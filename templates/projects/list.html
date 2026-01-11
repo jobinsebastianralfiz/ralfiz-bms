@@ -1,0 +1,117 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Projects - Ralfiz BMS{% endblock %}
+
+{% block breadcrumb %}
+<a href="{% url 'dashboard' %}" class="breadcrumb-item">Dashboard</a>
+<span class="breadcrumb-separator">/</span>
+<span class="breadcrumb-item active">Projects</span>
+{% endblock %}
+
+{% block content %}
+<!-- Page Header -->
+<div class="page-header">
+  <div>
+    <h1 class="page-title">Projects</h1>
+    <p class="page-subtitle mb-0">Manage your projects</p>
+  </div>
+  <div class="page-actions">
+    <a href="{% url 'project_create' %}" class="btn btn-primary">
+      <i class="fas fa-plus"></i>
+      New Project
+    </a>
+  </div>
+</div>
+
+<!-- Filters -->
+<div class="card mb-4">
+  <div class="card-body">
+    <form method="get" class="row align-items-end">
+      <div class="col-3 col-md-6 col-sm-12" style="padding: 0.5rem;">
+        <label class="form-label">Search</label>
+        <div class="navbar-search" style="width: 100%;">
+          <i class="fas fa-search"></i>
+          <input type="text" class="form-control" name="search" placeholder="Search projects..." value="{{ search }}" style="padding-left: 2.5rem; width: 100%;">
+        </div>
+      </div>
+      <div class="col-2 col-md-6 col-sm-12" style="padding: 0.5rem;">
+        <label class="form-label">Status</label>
+        <select class="form-control" name="status">
+          <option value="">All Status</option>
+          {% for key, value in status_choices %}
+          <option value="{{ key }}" {% if status == key %}selected{% endif %}>{{ value }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-2 col-md-6 col-sm-12" style="padding: 0.5rem;">
+        <label class="form-label">Type</label>
+        <select class="form-control" name="type">
+          <option value="">All Types</option>
+          {% for key, value in type_choices %}
+          <option value="{{ key }}" {% if project_type == key %}selected{% endif %}>{{ value }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-2 col-md-6 col-sm-12" style="padding: 0.5rem;">
+        <button type="submit" class="btn btn-outline-secondary w-100">
+          <i class="fas fa-filter"></i>
+          Apply Filters
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Projects Table -->
+<div class="card">
+  <div class="table-wrapper">
+    <table class="table">
+      <thead>
+        <tr>
+          <th>Project</th>
+          <th>Client</th>
+          <th>Type</th>
+          <th>Status</th>
+          <th>Budget</th>
+          <th>Deadline</th>
+          <th style="width: 120px;">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for project in projects %}
+        <tr>
+          <td>
+            <a href="{% url 'project_detail' project.pk %}" class="fw-medium">{{ project.name }}</a>
+          </td>
+          <td>
+            <a href="{% url 'client_detail' project.client.pk %}">{{ project.client.name }}</a>
+          </td>
+          <td>{{ project.get_project_type_display }}</td>
+          <td><span class="status-badge {{ project.status }}">{{ project.get_status_display }}</span></td>
+          <td class="fw-medium">{% if project.estimated_budget %}&#8377;{{ project.estimated_budget|floatformat:0 }}{% else %}-{% endif %}</td>
+          <td>{{ project.deadline|date:"d M Y"|default:"-" }}</td>
+          <td>
+            <div class="table-actions">
+              <a href="{% url 'project_detail' project.pk %}" class="btn btn-sm btn-ghost btn-icon" title="View">
+                <i class="fas fa-eye"></i>
+              </a>
+              <a href="{% url 'project_update' project.pk %}" class="btn btn-sm btn-ghost btn-icon" title="Edit">
+                <i class="fas fa-edit"></i>
+              </a>
+            </div>
+          </td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="7" class="text-center py-4 text-muted">
+            <i class="fas fa-folder-open mb-2" style="font-size: 2rem;"></i>
+            <p class="mb-0">No projects found</p>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

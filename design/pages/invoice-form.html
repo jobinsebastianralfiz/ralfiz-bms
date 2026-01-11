@@ -1,0 +1,460 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Create Invoice - Ralfiz BMS</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <link rel="stylesheet" href="../css/styles.css">
+</head>
+<body>
+  <div class="app-wrapper">
+    <!-- Sidebar -->
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-header">
+        <a href="../index.html" class="sidebar-logo">
+          <div class="sidebar-logo-icon">R</div>
+          <div class="sidebar-logo-text">Ralfiz<span>BMS</span></div>
+        </a>
+      </div>
+
+      <nav class="sidebar-nav">
+        <div class="nav-section">
+          <a href="../index.html" class="nav-item">
+            <i class="fas fa-th-large"></i>
+            <span>Dashboard</span>
+          </a>
+        </div>
+
+        <div class="nav-section">
+          <div class="nav-section-title">Management</div>
+          <a href="clients.html" class="nav-item">
+            <i class="fas fa-users"></i>
+            <span>Clients</span>
+          </a>
+          <a href="projects.html" class="nav-item">
+            <i class="fas fa-folder-open"></i>
+            <span>Projects</span>
+          </a>
+          <a href="credentials.html" class="nav-item">
+            <i class="fas fa-key"></i>
+            <span>Credentials</span>
+            <span class="nav-badge">3</span>
+          </a>
+        </div>
+
+        <div class="nav-section">
+          <div class="nav-section-title">Billing</div>
+          <a href="quotes.html" class="nav-item">
+            <i class="fas fa-file-alt"></i>
+            <span>Quotes</span>
+          </a>
+          <a href="invoices.html" class="nav-item active">
+            <i class="fas fa-file-invoice-dollar"></i>
+            <span>Invoices</span>
+          </a>
+          <a href="payments.html" class="nav-item">
+            <i class="fas fa-credit-card"></i>
+            <span>Payments</span>
+          </a>
+        </div>
+
+        <div class="nav-section">
+          <div class="nav-section-title">System</div>
+          <a href="reports.html" class="nav-item">
+            <i class="fas fa-chart-bar"></i>
+            <span>Reports</span>
+          </a>
+          <a href="settings.html" class="nav-item">
+            <i class="fas fa-cog"></i>
+            <span>Settings</span>
+          </a>
+        </div>
+      </nav>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="main-content">
+      <!-- Navbar -->
+      <header class="navbar">
+        <div class="navbar-left">
+          <button class="sidebar-toggle" id="sidebarToggle">
+            <i class="fas fa-bars"></i>
+          </button>
+          <div class="breadcrumb">
+            <a href="../index.html" class="breadcrumb-item">Dashboard</a>
+            <span class="breadcrumb-separator">/</span>
+            <a href="invoices.html" class="breadcrumb-item">Invoices</a>
+            <span class="breadcrumb-separator">/</span>
+            <span class="breadcrumb-item active">Create Invoice</span>
+          </div>
+        </div>
+
+        <div class="navbar-right">
+          <div class="navbar-search">
+            <i class="fas fa-search"></i>
+            <input type="text" placeholder="Search clients, projects...">
+          </div>
+
+          <div class="navbar-actions">
+            <button class="navbar-action-btn" title="Notifications">
+              <i class="fas fa-bell"></i>
+              <span class="badge">5</span>
+            </button>
+          </div>
+
+          <div class="user-dropdown dropdown">
+            <button class="user-dropdown-toggle" id="userDropdown">
+              <div class="user-avatar">JD</div>
+              <div class="user-info">
+                <div class="user-name">John Doe</div>
+                <div class="user-role">Administrator</div>
+              </div>
+              <i class="fas fa-chevron-down" style="color: var(--text-muted); font-size: 0.75rem;"></i>
+            </button>
+            <div class="dropdown-menu">
+              <a href="#" class="dropdown-item"><i class="fas fa-user"></i>Profile</a>
+              <a href="settings.html" class="dropdown-item"><i class="fas fa-cog"></i>Settings</a>
+              <div class="dropdown-divider"></div>
+              <a href="login.html" class="dropdown-item danger"><i class="fas fa-sign-out-alt"></i>Logout</a>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <!-- Page Content -->
+      <div class="content-wrapper">
+        <!-- Page Header -->
+        <div class="page-header">
+          <div>
+            <h1 class="page-title">Create Invoice</h1>
+            <p class="page-subtitle mb-0">Invoice Number: <span class="fw-semibold text-primary">INV20260019</span></p>
+          </div>
+          <div class="page-actions">
+            <button class="btn btn-outline-secondary">
+              <i class="fas fa-eye"></i>
+              Preview
+            </button>
+          </div>
+        </div>
+
+        <form id="invoiceForm">
+          <div class="row">
+            <!-- Left Column - Invoice Details -->
+            <div class="col-8 col-md-12" style="padding: 0.75rem;">
+              <!-- Client & Project -->
+              <div class="card mb-4">
+                <div class="card-header">
+                  <h3 class="card-title">
+                    <i class="fas fa-user me-2 text-primary"></i>
+                    Client & Project
+                  </h3>
+                </div>
+                <div class="card-body">
+                  <div class="row">
+                    <div class="col-6 col-sm-12" style="padding: 0.5rem;">
+                      <div class="form-group mb-0">
+                        <label class="form-label">Client <span class="required">*</span></label>
+                        <select class="form-control" id="client" required>
+                          <option value="">Select client</option>
+                          <option value="1" selected>TechStart Solutions</option>
+                          <option value="2">MediCare Hospital</option>
+                          <option value="3">EduHub Academy</option>
+                          <option value="4">GreenLeaf Organics</option>
+                        </select>
+                      </div>
+                    </div>
+                    <div class="col-6 col-sm-12" style="padding: 0.5rem;">
+                      <div class="form-group mb-0">
+                        <label class="form-label">Project</label>
+                        <select class="form-control" id="project">
+                          <option value="">Select project (optional)</option>
+                          <option value="1" selected>E-commerce Platform</option>
+                          <option value="2">Mobile App Development</option>
+                        </select>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Invoice Details -->
+              <div class="card mb-4">
+                <div class="card-header">
+                  <h3 class="card-title">
+                    <i class="fas fa-info-circle me-2 text-primary"></i>
+                    Invoice Details
+                  </h3>
+                </div>
+                <div class="card-body">
+                  <div class="row">
+                    <div class="col-12" style="padding: 0.5rem;">
+                      <div class="form-group">
+                        <label class="form-label">Invoice Title <span class="required">*</span></label>
+                        <input type="text" class="form-control" id="title" value="E-commerce Platform - Milestone 2 Payment" required>
+                      </div>
+                    </div>
+                    <div class="col-12" style="padding: 0.5rem;">
+                      <div class="form-group mb-0">
+                        <label class="form-label">Description</label>
+                        <textarea class="form-control" id="description" rows="2" placeholder="Brief description of this invoice">Development milestone payment for core features including product catalog, cart functionality, and checkout system.</textarea>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Line Items -->
+              <div class="card mb-4">
+                <div class="card-header">
+                  <h3 class="card-title">
+                    <i class="fas fa-list me-2 text-primary"></i>
+                    Line Items
+                  </h3>
+                  <button type="button" class="btn btn-sm btn-outline-primary" onclick="addLineItem('lineItemsBody')">
+                    <i class="fas fa-plus"></i>
+                    Add Item
+                  </button>
+                </div>
+                <div class="table-wrapper">
+                  <table class="table">
+                    <thead>
+                      <tr>
+                        <th>Description</th>
+                        <th style="width: 100px;">Qty</th>
+                        <th style="width: 150px;">Unit Price</th>
+                        <th style="width: 150px;">Amount</th>
+                        <th style="width: 50px;"></th>
+                      </tr>
+                    </thead>
+                    <tbody id="lineItemsBody">
+                      <tr id="lineItem1">
+                        <td>
+                          <input type="text" class="form-control" placeholder="Item description" name="items[1][description]" value="Product Catalog Module Development">
+                        </td>
+                        <td>
+                          <input type="number" class="form-control text-right" value="1" min="1" name="items[1][quantity]" onchange="calculateLineTotal(1)">
+                        </td>
+                        <td>
+                          <input type="number" class="form-control text-right" value="50000" name="items[1][price]" onchange="calculateLineTotal(1)">
+                        </td>
+                        <td>
+                          <input type="text" class="form-control text-right" readonly value="50,000.00" id="lineTotal1">
+                        </td>
+                        <td>
+                          <button type="button" class="btn btn-ghost btn-sm btn-icon text-danger" onclick="removeLineItem(1)">
+                            <i class="fas fa-trash"></i>
+                          </button>
+                        </td>
+                      </tr>
+                      <tr id="lineItem2">
+                        <td>
+                          <input type="text" class="form-control" placeholder="Item description" name="items[2][description]" value="Shopping Cart & Checkout System">
+                        </td>
+                        <td>
+                          <input type="number" class="form-control text-right" value="1" min="1" name="items[2][quantity]" onchange="calculateLineTotal(2)">
+                        </td>
+                        <td>
+                          <input type="number" class="form-control text-right" value="40000" name="items[2][price]" onchange="calculateLineTotal(2)">
+                        </td>
+                        <td>
+                          <input type="text" class="form-control text-right" readonly value="40,000.00" id="lineTotal2">
+                        </td>
+                        <td>
+                          <button type="button" class="btn btn-ghost btn-sm btn-icon text-danger" onclick="removeLineItem(2)">
+                            <i class="fas fa-trash"></i>
+                          </button>
+                        </td>
+                      </tr>
+                      <tr id="lineItem3">
+                        <td>
+                          <input type="text" class="form-control" placeholder="Item description" name="items[3][description]" value="Payment Gateway Integration">
+                        </td>
+                        <td>
+                          <input type="number" class="form-control text-right" value="1" min="1" name="items[3][quantity]" onchange="calculateLineTotal(3)">
+                        </td>
+                        <td>
+                          <input type="number" class="form-control text-right" value="15932.20" name="items[3][price]" onchange="calculateLineTotal(3)">
+                        </td>
+                        <td>
+                          <input type="text" class="form-control text-right" readonly value="15,932.20" id="lineTotal3">
+                        </td>
+                        <td>
+                          <button type="button" class="btn btn-ghost btn-sm btn-icon text-danger" onclick="removeLineItem(3)">
+                            <i class="fas fa-trash"></i>
+                          </button>
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              <!-- Terms -->
+              <div class="card">
+                <div class="card-header">
+                  <h3 class="card-title">
+                    <i class="fas fa-file-contract me-2 text-primary"></i>
+                    Terms & Notes
+                  </h3>
+                </div>
+                <div class="card-body">
+                  <div class="form-group">
+                    <label class="form-label">Payment Terms</label>
+                    <textarea class="form-control" id="terms" rows="3">1. Payment is due within 15 days of invoice date.
+2. Please include invoice number in payment reference.
+3. Late payments may incur additional charges.</textarea>
+                  </div>
+                  <div class="form-group mb-0">
+                    <label class="form-label">Internal Notes</label>
+                    <textarea class="form-control" id="notes" rows="2" placeholder="Notes visible only to your team"></textarea>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Right Column - Summary -->
+            <div class="col-4 col-md-12" style="padding: 0.75rem;">
+              <!-- Dates -->
+              <div class="card mb-4">
+                <div class="card-header">
+                  <h3 class="card-title">
+                    <i class="fas fa-calendar me-2 text-primary"></i>
+                    Dates
+                  </h3>
+                </div>
+                <div class="card-body">
+                  <div class="form-group">
+                    <label class="form-label">Issue Date <span class="required">*</span></label>
+                    <input type="date" class="form-control" id="issueDate" value="2026-01-10" required>
+                  </div>
+                  <div class="form-group mb-0">
+                    <label class="form-label">Due Date <span class="required">*</span></label>
+                    <input type="date" class="form-control" id="dueDate" value="2026-01-25" required>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Totals -->
+              <div class="card mb-4">
+                <div class="card-header">
+                  <h3 class="card-title">
+                    <i class="fas fa-calculator me-2 text-primary"></i>
+                    Summary
+                  </h3>
+                </div>
+                <div class="card-body">
+                  <div class="d-flex justify-content-between mb-3">
+                    <span class="text-secondary">Subtotal</span>
+                    <span class="fw-medium" id="subtotal">&#8377;1,05,932.20</span>
+                  </div>
+
+                  <div class="form-group">
+                    <label class="form-label">Discount</label>
+                    <div class="input-group">
+                      <span class="input-group-text">&#8377;</span>
+                      <input type="number" class="form-control" id="discount" value="0" onchange="calculateTotals()">
+                    </div>
+                  </div>
+
+                  <div class="d-flex justify-content-between mb-3">
+                    <span class="text-secondary">After Discount</span>
+                    <span class="fw-medium">&#8377;1,05,932.20</span>
+                  </div>
+
+                  <div class="form-group">
+                    <label class="form-label">Tax Rate (GST)</label>
+                    <div class="input-group">
+                      <input type="number" class="form-control" id="taxRate" value="18" onchange="calculateTotals()">
+                      <span class="input-group-text">%</span>
+                    </div>
+                  </div>
+
+                  <div class="d-flex justify-content-between mb-3">
+                    <span class="text-secondary">Tax Amount</span>
+                    <span class="fw-medium" id="taxAmount">&#8377;19,067.80</span>
+                  </div>
+
+                  <hr>
+
+                  <div class="d-flex justify-content-between">
+                    <span class="fw-semibold text-lg">Total</span>
+                    <span class="fw-bold text-lg text-primary" id="totalAmount">&#8377;1,25,000.00</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Status -->
+              <div class="card mb-4">
+                <div class="card-header">
+                  <h3 class="card-title">
+                    <i class="fas fa-tag me-2 text-primary"></i>
+                    Status
+                  </h3>
+                </div>
+                <div class="card-body">
+                  <select class="form-control" id="status">
+                    <option value="draft" selected>Draft</option>
+                    <option value="sent">Sent</option>
+                  </select>
+                  <div class="form-text">Set to 'Sent' when sending to client</div>
+                </div>
+              </div>
+
+              <!-- Quick Actions -->
+              <div class="card" style="background: var(--primary-bg); border-color: var(--primary-lighter);">
+                <div class="card-body">
+                  <h4 class="text-primary mb-3">
+                    <i class="fas fa-bolt me-2"></i>Quick Actions
+                  </h4>
+                  <button type="button" class="btn btn-outline-primary w-100 mb-2">
+                    <i class="fas fa-file-import me-2"></i>
+                    Import from Quote
+                  </button>
+                  <button type="button" class="btn btn-outline-secondary w-100">
+                    <i class="fas fa-copy me-2"></i>
+                    Clone Previous Invoice
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Form Actions -->
+          <div class="card mt-4">
+            <div class="card-body d-flex justify-content-between align-items-center">
+              <a href="invoices.html" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-left me-2"></i>
+                Cancel
+              </a>
+              <div class="d-flex gap-2">
+                <button type="button" class="btn btn-outline-primary">
+                  <i class="fas fa-save me-2"></i>
+                  Save as Draft
+                </button>
+                <button type="button" class="btn btn-outline-primary">
+                  <i class="fas fa-file-pdf me-2"></i>
+                  Save & Download PDF
+                </button>
+                <button type="submit" class="btn btn-primary">
+                  <i class="fas fa-paper-plane me-2"></i>
+                  Save & Send
+                </button>
+              </div>
+            </div>
+          </div>
+        </form>
+      </div>
+    </main>
+  </div>
+
+  <script src="../js/app.js"></script>
+  <script>
+    // Initialize line item counter
+    lineItemCounter = 3;
+  </script>
+</body>
+</html>

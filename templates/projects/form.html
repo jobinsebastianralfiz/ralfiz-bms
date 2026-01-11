@@ -1,0 +1,211 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ form_title }} - Ralfiz BMS{% endblock %}
+
+{% block breadcrumb %}
+<a href="{% url 'dashboard' %}" class="breadcrumb-item">Dashboard</a>
+<span class="breadcrumb-separator">/</span>
+<a href="{% url 'project_list' %}" class="breadcrumb-item">Projects</a>
+<span class="breadcrumb-separator">/</span>
+<span class="breadcrumb-item active">{{ form_title }}</span>
+{% endblock %}
+
+{% block content %}
+<!-- Page Header -->
+<div class="page-header">
+  <div>
+    <h1 class="page-title">{{ form_title }}</h1>
+    <p class="page-subtitle mb-0">{% if project %}Update project details{% else %}Create a new project{% endif %}</p>
+  </div>
+</div>
+
+<form method="post">
+  {% csrf_token %}
+  <div class="row">
+    <!-- Left Column -->
+    <div class="col-8 col-md-12" style="padding: 0.75rem;">
+      <!-- Basic Information -->
+      <div class="card mb-4">
+        <div class="card-header">
+          <h3 class="card-title">
+            <i class="fas fa-folder-open me-2 text-primary"></i>
+            Project Information
+          </h3>
+        </div>
+        <div class="card-body">
+          <div class="row">
+            <div class="col-6 col-sm-12" style="padding: 0.5rem;">
+              <div class="form-group">
+                <label class="form-label" for="name">
+                  Project Name <span class="required">*</span>
+                </label>
+                <input type="text" class="form-control" id="name" name="name" placeholder="Enter project name" value="{{ project.name|default:'' }}" required>
+              </div>
+            </div>
+            <div class="col-6 col-sm-12" style="padding: 0.5rem;">
+              <div class="form-group">
+                <label class="form-label" for="client">
+                  Client <span class="required">*</span>
+                </label>
+                <select class="form-control" id="client" name="client" required>
+                  <option value="">Select a client</option>
+                  {% for client in clients %}
+                  <option value="{{ client.pk }}" {% if project.client.pk == client.pk %}selected{% endif %}>{{ client.name }}{% if client.company_name %} ({{ client.company_name }}){% endif %}</option>
+                  {% endfor %}
+                </select>
+              </div>
+            </div>
+            <div class="col-6 col-sm-12" style="padding: 0.5rem;">
+              <div class="form-group">
+                <label class="form-label" for="project_type">Project Type</label>
+                <select class="form-control" id="project_type" name="project_type">
+                  {% for key, value in type_choices %}
+                  <option value="{{ key }}" {% if project.project_type == key %}selected{% endif %}>{{ value }}</option>
+                  {% endfor %}
+                </select>
+              </div>
+            </div>
+            <div class="col-6 col-sm-12" style="padding: 0.5rem;">
+              <div class="form-group">
+                <label class="form-label" for="status">Status</label>
+                <select class="form-control" id="status" name="status">
+                  {% for key, value in status_choices %}
+                  <option value="{{ key }}" {% if project.status == key %}selected{% endif %}>{{ value }}</option>
+                  {% endfor %}
+                </select>
+              </div>
+            </div>
+            <div class="col-12" style="padding: 0.5rem;">
+              <div class="form-group">
+                <label class="form-label" for="description">Description</label>
+                <textarea class="form-control" id="description" name="description" rows="3" placeholder="Project description...">{{ project.description|default:'' }}</textarea>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Timeline & Budget -->
+      <div class="card mb-4">
+        <div class="card-header">
+          <h3 class="card-title">
+            <i class="fas fa-calendar me-2 text-primary"></i>
+            Timeline & Budget
+          </h3>
+        </div>
+        <div class="card-body">
+          <div class="row">
+            <div class="col-6 col-sm-12" style="padding: 0.5rem;">
+              <div class="form-group">
+                <label class="form-label" for="estimated_budget">Estimated Budget (&#8377;)</label>
+                <input type="number" class="form-control" id="estimated_budget" name="estimated_budget" placeholder="0" value="{{ project.estimated_budget|default:'' }}">
+              </div>
+            </div>
+            {% if project %}
+            <div class="col-6 col-sm-12" style="padding: 0.5rem;">
+              <div class="form-group">
+                <label class="form-label" for="final_amount">Final Amount (&#8377;)</label>
+                <input type="number" class="form-control" id="final_amount" name="final_amount" placeholder="0" value="{{ project.final_amount|default:'' }}">
+              </div>
+            </div>
+            {% endif %}
+            <div class="col-6 col-sm-12" style="padding: 0.5rem;">
+              <div class="form-group">
+                <label class="form-label" for="start_date">Start Date</label>
+                <input type="date" class="form-control" id="start_date" name="start_date" value="{{ project.start_date|date:'Y-m-d'|default:'' }}">
+              </div>
+            </div>
+            <div class="col-6 col-sm-12" style="padding: 0.5rem;">
+              <div class="form-group">
+                <label class="form-label" for="deadline">Deadline</label>
+                <input type="date" class="form-control" id="deadline" name="deadline" value="{{ project.deadline|date:'Y-m-d'|default:'' }}">
+              </div>
+            </div>
+            {% if project %}
+            <div class="col-6 col-sm-12" style="padding: 0.5rem;">
+              <div class="form-group">
+                <label class="form-label" for="completed_date">Completed Date</label>
+                <input type="date" class="form-control" id="completed_date" name="completed_date" value="{{ project.completed_date|date:'Y-m-d'|default:'' }}">
+              </div>
+            </div>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+
+      <!-- Technical Details -->
+      <div class="card">
+        <div class="card-header">
+          <h3 class="card-title">
+            <i class="fas fa-code me-2 text-primary"></i>
+            Technical Details
+          </h3>
+        </div>
+        <div class="card-body">
+          <div class="row">
+            <div class="col-12" style="padding: 0.5rem;">
+              <div class="form-group">
+                <label class="form-label" for="tech_stack">Tech Stack</label>
+                <input type="text" class="form-control" id="tech_stack" name="tech_stack" placeholder="e.g., Django, React, PostgreSQL" value="{{ project.tech_stack|default:'' }}">
+              </div>
+            </div>
+            {% if project %}
+            <div class="col-6 col-sm-12" style="padding: 0.5rem;">
+              <div class="form-group">
+                <label class="form-label" for="github_repo">GitHub Repository</label>
+                <input type="url" class="form-control" id="github_repo" name="github_repo" placeholder="https://github.com/..." value="{{ project.github_repo|default:'' }}">
+              </div>
+            </div>
+            <div class="col-6 col-sm-12" style="padding: 0.5rem;">
+              <div class="form-group">
+                <label class="form-label" for="live_url">Live URL</label>
+                <input type="url" class="form-control" id="live_url" name="live_url" placeholder="https://..." value="{{ project.live_url|default:'' }}">
+              </div>
+            </div>
+            {% endif %}
+            <div class="col-12" style="padding: 0.5rem;">
+              <div class="form-group mb-0">
+                <label class="form-label" for="notes">Notes</label>
+                <textarea class="form-control" id="notes" name="notes" rows="3" placeholder="Internal notes...">{{ project.notes|default:'' }}</textarea>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right Column -->
+    <div class="col-4 col-md-12" style="padding: 0.75rem;">
+      <!-- Quick Tips -->
+      <div class="card" style="background: var(--primary-bg); border-color: var(--primary-lighter);">
+        <div class="card-body">
+          <h4 class="text-primary mb-3">
+            <i class="fas fa-lightbulb me-2"></i>Quick Tips
+          </h4>
+          <ul class="text-sm text-secondary" style="padding-left: 1.25rem; margin: 0;">
+            <li class="mb-2">Set realistic deadlines</li>
+            <li class="mb-2">Track budget carefully</li>
+            <li class="mb-2">Update status regularly</li>
+            <li>Add tech stack for reference</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Form Actions -->
+  <div class="card mt-4">
+    <div class="card-body d-flex justify-content-between align-items-center">
+      <a href="{% url 'project_list' %}" class="btn btn-outline-secondary">
+        <i class="fas fa-arrow-left me-2"></i>
+        Cancel
+      </a>
+      <button type="submit" class="btn btn-primary">
+        <i class="fas fa-check me-2"></i>
+        {% if project %}Update Project{% else %}Create Project{% endif %}
+      </button>
+    </div>
+  </div>
+</form>
+{% endblock %}

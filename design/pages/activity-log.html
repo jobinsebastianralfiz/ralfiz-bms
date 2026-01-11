@@ -1,0 +1,843 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Activity Log - Ralfiz BMS</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <link rel="stylesheet" href="../css/styles.css">
+  <style>
+    .activity-filters {
+      display: flex;
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+      flex-wrap: wrap;
+      align-items: flex-end;
+    }
+
+    .filter-group {
+      display: flex;
+      flex-direction: column;
+      gap: 0.25rem;
+    }
+
+    .filter-group label {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .activity-table {
+      width: 100%;
+    }
+
+    .activity-table th {
+      background: var(--hover-bg);
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: var(--text-muted);
+      font-weight: 600;
+    }
+
+    .activity-table td {
+      vertical-align: middle;
+    }
+
+    .activity-user {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .activity-user-avatar {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background: var(--primary);
+      color: white;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.75rem;
+      font-weight: 600;
+    }
+
+    .activity-user-name {
+      font-weight: 500;
+      color: var(--text-primary);
+    }
+
+    .activity-action {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .activity-action-icon {
+      width: 28px;
+      height: 28px;
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.75rem;
+    }
+
+    .activity-action-icon.create {
+      background: var(--success-light);
+      color: var(--success);
+    }
+
+    .activity-action-icon.update {
+      background: var(--info-light);
+      color: var(--info);
+    }
+
+    .activity-action-icon.delete {
+      background: var(--danger-light);
+      color: var(--danger);
+    }
+
+    .activity-action-icon.view {
+      background: var(--primary-light);
+      color: var(--primary);
+    }
+
+    .activity-action-icon.login {
+      background: var(--warning-light);
+      color: var(--warning);
+    }
+
+    .activity-action-icon.payment {
+      background: var(--success-light);
+      color: var(--success);
+    }
+
+    .activity-action-icon.send {
+      background: var(--primary-light);
+      color: var(--primary);
+    }
+
+    .activity-target {
+      display: flex;
+      flex-direction: column;
+      gap: 0.125rem;
+    }
+
+    .activity-target-type {
+      font-size: 0.688rem;
+      color: var(--text-muted);
+      text-transform: uppercase;
+    }
+
+    .activity-target-name {
+      color: var(--primary);
+      font-weight: 500;
+      text-decoration: none;
+    }
+
+    .activity-target-name:hover {
+      text-decoration: underline;
+    }
+
+    .activity-details {
+      font-size: 0.875rem;
+      color: var(--text-secondary);
+    }
+
+    .activity-details code {
+      background: var(--hover-bg);
+      padding: 0.125rem 0.375rem;
+      border-radius: 4px;
+      font-size: 0.813rem;
+    }
+
+    .activity-time {
+      font-size: 0.813rem;
+      color: var(--text-muted);
+      white-space: nowrap;
+    }
+
+    .activity-ip {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      font-family: monospace;
+    }
+
+    .activity-stats {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .activity-stat-card {
+      background: white;
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      padding: 1rem;
+      text-align: center;
+    }
+
+    .activity-stat-icon {
+      width: 40px;
+      height: 40px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 0.75rem;
+    }
+
+    .activity-stat-value {
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: var(--text-primary);
+    }
+
+    .activity-stat-label {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+    }
+
+    .export-dropdown {
+      position: relative;
+    }
+
+    .export-menu {
+      position: absolute;
+      top: 100%;
+      right: 0;
+      background: white;
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+      min-width: 180px;
+      display: none;
+      z-index: 100;
+    }
+
+    .export-menu.show {
+      display: block;
+    }
+
+    .export-menu a {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 0.75rem 1rem;
+      color: var(--text-secondary);
+      text-decoration: none;
+      transition: all 0.2s;
+    }
+
+    .export-menu a:hover {
+      background: var(--hover-bg);
+      color: var(--primary);
+    }
+
+    @media (max-width: 992px) {
+      .activity-stats {
+        grid-template-columns: repeat(3, 1fr);
+      }
+    }
+
+    @media (max-width: 768px) {
+      .activity-stats {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="app-wrapper">
+    <!-- Sidebar -->
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-header">
+        <a href="../index.html" class="sidebar-logo">
+          <div class="sidebar-logo-icon">R</div>
+          <div class="sidebar-logo-text">Ralfiz<span>BMS</span></div>
+        </a>
+      </div>
+
+      <nav class="sidebar-nav">
+        <div class="nav-section">
+          <a href="../index.html" class="nav-item">
+            <i class="fas fa-th-large"></i>
+            <span>Dashboard</span>
+          </a>
+        </div>
+
+        <div class="nav-section">
+          <div class="nav-section-title">Management</div>
+          <a href="clients.html" class="nav-item">
+            <i class="fas fa-users"></i>
+            <span>Clients</span>
+          </a>
+          <a href="projects.html" class="nav-item">
+            <i class="fas fa-folder-open"></i>
+            <span>Projects</span>
+          </a>
+          <a href="credentials.html" class="nav-item">
+            <i class="fas fa-key"></i>
+            <span>Credentials</span>
+            <span class="nav-badge">3</span>
+          </a>
+        </div>
+
+        <div class="nav-section">
+          <div class="nav-section-title">Billing</div>
+          <a href="quotes.html" class="nav-item">
+            <i class="fas fa-file-alt"></i>
+            <span>Quotes</span>
+          </a>
+          <a href="invoices.html" class="nav-item">
+            <i class="fas fa-file-invoice-dollar"></i>
+            <span>Invoices</span>
+          </a>
+          <a href="payments.html" class="nav-item">
+            <i class="fas fa-credit-card"></i>
+            <span>Payments</span>
+          </a>
+        </div>
+
+        <div class="nav-section">
+          <div class="nav-section-title">System</div>
+          <a href="reports.html" class="nav-item">
+            <i class="fas fa-chart-bar"></i>
+            <span>Reports</span>
+          </a>
+          <a href="settings.html" class="nav-item">
+            <i class="fas fa-cog"></i>
+            <span>Settings</span>
+          </a>
+        </div>
+      </nav>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="main-content">
+      <!-- Navbar -->
+      <header class="navbar">
+        <div class="navbar-left">
+          <button class="sidebar-toggle" id="sidebarToggle">
+            <i class="fas fa-bars"></i>
+          </button>
+          <div class="breadcrumb">
+            <a href="../index.html" class="breadcrumb-item">Dashboard</a>
+            <span class="breadcrumb-separator">/</span>
+            <span class="breadcrumb-item active">Activity Log</span>
+          </div>
+        </div>
+
+        <div class="navbar-right">
+          <div class="navbar-search">
+            <i class="fas fa-search"></i>
+            <input type="text" placeholder="Search clients, projects...">
+          </div>
+
+          <div class="navbar-actions">
+            <button class="navbar-action-btn" title="Notifications">
+              <i class="fas fa-bell"></i>
+              <span class="badge">5</span>
+            </button>
+          </div>
+
+          <div class="user-dropdown dropdown">
+            <button class="user-dropdown-toggle" id="userDropdown">
+              <div class="user-avatar">JD</div>
+              <div class="user-info">
+                <div class="user-name">John Doe</div>
+                <div class="user-role">Administrator</div>
+              </div>
+              <i class="fas fa-chevron-down" style="color: var(--text-muted); font-size: 0.75rem;"></i>
+            </button>
+            <div class="dropdown-menu">
+              <a href="user-profile.html" class="dropdown-item"><i class="fas fa-user"></i>Profile</a>
+              <a href="settings.html" class="dropdown-item"><i class="fas fa-cog"></i>Settings</a>
+              <div class="dropdown-divider"></div>
+              <a href="login.html" class="dropdown-item danger"><i class="fas fa-sign-out-alt"></i>Logout</a>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <!-- Page Content -->
+      <div class="content-wrapper">
+        <!-- Page Header -->
+        <div class="page-header">
+          <div>
+            <h1 class="page-title">Activity Log</h1>
+            <p class="page-subtitle mb-0">Track all user actions and system events</p>
+          </div>
+          <div class="page-actions">
+            <div class="export-dropdown">
+              <button class="btn btn-outline-secondary" onclick="toggleExportMenu()">
+                <i class="fas fa-download"></i>
+                Export
+                <i class="fas fa-chevron-down ms-1"></i>
+              </button>
+              <div class="export-menu" id="exportMenu">
+                <a href="#"><i class="fas fa-file-excel text-success"></i>Export to Excel</a>
+                <a href="#"><i class="fas fa-file-csv text-primary"></i>Export to CSV</a>
+                <a href="#"><i class="fas fa-file-pdf text-danger"></i>Export to PDF</a>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Stats -->
+        <div class="activity-stats">
+          <div class="activity-stat-card">
+            <div class="activity-stat-icon" style="background: var(--success-light);">
+              <i class="fas fa-plus text-success"></i>
+            </div>
+            <div class="activity-stat-value">156</div>
+            <div class="activity-stat-label">Created</div>
+          </div>
+          <div class="activity-stat-card">
+            <div class="activity-stat-icon" style="background: var(--info-light);">
+              <i class="fas fa-edit text-info"></i>
+            </div>
+            <div class="activity-stat-value">324</div>
+            <div class="activity-stat-label">Updated</div>
+          </div>
+          <div class="activity-stat-card">
+            <div class="activity-stat-icon" style="background: var(--danger-light);">
+              <i class="fas fa-trash text-danger"></i>
+            </div>
+            <div class="activity-stat-value">12</div>
+            <div class="activity-stat-label">Deleted</div>
+          </div>
+          <div class="activity-stat-card">
+            <div class="activity-stat-icon" style="background: var(--warning-light);">
+              <i class="fas fa-sign-in-alt text-warning"></i>
+            </div>
+            <div class="activity-stat-value">89</div>
+            <div class="activity-stat-label">Logins</div>
+          </div>
+          <div class="activity-stat-card">
+            <div class="activity-stat-icon" style="background: var(--primary-light);">
+              <i class="fas fa-history text-primary"></i>
+            </div>
+            <div class="activity-stat-value">581</div>
+            <div class="activity-stat-label">Total Events</div>
+          </div>
+        </div>
+
+        <!-- Filters -->
+        <div class="card mb-4">
+          <div class="card-body">
+            <div class="activity-filters">
+              <div class="filter-group">
+                <label>User</label>
+                <select class="form-control" style="min-width: 150px;">
+                  <option value="">All Users</option>
+                  <option value="john">John Doe</option>
+                  <option value="sarah">Sarah Wilson</option>
+                  <option value="mike">Mike Johnson</option>
+                </select>
+              </div>
+              <div class="filter-group">
+                <label>Action</label>
+                <select class="form-control" style="min-width: 150px;">
+                  <option value="">All Actions</option>
+                  <option value="create">Create</option>
+                  <option value="update">Update</option>
+                  <option value="delete">Delete</option>
+                  <option value="view">View</option>
+                  <option value="login">Login</option>
+                  <option value="logout">Logout</option>
+                </select>
+              </div>
+              <div class="filter-group">
+                <label>Module</label>
+                <select class="form-control" style="min-width: 150px;">
+                  <option value="">All Modules</option>
+                  <option value="clients">Clients</option>
+                  <option value="projects">Projects</option>
+                  <option value="credentials">Credentials</option>
+                  <option value="quotes">Quotes</option>
+                  <option value="invoices">Invoices</option>
+                  <option value="payments">Payments</option>
+                  <option value="settings">Settings</option>
+                </select>
+              </div>
+              <div class="filter-group">
+                <label>Date Range</label>
+                <div class="d-flex gap-2">
+                  <input type="date" class="form-control" value="2026-01-01" style="width: 140px;">
+                  <input type="date" class="form-control" value="2026-01-11" style="width: 140px;">
+                </div>
+              </div>
+              <div class="filter-group" style="align-self: flex-end;">
+                <button class="btn btn-primary">
+                  <i class="fas fa-filter me-1"></i>Apply
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Activity Log Table -->
+        <div class="card">
+          <div class="table-wrapper">
+            <table class="table activity-table">
+              <thead>
+                <tr>
+                  <th>User</th>
+                  <th>Action</th>
+                  <th>Target</th>
+                  <th>Details</th>
+                  <th>IP Address</th>
+                  <th>Timestamp</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>
+                    <div class="activity-user">
+                      <div class="activity-user-avatar">JD</div>
+                      <span class="activity-user-name">John Doe</span>
+                    </div>
+                  </td>
+                  <td>
+                    <div class="activity-action">
+                      <div class="activity-action-icon create">
+                        <i class="fas fa-plus"></i>
+                      </div>
+                      <span>Created</span>
+                    </div>
+                  </td>
+                  <td>
+                    <div class="activity-target">
+                      <span class="activity-target-type">Invoice</span>
+                      <a href="invoice-detail.html" class="activity-target-name">INV20260019</a>
+                    </div>
+                  </td>
+                  <td>
+                    <span class="activity-details">
+                      Created invoice for <code>TechStart Solutions</code> worth ₹1,25,000
+                    </span>
+                  </td>
+                  <td><span class="activity-ip">192.168.1.105</span></td>
+                  <td><span class="activity-time">Today, 10:45 AM</span></td>
+                </tr>
+
+                <tr>
+                  <td>
+                    <div class="activity-user">
+                      <div class="activity-user-avatar">JD</div>
+                      <span class="activity-user-name">John Doe</span>
+                    </div>
+                  </td>
+                  <td>
+                    <div class="activity-action">
+                      <div class="activity-action-icon update">
+                        <i class="fas fa-edit"></i>
+                      </div>
+                      <span>Updated</span>
+                    </div>
+                  </td>
+                  <td>
+                    <div class="activity-target">
+                      <span class="activity-target-type">Project</span>
+                      <a href="project-detail.html" class="activity-target-name">E-commerce Platform</a>
+                    </div>
+                  </td>
+                  <td>
+                    <span class="activity-details">
+                      Changed status from <code>In Progress</code> to <code>Review</code>
+                    </span>
+                  </td>
+                  <td><span class="activity-ip">192.168.1.105</span></td>
+                  <td><span class="activity-time">Today, 09:30 AM</span></td>
+                </tr>
+
+                <tr>
+                  <td>
+                    <div class="activity-user">
+                      <div class="activity-user-avatar">JD</div>
+                      <span class="activity-user-name">John Doe</span>
+                    </div>
+                  </td>
+                  <td>
+                    <div class="activity-action">
+                      <div class="activity-action-icon payment">
+                        <i class="fas fa-rupee-sign"></i>
+                      </div>
+                      <span>Payment</span>
+                    </div>
+                  </td>
+                  <td>
+                    <div class="activity-target">
+                      <span class="activity-target-type">Invoice</span>
+                      <a href="invoice-detail.html" class="activity-target-name">INV20260015</a>
+                    </div>
+                  </td>
+                  <td>
+                    <span class="activity-details">
+                      Recorded payment of <code>₹50,000</code> via Bank Transfer
+                    </span>
+                  </td>
+                  <td><span class="activity-ip">192.168.1.105</span></td>
+                  <td><span class="activity-time">Yesterday, 04:15 PM</span></td>
+                </tr>
+
+                <tr>
+                  <td>
+                    <div class="activity-user">
+                      <div class="activity-user-avatar">JD</div>
+                      <span class="activity-user-name">John Doe</span>
+                    </div>
+                  </td>
+                  <td>
+                    <div class="activity-action">
+                      <div class="activity-action-icon create">
+                        <i class="fas fa-plus"></i>
+                      </div>
+                      <span>Created</span>
+                    </div>
+                  </td>
+                  <td>
+                    <div class="activity-target">
+                      <span class="activity-target-type">Credential</span>
+                      <a href="credential-detail.html" class="activity-target-name">Production Server</a>
+                    </div>
+                  </td>
+                  <td>
+                    <span class="activity-details">
+                      Added server credential for <code>TechStart Solutions</code>
+                    </span>
+                  </td>
+                  <td><span class="activity-ip">192.168.1.105</span></td>
+                  <td><span class="activity-time">Yesterday, 02:00 PM</span></td>
+                </tr>
+
+                <tr>
+                  <td>
+                    <div class="activity-user">
+                      <div class="activity-user-avatar">JD</div>
+                      <span class="activity-user-name">John Doe</span>
+                    </div>
+                  </td>
+                  <td>
+                    <div class="activity-action">
+                      <div class="activity-action-icon send">
+                        <i class="fas fa-paper-plane"></i>
+                      </div>
+                      <span>Sent</span>
+                    </div>
+                  </td>
+                  <td>
+                    <div class="activity-target">
+                      <span class="activity-target-type">Quote</span>
+                      <a href="quote-detail.html" class="activity-target-name">QT20260042</a>
+                    </div>
+                  </td>
+                  <td>
+                    <span class="activity-details">
+                      Sent quote to <code>MediCare Hospital</code> via email
+                    </span>
+                  </td>
+                  <td><span class="activity-ip">192.168.1.105</span></td>
+                  <td><span class="activity-time">10 Jan, 11:20 AM</span></td>
+                </tr>
+
+                <tr>
+                  <td>
+                    <div class="activity-user">
+                      <div class="activity-user-avatar">JD</div>
+                      <span class="activity-user-name">John Doe</span>
+                    </div>
+                  </td>
+                  <td>
+                    <div class="activity-action">
+                      <div class="activity-action-icon create">
+                        <i class="fas fa-plus"></i>
+                      </div>
+                      <span>Created</span>
+                    </div>
+                  </td>
+                  <td>
+                    <div class="activity-target">
+                      <span class="activity-target-type">Client</span>
+                      <a href="client-detail.html" class="activity-target-name">GreenLeaf Organics</a>
+                    </div>
+                  </td>
+                  <td>
+                    <span class="activity-details">
+                      Added new client with email <code>info@greenleaf.com</code>
+                    </span>
+                  </td>
+                  <td><span class="activity-ip">192.168.1.105</span></td>
+                  <td><span class="activity-time">09 Jan, 03:45 PM</span></td>
+                </tr>
+
+                <tr>
+                  <td>
+                    <div class="activity-user">
+                      <div class="activity-user-avatar">JD</div>
+                      <span class="activity-user-name">John Doe</span>
+                    </div>
+                  </td>
+                  <td>
+                    <div class="activity-action">
+                      <div class="activity-action-icon login">
+                        <i class="fas fa-sign-in-alt"></i>
+                      </div>
+                      <span>Login</span>
+                    </div>
+                  </td>
+                  <td>
+                    <div class="activity-target">
+                      <span class="activity-target-type">Session</span>
+                      <span class="activity-target-name">MacBook Pro - Chrome</span>
+                    </div>
+                  </td>
+                  <td>
+                    <span class="activity-details">
+                      Logged in from <code>Kozhikode, Kerala</code>
+                    </span>
+                  </td>
+                  <td><span class="activity-ip">192.168.1.105</span></td>
+                  <td><span class="activity-time">09 Jan, 09:00 AM</span></td>
+                </tr>
+
+                <tr>
+                  <td>
+                    <div class="activity-user">
+                      <div class="activity-user-avatar">JD</div>
+                      <span class="activity-user-name">John Doe</span>
+                    </div>
+                  </td>
+                  <td>
+                    <div class="activity-action">
+                      <div class="activity-action-icon update">
+                        <i class="fas fa-edit"></i>
+                      </div>
+                      <span>Updated</span>
+                    </div>
+                  </td>
+                  <td>
+                    <div class="activity-target">
+                      <span class="activity-target-type">Settings</span>
+                      <a href="settings.html" class="activity-target-name">Company Settings</a>
+                    </div>
+                  </td>
+                  <td>
+                    <span class="activity-details">
+                      Updated bank account details
+                    </span>
+                  </td>
+                  <td><span class="activity-ip">192.168.1.105</span></td>
+                  <td><span class="activity-time">08 Jan, 04:30 PM</span></td>
+                </tr>
+
+                <tr>
+                  <td>
+                    <div class="activity-user">
+                      <div class="activity-user-avatar">JD</div>
+                      <span class="activity-user-name">John Doe</span>
+                    </div>
+                  </td>
+                  <td>
+                    <div class="activity-action">
+                      <div class="activity-action-icon delete">
+                        <i class="fas fa-trash"></i>
+                      </div>
+                      <span>Deleted</span>
+                    </div>
+                  </td>
+                  <td>
+                    <div class="activity-target">
+                      <span class="activity-target-type">Quote</span>
+                      <span class="activity-target-name text-muted">QT20260035</span>
+                    </div>
+                  </td>
+                  <td>
+                    <span class="activity-details">
+                      Deleted draft quote for <code>Test Client</code>
+                    </span>
+                  </td>
+                  <td><span class="activity-ip">192.168.1.105</span></td>
+                  <td><span class="activity-time">08 Jan, 02:15 PM</span></td>
+                </tr>
+
+                <tr>
+                  <td>
+                    <div class="activity-user">
+                      <div class="activity-user-avatar">JD</div>
+                      <span class="activity-user-name">John Doe</span>
+                    </div>
+                  </td>
+                  <td>
+                    <div class="activity-action">
+                      <div class="activity-action-icon view">
+                        <i class="fas fa-eye"></i>
+                      </div>
+                      <span>Viewed</span>
+                    </div>
+                  </td>
+                  <td>
+                    <div class="activity-target">
+                      <span class="activity-target-type">Credential</span>
+                      <a href="credential-detail.html" class="activity-target-name">Main Domain (GoDaddy)</a>
+                    </div>
+                  </td>
+                  <td>
+                    <span class="activity-details">
+                      Accessed password for domain credential
+                    </span>
+                  </td>
+                  <td><span class="activity-ip">192.168.1.105</span></td>
+                  <td><span class="activity-time">07 Jan, 11:45 AM</span></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <!-- Pagination -->
+          <div class="card-footer d-flex justify-content-between align-items-center">
+            <div class="text-secondary" style="font-size: 0.875rem;">
+              Showing 1-10 of 581 entries
+            </div>
+            <div class="pagination">
+              <button class="pagination-btn" disabled>
+                <i class="fas fa-chevron-left"></i>
+              </button>
+              <button class="pagination-btn active">1</button>
+              <button class="pagination-btn">2</button>
+              <button class="pagination-btn">3</button>
+              <span class="pagination-ellipsis">...</span>
+              <button class="pagination-btn">59</button>
+              <button class="pagination-btn">
+                <i class="fas fa-chevron-right"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script src="../js/app.js"></script>
+  <script>
+    function toggleExportMenu() {
+      document.getElementById('exportMenu').classList.toggle('show');
+    }
+
+    // Close export menu when clicking outside
+    document.addEventListener('click', function(e) {
+      if (!e.target.closest('.export-dropdown')) {
+        document.getElementById('exportMenu').classList.remove('show');
+      }
+    });
+  </script>
+</body>
+</html>

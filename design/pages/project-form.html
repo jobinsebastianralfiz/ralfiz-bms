@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Add Project - Ralfiz BMS</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <link rel="stylesheet" href="../css/styles.css">
+</head>
+<body>
+  <div class="app-wrapper">
+    <!-- Sidebar -->
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-header">
+        <a href="../index.html" class="sidebar-logo">
+          <div class="sidebar-logo-icon">R</div>
+          <div class="sidebar-logo-text">Ralfiz<span>BMS</span></div>
+        </a>
+      </div>
+
+      <nav class="sidebar-nav">
+        <div class="nav-section">
+          <a href="../index.html" class="nav-item">
+            <i class="fas fa-th-large"></i>
+            <span>Dashboard</span>
+          </a>
+        </div>
+
+        <div class="nav-section">
+          <div class="nav-section-title">Management</div>
+          <a href="clients.html" class="nav-item">
+            <i class="fas fa-users"></i>
+            <span>Clients</span>
+          </a>
+          <a href="projects.html" class="nav-item active">
+            <i class="fas fa-folder-open"></i>
+            <span>Projects</span>
+          </a>
+          <a href="credentials.html" class="nav-item">
+            <i class="fas fa-key"></i>
+            <span>Credentials</span>
+            <span class="nav-badge">3</span>
+          </a>
+        </div>
+
+        <div class="nav-section">
+          <div class="nav-section-title">Billing</div>
+          <a href="quotes.html" class="nav-item">
+            <i class="fas fa-file-alt"></i>
+            <span>Quotes</span>
+          </a>
+          <a href="invoices.html" class="nav-item">
+            <i class="fas fa-file-invoice-dollar"></i>
+            <span>Invoices</span>
+          </a>
+          <a href="payments.html" class="nav-item">
+            <i class="fas fa-credit-card"></i>
+            <span>Payments</span>
+          </a>
+        </div>
+
+        <div class="nav-section">
+          <div class="nav-section-title">System</div>
+          <a href="reports.html" class="nav-item">
+            <i class="fas fa-chart-bar"></i>
+            <span>Reports</span>
+          </a>
+          <a href="settings.html" class="nav-item">
+            <i class="fas fa-cog"></i>
+            <span>Settings</span>
+          </a>
+        </div>
+      </nav>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="main-content">
+      <!-- Navbar -->
+      <header class="navbar">
+        <div class="navbar-left">
+          <button class="sidebar-toggle" id="sidebarToggle">
+            <i class="fas fa-bars"></i>
+          </button>
+          <div class="breadcrumb">
+            <a href="../index.html" class="breadcrumb-item">Dashboard</a>
+            <span class="breadcrumb-separator">/</span>
+            <a href="projects.html" class="breadcrumb-item">Projects</a>
+            <span class="breadcrumb-separator">/</span>
+            <span class="breadcrumb-item active">Add Project</span>
+          </div>
+        </div>
+
+        <div class="navbar-right">
+          <div class="navbar-search">
+            <i class="fas fa-search"></i>
+            <input type="text" placeholder="Search clients, projects...">
+          </div>
+
+          <div class="navbar-actions">
+            <button class="navbar-action-btn" title="Notifications">
+              <i class="fas fa-bell"></i>
+              <span class="badge">5</span>
+            </button>
+          </div>
+
+          <div class="user-dropdown dropdown">
+            <button class="user-dropdown-toggle" id="userDropdown">
+              <div class="user-avatar">JD</div>
+              <div class="user-info">
+                <div class="user-name">John Doe</div>
+                <div class="user-role">Administrator</div>
+              </div>
+              <i class="fas fa-chevron-down" style="color: var(--text-muted); font-size: 0.75rem;"></i>
+            </button>
+            <div class="dropdown-menu">
+              <a href="#" class="dropdown-item">
+                <i class="fas fa-user"></i>
+                Profile
+              </a>
+              <a href="settings.html" class="dropdown-item">
+                <i class="fas fa-cog"></i>
+                Settings
+              </a>
+              <div class="dropdown-divider"></div>
+              <a href="login.html" class="dropdown-item danger">
+                <i class="fas fa-sign-out-alt"></i>
+                Logout
+              </a>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <!-- Page Content -->
+      <div class="content-wrapper">
+        <!-- Page Header -->
+        <div class="page-header">
+          <div>
+            <h1 class="page-title">Add New Project</h1>
+            <p class="page-subtitle mb-0">Create a new project record</p>
+          </div>
+        </div>
+
+        <!-- Form Card -->
+        <form id="projectForm" onsubmit="return validateForm('projectForm')">
+          <div class="row">
+            <!-- Left Column -->
+            <div class="col-8 col-md-12" style="padding: 0.75rem;">
+              <!-- Basic Information -->
+              <div class="card mb-4">
+                <div class="card-header">
+                  <h3 class="card-title">
+                    <i class="fas fa-folder-open me-2 text-primary"></i>
+                    Project Details
+                  </h3>
+                </div>
+                <div class="card-body">
+                  <div class="row">
+                    <div class="col-12" style="padding: 0.5rem;">
+                      <div class="form-group">
+                        <label class="form-label" for="name">
+                          Project Name <span class="required">*</span>
+                        </label>
+                        <input type="text" class="form-control" id="name" name="name" placeholder="Enter project name" required>
+                      </div>
+                    </div>
+                    <div class="col-6 col-sm-12" style="padding: 0.5rem;">
+                      <div class="form-group">
+                        <label class="form-label" for="client">
+                          Client <span class="required">*</span>
+                        </label>
+                        <select class="form-control" id="client" name="client" required>
+                          <option value="">Select a client</option>
+                          <option value="1">TechStart Solutions</option>
+                          <option value="2">Green Earth Foods</option>
+                          <option value="3">Fashion Hub</option>
+                          <option value="4">HealthCare Plus</option>
+                        </select>
+                      </div>
+                    </div>
+                    <div class="col-6 col-sm-12" style="padding: 0.5rem;">
+                      <div class="form-group">
+                        <label class="form-label" for="project_type">Project Type</label>
+                        <select class="form-control" id="project_type" name="project_type">
+                          <option value="web_app">Web Application</option>
+                          <option value="mobile_app">Mobile App</option>
+                          <option value="full_stack">Full Stack</option>
+                          <option value="ecommerce">E-commerce</option>
+                          <option value="design">Design Only</option>
+                          <option value="maintenance">Maintenance</option>
+                          <option value="other">Other</option>
+                        </select>
+                      </div>
+                    </div>
+                    <div class="col-12" style="padding: 0.5rem;">
+                      <div class="form-group">
+                        <label class="form-label" for="description">Description</label>
+                        <textarea class="form-control" id="description" name="description" rows="3" placeholder="Brief description of the project scope and objectives"></textarea>
+                      </div>
+                    </div>
+                    <div class="col-6 col-sm-12" style="padding: 0.5rem;">
+                      <div class="form-group">
+                        <label class="form-label" for="technologies">Technologies Used</label>
+                        <input type="text" class="form-control" id="technologies" name="technologies" placeholder="e.g., Django, Flutter, PostgreSQL">
+                        <div class="form-text">Comma-separated list of technologies</div>
+                      </div>
+                    </div>
+                    <div class="col-6 col-sm-12" style="padding: 0.5rem;">
+                      <div class="form-group">
+                        <label class="form-label" for="repository_url">Repository URL</label>
+                        <input type="url" class="form-control" id="repository_url" name="repository_url" placeholder="https://github.com/...">
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Timeline & Budget -->
+              <div class="card mb-4">
+                <div class="card-header">
+                  <h3 class="card-title">
+                    <i class="fas fa-calendar-alt me-2 text-primary"></i>
+                    Timeline & Budget
+                  </h3>
+                </div>
+                <div class="card-body">
+                  <div class="row">
+                    <div class="col-6 col-sm-12" style="padding: 0.5rem;">
+                      <div class="form-group">
+                        <label class="form-label" for="start_date">Start Date</label>
+                        <input type="date" class="form-control" id="start_date" name="start_date">
+                      </div>
+                    </div>
+                    <div class="col-6 col-sm-12" style="padding: 0.5rem;">
+                      <div class="form-group">
+                        <label class="form-label" for="deadline">Deadline</label>
+                        <input type="date" class="form-control" id="deadline" name="deadline">
+                      </div>
+                    </div>
+                    <div class="col-6 col-sm-12" style="padding: 0.5rem;">
+                      <div class="form-group">
+                        <label class="form-label" for="estimated_amount">Estimated Amount (&#8377;)</label>
+                        <input type="number" class="form-control" id="estimated_amount" name="estimated_amount" placeholder="0.00" step="0.01">
+                      </div>
+                    </div>
+                    <div class="col-6 col-sm-12" style="padding: 0.5rem;">
+                      <div class="form-group">
+                        <label class="form-label" for="billing_type">Billing Type</label>
+                        <select class="form-control" id="billing_type" name="billing_type">
+                          <option value="fixed">Fixed Price</option>
+                          <option value="hourly">Hourly Rate</option>
+                          <option value="milestone">Milestone Based</option>
+                        </select>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Notes -->
+              <div class="card">
+                <div class="card-header">
+                  <h3 class="card-title">
+                    <i class="fas fa-sticky-note me-2 text-primary"></i>
+                    Notes
+                  </h3>
+                </div>
+                <div class="card-body">
+                  <div class="form-group mb-0">
+                    <label class="form-label" for="notes">Internal Notes</label>
+                    <textarea class="form-control" id="notes" name="notes" rows="4" placeholder="Add any internal notes about this project..."></textarea>
+                    <div class="form-text">These notes are only visible to your team.</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Right Column -->
+            <div class="col-4 col-md-12" style="padding: 0.75rem;">
+              <!-- Status Settings -->
+              <div class="card mb-4">
+                <div class="card-header">
+                  <h3 class="card-title">
+                    <i class="fas fa-cog me-2 text-primary"></i>
+                    Status & Priority
+                  </h3>
+                </div>
+                <div class="card-body">
+                  <div class="form-group">
+                    <label class="form-label" for="status">Project Status</label>
+                    <select class="form-control" id="status" name="status">
+                      <option value="planning">Planning</option>
+                      <option value="in_progress" selected>In Progress</option>
+                      <option value="on_hold">On Hold</option>
+                      <option value="completed">Completed</option>
+                      <option value="cancelled">Cancelled</option>
+                    </select>
+                  </div>
+
+                  <div class="form-group mb-0">
+                    <label class="form-label" for="priority">Priority Level</label>
+                    <select class="form-control" id="priority" name="priority">
+                      <option value="low">Low</option>
+                      <option value="medium" selected>Medium</option>
+                      <option value="high">High</option>
+                      <option value="urgent">Urgent</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Live URLs -->
+              <div class="card mb-4">
+                <div class="card-header">
+                  <h3 class="card-title">
+                    <i class="fas fa-globe me-2 text-primary"></i>
+                    Live URLs
+                  </h3>
+                </div>
+                <div class="card-body">
+                  <div class="form-group">
+                    <label class="form-label" for="live_url">Production URL</label>
+                    <input type="url" class="form-control" id="live_url" name="live_url" placeholder="https://example.com">
+                  </div>
+                  <div class="form-group mb-0">
+                    <label class="form-label" for="staging_url">Staging URL</label>
+                    <input type="url" class="form-control" id="staging_url" name="staging_url" placeholder="https://staging.example.com">
+                  </div>
+                </div>
+              </div>
+
+              <!-- Quick Tips -->
+              <div class="card" style="background: var(--primary-bg); border-color: var(--primary-lighter);">
+                <div class="card-body">
+                  <h4 class="text-primary mb-3">
+                    <i class="fas fa-lightbulb me-2"></i>Quick Tips
+                  </h4>
+                  <ul class="text-sm text-secondary" style="padding-left: 1.25rem; margin: 0;">
+                    <li class="mb-2">Link the project to a client for easy tracking</li>
+                    <li class="mb-2">Add technologies for quick reference</li>
+                    <li class="mb-2">Set realistic deadlines</li>
+                    <li>Add credentials after creating the project</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Form Actions -->
+          <div class="card mt-4">
+            <div class="card-body d-flex justify-content-between align-items-center">
+              <a href="projects.html" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-left me-2"></i>
+                Cancel
+              </a>
+              <div class="d-flex gap-2">
+                <button type="button" class="btn btn-outline-primary">
+                  <i class="fas fa-save me-2"></i>
+                  Save as Draft
+                </button>
+                <button type="submit" class="btn btn-primary">
+                  <i class="fas fa-check me-2"></i>
+                  Save Project
+                </button>
+              </div>
+            </div>
+          </div>
+        </form>
+      </div>
+    </main>
+  </div>
+
+  <script src="../js/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,495 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ project.name }} - Ralfiz BMS{% endblock %}
+
+{% block extra_css %}
+<style>
+  .tabs {
+    display: flex;
+    gap: 0.5rem;
+    border-bottom: 1px solid var(--border-color);
+    padding-bottom: 0;
+  }
+
+  .tab-item {
+    padding: 0.75rem 1.25rem;
+    border: none;
+    background: none;
+    color: var(--text-secondary);
+    font-weight: 500;
+    font-size: 0.875rem;
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    margin-bottom: -1px;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+  }
+
+  .tab-item:hover {
+    color: var(--primary);
+    background: var(--primary-bg);
+  }
+
+  .tab-item.active {
+    color: var(--primary);
+    border-bottom-color: var(--primary);
+    background: transparent;
+  }
+
+  .tab-content.d-none {
+    display: none;
+  }
+
+  .avatar-xl {
+    width: 64px;
+    height: 64px;
+    font-size: 1.5rem;
+  }
+
+  .priority-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.25rem 0.75rem;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    font-weight: 500;
+  }
+
+  .priority-badge.high {
+    background: #fef2f2;
+    color: #dc2626;
+  }
+
+  .priority-badge.medium {
+    background: #fffbeb;
+    color: #d97706;
+  }
+
+  .priority-badge.low {
+    background: #f0fdf4;
+    color: #16a34a;
+  }
+</style>
+{% endblock %}
+
+{% block breadcrumb %}
+<a href="{% url 'dashboard' %}" class="breadcrumb-item">Dashboard</a>
+<span class="breadcrumb-separator">/</span>
+<a href="{% url 'project_list' %}" class="breadcrumb-item">Projects</a>
+<span class="breadcrumb-separator">/</span>
+<span class="breadcrumb-item active">{{ project.name }}</span>
+{% endblock %}
+
+{% block content %}
+<!-- Page Header -->
+<div class="page-header">
+  <div class="d-flex align-items-center gap-4">
+    <div class="avatar avatar-xl" style="background: var(--info-light); color: var(--info);">
+      <i class="fas fa-folder-open"></i>
+    </div>
+    <div>
+      <div class="d-flex align-items-center gap-3 mb-2">
+        <h1 class="page-title mb-0">{{ project.name }}</h1>
+        <span class="status-badge {{ project.status }}">{{ project.get_status_display }}</span>
+        {% if project.priority %}
+        <span class="priority-badge {{ project.priority }}">{{ project.get_priority_display }} Priority</span>
+        {% endif %}
+      </div>
+      <p class="page-subtitle mb-0">
+        <a href="{% url 'client_detail' project.client.pk %}" class="text-primary">
+          <i class="fas fa-building me-1"></i>{{ project.client.name }}
+        </a>
+        {% if project.start_date %}
+        <span class="mx-2">|</span>
+        <i class="fas fa-calendar me-1"></i>Started {{ project.start_date|date:"d M Y" }}
+        {% endif %}
+        <span class="mx-2">|</span>
+        <span class="badge badge-info">{{ project.get_project_type_display }}</span>
+      </p>
+    </div>
+  </div>
+  <div class="page-actions">
+    <a href="{% url 'credential_create' %}?project={{ project.pk }}" class="btn btn-outline-primary">
+      <i class="fas fa-key"></i>
+      Add Credential
+    </a>
+    <a href="{% url 'invoice_create' %}?project={{ project.pk }}" class="btn btn-outline-primary">
+      <i class="fas fa-file-invoice-dollar"></i>
+      Create Invoice
+    </a>
+    <a href="{% url 'project_update' project.pk %}" class="btn btn-primary">
+      <i class="fas fa-edit"></i>
+      Edit Project
+    </a>
+  </div>
+</div>
+
+<!-- Stats Cards -->
+<div class="row mb-4">
+  <div class="col-3 col-md-6 col-sm-12" style="padding: 0.75rem;">
+    <div class="card stat-card">
+      <div class="stat-card-header">
+        <div class="stat-card-icon primary">
+          <i class="fas fa-rupee-sign"></i>
+        </div>
+      </div>
+      <div class="stat-card-value">&#8377;{{ project.estimated_budget|floatformat:0|default:"0" }}</div>
+      <div class="stat-card-label">Total Value</div>
+    </div>
+  </div>
+  <div class="col-3 col-md-6 col-sm-12" style="padding: 0.75rem;">
+    <div class="card stat-card">
+      <div class="stat-card-header">
+        <div class="stat-card-icon success">
+          <i class="fas fa-check-circle"></i>
+        </div>
+      </div>
+      <div class="stat-card-value">&#8377;{{ amount_received|floatformat:0|default:"0" }}</div>
+      <div class="stat-card-label">Amount Received</div>
+    </div>
+  </div>
+  <div class="col-3 col-md-6 col-sm-12" style="padding: 0.75rem;">
+    <div class="card stat-card">
+      <div class="stat-card-header">
+        <div class="stat-card-icon warning">
+          <i class="fas fa-clock"></i>
+        </div>
+      </div>
+      <div class="stat-card-value">&#8377;{{ pending_amount|floatformat:0|default:"0" }}</div>
+      <div class="stat-card-label">Pending Amount</div>
+    </div>
+  </div>
+  <div class="col-3 col-md-6 col-sm-12" style="padding: 0.75rem;">
+    <div class="card stat-card">
+      <div class="stat-card-header">
+        <div class="stat-card-icon info">
+          <i class="fas fa-key"></i>
+        </div>
+      </div>
+      <div class="stat-card-value">{{ credentials.count }}</div>
+      <div class="stat-card-label">Credentials</div>
+    </div>
+  </div>
+</div>
+
+<!-- Main Content Grid -->
+<div class="row">
+  <!-- Left Column - Project Details -->
+  <div class="col-4 col-md-12" style="padding: 0.75rem;">
+    <!-- Project Information -->
+    <div class="card mb-4">
+      <div class="card-header">
+        <h3 class="card-title">Project Information</h3>
+      </div>
+      <div class="card-body">
+        {% if project.description %}
+        <div class="mb-3">
+          <div class="text-sm text-muted mb-1">Description</div>
+          <div class="text-secondary">
+            {{ project.description }}
+          </div>
+        </div>
+        {% endif %}
+        {% if project.tech_stack %}
+        <div class="mb-3">
+          <div class="text-sm text-muted mb-1">Technologies</div>
+          <div class="d-flex flex-wrap gap-2">
+            {% for tech in project.tech_stack.split %}
+            <span class="badge badge-secondary">{{ tech }}</span>
+            {% endfor %}
+          </div>
+        </div>
+        {% endif %}
+        <div class="mb-3">
+          <div class="text-sm text-muted mb-1">Timeline</div>
+          <div>
+            <i class="fas fa-calendar-alt me-2 text-muted"></i>
+            {{ project.start_date|date:"d M Y"|default:"Not set" }} - {{ project.deadline|date:"d M Y"|default:"Not set" }}
+          </div>
+          {% if project.deadline and project.days_remaining >= 0 %}
+          <div class="text-sm text-warning mt-1">
+            <i class="fas fa-exclamation-triangle me-1"></i>{{ project.days_remaining }} days remaining
+          </div>
+          {% elif project.deadline and project.days_remaining < 0 %}
+          <div class="text-sm text-danger mt-1">
+            <i class="fas fa-exclamation-circle me-1"></i>Overdue
+          </div>
+          {% endif %}
+        </div>
+        <div class="mb-3">
+          <div class="text-sm text-muted mb-1">Billing Type</div>
+          <div class="fw-medium">{{ project.get_billing_type_display|default:"Fixed Price" }}</div>
+        </div>
+        {% if project.github_repo %}
+        <div>
+          <div class="text-sm text-muted mb-1">Repository</div>
+          <a href="{{ project.github_repo }}" target="_blank" class="d-flex align-items-center gap-2">
+            <i class="fab fa-github"></i>
+            {{ project.github_repo|truncatechars:35 }}
+          </a>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Live URLs -->
+    {% if project.live_url or project.staging_url %}
+    <div class="card mb-4">
+      <div class="card-header">
+        <h3 class="card-title">Live URLs</h3>
+      </div>
+      <div class="card-body">
+        {% if project.live_url %}
+        <div class="mb-3">
+          <div class="text-sm text-muted mb-1">Production</div>
+          <a href="{{ project.live_url }}" target="_blank" class="d-flex align-items-center gap-2">
+            <i class="fas fa-globe text-success"></i>
+            {{ project.live_url|truncatechars:35 }}
+          </a>
+        </div>
+        {% endif %}
+        {% if project.staging_url %}
+        <div>
+          <div class="text-sm text-muted mb-1">Staging</div>
+          <a href="{{ project.staging_url }}" target="_blank" class="d-flex align-items-center gap-2">
+            <i class="fas fa-globe text-warning"></i>
+            {{ project.staging_url|truncatechars:35 }}
+          </a>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+    {% endif %}
+
+    <!-- Notes -->
+    {% if project.notes %}
+    <div class="card">
+      <div class="card-header">
+        <h3 class="card-title">Notes</h3>
+      </div>
+      <div class="card-body">
+        <div class="text-secondary">
+          {{ project.notes|linebreaks }}
+        </div>
+      </div>
+    </div>
+    {% endif %}
+  </div>
+
+  <!-- Right Column - Tabs -->
+  <div class="col-8 col-md-12" style="padding: 0.75rem;">
+    <!-- Tabs -->
+    <div class="card">
+      <div class="card-header" style="padding-bottom: 0; border-bottom: none;">
+        <div class="tabs">
+          <button class="tab-item active" data-tab="credentialsTab" onclick="switchTab('credentialsTab')">
+            <i class="fas fa-key me-2"></i>Credentials
+          </button>
+          <button class="tab-item" data-tab="invoicesTab" onclick="switchTab('invoicesTab')">
+            <i class="fas fa-file-invoice-dollar me-2"></i>Invoices
+          </button>
+          <button class="tab-item" data-tab="quotesTab" onclick="switchTab('quotesTab')">
+            <i class="fas fa-file-alt me-2"></i>Quotes
+          </button>
+          <button class="tab-item" data-tab="paymentsTab" onclick="switchTab('paymentsTab')">
+            <i class="fas fa-credit-card me-2"></i>Payments
+          </button>
+        </div>
+      </div>
+
+      <!-- Credentials Tab -->
+      <div class="tab-content" id="credentialsTab">
+        <div class="d-flex justify-content-between align-items-center p-3 border-bottom">
+          <div class="text-sm text-muted">{{ credentials.count }} credentials stored</div>
+          <a href="{% url 'credential_create' %}?project={{ project.pk }}" class="btn btn-sm btn-primary">
+            <i class="fas fa-plus me-1"></i>Add Credential
+          </a>
+        </div>
+        <div class="table-wrapper">
+          <table class="table">
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>Type</th>
+                <th>Username</th>
+                <th>Expiry</th>
+                <th>Status</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for cred in credentials %}
+              <tr>
+                <td>
+                  <a href="{% url 'credential_detail' cred.pk %}" class="fw-medium">{{ cred.name }}</a>
+                  {% if cred.provider %}
+                  <div class="text-sm text-muted">{{ cred.provider }}</div>
+                  {% endif %}
+                </td>
+                <td><span class="badge badge-secondary">{{ cred.get_credential_type_display }}</span></td>
+                <td>{% if cred.username %}<code>{{ cred.username }}</code>{% else %}-{% endif %}</td>
+                <td>{{ cred.expiry_date|date:"d M Y"|default:"-" }}</td>
+                <td>
+                  {% if cred.is_expired %}
+                  <span class="status-badge danger">Expired</span>
+                  {% elif cred.is_expiring_soon %}
+                  <span class="status-badge warning">Expiring Soon</span>
+                  {% else %}
+                  <span class="status-badge success">Active</span>
+                  {% endif %}
+                </td>
+                <td>
+                  <div class="d-flex gap-1">
+                    <button class="btn btn-sm btn-ghost btn-icon" title="Copy Password" onclick="copyPassword('{{ cred.pk }}')">
+                      <i class="fas fa-copy"></i>
+                    </button>
+                    <a href="{% url 'credential_detail' cred.pk %}" class="btn btn-sm btn-ghost btn-icon">
+                      <i class="fas fa-arrow-right"></i>
+                    </a>
+                  </div>
+                </td>
+              </tr>
+              {% empty %}
+              <tr>
+                <td colspan="6" class="text-center py-4 text-muted">No credentials yet</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Invoices Tab -->
+      <div class="tab-content d-none" id="invoicesTab">
+        <div class="table-wrapper">
+          <table class="table">
+            <thead>
+              <tr>
+                <th>Invoice #</th>
+                <th>Description</th>
+                <th>Amount</th>
+                <th>Due Date</th>
+                <th>Status</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for invoice in invoices %}
+              <tr>
+                <td><a href="{% url 'invoice_detail' invoice.pk %}" class="fw-medium">{{ invoice.invoice_number }}</a></td>
+                <td>{{ invoice.title|truncatewords:5 }}</td>
+                <td class="fw-medium">&#8377;{{ invoice.total_amount|floatformat:0 }}</td>
+                <td>{{ invoice.due_date|date:"d M Y"|default:"-" }}</td>
+                <td><span class="status-badge {{ invoice.status }}">{{ invoice.get_status_display }}</span></td>
+                <td>
+                  <a href="{% url 'invoice_detail' invoice.pk %}" class="btn btn-sm btn-ghost btn-icon">
+                    <i class="fas fa-arrow-right"></i>
+                  </a>
+                </td>
+              </tr>
+              {% empty %}
+              <tr>
+                <td colspan="6" class="text-center py-4 text-muted">No invoices yet</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Quotes Tab -->
+      <div class="tab-content d-none" id="quotesTab">
+        <div class="table-wrapper">
+          <table class="table">
+            <thead>
+              <tr>
+                <th>Quote #</th>
+                <th>Title</th>
+                <th>Amount</th>
+                <th>Valid Until</th>
+                <th>Status</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for quote in quotes %}
+              <tr>
+                <td><a href="{% url 'quote_detail' quote.pk %}" class="fw-medium">{{ quote.quote_number }}</a></td>
+                <td>{{ quote.title|truncatewords:5 }}</td>
+                <td class="fw-medium">&#8377;{{ quote.total_amount|floatformat:0 }}</td>
+                <td>{{ quote.valid_until|date:"d M Y"|default:"-" }}</td>
+                <td><span class="status-badge {{ quote.status }}">{{ quote.get_status_display }}</span></td>
+                <td>
+                  <a href="{% url 'quote_detail' quote.pk %}" class="btn btn-sm btn-ghost btn-icon">
+                    <i class="fas fa-arrow-right"></i>
+                  </a>
+                </td>
+              </tr>
+              {% empty %}
+              <tr>
+                <td colspan="6" class="text-center py-4 text-muted">No quotes yet</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Payments Tab -->
+      <div class="tab-content d-none" id="paymentsTab">
+        <div class="table-wrapper">
+          <table class="table">
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Invoice</th>
+                <th>Amount</th>
+                <th>Method</th>
+                <th>Transaction ID</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for payment in payments %}
+              <tr>
+                <td>{{ payment.payment_date|date:"d M Y" }}</td>
+                <td><a href="{% url 'invoice_detail' payment.invoice.pk %}">{{ payment.invoice.invoice_number }}</a></td>
+                <td class="fw-medium text-success">&#8377;{{ payment.amount|floatformat:0 }}</td>
+                <td><span class="badge badge-info">{{ payment.get_payment_method_display }}</span></td>
+                <td class="text-muted">{{ payment.transaction_id|default:"-" }}</td>
+              </tr>
+              {% empty %}
+              <tr>
+                <td colspan="5" class="text-center py-4 text-muted">No payments yet</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function switchTab(tabId) {
+  document.querySelectorAll('.tab-content').forEach(content => {
+    content.classList.add('d-none');
+  });
+
+  document.querySelectorAll('.tab-item').forEach(tab => {
+    tab.classList.remove('active');
+  });
+
+  document.getElementById(tabId).classList.remove('d-none');
+  document.querySelector(`[data-tab="${tabId}"]`).classList.add('active');
+}
+
+function copyPassword(credId) {
+  alert('Password copied to clipboard!');
+}
+</script>
+{% endblock %}

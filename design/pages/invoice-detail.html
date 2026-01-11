@@ -1,0 +1,432 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Invoice INV20260018 - Ralfiz BMS</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <link rel="stylesheet" href="../css/styles.css">
+</head>
+<body>
+  <div class="app-wrapper">
+    <!-- Sidebar -->
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-header">
+        <a href="../index.html" class="sidebar-logo">
+          <div class="sidebar-logo-icon">R</div>
+          <div class="sidebar-logo-text">Ralfiz<span>BMS</span></div>
+        </a>
+      </div>
+
+      <nav class="sidebar-nav">
+        <div class="nav-section">
+          <a href="../index.html" class="nav-item">
+            <i class="fas fa-th-large"></i>
+            <span>Dashboard</span>
+          </a>
+        </div>
+
+        <div class="nav-section">
+          <div class="nav-section-title">Management</div>
+          <a href="clients.html" class="nav-item">
+            <i class="fas fa-users"></i>
+            <span>Clients</span>
+          </a>
+          <a href="projects.html" class="nav-item">
+            <i class="fas fa-folder-open"></i>
+            <span>Projects</span>
+          </a>
+          <a href="credentials.html" class="nav-item">
+            <i class="fas fa-key"></i>
+            <span>Credentials</span>
+            <span class="nav-badge">3</span>
+          </a>
+        </div>
+
+        <div class="nav-section">
+          <div class="nav-section-title">Billing</div>
+          <a href="quotes.html" class="nav-item">
+            <i class="fas fa-file-alt"></i>
+            <span>Quotes</span>
+          </a>
+          <a href="invoices.html" class="nav-item active">
+            <i class="fas fa-file-invoice-dollar"></i>
+            <span>Invoices</span>
+          </a>
+          <a href="payments.html" class="nav-item">
+            <i class="fas fa-credit-card"></i>
+            <span>Payments</span>
+          </a>
+        </div>
+
+        <div class="nav-section">
+          <div class="nav-section-title">System</div>
+          <a href="reports.html" class="nav-item">
+            <i class="fas fa-chart-bar"></i>
+            <span>Reports</span>
+          </a>
+          <a href="settings.html" class="nav-item">
+            <i class="fas fa-cog"></i>
+            <span>Settings</span>
+          </a>
+        </div>
+      </nav>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="main-content">
+      <!-- Navbar -->
+      <header class="navbar">
+        <div class="navbar-left">
+          <button class="sidebar-toggle" id="sidebarToggle">
+            <i class="fas fa-bars"></i>
+          </button>
+          <div class="breadcrumb">
+            <a href="../index.html" class="breadcrumb-item">Dashboard</a>
+            <span class="breadcrumb-separator">/</span>
+            <a href="invoices.html" class="breadcrumb-item">Invoices</a>
+            <span class="breadcrumb-separator">/</span>
+            <span class="breadcrumb-item active">INV20260018</span>
+          </div>
+        </div>
+
+        <div class="navbar-right">
+          <div class="navbar-search">
+            <i class="fas fa-search"></i>
+            <input type="text" placeholder="Search clients, projects...">
+          </div>
+
+          <div class="navbar-actions">
+            <button class="navbar-action-btn" title="Notifications">
+              <i class="fas fa-bell"></i>
+              <span class="badge">5</span>
+            </button>
+          </div>
+
+          <div class="user-dropdown dropdown">
+            <button class="user-dropdown-toggle" id="userDropdown">
+              <div class="user-avatar">JD</div>
+              <div class="user-info">
+                <div class="user-name">John Doe</div>
+                <div class="user-role">Administrator</div>
+              </div>
+              <i class="fas fa-chevron-down" style="color: var(--text-muted); font-size: 0.75rem;"></i>
+            </button>
+            <div class="dropdown-menu">
+              <a href="#" class="dropdown-item">
+                <i class="fas fa-user"></i>
+                Profile
+              </a>
+              <a href="settings.html" class="dropdown-item">
+                <i class="fas fa-cog"></i>
+                Settings
+              </a>
+              <div class="dropdown-divider"></div>
+              <a href="login.html" class="dropdown-item danger">
+                <i class="fas fa-sign-out-alt"></i>
+                Logout
+              </a>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <!-- Page Content -->
+      <div class="content-wrapper">
+        <!-- Page Header -->
+        <div class="page-header">
+          <div class="d-flex align-items-center gap-4">
+            <div class="avatar avatar-xl" style="background: var(--warning-light); color: var(--warning);">
+              <i class="fas fa-file-invoice-dollar"></i>
+            </div>
+            <div>
+              <div class="d-flex align-items-center gap-3 mb-2">
+                <h1 class="page-title mb-0">Invoice #INV20260018</h1>
+                <span class="status-badge sent">Sent</span>
+              </div>
+              <p class="page-subtitle mb-0">
+                <a href="client-detail.html" class="text-primary">
+                  <i class="fas fa-building me-1"></i>TechStart Solutions
+                </a>
+                <span class="mx-2">|</span>
+                <a href="project-detail.html">
+                  <i class="fas fa-folder me-1"></i>E-commerce Platform
+                </a>
+              </p>
+            </div>
+          </div>
+          <div class="page-actions">
+            <a href="invoice-pdf.html" class="btn btn-outline-secondary" target="_blank">
+              <i class="fas fa-file-pdf"></i>
+              Download PDF
+            </a>
+            <button class="btn btn-outline-primary" onclick="sendReminder()">
+              <i class="fas fa-envelope"></i>
+              Send Reminder
+            </button>
+            <a href="payment-form.html" class="btn btn-success">
+              <i class="fas fa-plus"></i>
+              Record Payment
+            </a>
+            <a href="invoice-form.html" class="btn btn-primary">
+              <i class="fas fa-edit"></i>
+              Edit Invoice
+            </a>
+          </div>
+        </div>
+
+        <!-- Payment Summary Cards -->
+        <div class="row mb-4">
+          <div class="col-3 col-md-6 col-sm-12" style="padding: 0.75rem;">
+            <div class="card stat-card">
+              <div class="stat-card-header">
+                <div class="stat-card-icon primary">
+                  <i class="fas fa-file-invoice"></i>
+                </div>
+              </div>
+              <div class="stat-card-value">&#8377;1,25,000</div>
+              <div class="stat-card-label">Invoice Total</div>
+            </div>
+          </div>
+          <div class="col-3 col-md-6 col-sm-12" style="padding: 0.75rem;">
+            <div class="card stat-card">
+              <div class="stat-card-header">
+                <div class="stat-card-icon success">
+                  <i class="fas fa-check-circle"></i>
+                </div>
+              </div>
+              <div class="stat-card-value text-success">&#8377;0</div>
+              <div class="stat-card-label">Amount Paid</div>
+            </div>
+          </div>
+          <div class="col-3 col-md-6 col-sm-12" style="padding: 0.75rem;">
+            <div class="card stat-card">
+              <div class="stat-card-header">
+                <div class="stat-card-icon warning">
+                  <i class="fas fa-clock"></i>
+                </div>
+              </div>
+              <div class="stat-card-value text-warning">&#8377;1,25,000</div>
+              <div class="stat-card-label">Balance Due</div>
+            </div>
+          </div>
+          <div class="col-3 col-md-6 col-sm-12" style="padding: 0.75rem;">
+            <div class="card stat-card">
+              <div class="stat-card-header">
+                <div class="stat-card-icon info">
+                  <i class="fas fa-calendar"></i>
+                </div>
+              </div>
+              <div class="stat-card-value">14 days</div>
+              <div class="stat-card-label">Until Due Date</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Main Content Grid -->
+        <div class="row">
+          <!-- Left Column -->
+          <div class="col-4 col-md-12" style="padding: 0.75rem;">
+            <!-- Client Information -->
+            <div class="card mb-4">
+              <div class="card-header">
+                <h3 class="card-title">Bill To</h3>
+              </div>
+              <div class="card-body">
+                <div class="mb-3">
+                  <div class="text-sm text-muted mb-1">Company</div>
+                  <div class="fw-medium">TechStart Solutions Pvt. Ltd.</div>
+                </div>
+                <div class="mb-3">
+                  <div class="text-sm text-muted mb-1">Contact</div>
+                  <div>Rajesh Kumar</div>
+                </div>
+                <div class="mb-3">
+                  <div class="text-sm text-muted mb-1">Email</div>
+                  <div>
+                    <a href="mailto:contact@techstart.com">contact@techstart.com</a>
+                  </div>
+                </div>
+                <div>
+                  <div class="text-sm text-muted mb-1">GST Number</div>
+                  <div>32ABCDE1234F1Z5</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Invoice Details -->
+            <div class="card mb-4">
+              <div class="card-header">
+                <h3 class="card-title">Invoice Details</h3>
+              </div>
+              <div class="card-body">
+                <div class="mb-3">
+                  <div class="text-sm text-muted mb-1">Invoice Number</div>
+                  <div class="fw-medium">INV20260018</div>
+                </div>
+                <div class="mb-3">
+                  <div class="text-sm text-muted mb-1">Issue Date</div>
+                  <div>10 January 2026</div>
+                </div>
+                <div class="mb-3">
+                  <div class="text-sm text-muted mb-1">Due Date</div>
+                  <div>
+                    <span class="text-warning">
+                      <i class="fas fa-clock me-1"></i>25 January 2026
+                    </span>
+                  </div>
+                </div>
+                <div class="mb-3">
+                  <div class="text-sm text-muted mb-1">Project</div>
+                  <div>
+                    <a href="project-detail.html">E-commerce Platform</a>
+                  </div>
+                </div>
+                <div>
+                  <div class="text-sm text-muted mb-1">Status</div>
+                  <div><span class="status-badge sent">Sent</span></div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Payment History -->
+            <div class="card">
+              <div class="card-header d-flex justify-content-between align-items-center">
+                <h3 class="card-title mb-0">Payment History</h3>
+                <a href="payment-form.html" class="btn btn-sm btn-primary">
+                  <i class="fas fa-plus me-1"></i>Add
+                </a>
+              </div>
+              <div class="card-body">
+                <div class="text-center text-muted py-4">
+                  <i class="fas fa-receipt fa-2x mb-3" style="opacity: 0.5;"></i>
+                  <p class="mb-0">No payments recorded yet</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Right Column - Line Items -->
+          <div class="col-8 col-md-12" style="padding: 0.75rem;">
+            <!-- Description -->
+            <div class="card mb-4">
+              <div class="card-body">
+                <h3 class="mb-2">Milestone 2 - Core Features Development</h3>
+                <p class="text-secondary mb-0">
+                  Product catalog, shopping cart, and checkout system implementation for the e-commerce platform.
+                </p>
+              </div>
+            </div>
+
+            <!-- Line Items -->
+            <div class="card mb-4">
+              <div class="card-header">
+                <h3 class="card-title">Line Items</h3>
+              </div>
+              <div class="table-wrapper">
+                <table class="table">
+                  <thead>
+                    <tr>
+                      <th style="width: 50%;">Description</th>
+                      <th class="text-center">Qty</th>
+                      <th class="text-end">Unit Price</th>
+                      <th class="text-end">Amount</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td>
+                        <div class="fw-medium">Product Catalog Module Development</div>
+                        <div class="text-sm text-muted">Complete product listing, categories, search & filters</div>
+                      </td>
+                      <td class="text-center">1</td>
+                      <td class="text-end">&#8377;50,000.00</td>
+                      <td class="text-end fw-medium">&#8377;50,000.00</td>
+                    </tr>
+                    <tr>
+                      <td>
+                        <div class="fw-medium">Shopping Cart & Checkout System</div>
+                        <div class="text-sm text-muted">Cart management, guest checkout, order processing</div>
+                      </td>
+                      <td class="text-center">1</td>
+                      <td class="text-end">&#8377;40,000.00</td>
+                      <td class="text-end fw-medium">&#8377;40,000.00</td>
+                    </tr>
+                    <tr>
+                      <td>
+                        <div class="fw-medium">Payment Gateway Integration</div>
+                        <div class="text-sm text-muted">Stripe & Razorpay integration with webhooks</div>
+                      </td>
+                      <td class="text-center">1</td>
+                      <td class="text-end">&#8377;15,932.20</td>
+                      <td class="text-end fw-medium">&#8377;15,932.20</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <!-- Totals -->
+            <div class="card">
+              <div class="card-body">
+                <div class="row">
+                  <div class="col-6">
+                    <div class="text-sm text-muted mb-2">Notes</div>
+                    <div class="text-secondary text-sm">
+                      Payment is due within 15 days of invoice date. Please include invoice number in payment reference.
+                    </div>
+                  </div>
+                  <div class="col-6">
+                    <div class="totals-table" style="margin-left: auto; width: 280px;">
+                      <div class="d-flex justify-content-between py-2">
+                        <span class="text-muted">Subtotal</span>
+                        <span class="fw-medium">&#8377;1,05,932.20</span>
+                      </div>
+                      <div class="d-flex justify-content-between py-2">
+                        <span class="text-muted">Discount</span>
+                        <span>&#8377;0.00</span>
+                      </div>
+                      <div class="d-flex justify-content-between py-2">
+                        <span class="text-muted">CGST (9%)</span>
+                        <span>&#8377;9,533.90</span>
+                      </div>
+                      <div class="d-flex justify-content-between py-2" style="border-bottom: 1px solid var(--border-color);">
+                        <span class="text-muted">SGST (9%)</span>
+                        <span>&#8377;9,533.90</span>
+                      </div>
+                      <div class="d-flex justify-content-between py-3" style="border-bottom: 1px solid var(--border-color);">
+                        <span class="fw-bold">Total</span>
+                        <span class="fw-bold">&#8377;1,25,000.00</span>
+                      </div>
+                      <div class="d-flex justify-content-between py-2">
+                        <span class="text-muted">Amount Paid</span>
+                        <span class="text-success">&#8377;0.00</span>
+                      </div>
+                      <div class="d-flex justify-content-between py-3">
+                        <span class="fw-bold text-lg text-warning">Balance Due</span>
+                        <span class="fw-bold text-lg text-warning">&#8377;1,25,000.00</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script src="../js/app.js"></script>
+  <script>
+    function sendReminder() {
+      if (confirm('Send payment reminder to contact@techstart.com?')) {
+        alert('Payment reminder sent successfully!');
+      }
+    }
+  </script>
+</body>
+</html>

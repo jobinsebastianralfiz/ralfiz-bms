@@ -1,0 +1,600 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Invoice INV20260018 - Ralfiz Technologies</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      font-size: 14px;
+      line-height: 1.5;
+      color: #1e293b;
+      background: #ffffff;
+    }
+
+    .invoice-container {
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 40px;
+      background: white;
+    }
+
+    /* Header */
+    .invoice-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 40px;
+      padding-bottom: 30px;
+      border-bottom: 3px solid #0d9488;
+    }
+
+    .company-info {
+      max-width: 300px;
+    }
+
+    .company-logo {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+
+    .logo-icon {
+      width: 48px;
+      height: 48px;
+      background: linear-gradient(135deg, #0d9488, #14b8a6);
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-weight: 700;
+      font-size: 24px;
+    }
+
+    .company-name {
+      font-size: 24px;
+      font-weight: 700;
+      color: #0f172a;
+    }
+
+    .company-name span {
+      color: #0d9488;
+    }
+
+    .company-details {
+      font-size: 13px;
+      color: #64748b;
+      line-height: 1.6;
+    }
+
+    .invoice-title-section {
+      text-align: right;
+    }
+
+    .invoice-title {
+      font-size: 36px;
+      font-weight: 700;
+      color: #0d9488;
+      margin-bottom: 8px;
+    }
+
+    .invoice-number {
+      font-size: 16px;
+      color: #64748b;
+      margin-bottom: 16px;
+    }
+
+    .invoice-meta {
+      font-size: 13px;
+      color: #64748b;
+    }
+
+    .invoice-meta div {
+      margin-bottom: 4px;
+    }
+
+    .invoice-meta strong {
+      color: #1e293b;
+    }
+
+    /* Bill To Section */
+    .billing-section {
+      display: flex;
+      gap: 60px;
+      margin-bottom: 40px;
+    }
+
+    .billing-block {
+      flex: 1;
+    }
+
+    .billing-label {
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: #0d9488;
+      margin-bottom: 8px;
+    }
+
+    .billing-name {
+      font-size: 16px;
+      font-weight: 600;
+      color: #1e293b;
+      margin-bottom: 8px;
+    }
+
+    .billing-details {
+      font-size: 13px;
+      color: #64748b;
+      line-height: 1.6;
+    }
+
+    /* Items Table */
+    .items-section {
+      margin-bottom: 30px;
+    }
+
+    .items-table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    .items-table th {
+      background: #f1f5f9;
+      padding: 12px 16px;
+      text-align: left;
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: #64748b;
+      border-bottom: 2px solid #e2e8f0;
+    }
+
+    .items-table th:last-child,
+    .items-table td:last-child {
+      text-align: right;
+    }
+
+    .items-table td {
+      padding: 16px;
+      border-bottom: 1px solid #e2e8f0;
+      vertical-align: top;
+    }
+
+    .item-description {
+      font-weight: 500;
+      color: #1e293b;
+      margin-bottom: 4px;
+    }
+
+    .item-details {
+      font-size: 12px;
+      color: #64748b;
+    }
+
+    .items-table tbody tr:last-child td {
+      border-bottom: 2px solid #e2e8f0;
+    }
+
+    /* Totals */
+    .totals-section {
+      display: flex;
+      justify-content: flex-end;
+      margin-bottom: 40px;
+    }
+
+    .totals-table {
+      width: 300px;
+    }
+
+    .totals-row {
+      display: flex;
+      justify-content: space-between;
+      padding: 8px 0;
+      font-size: 14px;
+    }
+
+    .totals-row.subtotal {
+      border-bottom: 1px solid #e2e8f0;
+    }
+
+    .totals-row.total {
+      border-top: 2px solid #0d9488;
+      padding-top: 16px;
+      margin-top: 8px;
+    }
+
+    .totals-row.total .label,
+    .totals-row.total .value {
+      font-size: 18px;
+      font-weight: 700;
+      color: #0d9488;
+    }
+
+    .totals-row .label {
+      color: #64748b;
+    }
+
+    .totals-row .value {
+      font-weight: 600;
+      color: #1e293b;
+    }
+
+    /* Payment Info */
+    .payment-section {
+      display: flex;
+      gap: 40px;
+      margin-bottom: 40px;
+      padding: 24px;
+      background: #f8fafc;
+      border-radius: 8px;
+    }
+
+    .payment-block {
+      flex: 1;
+    }
+
+    .payment-label {
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: #0d9488;
+      margin-bottom: 12px;
+    }
+
+    .bank-details {
+      font-size: 13px;
+      color: #1e293b;
+      line-height: 1.8;
+    }
+
+    .bank-details span {
+      color: #64748b;
+      display: inline-block;
+      width: 120px;
+    }
+
+    .upi-info {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .upi-id {
+      font-size: 16px;
+      font-weight: 600;
+      color: #1e293b;
+      padding: 12px 20px;
+      background: white;
+      border: 2px solid #0d9488;
+      border-radius: 8px;
+    }
+
+    /* Terms */
+    .terms-section {
+      margin-bottom: 40px;
+    }
+
+    .terms-label {
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: #0d9488;
+      margin-bottom: 12px;
+    }
+
+    .terms-content {
+      font-size: 12px;
+      color: #64748b;
+      line-height: 1.8;
+    }
+
+    /* Footer */
+    .invoice-footer {
+      text-align: center;
+      padding-top: 30px;
+      border-top: 1px solid #e2e8f0;
+    }
+
+    .thank-you {
+      font-size: 18px;
+      font-weight: 600;
+      color: #0d9488;
+      margin-bottom: 8px;
+    }
+
+    .footer-note {
+      font-size: 12px;
+      color: #94a3b8;
+    }
+
+    /* Status Badge */
+    .status-badge {
+      display: inline-block;
+      padding: 6px 16px;
+      font-size: 12px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      border-radius: 20px;
+      margin-top: 12px;
+    }
+
+    .status-badge.paid {
+      background: #dcfce7;
+      color: #15803d;
+    }
+
+    .status-badge.pending {
+      background: #fef3c7;
+      color: #b45309;
+    }
+
+    .status-badge.overdue {
+      background: #fee2e2;
+      color: #dc2626;
+    }
+
+    /* Print Styles */
+    @media print {
+      body {
+        print-color-adjust: exact;
+        -webkit-print-color-adjust: exact;
+      }
+
+      .invoice-container {
+        padding: 20px;
+      }
+
+      .no-print {
+        display: none !important;
+      }
+    }
+
+    /* Download Button (for preview) */
+    .download-bar {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      background: #0f172a;
+      padding: 12px 40px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      z-index: 100;
+    }
+
+    .download-bar-title {
+      color: white;
+      font-weight: 600;
+    }
+
+    .download-btn {
+      background: #0d9488;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 6px;
+      font-weight: 500;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .download-btn:hover {
+      background: #0f766e;
+    }
+
+    .preview-mode .invoice-container {
+      margin-top: 60px;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
+      border-radius: 8px;
+    }
+
+    .preview-mode body {
+      background: #f1f5f9;
+    }
+  </style>
+</head>
+<body class="preview-mode">
+  <!-- Download Bar (Preview Only) -->
+  <div class="download-bar no-print">
+    <div class="download-bar-title">Invoice Preview - INV20260018</div>
+    <div>
+      <button class="download-btn" onclick="window.print()">
+        <svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+          <path d="M.5 9.9a.5.5 0 0 1 .5.5v2.5a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-2.5a.5.5 0 0 1 1 0v2.5a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2v-2.5a.5.5 0 0 1 .5-.5z"/>
+          <path d="M7.646 11.854a.5.5 0 0 0 .708 0l3-3a.5.5 0 0 0-.708-.708L8.5 10.293V1.5a.5.5 0 0 0-1 0v8.793L5.354 8.146a.5.5 0 1 0-.708.708l3 3z"/>
+        </svg>
+        Download PDF
+      </button>
+    </div>
+  </div>
+
+  <div class="invoice-container">
+    <!-- Header -->
+    <div class="invoice-header">
+      <div class="company-info">
+        <div class="company-logo">
+          <div class="logo-icon">R</div>
+          <div class="company-name">Ralfiz<span>Tech</span></div>
+        </div>
+        <div class="company-details">
+          Ralfiz Technologies Pvt. Ltd.<br>
+          123 Tech Park, Cyber City<br>
+          Kozhikode, Kerala 673001<br>
+          <br>
+          Phone: +91 98765 43210<br>
+          Email: billing@ralfiz.com<br>
+          GSTIN: 32XYZAB1234C1Z5
+        </div>
+      </div>
+      <div class="invoice-title-section">
+        <div class="invoice-title">INVOICE</div>
+        <div class="invoice-number">#INV20260018</div>
+        <div class="invoice-meta">
+          <div><strong>Issue Date:</strong> 10 January 2026</div>
+          <div><strong>Due Date:</strong> 25 January 2026</div>
+        </div>
+        <div class="status-badge pending">Payment Pending</div>
+      </div>
+    </div>
+
+    <!-- Billing Section -->
+    <div class="billing-section">
+      <div class="billing-block">
+        <div class="billing-label">Bill To</div>
+        <div class="billing-name">TechStart Solutions Pvt. Ltd.</div>
+        <div class="billing-details">
+          Rajesh Kumar<br>
+          123 Tech Park, Cyber City<br>
+          Kozhikode, Kerala 673001<br>
+          <br>
+          Email: contact@techstart.com<br>
+          GSTIN: 32ABCDE1234F1Z5
+        </div>
+      </div>
+      <div class="billing-block">
+        <div class="billing-label">Project</div>
+        <div class="billing-name">E-commerce Platform</div>
+        <div class="billing-details">
+          Milestone 2 - Core Features Development<br>
+          <br>
+          Product catalog, shopping cart, and<br>
+          checkout system implementation
+        </div>
+      </div>
+    </div>
+
+    <!-- Items Table -->
+    <div class="items-section">
+      <table class="items-table">
+        <thead>
+          <tr>
+            <th style="width: 50%;">Description</th>
+            <th style="width: 15%;">Qty</th>
+            <th style="width: 17%;">Unit Price</th>
+            <th style="width: 18%;">Amount</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>
+              <div class="item-description">Product Catalog Module Development</div>
+              <div class="item-details">Complete product listing, categories, search & filters</div>
+            </td>
+            <td>1</td>
+            <td>&#8377;50,000.00</td>
+            <td>&#8377;50,000.00</td>
+          </tr>
+          <tr>
+            <td>
+              <div class="item-description">Shopping Cart & Checkout System</div>
+              <div class="item-details">Cart management, guest checkout, order processing</div>
+            </td>
+            <td>1</td>
+            <td>&#8377;40,000.00</td>
+            <td>&#8377;40,000.00</td>
+          </tr>
+          <tr>
+            <td>
+              <div class="item-description">Payment Gateway Integration</div>
+              <div class="item-details">Stripe & Razorpay integration with webhooks</div>
+            </td>
+            <td>1</td>
+            <td>&#8377;15,932.20</td>
+            <td>&#8377;15,932.20</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Totals -->
+    <div class="totals-section">
+      <div class="totals-table">
+        <div class="totals-row subtotal">
+          <span class="label">Subtotal</span>
+          <span class="value">&#8377;1,05,932.20</span>
+        </div>
+        <div class="totals-row">
+          <span class="label">Discount</span>
+          <span class="value">&#8377;0.00</span>
+        </div>
+        <div class="totals-row">
+          <span class="label">CGST (9%)</span>
+          <span class="value">&#8377;9,533.90</span>
+        </div>
+        <div class="totals-row">
+          <span class="label">SGST (9%)</span>
+          <span class="value">&#8377;9,533.90</span>
+        </div>
+        <div class="totals-row total">
+          <span class="label">Total Due</span>
+          <span class="value">&#8377;1,25,000.00</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Payment Info -->
+    <div class="payment-section">
+      <div class="payment-block">
+        <div class="payment-label">Bank Details</div>
+        <div class="bank-details">
+          <span>Bank Name:</span> HDFC Bank<br>
+          <span>Account No:</span> 1234567890123<br>
+          <span>IFSC Code:</span> HDFC0001234<br>
+          <span>Branch:</span> Kozhikode Main
+        </div>
+      </div>
+      <div class="payment-block">
+        <div class="payment-label">UPI Payment</div>
+        <div class="upi-info">
+          <div class="upi-id">ralfiz@upi</div>
+        </div>
+        <div style="margin-top: 12px; font-size: 12px; color: #64748b;">
+          Please include invoice number<br>
+          in payment reference
+        </div>
+      </div>
+    </div>
+
+    <!-- Terms -->
+    <div class="terms-section">
+      <div class="terms-label">Terms & Conditions</div>
+      <div class="terms-content">
+        1. Payment is due within 15 days of invoice date.<br>
+        2. Please include invoice number in payment reference.<br>
+        3. Late payments may incur additional charges at 2% per month.<br>
+        4. All disputes are subject to Kozhikode jurisdiction.
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <div class="invoice-footer">
+      <div class="thank-you">Thank you for your business!</div>
+      <div class="footer-note">
+        If you have any questions about this invoice, please contact<br>
+        billing@ralfiz.com | +91 98765 43210
+      </div>
+    </div>
+  </div>
+</body>
+</html>

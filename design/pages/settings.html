@@ -1,0 +1,685 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Settings - Ralfiz BMS</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <link rel="stylesheet" href="../css/styles.css">
+</head>
+<body>
+  <div class="app-wrapper">
+    <!-- Sidebar -->
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-header">
+        <a href="../index.html" class="sidebar-logo">
+          <div class="sidebar-logo-icon">R</div>
+          <div class="sidebar-logo-text">Ralfiz<span>BMS</span></div>
+        </a>
+      </div>
+
+      <nav class="sidebar-nav">
+        <div class="nav-section">
+          <a href="../index.html" class="nav-item">
+            <i class="fas fa-th-large"></i>
+            <span>Dashboard</span>
+          </a>
+        </div>
+
+        <div class="nav-section">
+          <div class="nav-section-title">Management</div>
+          <a href="clients.html" class="nav-item">
+            <i class="fas fa-users"></i>
+            <span>Clients</span>
+          </a>
+          <a href="projects.html" class="nav-item">
+            <i class="fas fa-folder-open"></i>
+            <span>Projects</span>
+          </a>
+          <a href="credentials.html" class="nav-item">
+            <i class="fas fa-key"></i>
+            <span>Credentials</span>
+            <span class="nav-badge">3</span>
+          </a>
+        </div>
+
+        <div class="nav-section">
+          <div class="nav-section-title">Billing</div>
+          <a href="quotes.html" class="nav-item">
+            <i class="fas fa-file-alt"></i>
+            <span>Quotes</span>
+          </a>
+          <a href="invoices.html" class="nav-item">
+            <i class="fas fa-file-invoice-dollar"></i>
+            <span>Invoices</span>
+          </a>
+          <a href="payments.html" class="nav-item">
+            <i class="fas fa-credit-card"></i>
+            <span>Payments</span>
+          </a>
+        </div>
+
+        <div class="nav-section">
+          <div class="nav-section-title">System</div>
+          <a href="reports.html" class="nav-item">
+            <i class="fas fa-chart-bar"></i>
+            <span>Reports</span>
+          </a>
+          <a href="settings.html" class="nav-item active">
+            <i class="fas fa-cog"></i>
+            <span>Settings</span>
+          </a>
+        </div>
+      </nav>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="main-content">
+      <!-- Navbar -->
+      <header class="navbar">
+        <div class="navbar-left">
+          <button class="sidebar-toggle" id="sidebarToggle">
+            <i class="fas fa-bars"></i>
+          </button>
+          <div class="breadcrumb">
+            <a href="../index.html" class="breadcrumb-item">Dashboard</a>
+            <span class="breadcrumb-separator">/</span>
+            <span class="breadcrumb-item active">Settings</span>
+          </div>
+        </div>
+
+        <div class="navbar-right">
+          <div class="navbar-search">
+            <i class="fas fa-search"></i>
+            <input type="text" placeholder="Search...">
+          </div>
+
+          <div class="navbar-actions">
+            <button class="navbar-action-btn" title="Notifications">
+              <i class="fas fa-bell"></i>
+              <span class="badge">5</span>
+            </button>
+          </div>
+
+          <div class="user-dropdown dropdown">
+            <button class="user-dropdown-toggle" id="userDropdown">
+              <div class="user-avatar">JD</div>
+              <div class="user-info">
+                <div class="user-name">John Doe</div>
+                <div class="user-role">Administrator</div>
+              </div>
+              <i class="fas fa-chevron-down" style="color: var(--text-muted); font-size: 0.75rem;"></i>
+            </button>
+            <div class="dropdown-menu">
+              <a href="#" class="dropdown-item">
+                <i class="fas fa-user"></i>
+                Profile
+              </a>
+              <a href="settings.html" class="dropdown-item">
+                <i class="fas fa-cog"></i>
+                Settings
+              </a>
+              <div class="dropdown-divider"></div>
+              <a href="login.html" class="dropdown-item danger">
+                <i class="fas fa-sign-out-alt"></i>
+                Logout
+              </a>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <!-- Page Content -->
+      <div class="content-wrapper">
+        <!-- Page Header -->
+        <div class="page-header">
+          <div>
+            <h1 class="page-title">Settings</h1>
+            <p class="page-subtitle mb-0">Manage your company and system settings</p>
+          </div>
+        </div>
+
+        <!-- Settings Tabs -->
+        <div class="row">
+          <!-- Settings Navigation -->
+          <div class="col-3 col-md-12" style="padding: 0.75rem;">
+            <div class="card">
+              <div class="card-body p-0">
+                <nav class="settings-nav">
+                  <a href="#company" class="settings-nav-item active" onclick="switchSettingsTab('company')">
+                    <i class="fas fa-building"></i>
+                    <span>Company Info</span>
+                  </a>
+                  <a href="#bank" class="settings-nav-item" onclick="switchSettingsTab('bank')">
+                    <i class="fas fa-university"></i>
+                    <span>Bank Details</span>
+                  </a>
+                  <a href="#invoice" class="settings-nav-item" onclick="switchSettingsTab('invoice')">
+                    <i class="fas fa-file-invoice"></i>
+                    <span>Invoice Settings</span>
+                  </a>
+                  <a href="#notifications" class="settings-nav-item" onclick="switchSettingsTab('notifications')">
+                    <i class="fas fa-bell"></i>
+                    <span>Notifications</span>
+                  </a>
+                  <a href="#security" class="settings-nav-item" onclick="switchSettingsTab('security')">
+                    <i class="fas fa-shield-alt"></i>
+                    <span>Security</span>
+                  </a>
+                </nav>
+              </div>
+            </div>
+          </div>
+
+          <!-- Settings Content -->
+          <div class="col-9 col-md-12" style="padding: 0.75rem;">
+            <!-- Company Info -->
+            <div class="settings-panel" id="company-panel">
+              <form id="companyForm">
+                <div class="card mb-4">
+                  <div class="card-header">
+                    <h3 class="card-title">
+                      <i class="fas fa-building me-2 text-primary"></i>
+                      Company Information
+                    </h3>
+                  </div>
+                  <div class="card-body">
+                    <div class="row">
+                      <div class="col-6 col-sm-12" style="padding: 0.5rem;">
+                        <div class="form-group">
+                          <label class="form-label">Company Name</label>
+                          <input type="text" class="form-control" value="Ralfiz Technologies Pvt. Ltd.">
+                        </div>
+                      </div>
+                      <div class="col-6 col-sm-12" style="padding: 0.5rem;">
+                        <div class="form-group">
+                          <label class="form-label">Display Name</label>
+                          <input type="text" class="form-control" value="Ralfiz Technologies">
+                        </div>
+                      </div>
+                      <div class="col-6 col-sm-12" style="padding: 0.5rem;">
+                        <div class="form-group">
+                          <label class="form-label">Email</label>
+                          <input type="email" class="form-control" value="contact@ralfiz.com">
+                        </div>
+                      </div>
+                      <div class="col-6 col-sm-12" style="padding: 0.5rem;">
+                        <div class="form-group">
+                          <label class="form-label">Phone</label>
+                          <input type="tel" class="form-control" value="+91 98765 43210">
+                        </div>
+                      </div>
+                      <div class="col-6 col-sm-12" style="padding: 0.5rem;">
+                        <div class="form-group">
+                          <label class="form-label">Website</label>
+                          <input type="url" class="form-control" value="https://ralfiz.com">
+                        </div>
+                      </div>
+                      <div class="col-6 col-sm-12" style="padding: 0.5rem;">
+                        <div class="form-group">
+                          <label class="form-label">GSTIN</label>
+                          <input type="text" class="form-control" value="32XYZAB1234C1Z5">
+                        </div>
+                      </div>
+                      <div class="col-12" style="padding: 0.5rem;">
+                        <div class="form-group mb-0">
+                          <label class="form-label">Address</label>
+                          <textarea class="form-control" rows="3">123 Tech Park, Cyber City
+Kozhikode, Kerala 673001
+India</textarea>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="card">
+                  <div class="card-header">
+                    <h3 class="card-title">
+                      <i class="fas fa-image me-2 text-primary"></i>
+                      Logo & Branding
+                    </h3>
+                  </div>
+                  <div class="card-body">
+                    <div class="row align-items-center">
+                      <div class="col-3 col-sm-12" style="padding: 0.5rem;">
+                        <div class="logo-preview" style="width: 120px; height: 120px; background: var(--primary-light); border-radius: 12px; display: flex; align-items: center; justify-content: center;">
+                          <div style="width: 80px; height: 80px; background: linear-gradient(135deg, var(--primary), var(--primary-light)); border-radius: 16px; display: flex; align-items: center; justify-content: center; color: white; font-weight: 700; font-size: 36px;">
+                            R
+                          </div>
+                        </div>
+                      </div>
+                      <div class="col-9 col-sm-12" style="padding: 0.5rem;">
+                        <div class="form-group mb-3">
+                          <label class="form-label">Company Logo</label>
+                          <input type="file" class="form-control" accept="image/*">
+                          <div class="form-text">Recommended: 200x200px PNG with transparent background</div>
+                        </div>
+                        <div class="form-group mb-0">
+                          <label class="form-label">Primary Color</label>
+                          <div class="d-flex gap-2">
+                            <input type="color" class="form-control" style="width: 60px; height: 40px; padding: 4px;" value="#0d9488">
+                            <input type="text" class="form-control" value="#0d9488" style="width: 120px;">
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="card-footer d-flex justify-content-end">
+                    <button type="submit" class="btn btn-primary">
+                      <i class="fas fa-save me-2"></i>Save Changes
+                    </button>
+                  </div>
+                </div>
+              </form>
+            </div>
+
+            <!-- Bank Details -->
+            <div class="settings-panel d-none" id="bank-panel">
+              <form id="bankForm">
+                <div class="card mb-4">
+                  <div class="card-header">
+                    <h3 class="card-title">
+                      <i class="fas fa-university me-2 text-primary"></i>
+                      Bank Account Details
+                    </h3>
+                  </div>
+                  <div class="card-body">
+                    <div class="row">
+                      <div class="col-6 col-sm-12" style="padding: 0.5rem;">
+                        <div class="form-group">
+                          <label class="form-label">Bank Name</label>
+                          <input type="text" class="form-control" value="HDFC Bank">
+                        </div>
+                      </div>
+                      <div class="col-6 col-sm-12" style="padding: 0.5rem;">
+                        <div class="form-group">
+                          <label class="form-label">Branch</label>
+                          <input type="text" class="form-control" value="Kozhikode Main">
+                        </div>
+                      </div>
+                      <div class="col-6 col-sm-12" style="padding: 0.5rem;">
+                        <div class="form-group">
+                          <label class="form-label">Account Number</label>
+                          <input type="text" class="form-control" value="1234567890123">
+                        </div>
+                      </div>
+                      <div class="col-6 col-sm-12" style="padding: 0.5rem;">
+                        <div class="form-group">
+                          <label class="form-label">IFSC Code</label>
+                          <input type="text" class="form-control" value="HDFC0001234">
+                        </div>
+                      </div>
+                      <div class="col-6 col-sm-12" style="padding: 0.5rem;">
+                        <div class="form-group">
+                          <label class="form-label">Account Holder Name</label>
+                          <input type="text" class="form-control" value="Ralfiz Technologies Pvt. Ltd.">
+                        </div>
+                      </div>
+                      <div class="col-6 col-sm-12" style="padding: 0.5rem;">
+                        <div class="form-group">
+                          <label class="form-label">Account Type</label>
+                          <select class="form-control">
+                            <option value="current" selected>Current Account</option>
+                            <option value="savings">Savings Account</option>
+                          </select>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="card">
+                  <div class="card-header">
+                    <h3 class="card-title">
+                      <i class="fas fa-mobile-alt me-2 text-primary"></i>
+                      UPI Details
+                    </h3>
+                  </div>
+                  <div class="card-body">
+                    <div class="row">
+                      <div class="col-6 col-sm-12" style="padding: 0.5rem;">
+                        <div class="form-group mb-0">
+                          <label class="form-label">UPI ID</label>
+                          <input type="text" class="form-control" value="ralfiz@upi">
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="card-footer d-flex justify-content-end">
+                    <button type="submit" class="btn btn-primary">
+                      <i class="fas fa-save me-2"></i>Save Changes
+                    </button>
+                  </div>
+                </div>
+              </form>
+            </div>
+
+            <!-- Invoice Settings -->
+            <div class="settings-panel d-none" id="invoice-panel">
+              <form id="invoiceForm">
+                <div class="card mb-4">
+                  <div class="card-header">
+                    <h3 class="card-title">
+                      <i class="fas fa-file-invoice me-2 text-primary"></i>
+                      Invoice Preferences
+                    </h3>
+                  </div>
+                  <div class="card-body">
+                    <div class="row">
+                      <div class="col-6 col-sm-12" style="padding: 0.5rem;">
+                        <div class="form-group">
+                          <label class="form-label">Invoice Prefix</label>
+                          <input type="text" class="form-control" value="INV">
+                        </div>
+                      </div>
+                      <div class="col-6 col-sm-12" style="padding: 0.5rem;">
+                        <div class="form-group">
+                          <label class="form-label">Quote Prefix</label>
+                          <input type="text" class="form-control" value="QT">
+                        </div>
+                      </div>
+                      <div class="col-6 col-sm-12" style="padding: 0.5rem;">
+                        <div class="form-group">
+                          <label class="form-label">Default Payment Terms (Days)</label>
+                          <input type="number" class="form-control" value="15">
+                        </div>
+                      </div>
+                      <div class="col-6 col-sm-12" style="padding: 0.5rem;">
+                        <div class="form-group">
+                          <label class="form-label">Quote Validity (Days)</label>
+                          <input type="number" class="form-control" value="15">
+                        </div>
+                      </div>
+                      <div class="col-6 col-sm-12" style="padding: 0.5rem;">
+                        <div class="form-group">
+                          <label class="form-label">Currency</label>
+                          <select class="form-control">
+                            <option value="INR" selected>Indian Rupee (&#8377;)</option>
+                            <option value="USD">US Dollar ($)</option>
+                            <option value="EUR">Euro (€)</option>
+                          </select>
+                        </div>
+                      </div>
+                      <div class="col-6 col-sm-12" style="padding: 0.5rem;">
+                        <div class="form-group">
+                          <label class="form-label">Default Tax Rate (%)</label>
+                          <input type="number" class="form-control" value="18" step="0.01">
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="card">
+                  <div class="card-header">
+                    <h3 class="card-title">
+                      <i class="fas fa-align-left me-2 text-primary"></i>
+                      Default Terms & Notes
+                    </h3>
+                  </div>
+                  <div class="card-body">
+                    <div class="form-group mb-4">
+                      <label class="form-label">Default Invoice Terms</label>
+                      <textarea class="form-control" rows="4">1. Payment is due within 15 days of invoice date.
+2. Please include invoice number in payment reference.
+3. Late payments may incur additional charges at 2% per month.
+4. All disputes are subject to Kozhikode jurisdiction.</textarea>
+                    </div>
+                    <div class="form-group mb-0">
+                      <label class="form-label">Default Invoice Footer Note</label>
+                      <textarea class="form-control" rows="2">Thank you for your business! If you have any questions, please contact billing@ralfiz.com</textarea>
+                    </div>
+                  </div>
+                  <div class="card-footer d-flex justify-content-end">
+                    <button type="submit" class="btn btn-primary">
+                      <i class="fas fa-save me-2"></i>Save Changes
+                    </button>
+                  </div>
+                </div>
+              </form>
+            </div>
+
+            <!-- Notifications -->
+            <div class="settings-panel d-none" id="notifications-panel">
+              <div class="card">
+                <div class="card-header">
+                  <h3 class="card-title">
+                    <i class="fas fa-bell me-2 text-primary"></i>
+                    Notification Preferences
+                  </h3>
+                </div>
+                <div class="card-body">
+                  <div class="settings-item d-flex justify-content-between align-items-center py-3 border-bottom">
+                    <div>
+                      <div class="fw-medium">Invoice Payment Received</div>
+                      <div class="text-sm text-muted">Get notified when a payment is recorded</div>
+                    </div>
+                    <label class="toggle-switch">
+                      <input type="checkbox" checked>
+                      <span class="toggle-slider"></span>
+                    </label>
+                  </div>
+                  <div class="settings-item d-flex justify-content-between align-items-center py-3 border-bottom">
+                    <div>
+                      <div class="fw-medium">Overdue Invoice Reminders</div>
+                      <div class="text-sm text-muted">Daily reminder for overdue invoices</div>
+                    </div>
+                    <label class="toggle-switch">
+                      <input type="checkbox" checked>
+                      <span class="toggle-slider"></span>
+                    </label>
+                  </div>
+                  <div class="settings-item d-flex justify-content-between align-items-center py-3 border-bottom">
+                    <div>
+                      <div class="fw-medium">Credential Expiry Alerts</div>
+                      <div class="text-sm text-muted">Get notified before credentials expire</div>
+                    </div>
+                    <label class="toggle-switch">
+                      <input type="checkbox" checked>
+                      <span class="toggle-slider"></span>
+                    </label>
+                  </div>
+                  <div class="settings-item d-flex justify-content-between align-items-center py-3 border-bottom">
+                    <div>
+                      <div class="fw-medium">Quote Accepted</div>
+                      <div class="text-sm text-muted">Notify when a client accepts a quote</div>
+                    </div>
+                    <label class="toggle-switch">
+                      <input type="checkbox" checked>
+                      <span class="toggle-slider"></span>
+                    </label>
+                  </div>
+                  <div class="settings-item d-flex justify-content-between align-items-center py-3">
+                    <div>
+                      <div class="fw-medium">Weekly Summary Email</div>
+                      <div class="text-sm text-muted">Receive weekly business summary</div>
+                    </div>
+                    <label class="toggle-switch">
+                      <input type="checkbox">
+                      <span class="toggle-slider"></span>
+                    </label>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Security -->
+            <div class="settings-panel d-none" id="security-panel">
+              <div class="card mb-4">
+                <div class="card-header">
+                  <h3 class="card-title">
+                    <i class="fas fa-lock me-2 text-primary"></i>
+                    Change Password
+                  </h3>
+                </div>
+                <div class="card-body">
+                  <div class="row">
+                    <div class="col-6 col-sm-12" style="padding: 0.5rem;">
+                      <div class="form-group">
+                        <label class="form-label">Current Password</label>
+                        <input type="password" class="form-control" placeholder="Enter current password">
+                      </div>
+                    </div>
+                    <div class="col-6 col-sm-12" style="padding: 0.5rem;"></div>
+                    <div class="col-6 col-sm-12" style="padding: 0.5rem;">
+                      <div class="form-group">
+                        <label class="form-label">New Password</label>
+                        <input type="password" class="form-control" placeholder="Enter new password">
+                      </div>
+                    </div>
+                    <div class="col-6 col-sm-12" style="padding: 0.5rem;">
+                      <div class="form-group">
+                        <label class="form-label">Confirm New Password</label>
+                        <input type="password" class="form-control" placeholder="Confirm new password">
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div class="card-footer d-flex justify-content-end">
+                  <button type="button" class="btn btn-primary">
+                    <i class="fas fa-key me-2"></i>Update Password
+                  </button>
+                </div>
+              </div>
+
+              <div class="card">
+                <div class="card-header">
+                  <h3 class="card-title">
+                    <i class="fas fa-history me-2 text-primary"></i>
+                    Recent Login Activity
+                  </h3>
+                </div>
+                <div class="card-body p-0">
+                  <div class="table-wrapper">
+                    <table class="table">
+                      <thead>
+                        <tr>
+                          <th>Date & Time</th>
+                          <th>IP Address</th>
+                          <th>Device</th>
+                          <th>Status</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <tr>
+                          <td>11 Jan 2026, 09:30 AM</td>
+                          <td><code>192.168.1.100</code></td>
+                          <td>Chrome on macOS</td>
+                          <td><span class="status-badge success">Current</span></td>
+                        </tr>
+                        <tr>
+                          <td>10 Jan 2026, 02:15 PM</td>
+                          <td><code>192.168.1.100</code></td>
+                          <td>Chrome on macOS</td>
+                          <td><span class="status-badge">Success</span></td>
+                        </tr>
+                        <tr>
+                          <td>09 Jan 2026, 10:00 AM</td>
+                          <td><code>192.168.1.105</code></td>
+                          <td>Safari on iPhone</td>
+                          <td><span class="status-badge">Success</span></td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <style>
+    .settings-nav {
+      display: flex;
+      flex-direction: column;
+    }
+    .settings-nav-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 14px 20px;
+      color: var(--text-secondary);
+      text-decoration: none;
+      border-left: 3px solid transparent;
+      transition: all 0.2s;
+    }
+    .settings-nav-item:hover {
+      background: var(--hover-bg);
+      color: var(--text-primary);
+    }
+    .settings-nav-item.active {
+      background: var(--primary-bg);
+      color: var(--primary);
+      border-left-color: var(--primary);
+    }
+    .settings-nav-item i {
+      width: 20px;
+      text-align: center;
+    }
+
+    .toggle-switch {
+      position: relative;
+      display: inline-block;
+      width: 48px;
+      height: 26px;
+    }
+    .toggle-switch input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+    .toggle-slider {
+      position: absolute;
+      cursor: pointer;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-color: #ccc;
+      transition: 0.3s;
+      border-radius: 26px;
+    }
+    .toggle-slider:before {
+      position: absolute;
+      content: "";
+      height: 20px;
+      width: 20px;
+      left: 3px;
+      bottom: 3px;
+      background-color: white;
+      transition: 0.3s;
+      border-radius: 50%;
+    }
+    .toggle-switch input:checked + .toggle-slider {
+      background-color: var(--primary);
+    }
+    .toggle-switch input:checked + .toggle-slider:before {
+      transform: translateX(22px);
+    }
+  </style>
+
+  <script src="../js/app.js"></script>
+  <script>
+    function switchSettingsTab(tabName) {
+      // Update nav
+      document.querySelectorAll('.settings-nav-item').forEach(item => {
+        item.classList.remove('active');
+      });
+      document.querySelector(`[onclick="switchSettingsTab('${tabName}')"]`).classList.add('active');
+
+      // Update panels
+      document.querySelectorAll('.settings-panel').forEach(panel => {
+        panel.classList.add('d-none');
+      });
+      document.getElementById(tabName + '-panel').classList.remove('d-none');
+    }
+  </script>
+</body>
+</html>

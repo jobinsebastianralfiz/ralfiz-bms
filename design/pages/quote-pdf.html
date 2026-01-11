@@ -1,0 +1,622 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Quote QT20260005 - Ralfiz Technologies</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      font-size: 14px;
+      line-height: 1.5;
+      color: #1e293b;
+      background: #ffffff;
+    }
+
+    .quote-container {
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 40px;
+      background: white;
+    }
+
+    /* Header */
+    .quote-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 40px;
+      padding-bottom: 30px;
+      border-bottom: 3px solid #0d9488;
+    }
+
+    .company-info {
+      max-width: 300px;
+    }
+
+    .company-logo {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+
+    .logo-icon {
+      width: 48px;
+      height: 48px;
+      background: linear-gradient(135deg, #0d9488, #14b8a6);
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-weight: 700;
+      font-size: 24px;
+    }
+
+    .company-name {
+      font-size: 24px;
+      font-weight: 700;
+      color: #0f172a;
+    }
+
+    .company-name span {
+      color: #0d9488;
+    }
+
+    .company-details {
+      font-size: 13px;
+      color: #64748b;
+      line-height: 1.6;
+    }
+
+    .quote-title-section {
+      text-align: right;
+    }
+
+    .quote-title {
+      font-size: 36px;
+      font-weight: 700;
+      color: #0d9488;
+      margin-bottom: 8px;
+    }
+
+    .quote-number {
+      font-size: 16px;
+      color: #64748b;
+      margin-bottom: 16px;
+    }
+
+    .quote-meta {
+      font-size: 13px;
+      color: #64748b;
+    }
+
+    .quote-meta div {
+      margin-bottom: 4px;
+    }
+
+    .quote-meta strong {
+      color: #1e293b;
+    }
+
+    /* Bill To Section */
+    .billing-section {
+      display: flex;
+      gap: 60px;
+      margin-bottom: 40px;
+    }
+
+    .billing-block {
+      flex: 1;
+    }
+
+    .billing-label {
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: #0d9488;
+      margin-bottom: 8px;
+    }
+
+    .billing-name {
+      font-size: 16px;
+      font-weight: 600;
+      color: #1e293b;
+      margin-bottom: 8px;
+    }
+
+    .billing-details {
+      font-size: 13px;
+      color: #64748b;
+      line-height: 1.6;
+    }
+
+    /* Project Description */
+    .project-section {
+      background: #f8fafc;
+      padding: 20px;
+      border-radius: 8px;
+      margin-bottom: 30px;
+    }
+
+    .project-title {
+      font-size: 18px;
+      font-weight: 600;
+      color: #1e293b;
+      margin-bottom: 8px;
+    }
+
+    .project-description {
+      font-size: 13px;
+      color: #64748b;
+    }
+
+    /* Items Table */
+    .items-section {
+      margin-bottom: 30px;
+    }
+
+    .items-table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    .items-table th {
+      background: #f1f5f9;
+      padding: 12px 16px;
+      text-align: left;
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: #64748b;
+      border-bottom: 2px solid #e2e8f0;
+    }
+
+    .items-table th:last-child,
+    .items-table td:last-child {
+      text-align: right;
+    }
+
+    .items-table td {
+      padding: 16px;
+      border-bottom: 1px solid #e2e8f0;
+      vertical-align: top;
+    }
+
+    .item-description {
+      font-weight: 500;
+      color: #1e293b;
+      margin-bottom: 4px;
+    }
+
+    .item-details {
+      font-size: 12px;
+      color: #64748b;
+    }
+
+    .items-table tbody tr:last-child td {
+      border-bottom: 2px solid #e2e8f0;
+    }
+
+    /* Totals */
+    .totals-section {
+      display: flex;
+      justify-content: flex-end;
+      margin-bottom: 40px;
+    }
+
+    .totals-table {
+      width: 300px;
+    }
+
+    .totals-row {
+      display: flex;
+      justify-content: space-between;
+      padding: 8px 0;
+      font-size: 14px;
+    }
+
+    .totals-row.subtotal {
+      border-bottom: 1px solid #e2e8f0;
+    }
+
+    .totals-row.total {
+      border-top: 2px solid #0d9488;
+      padding-top: 16px;
+      margin-top: 8px;
+    }
+
+    .totals-row.total .label,
+    .totals-row.total .value {
+      font-size: 18px;
+      font-weight: 700;
+      color: #0d9488;
+    }
+
+    .totals-row .label {
+      color: #64748b;
+    }
+
+    .totals-row .value {
+      font-weight: 600;
+      color: #1e293b;
+    }
+
+    /* Terms */
+    .terms-section {
+      margin-bottom: 40px;
+    }
+
+    .terms-label {
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: #0d9488;
+      margin-bottom: 12px;
+    }
+
+    .terms-content {
+      font-size: 12px;
+      color: #64748b;
+      line-height: 1.8;
+    }
+
+    /* Validity Notice */
+    .validity-section {
+      background: #fef3c7;
+      border: 1px solid #fcd34d;
+      padding: 16px 20px;
+      border-radius: 8px;
+      margin-bottom: 40px;
+      text-align: center;
+    }
+
+    .validity-text {
+      font-size: 14px;
+      color: #92400e;
+      font-weight: 500;
+    }
+
+    /* Signature Section */
+    .signature-section {
+      display: flex;
+      gap: 40px;
+      margin-bottom: 40px;
+    }
+
+    .signature-block {
+      flex: 1;
+      padding-top: 60px;
+      border-top: 1px solid #e2e8f0;
+    }
+
+    .signature-label {
+      font-size: 12px;
+      color: #64748b;
+    }
+
+    /* Footer */
+    .quote-footer {
+      text-align: center;
+      padding-top: 30px;
+      border-top: 1px solid #e2e8f0;
+    }
+
+    .thank-you {
+      font-size: 18px;
+      font-weight: 600;
+      color: #0d9488;
+      margin-bottom: 8px;
+    }
+
+    .footer-note {
+      font-size: 12px;
+      color: #94a3b8;
+    }
+
+    /* Status Badge */
+    .status-badge {
+      display: inline-block;
+      padding: 6px 16px;
+      font-size: 12px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      border-radius: 20px;
+      margin-top: 12px;
+    }
+
+    .status-badge.draft {
+      background: #f1f5f9;
+      color: #64748b;
+    }
+
+    .status-badge.sent {
+      background: #dbeafe;
+      color: #1d4ed8;
+    }
+
+    .status-badge.accepted {
+      background: #dcfce7;
+      color: #15803d;
+    }
+
+    /* Print Styles */
+    @media print {
+      body {
+        print-color-adjust: exact;
+        -webkit-print-color-adjust: exact;
+      }
+
+      .quote-container {
+        padding: 20px;
+      }
+
+      .no-print {
+        display: none !important;
+      }
+    }
+
+    /* Download Button (for preview) */
+    .download-bar {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      background: #0f172a;
+      padding: 12px 40px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      z-index: 100;
+    }
+
+    .download-bar-title {
+      color: white;
+      font-weight: 600;
+    }
+
+    .download-btn {
+      background: #0d9488;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 6px;
+      font-weight: 500;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .download-btn:hover {
+      background: #0f766e;
+    }
+
+    .preview-mode .quote-container {
+      margin-top: 60px;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
+      border-radius: 8px;
+    }
+
+    .preview-mode body {
+      background: #f1f5f9;
+    }
+  </style>
+</head>
+<body class="preview-mode">
+  <!-- Download Bar (Preview Only) -->
+  <div class="download-bar no-print">
+    <div class="download-bar-title">Quote Preview - QT20260005</div>
+    <div>
+      <button class="download-btn" onclick="window.print()">
+        <svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+          <path d="M.5 9.9a.5.5 0 0 1 .5.5v2.5a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-2.5a.5.5 0 0 1 1 0v2.5a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2v-2.5a.5.5 0 0 1 .5-.5z"/>
+          <path d="M7.646 11.854a.5.5 0 0 0 .708 0l3-3a.5.5 0 0 0-.708-.708L8.5 10.293V1.5a.5.5 0 0 0-1 0v8.793L5.354 8.146a.5.5 0 1 0-.708.708l3 3z"/>
+        </svg>
+        Download PDF
+      </button>
+    </div>
+  </div>
+
+  <div class="quote-container">
+    <!-- Header -->
+    <div class="quote-header">
+      <div class="company-info">
+        <div class="company-logo">
+          <div class="logo-icon">R</div>
+          <div class="company-name">Ralfiz<span>Tech</span></div>
+        </div>
+        <div class="company-details">
+          Ralfiz Technologies Pvt. Ltd.<br>
+          123 Tech Park, Cyber City<br>
+          Kozhikode, Kerala 673001<br>
+          <br>
+          Phone: +91 98765 43210<br>
+          Email: quotes@ralfiz.com<br>
+          GSTIN: 32XYZAB1234C1Z5
+        </div>
+      </div>
+      <div class="quote-title-section">
+        <div class="quote-title">QUOTATION</div>
+        <div class="quote-number">#QT20260005</div>
+        <div class="quote-meta">
+          <div><strong>Issue Date:</strong> 05 January 2026</div>
+          <div><strong>Valid Until:</strong> 20 January 2026</div>
+        </div>
+        <div class="status-badge accepted">Accepted</div>
+      </div>
+    </div>
+
+    <!-- Billing Section -->
+    <div class="billing-section">
+      <div class="billing-block">
+        <div class="billing-label">Prepared For</div>
+        <div class="billing-name">TechStart Solutions Pvt. Ltd.</div>
+        <div class="billing-details">
+          Rajesh Kumar<br>
+          123 Tech Park, Cyber City<br>
+          Kozhikode, Kerala 673001<br>
+          <br>
+          Email: contact@techstart.com<br>
+          GSTIN: 32ABCDE1234F1Z5
+        </div>
+      </div>
+      <div class="billing-block">
+        <div class="billing-label">Prepared By</div>
+        <div class="billing-name">Ralfiz Technologies</div>
+        <div class="billing-details">
+          John Doe<br>
+          Project Manager<br>
+          <br>
+          Direct: +91 98765 43211<br>
+          Email: john@ralfiz.com
+        </div>
+      </div>
+    </div>
+
+    <!-- Project Description -->
+    <div class="project-section">
+      <div class="project-title">Mobile App Development</div>
+      <div class="project-description">
+        Complete mobile application development for iOS and Android platforms with Flutter framework, including backend API integration and push notifications. The app will feature user authentication, real-time data sync, and offline capabilities.
+      </div>
+    </div>
+
+    <!-- Items Table -->
+    <div class="items-section">
+      <table class="items-table">
+        <thead>
+          <tr>
+            <th style="width: 50%;">Description</th>
+            <th style="width: 15%;">Qty</th>
+            <th style="width: 17%;">Unit Price</th>
+            <th style="width: 18%;">Amount</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>
+              <div class="item-description">UI/UX Design</div>
+              <div class="item-details">Complete app design with 25+ screens, design system, and prototype</div>
+            </td>
+            <td>1</td>
+            <td>&#8377;30,000.00</td>
+            <td>&#8377;30,000.00</td>
+          </tr>
+          <tr>
+            <td>
+              <div class="item-description">Flutter App Development</div>
+              <div class="item-details">Cross-platform iOS and Android app with shared codebase</div>
+            </td>
+            <td>1</td>
+            <td>&#8377;1,00,000.00</td>
+            <td>&#8377;1,00,000.00</td>
+          </tr>
+          <tr>
+            <td>
+              <div class="item-description">Backend API Integration</div>
+              <div class="item-details">REST API integration with existing Django backend</div>
+            </td>
+            <td>1</td>
+            <td>&#8377;40,000.00</td>
+            <td>&#8377;40,000.00</td>
+          </tr>
+          <tr>
+            <td>
+              <div class="item-description">Push Notification Setup</div>
+              <div class="item-details">Firebase Cloud Messaging integration for both platforms</div>
+            </td>
+            <td>1</td>
+            <td>&#8377;15,000.00</td>
+            <td>&#8377;15,000.00</td>
+          </tr>
+          <tr>
+            <td>
+              <div class="item-description">App Store Deployment</div>
+              <div class="item-details">Publishing to Google Play Store and Apple App Store</div>
+            </td>
+            <td>1</td>
+            <td>&#8377;15,000.00</td>
+            <td>&#8377;15,000.00</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Totals -->
+    <div class="totals-section">
+      <div class="totals-table">
+        <div class="totals-row subtotal">
+          <span class="label">Subtotal</span>
+          <span class="value">&#8377;2,00,000.00</span>
+        </div>
+        <div class="totals-row">
+          <span class="label">Discount</span>
+          <span class="value">&#8377;0.00</span>
+        </div>
+        <div class="totals-row">
+          <span class="label">Tax (0%)</span>
+          <span class="value">&#8377;0.00</span>
+        </div>
+        <div class="totals-row total">
+          <span class="label">Total</span>
+          <span class="value">&#8377;2,00,000.00</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Validity Notice -->
+    <div class="validity-section">
+      <div class="validity-text">
+        This quotation is valid until 20 January 2026. Prices may be subject to change after the validity period.
+      </div>
+    </div>
+
+    <!-- Terms -->
+    <div class="terms-section">
+      <div class="terms-label">Terms & Conditions</div>
+      <div class="terms-content">
+        1. Payment Terms: 30% advance, 40% on milestone completion, 30% on final delivery.<br>
+        2. Project timeline: 8 weeks from the date of advance payment.<br>
+        3. This quote includes 30 days of post-launch support and bug fixes.<br>
+        4. App Store developer accounts (Apple & Google) to be provided by the client.<br>
+        5. Any additional features or scope changes will be quoted separately.<br>
+        6. All intellectual property rights will be transferred upon full payment.
+      </div>
+    </div>
+
+    <!-- Signature Section -->
+    <div class="signature-section">
+      <div class="signature-block">
+        <div class="signature-label">For Ralfiz Technologies</div>
+      </div>
+      <div class="signature-block">
+        <div class="signature-label">Client Acceptance</div>
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <div class="quote-footer">
+      <div class="thank-you">Thank you for considering Ralfiz Technologies!</div>
+      <div class="footer-note">
+        If you have any questions about this quote, please contact<br>
+        quotes@ralfiz.com | +91 98765 43210
+      </div>
+    </div>
+  </div>
+</body>
+</html>

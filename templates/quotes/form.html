@@ -1,0 +1,518 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ form_title }} - Ralfiz BMS{% endblock %}
+
+{% block breadcrumb %}
+<a href="{% url 'dashboard' %}" class="breadcrumb-item">Dashboard</a>
+<span class="breadcrumb-separator">/</span>
+<a href="{% url 'quote_list' %}" class="breadcrumb-item">Quotes</a>
+<span class="breadcrumb-separator">/</span>
+<span class="breadcrumb-item active">{{ form_title }}</span>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title">{{ form_title }}</h1>
+    {% if quote %}
+    <p class="page-subtitle mb-0">Quote Number: <span class="fw-semibold text-primary">{{ quote.quote_number }}</span></p>
+    {% endif %}
+  </div>
+  {% if quote %}
+  <div class="page-actions">
+    <a href="{% url 'quote_pdf' quote.pk %}" class="btn btn-outline-secondary" target="_blank">
+      <i class="fas fa-eye"></i>
+      Preview
+    </a>
+  </div>
+  {% endif %}
+</div>
+
+<form method="post" id="quoteForm">
+  {% csrf_token %}
+  <div class="row">
+    <!-- Left Column - Quote Details -->
+    <div class="col-8 col-md-12" style="padding: 0.75rem;">
+      <!-- Client & Project -->
+      <div class="card mb-4">
+        <div class="card-header">
+          <h3 class="card-title"><i class="fas fa-user me-2 text-primary"></i>Client & Project</h3>
+        </div>
+        <div class="card-body">
+          <div class="row">
+            <div class="col-6 col-sm-12" style="padding: 0.5rem;">
+              <div class="form-group mb-0">
+                <label class="form-label" for="client">Client <span class="required">*</span></label>
+                <select class="form-control" id="client" name="client" required>
+                  <option value="">Select client</option>
+                  {% for client in clients %}
+                  <option value="{{ client.pk }}" {% if quote.client.pk == client.pk %}selected{% endif %}>{{ client.name }}</option>
+                  {% endfor %}
+                </select>
+              </div>
+            </div>
+            <div class="col-6 col-sm-12" style="padding: 0.5rem;">
+              <div class="form-group mb-0">
+                <label class="form-label" for="project">Project</label>
+                <select class="form-control" id="project" name="project">
+                  <option value="">Select project (optional)</option>
+                  {% for project in projects %}
+                  <option value="{{ project.pk }}" {% if quote.project.pk == project.pk %}selected{% endif %}>{{ project.name }}</option>
+                  {% endfor %}
+                </select>
+                <div class="form-text">Leave empty for new project quote</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Quote Details -->
+      <div class="card mb-4">
+        <div class="card-header">
+          <h3 class="card-title"><i class="fas fa-info-circle me-2 text-primary"></i>Quote Details</h3>
+        </div>
+        <div class="card-body">
+          <div class="row">
+            <div class="col-12" style="padding: 0.5rem;">
+              <div class="form-group">
+                <label class="form-label" for="title">Quote Title <span class="required">*</span></label>
+                <input type="text" class="form-control" id="title" name="title" value="{{ quote.title|default:'' }}" placeholder="e.g., E-commerce Website Development" required>
+              </div>
+            </div>
+            <div class="col-12" style="padding: 0.5rem;">
+              <div class="form-group mb-0">
+                <label class="form-label" for="description">Project Scope / Description</label>
+                <textarea class="form-control" id="description" name="description" rows="4" placeholder="Describe the scope of work, deliverables, and any important details...">{{ quote.description|default:'' }}</textarea>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Line Items -->
+      <div class="card mb-4">
+        <div class="card-header">
+          <h3 class="card-title"><i class="fas fa-list me-2 text-primary"></i>Line Items</h3>
+          <button type="button" class="btn btn-sm btn-outline-primary" onclick="addLineItem()">
+            <i class="fas fa-plus"></i> Add Item
+          </button>
+        </div>
+        <div class="table-wrapper">
+          <table class="table">
+            <thead>
+              <tr>
+                <th>Description</th>
+                <th style="width: 100px;">Qty</th>
+                <th style="width: 150px;">Unit Price</th>
+                <th style="width: 150px;">Amount</th>
+                <th style="width: 50px;"></th>
+              </tr>
+            </thead>
+            <tbody id="lineItemsBody">
+              {% if quote and quote.items.all %}
+                {% for item in quote.items.all %}
+                <tr class="line-item-row" data-index="{{ forloop.counter }}">
+                  <td>
+                    <input type="text" class="form-control" name="item_description_{{ forloop.counter }}" value="{{ item.description }}" placeholder="Item description">
+                    <input type="hidden" name="item_id_{{ forloop.counter }}" value="{{ item.pk }}">
+                  </td>
+                  <td>
+                    <input type="number" class="form-control text-end item-qty" name="item_quantity_{{ forloop.counter }}" value="{{ item.quantity|floatformat:0 }}" min="1" onchange="calculateLineTotal(this)">
+                  </td>
+                  <td>
+                    <input type="number" class="form-control text-end item-price" name="item_price_{{ forloop.counter }}" value="{{ item.unit_price|floatformat:2 }}" step="0.01" onchange="calculateLineTotal(this)">
+                  </td>
+                  <td>
+                    <input type="text" class="form-control text-end item-total" readonly value="{{ item.amount|floatformat:2 }}">
+                  </td>
+                  <td>
+                    <button type="button" class="btn btn-ghost btn-sm btn-icon text-danger" onclick="removeLineItem(this)">
+                      <i class="fas fa-trash"></i>
+                    </button>
+                  </td>
+                </tr>
+                {% endfor %}
+              {% else %}
+              <tr class="line-item-row" data-index="1">
+                <td>
+                  <input type="text" class="form-control" name="item_description_1" placeholder="Item description">
+                </td>
+                <td>
+                  <input type="number" class="form-control text-end item-qty" name="item_quantity_1" value="1" min="1" onchange="calculateLineTotal(this)">
+                </td>
+                <td>
+                  <input type="number" class="form-control text-end item-price" name="item_price_1" value="0" step="0.01" onchange="calculateLineTotal(this)">
+                </td>
+                <td>
+                  <input type="text" class="form-control text-end item-total" readonly value="0.00">
+                </td>
+                <td>
+                  <button type="button" class="btn btn-ghost btn-sm btn-icon text-danger" onclick="removeLineItem(this)">
+                    <i class="fas fa-trash"></i>
+                  </button>
+                </td>
+              </tr>
+              {% endif %}
+            </tbody>
+          </table>
+        </div>
+        <input type="hidden" name="item_count" id="itemCount" value="{% if quote %}{{ quote.items.count }}{% else %}1{% endif %}">
+
+        <!-- Item Templates -->
+        <div class="card-body pt-0">
+          <div class="d-flex align-items-center gap-2 text-sm flex-wrap">
+            <span class="text-secondary">Quick add:</span>
+            <button type="button" class="btn btn-outline-secondary btn-sm" onclick="addTemplateItem('Design & UI/UX', 25000)">
+              Design & UI/UX
+            </button>
+            <button type="button" class="btn btn-outline-secondary btn-sm" onclick="addTemplateItem('Frontend Development', 50000)">
+              Frontend Dev
+            </button>
+            <button type="button" class="btn btn-outline-secondary btn-sm" onclick="addTemplateItem('Backend Development', 60000)">
+              Backend Dev
+            </button>
+            <button type="button" class="btn btn-outline-secondary btn-sm" onclick="addTemplateItem('Testing & QA', 15000)">
+              Testing & QA
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Timeline & Deliverables -->
+      <div class="card mb-4">
+        <div class="card-header">
+          <h3 class="card-title"><i class="fas fa-tasks me-2 text-primary"></i>Timeline & Deliverables</h3>
+        </div>
+        <div class="card-body">
+          <div class="row">
+            <div class="col-6 col-sm-12" style="padding: 0.5rem;">
+              <div class="form-group mb-0">
+                <label class="form-label" for="duration">Estimated Duration</label>
+                <input type="text" class="form-control" id="duration" name="duration" value="{{ quote.duration|default:'' }}" placeholder="e.g., 4-6 weeks">
+              </div>
+            </div>
+            <div class="col-6 col-sm-12" style="padding: 0.5rem;">
+              <div class="form-group mb-0">
+                <label class="form-label" for="start_date">Expected Start Date</label>
+                <input type="date" class="form-control" id="start_date" name="start_date" value="{{ quote.start_date|date:'Y-m-d'|default:'' }}">
+              </div>
+            </div>
+          </div>
+          <div class="row mt-3">
+            <div class="col-12" style="padding: 0.5rem;">
+              <div class="form-group mb-0">
+                <label class="form-label" for="deliverables">Deliverables</label>
+                <textarea class="form-control" id="deliverables" name="deliverables" rows="3" placeholder="List the key deliverables...
+e.g.:
+- Responsive website with 10+ pages
+- Admin dashboard
+- User authentication system
+- Documentation and training">{{ quote.deliverables|default:'' }}</textarea>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Terms & Conditions -->
+      <div class="card">
+        <div class="card-header">
+          <h3 class="card-title"><i class="fas fa-file-contract me-2 text-primary"></i>Terms & Conditions</h3>
+        </div>
+        <div class="card-body">
+          <div class="form-group">
+            <label class="form-label" for="payment_terms">Payment Terms</label>
+            <select class="form-control" id="payment_terms" name="payment_terms">
+              <option value="50-50" {% if quote.payment_terms == '50-50' %}selected{% endif %}>50% Advance, 50% on Completion</option>
+              <option value="30-30-40" {% if quote.payment_terms == '30-30-40' %}selected{% endif %}>30% Advance, 30% Mid-project, 40% on Completion</option>
+              <option value="100-advance" {% if quote.payment_terms == '100-advance' %}selected{% endif %}>100% Advance</option>
+              <option value="100-completion" {% if quote.payment_terms == '100-completion' %}selected{% endif %}>100% on Completion</option>
+              <option value="custom" {% if quote.payment_terms == 'custom' %}selected{% endif %}>Custom</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="terms">Terms & Conditions</label>
+            <textarea class="form-control" id="terms" name="terms" rows="4">{{ quote.terms|default:'1. Quote valid for 30 days from date of issue.
+2. Any changes to scope may result in revised pricing.
+3. Payment terms as agreed above.
+4. Development timeline begins after advance payment.
+5. Client to provide necessary assets and feedback within agreed timelines.' }}</textarea>
+          </div>
+          <div class="form-group mb-0">
+            <label class="form-label" for="notes">Internal Notes</label>
+            <textarea class="form-control" id="notes" name="notes" rows="2" placeholder="Notes visible only to your team">{{ quote.notes|default:'' }}</textarea>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right Column - Summary -->
+    <div class="col-4 col-md-12" style="padding: 0.75rem;">
+      <!-- Validity -->
+      <div class="card mb-4">
+        <div class="card-header">
+          <h3 class="card-title"><i class="fas fa-calendar me-2 text-primary"></i>Validity</h3>
+        </div>
+        <div class="card-body">
+          <div class="form-group">
+            <label class="form-label" for="issue_date">Quote Date <span class="required">*</span></label>
+            <input type="date" class="form-control" id="issue_date" name="issue_date" value="{{ quote.issue_date|date:'Y-m-d'|default:today }}" required>
+          </div>
+          <div class="form-group mb-0">
+            <label class="form-label" for="valid_until">Valid Until <span class="required">*</span></label>
+            <input type="date" class="form-control" id="valid_until" name="valid_until" value="{{ quote.valid_until|date:'Y-m-d'|default:valid_until_default }}" required>
+            <div class="form-text">Quote expires after this date</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Totals -->
+      <div class="card mb-4">
+        <div class="card-header">
+          <h3 class="card-title"><i class="fas fa-calculator me-2 text-primary"></i>Summary</h3>
+        </div>
+        <div class="card-body">
+          <div class="d-flex justify-content-between mb-3">
+            <span class="text-secondary">Subtotal</span>
+            <span class="fw-medium" id="subtotal">&#8377;{{ quote.subtotal|default:0|floatformat:2 }}</span>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Discount</label>
+            <div class="input-group">
+              <span class="input-group-text">&#8377;</span>
+              <input type="number" class="form-control" id="discount" name="discount" value="{{ quote.discount|default:0|floatformat:2 }}" step="0.01" onchange="calculateTotals()">
+            </div>
+          </div>
+
+          <div class="d-flex justify-content-between mb-3">
+            <span class="text-secondary">After Discount</span>
+            <span class="fw-medium" id="afterDiscount">&#8377;0.00</span>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Tax Rate (GST)</label>
+            <div class="input-group">
+              <input type="number" class="form-control" id="tax_rate" name="tax_rate" value="{{ quote.tax_rate|default:18 }}" onchange="calculateTotals()">
+              <span class="input-group-text">%</span>
+            </div>
+          </div>
+
+          <div class="d-flex justify-content-between mb-3">
+            <span class="text-secondary">Tax Amount</span>
+            <span class="fw-medium" id="taxAmount">&#8377;{{ quote.tax_amount|default:0|floatformat:2 }}</span>
+          </div>
+
+          <hr>
+
+          <div class="d-flex justify-content-between">
+            <span class="fw-semibold text-lg">Total</span>
+            <span class="fw-bold text-lg text-primary" id="totalAmount">&#8377;{{ quote.total_amount|default:0|floatformat:2 }}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Status -->
+      <div class="card mb-4">
+        <div class="card-header">
+          <h3 class="card-title"><i class="fas fa-tag me-2 text-primary"></i>Status</h3>
+        </div>
+        <div class="card-body">
+          <select class="form-control" id="status" name="status">
+            {% for key, value in status_choices %}
+            <option value="{{ key }}" {% if quote.status == key %}selected{% endif %}>{{ value }}</option>
+            {% endfor %}
+          </select>
+          <div class="form-text">Set to 'Sent' when sending to client</div>
+        </div>
+      </div>
+
+      <!-- Quick Actions -->
+      {% if not quote %}
+      <div class="card mb-4" style="background: var(--primary-bg); border-color: var(--primary-lighter);">
+        <div class="card-body">
+          <h4 class="text-primary mb-3">
+            <i class="fas fa-bolt me-2"></i>Quick Actions
+          </h4>
+          <button type="button" class="btn btn-outline-primary w-100 mb-2" onclick="showCloneModal()">
+            <i class="fas fa-copy me-2"></i>
+            Clone Previous Quote
+          </button>
+          <button type="button" class="btn btn-outline-secondary w-100" onclick="showTemplateModal()">
+            <i class="fas fa-file-import me-2"></i>
+            Import Template
+          </button>
+        </div>
+      </div>
+      {% endif %}
+
+      <!-- Tips -->
+      <div class="card" style="background: var(--info-light); border-color: var(--info);">
+        <div class="card-body">
+          <h4 class="text-info mb-2">
+            <i class="fas fa-lightbulb me-2"></i>Tips
+          </h4>
+          <ul class="text-sm text-secondary mb-0" style="padding-left: 1rem;">
+            <li class="mb-1">Be specific about deliverables to avoid scope creep</li>
+            <li class="mb-1">Include revision limits in terms</li>
+            <li>Set realistic timelines with buffer</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Form Actions -->
+  <div class="card mt-4">
+    <div class="card-body d-flex justify-content-between align-items-center">
+      <a href="{% url 'quote_list' %}" class="btn btn-outline-secondary">
+        <i class="fas fa-arrow-left me-2"></i>Cancel
+      </a>
+      <div class="d-flex gap-2">
+        <button type="submit" name="action" value="draft" class="btn btn-outline-primary">
+          <i class="fas fa-save me-2"></i>Save as Draft
+        </button>
+        <button type="submit" name="action" value="pdf" class="btn btn-outline-primary">
+          <i class="fas fa-file-pdf me-2"></i>Save & Download PDF
+        </button>
+        <button type="submit" name="action" value="send" class="btn btn-primary">
+          <i class="fas fa-paper-plane me-2"></i>{% if quote %}Update & Send{% else %}Save & Send{% endif %}
+        </button>
+      </div>
+    </div>
+  </div>
+</form>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+let lineItemCounter = {{ quote.items.count|default:1 }};
+
+function addLineItem() {
+  lineItemCounter++;
+  const tbody = document.getElementById('lineItemsBody');
+  const row = document.createElement('tr');
+  row.className = 'line-item-row';
+  row.dataset.index = lineItemCounter;
+  row.innerHTML = `
+    <td>
+      <input type="text" class="form-control" name="item_description_${lineItemCounter}" placeholder="Item description">
+    </td>
+    <td>
+      <input type="number" class="form-control text-end item-qty" name="item_quantity_${lineItemCounter}" value="1" min="1" onchange="calculateLineTotal(this)">
+    </td>
+    <td>
+      <input type="number" class="form-control text-end item-price" name="item_price_${lineItemCounter}" value="0" step="0.01" onchange="calculateLineTotal(this)">
+    </td>
+    <td>
+      <input type="text" class="form-control text-end item-total" readonly value="0.00">
+    </td>
+    <td>
+      <button type="button" class="btn btn-ghost btn-sm btn-icon text-danger" onclick="removeLineItem(this)">
+        <i class="fas fa-trash"></i>
+      </button>
+    </td>
+  `;
+  tbody.appendChild(row);
+  document.getElementById('itemCount').value = lineItemCounter;
+}
+
+function addTemplateItem(description, price) {
+  lineItemCounter++;
+  const tbody = document.getElementById('lineItemsBody');
+  const row = document.createElement('tr');
+  row.className = 'line-item-row';
+  row.dataset.index = lineItemCounter;
+  row.innerHTML = `
+    <td>
+      <input type="text" class="form-control" name="item_description_${lineItemCounter}" value="${description}" placeholder="Item description">
+    </td>
+    <td>
+      <input type="number" class="form-control text-end item-qty" name="item_quantity_${lineItemCounter}" value="1" min="1" onchange="calculateLineTotal(this)">
+    </td>
+    <td>
+      <input type="number" class="form-control text-end item-price" name="item_price_${lineItemCounter}" value="${price}" step="0.01" onchange="calculateLineTotal(this)">
+    </td>
+    <td>
+      <input type="text" class="form-control text-end item-total" readonly value="${price.toFixed(2)}">
+    </td>
+    <td>
+      <button type="button" class="btn btn-ghost btn-sm btn-icon text-danger" onclick="removeLineItem(this)">
+        <i class="fas fa-trash"></i>
+      </button>
+    </td>
+  `;
+  tbody.appendChild(row);
+  document.getElementById('itemCount').value = lineItemCounter;
+  calculateTotals();
+}
+
+function removeLineItem(btn) {
+  const row = btn.closest('tr');
+  const tbody = document.getElementById('lineItemsBody');
+  if (tbody.querySelectorAll('tr').length > 1) {
+    row.remove();
+    calculateTotals();
+  }
+}
+
+function calculateLineTotal(input) {
+  const row = input.closest('tr');
+  const qty = parseFloat(row.querySelector('.item-qty').value) || 0;
+  const price = parseFloat(row.querySelector('.item-price').value) || 0;
+  const total = qty * price;
+  row.querySelector('.item-total').value = total.toFixed(2);
+  calculateTotals();
+}
+
+function calculateTotals() {
+  let subtotal = 0;
+  document.querySelectorAll('.line-item-row').forEach(row => {
+    const total = parseFloat(row.querySelector('.item-total').value) || 0;
+    subtotal += total;
+  });
+
+  const discount = parseFloat(document.getElementById('discount').value) || 0;
+  const taxRate = parseFloat(document.getElementById('tax_rate').value) || 0;
+
+  const afterDiscount = subtotal - discount;
+  const taxAmount = afterDiscount * (taxRate / 100);
+  const total = afterDiscount + taxAmount;
+
+  document.getElementById('subtotal').textContent = '₹' + subtotal.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+  document.getElementById('afterDiscount').textContent = '₹' + afterDiscount.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+  document.getElementById('taxAmount').textContent = '₹' + taxAmount.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+  document.getElementById('totalAmount').textContent = '₹' + total.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+}
+
+function showCloneModal() {
+  alert('Clone functionality coming soon!');
+}
+
+function showTemplateModal() {
+  alert('Template import coming soon!');
+}
+
+// Auto-calculate valid until date (30 days from quote date)
+document.getElementById('issue_date').addEventListener('change', function() {
+  const quoteDate = new Date(this.value);
+  quoteDate.setDate(quoteDate.getDate() + 30);
+  document.getElementById('valid_until').value = quoteDate.toISOString().split('T')[0];
+});
+
+// Calculate on page load
+document.addEventListener('DOMContentLoaded', function() {
+  document.querySelectorAll('.line-item-row').forEach(row => {
+    const qty = parseFloat(row.querySelector('.item-qty')?.value) || 0;
+    const price = parseFloat(row.querySelector('.item-price')?.value) || 0;
+    const totalInput = row.querySelector('.item-total');
+    if (totalInput) {
+      totalInput.value = (qty * price).toFixed(2);
+    }
+  });
+  calculateTotals();
+});
+</script>
+{% endblock %}

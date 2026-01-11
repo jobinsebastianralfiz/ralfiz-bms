@@ -1,0 +1,343 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ invoice.invoice_number }} - Ralfiz BMS{% endblock %}
+
+{% block extra_css %}
+<style>
+  .avatar-xl {
+    width: 64px;
+    height: 64px;
+    font-size: 1.5rem;
+  }
+</style>
+{% endblock %}
+
+{% block breadcrumb %}
+<a href="{% url 'dashboard' %}" class="breadcrumb-item">Dashboard</a>
+<span class="breadcrumb-separator">/</span>
+<a href="{% url 'invoice_list' %}" class="breadcrumb-item">Invoices</a>
+<span class="breadcrumb-separator">/</span>
+<span class="breadcrumb-item active">{{ invoice.invoice_number }}</span>
+{% endblock %}
+
+{% block content %}
+<!-- Page Header -->
+<div class="page-header">
+  <div class="d-flex align-items-center gap-4">
+    <div class="avatar avatar-xl" style="background: var(--warning-light); color: var(--warning);">
+      <i class="fas fa-file-invoice-dollar"></i>
+    </div>
+    <div>
+      <div class="d-flex align-items-center gap-3 mb-2">
+        <h1 class="page-title mb-0">Invoice #{{ invoice.invoice_number }}</h1>
+        <span class="status-badge {{ invoice.status }}">{{ invoice.get_status_display }}</span>
+      </div>
+      <p class="page-subtitle mb-0">
+        <a href="{% url 'client_detail' invoice.client.pk %}" class="text-primary">
+          <i class="fas fa-building me-1"></i>{{ invoice.client.name }}
+        </a>
+        {% if invoice.project %}
+        <span class="mx-2">|</span>
+        <a href="{% url 'project_detail' invoice.project.pk %}">
+          <i class="fas fa-folder me-1"></i>{{ invoice.project.name }}
+        </a>
+        {% endif %}
+      </p>
+    </div>
+  </div>
+  <div class="page-actions">
+    <a href="{% url 'invoice_pdf' invoice.pk %}" class="btn btn-outline-secondary" target="_blank">
+      <i class="fas fa-file-pdf"></i>
+      Download PDF
+    </a>
+    <button class="btn btn-outline-primary" onclick="sendReminder()">
+      <i class="fas fa-envelope"></i>
+      Send Reminder
+    </button>
+    <a href="{% url 'payment_create' %}?invoice={{ invoice.pk }}" class="btn btn-success">
+      <i class="fas fa-plus"></i>
+      Record Payment
+    </a>
+    <a href="{% url 'invoice_update' invoice.pk %}" class="btn btn-primary">
+      <i class="fas fa-edit"></i>
+      Edit Invoice
+    </a>
+  </div>
+</div>
+
+<!-- Payment Summary Cards -->
+<div class="row mb-4">
+  <div class="col-3 col-md-6 col-sm-12" style="padding: 0.75rem;">
+    <div class="card stat-card">
+      <div class="stat-card-header">
+        <div class="stat-card-icon primary">
+          <i class="fas fa-file-invoice"></i>
+        </div>
+      </div>
+      <div class="stat-card-value">&#8377;{{ invoice.total_amount|floatformat:0 }}</div>
+      <div class="stat-card-label">Invoice Total</div>
+    </div>
+  </div>
+  <div class="col-3 col-md-6 col-sm-12" style="padding: 0.75rem;">
+    <div class="card stat-card">
+      <div class="stat-card-header">
+        <div class="stat-card-icon success">
+          <i class="fas fa-check-circle"></i>
+        </div>
+      </div>
+      <div class="stat-card-value text-success">&#8377;{{ invoice.amount_paid|floatformat:0 }}</div>
+      <div class="stat-card-label">Amount Paid</div>
+    </div>
+  </div>
+  <div class="col-3 col-md-6 col-sm-12" style="padding: 0.75rem;">
+    <div class="card stat-card">
+      <div class="stat-card-header">
+        <div class="stat-card-icon warning">
+          <i class="fas fa-clock"></i>
+        </div>
+      </div>
+      <div class="stat-card-value text-warning">&#8377;{{ invoice.balance_due|floatformat:0 }}</div>
+      <div class="stat-card-label">Balance Due</div>
+    </div>
+  </div>
+  <div class="col-3 col-md-6 col-sm-12" style="padding: 0.75rem;">
+    <div class="card stat-card">
+      <div class="stat-card-header">
+        <div class="stat-card-icon info">
+          <i class="fas fa-calendar"></i>
+        </div>
+      </div>
+      <div class="stat-card-value">
+        {% if invoice.days_until_due >= 0 %}
+        {{ invoice.days_until_due }} days
+        {% else %}
+        <span class="text-danger">Overdue</span>
+        {% endif %}
+      </div>
+      <div class="stat-card-label">Until Due Date</div>
+    </div>
+  </div>
+</div>
+
+<!-- Main Content Grid -->
+<div class="row">
+  <!-- Left Column -->
+  <div class="col-4 col-md-12" style="padding: 0.75rem;">
+    <!-- Bill To -->
+    <div class="card mb-4">
+      <div class="card-header">
+        <h3 class="card-title">Bill To</h3>
+      </div>
+      <div class="card-body">
+        <div class="mb-3">
+          <div class="text-sm text-muted mb-1">Company</div>
+          <div class="fw-medium">{{ invoice.client.company_name|default:invoice.client.name }}</div>
+        </div>
+        <div class="mb-3">
+          <div class="text-sm text-muted mb-1">Contact</div>
+          <div>{{ invoice.client.name }}</div>
+        </div>
+        <div class="mb-3">
+          <div class="text-sm text-muted mb-1">Email</div>
+          <div>
+            <a href="mailto:{{ invoice.client.email }}">{{ invoice.client.email }}</a>
+          </div>
+        </div>
+        {% if invoice.client.gst_number %}
+        <div>
+          <div class="text-sm text-muted mb-1">GST Number</div>
+          <div>{{ invoice.client.gst_number }}</div>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Invoice Details -->
+    <div class="card mb-4">
+      <div class="card-header">
+        <h3 class="card-title">Invoice Details</h3>
+      </div>
+      <div class="card-body">
+        <div class="mb-3">
+          <div class="text-sm text-muted mb-1">Invoice Number</div>
+          <div class="fw-medium">{{ invoice.invoice_number }}</div>
+        </div>
+        <div class="mb-3">
+          <div class="text-sm text-muted mb-1">Issue Date</div>
+          <div>{{ invoice.issue_date|date:"d F Y" }}</div>
+        </div>
+        <div class="mb-3">
+          <div class="text-sm text-muted mb-1">Due Date</div>
+          <div>
+            {% if invoice.due_date %}
+            <span class="{% if invoice.is_overdue %}text-danger{% else %}text-warning{% endif %}">
+              <i class="fas fa-clock me-1"></i>{{ invoice.due_date|date:"d F Y" }}
+            </span>
+            {% else %}
+            <span class="text-muted">Not specified</span>
+            {% endif %}
+          </div>
+        </div>
+        {% if invoice.project %}
+        <div class="mb-3">
+          <div class="text-sm text-muted mb-1">Project</div>
+          <div>
+            <a href="{% url 'project_detail' invoice.project.pk %}">{{ invoice.project.name }}</a>
+          </div>
+        </div>
+        {% endif %}
+        <div>
+          <div class="text-sm text-muted mb-1">Status</div>
+          <div><span class="status-badge {{ invoice.status }}">{{ invoice.get_status_display }}</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Payment History -->
+    <div class="card">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <h3 class="card-title mb-0">Payment History</h3>
+        <a href="{% url 'payment_create' %}?invoice={{ invoice.pk }}" class="btn btn-sm btn-primary">
+          <i class="fas fa-plus me-1"></i>Add
+        </a>
+      </div>
+      <div class="card-body">
+        {% if invoice.payments.all %}
+        {% for payment in invoice.payments.all %}
+        <div class="d-flex justify-content-between align-items-center {% if not forloop.last %}mb-3 pb-3{% endif %}" {% if not forloop.last %}style="border-bottom: 1px solid var(--border-color);"{% endif %}>
+          <div>
+            <div class="fw-medium text-success">&#8377;{{ payment.amount|floatformat:0 }}</div>
+            <div class="text-sm text-muted">{{ payment.get_payment_method_display }}</div>
+          </div>
+          <div class="text-sm text-muted">{{ payment.payment_date|date:"d M Y" }}</div>
+        </div>
+        {% endfor %}
+        {% else %}
+        <div class="text-center text-muted py-4">
+          <i class="fas fa-receipt fa-2x mb-3" style="opacity: 0.5;"></i>
+          <p class="mb-0">No payments recorded yet</p>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <!-- Right Column - Line Items -->
+  <div class="col-8 col-md-12" style="padding: 0.75rem;">
+    <!-- Description -->
+    <div class="card mb-4">
+      <div class="card-body">
+        <h3 class="mb-2">{{ invoice.title }}</h3>
+        {% if invoice.description %}
+        <p class="text-secondary mb-0">{{ invoice.description }}</p>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Line Items -->
+    <div class="card mb-4">
+      <div class="card-header">
+        <h3 class="card-title">Line Items</h3>
+      </div>
+      <div class="table-wrapper">
+        <table class="table">
+          <thead>
+            <tr>
+              <th style="width: 50%;">Description</th>
+              <th class="text-center">Qty</th>
+              <th class="text-end">Unit Price</th>
+              <th class="text-end">Amount</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for item in invoice.items.all %}
+            <tr>
+              <td>
+                <div class="fw-medium">{{ item.description }}</div>
+                {% if item.details %}
+                <div class="text-sm text-muted">{{ item.details }}</div>
+                {% endif %}
+              </td>
+              <td class="text-center">{{ item.quantity|floatformat:0 }}</td>
+              <td class="text-end">&#8377;{{ item.unit_price|floatformat:2 }}</td>
+              <td class="text-end fw-medium">&#8377;{{ item.total|floatformat:2 }}</td>
+            </tr>
+            {% empty %}
+            <tr>
+              <td colspan="4" class="text-center py-4 text-muted">No line items</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Totals -->
+    <div class="card">
+      <div class="card-body">
+        <div class="row">
+          <div class="col-6">
+            {% if invoice.notes %}
+            <div class="text-sm text-muted mb-2">Notes</div>
+            <div class="text-secondary text-sm">
+              {{ invoice.notes|linebreaks }}
+            </div>
+            {% endif %}
+            {% if invoice.terms %}
+            <div class="text-sm text-muted mb-2 mt-3">Terms & Conditions</div>
+            <div class="text-secondary text-sm">
+              {{ invoice.terms|linebreaks }}
+            </div>
+            {% endif %}
+          </div>
+          <div class="col-6">
+            <div class="totals-table" style="margin-left: auto; width: 280px;">
+              <div class="d-flex justify-content-between py-2">
+                <span class="text-muted">Subtotal</span>
+                <span class="fw-medium">&#8377;{{ invoice.subtotal|floatformat:2 }}</span>
+              </div>
+              {% if invoice.discount %}
+              <div class="d-flex justify-content-between py-2">
+                <span class="text-muted">Discount</span>
+                <span class="text-danger">-&#8377;{{ invoice.discount|floatformat:2 }}</span>
+              </div>
+              {% endif %}
+              <div class="d-flex justify-content-between py-2">
+                <span class="text-muted">CGST ({{ invoice.tax_rate|floatformat:0|divisibleby:2 }}%)</span>
+                <span>&#8377;{{ invoice.cgst_amount|floatformat:2 }}</span>
+              </div>
+              <div class="d-flex justify-content-between py-2" style="border-bottom: 1px solid var(--border-color);">
+                <span class="text-muted">SGST ({{ invoice.tax_rate|floatformat:0|divisibleby:2 }}%)</span>
+                <span>&#8377;{{ invoice.sgst_amount|floatformat:2 }}</span>
+              </div>
+              <div class="d-flex justify-content-between py-3" style="border-bottom: 1px solid var(--border-color);">
+                <span class="fw-bold">Total</span>
+                <span class="fw-bold">&#8377;{{ invoice.total_amount|floatformat:2 }}</span>
+              </div>
+              <div class="d-flex justify-content-between py-2">
+                <span class="text-muted">Amount Paid</span>
+                <span class="text-success">&#8377;{{ invoice.amount_paid|floatformat:2 }}</span>
+              </div>
+              <div class="d-flex justify-content-between py-3">
+                <span class="fw-bold text-lg {% if invoice.balance_due > 0 %}text-warning{% else %}text-success{% endif %}">Balance Due</span>
+                <span class="fw-bold text-lg {% if invoice.balance_due > 0 %}text-warning{% else %}text-success{% endif %}">&#8377;{{ invoice.balance_due|floatformat:2 }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function sendReminder() {
+  if (confirm('Send payment reminder to {{ invoice.client.email }}?')) {
+    alert('Payment reminder sent successfully!');
+  }
+}
+</script>
+{% endblock %}

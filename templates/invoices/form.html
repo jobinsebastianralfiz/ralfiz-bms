@@ -1,0 +1,438 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ form_title }} - Ralfiz BMS{% endblock %}
+
+{% block breadcrumb %}
+<a href="{% url 'dashboard' %}" class="breadcrumb-item">Dashboard</a>
+<span class="breadcrumb-separator">/</span>
+<a href="{% url 'invoice_list' %}" class="breadcrumb-item">Invoices</a>
+<span class="breadcrumb-separator">/</span>
+<span class="breadcrumb-item active">{{ form_title }}</span>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title">{{ form_title }}</h1>
+    {% if invoice %}
+    <p class="page-subtitle mb-0">Invoice Number: <span class="fw-semibold text-primary">{{ invoice.invoice_number }}</span></p>
+    {% endif %}
+  </div>
+  {% if invoice %}
+  <div class="page-actions">
+    <a href="{% url 'invoice_pdf' invoice.pk %}" class="btn btn-outline-secondary" target="_blank">
+      <i class="fas fa-eye"></i>
+      Preview
+    </a>
+  </div>
+  {% endif %}
+</div>
+
+<form method="post" id="invoiceForm">
+  {% csrf_token %}
+  <div class="row">
+    <!-- Left Column - Invoice Details -->
+    <div class="col-8 col-md-12" style="padding: 0.75rem;">
+      <!-- Client & Project -->
+      <div class="card mb-4">
+        <div class="card-header">
+          <h3 class="card-title"><i class="fas fa-user me-2 text-primary"></i>Client & Project</h3>
+        </div>
+        <div class="card-body">
+          <div class="row">
+            <div class="col-6 col-sm-12" style="padding: 0.5rem;">
+              <div class="form-group mb-0">
+                <label class="form-label" for="client">Client <span class="required">*</span></label>
+                <select class="form-control" id="client" name="client" required>
+                  <option value="">Select client</option>
+                  {% for client in clients %}
+                  <option value="{{ client.pk }}" {% if invoice.client.pk == client.pk %}selected{% endif %}>{{ client.name }}</option>
+                  {% endfor %}
+                </select>
+              </div>
+            </div>
+            <div class="col-6 col-sm-12" style="padding: 0.5rem;">
+              <div class="form-group mb-0">
+                <label class="form-label" for="project">Project</label>
+                <select class="form-control" id="project" name="project">
+                  <option value="">Select project (optional)</option>
+                  {% for project in projects %}
+                  <option value="{{ project.pk }}" {% if invoice.project.pk == project.pk %}selected{% endif %}>{{ project.name }}</option>
+                  {% endfor %}
+                </select>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Invoice Details -->
+      <div class="card mb-4">
+        <div class="card-header">
+          <h3 class="card-title"><i class="fas fa-info-circle me-2 text-primary"></i>Invoice Details</h3>
+        </div>
+        <div class="card-body">
+          <div class="row">
+            <div class="col-12" style="padding: 0.5rem;">
+              <div class="form-group">
+                <label class="form-label" for="title">Invoice Title <span class="required">*</span></label>
+                <input type="text" class="form-control" id="title" name="title" value="{{ invoice.title|default:'' }}" placeholder="e.g., Website Development - Milestone 1" required>
+              </div>
+            </div>
+            <div class="col-12" style="padding: 0.5rem;">
+              <div class="form-group mb-0">
+                <label class="form-label" for="description">Description</label>
+                <textarea class="form-control" id="description" name="description" rows="2" placeholder="Brief description of this invoice">{{ invoice.description|default:'' }}</textarea>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Line Items -->
+      <div class="card mb-4">
+        <div class="card-header">
+          <h3 class="card-title"><i class="fas fa-list me-2 text-primary"></i>Line Items</h3>
+          <button type="button" class="btn btn-sm btn-outline-primary" onclick="addLineItem()">
+            <i class="fas fa-plus"></i> Add Item
+          </button>
+        </div>
+        <div class="table-wrapper">
+          <table class="table">
+            <thead>
+              <tr>
+                <th>Description</th>
+                <th style="width: 100px;">Qty</th>
+                <th style="width: 150px;">Unit Price</th>
+                <th style="width: 150px;">Amount</th>
+                <th style="width: 50px;"></th>
+              </tr>
+            </thead>
+            <tbody id="lineItemsBody">
+              {% if invoice and invoice.items.all %}
+                {% for item in invoice.items.all %}
+                <tr class="line-item-row" data-index="{{ forloop.counter }}">
+                  <td>
+                    <input type="text" class="form-control" name="item_description_{{ forloop.counter }}" value="{{ item.description }}" placeholder="Item description">
+                    <input type="hidden" name="item_id_{{ forloop.counter }}" value="{{ item.pk }}">
+                  </td>
+                  <td>
+                    <input type="number" class="form-control text-end item-qty" name="item_quantity_{{ forloop.counter }}" value="{{ item.quantity|floatformat:0 }}" min="1" onchange="calculateLineTotal(this)">
+                  </td>
+                  <td>
+                    <input type="number" class="form-control text-end item-price" name="item_price_{{ forloop.counter }}" value="{{ item.unit_price|floatformat:2 }}" step="0.01" onchange="calculateLineTotal(this)">
+                  </td>
+                  <td>
+                    <input type="text" class="form-control text-end item-total" readonly value="{{ item.total|floatformat:2 }}">
+                  </td>
+                  <td>
+                    <button type="button" class="btn btn-ghost btn-sm btn-icon text-danger" onclick="removeLineItem(this)">
+                      <i class="fas fa-trash"></i>
+                    </button>
+                  </td>
+                </tr>
+                {% endfor %}
+              {% else %}
+              <tr class="line-item-row" data-index="1">
+                <td>
+                  <input type="text" class="form-control" name="item_description_1" placeholder="Item description">
+                </td>
+                <td>
+                  <input type="number" class="form-control text-end item-qty" name="item_quantity_1" value="1" min="1" onchange="calculateLineTotal(this)">
+                </td>
+                <td>
+                  <input type="number" class="form-control text-end item-price" name="item_price_1" value="0" step="0.01" onchange="calculateLineTotal(this)">
+                </td>
+                <td>
+                  <input type="text" class="form-control text-end item-total" readonly value="0.00">
+                </td>
+                <td>
+                  <button type="button" class="btn btn-ghost btn-sm btn-icon text-danger" onclick="removeLineItem(this)">
+                    <i class="fas fa-trash"></i>
+                  </button>
+                </td>
+              </tr>
+              {% endif %}
+            </tbody>
+          </table>
+        </div>
+        <input type="hidden" name="item_count" id="itemCount" value="{% if invoice %}{{ invoice.items.count }}{% else %}1{% endif %}">
+      </div>
+
+      <!-- Terms & Conditions -->
+      <div class="card">
+        <div class="card-header">
+          <h3 class="card-title"><i class="fas fa-file-contract me-2 text-primary"></i>Terms & Notes</h3>
+        </div>
+        <div class="card-body">
+          <div class="form-group">
+            <label class="form-label" for="terms">Payment Terms</label>
+            <textarea class="form-control" id="terms" name="terms" rows="3">{{ invoice.terms|default:'1. Payment is due within 15 days of invoice date.
+2. Please include invoice number in payment reference.
+3. Late payments may incur additional charges.' }}</textarea>
+          </div>
+          <div class="form-group mb-0">
+            <label class="form-label" for="notes">Internal Notes</label>
+            <textarea class="form-control" id="notes" name="notes" rows="2" placeholder="Notes visible only to your team">{{ invoice.notes|default:'' }}</textarea>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right Column - Summary -->
+    <div class="col-4 col-md-12" style="padding: 0.75rem;">
+      <!-- Dates -->
+      <div class="card mb-4">
+        <div class="card-header">
+          <h3 class="card-title"><i class="fas fa-calendar me-2 text-primary"></i>Dates</h3>
+        </div>
+        <div class="card-body">
+          <div class="form-group">
+            <label class="form-label" for="issue_date">Issue Date <span class="required">*</span></label>
+            <input type="date" class="form-control" id="issue_date" name="issue_date" value="{{ invoice.issue_date|date:'Y-m-d'|default:today }}" required>
+          </div>
+          <div class="form-group mb-0">
+            <label class="form-label" for="due_date">Due Date <span class="required">*</span></label>
+            <input type="date" class="form-control" id="due_date" name="due_date" value="{{ invoice.due_date|date:'Y-m-d'|default:due_date_default }}" required>
+          </div>
+        </div>
+      </div>
+
+      <!-- Totals -->
+      <div class="card mb-4">
+        <div class="card-header">
+          <h3 class="card-title"><i class="fas fa-calculator me-2 text-primary"></i>Summary</h3>
+        </div>
+        <div class="card-body">
+          <div class="d-flex justify-content-between mb-3">
+            <span class="text-secondary">Subtotal</span>
+            <span class="fw-medium" id="subtotal">&#8377;{{ invoice.subtotal|default:0|floatformat:2 }}</span>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Discount</label>
+            <div class="input-group">
+              <span class="input-group-text">&#8377;</span>
+              <input type="number" class="form-control" id="discount" name="discount" value="{{ invoice.discount|default:0|floatformat:2 }}" step="0.01" onchange="calculateTotals()">
+            </div>
+          </div>
+
+          <div class="d-flex justify-content-between mb-3">
+            <span class="text-secondary">After Discount</span>
+            <span class="fw-medium" id="afterDiscount">&#8377;0.00</span>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Tax Rate (GST)</label>
+            <div class="input-group">
+              <input type="number" class="form-control" id="tax_rate" name="tax_rate" value="{{ invoice.tax_rate|default:18 }}" onchange="calculateTotals()">
+              <span class="input-group-text">%</span>
+            </div>
+          </div>
+
+          <div class="d-flex justify-content-between mb-3">
+            <span class="text-secondary">Tax Amount</span>
+            <span class="fw-medium" id="taxAmount">&#8377;{{ invoice.tax_amount|default:0|floatformat:2 }}</span>
+          </div>
+
+          <hr>
+
+          <div class="d-flex justify-content-between">
+            <span class="fw-semibold text-lg">Total</span>
+            <span class="fw-bold text-lg text-primary" id="totalAmount">&#8377;{{ invoice.total_amount|default:0|floatformat:2 }}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Status -->
+      <div class="card mb-4">
+        <div class="card-header">
+          <h3 class="card-title"><i class="fas fa-tag me-2 text-primary"></i>Status</h3>
+        </div>
+        <div class="card-body">
+          <select class="form-control" id="status" name="status">
+            {% for key, value in status_choices %}
+            <option value="{{ key }}" {% if invoice.status == key %}selected{% endif %}>{{ value }}</option>
+            {% endfor %}
+          </select>
+          <div class="form-text">Set to 'Sent' when sending to client</div>
+        </div>
+      </div>
+
+      <!-- Quick Actions -->
+      {% if not invoice %}
+      <div class="card" style="background: var(--primary-bg); border-color: var(--primary-lighter);">
+        <div class="card-body">
+          <h4 class="text-primary mb-3">
+            <i class="fas fa-bolt me-2"></i>Quick Actions
+          </h4>
+          <button type="button" class="btn btn-outline-primary w-100 mb-2" onclick="showQuoteImportModal()">
+            <i class="fas fa-file-import me-2"></i>
+            Import from Quote
+          </button>
+          <button type="button" class="btn btn-outline-secondary w-100" onclick="showCloneModal()">
+            <i class="fas fa-copy me-2"></i>
+            Clone Previous Invoice
+          </button>
+        </div>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Form Actions -->
+  <div class="card mt-4">
+    <div class="card-body d-flex justify-content-between align-items-center">
+      <a href="{% url 'invoice_list' %}" class="btn btn-outline-secondary">
+        <i class="fas fa-arrow-left me-2"></i>Cancel
+      </a>
+      <div class="d-flex gap-2">
+        <button type="submit" name="action" value="draft" class="btn btn-outline-primary">
+          <i class="fas fa-save me-2"></i>Save as Draft
+        </button>
+        <button type="submit" name="action" value="pdf" class="btn btn-outline-primary">
+          <i class="fas fa-file-pdf me-2"></i>Save & Download PDF
+        </button>
+        <button type="submit" name="action" value="send" class="btn btn-primary">
+          <i class="fas fa-paper-plane me-2"></i>{% if invoice %}Update & Send{% else %}Save & Send{% endif %}
+        </button>
+      </div>
+    </div>
+  </div>
+</form>
+
+<!-- Quote Import Modal -->
+<div class="modal" id="quoteImportModal" style="display: none;">
+  <div class="modal-backdrop" onclick="hideQuoteImportModal()"></div>
+  <div class="modal-dialog">
+    <div class="modal-header">
+      <h3 class="modal-title">Import from Quote</h3>
+      <button type="button" class="btn btn-ghost btn-sm btn-icon" onclick="hideQuoteImportModal()">
+        <i class="fas fa-times"></i>
+      </button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label class="form-label">Select Quote</label>
+        <select class="form-control" id="quoteSelect">
+          <option value="">Choose a quote to import...</option>
+          {% for quote in quotes %}
+          <option value="{{ quote.pk }}">{{ quote.quote_number }} - {{ quote.title }}</option>
+          {% endfor %}
+        </select>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button type="button" class="btn btn-outline-secondary" onclick="hideQuoteImportModal()">Cancel</button>
+      <button type="button" class="btn btn-primary" onclick="importQuote()">Import</button>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+let lineItemCounter = {{ invoice.items.count|default:1 }};
+
+function addLineItem() {
+  lineItemCounter++;
+  const tbody = document.getElementById('lineItemsBody');
+  const row = document.createElement('tr');
+  row.className = 'line-item-row';
+  row.dataset.index = lineItemCounter;
+  row.innerHTML = `
+    <td>
+      <input type="text" class="form-control" name="item_description_${lineItemCounter}" placeholder="Item description">
+    </td>
+    <td>
+      <input type="number" class="form-control text-end item-qty" name="item_quantity_${lineItemCounter}" value="1" min="1" onchange="calculateLineTotal(this)">
+    </td>
+    <td>
+      <input type="number" class="form-control text-end item-price" name="item_price_${lineItemCounter}" value="0" step="0.01" onchange="calculateLineTotal(this)">
+    </td>
+    <td>
+      <input type="text" class="form-control text-end item-total" readonly value="0.00">
+    </td>
+    <td>
+      <button type="button" class="btn btn-ghost btn-sm btn-icon text-danger" onclick="removeLineItem(this)">
+        <i class="fas fa-trash"></i>
+      </button>
+    </td>
+  `;
+  tbody.appendChild(row);
+  document.getElementById('itemCount').value = lineItemCounter;
+}
+
+function removeLineItem(btn) {
+  const row = btn.closest('tr');
+  const tbody = document.getElementById('lineItemsBody');
+  if (tbody.querySelectorAll('tr').length > 1) {
+    row.remove();
+    calculateTotals();
+  }
+}
+
+function calculateLineTotal(input) {
+  const row = input.closest('tr');
+  const qty = parseFloat(row.querySelector('.item-qty').value) || 0;
+  const price = parseFloat(row.querySelector('.item-price').value) || 0;
+  const total = qty * price;
+  row.querySelector('.item-total').value = total.toFixed(2);
+  calculateTotals();
+}
+
+function calculateTotals() {
+  let subtotal = 0;
+  document.querySelectorAll('.line-item-row').forEach(row => {
+    const total = parseFloat(row.querySelector('.item-total').value) || 0;
+    subtotal += total;
+  });
+
+  const discount = parseFloat(document.getElementById('discount').value) || 0;
+  const taxRate = parseFloat(document.getElementById('tax_rate').value) || 0;
+
+  const afterDiscount = subtotal - discount;
+  const taxAmount = afterDiscount * (taxRate / 100);
+  const total = afterDiscount + taxAmount;
+
+  document.getElementById('subtotal').textContent = '₹' + subtotal.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+  document.getElementById('afterDiscount').textContent = '₹' + afterDiscount.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+  document.getElementById('taxAmount').textContent = '₹' + taxAmount.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+  document.getElementById('totalAmount').textContent = '₹' + total.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+}
+
+// Modal functions
+function showQuoteImportModal() {
+  document.getElementById('quoteImportModal').style.display = 'flex';
+}
+
+function hideQuoteImportModal() {
+  document.getElementById('quoteImportModal').style.display = 'none';
+}
+
+function importQuote() {
+  const quoteId = document.getElementById('quoteSelect').value;
+  if (quoteId) {
+    window.location.href = '{% url "invoice_create" %}?from_quote=' + quoteId;
+  }
+}
+
+function showCloneModal() {
+  alert('Clone functionality coming soon!');
+}
+
+// Calculate on page load
+document.addEventListener('DOMContentLoaded', function() {
+  document.querySelectorAll('.line-item-row').forEach(row => {
+    const qty = parseFloat(row.querySelector('.item-qty')?.value) || 0;
+    const price = parseFloat(row.querySelector('.item-price')?.value) || 0;
+    const totalInput = row.querySelector('.item-total');
+    if (totalInput) {
+      totalInput.value = (qty * price).toFixed(2);
+    }
+  });
+  calculateTotals();
+});
+</script>
+{% endblock %}

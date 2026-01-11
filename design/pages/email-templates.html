@@ -1,0 +1,852 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Email Templates - Ralfiz BMS</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <link rel="stylesheet" href="../css/styles.css">
+  <style>
+    .template-grid {
+      display: grid;
+      grid-template-columns: 280px 1fr;
+      gap: 1.5rem;
+      height: calc(100vh - 180px);
+    }
+
+    .template-list {
+      background: white;
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .template-list-header {
+      padding: 1rem;
+      border-bottom: 1px solid var(--border-color);
+      background: var(--hover-bg);
+    }
+
+    .template-list-header h3 {
+      font-size: 0.938rem;
+      font-weight: 600;
+      color: var(--text-primary);
+    }
+
+    .template-list-body {
+      flex: 1;
+      overflow-y: auto;
+    }
+
+    .template-item {
+      padding: 1rem;
+      border-bottom: 1px solid var(--border-color);
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .template-item:hover {
+      background: var(--hover-bg);
+    }
+
+    .template-item.active {
+      background: var(--primary-bg);
+      border-left: 3px solid var(--primary);
+    }
+
+    .template-item-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 0.25rem;
+    }
+
+    .template-item-title {
+      font-weight: 500;
+      color: var(--text-primary);
+      font-size: 0.875rem;
+    }
+
+    .template-item-badge {
+      font-size: 0.688rem;
+      padding: 0.125rem 0.5rem;
+      border-radius: 10px;
+      background: var(--primary-light);
+      color: var(--primary);
+    }
+
+    .template-item-desc {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+    }
+
+    .template-preview {
+      background: white;
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .preview-header {
+      padding: 1rem;
+      border-bottom: 1px solid var(--border-color);
+      background: var(--hover-bg);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .preview-title {
+      font-size: 1rem;
+      font-weight: 600;
+      color: var(--text-primary);
+    }
+
+    .preview-actions {
+      display: flex;
+      gap: 0.5rem;
+    }
+
+    .preview-tabs {
+      display: flex;
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    .preview-tab {
+      padding: 0.75rem 1.5rem;
+      border: none;
+      background: none;
+      font-size: 0.875rem;
+      color: var(--text-secondary);
+      cursor: pointer;
+      border-bottom: 2px solid transparent;
+      margin-bottom: -1px;
+    }
+
+    .preview-tab:hover {
+      color: var(--primary);
+    }
+
+    .preview-tab.active {
+      color: var(--primary);
+      border-bottom-color: var(--primary);
+    }
+
+    .preview-content {
+      flex: 1;
+      overflow: auto;
+      padding: 1.5rem;
+      background: #f1f5f9;
+    }
+
+    .preview-panel {
+      display: none;
+    }
+
+    .preview-panel.active {
+      display: block;
+    }
+
+    /* Email Preview */
+    .email-preview-container {
+      max-width: 600px;
+      margin: 0 auto;
+      background: white;
+      border-radius: 8px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+      overflow: hidden;
+    }
+
+    .email-header {
+      background: linear-gradient(135deg, #0d9488 0%, #0f766e 100%);
+      padding: 2rem;
+      text-align: center;
+      color: white;
+    }
+
+    .email-logo {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      margin-bottom: 1rem;
+    }
+
+    .email-logo-icon {
+      width: 40px;
+      height: 40px;
+      background: rgba(255, 255, 255, 0.2);
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 1.25rem;
+    }
+
+    .email-logo-text {
+      font-size: 1.25rem;
+      font-weight: 600;
+    }
+
+    .email-title {
+      font-size: 1.5rem;
+      font-weight: 600;
+      margin-bottom: 0.5rem;
+    }
+
+    .email-subtitle {
+      opacity: 0.9;
+      font-size: 0.938rem;
+    }
+
+    .email-body {
+      padding: 2rem;
+    }
+
+    .email-greeting {
+      font-size: 1.125rem;
+      font-weight: 500;
+      margin-bottom: 1rem;
+      color: #1e293b;
+    }
+
+    .email-text {
+      color: #475569;
+      line-height: 1.6;
+      margin-bottom: 1rem;
+    }
+
+    .email-highlight-box {
+      background: #f0fdfa;
+      border: 1px solid #99f6e4;
+      border-radius: 8px;
+      padding: 1.5rem;
+      margin: 1.5rem 0;
+    }
+
+    .email-detail-row {
+      display: flex;
+      justify-content: space-between;
+      padding: 0.5rem 0;
+      border-bottom: 1px solid #e2e8f0;
+    }
+
+    .email-detail-row:last-child {
+      border-bottom: none;
+      font-weight: 600;
+      font-size: 1.125rem;
+      padding-top: 1rem;
+      margin-top: 0.5rem;
+      border-top: 2px solid #0d9488;
+    }
+
+    .email-detail-label {
+      color: #64748b;
+    }
+
+    .email-detail-value {
+      color: #1e293b;
+      font-weight: 500;
+    }
+
+    .email-cta {
+      text-align: center;
+      margin: 2rem 0;
+    }
+
+    .email-cta-btn {
+      display: inline-block;
+      background: #0d9488;
+      color: white;
+      padding: 0.875rem 2rem;
+      border-radius: 8px;
+      text-decoration: none;
+      font-weight: 500;
+    }
+
+    .email-footer {
+      background: #f8fafc;
+      padding: 1.5rem 2rem;
+      text-align: center;
+      border-top: 1px solid #e2e8f0;
+    }
+
+    .email-footer p {
+      font-size: 0.813rem;
+      color: #64748b;
+      margin-bottom: 0.5rem;
+    }
+
+    .email-footer-links {
+      display: flex;
+      justify-content: center;
+      gap: 1rem;
+      margin-top: 1rem;
+    }
+
+    .email-footer-links a {
+      color: #0d9488;
+      text-decoration: none;
+      font-size: 0.813rem;
+    }
+
+    /* Code Editor */
+    .code-editor {
+      background: #1e293b;
+      border-radius: 8px;
+      overflow: hidden;
+    }
+
+    .code-editor-header {
+      display: flex;
+      align-items: center;
+      padding: 0.75rem 1rem;
+      background: #0f172a;
+    }
+
+    .code-dots {
+      display: flex;
+      gap: 0.5rem;
+    }
+
+    .code-dot {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+    }
+
+    .code-dot.red { background: #ef4444; }
+    .code-dot.yellow { background: #f59e0b; }
+    .code-dot.green { background: #22c55e; }
+
+    .code-content {
+      padding: 1rem;
+      font-family: 'Monaco', 'Menlo', monospace;
+      font-size: 0.813rem;
+      color: #e2e8f0;
+      line-height: 1.6;
+      max-height: 500px;
+      overflow: auto;
+    }
+
+    .code-content .tag { color: #f472b6; }
+    .code-content .attr { color: #a5f3fc; }
+    .code-content .string { color: #86efac; }
+    .code-content .comment { color: #64748b; }
+    .code-content .variable { color: #fbbf24; }
+
+    /* Variables Panel */
+    .variables-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 1rem;
+    }
+
+    .variable-card {
+      background: white;
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      padding: 1rem;
+    }
+
+    .variable-card h4 {
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      margin-bottom: 0.75rem;
+    }
+
+    .variable-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0.5rem 0;
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    .variable-item:last-child {
+      border-bottom: none;
+    }
+
+    .variable-name {
+      font-family: monospace;
+      background: var(--hover-bg);
+      padding: 0.25rem 0.5rem;
+      border-radius: 4px;
+      font-size: 0.813rem;
+      color: var(--primary);
+    }
+
+    .variable-desc {
+      font-size: 0.813rem;
+      color: var(--text-secondary);
+    }
+
+    @media (max-width: 992px) {
+      .template-grid {
+        grid-template-columns: 1fr;
+        height: auto;
+      }
+
+      .template-list {
+        max-height: 300px;
+      }
+
+      .variables-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="app-wrapper">
+    <!-- Sidebar -->
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-header">
+        <a href="../index.html" class="sidebar-logo">
+          <div class="sidebar-logo-icon">R</div>
+          <div class="sidebar-logo-text">Ralfiz<span>BMS</span></div>
+        </a>
+      </div>
+
+      <nav class="sidebar-nav">
+        <div class="nav-section">
+          <a href="../index.html" class="nav-item">
+            <i class="fas fa-th-large"></i>
+            <span>Dashboard</span>
+          </a>
+        </div>
+
+        <div class="nav-section">
+          <div class="nav-section-title">Management</div>
+          <a href="clients.html" class="nav-item">
+            <i class="fas fa-users"></i>
+            <span>Clients</span>
+          </a>
+          <a href="projects.html" class="nav-item">
+            <i class="fas fa-folder-open"></i>
+            <span>Projects</span>
+          </a>
+          <a href="credentials.html" class="nav-item">
+            <i class="fas fa-key"></i>
+            <span>Credentials</span>
+            <span class="nav-badge">3</span>
+          </a>
+        </div>
+
+        <div class="nav-section">
+          <div class="nav-section-title">Billing</div>
+          <a href="quotes.html" class="nav-item">
+            <i class="fas fa-file-alt"></i>
+            <span>Quotes</span>
+          </a>
+          <a href="invoices.html" class="nav-item">
+            <i class="fas fa-file-invoice-dollar"></i>
+            <span>Invoices</span>
+          </a>
+          <a href="payments.html" class="nav-item">
+            <i class="fas fa-credit-card"></i>
+            <span>Payments</span>
+          </a>
+        </div>
+
+        <div class="nav-section">
+          <div class="nav-section-title">System</div>
+          <a href="reports.html" class="nav-item">
+            <i class="fas fa-chart-bar"></i>
+            <span>Reports</span>
+          </a>
+          <a href="settings.html" class="nav-item active">
+            <i class="fas fa-cog"></i>
+            <span>Settings</span>
+          </a>
+        </div>
+      </nav>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="main-content">
+      <!-- Navbar -->
+      <header class="navbar">
+        <div class="navbar-left">
+          <button class="sidebar-toggle" id="sidebarToggle">
+            <i class="fas fa-bars"></i>
+          </button>
+          <div class="breadcrumb">
+            <a href="../index.html" class="breadcrumb-item">Dashboard</a>
+            <span class="breadcrumb-separator">/</span>
+            <a href="settings.html" class="breadcrumb-item">Settings</a>
+            <span class="breadcrumb-separator">/</span>
+            <span class="breadcrumb-item active">Email Templates</span>
+          </div>
+        </div>
+
+        <div class="navbar-right">
+          <div class="navbar-search">
+            <i class="fas fa-search"></i>
+            <input type="text" placeholder="Search clients, projects...">
+          </div>
+
+          <div class="navbar-actions">
+            <button class="navbar-action-btn" title="Notifications">
+              <i class="fas fa-bell"></i>
+              <span class="badge">5</span>
+            </button>
+          </div>
+
+          <div class="user-dropdown dropdown">
+            <button class="user-dropdown-toggle" id="userDropdown">
+              <div class="user-avatar">JD</div>
+              <div class="user-info">
+                <div class="user-name">John Doe</div>
+                <div class="user-role">Administrator</div>
+              </div>
+              <i class="fas fa-chevron-down" style="color: var(--text-muted); font-size: 0.75rem;"></i>
+            </button>
+            <div class="dropdown-menu">
+              <a href="user-profile.html" class="dropdown-item"><i class="fas fa-user"></i>Profile</a>
+              <a href="settings.html" class="dropdown-item"><i class="fas fa-cog"></i>Settings</a>
+              <div class="dropdown-divider"></div>
+              <a href="login.html" class="dropdown-item danger"><i class="fas fa-sign-out-alt"></i>Logout</a>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <!-- Page Content -->
+      <div class="content-wrapper">
+        <!-- Page Header -->
+        <div class="page-header">
+          <div>
+            <h1 class="page-title">Email Templates</h1>
+            <p class="page-subtitle mb-0">Customize email notifications sent to clients</p>
+          </div>
+          <div class="page-actions">
+            <button class="btn btn-outline-secondary">
+              <i class="fas fa-undo"></i>
+              Reset to Default
+            </button>
+            <button class="btn btn-primary">
+              <i class="fas fa-save"></i>
+              Save Changes
+            </button>
+          </div>
+        </div>
+
+        <!-- Template Grid -->
+        <div class="template-grid">
+          <!-- Template List -->
+          <div class="template-list">
+            <div class="template-list-header">
+              <h3>Templates</h3>
+            </div>
+            <div class="template-list-body">
+              <div class="template-item active" onclick="selectTemplate('invoice')">
+                <div class="template-item-header">
+                  <span class="template-item-title">Invoice Email</span>
+                  <span class="template-item-badge">Active</span>
+                </div>
+                <span class="template-item-desc">Sent when invoice is created</span>
+              </div>
+              <div class="template-item" onclick="selectTemplate('quote')">
+                <div class="template-item-header">
+                  <span class="template-item-title">Quote Email</span>
+                  <span class="template-item-badge">Active</span>
+                </div>
+                <span class="template-item-desc">Sent when quote is shared</span>
+              </div>
+              <div class="template-item" onclick="selectTemplate('payment')">
+                <div class="template-item-header">
+                  <span class="template-item-title">Payment Receipt</span>
+                  <span class="template-item-badge">Active</span>
+                </div>
+                <span class="template-item-desc">Sent when payment is recorded</span>
+              </div>
+              <div class="template-item" onclick="selectTemplate('reminder')">
+                <div class="template-item-header">
+                  <span class="template-item-title">Payment Reminder</span>
+                  <span class="template-item-badge">Active</span>
+                </div>
+                <span class="template-item-desc">Sent for overdue invoices</span>
+              </div>
+              <div class="template-item" onclick="selectTemplate('welcome')">
+                <div class="template-item-header">
+                  <span class="template-item-title">Welcome Email</span>
+                  <span class="template-item-badge">Active</span>
+                </div>
+                <span class="template-item-desc">Sent when client is added</span>
+              </div>
+              <div class="template-item" onclick="selectTemplate('credential')">
+                <div class="template-item-header">
+                  <span class="template-item-title">Credential Expiry</span>
+                  <span class="template-item-badge">Active</span>
+                </div>
+                <span class="template-item-desc">Alert for expiring credentials</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Template Preview -->
+          <div class="template-preview">
+            <div class="preview-header">
+              <span class="preview-title">Invoice Email</span>
+              <div class="preview-actions">
+                <button class="btn btn-outline-secondary btn-sm">
+                  <i class="fas fa-paper-plane me-1"></i>Send Test
+                </button>
+                <button class="btn btn-outline-primary btn-sm">
+                  <i class="fas fa-edit me-1"></i>Edit
+                </button>
+              </div>
+            </div>
+            <div class="preview-tabs">
+              <button class="preview-tab active" onclick="showPreviewTab('preview')">
+                <i class="fas fa-eye me-1"></i>Preview
+              </button>
+              <button class="preview-tab" onclick="showPreviewTab('code')">
+                <i class="fas fa-code me-1"></i>HTML Code
+              </button>
+              <button class="preview-tab" onclick="showPreviewTab('variables')">
+                <i class="fas fa-at me-1"></i>Variables
+              </button>
+            </div>
+            <div class="preview-content">
+              <!-- Preview Panel -->
+              <div class="preview-panel active" id="preview-panel">
+                <div class="email-preview-container">
+                  <div class="email-header">
+                    <div class="email-logo">
+                      <div class="email-logo-icon">R</div>
+                      <div class="email-logo-text">Ralfiz Technologies</div>
+                    </div>
+                    <div class="email-title">Invoice #INV20260019</div>
+                    <div class="email-subtitle">Thank you for your business!</div>
+                  </div>
+                  <div class="email-body">
+                    <div class="email-greeting">Hello TechStart Solutions,</div>
+                    <p class="email-text">
+                      Please find attached your invoice for the services rendered. We appreciate your continued partnership with Ralfiz Technologies.
+                    </p>
+
+                    <div class="email-highlight-box">
+                      <div class="email-detail-row">
+                        <span class="email-detail-label">Invoice Number</span>
+                        <span class="email-detail-value">INV20260019</span>
+                      </div>
+                      <div class="email-detail-row">
+                        <span class="email-detail-label">Invoice Date</span>
+                        <span class="email-detail-value">11 January 2026</span>
+                      </div>
+                      <div class="email-detail-row">
+                        <span class="email-detail-label">Due Date</span>
+                        <span class="email-detail-value">25 January 2026</span>
+                      </div>
+                      <div class="email-detail-row">
+                        <span class="email-detail-label">Amount Due</span>
+                        <span class="email-detail-value">&#8377;1,25,000.00</span>
+                      </div>
+                    </div>
+
+                    <div class="email-cta">
+                      <a href="#" class="email-cta-btn">View Invoice</a>
+                    </div>
+
+                    <p class="email-text">
+                      If you have any questions about this invoice, please don't hesitate to contact us.
+                    </p>
+
+                    <p class="email-text">
+                      Best regards,<br>
+                      <strong>Ralfiz Technologies</strong>
+                    </p>
+                  </div>
+                  <div class="email-footer">
+                    <p>Ralfiz Technologies | 2nd Floor, Tech Park, Mavoor Road, Kozhikode</p>
+                    <p>Phone: +91 495 2766789 | Email: hello@ralfiz.com</p>
+                    <div class="email-footer-links">
+                      <a href="#">View in Browser</a>
+                      <a href="#">Unsubscribe</a>
+                      <a href="#">Contact Us</a>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Code Panel -->
+              <div class="preview-panel" id="code-panel">
+                <div class="code-editor">
+                  <div class="code-editor-header">
+                    <div class="code-dots">
+                      <div class="code-dot red"></div>
+                      <div class="code-dot yellow"></div>
+                      <div class="code-dot green"></div>
+                    </div>
+                  </div>
+                  <div class="code-content">
+<pre><span class="comment">&lt;!-- Invoice Email Template --&gt;</span>
+<span class="tag">&lt;table</span> <span class="attr">width=</span><span class="string">"100%"</span> <span class="attr">cellpadding=</span><span class="string">"0"</span><span class="tag">&gt;</span>
+  <span class="tag">&lt;tr&gt;</span>
+    <span class="tag">&lt;td</span> <span class="attr">style=</span><span class="string">"background: #0d9488; padding: 2rem;"</span><span class="tag">&gt;</span>
+      <span class="tag">&lt;h1&gt;</span>Invoice #<span class="variable">{{invoice_number}}</span><span class="tag">&lt;/h1&gt;</span>
+    <span class="tag">&lt;/td&gt;</span>
+  <span class="tag">&lt;/tr&gt;</span>
+  <span class="tag">&lt;tr&gt;</span>
+    <span class="tag">&lt;td</span> <span class="attr">style=</span><span class="string">"padding: 2rem;"</span><span class="tag">&gt;</span>
+      <span class="tag">&lt;p&gt;</span>Hello <span class="variable">{{client_name}}</span>,<span class="tag">&lt;/p&gt;</span>
+      <span class="tag">&lt;p&gt;</span>
+        Please find attached your invoice for
+        the services rendered.
+      <span class="tag">&lt;/p&gt;</span>
+
+      <span class="comment">&lt;!-- Invoice Details Box --&gt;</span>
+      <span class="tag">&lt;table</span> <span class="attr">class=</span><span class="string">"details-box"</span><span class="tag">&gt;</span>
+        <span class="tag">&lt;tr&gt;</span>
+          <span class="tag">&lt;td&gt;</span>Invoice Number<span class="tag">&lt;/td&gt;</span>
+          <span class="tag">&lt;td&gt;</span><span class="variable">{{invoice_number}}</span><span class="tag">&lt;/td&gt;</span>
+        <span class="tag">&lt;/tr&gt;</span>
+        <span class="tag">&lt;tr&gt;</span>
+          <span class="tag">&lt;td&gt;</span>Invoice Date<span class="tag">&lt;/td&gt;</span>
+          <span class="tag">&lt;td&gt;</span><span class="variable">{{invoice_date}}</span><span class="tag">&lt;/td&gt;</span>
+        <span class="tag">&lt;/tr&gt;</span>
+        <span class="tag">&lt;tr&gt;</span>
+          <span class="tag">&lt;td&gt;</span>Due Date<span class="tag">&lt;/td&gt;</span>
+          <span class="tag">&lt;td&gt;</span><span class="variable">{{due_date}}</span><span class="tag">&lt;/td&gt;</span>
+        <span class="tag">&lt;/tr&gt;</span>
+        <span class="tag">&lt;tr&gt;</span>
+          <span class="tag">&lt;td&gt;</span>Amount Due<span class="tag">&lt;/td&gt;</span>
+          <span class="tag">&lt;td&gt;</span><span class="variable">{{total_amount}}</span><span class="tag">&lt;/td&gt;</span>
+        <span class="tag">&lt;/tr&gt;</span>
+      <span class="tag">&lt;/table&gt;</span>
+
+      <span class="tag">&lt;a</span> <span class="attr">href=</span><span class="string">"<span class="variable">{{invoice_url}}</span>"</span> <span class="attr">class=</span><span class="string">"btn"</span><span class="tag">&gt;</span>
+        View Invoice
+      <span class="tag">&lt;/a&gt;</span>
+    <span class="tag">&lt;/td&gt;</span>
+  <span class="tag">&lt;/tr&gt;</span>
+<span class="tag">&lt;/table&gt;</span></pre>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Variables Panel -->
+              <div class="preview-panel" id="variables-panel">
+                <div class="variables-grid">
+                  <div class="variable-card">
+                    <h4>Invoice Variables</h4>
+                    <div class="variable-item">
+                      <span class="variable-name">{{invoice_number}}</span>
+                      <span class="variable-desc">Invoice number</span>
+                    </div>
+                    <div class="variable-item">
+                      <span class="variable-name">{{invoice_date}}</span>
+                      <span class="variable-desc">Issue date</span>
+                    </div>
+                    <div class="variable-item">
+                      <span class="variable-name">{{due_date}}</span>
+                      <span class="variable-desc">Payment due date</span>
+                    </div>
+                    <div class="variable-item">
+                      <span class="variable-name">{{total_amount}}</span>
+                      <span class="variable-desc">Total amount due</span>
+                    </div>
+                    <div class="variable-item">
+                      <span class="variable-name">{{invoice_url}}</span>
+                      <span class="variable-desc">Link to invoice</span>
+                    </div>
+                  </div>
+                  <div class="variable-card">
+                    <h4>Client Variables</h4>
+                    <div class="variable-item">
+                      <span class="variable-name">{{client_name}}</span>
+                      <span class="variable-desc">Client's name</span>
+                    </div>
+                    <div class="variable-item">
+                      <span class="variable-name">{{client_email}}</span>
+                      <span class="variable-desc">Client's email</span>
+                    </div>
+                    <div class="variable-item">
+                      <span class="variable-name">{{client_company}}</span>
+                      <span class="variable-desc">Company name</span>
+                    </div>
+                  </div>
+                  <div class="variable-card">
+                    <h4>Company Variables</h4>
+                    <div class="variable-item">
+                      <span class="variable-name">{{company_name}}</span>
+                      <span class="variable-desc">Your company name</span>
+                    </div>
+                    <div class="variable-item">
+                      <span class="variable-name">{{company_email}}</span>
+                      <span class="variable-desc">Company email</span>
+                    </div>
+                    <div class="variable-item">
+                      <span class="variable-name">{{company_phone}}</span>
+                      <span class="variable-desc">Company phone</span>
+                    </div>
+                    <div class="variable-item">
+                      <span class="variable-name">{{company_address}}</span>
+                      <span class="variable-desc">Company address</span>
+                    </div>
+                  </div>
+                  <div class="variable-card">
+                    <h4>Project Variables</h4>
+                    <div class="variable-item">
+                      <span class="variable-name">{{project_name}}</span>
+                      <span class="variable-desc">Project name</span>
+                    </div>
+                    <div class="variable-item">
+                      <span class="variable-name">{{project_status}}</span>
+                      <span class="variable-desc">Current status</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script src="../js/app.js"></script>
+  <script>
+    function selectTemplate(templateId) {
+      document.querySelectorAll('.template-item').forEach(item => {
+        item.classList.remove('active');
+      });
+      event.currentTarget.classList.add('active');
+
+      // Update preview title based on selection
+      const titles = {
+        'invoice': 'Invoice Email',
+        'quote': 'Quote Email',
+        'payment': 'Payment Receipt',
+        'reminder': 'Payment Reminder',
+        'welcome': 'Welcome Email',
+        'credential': 'Credential Expiry Alert'
+      };
+      document.querySelector('.preview-title').textContent = titles[templateId];
+    }
+
+    function showPreviewTab(tabId) {
+      document.querySelectorAll('.preview-tab').forEach(tab => {
+        tab.classList.remove('active');
+      });
+      document.querySelectorAll('.preview-panel').forEach(panel => {
+        panel.classList.remove('active');
+      });
+
+      event.currentTarget.classList.add('active');
+      document.getElementById(tabId + '-panel').classList.add('active');
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,65 @@
+{% load static %}
+<aside class="sidebar" id="sidebar">
+  <div class="sidebar-header">
+    <a href="{% url 'dashboard' %}" class="sidebar-logo">
+      <div class="sidebar-logo-icon">R</div>
+      <div class="sidebar-logo-text">Ralfiz<span>BMS</span></div>
+    </a>
+  </div>
+
+  <nav class="sidebar-nav">
+    <div class="nav-section">
+      <a href="{% url 'dashboard' %}" class="nav-item {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}">
+        <i class="fas fa-th-large"></i>
+        <span>Dashboard</span>
+      </a>
+    </div>
+
+    <div class="nav-section">
+      <div class="nav-section-title">Management</div>
+      <a href="{% url 'client_list' %}" class="nav-item {% if 'client' in request.resolver_match.url_name %}active{% endif %}">
+        <i class="fas fa-users"></i>
+        <span>Clients</span>
+      </a>
+      <a href="{% url 'project_list' %}" class="nav-item {% if 'project' in request.resolver_match.url_name %}active{% endif %}">
+        <i class="fas fa-folder-open"></i>
+        <span>Projects</span>
+      </a>
+      <a href="{% url 'credential_list' %}" class="nav-item {% if 'credential' in request.resolver_match.url_name %}active{% endif %}">
+        <i class="fas fa-key"></i>
+        <span>Credentials</span>
+        {% if expiring_credentials_count %}
+        <span class="nav-badge">{{ expiring_credentials_count }}</span>
+        {% endif %}
+      </a>
+    </div>
+
+    <div class="nav-section">
+      <div class="nav-section-title">Billing</div>
+      <a href="{% url 'quote_list' %}" class="nav-item {% if 'quote' in request.resolver_match.url_name %}active{% endif %}">
+        <i class="fas fa-file-alt"></i>
+        <span>Quotes</span>
+      </a>
+      <a href="{% url 'invoice_list' %}" class="nav-item {% if 'invoice' in request.resolver_match.url_name %}active{% endif %}">
+        <i class="fas fa-file-invoice-dollar"></i>
+        <span>Invoices</span>
+      </a>
+      <a href="{% url 'payment_list' %}" class="nav-item {% if 'payment' in request.resolver_match.url_name %}active{% endif %}">
+        <i class="fas fa-credit-card"></i>
+        <span>Payments</span>
+      </a>
+    </div>
+
+    <div class="nav-section">
+      <div class="nav-section-title">System</div>
+      <a href="{% url 'reports' %}" class="nav-item {% if 'report' in request.resolver_match.url_name %}active{% endif %}">
+        <i class="fas fa-chart-bar"></i>
+        <span>Reports</span>
+      </a>
+      <a href="{% url 'settings' %}" class="nav-item {% if 'setting' in request.resolver_match.url_name %}active{% endif %}">
+        <i class="fas fa-cog"></i>
+        <span>Settings</span>
+      </a>
+    </div>
+  </nav>
+</aside>

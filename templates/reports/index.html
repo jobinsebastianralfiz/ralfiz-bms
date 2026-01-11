@@ -1,0 +1,123 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Reports - Ralfiz BMS{% endblock %}
+
+{% block breadcrumb %}
+<a href="{% url 'dashboard' %}" class="breadcrumb-item">Dashboard</a>
+<span class="breadcrumb-separator">/</span>
+<span class="breadcrumb-item active">Reports</span>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title">Reports</h1>
+    <p class="page-subtitle mb-0">Business analytics and reports</p>
+  </div>
+</div>
+
+<!-- Stats Cards -->
+<div class="row mb-4">
+  <div class="col-4 col-md-6 col-sm-12" style="padding: 0.75rem;">
+    <div class="card stat-card">
+      <div class="stat-card-header">
+        <div class="stat-card-icon success">
+          <i class="fas fa-rupee-sign"></i>
+        </div>
+      </div>
+      <div class="stat-card-value">&#8377;{{ total_revenue|floatformat:0|default:"0" }}</div>
+      <div class="stat-card-label">Total Revenue</div>
+    </div>
+  </div>
+  <div class="col-4 col-md-6 col-sm-12" style="padding: 0.75rem;">
+    <div class="card stat-card">
+      <div class="stat-card-header">
+        <div class="stat-card-icon primary">
+          <i class="fas fa-calendar-check"></i>
+        </div>
+      </div>
+      <div class="stat-card-value">&#8377;{{ this_month_revenue|floatformat:0|default:"0" }}</div>
+      <div class="stat-card-label">This Month</div>
+    </div>
+  </div>
+  <div class="col-4 col-md-6 col-sm-12" style="padding: 0.75rem;">
+    <div class="card stat-card">
+      <div class="stat-card-header">
+        <div class="stat-card-icon warning">
+          <i class="fas fa-exclamation-circle"></i>
+        </div>
+      </div>
+      <div class="stat-card-value">&#8377;{{ outstanding|floatformat:0|default:"0" }}</div>
+      <div class="stat-card-label">Outstanding</div>
+    </div>
+  </div>
+</div>
+
+<!-- Quick Links -->
+<div class="row">
+  <div class="col-6 col-md-12" style="padding: 0.75rem;">
+    <div class="card">
+      <div class="card-header"><h3 class="card-title">Quick Reports</h3></div>
+      <div class="card-body">
+        <a href="{% url 'invoice_list' %}?status=overdue" class="d-flex align-items-center gap-3 p-3 rounded mb-2" style="background: var(--bg-hover); text-decoration: none;">
+          <div class="avatar avatar-sm" style="background: var(--danger);"><i class="fas fa-exclamation"></i></div>
+          <div class="flex-1">
+            <div class="fw-medium">Overdue Invoices</div>
+            <div class="text-sm text-muted">View all overdue invoices</div>
+          </div>
+          <i class="fas fa-chevron-right text-muted"></i>
+        </a>
+        <a href="{% url 'credential_expiry' %}" class="d-flex align-items-center gap-3 p-3 rounded mb-2" style="background: var(--bg-hover); text-decoration: none;">
+          <div class="avatar avatar-sm" style="background: var(--warning);"><i class="fas fa-clock"></i></div>
+          <div class="flex-1">
+            <div class="fw-medium">Expiring Credentials</div>
+            <div class="text-sm text-muted">Credentials needing renewal</div>
+          </div>
+          <i class="fas fa-chevron-right text-muted"></i>
+        </a>
+        <a href="{% url 'payment_list' %}" class="d-flex align-items-center gap-3 p-3 rounded" style="background: var(--bg-hover); text-decoration: none;">
+          <div class="avatar avatar-sm" style="background: var(--success);"><i class="fas fa-credit-card"></i></div>
+          <div class="flex-1">
+            <div class="fw-medium">Payment History</div>
+            <div class="text-sm text-muted">All recorded payments</div>
+          </div>
+          <i class="fas fa-chevron-right text-muted"></i>
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-6 col-md-12" style="padding: 0.75rem;">
+    <div class="card">
+      <div class="card-header"><h3 class="card-title">Management Reports</h3></div>
+      <div class="card-body">
+        <a href="{% url 'client_list' %}" class="d-flex align-items-center gap-3 p-3 rounded mb-2" style="background: var(--bg-hover); text-decoration: none;">
+          <div class="avatar avatar-sm" style="background: var(--primary);"><i class="fas fa-users"></i></div>
+          <div class="flex-1">
+            <div class="fw-medium">Client List</div>
+            <div class="text-sm text-muted">All clients and contacts</div>
+          </div>
+          <i class="fas fa-chevron-right text-muted"></i>
+        </a>
+        <a href="{% url 'project_list' %}" class="d-flex align-items-center gap-3 p-3 rounded mb-2" style="background: var(--bg-hover); text-decoration: none;">
+          <div class="avatar avatar-sm" style="background: var(--info);"><i class="fas fa-folder-open"></i></div>
+          <div class="flex-1">
+            <div class="fw-medium">Project Status</div>
+            <div class="text-sm text-muted">All projects by status</div>
+          </div>
+          <i class="fas fa-chevron-right text-muted"></i>
+        </a>
+        <a href="{% url 'quote_list' %}" class="d-flex align-items-center gap-3 p-3 rounded" style="background: var(--bg-hover); text-decoration: none;">
+          <div class="avatar avatar-sm" style="background: var(--secondary);"><i class="fas fa-file-alt"></i></div>
+          <div class="flex-1">
+            <div class="fw-medium">Quote Status</div>
+            <div class="text-sm text-muted">All quotes by status</div>
+          </div>
+          <i class="fas fa-chevron-right text-muted"></i>
+        </a>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,734 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>My Profile - Ralfiz BMS</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <link rel="stylesheet" href="../css/styles.css">
+  <style>
+    .profile-header-card {
+      background: linear-gradient(135deg, var(--primary) 0%, #0f766e 100%);
+      border-radius: 12px;
+      padding: 2rem;
+      color: white;
+      margin-bottom: 1.5rem;
+    }
+
+    .profile-header-content {
+      display: flex;
+      align-items: center;
+      gap: 1.5rem;
+    }
+
+    .profile-avatar-large {
+      width: 100px;
+      height: 100px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.2);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 2.5rem;
+      font-weight: 600;
+      border: 4px solid rgba(255, 255, 255, 0.3);
+      position: relative;
+    }
+
+    .avatar-edit-btn {
+      position: absolute;
+      bottom: 0;
+      right: 0;
+      width: 32px;
+      height: 32px;
+      background: white;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--primary);
+      cursor: pointer;
+      border: 2px solid var(--primary);
+      transition: all 0.2s;
+    }
+
+    .avatar-edit-btn:hover {
+      transform: scale(1.1);
+    }
+
+    .profile-info h1 {
+      font-size: 1.75rem;
+      font-weight: 600;
+      margin-bottom: 0.25rem;
+    }
+
+    .profile-info p {
+      opacity: 0.9;
+      margin-bottom: 0.5rem;
+    }
+
+    .profile-badges {
+      display: flex;
+      gap: 0.5rem;
+      margin-top: 0.75rem;
+    }
+
+    .profile-badge {
+      background: rgba(255, 255, 255, 0.2);
+      padding: 0.25rem 0.75rem;
+      border-radius: 20px;
+      font-size: 0.813rem;
+    }
+
+    .profile-stats {
+      display: flex;
+      gap: 2rem;
+      margin-left: auto;
+    }
+
+    .profile-stat {
+      text-align: center;
+    }
+
+    .profile-stat-value {
+      font-size: 1.5rem;
+      font-weight: 700;
+    }
+
+    .profile-stat-label {
+      font-size: 0.813rem;
+      opacity: 0.8;
+    }
+
+    .profile-tabs {
+      display: flex;
+      gap: 0.5rem;
+      border-bottom: 1px solid var(--border-color);
+      margin-bottom: 1.5rem;
+    }
+
+    .profile-tab {
+      padding: 0.75rem 1.5rem;
+      border: none;
+      background: none;
+      color: var(--text-secondary);
+      font-weight: 500;
+      cursor: pointer;
+      border-bottom: 2px solid transparent;
+      margin-bottom: -1px;
+      transition: all 0.2s;
+    }
+
+    .profile-tab:hover {
+      color: var(--primary);
+    }
+
+    .profile-tab.active {
+      color: var(--primary);
+      border-bottom-color: var(--primary);
+    }
+
+    .profile-section {
+      display: none;
+    }
+
+    .profile-section.active {
+      display: block;
+    }
+
+    .info-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 1.5rem;
+    }
+
+    .info-item {
+      display: flex;
+      flex-direction: column;
+      gap: 0.25rem;
+    }
+
+    .info-label {
+      font-size: 0.813rem;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .info-value {
+      font-size: 1rem;
+      color: var(--text-primary);
+      font-weight: 500;
+    }
+
+    .session-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 1rem;
+      background: var(--hover-bg);
+      border-radius: 8px;
+      margin-bottom: 0.75rem;
+    }
+
+    .session-info {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+
+    .session-icon {
+      width: 40px;
+      height: 40px;
+      background: white;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--text-secondary);
+    }
+
+    .session-details h4 {
+      font-size: 0.938rem;
+      font-weight: 500;
+      margin-bottom: 0.25rem;
+    }
+
+    .session-details p {
+      font-size: 0.813rem;
+      color: var(--text-muted);
+      margin: 0;
+    }
+
+    .session-current {
+      background: var(--success-light);
+    }
+
+    .session-current .session-icon {
+      background: var(--success);
+      color: white;
+    }
+
+    .activity-timeline {
+      position: relative;
+      padding-left: 2rem;
+    }
+
+    .activity-timeline::before {
+      content: '';
+      position: absolute;
+      left: 7px;
+      top: 0;
+      bottom: 0;
+      width: 2px;
+      background: var(--border-color);
+    }
+
+    .activity-item {
+      position: relative;
+      padding-bottom: 1.5rem;
+    }
+
+    .activity-item::before {
+      content: '';
+      position: absolute;
+      left: -1.65rem;
+      top: 4px;
+      width: 12px;
+      height: 12px;
+      background: var(--primary);
+      border-radius: 50%;
+      border: 2px solid white;
+      box-shadow: 0 0 0 2px var(--primary-light);
+    }
+
+    .activity-content {
+      background: var(--hover-bg);
+      padding: 1rem;
+      border-radius: 8px;
+    }
+
+    .activity-content h4 {
+      font-size: 0.938rem;
+      font-weight: 500;
+      margin-bottom: 0.25rem;
+    }
+
+    .activity-content p {
+      font-size: 0.813rem;
+      color: var(--text-muted);
+      margin: 0;
+    }
+
+    @media (max-width: 768px) {
+      .profile-header-content {
+        flex-direction: column;
+        text-align: center;
+      }
+
+      .profile-stats {
+        margin-left: 0;
+        margin-top: 1rem;
+      }
+
+      .info-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="app-wrapper">
+    <!-- Sidebar -->
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-header">
+        <a href="../index.html" class="sidebar-logo">
+          <div class="sidebar-logo-icon">R</div>
+          <div class="sidebar-logo-text">Ralfiz<span>BMS</span></div>
+        </a>
+      </div>
+
+      <nav class="sidebar-nav">
+        <div class="nav-section">
+          <a href="../index.html" class="nav-item">
+            <i class="fas fa-th-large"></i>
+            <span>Dashboard</span>
+          </a>
+        </div>
+
+        <div class="nav-section">
+          <div class="nav-section-title">Management</div>
+          <a href="clients.html" class="nav-item">
+            <i class="fas fa-users"></i>
+            <span>Clients</span>
+          </a>
+          <a href="projects.html" class="nav-item">
+            <i class="fas fa-folder-open"></i>
+            <span>Projects</span>
+          </a>
+          <a href="credentials.html" class="nav-item">
+            <i class="fas fa-key"></i>
+            <span>Credentials</span>
+            <span class="nav-badge">3</span>
+          </a>
+        </div>
+
+        <div class="nav-section">
+          <div class="nav-section-title">Billing</div>
+          <a href="quotes.html" class="nav-item">
+            <i class="fas fa-file-alt"></i>
+            <span>Quotes</span>
+          </a>
+          <a href="invoices.html" class="nav-item">
+            <i class="fas fa-file-invoice-dollar"></i>
+            <span>Invoices</span>
+          </a>
+          <a href="payments.html" class="nav-item">
+            <i class="fas fa-credit-card"></i>
+            <span>Payments</span>
+          </a>
+        </div>
+
+        <div class="nav-section">
+          <div class="nav-section-title">System</div>
+          <a href="reports.html" class="nav-item">
+            <i class="fas fa-chart-bar"></i>
+            <span>Reports</span>
+          </a>
+          <a href="settings.html" class="nav-item">
+            <i class="fas fa-cog"></i>
+            <span>Settings</span>
+          </a>
+        </div>
+      </nav>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="main-content">
+      <!-- Navbar -->
+      <header class="navbar">
+        <div class="navbar-left">
+          <button class="sidebar-toggle" id="sidebarToggle">
+            <i class="fas fa-bars"></i>
+          </button>
+          <div class="breadcrumb">
+            <a href="../index.html" class="breadcrumb-item">Dashboard</a>
+            <span class="breadcrumb-separator">/</span>
+            <span class="breadcrumb-item active">My Profile</span>
+          </div>
+        </div>
+
+        <div class="navbar-right">
+          <div class="navbar-search">
+            <i class="fas fa-search"></i>
+            <input type="text" placeholder="Search clients, projects...">
+          </div>
+
+          <div class="navbar-actions">
+            <button class="navbar-action-btn" title="Notifications">
+              <i class="fas fa-bell"></i>
+              <span class="badge">5</span>
+            </button>
+          </div>
+
+          <div class="user-dropdown dropdown">
+            <button class="user-dropdown-toggle" id="userDropdown">
+              <div class="user-avatar">JD</div>
+              <div class="user-info">
+                <div class="user-name">John Doe</div>
+                <div class="user-role">Administrator</div>
+              </div>
+              <i class="fas fa-chevron-down" style="color: var(--text-muted); font-size: 0.75rem;"></i>
+            </button>
+            <div class="dropdown-menu">
+              <a href="user-profile.html" class="dropdown-item active"><i class="fas fa-user"></i>Profile</a>
+              <a href="settings.html" class="dropdown-item"><i class="fas fa-cog"></i>Settings</a>
+              <div class="dropdown-divider"></div>
+              <a href="login.html" class="dropdown-item danger"><i class="fas fa-sign-out-alt"></i>Logout</a>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <!-- Page Content -->
+      <div class="content-wrapper">
+        <!-- Profile Header -->
+        <div class="profile-header-card">
+          <div class="profile-header-content">
+            <div class="profile-avatar-large">
+              JD
+              <label class="avatar-edit-btn" for="avatarUpload">
+                <i class="fas fa-camera"></i>
+              </label>
+              <input type="file" id="avatarUpload" accept="image/*" style="display: none;">
+            </div>
+            <div class="profile-info">
+              <h1>John Doe</h1>
+              <p><i class="fas fa-envelope me-2"></i>john.doe@ralfiz.com</p>
+              <div class="profile-badges">
+                <span class="profile-badge"><i class="fas fa-shield-alt me-1"></i>Administrator</span>
+                <span class="profile-badge"><i class="fas fa-check-circle me-1"></i>Verified</span>
+              </div>
+            </div>
+            <div class="profile-stats">
+              <div class="profile-stat">
+                <div class="profile-stat-value">156</div>
+                <div class="profile-stat-label">Invoices Created</div>
+              </div>
+              <div class="profile-stat">
+                <div class="profile-stat-value">43</div>
+                <div class="profile-stat-label">Projects</div>
+              </div>
+              <div class="profile-stat">
+                <div class="profile-stat-value">2y 3m</div>
+                <div class="profile-stat-label">Member Since</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Profile Tabs -->
+        <div class="profile-tabs">
+          <button class="profile-tab active" onclick="showSection('personal')">
+            <i class="fas fa-user me-2"></i>Personal Info
+          </button>
+          <button class="profile-tab" onclick="showSection('security')">
+            <i class="fas fa-lock me-2"></i>Security
+          </button>
+          <button class="profile-tab" onclick="showSection('sessions')">
+            <i class="fas fa-desktop me-2"></i>Sessions
+          </button>
+          <button class="profile-tab" onclick="showSection('activity')">
+            <i class="fas fa-history me-2"></i>Activity
+          </button>
+        </div>
+
+        <!-- Personal Info Section -->
+        <div class="profile-section active" id="personal">
+          <div class="card">
+            <div class="card-header">
+              <h3 class="card-title">
+                <i class="fas fa-user me-2 text-primary"></i>
+                Personal Information
+              </h3>
+              <button class="btn btn-outline-primary btn-sm">
+                <i class="fas fa-edit me-1"></i>Edit
+              </button>
+            </div>
+            <div class="card-body">
+              <div class="info-grid">
+                <div class="info-item">
+                  <span class="info-label">Full Name</span>
+                  <span class="info-value">John Doe</span>
+                </div>
+                <div class="info-item">
+                  <span class="info-label">Email Address</span>
+                  <span class="info-value">john.doe@ralfiz.com</span>
+                </div>
+                <div class="info-item">
+                  <span class="info-label">Phone Number</span>
+                  <span class="info-value">+91 98765 43210</span>
+                </div>
+                <div class="info-item">
+                  <span class="info-label">Role</span>
+                  <span class="info-value">Administrator</span>
+                </div>
+                <div class="info-item">
+                  <span class="info-label">Department</span>
+                  <span class="info-value">Management</span>
+                </div>
+                <div class="info-item">
+                  <span class="info-label">Joined</span>
+                  <span class="info-value">15 Oct 2023</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="card mt-4">
+            <div class="card-header">
+              <h3 class="card-title">
+                <i class="fas fa-bell me-2 text-primary"></i>
+                Notification Preferences
+              </h3>
+            </div>
+            <div class="card-body">
+              <div class="form-check mb-3">
+                <input type="checkbox" class="form-check-input" id="emailNotif" checked>
+                <label class="form-check-label" for="emailNotif">
+                  <strong>Email Notifications</strong>
+                  <p class="text-secondary mb-0" style="font-size: 0.875rem;">Receive email alerts for important updates</p>
+                </label>
+              </div>
+              <div class="form-check mb-3">
+                <input type="checkbox" class="form-check-input" id="invoiceNotif" checked>
+                <label class="form-check-label" for="invoiceNotif">
+                  <strong>Invoice Reminders</strong>
+                  <p class="text-secondary mb-0" style="font-size: 0.875rem;">Get notified about overdue invoices</p>
+                </label>
+              </div>
+              <div class="form-check mb-3">
+                <input type="checkbox" class="form-check-input" id="credentialNotif" checked>
+                <label class="form-check-label" for="credentialNotif">
+                  <strong>Credential Expiry Alerts</strong>
+                  <p class="text-secondary mb-0" style="font-size: 0.875rem;">Get alerted before credentials expire</p>
+                </label>
+              </div>
+              <div class="form-check">
+                <input type="checkbox" class="form-check-input" id="weeklyNotif">
+                <label class="form-check-label" for="weeklyNotif">
+                  <strong>Weekly Summary</strong>
+                  <p class="text-secondary mb-0" style="font-size: 0.875rem;">Receive a weekly summary of activities</p>
+                </label>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Security Section -->
+        <div class="profile-section" id="security">
+          <div class="card">
+            <div class="card-header">
+              <h3 class="card-title">
+                <i class="fas fa-key me-2 text-primary"></i>
+                Change Password
+              </h3>
+            </div>
+            <div class="card-body">
+              <form style="max-width: 500px;">
+                <div class="form-group">
+                  <label class="form-label">Current Password</label>
+                  <input type="password" class="form-control" placeholder="Enter current password">
+                </div>
+                <div class="form-group">
+                  <label class="form-label">New Password</label>
+                  <input type="password" class="form-control" placeholder="Enter new password">
+                  <div class="form-text">Minimum 8 characters with at least one uppercase, lowercase, and number</div>
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Confirm New Password</label>
+                  <input type="password" class="form-control" placeholder="Confirm new password">
+                </div>
+                <button type="submit" class="btn btn-primary">
+                  <i class="fas fa-save me-2"></i>Update Password
+                </button>
+              </form>
+            </div>
+          </div>
+
+          <div class="card mt-4">
+            <div class="card-header">
+              <h3 class="card-title">
+                <i class="fas fa-shield-alt me-2 text-primary"></i>
+                Two-Factor Authentication
+              </h3>
+            </div>
+            <div class="card-body">
+              <div class="d-flex align-items-center justify-content-between" style="max-width: 500px;">
+                <div>
+                  <h4 style="font-size: 1rem; font-weight: 500; margin-bottom: 0.25rem;">Authenticator App</h4>
+                  <p class="text-secondary mb-0" style="font-size: 0.875rem;">Use an authenticator app for additional security</p>
+                </div>
+                <div class="form-check form-switch">
+                  <input class="form-check-input" type="checkbox" id="twoFactor" style="width: 48px; height: 24px;">
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="card mt-4" style="border-color: var(--danger);">
+            <div class="card-header" style="background: #fef2f2;">
+              <h3 class="card-title text-danger">
+                <i class="fas fa-exclamation-triangle me-2"></i>
+                Danger Zone
+              </h3>
+            </div>
+            <div class="card-body">
+              <div class="d-flex align-items-center justify-content-between" style="max-width: 500px;">
+                <div>
+                  <h4 style="font-size: 1rem; font-weight: 500; margin-bottom: 0.25rem;">Delete Account</h4>
+                  <p class="text-secondary mb-0" style="font-size: 0.875rem;">Permanently delete your account and all data</p>
+                </div>
+                <button class="btn btn-outline-danger">Delete Account</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Sessions Section -->
+        <div class="profile-section" id="sessions">
+          <div class="card">
+            <div class="card-header">
+              <h3 class="card-title">
+                <i class="fas fa-desktop me-2 text-primary"></i>
+                Active Sessions
+              </h3>
+              <button class="btn btn-outline-danger btn-sm">
+                <i class="fas fa-sign-out-alt me-1"></i>Sign Out All
+              </button>
+            </div>
+            <div class="card-body">
+              <div class="session-item session-current">
+                <div class="session-info">
+                  <div class="session-icon">
+                    <i class="fas fa-laptop"></i>
+                  </div>
+                  <div class="session-details">
+                    <h4>MacBook Pro - Chrome <span class="badge badge-success ms-2">Current</span></h4>
+                    <p>Kozhikode, Kerala, India - Last active: Now</p>
+                  </div>
+                </div>
+              </div>
+
+              <div class="session-item">
+                <div class="session-info">
+                  <div class="session-icon">
+                    <i class="fas fa-mobile-alt"></i>
+                  </div>
+                  <div class="session-details">
+                    <h4>iPhone 14 Pro - Safari</h4>
+                    <p>Kozhikode, Kerala, India - Last active: 2 hours ago</p>
+                  </div>
+                </div>
+                <button class="btn btn-ghost btn-sm text-danger">
+                  <i class="fas fa-times"></i>
+                </button>
+              </div>
+
+              <div class="session-item">
+                <div class="session-info">
+                  <div class="session-icon">
+                    <i class="fas fa-tablet-alt"></i>
+                  </div>
+                  <div class="session-details">
+                    <h4>iPad Pro - Safari</h4>
+                    <p>Kannur, Kerala, India - Last active: 1 day ago</p>
+                  </div>
+                </div>
+                <button class="btn btn-ghost btn-sm text-danger">
+                  <i class="fas fa-times"></i>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Activity Section -->
+        <div class="profile-section" id="activity">
+          <div class="card">
+            <div class="card-header">
+              <h3 class="card-title">
+                <i class="fas fa-history me-2 text-primary"></i>
+                Recent Activity
+              </h3>
+            </div>
+            <div class="card-body">
+              <div class="activity-timeline">
+                <div class="activity-item">
+                  <div class="activity-content">
+                    <h4>Created Invoice INV20260019</h4>
+                    <p>Today at 10:45 AM</p>
+                  </div>
+                </div>
+                <div class="activity-item">
+                  <div class="activity-content">
+                    <h4>Updated project "E-commerce Platform"</h4>
+                    <p>Today at 09:30 AM</p>
+                  </div>
+                </div>
+                <div class="activity-item">
+                  <div class="activity-content">
+                    <h4>Recorded payment of ₹50,000</h4>
+                    <p>Yesterday at 04:15 PM</p>
+                  </div>
+                </div>
+                <div class="activity-item">
+                  <div class="activity-content">
+                    <h4>Added new credential for TechStart server</h4>
+                    <p>Yesterday at 02:00 PM</p>
+                  </div>
+                </div>
+                <div class="activity-item">
+                  <div class="activity-content">
+                    <h4>Sent Quote QT20260042 to MediCare Hospital</h4>
+                    <p>10 Jan 2026 at 11:20 AM</p>
+                  </div>
+                </div>
+                <div class="activity-item">
+                  <div class="activity-content">
+                    <h4>Added new client "GreenLeaf Organics"</h4>
+                    <p>09 Jan 2026 at 03:45 PM</p>
+                  </div>
+                </div>
+              </div>
+
+              <div class="text-center mt-4">
+                <a href="activity-log.html" class="btn btn-outline-primary">
+                  View Full Activity Log
+                  <i class="fas fa-arrow-right ms-2"></i>
+                </a>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script src="../js/app.js"></script>
+  <script>
+    function showSection(sectionId) {
+      // Hide all sections
+      document.querySelectorAll('.profile-section').forEach(s => s.classList.remove('active'));
+      document.querySelectorAll('.profile-tab').forEach(t => t.classList.remove('active'));
+
+      // Show selected section
+      document.getElementById(sectionId).classList.add('active');
+      event.target.closest('.profile-tab').classList.add('active');
+    }
+  </script>
+</body>
+</html>

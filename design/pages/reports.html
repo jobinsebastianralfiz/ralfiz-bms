@@ -1,0 +1,470 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Reports - Ralfiz BMS</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <link rel="stylesheet" href="../css/styles.css">
+</head>
+<body>
+  <div class="app-wrapper">
+    <!-- Sidebar -->
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-header">
+        <a href="../index.html" class="sidebar-logo">
+          <div class="sidebar-logo-icon">R</div>
+          <div class="sidebar-logo-text">Ralfiz<span>BMS</span></div>
+        </a>
+      </div>
+
+      <nav class="sidebar-nav">
+        <div class="nav-section">
+          <a href="../index.html" class="nav-item">
+            <i class="fas fa-th-large"></i>
+            <span>Dashboard</span>
+          </a>
+        </div>
+
+        <div class="nav-section">
+          <div class="nav-section-title">Management</div>
+          <a href="clients.html" class="nav-item">
+            <i class="fas fa-users"></i>
+            <span>Clients</span>
+          </a>
+          <a href="projects.html" class="nav-item">
+            <i class="fas fa-folder-open"></i>
+            <span>Projects</span>
+          </a>
+          <a href="credentials.html" class="nav-item">
+            <i class="fas fa-key"></i>
+            <span>Credentials</span>
+            <span class="nav-badge">3</span>
+          </a>
+        </div>
+
+        <div class="nav-section">
+          <div class="nav-section-title">Billing</div>
+          <a href="quotes.html" class="nav-item">
+            <i class="fas fa-file-alt"></i>
+            <span>Quotes</span>
+          </a>
+          <a href="invoices.html" class="nav-item">
+            <i class="fas fa-file-invoice-dollar"></i>
+            <span>Invoices</span>
+          </a>
+          <a href="payments.html" class="nav-item">
+            <i class="fas fa-credit-card"></i>
+            <span>Payments</span>
+          </a>
+        </div>
+
+        <div class="nav-section">
+          <div class="nav-section-title">System</div>
+          <a href="reports.html" class="nav-item active">
+            <i class="fas fa-chart-bar"></i>
+            <span>Reports</span>
+          </a>
+          <a href="settings.html" class="nav-item">
+            <i class="fas fa-cog"></i>
+            <span>Settings</span>
+          </a>
+        </div>
+      </nav>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="main-content">
+      <!-- Navbar -->
+      <header class="navbar">
+        <div class="navbar-left">
+          <button class="sidebar-toggle" id="sidebarToggle">
+            <i class="fas fa-bars"></i>
+          </button>
+          <div class="breadcrumb">
+            <a href="../index.html" class="breadcrumb-item">Dashboard</a>
+            <span class="breadcrumb-separator">/</span>
+            <span class="breadcrumb-item active">Reports</span>
+          </div>
+        </div>
+
+        <div class="navbar-right">
+          <div class="navbar-search">
+            <i class="fas fa-search"></i>
+            <input type="text" placeholder="Search...">
+          </div>
+
+          <div class="navbar-actions">
+            <button class="navbar-action-btn" title="Notifications">
+              <i class="fas fa-bell"></i>
+              <span class="badge">5</span>
+            </button>
+          </div>
+
+          <div class="user-dropdown dropdown">
+            <button class="user-dropdown-toggle" id="userDropdown">
+              <div class="user-avatar">JD</div>
+              <div class="user-info">
+                <div class="user-name">John Doe</div>
+                <div class="user-role">Administrator</div>
+              </div>
+              <i class="fas fa-chevron-down" style="color: var(--text-muted); font-size: 0.75rem;"></i>
+            </button>
+            <div class="dropdown-menu">
+              <a href="#" class="dropdown-item">
+                <i class="fas fa-user"></i>
+                Profile
+              </a>
+              <a href="settings.html" class="dropdown-item">
+                <i class="fas fa-cog"></i>
+                Settings
+              </a>
+              <div class="dropdown-divider"></div>
+              <a href="login.html" class="dropdown-item danger">
+                <i class="fas fa-sign-out-alt"></i>
+                Logout
+              </a>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <!-- Page Content -->
+      <div class="content-wrapper">
+        <!-- Page Header -->
+        <div class="page-header">
+          <div>
+            <h1 class="page-title">Reports</h1>
+            <p class="page-subtitle mb-0">Business analytics and insights</p>
+          </div>
+          <div class="page-actions">
+            <select class="form-control" style="width: auto;">
+              <option value="this_year" selected>This Year (2026)</option>
+              <option value="last_year">Last Year (2025)</option>
+              <option value="this_quarter">This Quarter</option>
+              <option value="this_month">This Month</option>
+            </select>
+            <button class="btn btn-outline-secondary">
+              <i class="fas fa-download"></i>
+              Export All
+            </button>
+          </div>
+        </div>
+
+        <!-- Summary Cards -->
+        <div class="row mb-4">
+          <div class="col-3 col-md-6 col-sm-12" style="padding: 0.75rem;">
+            <div class="card stat-card">
+              <div class="stat-card-header">
+                <div class="stat-card-icon success">
+                  <i class="fas fa-rupee-sign"></i>
+                </div>
+                <div class="stat-trend up">
+                  <i class="fas fa-arrow-up"></i>
+                  <span>23%</span>
+                </div>
+              </div>
+              <div class="stat-card-value">&#8377;24,50,000</div>
+              <div class="stat-card-label">Total Revenue</div>
+            </div>
+          </div>
+          <div class="col-3 col-md-6 col-sm-12" style="padding: 0.75rem;">
+            <div class="card stat-card">
+              <div class="stat-card-header">
+                <div class="stat-card-icon warning">
+                  <i class="fas fa-hourglass-half"></i>
+                </div>
+              </div>
+              <div class="stat-card-value">&#8377;4,50,000</div>
+              <div class="stat-card-label">Outstanding Amount</div>
+            </div>
+          </div>
+          <div class="col-3 col-md-6 col-sm-12" style="padding: 0.75rem;">
+            <div class="card stat-card">
+              <div class="stat-card-header">
+                <div class="stat-card-icon primary">
+                  <i class="fas fa-folder"></i>
+                </div>
+              </div>
+              <div class="stat-card-value">18</div>
+              <div class="stat-card-label">Active Projects</div>
+            </div>
+          </div>
+          <div class="col-3 col-md-6 col-sm-12" style="padding: 0.75rem;">
+            <div class="card stat-card">
+              <div class="stat-card-header">
+                <div class="stat-card-icon info">
+                  <i class="fas fa-users"></i>
+                </div>
+              </div>
+              <div class="stat-card-value">12</div>
+              <div class="stat-card-label">Active Clients</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Charts Row -->
+        <div class="row mb-4">
+          <!-- Revenue Chart -->
+          <div class="col-8 col-md-12" style="padding: 0.75rem;">
+            <div class="card">
+              <div class="card-header d-flex justify-content-between align-items-center">
+                <h3 class="card-title mb-0">Revenue Overview</h3>
+                <div class="d-flex gap-2">
+                  <button class="btn btn-sm btn-outline-secondary active">Monthly</button>
+                  <button class="btn btn-sm btn-outline-secondary">Quarterly</button>
+                </div>
+              </div>
+              <div class="card-body">
+                <!-- Placeholder for Chart -->
+                <div class="chart-placeholder" style="height: 300px; background: linear-gradient(to top, var(--primary-light), transparent); border-radius: 8px; display: flex; align-items: flex-end; padding: 20px; gap: 20px;">
+                  <div style="flex: 1; background: var(--primary); border-radius: 4px 4px 0 0; height: 40%;"></div>
+                  <div style="flex: 1; background: var(--primary); border-radius: 4px 4px 0 0; height: 55%;"></div>
+                  <div style="flex: 1; background: var(--primary); border-radius: 4px 4px 0 0; height: 45%;"></div>
+                  <div style="flex: 1; background: var(--primary); border-radius: 4px 4px 0 0; height: 70%;"></div>
+                  <div style="flex: 1; background: var(--primary); border-radius: 4px 4px 0 0; height: 60%;"></div>
+                  <div style="flex: 1; background: var(--primary); border-radius: 4px 4px 0 0; height: 85%;"></div>
+                  <div style="flex: 1; background: var(--primary); border-radius: 4px 4px 0 0; height: 75%;"></div>
+                  <div style="flex: 1; background: var(--primary); border-radius: 4px 4px 0 0; height: 90%;"></div>
+                  <div style="flex: 1; background: var(--primary); border-radius: 4px 4px 0 0; height: 80%;"></div>
+                  <div style="flex: 1; background: var(--primary); border-radius: 4px 4px 0 0; height: 95%;"></div>
+                  <div style="flex: 1; background: var(--primary); border-radius: 4px 4px 0 0; height: 70%;"></div>
+                  <div style="flex: 1; background: var(--primary-lighter); border-radius: 4px 4px 0 0; height: 50%; border: 2px dashed var(--primary);"></div>
+                </div>
+                <div class="d-flex justify-content-between text-sm text-muted mt-3">
+                  <span>Jan</span>
+                  <span>Feb</span>
+                  <span>Mar</span>
+                  <span>Apr</span>
+                  <span>May</span>
+                  <span>Jun</span>
+                  <span>Jul</span>
+                  <span>Aug</span>
+                  <span>Sep</span>
+                  <span>Oct</span>
+                  <span>Nov</span>
+                  <span>Dec</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Revenue by Client -->
+          <div class="col-4 col-md-12" style="padding: 0.75rem;">
+            <div class="card">
+              <div class="card-header">
+                <h3 class="card-title">Revenue by Client</h3>
+              </div>
+              <div class="card-body">
+                <div class="client-revenue-item d-flex justify-content-between align-items-center py-3 border-bottom">
+                  <div class="d-flex align-items-center gap-3">
+                    <div class="avatar avatar-sm">TS</div>
+                    <div>
+                      <div class="fw-medium">TechStart Solutions</div>
+                      <div class="text-sm text-muted">5 projects</div>
+                    </div>
+                  </div>
+                  <div class="text-end">
+                    <div class="fw-medium">&#8377;8,50,000</div>
+                    <div class="text-sm text-success">35%</div>
+                  </div>
+                </div>
+                <div class="client-revenue-item d-flex justify-content-between align-items-center py-3 border-bottom">
+                  <div class="d-flex align-items-center gap-3">
+                    <div class="avatar avatar-sm" style="background: var(--success-light); color: var(--success);">GE</div>
+                    <div>
+                      <div class="fw-medium">Green Earth Foods</div>
+                      <div class="text-sm text-muted">3 projects</div>
+                    </div>
+                  </div>
+                  <div class="text-end">
+                    <div class="fw-medium">&#8377;5,25,000</div>
+                    <div class="text-sm text-success">21%</div>
+                  </div>
+                </div>
+                <div class="client-revenue-item d-flex justify-content-between align-items-center py-3 border-bottom">
+                  <div class="d-flex align-items-center gap-3">
+                    <div class="avatar avatar-sm" style="background: var(--warning-light); color: var(--warning);">HC</div>
+                    <div>
+                      <div class="fw-medium">HealthCare Plus</div>
+                      <div class="text-sm text-muted">2 projects</div>
+                    </div>
+                  </div>
+                  <div class="text-end">
+                    <div class="fw-medium">&#8377;4,75,000</div>
+                    <div class="text-sm text-success">19%</div>
+                  </div>
+                </div>
+                <div class="client-revenue-item d-flex justify-content-between align-items-center py-3">
+                  <div class="d-flex align-items-center gap-3">
+                    <div class="avatar avatar-sm" style="background: var(--info-light); color: var(--info);">FH</div>
+                    <div>
+                      <div class="fw-medium">Fashion Hub</div>
+                      <div class="text-sm text-muted">2 projects</div>
+                    </div>
+                  </div>
+                  <div class="text-end">
+                    <div class="fw-medium">&#8377;3,50,000</div>
+                    <div class="text-sm text-success">14%</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Quick Reports -->
+        <div class="row">
+          <div class="col-6 col-md-12" style="padding: 0.75rem;">
+            <div class="card">
+              <div class="card-header d-flex justify-content-between align-items-center">
+                <h3 class="card-title mb-0">Outstanding Invoices</h3>
+                <a href="invoices.html" class="btn btn-sm btn-outline-primary">View All</a>
+              </div>
+              <div class="table-wrapper">
+                <table class="table">
+                  <thead>
+                    <tr>
+                      <th>Invoice</th>
+                      <th>Client</th>
+                      <th>Amount</th>
+                      <th>Due Date</th>
+                      <th>Status</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td><a href="invoice-detail.html">INV20260018</a></td>
+                      <td>TechStart Solutions</td>
+                      <td class="fw-medium">&#8377;1,25,000</td>
+                      <td>25 Jan 2026</td>
+                      <td><span class="status-badge sent">Sent</span></td>
+                    </tr>
+                    <tr>
+                      <td><a href="invoice-detail.html">INV20260015</a></td>
+                      <td>Green Earth Foods</td>
+                      <td class="fw-medium">&#8377;42,500</td>
+                      <td>20 Jan 2026</td>
+                      <td><span class="status-badge partial">Partial</span></td>
+                    </tr>
+                    <tr>
+                      <td><a href="invoice-detail.html">INV20260010</a></td>
+                      <td>Fashion Hub</td>
+                      <td class="fw-medium">&#8377;75,000</td>
+                      <td>15 Jan 2026</td>
+                      <td><span class="status-badge overdue">Overdue</span></td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+          <div class="col-6 col-md-12" style="padding: 0.75rem;">
+            <div class="card">
+              <div class="card-header d-flex justify-content-between align-items-center">
+                <h3 class="card-title mb-0">Project Status</h3>
+                <a href="projects.html" class="btn btn-sm btn-outline-primary">View All</a>
+              </div>
+              <div class="card-body">
+                <div class="mb-4">
+                  <div class="d-flex justify-content-between mb-2">
+                    <span>In Progress</span>
+                    <span class="fw-medium">8 projects</span>
+                  </div>
+                  <div class="progress" style="height: 8px; background: var(--border-color); border-radius: 4px;">
+                    <div style="width: 44%; background: var(--info); border-radius: 4px;"></div>
+                  </div>
+                </div>
+                <div class="mb-4">
+                  <div class="d-flex justify-content-between mb-2">
+                    <span>Completed</span>
+                    <span class="fw-medium">6 projects</span>
+                  </div>
+                  <div class="progress" style="height: 8px; background: var(--border-color); border-radius: 4px;">
+                    <div style="width: 33%; background: var(--success); border-radius: 4px;"></div>
+                  </div>
+                </div>
+                <div class="mb-4">
+                  <div class="d-flex justify-content-between mb-2">
+                    <span>Planning</span>
+                    <span class="fw-medium">3 projects</span>
+                  </div>
+                  <div class="progress" style="height: 8px; background: var(--border-color); border-radius: 4px;">
+                    <div style="width: 17%; background: var(--warning); border-radius: 4px;"></div>
+                  </div>
+                </div>
+                <div>
+                  <div class="d-flex justify-content-between mb-2">
+                    <span>On Hold</span>
+                    <span class="fw-medium">1 project</span>
+                  </div>
+                  <div class="progress" style="height: 8px; background: var(--border-color); border-radius: 4px;">
+                    <div style="width: 6%; background: var(--secondary); border-radius: 4px;"></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Export Options -->
+        <div class="card mt-4">
+          <div class="card-header">
+            <h3 class="card-title">Export Reports</h3>
+          </div>
+          <div class="card-body">
+            <div class="row">
+              <div class="col-3 col-md-6 col-sm-12" style="padding: 0.5rem;">
+                <div class="export-card p-4 border rounded text-center" style="cursor: pointer;" onclick="exportReport('revenue')">
+                  <i class="fas fa-chart-line fa-2x text-primary mb-3"></i>
+                  <div class="fw-medium">Revenue Report</div>
+                  <div class="text-sm text-muted">Monthly breakdown</div>
+                </div>
+              </div>
+              <div class="col-3 col-md-6 col-sm-12" style="padding: 0.5rem;">
+                <div class="export-card p-4 border rounded text-center" style="cursor: pointer;" onclick="exportReport('clients')">
+                  <i class="fas fa-users fa-2x text-success mb-3"></i>
+                  <div class="fw-medium">Client Report</div>
+                  <div class="text-sm text-muted">All clients data</div>
+                </div>
+              </div>
+              <div class="col-3 col-md-6 col-sm-12" style="padding: 0.5rem;">
+                <div class="export-card p-4 border rounded text-center" style="cursor: pointer;" onclick="exportReport('invoices')">
+                  <i class="fas fa-file-invoice fa-2x text-warning mb-3"></i>
+                  <div class="fw-medium">Invoice Report</div>
+                  <div class="text-sm text-muted">Outstanding & paid</div>
+                </div>
+              </div>
+              <div class="col-3 col-md-6 col-sm-12" style="padding: 0.5rem;">
+                <div class="export-card p-4 border rounded text-center" style="cursor: pointer;" onclick="exportReport('gst')">
+                  <i class="fas fa-receipt fa-2x text-info mb-3"></i>
+                  <div class="fw-medium">GST Report</div>
+                  <div class="text-sm text-muted">Tax summary</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <style>
+    .export-card:hover {
+      background: var(--hover-bg);
+      border-color: var(--primary) !important;
+    }
+  </style>
+
+  <script src="../js/app.js"></script>
+  <script>
+    function exportReport(type) {
+      alert(`Exporting ${type} report... (This would download a PDF/Excel file)`);
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,162 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Quotes - Ralfiz BMS{% endblock %}
+
+{% block breadcrumb %}
+<a href="{% url 'dashboard' %}" class="breadcrumb-item">Dashboard</a>
+<span class="breadcrumb-separator">/</span>
+<span class="breadcrumb-item active">Quotes</span>
+{% endblock %}
+
+{% block content %}
+<!-- Page Header -->
+<div class="page-header">
+  <div>
+    <h1 class="page-title">Quotes</h1>
+    <p class="page-subtitle mb-0">Create and manage project proposals</p>
+  </div>
+  <div class="page-actions">
+    <a href="{% url 'quote_create' %}" class="btn btn-primary">
+      <i class="fas fa-plus"></i>
+      Create Quote
+    </a>
+  </div>
+</div>
+
+<!-- Stats Overview -->
+<div class="row mb-4">
+  <div class="col" style="padding: 0.5rem;">
+    <div class="card stat-card" style="text-align: center;">
+      <div class="stat-card-value" style="font-size: 1.25rem; color: var(--secondary);">{{ draft_count|default:0 }}</div>
+      <div class="stat-card-label">Draft</div>
+    </div>
+  </div>
+  <div class="col" style="padding: 0.5rem;">
+    <div class="card stat-card" style="text-align: center;">
+      <div class="stat-card-value text-info" style="font-size: 1.25rem;">{{ sent_count|default:0 }}</div>
+      <div class="stat-card-label">Sent</div>
+    </div>
+  </div>
+  <div class="col" style="padding: 0.5rem;">
+    <div class="card stat-card" style="text-align: center;">
+      <div class="stat-card-value text-success" style="font-size: 1.25rem;">{{ accepted_count|default:0 }}</div>
+      <div class="stat-card-label">Accepted</div>
+    </div>
+  </div>
+  <div class="col" style="padding: 0.5rem;">
+    <div class="card stat-card" style="text-align: center;">
+      <div class="stat-card-value text-danger" style="font-size: 1.25rem;">{{ rejected_count|default:0 }}</div>
+      <div class="stat-card-label">Rejected</div>
+    </div>
+  </div>
+  <div class="col" style="padding: 0.5rem;">
+    <div class="card stat-card" style="text-align: center;">
+      <div class="stat-card-value text-warning" style="font-size: 1.25rem;">{{ expiring_count|default:0 }}</div>
+      <div class="stat-card-label">Expiring</div>
+    </div>
+  </div>
+</div>
+
+<!-- Filters -->
+<div class="card mb-4">
+  <div class="card-body">
+    <form method="get" class="row align-items-end">
+      <div class="col-3 col-md-6 col-sm-12" style="padding: 0.5rem;">
+        <label class="form-label">Search</label>
+        <div class="navbar-search" style="width: 100%;">
+          <i class="fas fa-search"></i>
+          <input type="text" class="form-control" name="search" placeholder="Search quotes..." value="{{ search }}" style="padding-left: 2.5rem; width: 100%;">
+        </div>
+      </div>
+      <div class="col-2 col-md-6 col-sm-12" style="padding: 0.5rem;">
+        <label class="form-label">Client</label>
+        <select class="form-control" name="client">
+          <option value="">All Clients</option>
+          {% for client in clients %}
+          <option value="{{ client.pk }}" {% if selected_client == client.pk|slugify %}selected{% endif %}>{{ client.name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-2 col-md-6 col-sm-12" style="padding: 0.5rem;">
+        <label class="form-label">Status</label>
+        <select class="form-control" name="status">
+          <option value="">All Status</option>
+          {% for key, value in status_choices %}
+          <option value="{{ key }}" {% if status == key %}selected{% endif %}>{{ value }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-2 col-md-6 col-sm-12" style="padding: 0.5rem;">
+        <button type="submit" class="btn btn-outline-secondary w-100">
+          <i class="fas fa-filter"></i>
+          Apply
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Quotes Table -->
+<div class="card">
+  <div class="table-wrapper">
+    <table class="table">
+      <thead>
+        <tr>
+          <th>Quote #</th>
+          <th>Client</th>
+          <th>Title</th>
+          <th>Amount</th>
+          <th>Valid Until</th>
+          <th>Status</th>
+          <th style="width: 150px;">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for quote in quotes %}
+        <tr>
+          <td>
+            <a href="{% url 'quote_detail' quote.pk %}" class="fw-medium">{{ quote.quote_number }}</a>
+            <div class="text-sm text-muted">{{ quote.issue_date|date:"d M Y" }}</div>
+          </td>
+          <td><a href="{% url 'client_detail' quote.client.pk %}">{{ quote.client.name }}</a></td>
+          <td>{{ quote.title }}</td>
+          <td class="fw-medium">&#8377;{{ quote.total_amount|floatformat:0 }}</td>
+          <td class="{% if quote.is_expired %}text-danger{% elif quote.is_expiring_soon %}text-warning fw-medium{% endif %}">
+            {{ quote.valid_until|date:"d M Y"|default:"-" }}
+          </td>
+          <td><span class="status-badge {{ quote.status }}">{{ quote.get_status_display }}</span></td>
+          <td>
+            <div class="table-actions">
+              <a href="{% url 'quote_detail' quote.pk %}" class="btn btn-sm btn-ghost btn-icon" title="View">
+                <i class="fas fa-eye"></i>
+              </a>
+              <a href="{% url 'quote_pdf' quote.pk %}" class="btn btn-sm btn-ghost btn-icon" title="Download PDF" target="_blank">
+                <i class="fas fa-download"></i>
+              </a>
+              {% if quote.status == 'sent' or quote.status == 'accepted' %}
+              <a href="{% url 'invoice_create' %}?quote={{ quote.pk }}" class="btn btn-sm btn-ghost btn-icon text-success" title="Convert to Invoice">
+                <i class="fas fa-file-invoice"></i>
+              </a>
+              {% elif quote.status == 'expired' or quote.status == 'rejected' %}
+              <a href="{% url 'quote_create' %}?duplicate={{ quote.pk }}" class="btn btn-sm btn-ghost btn-icon" title="Clone Quote">
+                <i class="fas fa-copy"></i>
+              </a>
+              {% else %}
+              <a href="{% url 'quote_update' quote.pk %}" class="btn btn-sm btn-ghost btn-icon" title="Edit">
+                <i class="fas fa-edit"></i>
+              </a>
+              {% endif %}
+            </div>
+          </td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="7" class="text-center py-4 text-muted">No quotes found</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

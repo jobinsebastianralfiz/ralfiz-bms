@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Page Not Found - Ralfiz BMS</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <link rel="stylesheet" href="../css/styles.css">
+  <style>
+    .error-page {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: linear-gradient(135deg, var(--primary-bg) 0%, #ffffff 100%);
+    }
+
+    .error-content {
+      text-align: center;
+      max-width: 500px;
+      padding: 2rem;
+    }
+
+    .error-code {
+      font-size: 120px;
+      font-weight: 700;
+      color: var(--primary);
+      line-height: 1;
+      margin-bottom: 1rem;
+      text-shadow: 4px 4px 0px var(--primary-lighter);
+    }
+
+    .error-icon {
+      width: 120px;
+      height: 120px;
+      background: var(--warning-light);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 2rem;
+    }
+
+    .error-icon i {
+      font-size: 48px;
+      color: var(--warning);
+    }
+
+    .error-title {
+      font-size: 28px;
+      font-weight: 600;
+      color: var(--text-primary);
+      margin-bottom: 1rem;
+    }
+
+    .error-message {
+      font-size: 16px;
+      color: var(--text-secondary);
+      margin-bottom: 2rem;
+      line-height: 1.6;
+    }
+
+    .error-actions {
+      display: flex;
+      gap: 1rem;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+
+    .error-suggestions {
+      margin-top: 3rem;
+      padding-top: 2rem;
+      border-top: 1px solid var(--border-color);
+    }
+
+    .error-suggestions h4 {
+      font-size: 14px;
+      color: var(--text-muted);
+      margin-bottom: 1rem;
+    }
+
+    .suggestion-links {
+      display: flex;
+      gap: 1rem;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+
+    .suggestion-links a {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.5rem 1rem;
+      background: var(--hover-bg);
+      border-radius: 8px;
+      color: var(--text-secondary);
+      text-decoration: none;
+      font-size: 14px;
+      transition: all 0.2s;
+    }
+
+    .suggestion-links a:hover {
+      background: var(--primary-light);
+      color: var(--primary);
+    }
+  </style>
+</head>
+<body>
+  <div class="error-page">
+    <div class="error-content">
+      <div class="error-icon">
+        <i class="fas fa-search"></i>
+      </div>
+
+      <div class="error-code">404</div>
+
+      <h1 class="error-title">Page Not Found</h1>
+
+      <p class="error-message">
+        Oops! The page you're looking for doesn't exist or has been moved.
+        Let's get you back on track.
+      </p>
+
+      <div class="error-actions">
+        <a href="../index.html" class="btn btn-primary">
+          <i class="fas fa-home me-2"></i>
+          Go to Dashboard
+        </a>
+        <button class="btn btn-outline-secondary" onclick="history.back()">
+          <i class="fas fa-arrow-left me-2"></i>
+          Go Back
+        </button>
+      </div>
+
+      <div class="error-suggestions">
+        <h4>Or try one of these pages:</h4>
+        <div class="suggestion-links">
+          <a href="clients.html">
+            <i class="fas fa-users"></i>
+            Clients
+          </a>
+          <a href="projects.html">
+            <i class="fas fa-folder-open"></i>
+            Projects
+          </a>
+          <a href="invoices.html">
+            <i class="fas fa-file-invoice-dollar"></i>
+            Invoices
+          </a>
+          <a href="settings.html">
+            <i class="fas fa-cog"></i>
+            Settings
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

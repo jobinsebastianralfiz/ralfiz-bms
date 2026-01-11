@@ -1,0 +1,514 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Payment Receipt - REC20260045 - Ralfiz BMS</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      font-size: 14px;
+      line-height: 1.5;
+      color: #1e293b;
+      background: #f1f5f9;
+      padding: 2rem;
+    }
+
+    .receipt-container {
+      max-width: 800px;
+      margin: 0 auto;
+      background: white;
+      box-shadow: 0 4px 24px rgba(0, 0, 0, 0.1);
+    }
+
+    /* Header */
+    .receipt-header {
+      background: linear-gradient(135deg, #0d9488 0%, #0f766e 100%);
+      color: white;
+      padding: 2rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+    }
+
+    .company-logo {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .logo-icon {
+      width: 48px;
+      height: 48px;
+      background: rgba(255, 255, 255, 0.2);
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.5rem;
+      font-weight: 700;
+    }
+
+    .company-name {
+      font-size: 1.5rem;
+      font-weight: 700;
+    }
+
+    .company-name span {
+      opacity: 0.8;
+      font-weight: 400;
+    }
+
+    .receipt-title {
+      text-align: right;
+    }
+
+    .receipt-title h1 {
+      font-size: 2rem;
+      font-weight: 700;
+      margin-bottom: 0.25rem;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+    }
+
+    .receipt-number {
+      font-size: 1rem;
+      opacity: 0.9;
+    }
+
+    /* Body */
+    .receipt-body {
+      padding: 2rem;
+    }
+
+    /* Success Badge */
+    .payment-success {
+      background: #dcfce7;
+      border: 2px solid #22c55e;
+      border-radius: 12px;
+      padding: 1.5rem;
+      text-align: center;
+      margin-bottom: 2rem;
+    }
+
+    .success-icon {
+      width: 60px;
+      height: 60px;
+      background: #22c55e;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 1rem;
+    }
+
+    .success-icon svg {
+      width: 32px;
+      height: 32px;
+      color: white;
+    }
+
+    .success-text {
+      font-size: 1.25rem;
+      font-weight: 600;
+      color: #166534;
+      margin-bottom: 0.25rem;
+    }
+
+    .success-subtext {
+      color: #15803d;
+      font-size: 0.875rem;
+    }
+
+    /* Details Grid */
+    .details-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 2rem;
+      margin-bottom: 2rem;
+    }
+
+    .detail-section h3 {
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: #64748b;
+      margin-bottom: 0.75rem;
+      padding-bottom: 0.5rem;
+      border-bottom: 2px solid #e2e8f0;
+    }
+
+    .detail-row {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 0.5rem;
+      font-size: 0.938rem;
+    }
+
+    .detail-row .label {
+      color: #64748b;
+    }
+
+    .detail-row .value {
+      font-weight: 500;
+      color: #1e293b;
+    }
+
+    /* Amount Box */
+    .amount-box {
+      background: linear-gradient(135deg, #f0fdfa 0%, #ccfbf1 100%);
+      border: 2px solid #0d9488;
+      border-radius: 12px;
+      padding: 1.5rem;
+      text-align: center;
+      margin-bottom: 2rem;
+    }
+
+    .amount-label {
+      font-size: 0.875rem;
+      color: #0d9488;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 0.5rem;
+    }
+
+    .amount-value {
+      font-size: 2.5rem;
+      font-weight: 700;
+      color: #0d9488;
+    }
+
+    .amount-words {
+      font-size: 0.875rem;
+      color: #0f766e;
+      margin-top: 0.5rem;
+      font-style: italic;
+    }
+
+    /* Invoice Reference */
+    .invoice-reference {
+      background: #f8fafc;
+      border-radius: 8px;
+      padding: 1rem;
+      margin-bottom: 2rem;
+    }
+
+    .invoice-reference h3 {
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: #64748b;
+      margin-bottom: 0.75rem;
+    }
+
+    .invoice-table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    .invoice-table th,
+    .invoice-table td {
+      padding: 0.75rem;
+      text-align: left;
+      border-bottom: 1px solid #e2e8f0;
+    }
+
+    .invoice-table th {
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      color: #64748b;
+      font-weight: 600;
+    }
+
+    .invoice-table td {
+      font-size: 0.875rem;
+    }
+
+    .invoice-link {
+      color: #0d9488;
+      font-weight: 500;
+    }
+
+    .status-badge {
+      display: inline-block;
+      padding: 0.25rem 0.75rem;
+      border-radius: 20px;
+      font-size: 0.75rem;
+      font-weight: 500;
+    }
+
+    .status-badge.partial {
+      background: #fef3c7;
+      color: #b45309;
+    }
+
+    .status-badge.paid {
+      background: #dcfce7;
+      color: #166534;
+    }
+
+    /* Notes */
+    .receipt-notes {
+      background: #fffbeb;
+      border-left: 4px solid #f59e0b;
+      padding: 1rem;
+      margin-bottom: 2rem;
+      font-size: 0.875rem;
+      color: #92400e;
+    }
+
+    .receipt-notes strong {
+      display: block;
+      margin-bottom: 0.25rem;
+    }
+
+    /* Footer */
+    .receipt-footer {
+      border-top: 2px solid #e2e8f0;
+      padding-top: 1.5rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+    }
+
+    .footer-left {
+      font-size: 0.813rem;
+      color: #64748b;
+    }
+
+    .footer-left p {
+      margin-bottom: 0.25rem;
+    }
+
+    .authorized-signature {
+      text-align: center;
+    }
+
+    .signature-line {
+      width: 200px;
+      border-top: 1px solid #1e293b;
+      padding-top: 0.5rem;
+      margin-top: 2rem;
+    }
+
+    .signature-name {
+      font-weight: 600;
+      color: #1e293b;
+    }
+
+    .signature-title {
+      font-size: 0.813rem;
+      color: #64748b;
+    }
+
+    /* Watermark */
+    .watermark {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%) rotate(-30deg);
+      font-size: 6rem;
+      font-weight: 700;
+      color: rgba(34, 197, 94, 0.08);
+      text-transform: uppercase;
+      letter-spacing: 10px;
+      pointer-events: none;
+      white-space: nowrap;
+    }
+
+    .receipt-body {
+      position: relative;
+    }
+
+    /* Print Button (hide in print) */
+    .print-actions {
+      text-align: center;
+      margin-bottom: 1.5rem;
+    }
+
+    .print-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.75rem 1.5rem;
+      background: #0d9488;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-size: 0.938rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    .print-btn:hover {
+      background: #0f766e;
+    }
+
+    @media print {
+      body {
+        background: white;
+        padding: 0;
+      }
+
+      .receipt-container {
+        box-shadow: none;
+      }
+
+      .print-actions {
+        display: none;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="print-actions">
+    <button class="print-btn" onclick="window.print()">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M6 9V2h12v7M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2M6 14h12v8H6z"/>
+      </svg>
+      Print Receipt
+    </button>
+  </div>
+
+  <div class="receipt-container">
+    <!-- Header -->
+    <div class="receipt-header">
+      <div class="company-logo">
+        <div class="logo-icon">R</div>
+        <div class="company-name">Ralfiz <span>Technologies</span></div>
+      </div>
+      <div class="receipt-title">
+        <h1>Receipt</h1>
+        <div class="receipt-number">REC20260045</div>
+      </div>
+    </div>
+
+    <!-- Body -->
+    <div class="receipt-body">
+      <div class="watermark">PAID</div>
+
+      <!-- Success Badge -->
+      <div class="payment-success">
+        <div class="success-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
+            <polyline points="20,6 9,17 4,12"></polyline>
+          </svg>
+        </div>
+        <div class="success-text">Payment Received Successfully</div>
+        <div class="success-subtext">Thank you for your payment</div>
+      </div>
+
+      <!-- Details Grid -->
+      <div class="details-grid">
+        <div class="detail-section">
+          <h3>Payment Details</h3>
+          <div class="detail-row">
+            <span class="label">Receipt No.</span>
+            <span class="value">REC20260045</span>
+          </div>
+          <div class="detail-row">
+            <span class="label">Payment Date</span>
+            <span class="value">11 January 2026</span>
+          </div>
+          <div class="detail-row">
+            <span class="label">Payment Method</span>
+            <span class="value">Bank Transfer</span>
+          </div>
+          <div class="detail-row">
+            <span class="label">Transaction ID</span>
+            <span class="value">TXN20260111045678</span>
+          </div>
+        </div>
+
+        <div class="detail-section">
+          <h3>Received From</h3>
+          <div class="detail-row">
+            <span class="label">Client</span>
+            <span class="value">MediCare Hospital</span>
+          </div>
+          <div class="detail-row">
+            <span class="label">Email</span>
+            <span class="value">accounts@medicare.com</span>
+          </div>
+          <div class="detail-row">
+            <span class="label">Phone</span>
+            <span class="value">+91 97123 45678</span>
+          </div>
+          <div class="detail-row">
+            <span class="label">GST No.</span>
+            <span class="value">32AABCT1234F1ZH</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Amount Box -->
+      <div class="amount-box">
+        <div class="amount-label">Amount Received</div>
+        <div class="amount-value">&#8377;50,000.00</div>
+        <div class="amount-words">Rupees Fifty Thousand Only</div>
+      </div>
+
+      <!-- Invoice Reference -->
+      <div class="invoice-reference">
+        <h3>Invoice Reference</h3>
+        <table class="invoice-table">
+          <thead>
+            <tr>
+              <th>Invoice No.</th>
+              <th>Invoice Date</th>
+              <th>Invoice Amount</th>
+              <th>Paid Amount</th>
+              <th>Balance</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><span class="invoice-link">INV20260015</span></td>
+              <td>05 Jan 2026</td>
+              <td>&#8377;1,25,000.00</td>
+              <td>&#8377;50,000.00</td>
+              <td>&#8377;75,000.00</td>
+              <td><span class="status-badge partial">Partial</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Notes -->
+      <div class="receipt-notes">
+        <strong>Note:</strong>
+        This is a computer-generated receipt and does not require a physical signature.
+        For any queries regarding this payment, please contact our accounts team.
+      </div>
+
+      <!-- Footer -->
+      <div class="receipt-footer">
+        <div class="footer-left">
+          <p><strong>Ralfiz Technologies</strong></p>
+          <p>2nd Floor, Tech Park, Mavoor Road</p>
+          <p>Kozhikode, Kerala - 673004</p>
+          <p>Email: accounts@ralfiz.com | Phone: +91 495 2766789</p>
+          <p>GSTIN: 32AABCT5678E1ZK</p>
+        </div>
+        <div class="authorized-signature">
+          <div class="signature-line">
+            <div class="signature-name">Ralfiz Technologies</div>
+            <div class="signature-title">Authorized Signatory</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

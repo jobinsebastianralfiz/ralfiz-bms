@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Quotes - Ralfiz BMS</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <link rel="stylesheet" href="../css/styles.css">
+</head>
+<body>
+  <div class="app-wrapper">
+    <!-- Sidebar -->
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-header">
+        <a href="../index.html" class="sidebar-logo">
+          <div class="sidebar-logo-icon">R</div>
+          <div class="sidebar-logo-text">Ralfiz<span>BMS</span></div>
+        </a>
+      </div>
+
+      <nav class="sidebar-nav">
+        <div class="nav-section">
+          <a href="../index.html" class="nav-item">
+            <i class="fas fa-th-large"></i>
+            <span>Dashboard</span>
+          </a>
+        </div>
+
+        <div class="nav-section">
+          <div class="nav-section-title">Management</div>
+          <a href="clients.html" class="nav-item">
+            <i class="fas fa-users"></i>
+            <span>Clients</span>
+          </a>
+          <a href="projects.html" class="nav-item">
+            <i class="fas fa-folder-open"></i>
+            <span>Projects</span>
+          </a>
+          <a href="credentials.html" class="nav-item">
+            <i class="fas fa-key"></i>
+            <span>Credentials</span>
+            <span class="nav-badge">3</span>
+          </a>
+        </div>
+
+        <div class="nav-section">
+          <div class="nav-section-title">Billing</div>
+          <a href="quotes.html" class="nav-item active">
+            <i class="fas fa-file-alt"></i>
+            <span>Quotes</span>
+          </a>
+          <a href="invoices.html" class="nav-item">
+            <i class="fas fa-file-invoice-dollar"></i>
+            <span>Invoices</span>
+          </a>
+          <a href="payments.html" class="nav-item">
+            <i class="fas fa-credit-card"></i>
+            <span>Payments</span>
+          </a>
+        </div>
+
+        <div class="nav-section">
+          <div class="nav-section-title">System</div>
+          <a href="reports.html" class="nav-item">
+            <i class="fas fa-chart-bar"></i>
+            <span>Reports</span>
+          </a>
+          <a href="settings.html" class="nav-item">
+            <i class="fas fa-cog"></i>
+            <span>Settings</span>
+          </a>
+        </div>
+      </nav>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="main-content">
+      <!-- Navbar -->
+      <header class="navbar">
+        <div class="navbar-left">
+          <button class="sidebar-toggle" id="sidebarToggle">
+            <i class="fas fa-bars"></i>
+          </button>
+          <div class="breadcrumb">
+            <a href="../index.html" class="breadcrumb-item">Dashboard</a>
+            <span class="breadcrumb-separator">/</span>
+            <span class="breadcrumb-item active">Quotes</span>
+          </div>
+        </div>
+
+        <div class="navbar-right">
+          <div class="navbar-search">
+            <i class="fas fa-search"></i>
+            <input type="text" placeholder="Search clients, projects...">
+          </div>
+
+          <div class="navbar-actions">
+            <button class="navbar-action-btn" title="Notifications">
+              <i class="fas fa-bell"></i>
+              <span class="badge">5</span>
+            </button>
+          </div>
+
+          <div class="user-dropdown dropdown">
+            <button class="user-dropdown-toggle" id="userDropdown">
+              <div class="user-avatar">JD</div>
+              <div class="user-info">
+                <div class="user-name">John Doe</div>
+                <div class="user-role">Administrator</div>
+              </div>
+              <i class="fas fa-chevron-down" style="color: var(--text-muted); font-size: 0.75rem;"></i>
+            </button>
+            <div class="dropdown-menu">
+              <a href="#" class="dropdown-item"><i class="fas fa-user"></i>Profile</a>
+              <a href="settings.html" class="dropdown-item"><i class="fas fa-cog"></i>Settings</a>
+              <div class="dropdown-divider"></div>
+              <a href="login.html" class="dropdown-item danger"><i class="fas fa-sign-out-alt"></i>Logout</a>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <!-- Page Content -->
+      <div class="content-wrapper">
+        <!-- Page Header -->
+        <div class="page-header">
+          <div>
+            <h1 class="page-title">Quotes</h1>
+            <p class="page-subtitle mb-0">Create and manage project proposals</p>
+          </div>
+          <div class="page-actions">
+            <a href="quote-form.html" class="btn btn-primary">
+              <i class="fas fa-plus"></i>
+              Create Quote
+            </a>
+          </div>
+        </div>
+
+        <!-- Stats Overview -->
+        <div class="row mb-4">
+          <div class="col" style="padding: 0.5rem;">
+            <div class="card stat-card" style="text-align: center;">
+              <div class="stat-card-value" style="font-size: 1.25rem; color: var(--secondary);">8</div>
+              <div class="stat-card-label">Draft</div>
+            </div>
+          </div>
+          <div class="col" style="padding: 0.5rem;">
+            <div class="card stat-card" style="text-align: center;">
+              <div class="stat-card-value text-info" style="font-size: 1.25rem;">5</div>
+              <div class="stat-card-label">Sent</div>
+            </div>
+          </div>
+          <div class="col" style="padding: 0.5rem;">
+            <div class="card stat-card" style="text-align: center;">
+              <div class="stat-card-value text-success" style="font-size: 1.25rem;">12</div>
+              <div class="stat-card-label">Accepted</div>
+            </div>
+          </div>
+          <div class="col" style="padding: 0.5rem;">
+            <div class="card stat-card" style="text-align: center;">
+              <div class="stat-card-value text-danger" style="font-size: 1.25rem;">3</div>
+              <div class="stat-card-label">Rejected</div>
+            </div>
+          </div>
+          <div class="col" style="padding: 0.5rem;">
+            <div class="card stat-card" style="text-align: center;">
+              <div class="stat-card-value text-warning" style="font-size: 1.25rem;">2</div>
+              <div class="stat-card-label">Expiring</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Filters -->
+        <div class="card mb-4">
+          <div class="card-body">
+            <div class="row align-items-end">
+              <div class="col-3 col-md-6 col-sm-12" style="padding: 0.5rem;">
+                <label class="form-label">Search</label>
+                <div class="navbar-search" style="width: 100%;">
+                  <i class="fas fa-search"></i>
+                  <input type="text" class="form-control" placeholder="Search quotes..." style="padding-left: 2.5rem; width: 100%;">
+                </div>
+              </div>
+              <div class="col-2 col-md-6 col-sm-12" style="padding: 0.5rem;">
+                <label class="form-label">Client</label>
+                <select class="form-control">
+                  <option value="">All Clients</option>
+                  <option>TechStart Solutions</option>
+                  <option>MediCare Hospital</option>
+                </select>
+              </div>
+              <div class="col-2 col-md-6 col-sm-12" style="padding: 0.5rem;">
+                <label class="form-label">Status</label>
+                <select class="form-control">
+                  <option value="">All Status</option>
+                  <option>Draft</option>
+                  <option>Sent</option>
+                  <option>Accepted</option>
+                  <option>Rejected</option>
+                  <option>Expired</option>
+                </select>
+              </div>
+              <div class="col-2 col-md-6 col-sm-12" style="padding: 0.5rem;">
+                <button class="btn btn-outline-secondary w-100">
+                  <i class="fas fa-filter"></i>
+                  Apply
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Quotes Table -->
+        <div class="card">
+          <div class="table-wrapper">
+            <table class="table">
+              <thead>
+                <tr>
+                  <th>Quote #</th>
+                  <th>Client</th>
+                  <th>Title</th>
+                  <th>Amount</th>
+                  <th>Valid Until</th>
+                  <th>Status</th>
+                  <th style="width: 150px;">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>
+                    <a href="quote-detail.html" class="fw-medium">QT20260008</a>
+                    <div class="text-sm text-muted">08 Jan 2026</div>
+                  </td>
+                  <td><a href="client-detail.html">GreenLeaf Organics</a></td>
+                  <td>E-commerce Website Redesign</td>
+                  <td class="fw-medium">&#8377;1,80,000</td>
+                  <td>22 Jan 2026</td>
+                  <td><span class="status-badge sent">Sent</span></td>
+                  <td>
+                    <div class="table-actions">
+                      <a href="quote-detail.html" class="btn btn-sm btn-ghost btn-icon" title="View">
+                        <i class="fas fa-eye"></i>
+                      </a>
+                      <button class="btn btn-sm btn-ghost btn-icon" title="Download PDF">
+                        <i class="fas fa-download"></i>
+                      </button>
+                      <button class="btn btn-sm btn-ghost btn-icon text-success" title="Convert to Invoice">
+                        <i class="fas fa-file-invoice"></i>
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+                <tr>
+                  <td>
+                    <a href="quote-detail.html" class="fw-medium">QT20260007</a>
+                    <div class="text-sm text-muted">05 Jan 2026</div>
+                  </td>
+                  <td><a href="client-detail.html">TechStart Solutions</a></td>
+                  <td>Mobile App - Phase 2</td>
+                  <td class="fw-medium">&#8377;2,50,000</td>
+                  <td>20 Jan 2026</td>
+                  <td><span class="status-badge confirmed">Accepted</span></td>
+                  <td>
+                    <div class="table-actions">
+                      <a href="quote-detail.html" class="btn btn-sm btn-ghost btn-icon" title="View">
+                        <i class="fas fa-eye"></i>
+                      </a>
+                      <button class="btn btn-sm btn-ghost btn-icon" title="Download PDF">
+                        <i class="fas fa-download"></i>
+                      </button>
+                      <button class="btn btn-sm btn-ghost btn-icon text-success" title="Convert to Invoice">
+                        <i class="fas fa-file-invoice"></i>
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+                <tr>
+                  <td>
+                    <a href="quote-detail.html" class="fw-medium">QT20260006</a>
+                    <div class="text-sm text-muted">02 Jan 2026</div>
+                  </td>
+                  <td><a href="client-detail.html">MediCare Hospital</a></td>
+                  <td>Telemedicine Integration</td>
+                  <td class="fw-medium">&#8377;4,50,000</td>
+                  <td class="text-warning fw-medium">12 Jan 2026</td>
+                  <td><span class="status-badge sent">Sent</span></td>
+                  <td>
+                    <div class="table-actions">
+                      <a href="quote-detail.html" class="btn btn-sm btn-ghost btn-icon" title="View">
+                        <i class="fas fa-eye"></i>
+                      </a>
+                      <button class="btn btn-sm btn-ghost btn-icon text-warning" title="Send Reminder">
+                        <i class="fas fa-bell"></i>
+                      </button>
+                      <a href="quote-form.html" class="btn btn-sm btn-ghost btn-icon" title="Edit">
+                        <i class="fas fa-edit"></i>
+                      </a>
+                    </div>
+                  </td>
+                </tr>
+                <tr>
+                  <td>
+                    <a href="quote-detail.html" class="fw-medium">QT20260005</a>
+                    <div class="text-sm text-muted">28 Dec 2025</div>
+                  </td>
+                  <td><a href="client-detail.html">BlueSky Travels</a></td>
+                  <td>Booking System Upgrade</td>
+                  <td class="fw-medium">&#8377;95,000</td>
+                  <td class="text-danger">05 Jan 2026</td>
+                  <td><span class="status-badge cancelled">Expired</span></td>
+                  <td>
+                    <div class="table-actions">
+                      <a href="quote-detail.html" class="btn btn-sm btn-ghost btn-icon" title="View">
+                        <i class="fas fa-eye"></i>
+                      </a>
+                      <button class="btn btn-sm btn-ghost btn-icon" title="Clone Quote">
+                        <i class="fas fa-copy"></i>
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+                <tr>
+                  <td>
+                    <a href="quote-detail.html" class="fw-medium">QT20260004</a>
+                    <div class="text-sm text-muted">20 Dec 2025</div>
+                  </td>
+                  <td><a href="client-detail.html">EduHub Academy</a></td>
+                  <td>LMS Platform Development</td>
+                  <td class="fw-medium">&#8377;2,00,000</td>
+                  <td>10 Jan 2026</td>
+                  <td><span class="status-badge confirmed">Accepted</span></td>
+                  <td>
+                    <div class="table-actions">
+                      <a href="quote-detail.html" class="btn btn-sm btn-ghost btn-icon" title="View">
+                        <i class="fas fa-eye"></i>
+                      </a>
+                      <button class="btn btn-sm btn-ghost btn-icon" title="Download PDF">
+                        <i class="fas fa-download"></i>
+                      </button>
+                      <button class="btn btn-sm btn-ghost btn-icon text-success" title="Convert to Invoice">
+                        <i class="fas fa-file-invoice"></i>
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <!-- Pagination -->
+          <div class="card-footer d-flex align-items-center justify-content-between">
+            <span class="text-sm text-muted">Showing 1 to 5 of 30 quotes</span>
+            <div class="pagination">
+              <button class="pagination-item" disabled><i class="fas fa-chevron-left"></i></button>
+              <button class="pagination-item active">1</button>
+              <button class="pagination-item">2</button>
+              <button class="pagination-item">3</button>
+              <button class="pagination-item">...</button>
+              <button class="pagination-item">6</button>
+              <button class="pagination-item"><i class="fas fa-chevron-right"></i></button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script src="../js/app.js"></script>
+</body>
+</html>

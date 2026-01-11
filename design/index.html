@@ -1,0 +1,509 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard - Ralfiz BMS</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+  <div class="app-wrapper">
+    <!-- Sidebar -->
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-header">
+        <a href="index.html" class="sidebar-logo">
+          <div class="sidebar-logo-icon">R</div>
+          <div class="sidebar-logo-text">Ralfiz<span>BMS</span></div>
+        </a>
+      </div>
+
+      <nav class="sidebar-nav">
+        <div class="nav-section">
+          <a href="index.html" class="nav-item active">
+            <i class="fas fa-th-large"></i>
+            <span>Dashboard</span>
+          </a>
+        </div>
+
+        <div class="nav-section">
+          <div class="nav-section-title">Management</div>
+          <a href="pages/clients.html" class="nav-item">
+            <i class="fas fa-users"></i>
+            <span>Clients</span>
+          </a>
+          <a href="pages/projects.html" class="nav-item">
+            <i class="fas fa-folder-open"></i>
+            <span>Projects</span>
+          </a>
+          <a href="pages/credentials.html" class="nav-item">
+            <i class="fas fa-key"></i>
+            <span>Credentials</span>
+            <span class="nav-badge">3</span>
+          </a>
+        </div>
+
+        <div class="nav-section">
+          <div class="nav-section-title">Billing</div>
+          <a href="pages/quotes.html" class="nav-item">
+            <i class="fas fa-file-alt"></i>
+            <span>Quotes</span>
+          </a>
+          <a href="pages/invoices.html" class="nav-item">
+            <i class="fas fa-file-invoice-dollar"></i>
+            <span>Invoices</span>
+          </a>
+          <a href="pages/payments.html" class="nav-item">
+            <i class="fas fa-credit-card"></i>
+            <span>Payments</span>
+          </a>
+        </div>
+
+        <div class="nav-section">
+          <div class="nav-section-title">System</div>
+          <a href="pages/reports.html" class="nav-item">
+            <i class="fas fa-chart-bar"></i>
+            <span>Reports</span>
+          </a>
+          <a href="pages/settings.html" class="nav-item">
+            <i class="fas fa-cog"></i>
+            <span>Settings</span>
+          </a>
+        </div>
+      </nav>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="main-content">
+      <!-- Navbar -->
+      <header class="navbar">
+        <div class="navbar-left">
+          <button class="sidebar-toggle" id="sidebarToggle">
+            <i class="fas fa-bars"></i>
+          </button>
+          <div class="breadcrumb">
+            <span class="breadcrumb-item active">Dashboard</span>
+          </div>
+        </div>
+
+        <div class="navbar-right">
+          <div class="navbar-search">
+            <i class="fas fa-search"></i>
+            <input type="text" placeholder="Search clients, projects...">
+          </div>
+
+          <div class="navbar-actions">
+            <button class="navbar-action-btn" title="Notifications">
+              <i class="fas fa-bell"></i>
+              <span class="badge">5</span>
+            </button>
+          </div>
+
+          <div class="user-dropdown dropdown">
+            <button class="user-dropdown-toggle" id="userDropdown">
+              <div class="user-avatar">JD</div>
+              <div class="user-info">
+                <div class="user-name">John Doe</div>
+                <div class="user-role">Administrator</div>
+              </div>
+              <i class="fas fa-chevron-down" style="color: var(--text-muted); font-size: 0.75rem;"></i>
+            </button>
+            <div class="dropdown-menu">
+              <a href="#" class="dropdown-item">
+                <i class="fas fa-user"></i>
+                Profile
+              </a>
+              <a href="#" class="dropdown-item">
+                <i class="fas fa-cog"></i>
+                Settings
+              </a>
+              <div class="dropdown-divider"></div>
+              <a href="pages/login.html" class="dropdown-item danger">
+                <i class="fas fa-sign-out-alt"></i>
+                Logout
+              </a>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <!-- Page Content -->
+      <div class="content-wrapper">
+        <!-- Page Header -->
+        <div class="page-header">
+          <div>
+            <h1 class="page-title">Dashboard</h1>
+            <p class="page-subtitle mb-0">Welcome back! Here's what's happening with your business.</p>
+          </div>
+          <div class="page-actions">
+            <button class="btn btn-outline-secondary">
+              <i class="fas fa-download"></i>
+              Export
+            </button>
+            <button class="btn btn-primary">
+              <i class="fas fa-plus"></i>
+              New Project
+            </button>
+          </div>
+        </div>
+
+        <!-- Stats Cards -->
+        <div class="row mb-4">
+          <div class="col-3 col-md-6 col-sm-12" style="padding: 0.75rem;">
+            <div class="card stat-card">
+              <div class="stat-card-header">
+                <div class="stat-card-icon primary">
+                  <i class="fas fa-users"></i>
+                </div>
+                <div class="stat-card-trend up">
+                  <i class="fas fa-arrow-up"></i>
+                  12%
+                </div>
+              </div>
+              <div class="stat-card-value">48</div>
+              <div class="stat-card-label">Total Clients</div>
+            </div>
+          </div>
+          <div class="col-3 col-md-6 col-sm-12" style="padding: 0.75rem;">
+            <div class="card stat-card">
+              <div class="stat-card-header">
+                <div class="stat-card-icon info">
+                  <i class="fas fa-folder-open"></i>
+                </div>
+                <div class="stat-card-trend up">
+                  <i class="fas fa-arrow-up"></i>
+                  8%
+                </div>
+              </div>
+              <div class="stat-card-value">12</div>
+              <div class="stat-card-label">Active Projects</div>
+            </div>
+          </div>
+          <div class="col-3 col-md-6 col-sm-12" style="padding: 0.75rem;">
+            <div class="card stat-card">
+              <div class="stat-card-header">
+                <div class="stat-card-icon warning">
+                  <i class="fas fa-file-invoice-dollar"></i>
+                </div>
+                <div class="stat-card-trend down">
+                  <i class="fas fa-arrow-down"></i>
+                  3%
+                </div>
+              </div>
+              <div class="stat-card-value">&#8377;2,45,000</div>
+              <div class="stat-card-label">Pending Invoices</div>
+            </div>
+          </div>
+          <div class="col-3 col-md-6 col-sm-12" style="padding: 0.75rem;">
+            <div class="card stat-card">
+              <div class="stat-card-header">
+                <div class="stat-card-icon success">
+                  <i class="fas fa-rupee-sign"></i>
+                </div>
+                <div class="stat-card-trend up">
+                  <i class="fas fa-arrow-up"></i>
+                  24%
+                </div>
+              </div>
+              <div class="stat-card-value">&#8377;18,50,000</div>
+              <div class="stat-card-label">Revenue This Year</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Alerts Section -->
+        <div class="row mb-4">
+          <div class="col-12" style="padding: 0.75rem;">
+            <div class="card">
+              <div class="card-header">
+                <h3 class="card-title">
+                  <i class="fas fa-exclamation-triangle text-warning me-2"></i>
+                  Alerts & Reminders
+                </h3>
+                <a href="#" class="btn btn-sm btn-ghost">View All</a>
+              </div>
+              <div class="card-body p-0">
+                <div class="alert alert-danger m-3 mb-2">
+                  <i class="fas fa-globe alert-icon"></i>
+                  <div class="alert-content">
+                    <div class="alert-title">Domain Expiring Soon</div>
+                    <p class="alert-text">techstart.com expires in 5 days. Renew now to avoid downtime.</p>
+                  </div>
+                  <button class="btn btn-sm btn-danger">Renew Now</button>
+                </div>
+                <div class="alert alert-warning m-3 mb-2">
+                  <i class="fas fa-file-invoice alert-icon"></i>
+                  <div class="alert-content">
+                    <div class="alert-title">Overdue Invoice</div>
+                    <p class="alert-text">INV20260015 for MediCare Hospital is 7 days overdue. Amount: &#8377;75,000</p>
+                  </div>
+                  <button class="btn btn-sm btn-warning">Send Reminder</button>
+                </div>
+                <div class="alert alert-info m-3 mb-0">
+                  <i class="fas fa-server alert-icon"></i>
+                  <div class="alert-content">
+                    <div class="alert-title">SSL Certificate Expiring</div>
+                    <p class="alert-text">SSL for medicare-portal.com expires in 15 days.</p>
+                  </div>
+                  <button class="btn btn-sm btn-outline-primary">View Details</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Main Content Grid -->
+        <div class="row">
+          <!-- Recent Invoices -->
+          <div class="col-8 col-md-12" style="padding: 0.75rem;">
+            <div class="card">
+              <div class="card-header">
+                <h3 class="card-title">Recent Invoices</h3>
+                <a href="pages/invoices.html" class="btn btn-sm btn-ghost">View All</a>
+              </div>
+              <div class="table-wrapper">
+                <table class="table">
+                  <thead>
+                    <tr>
+                      <th>Invoice</th>
+                      <th>Client</th>
+                      <th>Amount</th>
+                      <th>Due Date</th>
+                      <th>Status</th>
+                      <th></th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td>
+                        <a href="#" class="fw-medium">INV20260018</a>
+                      </td>
+                      <td>TechStart Solutions</td>
+                      <td class="fw-medium">&#8377;1,25,000</td>
+                      <td>15 Jan 2026</td>
+                      <td><span class="status-badge sent">Sent</span></td>
+                      <td class="text-right">
+                        <button class="btn btn-sm btn-ghost btn-icon">
+                          <i class="fas fa-ellipsis-v"></i>
+                        </button>
+                      </td>
+                    </tr>
+                    <tr>
+                      <td>
+                        <a href="#" class="fw-medium">INV20260017</a>
+                      </td>
+                      <td>EduHub Academy</td>
+                      <td class="fw-medium">&#8377;85,000</td>
+                      <td>12 Jan 2026</td>
+                      <td><span class="status-badge partial">Partial</span></td>
+                      <td class="text-right">
+                        <button class="btn btn-sm btn-ghost btn-icon">
+                          <i class="fas fa-ellipsis-v"></i>
+                        </button>
+                      </td>
+                    </tr>
+                    <tr>
+                      <td>
+                        <a href="#" class="fw-medium">INV20260016</a>
+                      </td>
+                      <td>GreenLeaf Organics</td>
+                      <td class="fw-medium">&#8377;2,10,000</td>
+                      <td>08 Jan 2026</td>
+                      <td><span class="status-badge paid">Paid</span></td>
+                      <td class="text-right">
+                        <button class="btn btn-sm btn-ghost btn-icon">
+                          <i class="fas fa-ellipsis-v"></i>
+                        </button>
+                      </td>
+                    </tr>
+                    <tr>
+                      <td>
+                        <a href="#" class="fw-medium">INV20260015</a>
+                      </td>
+                      <td>MediCare Hospital</td>
+                      <td class="fw-medium">&#8377;75,000</td>
+                      <td>03 Jan 2026</td>
+                      <td><span class="status-badge overdue">Overdue</span></td>
+                      <td class="text-right">
+                        <button class="btn btn-sm btn-ghost btn-icon">
+                          <i class="fas fa-ellipsis-v"></i>
+                        </button>
+                      </td>
+                    </tr>
+                    <tr>
+                      <td>
+                        <a href="#" class="fw-medium">INV20260014</a>
+                      </td>
+                      <td>BlueSky Travels</td>
+                      <td class="fw-medium">&#8377;1,50,000</td>
+                      <td>28 Dec 2025</td>
+                      <td><span class="status-badge paid">Paid</span></td>
+                      <td class="text-right">
+                        <button class="btn btn-sm btn-ghost btn-icon">
+                          <i class="fas fa-ellipsis-v"></i>
+                        </button>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+          <!-- Recent Payments -->
+          <div class="col-4 col-md-12" style="padding: 0.75rem;">
+            <div class="card">
+              <div class="card-header">
+                <h3 class="card-title">Recent Payments</h3>
+                <a href="pages/payments.html" class="btn btn-sm btn-ghost">View All</a>
+              </div>
+              <div class="card-body">
+                <div class="d-flex align-items-center gap-3 mb-3 p-2 rounded" style="background: var(--bg-hover);">
+                  <div class="avatar avatar-sm" style="background: var(--success);">
+                    <i class="fas fa-check" style="font-size: 0.75rem;"></i>
+                  </div>
+                  <div class="flex-1">
+                    <div class="fw-medium">&#8377;50,000</div>
+                    <div class="text-sm text-muted">GreenLeaf Organics</div>
+                  </div>
+                  <div class="text-sm text-muted">Today</div>
+                </div>
+                <div class="d-flex align-items-center gap-3 mb-3 p-2 rounded" style="background: var(--bg-hover);">
+                  <div class="avatar avatar-sm" style="background: var(--success);">
+                    <i class="fas fa-check" style="font-size: 0.75rem;"></i>
+                  </div>
+                  <div class="flex-1">
+                    <div class="fw-medium">&#8377;1,60,000</div>
+                    <div class="text-sm text-muted">GreenLeaf Organics</div>
+                  </div>
+                  <div class="text-sm text-muted">Yesterday</div>
+                </div>
+                <div class="d-flex align-items-center gap-3 mb-3 p-2 rounded" style="background: var(--bg-hover);">
+                  <div class="avatar avatar-sm" style="background: var(--success);">
+                    <i class="fas fa-check" style="font-size: 0.75rem;"></i>
+                  </div>
+                  <div class="flex-1">
+                    <div class="fw-medium">&#8377;40,000</div>
+                    <div class="text-sm text-muted">EduHub Academy</div>
+                  </div>
+                  <div class="text-sm text-muted">2 days ago</div>
+                </div>
+                <div class="d-flex align-items-center gap-3 mb-3 p-2 rounded" style="background: var(--bg-hover);">
+                  <div class="avatar avatar-sm" style="background: var(--success);">
+                    <i class="fas fa-check" style="font-size: 0.75rem;"></i>
+                  </div>
+                  <div class="flex-1">
+                    <div class="fw-medium">&#8377;1,50,000</div>
+                    <div class="text-sm text-muted">BlueSky Travels</div>
+                  </div>
+                  <div class="text-sm text-muted">5 days ago</div>
+                </div>
+              </div>
+              <div class="card-footer text-center">
+                <span class="text-sm text-muted">
+                  <i class="fas fa-check-circle text-success me-2"></i>
+                  &#8377;4,00,000 received this month
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Project Status & Quick Actions -->
+        <div class="row">
+          <div class="col-6 col-md-12" style="padding: 0.75rem;">
+            <div class="card">
+              <div class="card-header">
+                <h3 class="card-title">Project Status</h3>
+              </div>
+              <div class="card-body">
+                <div class="d-flex align-items-center gap-3 mb-3">
+                  <div style="width: 120px;" class="text-sm text-secondary">In Progress</div>
+                  <div style="flex: 1; height: 8px; background: var(--bg-body); border-radius: 4px; overflow: hidden;">
+                    <div style="width: 45%; height: 100%; background: var(--primary);"></div>
+                  </div>
+                  <div class="fw-medium" style="width: 30px;">5</div>
+                </div>
+                <div class="d-flex align-items-center gap-3 mb-3">
+                  <div style="width: 120px;" class="text-sm text-secondary">Review</div>
+                  <div style="flex: 1; height: 8px; background: var(--bg-body); border-radius: 4px; overflow: hidden;">
+                    <div style="width: 18%; height: 100%; background: var(--info);"></div>
+                  </div>
+                  <div class="fw-medium" style="width: 30px;">2</div>
+                </div>
+                <div class="d-flex align-items-center gap-3 mb-3">
+                  <div style="width: 120px;" class="text-sm text-secondary">Lead</div>
+                  <div style="flex: 1; height: 8px; background: var(--bg-body); border-radius: 4px; overflow: hidden;">
+                    <div style="width: 27%; height: 100%; background: #7c3aed;"></div>
+                  </div>
+                  <div class="fw-medium" style="width: 30px;">3</div>
+                </div>
+                <div class="d-flex align-items-center gap-3 mb-3">
+                  <div style="width: 120px;" class="text-sm text-secondary">On Hold</div>
+                  <div style="flex: 1; height: 8px; background: var(--bg-body); border-radius: 4px; overflow: hidden;">
+                    <div style="width: 18%; height: 100%; background: var(--warning);"></div>
+                  </div>
+                  <div class="fw-medium" style="width: 30px;">2</div>
+                </div>
+                <div class="d-flex align-items-center gap-3">
+                  <div style="width: 120px;" class="text-sm text-secondary">Completed</div>
+                  <div style="flex: 1; height: 8px; background: var(--bg-body); border-radius: 4px; overflow: hidden;">
+                    <div style="width: 100%; height: 100%; background: var(--success);"></div>
+                  </div>
+                  <div class="fw-medium" style="width: 30px;">11</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="col-6 col-md-12" style="padding: 0.75rem;">
+            <div class="card">
+              <div class="card-header">
+                <h3 class="card-title">Quick Actions</h3>
+              </div>
+              <div class="card-body">
+                <div class="row">
+                  <div class="col-6" style="padding: 0.5rem;">
+                    <a href="pages/client-form.html" class="card p-3 text-center" style="border: 2px dashed var(--border-color); text-decoration: none;">
+                      <i class="fas fa-user-plus text-primary mb-2" style="font-size: 1.5rem;"></i>
+                      <div class="fw-medium">Add Client</div>
+                    </a>
+                  </div>
+                  <div class="col-6" style="padding: 0.5rem;">
+                    <a href="pages/project-form.html" class="card p-3 text-center" style="border: 2px dashed var(--border-color); text-decoration: none;">
+                      <i class="fas fa-folder-plus text-info mb-2" style="font-size: 1.5rem;"></i>
+                      <div class="fw-medium">New Project</div>
+                    </a>
+                  </div>
+                  <div class="col-6" style="padding: 0.5rem;">
+                    <a href="pages/quote-form.html" class="card p-3 text-center" style="border: 2px dashed var(--border-color); text-decoration: none;">
+                      <i class="fas fa-file-alt text-warning mb-2" style="font-size: 1.5rem;"></i>
+                      <div class="fw-medium">Create Quote</div>
+                    </a>
+                  </div>
+                  <div class="col-6" style="padding: 0.5rem;">
+                    <a href="pages/invoice-form.html" class="card p-3 text-center" style="border: 2px dashed var(--border-color); text-decoration: none;">
+                      <i class="fas fa-file-invoice-dollar text-success mb-2" style="font-size: 1.5rem;"></i>
+                      <div class="fw-medium">Create Invoice</div>
+                    </a>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- Toast Container -->
+  <div class="toast-container" id="toastContainer">
+    <!-- Toasts will be added here dynamically -->
+  </div>
+
+  <script src="js/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,232 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Dashboard - Ralfiz BMS{% endblock %}
+
+{% block breadcrumb %}
+<span class="breadcrumb-item active">Dashboard</span>
+{% endblock %}
+
+{% block content %}
+<!-- Page Header -->
+<div class="page-header">
+  <div>
+    <h1 class="page-title">Dashboard</h1>
+    <p class="page-subtitle mb-0">Welcome back! Here's what's happening with your business.</p>
+  </div>
+  <div class="page-actions">
+    <a href="{% url 'project_create' %}" class="btn btn-primary">
+      <i class="fas fa-plus"></i>
+      New Project
+    </a>
+  </div>
+</div>
+
+<!-- Stats Cards -->
+<div class="row mb-4">
+  <div class="col-3 col-md-6 col-sm-12" style="padding: 0.75rem;">
+    <div class="card stat-card">
+      <div class="stat-card-header">
+        <div class="stat-card-icon primary">
+          <i class="fas fa-users"></i>
+        </div>
+      </div>
+      <div class="stat-card-value">{{ total_clients }}</div>
+      <div class="stat-card-label">Total Clients</div>
+    </div>
+  </div>
+  <div class="col-3 col-md-6 col-sm-12" style="padding: 0.75rem;">
+    <div class="card stat-card">
+      <div class="stat-card-header">
+        <div class="stat-card-icon info">
+          <i class="fas fa-folder-open"></i>
+        </div>
+      </div>
+      <div class="stat-card-value">{{ active_projects }}</div>
+      <div class="stat-card-label">Active Projects</div>
+    </div>
+  </div>
+  <div class="col-3 col-md-6 col-sm-12" style="padding: 0.75rem;">
+    <div class="card stat-card">
+      <div class="stat-card-header">
+        <div class="stat-card-icon warning">
+          <i class="fas fa-file-invoice-dollar"></i>
+        </div>
+      </div>
+      <div class="stat-card-value">&#8377;{{ pending_amount|floatformat:0|default:"0" }}</div>
+      <div class="stat-card-label">Pending ({{ pending_count }} invoices)</div>
+    </div>
+  </div>
+  <div class="col-3 col-md-6 col-sm-12" style="padding: 0.75rem;">
+    <div class="card stat-card">
+      <div class="stat-card-header">
+        <div class="stat-card-icon success">
+          <i class="fas fa-rupee-sign"></i>
+        </div>
+      </div>
+      <div class="stat-card-value">&#8377;{{ revenue_this_month|floatformat:0|default:"0" }}</div>
+      <div class="stat-card-label">Revenue This Month</div>
+    </div>
+  </div>
+</div>
+
+{% if expiring_credentials or overdue_invoices %}
+<!-- Alerts Section -->
+<div class="row mb-4">
+  <div class="col-12" style="padding: 0.75rem;">
+    <div class="card">
+      <div class="card-header">
+        <h3 class="card-title">
+          <i class="fas fa-exclamation-triangle text-warning me-2"></i>
+          Alerts & Reminders
+        </h3>
+        <a href="{% url 'credential_expiry' %}" class="btn btn-sm btn-ghost">View All</a>
+      </div>
+      <div class="card-body p-0">
+        {% for credential in expiring_credentials %}
+        <div class="alert alert-{% if credential.is_expired %}danger{% else %}warning{% endif %} m-3 {% if forloop.last %}mb-0{% else %}mb-2{% endif %}">
+          <i class="fas fa-key alert-icon"></i>
+          <div class="alert-content">
+            <div class="alert-title">{{ credential.name }} - {{ credential.credential_type|title }}</div>
+            <p class="alert-text">{{ credential.project.name }} - Expires {{ credential.expiry_date|date:"d M Y" }}</p>
+          </div>
+          <a href="{% url 'credential_detail' credential.pk %}" class="btn btn-sm btn-outline-primary">View Details</a>
+        </div>
+        {% endfor %}
+
+        {% for invoice in overdue_invoices %}
+        <div class="alert alert-danger m-3 {% if forloop.last %}mb-0{% else %}mb-2{% endif %}">
+          <i class="fas fa-file-invoice alert-icon"></i>
+          <div class="alert-content">
+            <div class="alert-title">Overdue Invoice</div>
+            <p class="alert-text">{{ invoice.invoice_number }} for {{ invoice.client.name }} - Amount: &#8377;{{ invoice.balance_due|floatformat:0 }}</p>
+          </div>
+          <a href="{% url 'invoice_detail' invoice.pk %}" class="btn btn-sm btn-danger">View Invoice</a>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+</div>
+{% endif %}
+
+<!-- Main Content Grid -->
+<div class="row">
+  <!-- Recent Invoices -->
+  <div class="col-8 col-md-12" style="padding: 0.75rem;">
+    <div class="card">
+      <div class="card-header">
+        <h3 class="card-title">Recent Invoices</h3>
+        <a href="{% url 'invoice_list' %}" class="btn btn-sm btn-ghost">View All</a>
+      </div>
+      <div class="table-wrapper">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>Invoice</th>
+              <th>Client</th>
+              <th>Amount</th>
+              <th>Due Date</th>
+              <th>Status</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for invoice in recent_invoices %}
+            <tr>
+              <td>
+                <a href="{% url 'invoice_detail' invoice.pk %}" class="fw-medium">{{ invoice.invoice_number }}</a>
+              </td>
+              <td>{{ invoice.client.name }}</td>
+              <td class="fw-medium">&#8377;{{ invoice.total_amount|floatformat:0 }}</td>
+              <td>{{ invoice.due_date|date:"d M Y"|default:"-" }}</td>
+              <td><span class="status-badge {{ invoice.status }}">{{ invoice.get_status_display }}</span></td>
+              <td class="text-right">
+                <a href="{% url 'invoice_detail' invoice.pk %}" class="btn btn-sm btn-ghost btn-icon">
+                  <i class="fas fa-eye"></i>
+                </a>
+              </td>
+            </tr>
+            {% empty %}
+            <tr>
+              <td colspan="6" class="text-center text-muted py-4">No invoices yet</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Recent Payments -->
+  <div class="col-4 col-md-12" style="padding: 0.75rem;">
+    <div class="card">
+      <div class="card-header">
+        <h3 class="card-title">Recent Payments</h3>
+        <a href="{% url 'payment_list' %}" class="btn btn-sm btn-ghost">View All</a>
+      </div>
+      <div class="card-body">
+        {% for payment in recent_payments %}
+        <div class="d-flex align-items-center gap-3 mb-3 p-2 rounded" style="background: var(--bg-hover);">
+          <div class="avatar avatar-sm" style="background: var(--success);">
+            <i class="fas fa-check" style="font-size: 0.75rem;"></i>
+          </div>
+          <div class="flex-1">
+            <div class="fw-medium">&#8377;{{ payment.amount|floatformat:0 }}</div>
+            <div class="text-sm text-muted">{{ payment.invoice.client.name }}</div>
+          </div>
+          <div class="text-sm text-muted">{{ payment.payment_date|date:"d M" }}</div>
+        </div>
+        {% empty %}
+        <p class="text-center text-muted py-4">No payments yet</p>
+        {% endfor %}
+      </div>
+      <div class="card-footer text-center">
+        <span class="text-sm text-muted">
+          <i class="fas fa-check-circle text-success me-2"></i>
+          &#8377;{{ revenue_this_month|floatformat:0|default:"0" }} received this month
+        </span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Quick Actions -->
+<div class="row">
+  <div class="col-12" style="padding: 0.75rem;">
+    <div class="card">
+      <div class="card-header">
+        <h3 class="card-title">Quick Actions</h3>
+      </div>
+      <div class="card-body">
+        <div class="row">
+          <div class="col-3 col-md-6" style="padding: 0.5rem;">
+            <a href="{% url 'client_create' %}" class="card p-3 text-center" style="border: 2px dashed var(--border-color); text-decoration: none;">
+              <i class="fas fa-user-plus text-primary mb-2" style="font-size: 1.5rem;"></i>
+              <div class="fw-medium">Add Client</div>
+            </a>
+          </div>
+          <div class="col-3 col-md-6" style="padding: 0.5rem;">
+            <a href="{% url 'project_create' %}" class="card p-3 text-center" style="border: 2px dashed var(--border-color); text-decoration: none;">
+              <i class="fas fa-folder-plus text-info mb-2" style="font-size: 1.5rem;"></i>
+              <div class="fw-medium">New Project</div>
+            </a>
+          </div>
+          <div class="col-3 col-md-6" style="padding: 0.5rem;">
+            <a href="{% url 'quote_create' %}" class="card p-3 text-center" style="border: 2px dashed var(--border-color); text-decoration: none;">
+              <i class="fas fa-file-alt text-warning mb-2" style="font-size: 1.5rem;"></i>
+              <div class="fw-medium">Create Quote</div>
+            </a>
+          </div>
+          <div class="col-3 col-md-6" style="padding: 0.5rem;">
+            <a href="{% url 'invoice_create' %}" class="card p-3 text-center" style="border: 2px dashed var(--border-color); text-decoration: none;">
+              <i class="fas fa-file-invoice-dollar text-success mb-2" style="font-size: 1.5rem;"></i>
+              <div class="fw-medium">Create Invoice</div>
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

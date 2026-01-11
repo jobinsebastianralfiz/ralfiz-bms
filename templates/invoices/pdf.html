@@ -1,0 +1,650 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{{ invoice.invoice_number }} - Ralfiz Technologies</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      font-size: 14px;
+      line-height: 1.5;
+      color: #1e293b;
+      background: #f1f5f9;
+    }
+
+    .invoice-container {
+      max-width: 800px;
+      margin: 60px auto 40px;
+      padding: 40px;
+      background: white;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
+      border-radius: 8px;
+    }
+
+    /* Download Bar */
+    .download-bar {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      background: #0f172a;
+      padding: 12px 40px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      z-index: 100;
+    }
+
+    .download-bar-title {
+      color: white;
+      font-weight: 600;
+    }
+
+    .download-bar-actions {
+      display: flex;
+      gap: 12px;
+    }
+
+    .download-btn {
+      background: #0d9488;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 6px;
+      font-weight: 500;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      text-decoration: none;
+      font-size: 14px;
+    }
+
+    .download-btn:hover {
+      background: #0f766e;
+    }
+
+    .download-btn.secondary {
+      background: #475569;
+    }
+
+    .download-btn.secondary:hover {
+      background: #334155;
+    }
+
+    /* Header */
+    .invoice-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 40px;
+      padding-bottom: 30px;
+      border-bottom: 3px solid #0d9488;
+    }
+
+    .company-info {
+      max-width: 300px;
+    }
+
+    .company-logo {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+
+    .logo-icon {
+      width: 48px;
+      height: 48px;
+      background: linear-gradient(135deg, #0d9488, #14b8a6);
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-weight: 700;
+      font-size: 24px;
+    }
+
+    .company-name {
+      font-size: 24px;
+      font-weight: 700;
+      color: #0f172a;
+    }
+
+    .company-name span {
+      color: #0d9488;
+    }
+
+    .company-details {
+      font-size: 13px;
+      color: #64748b;
+      line-height: 1.6;
+    }
+
+    .invoice-title-section {
+      text-align: right;
+    }
+
+    .invoice-title {
+      font-size: 36px;
+      font-weight: 700;
+      color: #0d9488;
+      margin-bottom: 8px;
+    }
+
+    .invoice-number {
+      font-size: 16px;
+      color: #64748b;
+      margin-bottom: 16px;
+    }
+
+    .invoice-meta {
+      font-size: 13px;
+      color: #64748b;
+    }
+
+    .invoice-meta div {
+      margin-bottom: 4px;
+    }
+
+    .invoice-meta strong {
+      color: #1e293b;
+    }
+
+    .status-badge {
+      display: inline-block;
+      padding: 6px 16px;
+      font-size: 12px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      border-radius: 20px;
+      margin-top: 12px;
+    }
+
+    .status-badge.paid {
+      background: #dcfce7;
+      color: #15803d;
+    }
+
+    .status-badge.sent, .status-badge.pending {
+      background: #fef3c7;
+      color: #b45309;
+    }
+
+    .status-badge.overdue {
+      background: #fee2e2;
+      color: #dc2626;
+    }
+
+    .status-badge.draft {
+      background: #f1f5f9;
+      color: #64748b;
+    }
+
+    .status-badge.partial {
+      background: #dbeafe;
+      color: #1d4ed8;
+    }
+
+    /* Billing Section */
+    .billing-section {
+      display: flex;
+      gap: 60px;
+      margin-bottom: 40px;
+    }
+
+    .billing-block {
+      flex: 1;
+    }
+
+    .billing-label {
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: #0d9488;
+      margin-bottom: 8px;
+    }
+
+    .billing-name {
+      font-size: 16px;
+      font-weight: 600;
+      color: #1e293b;
+      margin-bottom: 8px;
+    }
+
+    .billing-details {
+      font-size: 13px;
+      color: #64748b;
+      line-height: 1.6;
+    }
+
+    /* Items Table */
+    .items-section {
+      margin-bottom: 30px;
+    }
+
+    .items-table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    .items-table th {
+      background: #f1f5f9;
+      padding: 12px 16px;
+      text-align: left;
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: #64748b;
+      border-bottom: 2px solid #e2e8f0;
+    }
+
+    .items-table th:last-child,
+    .items-table td:last-child {
+      text-align: right;
+    }
+
+    .items-table td {
+      padding: 16px;
+      border-bottom: 1px solid #e2e8f0;
+      vertical-align: top;
+    }
+
+    .item-description {
+      font-weight: 500;
+      color: #1e293b;
+      margin-bottom: 4px;
+    }
+
+    .item-details {
+      font-size: 12px;
+      color: #64748b;
+    }
+
+    .items-table tbody tr:last-child td {
+      border-bottom: 2px solid #e2e8f0;
+    }
+
+    /* Totals */
+    .totals-section {
+      display: flex;
+      justify-content: flex-end;
+      margin-bottom: 40px;
+    }
+
+    .totals-table {
+      width: 300px;
+    }
+
+    .totals-row {
+      display: flex;
+      justify-content: space-between;
+      padding: 8px 0;
+      font-size: 14px;
+    }
+
+    .totals-row.subtotal {
+      border-bottom: 1px solid #e2e8f0;
+    }
+
+    .totals-row.total {
+      border-top: 2px solid #0d9488;
+      padding-top: 16px;
+      margin-top: 8px;
+    }
+
+    .totals-row.total .label,
+    .totals-row.total .value {
+      font-size: 18px;
+      font-weight: 700;
+      color: #0d9488;
+    }
+
+    .totals-row .label {
+      color: #64748b;
+    }
+
+    .totals-row .value {
+      font-weight: 600;
+      color: #1e293b;
+    }
+
+    .totals-row .value.success {
+      color: #15803d;
+    }
+
+    .totals-row .value.warning {
+      color: #b45309;
+    }
+
+    /* Payment Info */
+    .payment-section {
+      display: flex;
+      gap: 40px;
+      margin-bottom: 40px;
+      padding: 24px;
+      background: #f8fafc;
+      border-radius: 8px;
+    }
+
+    .payment-block {
+      flex: 1;
+    }
+
+    .payment-label {
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: #0d9488;
+      margin-bottom: 12px;
+    }
+
+    .bank-details {
+      font-size: 13px;
+      color: #1e293b;
+      line-height: 1.8;
+    }
+
+    .bank-details span {
+      color: #64748b;
+      display: inline-block;
+      width: 120px;
+    }
+
+    .upi-info {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .upi-id {
+      font-size: 16px;
+      font-weight: 600;
+      color: #1e293b;
+      padding: 12px 20px;
+      background: white;
+      border: 2px solid #0d9488;
+      border-radius: 8px;
+    }
+
+    /* Terms */
+    .terms-section {
+      margin-bottom: 40px;
+    }
+
+    .terms-label {
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: #0d9488;
+      margin-bottom: 12px;
+    }
+
+    .terms-content {
+      font-size: 12px;
+      color: #64748b;
+      line-height: 1.8;
+    }
+
+    /* Footer */
+    .invoice-footer {
+      text-align: center;
+      padding-top: 30px;
+      border-top: 1px solid #e2e8f0;
+    }
+
+    .thank-you {
+      font-size: 18px;
+      font-weight: 600;
+      color: #0d9488;
+      margin-bottom: 8px;
+    }
+
+    .footer-note {
+      font-size: 12px;
+      color: #94a3b8;
+    }
+
+    /* Print Styles */
+    @media print {
+      body {
+        background: white;
+        print-color-adjust: exact;
+        -webkit-print-color-adjust: exact;
+      }
+
+      .invoice-container {
+        margin: 0;
+        padding: 20px;
+        box-shadow: none;
+        border-radius: 0;
+      }
+
+      .no-print {
+        display: none !important;
+      }
+    }
+  </style>
+</head>
+<body>
+  <!-- Download Bar -->
+  <div class="download-bar no-print">
+    <div class="download-bar-title">Invoice Preview - {{ invoice.invoice_number }}</div>
+    <div class="download-bar-actions">
+      {% if with_gst %}
+      <a href="{% url 'invoice_pdf' invoice.pk %}" class="download-btn secondary">Without GST</a>
+      {% else %}
+      <a href="{% url 'invoice_pdf' invoice.pk %}?gst=1" class="download-btn secondary">With GST</a>
+      {% endif %}
+      <button class="download-btn" onclick="window.print()">
+        <svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+          <path d="M.5 9.9a.5.5 0 0 1 .5.5v2.5a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-2.5a.5.5 0 0 1 1 0v2.5a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2v-2.5a.5.5 0 0 1 .5-.5z"/>
+          <path d="M7.646 11.854a.5.5 0 0 0 .708 0l3-3a.5.5 0 0 0-.708-.708L8.5 10.293V1.5a.5.5 0 0 0-1 0v8.793L5.354 8.146a.5.5 0 1 0-.708.708l3 3z"/>
+        </svg>
+        Download PDF
+      </button>
+    </div>
+  </div>
+
+  <div class="invoice-container">
+    <!-- Header -->
+    <div class="invoice-header">
+      <div class="company-info">
+        <div class="company-logo">
+          <div class="logo-icon">R</div>
+          <div class="company-name">Ralfiz<span>Tech</span></div>
+        </div>
+        <div class="company-details">
+          Ralfiz Technologies Pvt. Ltd.<br>
+          123 Tech Park, Cyber City<br>
+          Kozhikode, Kerala 673001<br>
+          <br>
+          Phone: +91 98765 43210<br>
+          Email: billing@ralfiz.com
+          {% if with_gst %}<br>GSTIN: 32XYZAB1234C1Z5{% endif %}
+        </div>
+      </div>
+      <div class="invoice-title-section">
+        <div class="invoice-title">INVOICE</div>
+        <div class="invoice-number">#{{ invoice.invoice_number }}</div>
+        <div class="invoice-meta">
+          <div><strong>Issue Date:</strong> {{ invoice.issue_date|date:"d F Y" }}</div>
+          <div><strong>Due Date:</strong> {{ invoice.due_date|date:"d F Y"|default:"Not specified" }}</div>
+        </div>
+        <div class="status-badge {{ invoice.status }}">{{ invoice.get_status_display }}</div>
+      </div>
+    </div>
+
+    <!-- Billing Section -->
+    <div class="billing-section">
+      <div class="billing-block">
+        <div class="billing-label">Bill To</div>
+        <div class="billing-name">{{ invoice.client.company_name|default:invoice.client.name }}</div>
+        <div class="billing-details">
+          {{ invoice.client.name }}<br>
+          {% if invoice.client.address %}{{ invoice.client.address }}<br>{% endif %}
+          <br>
+          Email: {{ invoice.client.email }}
+          {% if invoice.client.phone %}<br>Phone: {{ invoice.client.phone }}{% endif %}
+          {% if with_gst and invoice.client.gst_number %}<br>GSTIN: {{ invoice.client.gst_number }}{% endif %}
+        </div>
+      </div>
+      <div class="billing-block">
+        <div class="billing-label">Project</div>
+        <div class="billing-name">{{ invoice.project.name|default:invoice.title }}</div>
+        <div class="billing-details">
+          {{ invoice.title }}<br>
+          {% if invoice.description %}<br>{{ invoice.description }}{% endif %}
+        </div>
+      </div>
+    </div>
+
+    <!-- Items Table -->
+    <div class="items-section">
+      <table class="items-table">
+        <thead>
+          <tr>
+            <th style="width: 50%;">Description</th>
+            <th style="width: 15%;">Qty</th>
+            <th style="width: 17%;">Unit Price</th>
+            <th style="width: 18%;">Amount</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for item in invoice.items.all %}
+          <tr>
+            <td>
+              <div class="item-description">{{ item.description }}</div>
+              {% if item.details %}
+              <div class="item-details">{{ item.details }}</div>
+              {% endif %}
+            </td>
+            <td>{{ item.quantity|floatformat:0 }}</td>
+            <td>&#8377;{{ item.unit_price|floatformat:2 }}</td>
+            <td>&#8377;{{ item.total|floatformat:2 }}</td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="4" style="text-align: center; padding: 40px; color: #64748b;">No line items</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Totals -->
+    <div class="totals-section">
+      <div class="totals-table">
+        <div class="totals-row subtotal">
+          <span class="label">Subtotal</span>
+          <span class="value">&#8377;{{ invoice.subtotal|floatformat:2 }}</span>
+        </div>
+        {% if invoice.discount %}
+        <div class="totals-row">
+          <span class="label">Discount</span>
+          <span class="value">-&#8377;{{ invoice.discount|floatformat:2 }}</span>
+        </div>
+        {% endif %}
+        {% if with_gst %}
+        <div class="totals-row">
+          <span class="label">CGST ({{ cgst_rate|floatformat:0 }}%)</span>
+          <span class="value">&#8377;{{ cgst_amount|floatformat:2 }}</span>
+        </div>
+        <div class="totals-row">
+          <span class="label">SGST ({{ sgst_rate|floatformat:0 }}%)</span>
+          <span class="value">&#8377;{{ sgst_amount|floatformat:2 }}</span>
+        </div>
+        <div class="totals-row total">
+          <span class="label">Total (incl. GST)</span>
+          <span class="value">&#8377;{{ total_with_gst|floatformat:2 }}</span>
+        </div>
+        {% else %}
+        <div class="totals-row total">
+          <span class="label">Total</span>
+          <span class="value">&#8377;{{ taxable_amount|floatformat:2 }}</span>
+        </div>
+        <div class="totals-row" style="font-size: 12px;">
+          <span class="label">GST Extra as applicable</span>
+          <span class="value"></span>
+        </div>
+        {% endif %}
+        {% if invoice.amount_paid > 0 %}
+        <div class="totals-row">
+          <span class="label">Amount Paid</span>
+          <span class="value success">&#8377;{{ invoice.amount_paid|floatformat:2 }}</span>
+        </div>
+        {% endif %}
+        {% if balance_due > 0 %}
+        <div class="totals-row">
+          <span class="label">Balance Due</span>
+          <span class="value warning">&#8377;{{ balance_due|floatformat:2 }}</span>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Payment Info -->
+    <div class="payment-section">
+      <div class="payment-block">
+        <div class="payment-label">Bank Details</div>
+        <div class="bank-details">
+          <span>Bank Name:</span> HDFC Bank<br>
+          <span>Account No:</span> 1234567890123<br>
+          <span>IFSC Code:</span> HDFC0001234<br>
+          <span>Branch:</span> Kozhikode Main
+        </div>
+      </div>
+      <div class="payment-block">
+        <div class="payment-label">UPI Payment</div>
+        <div class="upi-info">
+          <div class="upi-id">ralfiz@upi</div>
+        </div>
+        <div style="margin-top: 12px; font-size: 12px; color: #64748b;">
+          Please include invoice number<br>
+          in payment reference
+        </div>
+      </div>
+    </div>
+
+    <!-- Terms -->
+    {% if invoice.terms %}
+    <div class="terms-section">
+      <div class="terms-label">Terms & Conditions</div>
+      <div class="terms-content">{{ invoice.terms|linebreaksbr }}</div>
+    </div>
+    {% endif %}
+
+    {% if invoice.notes %}
+    <div class="terms-section">
+      <div class="terms-label">Notes</div>
+      <div class="terms-content">{{ invoice.notes|linebreaksbr }}</div>
+    </div>
+    {% endif %}
+
+    <!-- Footer -->
+    <div class="invoice-footer">
+      <div class="thank-you">Thank you for your business!</div>
+      <div class="footer-note">
+        If you have any questions about this invoice, please contact<br>
+        billing@ralfiz.com | +91 98765 43210
+      </div>
+    </div>
+  </div>
+</body>
+</html>

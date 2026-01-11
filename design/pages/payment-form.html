@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Record Payment - Ralfiz BMS</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <link rel="stylesheet" href="../css/styles.css">
+</head>
+<body>
+  <div class="app-wrapper">
+    <!-- Sidebar -->
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-header">
+        <a href="../index.html" class="sidebar-logo">
+          <div class="sidebar-logo-icon">R</div>
+          <div class="sidebar-logo-text">Ralfiz<span>BMS</span></div>
+        </a>
+      </div>
+
+      <nav class="sidebar-nav">
+        <div class="nav-section">
+          <a href="../index.html" class="nav-item">
+            <i class="fas fa-th-large"></i>
+            <span>Dashboard</span>
+          </a>
+        </div>
+
+        <div class="nav-section">
+          <div class="nav-section-title">Management</div>
+          <a href="clients.html" class="nav-item">
+            <i class="fas fa-users"></i>
+            <span>Clients</span>
+          </a>
+          <a href="projects.html" class="nav-item">
+            <i class="fas fa-folder-open"></i>
+            <span>Projects</span>
+          </a>
+          <a href="credentials.html" class="nav-item">
+            <i class="fas fa-key"></i>
+            <span>Credentials</span>
+            <span class="nav-badge">3</span>
+          </a>
+        </div>
+
+        <div class="nav-section">
+          <div class="nav-section-title">Billing</div>
+          <a href="quotes.html" class="nav-item">
+            <i class="fas fa-file-alt"></i>
+            <span>Quotes</span>
+          </a>
+          <a href="invoices.html" class="nav-item">
+            <i class="fas fa-file-invoice-dollar"></i>
+            <span>Invoices</span>
+          </a>
+          <a href="payments.html" class="nav-item active">
+            <i class="fas fa-credit-card"></i>
+            <span>Payments</span>
+          </a>
+        </div>
+
+        <div class="nav-section">
+          <div class="nav-section-title">System</div>
+          <a href="reports.html" class="nav-item">
+            <i class="fas fa-chart-bar"></i>
+            <span>Reports</span>
+          </a>
+          <a href="settings.html" class="nav-item">
+            <i class="fas fa-cog"></i>
+            <span>Settings</span>
+          </a>
+        </div>
+      </nav>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="main-content">
+      <!-- Navbar -->
+      <header class="navbar">
+        <div class="navbar-left">
+          <button class="sidebar-toggle" id="sidebarToggle">
+            <i class="fas fa-bars"></i>
+          </button>
+          <div class="breadcrumb">
+            <a href="../index.html" class="breadcrumb-item">Dashboard</a>
+            <span class="breadcrumb-separator">/</span>
+            <a href="payments.html" class="breadcrumb-item">Payments</a>
+            <span class="breadcrumb-separator">/</span>
+            <span class="breadcrumb-item active">Record Payment</span>
+          </div>
+        </div>
+
+        <div class="navbar-right">
+          <div class="navbar-search">
+            <i class="fas fa-search"></i>
+            <input type="text" placeholder="Search clients, projects...">
+          </div>
+
+          <div class="navbar-actions">
+            <button class="navbar-action-btn" title="Notifications">
+              <i class="fas fa-bell"></i>
+              <span class="badge">5</span>
+            </button>
+          </div>
+
+          <div class="user-dropdown dropdown">
+            <button class="user-dropdown-toggle" id="userDropdown">
+              <div class="user-avatar">JD</div>
+              <div class="user-info">
+                <div class="user-name">John Doe</div>
+                <div class="user-role">Administrator</div>
+              </div>
+              <i class="fas fa-chevron-down" style="color: var(--text-muted); font-size: 0.75rem;"></i>
+            </button>
+            <div class="dropdown-menu">
+              <a href="#" class="dropdown-item">
+                <i class="fas fa-user"></i>
+                Profile
+              </a>
+              <a href="settings.html" class="dropdown-item">
+                <i class="fas fa-cog"></i>
+                Settings
+              </a>
+              <div class="dropdown-divider"></div>
+              <a href="login.html" class="dropdown-item danger">
+                <i class="fas fa-sign-out-alt"></i>
+                Logout
+              </a>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <!-- Page Content -->
+      <div class="content-wrapper">
+        <!-- Page Header -->
+        <div class="page-header">
+          <div>
+            <h1 class="page-title">Record Payment</h1>
+            <p class="page-subtitle mb-0">Record a payment against an invoice</p>
+          </div>
+        </div>
+
+        <!-- Form Card -->
+        <form id="paymentForm" onsubmit="return validateForm('paymentForm')">
+          <div class="row">
+            <!-- Left Column -->
+            <div class="col-8 col-md-12" style="padding: 0.75rem;">
+              <!-- Invoice Selection -->
+              <div class="card mb-4">
+                <div class="card-header">
+                  <h3 class="card-title">
+                    <i class="fas fa-file-invoice-dollar me-2 text-primary"></i>
+                    Invoice Details
+                  </h3>
+                </div>
+                <div class="card-body">
+                  <div class="row">
+                    <div class="col-12" style="padding: 0.5rem;">
+                      <div class="form-group">
+                        <label class="form-label" for="invoice">
+                          Select Invoice <span class="required">*</span>
+                        </label>
+                        <select class="form-control" id="invoice" name="invoice" required onchange="updateInvoiceDetails()">
+                          <option value="">Select an invoice</option>
+                          <option value="INV20260018" data-client="TechStart Solutions" data-amount="125000" data-balance="125000">INV20260018 - TechStart Solutions - &#8377;1,25,000 (Pending)</option>
+                          <option value="INV20260015" data-client="Green Earth Foods" data-amount="85000" data-balance="42500">INV20260015 - Green Earth Foods - &#8377;42,500 (Partial)</option>
+                          <option value="INV20260010" data-client="Fashion Hub" data-amount="75000" data-balance="75000">INV20260010 - Fashion Hub - &#8377;75,000 (Pending)</option>
+                        </select>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Invoice Summary (shown when invoice is selected) -->
+                  <div id="invoiceSummary" class="mt-4 p-3 bg-light rounded" style="display: none;">
+                    <div class="row">
+                      <div class="col-4">
+                        <div class="text-sm text-muted mb-1">Client</div>
+                        <div class="fw-medium" id="summaryClient">-</div>
+                      </div>
+                      <div class="col-4">
+                        <div class="text-sm text-muted mb-1">Invoice Amount</div>
+                        <div class="fw-medium" id="summaryAmount">-</div>
+                      </div>
+                      <div class="col-4">
+                        <div class="text-sm text-muted mb-1">Balance Due</div>
+                        <div class="fw-medium text-warning" id="summaryBalance">-</div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Payment Details -->
+              <div class="card mb-4">
+                <div class="card-header">
+                  <h3 class="card-title">
+                    <i class="fas fa-credit-card me-2 text-primary"></i>
+                    Payment Details
+                  </h3>
+                </div>
+                <div class="card-body">
+                  <div class="row">
+                    <div class="col-6 col-sm-12" style="padding: 0.5rem;">
+                      <div class="form-group">
+                        <label class="form-label" for="amount">
+                          Amount Received (&#8377;) <span class="required">*</span>
+                        </label>
+                        <input type="number" class="form-control" id="amount" name="amount" placeholder="0.00" step="0.01" required>
+                        <div class="form-text">
+                          <button type="button" class="btn btn-sm btn-link p-0" onclick="fillFullAmount()">Fill full balance</button>
+                        </div>
+                      </div>
+                    </div>
+                    <div class="col-6 col-sm-12" style="padding: 0.5rem;">
+                      <div class="form-group">
+                        <label class="form-label" for="payment_date">
+                          Payment Date <span class="required">*</span>
+                        </label>
+                        <input type="date" class="form-control" id="payment_date" name="payment_date" required>
+                      </div>
+                    </div>
+                    <div class="col-6 col-sm-12" style="padding: 0.5rem;">
+                      <div class="form-group">
+                        <label class="form-label" for="payment_method">
+                          Payment Method <span class="required">*</span>
+                        </label>
+                        <select class="form-control" id="payment_method" name="payment_method" required>
+                          <option value="">Select method</option>
+                          <option value="bank_transfer">Bank Transfer (NEFT/RTGS/IMPS)</option>
+                          <option value="upi">UPI</option>
+                          <option value="cheque">Cheque</option>
+                          <option value="cash">Cash</option>
+                          <option value="card">Credit/Debit Card</option>
+                          <option value="other">Other</option>
+                        </select>
+                      </div>
+                    </div>
+                    <div class="col-6 col-sm-12" style="padding: 0.5rem;">
+                      <div class="form-group">
+                        <label class="form-label" for="transaction_id">Transaction ID / Reference</label>
+                        <input type="text" class="form-control" id="transaction_id" name="transaction_id" placeholder="e.g., NEFT123456789">
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Notes -->
+              <div class="card">
+                <div class="card-header">
+                  <h3 class="card-title">
+                    <i class="fas fa-sticky-note me-2 text-primary"></i>
+                    Notes
+                  </h3>
+                </div>
+                <div class="card-body">
+                  <div class="form-group mb-0">
+                    <label class="form-label" for="notes">Payment Notes</label>
+                    <textarea class="form-control" id="notes" name="notes" rows="3" placeholder="Add any notes about this payment..."></textarea>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Right Column -->
+            <div class="col-4 col-md-12" style="padding: 0.75rem;">
+              <!-- Payment Summary -->
+              <div class="card mb-4">
+                <div class="card-header">
+                  <h3 class="card-title">
+                    <i class="fas fa-calculator me-2 text-primary"></i>
+                    Payment Summary
+                  </h3>
+                </div>
+                <div class="card-body">
+                  <div class="mb-3 pb-3" style="border-bottom: 1px solid var(--border-color);">
+                    <div class="d-flex justify-content-between mb-2">
+                      <span class="text-muted">Invoice Total</span>
+                      <span class="fw-medium" id="calcTotal">&#8377;0.00</span>
+                    </div>
+                    <div class="d-flex justify-content-between mb-2">
+                      <span class="text-muted">Previously Paid</span>
+                      <span class="text-success" id="calcPaid">&#8377;0.00</span>
+                    </div>
+                    <div class="d-flex justify-content-between">
+                      <span class="text-muted">Balance Due</span>
+                      <span class="fw-medium text-warning" id="calcBalance">&#8377;0.00</span>
+                    </div>
+                  </div>
+                  <div class="mb-3 pb-3" style="border-bottom: 1px solid var(--border-color);">
+                    <div class="d-flex justify-content-between">
+                      <span class="text-muted">This Payment</span>
+                      <span class="fw-medium text-primary" id="calcPayment">&#8377;0.00</span>
+                    </div>
+                  </div>
+                  <div class="d-flex justify-content-between">
+                    <span class="fw-bold">New Balance</span>
+                    <span class="fw-bold" id="calcNewBalance">&#8377;0.00</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Quick Tips -->
+              <div class="card" style="background: var(--primary-bg); border-color: var(--primary-lighter);">
+                <div class="card-body">
+                  <h4 class="text-primary mb-3">
+                    <i class="fas fa-lightbulb me-2"></i>Quick Tips
+                  </h4>
+                  <ul class="text-sm text-secondary" style="padding-left: 1.25rem; margin: 0;">
+                    <li class="mb-2">Always record the transaction ID for reference</li>
+                    <li class="mb-2">Partial payments will update invoice status to "Partial"</li>
+                    <li class="mb-2">Full payment will automatically mark invoice as "Paid"</li>
+                    <li>Payment date should match the actual transaction date</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Form Actions -->
+          <div class="card mt-4">
+            <div class="card-body d-flex justify-content-between align-items-center">
+              <a href="payments.html" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-left me-2"></i>
+                Cancel
+              </a>
+              <button type="submit" class="btn btn-success">
+                <i class="fas fa-check me-2"></i>
+                Record Payment
+              </button>
+            </div>
+          </div>
+        </form>
+      </div>
+    </main>
+  </div>
+
+  <script src="../js/app.js"></script>
+  <script>
+    // Set default date to today
+    document.getElementById('payment_date').valueAsDate = new Date();
+
+    let currentBalance = 0;
+    let invoiceTotal = 0;
+
+    function updateInvoiceDetails() {
+      const select = document.getElementById('invoice');
+      const option = select.options[select.selectedIndex];
+      const summary = document.getElementById('invoiceSummary');
+
+      if (option.value) {
+        const client = option.dataset.client;
+        const amount = parseFloat(option.dataset.amount);
+        const balance = parseFloat(option.dataset.balance);
+        const paid = amount - balance;
+
+        invoiceTotal = amount;
+        currentBalance = balance;
+
+        document.getElementById('summaryClient').textContent = client;
+        document.getElementById('summaryAmount').textContent = '₹' + amount.toLocaleString('en-IN');
+        document.getElementById('summaryBalance').textContent = '₹' + balance.toLocaleString('en-IN');
+
+        document.getElementById('calcTotal').textContent = '₹' + amount.toLocaleString('en-IN');
+        document.getElementById('calcPaid').textContent = '₹' + paid.toLocaleString('en-IN');
+        document.getElementById('calcBalance').textContent = '₹' + balance.toLocaleString('en-IN');
+
+        summary.style.display = 'block';
+        updatePaymentCalc();
+      } else {
+        summary.style.display = 'none';
+        invoiceTotal = 0;
+        currentBalance = 0;
+        updatePaymentCalc();
+      }
+    }
+
+    function fillFullAmount() {
+      document.getElementById('amount').value = currentBalance;
+      updatePaymentCalc();
+    }
+
+    function updatePaymentCalc() {
+      const payment = parseFloat(document.getElementById('amount').value) || 0;
+      const newBalance = Math.max(0, currentBalance - payment);
+
+      document.getElementById('calcPayment').textContent = '₹' + payment.toLocaleString('en-IN');
+      document.getElementById('calcNewBalance').textContent = '₹' + newBalance.toLocaleString('en-IN');
+
+      if (newBalance === 0 && payment > 0) {
+        document.getElementById('calcNewBalance').classList.add('text-success');
+        document.getElementById('calcNewBalance').classList.remove('text-warning');
+      } else if (newBalance > 0) {
+        document.getElementById('calcNewBalance').classList.add('text-warning');
+        document.getElementById('calcNewBalance').classList.remove('text-success');
+      }
+    }
+
+    document.getElementById('amount').addEventListener('input', updatePaymentCalc);
+  </script>
+</body>
+</html>

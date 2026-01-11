@@ -1,0 +1,627 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TechStart Solutions - Client Detail - Ralfiz BMS</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <link rel="stylesheet" href="../css/styles.css">
+  <style>
+    /* Tabs Styling */
+    .tabs {
+      display: flex;
+      gap: 0.5rem;
+      border-bottom: 1px solid var(--border-color);
+      padding-bottom: 0;
+    }
+
+    .tab-item {
+      padding: 0.75rem 1.25rem;
+      border: none;
+      background: none;
+      color: var(--text-secondary);
+      font-weight: 500;
+      font-size: 0.875rem;
+      cursor: pointer;
+      border-bottom: 2px solid transparent;
+      margin-bottom: -1px;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+    }
+
+    .tab-item:hover {
+      color: var(--primary);
+      background: var(--primary-bg);
+    }
+
+    .tab-item.active {
+      color: var(--primary);
+      border-bottom-color: var(--primary);
+      background: transparent;
+    }
+
+    .tab-content {
+      padding: 0;
+    }
+
+    .tab-content.d-none {
+      display: none;
+    }
+
+    /* Avatar XL */
+    .avatar-xl {
+      width: 72px;
+      height: 72px;
+      font-size: 1.5rem;
+    }
+
+    .avatar {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: var(--primary);
+      color: white;
+      border-radius: 12px;
+      font-weight: 600;
+    }
+
+    /* Priority Badge */
+    .priority-badge {
+      display: inline-flex;
+      align-items: center;
+      padding: 0.25rem 0.75rem;
+      border-radius: 20px;
+      font-size: 0.75rem;
+      font-weight: 500;
+    }
+
+    .priority-badge.high {
+      background: #fef2f2;
+      color: #dc2626;
+    }
+
+    .priority-badge.medium {
+      background: #fffbeb;
+      color: #d97706;
+    }
+
+    .priority-badge.low {
+      background: #f0fdf4;
+      color: #16a34a;
+    }
+  </style>
+</head>
+<body>
+  <div class="app-wrapper">
+    <!-- Sidebar -->
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-header">
+        <a href="../index.html" class="sidebar-logo">
+          <div class="sidebar-logo-icon">R</div>
+          <div class="sidebar-logo-text">Ralfiz<span>BMS</span></div>
+        </a>
+      </div>
+
+      <nav class="sidebar-nav">
+        <div class="nav-section">
+          <a href="../index.html" class="nav-item">
+            <i class="fas fa-th-large"></i>
+            <span>Dashboard</span>
+          </a>
+        </div>
+
+        <div class="nav-section">
+          <div class="nav-section-title">Management</div>
+          <a href="clients.html" class="nav-item active">
+            <i class="fas fa-users"></i>
+            <span>Clients</span>
+          </a>
+          <a href="projects.html" class="nav-item">
+            <i class="fas fa-folder-open"></i>
+            <span>Projects</span>
+          </a>
+          <a href="credentials.html" class="nav-item">
+            <i class="fas fa-key"></i>
+            <span>Credentials</span>
+            <span class="nav-badge">3</span>
+          </a>
+        </div>
+
+        <div class="nav-section">
+          <div class="nav-section-title">Billing</div>
+          <a href="quotes.html" class="nav-item">
+            <i class="fas fa-file-alt"></i>
+            <span>Quotes</span>
+          </a>
+          <a href="invoices.html" class="nav-item">
+            <i class="fas fa-file-invoice-dollar"></i>
+            <span>Invoices</span>
+          </a>
+          <a href="payments.html" class="nav-item">
+            <i class="fas fa-credit-card"></i>
+            <span>Payments</span>
+          </a>
+        </div>
+
+        <div class="nav-section">
+          <div class="nav-section-title">System</div>
+          <a href="reports.html" class="nav-item">
+            <i class="fas fa-chart-bar"></i>
+            <span>Reports</span>
+          </a>
+          <a href="settings.html" class="nav-item">
+            <i class="fas fa-cog"></i>
+            <span>Settings</span>
+          </a>
+        </div>
+      </nav>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="main-content">
+      <!-- Navbar -->
+      <header class="navbar">
+        <div class="navbar-left">
+          <button class="sidebar-toggle" id="sidebarToggle">
+            <i class="fas fa-bars"></i>
+          </button>
+          <div class="breadcrumb">
+            <a href="../index.html" class="breadcrumb-item">Dashboard</a>
+            <span class="breadcrumb-separator">/</span>
+            <a href="clients.html" class="breadcrumb-item">Clients</a>
+            <span class="breadcrumb-separator">/</span>
+            <span class="breadcrumb-item active">TechStart Solutions</span>
+          </div>
+        </div>
+
+        <div class="navbar-right">
+          <div class="navbar-search">
+            <i class="fas fa-search"></i>
+            <input type="text" placeholder="Search clients, projects...">
+          </div>
+
+          <div class="navbar-actions">
+            <button class="navbar-action-btn" title="Notifications">
+              <i class="fas fa-bell"></i>
+              <span class="badge">5</span>
+            </button>
+          </div>
+
+          <div class="user-dropdown dropdown">
+            <button class="user-dropdown-toggle" id="userDropdown">
+              <div class="user-avatar">JD</div>
+              <div class="user-info">
+                <div class="user-name">John Doe</div>
+                <div class="user-role">Administrator</div>
+              </div>
+              <i class="fas fa-chevron-down" style="color: var(--text-muted); font-size: 0.75rem;"></i>
+            </button>
+            <div class="dropdown-menu">
+              <a href="#" class="dropdown-item">
+                <i class="fas fa-user"></i>
+                Profile
+              </a>
+              <a href="settings.html" class="dropdown-item">
+                <i class="fas fa-cog"></i>
+                Settings
+              </a>
+              <div class="dropdown-divider"></div>
+              <a href="login.html" class="dropdown-item danger">
+                <i class="fas fa-sign-out-alt"></i>
+                Logout
+              </a>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <!-- Page Content -->
+      <div class="content-wrapper">
+        <!-- Page Header -->
+        <div class="page-header">
+          <div class="d-flex align-items-center gap-4">
+            <div class="avatar avatar-xl">TS</div>
+            <div>
+              <div class="d-flex align-items-center gap-3 mb-2">
+                <h1 class="page-title mb-0">TechStart Solutions</h1>
+                <span class="priority-badge high">High Priority</span>
+                <span class="badge badge-success">Active</span>
+              </div>
+              <p class="page-subtitle mb-0">
+                <i class="fas fa-map-marker-alt me-2"></i>Kozhikode, Kerala
+                <span class="mx-2">|</span>
+                <i class="fas fa-calendar me-2"></i>Client since Jan 2024
+              </p>
+            </div>
+          </div>
+          <div class="page-actions">
+            <a href="project-form.html" class="btn btn-outline-primary">
+              <i class="fas fa-folder-plus"></i>
+              New Project
+            </a>
+            <a href="quote-form.html" class="btn btn-outline-primary">
+              <i class="fas fa-file-alt"></i>
+              Create Quote
+            </a>
+            <a href="client-form.html" class="btn btn-primary">
+              <i class="fas fa-edit"></i>
+              Edit Client
+            </a>
+          </div>
+        </div>
+
+        <!-- Stats Cards -->
+        <div class="row mb-4">
+          <div class="col-3 col-md-6 col-sm-12" style="padding: 0.75rem;">
+            <div class="card stat-card">
+              <div class="stat-card-header">
+                <div class="stat-card-icon primary">
+                  <i class="fas fa-folder-open"></i>
+                </div>
+              </div>
+              <div class="stat-card-value">3</div>
+              <div class="stat-card-label">Total Projects</div>
+            </div>
+          </div>
+          <div class="col-3 col-md-6 col-sm-12" style="padding: 0.75rem;">
+            <div class="card stat-card">
+              <div class="stat-card-header">
+                <div class="stat-card-icon success">
+                  <i class="fas fa-rupee-sign"></i>
+                </div>
+              </div>
+              <div class="stat-card-value">&#8377;8,50,000</div>
+              <div class="stat-card-label">Total Revenue</div>
+            </div>
+          </div>
+          <div class="col-3 col-md-6 col-sm-12" style="padding: 0.75rem;">
+            <div class="card stat-card">
+              <div class="stat-card-header">
+                <div class="stat-card-icon warning">
+                  <i class="fas fa-file-invoice"></i>
+                </div>
+              </div>
+              <div class="stat-card-value">&#8377;1,25,000</div>
+              <div class="stat-card-label">Pending Amount</div>
+            </div>
+          </div>
+          <div class="col-3 col-md-6 col-sm-12" style="padding: 0.75rem;">
+            <div class="card stat-card">
+              <div class="stat-card-header">
+                <div class="stat-card-icon info">
+                  <i class="fas fa-key"></i>
+                </div>
+              </div>
+              <div class="stat-card-value">5</div>
+              <div class="stat-card-label">Credentials</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Main Content Grid -->
+        <div class="row">
+          <!-- Left Column - Client Details -->
+          <div class="col-4 col-md-12" style="padding: 0.75rem;">
+            <!-- Contact Information -->
+            <div class="card mb-4">
+              <div class="card-header">
+                <h3 class="card-title">Contact Information</h3>
+              </div>
+              <div class="card-body">
+                <div class="mb-3">
+                  <div class="text-sm text-muted mb-1">Contact Person</div>
+                  <div class="fw-medium">Rajesh Kumar</div>
+                </div>
+                <div class="mb-3">
+                  <div class="text-sm text-muted mb-1">Email</div>
+                  <div>
+                    <a href="mailto:contact@techstart.com" class="d-flex align-items-center gap-2">
+                      <i class="fas fa-envelope"></i>
+                      contact@techstart.com
+                    </a>
+                  </div>
+                </div>
+                <div class="mb-3">
+                  <div class="text-sm text-muted mb-1">Phone</div>
+                  <div>
+                    <a href="tel:+919876543210" class="d-flex align-items-center gap-2">
+                      <i class="fas fa-phone"></i>
+                      +91 98765 43210
+                    </a>
+                  </div>
+                </div>
+                <div class="mb-3">
+                  <div class="text-sm text-muted mb-1">WhatsApp</div>
+                  <div>
+                    <a href="https://wa.me/919876543210" target="_blank" class="d-flex align-items-center gap-2">
+                      <i class="fab fa-whatsapp"></i>
+                      +91 98765 43210
+                    </a>
+                  </div>
+                </div>
+                <div>
+                  <div class="text-sm text-muted mb-1">Address</div>
+                  <div class="text-secondary">
+                    <i class="fas fa-map-marker-alt me-2"></i>
+                    123 Tech Park, Cyber City<br>
+                    <span style="margin-left: 1.25rem;">Kozhikode, Kerala 673001</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Business Information -->
+            <div class="card">
+              <div class="card-header">
+                <h3 class="card-title">Business Information</h3>
+              </div>
+              <div class="card-body">
+                <div class="mb-3">
+                  <div class="text-sm text-muted mb-1">Company Name</div>
+                  <div class="fw-medium">TechStart Solutions Pvt. Ltd.</div>
+                </div>
+                <div class="mb-3">
+                  <div class="text-sm text-muted mb-1">GST Number</div>
+                  <div class="fw-medium">32ABCDE1234F1Z5</div>
+                </div>
+                <div>
+                  <div class="text-sm text-muted mb-1">Notes</div>
+                  <div class="text-secondary">
+                    Long-term client with multiple ongoing projects. Prefers communication via WhatsApp. Usually pays within 15 days of invoice.
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Right Column - Projects, Invoices, Payments -->
+          <div class="col-8 col-md-12" style="padding: 0.75rem;">
+            <!-- Tabs -->
+            <div class="card">
+              <div class="card-header" style="padding-bottom: 0; border-bottom: none;">
+                <div class="tabs">
+                  <button class="tab-item active" data-tab="projectsTab" onclick="switchTab('projectsTab')">
+                    <i class="fas fa-folder-open me-2"></i>Projects
+                  </button>
+                  <button class="tab-item" data-tab="invoicesTab" onclick="switchTab('invoicesTab')">
+                    <i class="fas fa-file-invoice-dollar me-2"></i>Invoices
+                  </button>
+                  <button class="tab-item" data-tab="quotesTab" onclick="switchTab('quotesTab')">
+                    <i class="fas fa-file-alt me-2"></i>Quotes
+                  </button>
+                  <button class="tab-item" data-tab="paymentsTab" onclick="switchTab('paymentsTab')">
+                    <i class="fas fa-credit-card me-2"></i>Payments
+                  </button>
+                </div>
+              </div>
+
+              <!-- Projects Tab -->
+              <div class="tab-content" id="projectsTab">
+                <div class="table-wrapper">
+                  <table class="table">
+                    <thead>
+                      <tr>
+                        <th>Project</th>
+                        <th>Type</th>
+                        <th>Status</th>
+                        <th>Amount</th>
+                        <th>Deadline</th>
+                        <th></th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr>
+                        <td>
+                          <a href="project-detail.html" class="fw-medium">E-commerce Platform</a>
+                          <div class="text-sm text-muted">Django, Flutter, PostgreSQL</div>
+                        </td>
+                        <td><span class="badge badge-info">Full Stack</span></td>
+                        <td><span class="status-badge in-progress">In Progress</span></td>
+                        <td class="fw-medium">&#8377;3,50,000</td>
+                        <td>28 Feb 2026</td>
+                        <td>
+                          <a href="project-detail.html" class="btn btn-sm btn-ghost btn-icon">
+                            <i class="fas fa-arrow-right"></i>
+                          </a>
+                        </td>
+                      </tr>
+                      <tr>
+                        <td>
+                          <a href="project-detail.html" class="fw-medium">Mobile App Development</a>
+                          <div class="text-sm text-muted">Flutter, Firebase</div>
+                        </td>
+                        <td><span class="badge badge-primary">Mobile App</span></td>
+                        <td><span class="status-badge in-progress">In Progress</span></td>
+                        <td class="fw-medium">&#8377;2,00,000</td>
+                        <td>15 Mar 2026</td>
+                        <td>
+                          <a href="project-detail.html" class="btn btn-sm btn-ghost btn-icon">
+                            <i class="fas fa-arrow-right"></i>
+                          </a>
+                        </td>
+                      </tr>
+                      <tr>
+                        <td>
+                          <a href="project-detail.html" class="fw-medium">Website Redesign</a>
+                          <div class="text-sm text-muted">HTML, CSS, JavaScript</div>
+                        </td>
+                        <td><span class="badge badge-secondary">Web App</span></td>
+                        <td><span class="status-badge completed">Completed</span></td>
+                        <td class="fw-medium">&#8377;75,000</td>
+                        <td>10 Nov 2025</td>
+                        <td>
+                          <a href="project-detail.html" class="btn btn-sm btn-ghost btn-icon">
+                            <i class="fas fa-arrow-right"></i>
+                          </a>
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              <!-- Invoices Tab -->
+              <div class="tab-content d-none" id="invoicesTab">
+                <div class="table-wrapper">
+                  <table class="table">
+                    <thead>
+                      <tr>
+                        <th>Invoice #</th>
+                        <th>Project</th>
+                        <th>Amount</th>
+                        <th>Due Date</th>
+                        <th>Status</th>
+                        <th></th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr>
+                        <td><a href="invoice-detail.html" class="fw-medium">INV20260018</a></td>
+                        <td>E-commerce Platform</td>
+                        <td class="fw-medium">&#8377;1,25,000</td>
+                        <td>15 Jan 2026</td>
+                        <td><span class="status-badge sent">Sent</span></td>
+                        <td>
+                          <a href="invoice-detail.html" class="btn btn-sm btn-ghost btn-icon">
+                            <i class="fas fa-arrow-right"></i>
+                          </a>
+                        </td>
+                      </tr>
+                      <tr>
+                        <td><a href="invoice-detail.html" class="fw-medium">INV20260012</a></td>
+                        <td>E-commerce Platform</td>
+                        <td class="fw-medium">&#8377;1,00,000</td>
+                        <td>01 Jan 2026</td>
+                        <td><span class="status-badge paid">Paid</span></td>
+                        <td>
+                          <a href="invoice-detail.html" class="btn btn-sm btn-ghost btn-icon">
+                            <i class="fas fa-arrow-right"></i>
+                          </a>
+                        </td>
+                      </tr>
+                      <tr>
+                        <td><a href="invoice-detail.html" class="fw-medium">INV20250089</a></td>
+                        <td>Website Redesign</td>
+                        <td class="fw-medium">&#8377;75,000</td>
+                        <td>20 Nov 2025</td>
+                        <td><span class="status-badge paid">Paid</span></td>
+                        <td>
+                          <a href="invoice-detail.html" class="btn btn-sm btn-ghost btn-icon">
+                            <i class="fas fa-arrow-right"></i>
+                          </a>
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              <!-- Quotes Tab -->
+              <div class="tab-content d-none" id="quotesTab">
+                <div class="table-wrapper">
+                  <table class="table">
+                    <thead>
+                      <tr>
+                        <th>Quote #</th>
+                        <th>Title</th>
+                        <th>Amount</th>
+                        <th>Valid Until</th>
+                        <th>Status</th>
+                        <th></th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr>
+                        <td><a href="quote-detail.html" class="fw-medium">QT20260005</a></td>
+                        <td>Mobile App Development</td>
+                        <td class="fw-medium">&#8377;2,00,000</td>
+                        <td>20 Jan 2026</td>
+                        <td><span class="status-badge confirmed">Accepted</span></td>
+                        <td>
+                          <a href="quote-detail.html" class="btn btn-sm btn-ghost btn-icon">
+                            <i class="fas fa-arrow-right"></i>
+                          </a>
+                        </td>
+                      </tr>
+                      <tr>
+                        <td><a href="quote-detail.html" class="fw-medium">QT20250042</a></td>
+                        <td>E-commerce Platform</td>
+                        <td class="fw-medium">&#8377;3,50,000</td>
+                        <td>15 Oct 2025</td>
+                        <td><span class="status-badge confirmed">Accepted</span></td>
+                        <td>
+                          <a href="quote-detail.html" class="btn btn-sm btn-ghost btn-icon">
+                            <i class="fas fa-arrow-right"></i>
+                          </a>
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              <!-- Payments Tab -->
+              <div class="tab-content d-none" id="paymentsTab">
+                <div class="table-wrapper">
+                  <table class="table">
+                    <thead>
+                      <tr>
+                        <th>Date</th>
+                        <th>Invoice</th>
+                        <th>Amount</th>
+                        <th>Method</th>
+                        <th>Transaction ID</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr>
+                        <td>05 Jan 2026</td>
+                        <td><a href="invoice-detail.html">INV20260012</a></td>
+                        <td class="fw-medium text-success">&#8377;1,00,000</td>
+                        <td><span class="badge badge-info">Bank Transfer</span></td>
+                        <td class="text-muted">NEFT123456789</td>
+                      </tr>
+                      <tr>
+                        <td>22 Nov 2025</td>
+                        <td><a href="invoice-detail.html">INV20250089</a></td>
+                        <td class="fw-medium text-success">&#8377;75,000</td>
+                        <td><span class="badge badge-success">UPI</span></td>
+                        <td class="text-muted">UPI987654321</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script src="../js/app.js"></script>
+  <script>
+    function switchTab(tabId) {
+      // Hide all tab contents
+      document.querySelectorAll('.tab-content').forEach(content => {
+        content.classList.add('d-none');
+      });
+
+      // Remove active class from all tabs
+      document.querySelectorAll('.tab-item').forEach(tab => {
+        tab.classList.remove('active');
+      });
+
+      // Show selected tab content
+      document.getElementById(tabId).classList.remove('d-none');
+
+      // Add active class to clicked tab
+      document.querySelector(`[data-tab="${tabId}"]`).classList.add('active');
+    }
+  </script>
+</body>
+</html>

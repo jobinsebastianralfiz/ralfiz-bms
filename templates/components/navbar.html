@@ -1,0 +1,55 @@
+{% load static %}
+<header class="navbar">
+  <div class="navbar-left">
+    <button class="sidebar-toggle" id="sidebarToggle">
+      <i class="fas fa-bars"></i>
+    </button>
+    <div class="breadcrumb">
+      {% block breadcrumb %}
+      <a href="{% url 'dashboard' %}" class="breadcrumb-item">Dashboard</a>
+      {% endblock %}
+    </div>
+  </div>
+
+  <div class="navbar-right">
+    <div class="navbar-search">
+      <i class="fas fa-search"></i>
+      <input type="text" placeholder="Search clients, projects..." id="globalSearch">
+    </div>
+
+    <div class="navbar-actions">
+      <button class="navbar-action-btn" title="Notifications">
+        <i class="fas fa-bell"></i>
+        {% if notifications_count %}
+        <span class="badge">{{ notifications_count }}</span>
+        {% endif %}
+      </button>
+    </div>
+
+    <div class="user-dropdown dropdown">
+      <button class="user-dropdown-toggle" id="userDropdown">
+        <div class="user-avatar">{{ user.first_name|slice:":1"|upper }}{{ user.last_name|slice:":1"|upper|default:"U" }}</div>
+        <div class="user-info">
+          <div class="user-name">{{ user.get_full_name|default:user.username }}</div>
+          <div class="user-role">{% if user.is_superuser %}Administrator{% else %}User{% endif %}</div>
+        </div>
+        <i class="fas fa-chevron-down" style="color: var(--text-muted); font-size: 0.75rem;"></i>
+      </button>
+      <div class="dropdown-menu">
+        <a href="#" class="dropdown-item">
+          <i class="fas fa-user"></i>
+          Profile
+        </a>
+        <a href="{% url 'settings' %}" class="dropdown-item">
+          <i class="fas fa-cog"></i>
+          Settings
+        </a>
+        <div class="dropdown-divider"></div>
+        <a href="{% url 'logout' %}" class="dropdown-item danger">
+          <i class="fas fa-sign-out-alt"></i>
+          Logout
+        </a>
+      </div>
+    </div>
+  </div>
+</header>

@@ -1,0 +1,282 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ form_title }} - Ralfiz BMS{% endblock %}
+
+{% block breadcrumb %}
+<a href="{% url 'dashboard' %}" class="breadcrumb-item">Dashboard</a>
+<span class="breadcrumb-separator">/</span>
+<a href="{% url 'payment_list' %}" class="breadcrumb-item">Payments</a>
+<span class="breadcrumb-separator">/</span>
+<span class="breadcrumb-item active">{{ form_title }}</span>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title">{{ form_title }}</h1>
+    <p class="page-subtitle mb-0">Record a payment against an invoice</p>
+  </div>
+</div>
+
+<form method="post" id="paymentForm">
+  {% csrf_token %}
+  <div class="row">
+    <!-- Left Column -->
+    <div class="col-8 col-md-12" style="padding: 0.75rem;">
+      <!-- Invoice Selection -->
+      <div class="card mb-4">
+        <div class="card-header">
+          <h3 class="card-title">
+            <i class="fas fa-file-invoice-dollar me-2 text-primary"></i>
+            Invoice Details
+          </h3>
+        </div>
+        <div class="card-body">
+          <div class="row">
+            <div class="col-12" style="padding: 0.5rem;">
+              <div class="form-group">
+                <label class="form-label" for="invoice">
+                  Select Invoice <span class="required">*</span>
+                </label>
+                <select class="form-control" id="invoice" name="invoice" required onchange="updateInvoiceDetails()">
+                  <option value="">Select an invoice</option>
+                  {% for inv in invoices %}
+                  <option value="{{ inv.pk }}"
+                          data-client="{{ inv.client.name }}"
+                          data-amount="{{ inv.total_amount }}"
+                          data-balance="{{ inv.balance_due }}"
+                          {% if selected_invoice == inv.pk %}selected{% endif %}>
+                    {{ inv.invoice_number }} - {{ inv.client.name }} (Balance: &#8377;{{ inv.balance_due|floatformat:0 }})
+                  </option>
+                  {% endfor %}
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <!-- Invoice Summary (shown when invoice is selected) -->
+          <div id="invoiceSummary" class="mt-4 p-3 rounded" style="display: none; background: var(--bg-hover);">
+            <div class="row">
+              <div class="col-4">
+                <div class="text-sm text-muted mb-1">Client</div>
+                <div class="fw-medium" id="summaryClient">-</div>
+              </div>
+              <div class="col-4">
+                <div class="text-sm text-muted mb-1">Invoice Amount</div>
+                <div class="fw-medium" id="summaryAmount">-</div>
+              </div>
+              <div class="col-4">
+                <div class="text-sm text-muted mb-1">Balance Due</div>
+                <div class="fw-medium text-warning" id="summaryBalance">-</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Payment Details -->
+      <div class="card mb-4">
+        <div class="card-header">
+          <h3 class="card-title">
+            <i class="fas fa-credit-card me-2 text-primary"></i>
+            Payment Details
+          </h3>
+        </div>
+        <div class="card-body">
+          <div class="row">
+            <div class="col-6 col-sm-12" style="padding: 0.5rem;">
+              <div class="form-group">
+                <label class="form-label" for="amount">
+                  Amount Received (&#8377;) <span class="required">*</span>
+                </label>
+                <input type="number" class="form-control" id="amount" name="amount" placeholder="0.00" step="0.01" required oninput="updatePaymentCalc()">
+                <div class="form-text">
+                  <button type="button" class="btn btn-sm btn-link p-0" onclick="fillFullAmount()">Fill full balance</button>
+                </div>
+              </div>
+            </div>
+            <div class="col-6 col-sm-12" style="padding: 0.5rem;">
+              <div class="form-group">
+                <label class="form-label" for="payment_date">
+                  Payment Date <span class="required">*</span>
+                </label>
+                <input type="date" class="form-control" id="payment_date" name="payment_date" required>
+              </div>
+            </div>
+            <div class="col-6 col-sm-12" style="padding: 0.5rem;">
+              <div class="form-group">
+                <label class="form-label" for="payment_method">
+                  Payment Method <span class="required">*</span>
+                </label>
+                <select class="form-control" id="payment_method" name="payment_method" required>
+                  <option value="">Select method</option>
+                  {% for key, value in method_choices %}
+                  <option value="{{ key }}">{{ value }}</option>
+                  {% endfor %}
+                </select>
+              </div>
+            </div>
+            <div class="col-6 col-sm-12" style="padding: 0.5rem;">
+              <div class="form-group">
+                <label class="form-label" for="transaction_id">Transaction ID / Reference</label>
+                <input type="text" class="form-control" id="transaction_id" name="transaction_id" placeholder="e.g., NEFT123456789">
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Notes -->
+      <div class="card">
+        <div class="card-header">
+          <h3 class="card-title">
+            <i class="fas fa-sticky-note me-2 text-primary"></i>
+            Notes
+          </h3>
+        </div>
+        <div class="card-body">
+          <div class="form-group mb-0">
+            <label class="form-label" for="notes">Payment Notes</label>
+            <textarea class="form-control" id="notes" name="notes" rows="3" placeholder="Add any notes about this payment..."></textarea>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right Column -->
+    <div class="col-4 col-md-12" style="padding: 0.75rem;">
+      <!-- Payment Summary -->
+      <div class="card mb-4">
+        <div class="card-header">
+          <h3 class="card-title">
+            <i class="fas fa-calculator me-2 text-primary"></i>
+            Payment Summary
+          </h3>
+        </div>
+        <div class="card-body">
+          <div class="mb-3 pb-3" style="border-bottom: 1px solid var(--border-color);">
+            <div class="d-flex justify-content-between mb-2">
+              <span class="text-muted">Invoice Total</span>
+              <span class="fw-medium" id="calcTotal">&#8377;0.00</span>
+            </div>
+            <div class="d-flex justify-content-between mb-2">
+              <span class="text-muted">Previously Paid</span>
+              <span class="text-success" id="calcPaid">&#8377;0.00</span>
+            </div>
+            <div class="d-flex justify-content-between">
+              <span class="text-muted">Balance Due</span>
+              <span class="fw-medium text-warning" id="calcBalance">&#8377;0.00</span>
+            </div>
+          </div>
+          <div class="mb-3 pb-3" style="border-bottom: 1px solid var(--border-color);">
+            <div class="d-flex justify-content-between">
+              <span class="text-muted">This Payment</span>
+              <span class="fw-medium text-primary" id="calcPayment">&#8377;0.00</span>
+            </div>
+          </div>
+          <div class="d-flex justify-content-between">
+            <span class="fw-bold">New Balance</span>
+            <span class="fw-bold" id="calcNewBalance">&#8377;0.00</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Quick Tips -->
+      <div class="card" style="background: var(--primary-light); border-color: var(--primary);">
+        <div class="card-body">
+          <h4 class="text-primary mb-3">
+            <i class="fas fa-lightbulb me-2"></i>Quick Tips
+          </h4>
+          <ul class="text-sm text-secondary" style="padding-left: 1.25rem; margin: 0;">
+            <li class="mb-2">Always record the transaction ID for reference</li>
+            <li class="mb-2">Partial payments will update invoice status to "Partial"</li>
+            <li class="mb-2">Full payment will automatically mark invoice as "Paid"</li>
+            <li>Payment date should match the actual transaction date</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Form Actions -->
+  <div class="card mt-4">
+    <div class="card-body d-flex justify-content-between align-items-center">
+      <a href="{% url 'payment_list' %}" class="btn btn-outline-secondary">
+        <i class="fas fa-arrow-left me-2"></i>
+        Cancel
+      </a>
+      <button type="submit" class="btn btn-success">
+        <i class="fas fa-check me-2"></i>
+        Record Payment
+      </button>
+    </div>
+  </div>
+</form>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  // Set default date to today
+  document.getElementById('payment_date').valueAsDate = new Date();
+
+  let currentBalance = 0;
+  let invoiceTotal = 0;
+
+  function updateInvoiceDetails() {
+    const select = document.getElementById('invoice');
+    const option = select.options[select.selectedIndex];
+    const summary = document.getElementById('invoiceSummary');
+
+    if (option.value) {
+      const client = option.dataset.client;
+      const amount = parseFloat(option.dataset.amount);
+      const balance = parseFloat(option.dataset.balance);
+      const paid = amount - balance;
+
+      invoiceTotal = amount;
+      currentBalance = balance;
+
+      document.getElementById('summaryClient').textContent = client;
+      document.getElementById('summaryAmount').textContent = '\u20B9' + amount.toLocaleString('en-IN');
+      document.getElementById('summaryBalance').textContent = '\u20B9' + balance.toLocaleString('en-IN');
+
+      document.getElementById('calcTotal').textContent = '\u20B9' + amount.toLocaleString('en-IN');
+      document.getElementById('calcPaid').textContent = '\u20B9' + paid.toLocaleString('en-IN');
+      document.getElementById('calcBalance').textContent = '\u20B9' + balance.toLocaleString('en-IN');
+
+      summary.style.display = 'block';
+      updatePaymentCalc();
+    } else {
+      summary.style.display = 'none';
+      invoiceTotal = 0;
+      currentBalance = 0;
+      updatePaymentCalc();
+    }
+  }
+
+  function fillFullAmount() {
+    document.getElementById('amount').value = currentBalance;
+    updatePaymentCalc();
+  }
+
+  function updatePaymentCalc() {
+    const payment = parseFloat(document.getElementById('amount').value) || 0;
+    const newBalance = Math.max(0, currentBalance - payment);
+
+    document.getElementById('calcPayment').textContent = '\u20B9' + payment.toLocaleString('en-IN');
+    document.getElementById('calcNewBalance').textContent = '\u20B9' + newBalance.toLocaleString('en-IN');
+
+    if (newBalance === 0 && payment > 0) {
+      document.getElementById('calcNewBalance').classList.add('text-success');
+      document.getElementById('calcNewBalance').classList.remove('text-warning');
+    } else if (newBalance > 0) {
+      document.getElementById('calcNewBalance').classList.add('text-warning');
+      document.getElementById('calcNewBalance').classList.remove('text-success');
+    }
+  }
+
+  // Initialize on page load
+  updateInvoiceDetails();
+</script>
+{% endblock %}

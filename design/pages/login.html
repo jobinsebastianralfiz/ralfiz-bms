@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Login - Ralfiz BMS</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <link rel="stylesheet" href="../css/styles.css">
+  <style>
+    body {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+      padding: 1rem;
+    }
+
+    .login-container {
+      width: 100%;
+      max-width: 420px;
+    }
+
+    .login-card {
+      background: var(--bg-card);
+      border-radius: var(--border-radius-lg);
+      box-shadow: var(--shadow-lg);
+      overflow: hidden;
+    }
+
+    .login-header {
+      background: linear-gradient(135deg, var(--primary) 0%, var(--primary-hover) 100%);
+      padding: 2.5rem 2rem;
+      text-align: center;
+    }
+
+    .login-logo {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.75rem;
+      margin-bottom: 1rem;
+    }
+
+    .login-logo-icon {
+      width: 56px;
+      height: 56px;
+      background: rgba(255, 255, 255, 0.2);
+      border-radius: var(--border-radius);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-weight: 700;
+      font-size: 1.5rem;
+    }
+
+    .login-logo-text {
+      color: white;
+      font-size: 1.75rem;
+      font-weight: 700;
+    }
+
+    .login-logo-text span {
+      opacity: 0.8;
+    }
+
+    .login-subtitle {
+      color: rgba(255, 255, 255, 0.8);
+      font-size: 0.9375rem;
+      margin: 0;
+    }
+
+    .login-body {
+      padding: 2rem;
+    }
+
+    .login-title {
+      font-size: 1.25rem;
+      font-weight: 600;
+      text-align: center;
+      margin-bottom: 1.5rem;
+      color: var(--text-primary);
+    }
+
+    .login-form .form-group {
+      margin-bottom: 1.25rem;
+    }
+
+    .login-form .form-control {
+      padding: 0.75rem 1rem;
+      font-size: 1rem;
+    }
+
+    .password-input-wrapper {
+      position: relative;
+    }
+
+    .password-toggle {
+      position: absolute;
+      right: 1rem;
+      top: 50%;
+      transform: translateY(-50%);
+      background: none;
+      border: none;
+      color: var(--text-muted);
+      cursor: pointer;
+      padding: 0;
+    }
+
+    .password-toggle:hover {
+      color: var(--text-primary);
+    }
+
+    .login-options {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 1.5rem;
+    }
+
+    .login-options a {
+      font-size: 0.875rem;
+      color: var(--primary);
+    }
+
+    .login-options a:hover {
+      text-decoration: underline;
+    }
+
+    .login-btn {
+      width: 100%;
+      padding: 0.875rem;
+      font-size: 1rem;
+      font-weight: 600;
+    }
+
+    .login-divider {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      margin: 1.5rem 0;
+      color: var(--text-muted);
+      font-size: 0.875rem;
+    }
+
+    .login-divider::before,
+    .login-divider::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: var(--border-color);
+    }
+
+    .demo-credentials {
+      background: var(--info-bg);
+      border: 1px solid #bae6fd;
+      border-radius: var(--border-radius);
+      padding: 1rem;
+      text-align: center;
+    }
+
+    .demo-credentials-title {
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--info);
+      margin-bottom: 0.5rem;
+    }
+
+    .demo-credentials-info {
+      font-size: 0.875rem;
+      color: var(--text-secondary);
+    }
+
+    .demo-credentials-info strong {
+      color: var(--text-primary);
+    }
+
+    .login-footer {
+      text-align: center;
+      padding: 1.5rem 2rem;
+      background: var(--bg-hover);
+      border-top: 1px solid var(--border-color);
+    }
+
+    .login-footer p {
+      margin: 0;
+      font-size: 0.875rem;
+      color: var(--text-muted);
+    }
+
+    .login-footer a {
+      color: var(--primary);
+      font-weight: 500;
+    }
+
+    .copyright {
+      text-align: center;
+      margin-top: 1.5rem;
+      color: rgba(255, 255, 255, 0.5);
+      font-size: 0.8125rem;
+    }
+
+    .copyright a {
+      color: rgba(255, 255, 255, 0.7);
+    }
+  </style>
+</head>
+<body>
+  <div class="login-container">
+    <div class="login-card">
+      <div class="login-header">
+        <div class="login-logo">
+          <div class="login-logo-icon">R</div>
+          <div class="login-logo-text">Ralfiz<span>BMS</span></div>
+        </div>
+        <p class="login-subtitle">Business Management System</p>
+      </div>
+
+      <div class="login-body">
+        <h2 class="login-title">Sign in to your account</h2>
+
+        <form class="login-form" action="../index.html">
+          <div class="form-group">
+            <label class="form-label" for="email">Email Address</label>
+            <input type="email" class="form-control" id="email" placeholder="Enter your email" value="admin@ralfiz.com">
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="password">Password</label>
+            <div class="password-input-wrapper">
+              <input type="password" class="form-control" id="password" placeholder="Enter your password" value="password123" style="padding-right: 3rem;">
+              <button type="button" class="password-toggle" onclick="togglePassword()">
+                <i class="fas fa-eye" id="passwordIcon"></i>
+              </button>
+            </div>
+          </div>
+
+          <div class="login-options">
+            <label class="form-check" style="margin: 0;">
+              <input type="checkbox" class="form-check-input" checked>
+              <span class="form-check-label text-sm">Remember me</span>
+            </label>
+            <a href="#">Forgot password?</a>
+          </div>
+
+          <button type="submit" class="btn btn-primary login-btn">
+            <i class="fas fa-sign-in-alt me-2"></i>
+            Sign In
+          </button>
+
+          <div class="login-divider">Demo Access</div>
+
+          <div class="demo-credentials">
+            <div class="demo-credentials-title">Demo Credentials</div>
+            <div class="demo-credentials-info">
+              <strong>Email:</strong> admin@ralfiz.com<br>
+              <strong>Password:</strong> password123
+            </div>
+          </div>
+        </form>
+      </div>
+
+      <div class="login-footer">
+        <p>Don't have an account? <a href="#">Contact Administrator</a></p>
+      </div>
+    </div>
+
+    <div class="copyright">
+      &copy; 2026 <a href="#">Ralfiz Technologies</a>. All rights reserved.
+    </div>
+  </div>
+
+  <script>
+    function togglePassword() {
+      const passwordInput = document.getElementById('password');
+      const passwordIcon = document.getElementById('passwordIcon');
+
+      if (passwordInput.type === 'password') {
+        passwordInput.type = 'text';
+        passwordIcon.classList.remove('fa-eye');
+        passwordIcon.classList.add('fa-eye-slash');
+      } else {
+        passwordInput.type = 'password';
+        passwordIcon.classList.remove('fa-eye-slash');
+        passwordIcon.classList.add('fa-eye');
+      }
+    }
+  </script>
+</body>
+</html>
