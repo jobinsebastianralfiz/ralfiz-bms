@@ -123,6 +123,10 @@
       <i class="fas fa-edit"></i>
       Edit Project
     </a>
+    <a href="{% url 'project_delete' project.pk %}" class="btn btn-danger">
+      <i class="fas fa-trash-alt"></i>
+      Delete
+    </a>
   </div>
 </div>
 
@@ -228,6 +232,41 @@
           <a href="{{ project.github_repo }}" target="_blank" class="d-flex align-items-center gap-2">
             <i class="fab fa-github"></i>
             {{ project.github_repo|truncatechars:35 }}
+          </a>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Team Members -->
+    <div class="card mb-4">
+      <div class="card-header">
+        <h3 class="card-title"><i class="fas fa-users me-2 text-primary"></i> Team Members</h3>
+      </div>
+      <div class="card-body">
+        {% if project.team_members.all %}
+        {% for member in project.team_members.all %}
+        <div class="d-flex align-items-center gap-3 {% if not forloop.last %}mb-3{% endif %} p-2 rounded" style="background: var(--bg-hover);">
+          <div class="avatar avatar-sm" style="background: var(--primary); color: white;">
+            {{ member.name|slice:":1"|upper }}
+          </div>
+          <div class="flex-1">
+            <div class="fw-medium">{{ member.name }}</div>
+            <div class="text-sm text-muted">{{ member.get_role_display }}</div>
+          </div>
+          {% if member.is_freelancer %}
+          <span class="badge" style="background: var(--warning-bg); color: var(--warning);">Freelancer</span>
+          {% else %}
+          <span class="badge" style="background: var(--primary-bg); color: var(--primary);">Permanent</span>
+          {% endif %}
+        </div>
+        {% endfor %}
+        {% else %}
+        <div class="text-center text-muted py-3">
+          <i class="fas fa-user-plus mb-2" style="font-size: 1.5rem; display: block;"></i>
+          <p class="mb-2">No team members assigned</p>
+          <a href="{% url 'project_update' project.pk %}" class="btn btn-sm btn-primary">
+            <i class="fas fa-plus me-1"></i>Assign Team
           </a>
         </div>
         {% endif %}

@@ -1,0 +1,127 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Time Tracking - Ralfiz BMS{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title">Time Tracking</h1>
+    <p class="page-subtitle mb-0">Track time spent on projects</p>
+  </div>
+  <div class="page-actions">
+    <a href="{% url 'timeentry_create' %}" class="btn btn-primary">
+      <i class="fas fa-plus"></i> Log Time
+    </a>
+  </div>
+</div>
+
+<!-- Stats -->
+<div class="row mb-4">
+  <div class="col-6" style="padding: 0.5rem;">
+    <div class="card stat-card" style="text-align: center;">
+      <div class="stat-card-value" style="font-size: 1.25rem;">{{ total_hours }} hrs</div>
+      <div class="stat-card-label">Total Hours</div>
+    </div>
+  </div>
+  <div class="col-6" style="padding: 0.5rem;">
+    <div class="card stat-card" style="text-align: center;">
+      <div class="stat-card-value text-success" style="font-size: 1.25rem;">{{ billable_hours }} hrs</div>
+      <div class="stat-card-label">Billable Hours</div>
+    </div>
+  </div>
+</div>
+
+<!-- Filters -->
+<div class="card mb-4">
+  <div class="card-body">
+    <form method="get" class="row align-items-end">
+      <div class="col-2" style="padding: 0.5rem;">
+        <label class="form-label">Search</label>
+        <input type="text" class="form-control" name="search" placeholder="Search..." value="{{ search }}">
+      </div>
+      <div class="col-3" style="padding: 0.5rem;">
+        <label class="form-label">Project</label>
+        <select class="form-control" name="project">
+          <option value="">All Projects</option>
+          {% for project in projects %}
+          <option value="{{ project.pk }}" {% if selected_project == project.pk|slugify %}selected{% endif %}>{{ project.name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-2" style="padding: 0.5rem;">
+        <label class="form-label">From</label>
+        <input type="date" class="form-control" name="date_from" value="{{ date_from }}">
+      </div>
+      <div class="col-2" style="padding: 0.5rem;">
+        <label class="form-label">To</label>
+        <input type="date" class="form-control" name="date_to" value="{{ date_to }}">
+      </div>
+      <div class="col-2" style="padding: 0.5rem;">
+        <button type="submit" class="btn btn-outline-secondary w-100">
+          <i class="fas fa-filter"></i> Filter
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Time Entries Table -->
+<div class="card">
+  <div class="table-wrapper">
+    <table class="table">
+      <thead>
+        <tr>
+          <th>Date</th>
+          <th>Project</th>
+          <th>Task</th>
+          <th>Description</th>
+          <th>Hours</th>
+          <th>Billable</th>
+          <th>User</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for entry in entries %}
+        <tr>
+          <td>{{ entry.date|date:"d M Y" }}</td>
+          <td><a href="{% url 'project_detail' entry.project.pk %}">{{ entry.project.name }}</a></td>
+          <td>
+            {% if entry.task %}
+            <a href="{% url 'task_detail' entry.task.pk %}">{{ entry.task.title|truncatechars:20 }}</a>
+            {% else %}
+            <span class="text-muted">-</span>
+            {% endif %}
+          </td>
+          <td>{{ entry.description|truncatewords:8 }}</td>
+          <td class="fw-medium">{{ entry.hours }}h</td>
+          <td>
+            {% if entry.is_billable %}
+            <span class="badge badge-success">Yes</span>
+            {% else %}
+            <span class="badge badge-secondary">No</span>
+            {% endif %}
+          </td>
+          <td>{{ entry.user.get_full_name|default:entry.user.username }}</td>
+          <td>
+            <div class="table-actions">
+              <a href="{% url 'timeentry_update' entry.pk %}" class="btn btn-sm btn-ghost btn-icon" title="Edit">
+                <i class="fas fa-edit"></i>
+              </a>
+              <a href="{% url 'timeentry_delete' entry.pk %}" class="btn btn-sm btn-ghost btn-icon text-danger" title="Delete">
+                <i class="fas fa-trash"></i>
+              </a>
+            </div>
+          </td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="8" class="text-center py-4 text-muted">No time entries found</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

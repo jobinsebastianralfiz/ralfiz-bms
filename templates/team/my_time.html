@@ -1,0 +1,103 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}My Time Entries - Ralfiz BMS{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title">My Time Entries</h1>
+    <p class="page-subtitle mb-0">Track your work hours</p>
+  </div>
+  <div class="page-actions">
+    <a href="{% url 'timeentry_create' %}" class="btn btn-primary">
+      <i class="fas fa-plus"></i> Log Time
+    </a>
+    <a href="{% url 'team_dashboard' %}" class="btn btn-outline-secondary">
+      <i class="fas fa-arrow-left"></i> Back to Dashboard
+    </a>
+  </div>
+</div>
+
+<!-- Summary Card -->
+<div class="card mb-4">
+  <div class="card-body">
+    <div class="d-flex justify-content-between align-items-center">
+      <div>
+        <h3 class="mb-0">{{ total_hours }} hours</h3>
+        <p class="text-muted mb-0">
+          {% if date_filter == 'today' %}Today{% elif date_filter == 'week' %}This Week{% elif date_filter == 'month' %}This Month{% else %}All Time{% endif %}
+        </p>
+      </div>
+      <div class="btn-group">
+        <a href="?date_filter=today" class="btn btn-sm {% if date_filter == 'today' %}btn-primary{% else %}btn-outline-primary{% endif %}">Today</a>
+        <a href="?date_filter=week" class="btn btn-sm {% if date_filter == 'week' %}btn-primary{% else %}btn-outline-primary{% endif %}">This Week</a>
+        <a href="?date_filter=month" class="btn btn-sm {% if date_filter == 'month' %}btn-primary{% else %}btn-outline-primary{% endif %}">This Month</a>
+        <a href="?date_filter=all" class="btn btn-sm {% if date_filter == 'all' %}btn-primary{% else %}btn-outline-primary{% endif %}">All</a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header">
+    <h3 class="card-title"><i class="fas fa-clock"></i> Time Entries</h3>
+  </div>
+  <div class="card-body p-0">
+    {% if entries %}
+    <div class="table-responsive">
+      <table class="table table-hover mb-0">
+        <thead>
+          <tr>
+            <th>Date</th>
+            <th>Project</th>
+            <th>Task</th>
+            <th>Description</th>
+            <th class="text-center">Hours</th>
+            <th class="text-center">Billable</th>
+            <th class="text-end">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for entry in entries %}
+          <tr>
+            <td>{{ entry.date|date:"M d, Y" }}</td>
+            <td>{{ entry.project.name }}</td>
+            <td>{{ entry.task.title|default:"-" }}</td>
+            <td>{{ entry.description|truncatewords:15 }}</td>
+            <td class="text-center"><strong>{{ entry.hours }}h</strong></td>
+            <td class="text-center">
+              {% if entry.is_billable %}
+              <span class="badge bg-success">Yes</span>
+              {% else %}
+              <span class="badge bg-secondary">No</span>
+              {% endif %}
+            </td>
+            <td class="text-end">
+              <div class="btn-group">
+                <a href="{% url 'timeentry_update' entry.pk %}" class="btn btn-sm btn-outline-primary" title="Edit">
+                  <i class="fas fa-edit"></i>
+                </a>
+                <a href="{% url 'timeentry_delete' entry.pk %}" class="btn btn-sm btn-outline-danger" title="Delete">
+                  <i class="fas fa-trash"></i>
+                </a>
+              </div>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <div class="empty-state">
+      <i class="fas fa-clock"></i>
+      <h3>No Time Entries</h3>
+      <p>Start logging your work hours.</p>
+      <a href="{% url 'timeentry_create' %}" class="btn btn-primary btn-sm">
+        <i class="fas fa-plus"></i> Log Time
+      </a>
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

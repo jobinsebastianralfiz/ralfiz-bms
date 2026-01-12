@@ -174,6 +174,19 @@
                   <input type="text" class="form-control" name="gst_number" value="{{ company.gst_number|default:'' }}">
                 </div>
               </div>
+              <div class="col-6 col-sm-12" style="padding: 0.5rem;">
+                <div class="form-group">
+                  <label class="form-label">PAN Number</label>
+                  <input type="text" class="form-control" name="pan_number" value="{{ company.pan_number|default:'' }}">
+                </div>
+              </div>
+              <div class="col-6 col-sm-12" style="padding: 0.5rem;">
+                <div class="form-group">
+                  <label class="form-label">HSN/SAC Code</label>
+                  <input type="text" class="form-control" name="hsn_code" value="{{ company.hsn_code|default:'' }}" placeholder="e.g., 998314 for IT services">
+                  <div class="form-text">HSN code for goods or SAC code for services</div>
+                </div>
+              </div>
               <div class="col-12" style="padding: 0.5rem;">
                 <div class="form-group mb-0">
                   <label class="form-label">Address</label>

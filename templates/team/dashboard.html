@@ -1,0 +1,322 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}My Dashboard - Ralfiz BMS{% endblock %}
+
+{% block breadcrumb %}
+<span class="breadcrumb-item active">My Dashboard</span>
+{% endblock %}
+
+{% block content %}
+<!-- Page Header -->
+<div class="page-header">
+  <div>
+    <h1 class="page-title">Welcome, {{ team_member.name }}</h1>
+    <p class="page-subtitle mb-0">
+      {{ team_member.get_role_display }}
+      {% if team_member.is_freelancer %}<span class="badge bg-warning text-dark ms-2">Freelancer</span>{% else %}<span class="badge bg-primary ms-2">Permanent</span>{% endif %}
+    </p>
+  </div>
+  {% if team_member.is_freelancer %}
+  <div class="page-actions">
+    <a href="{% url 'timeentry_create' %}" class="btn btn-primary">
+      <i class="fas fa-clock"></i> Log Time
+    </a>
+  </div>
+  {% endif %}
+</div>
+
+<!-- Task Stats Cards -->
+<div class="row mb-4">
+  <div class="col-3 col-md-6 col-sm-12" style="padding: 0.75rem;">
+    <div class="card stat-card">
+      <div class="stat-card-header">
+        <div class="stat-card-icon primary">
+          <i class="fas fa-list"></i>
+        </div>
+      </div>
+      <div class="stat-card-value">{{ tasks_todo }}</div>
+      <div class="stat-card-label">To Do</div>
+    </div>
+  </div>
+  <div class="col-3 col-md-6 col-sm-12" style="padding: 0.75rem;">
+    <div class="card stat-card">
+      <div class="stat-card-header">
+        <div class="stat-card-icon warning">
+          <i class="fas fa-spinner"></i>
+        </div>
+      </div>
+      <div class="stat-card-value">{{ tasks_in_progress }}</div>
+      <div class="stat-card-label">In Progress</div>
+    </div>
+  </div>
+  <div class="col-3 col-md-6 col-sm-12" style="padding: 0.75rem;">
+    <div class="card stat-card">
+      <div class="stat-card-header">
+        <div class="stat-card-icon info">
+          <i class="fas fa-eye"></i>
+        </div>
+      </div>
+      <div class="stat-card-value">{{ tasks_review }}</div>
+      <div class="stat-card-label">In Review</div>
+    </div>
+  </div>
+  <div class="col-3 col-md-6 col-sm-12" style="padding: 0.75rem;">
+    <div class="card stat-card">
+      <div class="stat-card-header">
+        <div class="stat-card-icon success">
+          <i class="fas fa-check-circle"></i>
+        </div>
+      </div>
+      <div class="stat-card-value">{{ tasks_completed }}</div>
+      <div class="stat-card-label">Completed</div>
+    </div>
+  </div>
+</div>
+
+{% if team_member.is_freelancer %}
+<!-- Time Stats (Freelancers only) -->
+<div class="row mb-4">
+  <div class="col-6 col-md-6 col-sm-12" style="padding: 0.75rem;">
+    <div class="card stat-card">
+      <div class="stat-card-header">
+        <div class="stat-card-icon primary">
+          <i class="fas fa-clock"></i>
+        </div>
+      </div>
+      <div class="stat-card-value">{{ hours_this_week }} hrs</div>
+      <div class="stat-card-label">Logged This Week</div>
+    </div>
+  </div>
+  <div class="col-6 col-md-6 col-sm-12" style="padding: 0.75rem;">
+    <div class="card stat-card">
+      <div class="stat-card-header">
+        <div class="stat-card-icon success">
+          <i class="fas fa-calendar-alt"></i>
+        </div>
+      </div>
+      <div class="stat-card-value">{{ hours_this_month }} hrs</div>
+      <div class="stat-card-label">Logged This Month</div>
+    </div>
+  </div>
+</div>
+{% endif %}
+
+<div class="row">
+  <!-- My Tasks -->
+  <div class="{% if team_member.is_freelancer %}col-8 col-md-12{% else %}col-12{% endif %}" style="padding: 0.75rem;">
+    <div class="card">
+      <div class="card-header">
+        <h3 class="card-title"><i class="fas fa-tasks text-primary me-2"></i> My Active Tasks</h3>
+        <a href="{% url 'task_list' %}" class="btn btn-sm btn-ghost">View All</a>
+      </div>
+      {% if recent_tasks %}
+      <div class="table-wrapper">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>Task</th>
+              <th>Project</th>
+              <th>Status</th>
+              <th>Priority</th>
+              <th>Due Date</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for task in recent_tasks %}
+            <tr>
+              <td>
+                <a href="{% url 'task_detail' task.pk %}" class="fw-medium">{{ task.title }}</a>
+              </td>
+              <td>{{ task.project.name }}</td>
+              <td>
+                <span class="status-badge {{ task.status }}">{{ task.get_status_display }}</span>
+              </td>
+              <td>
+                <span class="priority-badge {{ task.priority }}">{{ task.get_priority_display }}</span>
+              </td>
+              <td>
+                {% if task.due_date %}
+                  {% if task.due_date < today %}
+                  <span class="text-danger"><i class="fas fa-exclamation-circle"></i> {{ task.due_date|date:"d M" }}</span>
+                  {% else %}
+                  {{ task.due_date|date:"d M Y" }}
+                  {% endif %}
+                {% else %}
+                <span class="text-muted">-</span>
+                {% endif %}
+              </td>
+              <td class="text-right">
+                <a href="{% url 'task_detail' task.pk %}" class="btn btn-sm btn-ghost btn-icon" title="View">
+                  <i class="fas fa-eye"></i>
+                </a>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}
+      <div class="card-body">
+        <div class="empty-state">
+          <i class="fas fa-check-circle text-success"></i>
+          <h3>No Active Tasks</h3>
+          <p>You're all caught up!</p>
+        </div>
+      </div>
+      {% endif %}
+    </div>
+
+    {% if team_member.is_freelancer %}
+    <!-- Recent Time Entries (Freelancers only) -->
+    <div class="card mt-4">
+      <div class="card-header">
+        <h3 class="card-title"><i class="fas fa-clock text-info me-2"></i> Recent Time Entries</h3>
+        <a href="{% url 'timeentry_list' %}" class="btn btn-sm btn-ghost">View All</a>
+      </div>
+      {% if recent_time_entries %}
+      <div class="table-wrapper">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>Project</th>
+              <th>Task</th>
+              <th>Hours</th>
+              <th>Description</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for entry in recent_time_entries %}
+            <tr>
+              <td>{{ entry.date|date:"d M Y" }}</td>
+              <td>{{ entry.project.name }}</td>
+              <td>{{ entry.task.title|default:"-" }}</td>
+              <td><span class="fw-medium">{{ entry.hours }}h</span></td>
+              <td>{{ entry.description|truncatewords:10 }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}
+      <div class="card-body">
+        <div class="empty-state">
+          <i class="fas fa-clock"></i>
+          <h3>No Time Entries</h3>
+          <p>Start logging your work time.</p>
+          <a href="{% url 'timeentry_create' %}" class="btn btn-primary btn-sm">
+            <i class="fas fa-plus"></i> Log Time
+          </a>
+        </div>
+      </div>
+      {% endif %}
+    </div>
+    {% else %}
+    <!-- My Projects (for permanent employees - full width) -->
+    <div class="card mt-4">
+      <div class="card-header">
+        <h3 class="card-title"><i class="fas fa-folder-open text-warning me-2"></i> My Projects</h3>
+      </div>
+      {% if my_projects %}
+      <div class="table-wrapper">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>Project</th>
+              <th>Client</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for project in my_projects %}
+            <tr>
+              <td><span class="fw-medium">{{ project.name }}</span></td>
+              <td>{{ project.client.name }}</td>
+              <td><span class="status-badge {{ project.status }}">{{ project.get_status_display }}</span></td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}
+      <div class="card-body">
+        <div class="empty-state">
+          <i class="fas fa-folder-open"></i>
+          <h3>No Projects</h3>
+          <p>No projects assigned yet.</p>
+        </div>
+      </div>
+      {% endif %}
+    </div>
+    {% endif %}
+  </div>
+
+  {% if team_member.is_freelancer %}
+  <!-- Sidebar (Freelancers only) -->
+  <div class="col-4 col-md-12" style="padding: 0.75rem;">
+    <!-- Quick Log Time -->
+    <div class="card">
+      <div class="card-header">
+        <h3 class="card-title"><i class="fas fa-plus-circle text-success me-2"></i> Quick Log Time</h3>
+      </div>
+      <div class="card-body">
+        <form method="post" action="{% url 'timeentry_create' %}">
+          {% csrf_token %}
+          <input type="hidden" name="quick_log" value="1">
+          <div class="mb-3">
+            <label class="form-label">Project <span class="text-danger">*</span></label>
+            <select name="project" class="form-control" required>
+              <option value="">Select Project</option>
+              {% for project in my_projects %}
+              <option value="{{ project.pk }}">{{ project.name }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Hours <span class="text-danger">*</span></label>
+            <input type="number" name="hours" class="form-control" step="0.25" min="0.25" max="24" placeholder="e.g. 2.5" required>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Description <span class="text-danger">*</span></label>
+            <textarea name="description" class="form-control" rows="2" placeholder="What did you work on?" required></textarea>
+          </div>
+          <button type="submit" class="btn btn-primary w-100">
+            <i class="fas fa-clock"></i> Log Time
+          </button>
+        </form>
+      </div>
+    </div>
+
+    <!-- My Projects -->
+    <div class="card mt-4">
+      <div class="card-header">
+        <h3 class="card-title"><i class="fas fa-folder-open text-warning me-2"></i> My Projects</h3>
+      </div>
+      <div class="card-body">
+        {% if my_projects %}
+        {% for project in my_projects %}
+        <div class="d-flex align-items-center gap-3 {% if not forloop.last %}mb-3{% endif %} p-2 rounded" style="background: var(--bg-hover);">
+          <div class="avatar avatar-sm" style="background: var(--info); color: white;">
+            <i class="fas fa-folder" style="font-size: 0.75rem;"></i>
+          </div>
+          <div class="flex-1">
+            <div class="fw-medium">{{ project.name }}</div>
+            <div class="text-sm text-muted">{{ project.client.name }}</div>
+          </div>
+          <span class="status-badge {{ project.status }}">{{ project.get_status_display }}</span>
+        </div>
+        {% endfor %}
+        {% else %}
+        <div class="text-center text-muted py-3">
+          <i class="fas fa-folder-open mb-2" style="font-size: 1.5rem; display: block;"></i>
+          <p class="mb-0">No projects assigned yet.</p>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

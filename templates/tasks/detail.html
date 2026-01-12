@@ -1,0 +1,130 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ task.title }} - Ralfiz BMS{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title">{{ task.title }}</h1>
+    <p class="page-subtitle mb-0">
+      <a href="{% url 'project_detail' task.project.pk %}">{{ task.project.name }}</a>
+    </p>
+  </div>
+  <div class="page-actions">
+    <a href="{% url 'task_update' task.pk %}" class="btn btn-outline-secondary">
+      <i class="fas fa-edit"></i> Edit
+    </a>
+    <a href="{% url 'task_delete' task.pk %}" class="btn btn-outline-danger">
+      <i class="fas fa-trash"></i> Delete
+    </a>
+  </div>
+</div>
+
+<div class="row">
+  <div class="col-8">
+    <div class="card mb-4">
+      <div class="card-header">
+        <h3 class="card-title"><i class="fas fa-info-circle"></i> Task Details</h3>
+      </div>
+      <div class="card-body">
+        <div class="row mb-3">
+          <div class="col-3"><strong>Status</strong></div>
+          <div class="col-9"><span class="status-badge {{ task.status }}">{{ task.get_status_display }}</span></div>
+        </div>
+        <div class="row mb-3">
+          <div class="col-3"><strong>Priority</strong></div>
+          <div class="col-9"><span class="priority-badge {{ task.priority }}">{{ task.get_priority_display }}</span></div>
+        </div>
+        <div class="row mb-3">
+          <div class="col-3"><strong>Assigned To</strong></div>
+          <div class="col-9">{{ task.assigned_to.name|default:"Unassigned" }}</div>
+        </div>
+        <div class="row mb-3">
+          <div class="col-3"><strong>Due Date</strong></div>
+          <div class="col-9 {% if task.is_overdue %}text-danger fw-medium{% endif %}">
+            {{ task.due_date|date:"d M Y"|default:"-" }}
+            {% if task.is_overdue %}<span class="badge badge-danger ms-2">Overdue</span>{% endif %}
+          </div>
+        </div>
+        {% if task.completed_date %}
+        <div class="row mb-3">
+          <div class="col-3"><strong>Completed</strong></div>
+          <div class="col-9 text-success">{{ task.completed_date|date:"d M Y" }}</div>
+        </div>
+        {% endif %}
+        {% if task.description %}
+        <div class="row mb-3">
+          <div class="col-3"><strong>Description</strong></div>
+          <div class="col-9">{{ task.description|linebreaks }}</div>
+        </div>
+        {% endif %}
+        {% if task.notes %}
+        <div class="row mb-3">
+          <div class="col-3"><strong>Notes</strong></div>
+          <div class="col-9">{{ task.notes|linebreaks }}</div>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Time Entries -->
+    <div class="card">
+      <div class="card-header">
+        <h3 class="card-title"><i class="fas fa-clock"></i> Time Entries</h3>
+        <span class="badge">{{ total_hours }} hours</span>
+      </div>
+      <div class="table-wrapper">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>Description</th>
+              <th>Hours</th>
+              <th>User</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for entry in time_entries %}
+            <tr>
+              <td>{{ entry.date|date:"d M Y" }}</td>
+              <td>{{ entry.description|truncatewords:10 }}</td>
+              <td>{{ entry.hours }}h</td>
+              <td>{{ entry.user.get_full_name|default:entry.user.username }}</td>
+            </tr>
+            {% empty %}
+            <tr>
+              <td colspan="4" class="text-center py-3 text-muted">No time entries</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-4">
+    <div class="card">
+      <div class="card-header">
+        <h3 class="card-title"><i class="fas fa-bolt"></i> Quick Actions</h3>
+      </div>
+      <div class="card-body">
+        <form method="post" action="{% url 'task_status_update' task.pk %}" id="status-form">
+          {% csrf_token %}
+          <label class="form-label">Update Status</label>
+          <select class="form-control mb-3" name="status" onchange="document.getElementById('status-form').submit()">
+            <option value="todo" {% if task.status == 'todo' %}selected{% endif %}>To Do</option>
+            <option value="in_progress" {% if task.status == 'in_progress' %}selected{% endif %}>In Progress</option>
+            <option value="review" {% if task.status == 'review' %}selected{% endif %}>In Review</option>
+            <option value="completed" {% if task.status == 'completed' %}selected{% endif %}>Completed</option>
+          </select>
+        </form>
+        <hr>
+        <a href="{% url 'timeentry_create' %}?task={{ task.pk }}" class="btn btn-outline-primary w-100">
+          <i class="fas fa-clock"></i> Log Time
+        </a>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

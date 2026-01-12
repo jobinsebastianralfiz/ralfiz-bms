@@ -1,0 +1,97 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{% if entry %}Edit Time Entry{% else %}Log Time{% endif %} - Ralfiz BMS{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title">{% if entry %}Edit Time Entry{% else %}Log Time{% endif %}</h1>
+    <p class="page-subtitle mb-0">{% if entry %}Update time entry{% else %}Record time spent on a project{% endif %}</p>
+  </div>
+</div>
+
+<form method="post">
+  {% csrf_token %}
+  <div class="row">
+    <div class="col-8">
+      <div class="card">
+        <div class="card-header">
+          <h3 class="card-title"><i class="fas fa-clock"></i> Time Entry Details</h3>
+        </div>
+        <div class="card-body">
+          <div class="row">
+            <div class="col-6" style="padding: 0.5rem;">
+              <label class="form-label">Project <span class="text-danger">*</span></label>
+              <select class="form-control" name="project" id="project-select" required>
+                <option value="">Select Project</option>
+                {% for project in projects %}
+                <option value="{{ project.pk }}" {% if entry.project_id == project.pk %}selected{% endif %}>{{ project.name }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="col-6" style="padding: 0.5rem;">
+              <label class="form-label">Task</label>
+              <select class="form-control" name="task">
+                <option value="">No Task</option>
+                {% for task in tasks %}
+                <option value="{{ task.pk }}" {% if entry.task_id == task.pk %}selected{% endif %}>{{ task.title }}</option>
+                {% endfor %}
+              </select>
+            </div>
+          </div>
+          <div class="row">
+            <div class="col-4" style="padding: 0.5rem;">
+              <label class="form-label">Date <span class="text-danger">*</span></label>
+              <input type="date" class="form-control" name="date" value="{{ entry.date|date:'Y-m-d'|default:'' }}" required>
+            </div>
+            <div class="col-4" style="padding: 0.5rem;">
+              <label class="form-label">Hours <span class="text-danger">*</span></label>
+              <input type="number" step="0.25" min="0.25" class="form-control" name="hours" value="{{ entry.hours|default:'' }}" placeholder="e.g. 2.5" required>
+            </div>
+            <div class="col-4" style="padding: 0.5rem;">
+              <label class="form-label">Hourly Rate</label>
+              <input type="number" step="0.01" class="form-control" name="hourly_rate" value="{{ entry.hourly_rate|default:'' }}" placeholder="Optional">
+            </div>
+          </div>
+          <div class="row">
+            <div class="col-12" style="padding: 0.5rem;">
+              <label class="form-label">Description <span class="text-danger">*</span></label>
+              <textarea class="form-control" name="description" rows="3" required>{{ entry.description|default:'' }}</textarea>
+            </div>
+          </div>
+          <div class="row">
+            <div class="col-6" style="padding: 0.5rem;">
+              <label class="form-check">
+                <input type="checkbox" name="is_billable" {% if entry.is_billable or not entry %}checked{% endif %}>
+                <span class="form-check-label">Billable time</span>
+              </label>
+            </div>
+          </div>
+          <div class="row">
+            <div class="col-12" style="padding: 0.5rem;">
+              <label class="form-label">Notes</label>
+              <textarea class="form-control" name="notes" rows="2">{{ entry.notes|default:'' }}</textarea>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-4">
+      <div class="card">
+        <div class="card-header">
+          <h3 class="card-title"><i class="fas fa-save"></i> Actions</h3>
+        </div>
+        <div class="card-body">
+          <button type="submit" class="btn btn-primary w-100 mb-2">
+            <i class="fas fa-save"></i> {% if entry %}Update Entry{% else %}Log Time{% endif %}
+          </button>
+          <a href="{% url 'timeentry_list' %}" class="btn btn-outline-secondary w-100">
+            <i class="fas fa-times"></i> Cancel
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+</form>
+{% endblock %}

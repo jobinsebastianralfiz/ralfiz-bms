@@ -1,0 +1,104 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{% if task %}Edit Task{% else %}Add Task{% endif %} - Ralfiz BMS{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title">{% if task %}Edit Task{% else %}Add Task{% endif %}</h1>
+    <p class="page-subtitle mb-0">{% if task %}Update task details{% else %}Create a new task{% endif %}</p>
+  </div>
+</div>
+
+<form method="post">
+  {% csrf_token %}
+  <div class="row">
+    <div class="col-8">
+      <div class="card">
+        <div class="card-header">
+          <h3 class="card-title"><i class="fas fa-tasks"></i> Task Details</h3>
+        </div>
+        <div class="card-body">
+          <div class="row">
+            <div class="col-12" style="padding: 0.5rem;">
+              <label class="form-label">Title <span class="text-danger">*</span></label>
+              <input type="text" class="form-control" name="title" value="{{ task.title|default:'' }}" required>
+            </div>
+          </div>
+          <div class="row">
+            <div class="col-6" style="padding: 0.5rem;">
+              <label class="form-label">Project <span class="text-danger">*</span></label>
+              <select class="form-control" name="project" required>
+                <option value="">Select Project</option>
+                {% for project in projects %}
+                <option value="{{ project.pk }}" {% if task.project_id == project.pk %}selected{% endif %}>{{ project.name }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="col-6" style="padding: 0.5rem;">
+              <label class="form-label">Assigned To</label>
+              <select class="form-control" name="assigned_to">
+                <option value="">Unassigned</option>
+                {% for member in team_members %}
+                <option value="{{ member.pk }}" {% if task.assigned_to_id == member.pk %}selected{% endif %}>{{ member.name }} ({{ member.get_role_display }})</option>
+                {% endfor %}
+              </select>
+              <small class="text-muted"><a href="{% url 'team_list' %}">Manage Team Members</a></small>
+            </div>
+          </div>
+          <div class="row">
+            <div class="col-4" style="padding: 0.5rem;">
+              <label class="form-label">Status</label>
+              <select class="form-control" name="status">
+                {% for key, value in status_choices %}
+                <option value="{{ key }}" {% if task.status == key %}selected{% endif %}>{{ value }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="col-4" style="padding: 0.5rem;">
+              <label class="form-label">Priority</label>
+              <select class="form-control" name="priority">
+                {% for key, value in priority_choices %}
+                <option value="{{ key }}" {% if task.priority == key %}selected{% endif %}>{{ value }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="col-4" style="padding: 0.5rem;">
+              <label class="form-label">Due Date</label>
+              <input type="date" class="form-control" name="due_date" value="{{ task.due_date|date:'Y-m-d'|default:'' }}">
+            </div>
+          </div>
+          <div class="row">
+            <div class="col-12" style="padding: 0.5rem;">
+              <label class="form-label">Description</label>
+              <textarea class="form-control" name="description" rows="3">{{ task.description|default:'' }}</textarea>
+            </div>
+          </div>
+          <div class="row">
+            <div class="col-12" style="padding: 0.5rem;">
+              <label class="form-label">Notes</label>
+              <textarea class="form-control" name="notes" rows="2">{{ task.notes|default:'' }}</textarea>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-4">
+      <div class="card">
+        <div class="card-header">
+          <h3 class="card-title"><i class="fas fa-save"></i> Actions</h3>
+        </div>
+        <div class="card-body">
+          <button type="submit" class="btn btn-primary w-100 mb-2">
+            <i class="fas fa-save"></i> {% if task %}Update Task{% else %}Create Task{% endif %}
+          </button>
+          <a href="{% url 'task_list' %}" class="btn btn-outline-secondary w-100">
+            <i class="fas fa-times"></i> Cancel
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+</form>
+{% endblock %}

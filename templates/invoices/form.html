@@ -47,7 +47,7 @@
                 <select class="form-control" id="client" name="client" required>
                   <option value="">Select client</option>
                   {% for client in clients %}
-                  <option value="{{ client.pk }}" {% if invoice.client.pk == client.pk %}selected{% endif %}>{{ client.name }}</option>
+                  <option value="{{ client.pk }}" {% if invoice.client_id and invoice.client_id == client.pk %}selected{% endif %}>{{ client.name }}</option>
                   {% endfor %}
                 </select>
               </div>
@@ -58,7 +58,7 @@
                 <select class="form-control" id="project" name="project">
                   <option value="">Select project (optional)</option>
                   {% for project in projects %}
-                  <option value="{{ project.pk }}" {% if invoice.project.pk == project.pk %}selected{% endif %}>{{ project.name }}</option>
+                  <option value="{{ project.pk }}" {% if invoice.project_id and invoice.project_id == project.pk %}selected{% endif %}>{{ project.name }}</option>
                   {% endfor %}
                 </select>
               </div>
@@ -124,7 +124,7 @@
                     <input type="number" class="form-control text-end item-price" name="item_price_{{ forloop.counter }}" value="{{ item.unit_price|floatformat:2 }}" step="0.01" onchange="calculateLineTotal(this)">
                   </td>
                   <td>
-                    <input type="text" class="form-control text-end item-total" readonly value="{{ item.total|floatformat:2 }}">
+                    <input type="text" class="form-control text-end item-total" readonly value="{{ item.amount|floatformat:2 }}">
                   </td>
                   <td>
                     <button type="button" class="btn btn-ghost btn-sm btn-icon text-danger" onclick="removeLineItem(this)">

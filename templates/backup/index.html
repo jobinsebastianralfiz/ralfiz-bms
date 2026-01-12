@@ -1,0 +1,184 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Backup & Restore - Ralfiz BMS{% endblock %}
+
+{% block breadcrumb %}
+<a href="{% url 'dashboard' %}" class="breadcrumb-item">Dashboard</a>
+<span class="breadcrumb-separator">/</span>
+<span class="breadcrumb-item active">Backup & Restore</span>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title">Backup & Restore</h1>
+    <p class="page-subtitle mb-0">Manage your data backups</p>
+  </div>
+</div>
+
+<div class="row">
+  <!-- Create Backup -->
+  <div class="col-6 col-md-12" style="padding: 0.75rem;">
+    <div class="card">
+      <div class="card-header">
+        <h3 class="card-title">
+          <i class="fas fa-download me-2 text-primary"></i>
+          Create Backup
+        </h3>
+      </div>
+      <div class="card-body">
+        <p class="text-secondary mb-4">
+          Create a complete backup of all your data including clients, projects, invoices, quotes, payments, credentials, and settings.
+        </p>
+        <div class="d-flex gap-3">
+          <a href="{% url 'backup_download' %}" class="btn btn-primary">
+            <i class="fas fa-cloud-download-alt me-2"></i>Create & Download Backup
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Restore Backup -->
+  <div class="col-6 col-md-12" style="padding: 0.75rem;">
+    <div class="card">
+      <div class="card-header">
+        <h3 class="card-title">
+          <i class="fas fa-upload me-2 text-warning"></i>
+          Restore Backup
+        </h3>
+      </div>
+      <div class="card-body">
+        <div class="alert alert-warning mb-4">
+          <i class="fas fa-exclamation-triangle me-2"></i>
+          <strong>Warning:</strong> Restoring a backup will replace all existing data. This action cannot be undone.
+        </div>
+        <form method="post" action="{% url 'backup_restore' %}" enctype="multipart/form-data" onsubmit="return confirm('Are you sure you want to restore this backup? All existing data will be replaced.');">
+          {% csrf_token %}
+          <div class="form-group mb-3">
+            <label class="form-label">Select Backup File</label>
+            <input type="file" class="form-control" name="backup_file" accept=".json" required>
+            <div class="form-text">Only .json backup files are supported</div>
+          </div>
+          <button type="submit" class="btn btn-warning">
+            <i class="fas fa-undo me-2"></i>Restore Backup
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Recent Backups -->
+<div class="row">
+  <div class="col-12" style="padding: 0.75rem;">
+    <div class="card">
+      <div class="card-header">
+        <h3 class="card-title">
+          <i class="fas fa-history me-2 text-primary"></i>
+          Recent Backups
+        </h3>
+      </div>
+      <div class="card-body">
+        {% if backups %}
+        <div class="table-wrapper">
+          <table class="table">
+            <thead>
+              <tr>
+                <th>Filename</th>
+                <th>Size</th>
+                <th>Created</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for backup in backups %}
+              <tr>
+                <td>
+                  <i class="fas fa-file-archive text-primary me-2"></i>
+                  {{ backup.filename }}
+                </td>
+                <td>{{ backup.size|filesizeformat }}</td>
+                <td>{{ backup.created|date:"d M Y, h:i A" }}</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        {% else %}
+        <div class="text-center py-4 text-muted">
+          <i class="fas fa-archive fa-3x mb-3" style="opacity: 0.3;"></i>
+          <p class="mb-0">No backups created yet</p>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- What's Included -->
+<div class="row">
+  <div class="col-12" style="padding: 0.75rem;">
+    <div class="card">
+      <div class="card-header">
+        <h3 class="card-title">
+          <i class="fas fa-list-check me-2 text-primary"></i>
+          What's Included in Backup
+        </h3>
+      </div>
+      <div class="card-body">
+        <div class="row">
+          <div class="col-3 col-md-6 col-sm-12" style="padding: 0.5rem;">
+            <div class="d-flex align-items-center gap-2 mb-2">
+              <i class="fas fa-check-circle text-success"></i>
+              <span class="fw-medium">Clients</span>
+            </div>
+          </div>
+          <div class="col-3 col-md-6 col-sm-12" style="padding: 0.5rem;">
+            <div class="d-flex align-items-center gap-2 mb-2">
+              <i class="fas fa-check-circle text-success"></i>
+              <span class="fw-medium">Projects</span>
+            </div>
+          </div>
+          <div class="col-3 col-md-6 col-sm-12" style="padding: 0.5rem;">
+            <div class="d-flex align-items-center gap-2 mb-2">
+              <i class="fas fa-check-circle text-success"></i>
+              <span class="fw-medium">Invoices & Items</span>
+            </div>
+          </div>
+          <div class="col-3 col-md-6 col-sm-12" style="padding: 0.5rem;">
+            <div class="d-flex align-items-center gap-2 mb-2">
+              <i class="fas fa-check-circle text-success"></i>
+              <span class="fw-medium">Quotes & Items</span>
+            </div>
+          </div>
+          <div class="col-3 col-md-6 col-sm-12" style="padding: 0.5rem;">
+            <div class="d-flex align-items-center gap-2 mb-2">
+              <i class="fas fa-check-circle text-success"></i>
+              <span class="fw-medium">Payments</span>
+            </div>
+          </div>
+          <div class="col-3 col-md-6 col-sm-12" style="padding: 0.5rem;">
+            <div class="d-flex align-items-center gap-2 mb-2">
+              <i class="fas fa-check-circle text-success"></i>
+              <span class="fw-medium">Credentials</span>
+            </div>
+          </div>
+          <div class="col-3 col-md-6 col-sm-12" style="padding: 0.5rem;">
+            <div class="d-flex align-items-center gap-2 mb-2">
+              <i class="fas fa-check-circle text-success"></i>
+              <span class="fw-medium">Company Settings</span>
+            </div>
+          </div>
+          <div class="col-3 col-md-6 col-sm-12" style="padding: 0.5rem;">
+            <div class="d-flex align-items-center gap-2 mb-2">
+              <i class="fas fa-times-circle text-muted"></i>
+              <span class="text-muted">User Accounts (not included)</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

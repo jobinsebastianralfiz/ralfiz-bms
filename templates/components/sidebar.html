@@ -1,13 +1,54 @@
 {% load static %}
 <aside class="sidebar" id="sidebar">
   <div class="sidebar-header">
-    <a href="{% url 'dashboard' %}" class="sidebar-logo">
-      <div class="sidebar-logo-icon">R</div>
-      <div class="sidebar-logo-text">Ralfiz<span>BMS</span></div>
+    <a href="{% if request.user.team_profile %}{% url 'team_dashboard' %}{% else %}{% url 'dashboard' %}{% endif %}" class="sidebar-logo">
+      {% if company.logo %}
+      <img src="{{ company.logo.url }}" alt="{{ company.company_name }}" class="sidebar-logo-img">
+      {% else %}
+      <div class="sidebar-logo-icon">{{ company.company_name|slice:":1"|upper|default:"R" }}</div>
+      {% endif %}
+      <div class="sidebar-logo-text">{{ company.company_name|default:"Ralfiz" }}<span>BMS</span></div>
     </a>
   </div>
 
   <nav class="sidebar-nav">
+    {% if request.user.team_profile %}
+    <!-- Team Member Navigation -->
+    <div class="nav-section">
+      <a href="{% url 'team_dashboard' %}" class="nav-item {% if request.resolver_match.url_name == 'team_dashboard' %}active{% endif %}">
+        <i class="fas fa-th-large"></i>
+        <span>My Dashboard</span>
+      </a>
+    </div>
+
+    <div class="nav-section">
+      <div class="nav-section-title">My Work</div>
+      <a href="{% url 'task_list' %}" class="nav-item {% if 'task' in request.resolver_match.url_name %}active{% endif %}">
+        <i class="fas fa-tasks"></i>
+        <span>My Tasks</span>
+      </a>
+      <a href="{% url 'task_board' %}" class="nav-item {% if request.resolver_match.url_name == 'task_board' %}active{% endif %}">
+        <i class="fas fa-columns"></i>
+        <span>Task Board</span>
+      </a>
+      {% if request.user.team_profile.is_freelancer %}
+      <a href="{% url 'timeentry_list' %}" class="nav-item {% if 'time' in request.resolver_match.url_name %}active{% endif %}">
+        <i class="fas fa-clock"></i>
+        <span>My Time</span>
+      </a>
+      {% endif %}
+    </div>
+
+    <div class="nav-section">
+      <div class="nav-section-title">Account</div>
+      <a href="{% url 'profile' %}" class="nav-item {% if 'profile' in request.resolver_match.url_name %}active{% endif %}">
+        <i class="fas fa-user-circle"></i>
+        <span>Profile</span>
+      </a>
+    </div>
+
+    {% else %}
+    <!-- Admin Navigation -->
     <div class="nav-section">
       <a href="{% url 'dashboard' %}" class="nav-item {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}">
         <i class="fas fa-th-large"></i>
@@ -25,12 +66,32 @@
         <i class="fas fa-folder-open"></i>
         <span>Projects</span>
       </a>
+      <a href="{% url 'task_list' %}" class="nav-item {% if 'task' in request.resolver_match.url_name %}active{% endif %}">
+        <i class="fas fa-tasks"></i>
+        <span>Tasks</span>
+      </a>
+      <a href="{% url 'team_list' %}" class="nav-item {% if 'team' in request.resolver_match.url_name %}active{% endif %}">
+        <i class="fas fa-user-friends"></i>
+        <span>Team Members</span>
+      </a>
       <a href="{% url 'credential_list' %}" class="nav-item {% if 'credential' in request.resolver_match.url_name %}active{% endif %}">
         <i class="fas fa-key"></i>
         <span>Credentials</span>
         {% if expiring_credentials_count %}
         <span class="nav-badge">{{ expiring_credentials_count }}</span>
         {% endif %}
+      </a>
+    </div>
+
+    <div class="nav-section">
+      <div class="nav-section-title">Tracking</div>
+      <a href="{% url 'timeentry_list' %}" class="nav-item {% if 'time' in request.resolver_match.url_name %}active{% endif %}">
+        <i class="fas fa-clock"></i>
+        <span>Time Tracking</span>
+      </a>
+      <a href="{% url 'expense_list' %}" class="nav-item {% if 'expense' in request.resolver_match.url_name %}active{% endif %}">
+        <i class="fas fa-receipt"></i>
+        <span>Expenses</span>
       </a>
     </div>
 
@@ -56,10 +117,23 @@
         <i class="fas fa-chart-bar"></i>
         <span>Reports</span>
       </a>
+      <a href="{% url 'activity_log' %}" class="nav-item {% if 'activity' in request.resolver_match.url_name %}active{% endif %}">
+        <i class="fas fa-history"></i>
+        <span>Activity Log</span>
+      </a>
       <a href="{% url 'settings' %}" class="nav-item {% if 'setting' in request.resolver_match.url_name %}active{% endif %}">
         <i class="fas fa-cog"></i>
         <span>Settings</span>
       </a>
+      <a href="{% url 'backup' %}" class="nav-item {% if 'backup' in request.resolver_match.url_name %}active{% endif %}">
+        <i class="fas fa-database"></i>
+        <span>Backup</span>
+      </a>
+      <a href="{% url 'profile' %}" class="nav-item {% if 'profile' in request.resolver_match.url_name %}active{% endif %}">
+        <i class="fas fa-user-circle"></i>
+        <span>Profile</span>
+      </a>
     </div>
+    {% endif %}
   </nav>
 </aside>

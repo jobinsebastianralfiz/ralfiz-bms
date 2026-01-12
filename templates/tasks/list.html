@@ -1,0 +1,129 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Tasks - Ralfiz BMS{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title">Tasks</h1>
+    <p class="page-subtitle mb-0">Manage project tasks</p>
+  </div>
+  <div class="page-actions">
+    <a href="{% url 'task_board' %}" class="btn btn-outline-secondary">
+      <i class="fas fa-columns"></i> Board View
+    </a>
+    <a href="{% url 'task_create' %}" class="btn btn-primary">
+      <i class="fas fa-plus"></i> Add Task
+    </a>
+  </div>
+</div>
+
+<!-- Filters -->
+<div class="card mb-4">
+  <div class="card-body">
+    <form method="get" class="row align-items-end">
+      <div class="col-3" style="padding: 0.5rem;">
+        <label class="form-label">Search</label>
+        <input type="text" class="form-control" name="search" placeholder="Search..." value="{{ search }}">
+      </div>
+      <div class="col-2" style="padding: 0.5rem;">
+        <label class="form-label">Status</label>
+        <select class="form-control" name="status">
+          <option value="">All Status</option>
+          {% for key, value in status_choices %}
+          <option value="{{ key }}" {% if selected_status == key %}selected{% endif %}>{{ value }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-2" style="padding: 0.5rem;">
+        <label class="form-label">Priority</label>
+        <select class="form-control" name="priority">
+          <option value="">All Priority</option>
+          {% for key, value in priority_choices %}
+          <option value="{{ key }}" {% if selected_priority == key %}selected{% endif %}>{{ value }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-3" style="padding: 0.5rem;">
+        <label class="form-label">Project</label>
+        <select class="form-control" name="project">
+          <option value="">All Projects</option>
+          {% for project in projects %}
+          <option value="{{ project.pk }}" {% if selected_project == project.pk|slugify %}selected{% endif %}>{{ project.name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-2" style="padding: 0.5rem;">
+        <button type="submit" class="btn btn-outline-secondary w-100">
+          <i class="fas fa-filter"></i> Filter
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Tasks Table -->
+<div class="card">
+  <div class="table-wrapper">
+    <table class="table">
+      <thead>
+        <tr>
+          <th>Task</th>
+          <th>Project</th>
+          <th>Assigned To</th>
+          <th>Priority</th>
+          <th>Due Date</th>
+          <th>Status</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for task in tasks %}
+        <tr>
+          <td>
+            <a href="{% url 'task_detail' task.pk %}" class="fw-medium">{{ task.title }}</a>
+            {% if task.description %}
+            <div class="text-sm text-muted">{{ task.description|truncatewords:10 }}</div>
+            {% endif %}
+          </td>
+          <td><a href="{% url 'project_detail' task.project.pk %}">{{ task.project.name }}</a></td>
+          <td>
+            {% if task.assigned_to %}
+            {{ task.assigned_to.name }}
+            {% else %}
+            <span class="text-muted">Unassigned</span>
+            {% endif %}
+          </td>
+          <td>
+            <span class="priority-badge {{ task.priority }}">{{ task.get_priority_display }}</span>
+          </td>
+          <td class="{% if task.is_overdue %}text-danger fw-medium{% endif %}">
+            {{ task.due_date|date:"d M Y"|default:"-" }}
+            {% if task.is_overdue %}<i class="fas fa-exclamation-circle"></i>{% endif %}
+          </td>
+          <td><span class="status-badge {{ task.status }}">{{ task.get_status_display }}</span></td>
+          <td>
+            <div class="table-actions">
+              <a href="{% url 'task_detail' task.pk %}" class="btn btn-sm btn-ghost btn-icon" title="View">
+                <i class="fas fa-eye"></i>
+              </a>
+              <a href="{% url 'task_update' task.pk %}" class="btn btn-sm btn-ghost btn-icon" title="Edit">
+                <i class="fas fa-edit"></i>
+              </a>
+              <a href="{% url 'task_delete' task.pk %}" class="btn btn-sm btn-ghost btn-icon text-danger" title="Delete">
+                <i class="fas fa-trash"></i>
+              </a>
+            </div>
+          </td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="7" class="text-center py-4 text-muted">No tasks found</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

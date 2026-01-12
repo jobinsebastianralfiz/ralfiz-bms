@@ -1,5 +1,8 @@
 import uuid
 from django.db import models
+from django.contrib.auth.models import User
+from django.contrib.contenttypes.fields import GenericForeignKey
+from django.contrib.contenttypes.models import ContentType
 from django.utils import timezone
 from datetime import timedelta
 
@@ -85,6 +88,7 @@ class Project(models.Model):
     github_repo = models.URLField(blank=True)
     live_url = models.URLField(blank=True)
     notes = models.TextField(blank=True)
+    team_members = models.ManyToManyField('TeamMember', blank=True, related_name='assigned_projects')
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -402,7 +406,8 @@ class CompanySettings(models.Model):
     address = models.TextField(blank=True)
     gst_number = models.CharField(max_length=20, blank=True, verbose_name='GST Number')
     pan_number = models.CharField(max_length=20, blank=True, verbose_name='PAN Number')
-    logo = models.ImageField(upload_to='company/', blank=True)
+    hsn_code = models.CharField(max_length=20, blank=True, verbose_name='HSN/SAC Code', help_text='HSN code for goods or SAC code for services')
+    logo = models.FileField(upload_to='company/', blank=True, help_text='Accepts PNG, JPG, or SVG files')
 
     # Bank Details
     bank_name = models.CharField(max_length=100, blank=True)
@@ -417,6 +422,14 @@ class CompanySettings(models.Model):
     default_tax_rate = models.DecimalField(max_digits=5, decimal_places=2, default=18)
     invoice_terms = models.TextField(blank=True)
     quote_terms = models.TextField(blank=True)
+
+    # Email Settings
+    smtp_host = models.CharField(max_length=255, blank=True, verbose_name='SMTP Host')
+    smtp_port = models.IntegerField(default=587, verbose_name='SMTP Port')
+    smtp_user = models.CharField(max_length=255, blank=True, verbose_name='SMTP Username')
+    smtp_password = models.CharField(max_length=255, blank=True, verbose_name='SMTP Password')
+    smtp_use_tls = models.BooleanField(default=True, verbose_name='Use TLS')
+    from_email = models.EmailField(blank=True, verbose_name='From Email')
 
     class Meta:
         verbose_name = 'Company Settings'
@@ -434,3 +447,224 @@ class CompanySettings(models.Model):
     def get_settings(cls):
         obj, created = cls.objects.get_or_create(pk=1)
         return obj
+
+
+class Expense(models.Model):
+    """Expense tracking model"""
+    CATEGORY_CHOICES = [
+        ('travel', 'Travel'),
+        ('software', 'Software & Subscriptions'),
+        ('hardware', 'Hardware & Equipment'),
+        ('office', 'Office Supplies'),
+        ('marketing', 'Marketing & Advertising'),
+        ('professional', 'Professional Services'),
+        ('utilities', 'Utilities'),
+        ('meals', 'Meals & Entertainment'),
+        ('other', 'Other'),
+    ]
+
+    PAYMENT_METHOD_CHOICES = [
+        ('bank_transfer', 'Bank Transfer'),
+        ('upi', 'UPI'),
+        ('cash', 'Cash'),
+        ('card', 'Credit/Debit Card'),
+        ('other', 'Other'),
+    ]
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    category = models.CharField(max_length=20, choices=CATEGORY_CHOICES)
+    amount = models.DecimalField(max_digits=12, decimal_places=2)
+    date = models.DateField(default=timezone.now)
+    vendor = models.CharField(max_length=255)
+    description = models.TextField(blank=True)
+    receipt = models.FileField(upload_to='receipts/', blank=True, null=True)
+    project = models.ForeignKey(Project, on_delete=models.SET_NULL, null=True, blank=True, related_name='expenses')
+    is_billable = models.BooleanField(default=False)
+    payment_method = models.CharField(max_length=20, choices=PAYMENT_METHOD_CHOICES, default='bank_transfer')
+    notes = models.TextField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['-date', '-created_at']
+
+    def __str__(self):
+        return f"{self.vendor} - ₹{self.amount} ({self.get_category_display()})"
+
+
+class TeamMember(models.Model):
+    """Team member model for task assignment"""
+    ROLE_CHOICES = [
+        ('developer', 'Developer'),
+        ('designer', 'Designer'),
+        ('project_manager', 'Project Manager'),
+        ('qa', 'QA Engineer'),
+        ('devops', 'DevOps'),
+        ('other', 'Other'),
+    ]
+
+    EMPLOYMENT_TYPE_CHOICES = [
+        ('permanent', 'Permanent'),
+        ('freelancer', 'Freelancer'),
+    ]
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    user = models.OneToOneField(User, on_delete=models.CASCADE, null=True, blank=True, related_name='team_profile')
+    name = models.CharField(max_length=255)
+    email = models.EmailField(blank=True)
+    phone = models.CharField(max_length=20, blank=True)
+    role = models.CharField(max_length=20, choices=ROLE_CHOICES, default='developer')
+    employment_type = models.CharField(max_length=20, choices=EMPLOYMENT_TYPE_CHOICES, default='permanent')
+    monthly_salary = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True, help_text='For permanent employees')
+    hourly_rate = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True, help_text='For freelancers')
+    is_active = models.BooleanField(default=True)
+    notes = models.TextField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['name']
+
+    def __str__(self):
+        return f"{self.name} ({self.get_role_display()})"
+
+    @property
+    def is_freelancer(self):
+        return self.employment_type == 'freelancer'
+
+    @property
+    def is_team_member(self):
+        """Check if this user is a team member (not admin)"""
+        return self.user is not None and not self.user.is_superuser
+
+
+class Task(models.Model):
+    """Task management model"""
+    STATUS_CHOICES = [
+        ('todo', 'To Do'),
+        ('in_progress', 'In Progress'),
+        ('review', 'In Review'),
+        ('completed', 'Completed'),
+    ]
+
+    PRIORITY_CHOICES = [
+        ('low', 'Low'),
+        ('medium', 'Medium'),
+        ('high', 'High'),
+        ('urgent', 'Urgent'),
+    ]
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    title = models.CharField(max_length=255)
+    description = models.TextField(blank=True)
+    project = models.ForeignKey(Project, on_delete=models.CASCADE, related_name='tasks')
+    assigned_to = models.ForeignKey(TeamMember, on_delete=models.SET_NULL, null=True, blank=True, related_name='tasks')
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='todo')
+    priority = models.CharField(max_length=10, choices=PRIORITY_CHOICES, default='medium')
+    due_date = models.DateField(null=True, blank=True)
+    completed_date = models.DateField(null=True, blank=True)
+    notes = models.TextField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['-priority', 'due_date', '-created_at']
+
+    def __str__(self):
+        return self.title
+
+    @property
+    def is_overdue(self):
+        if self.due_date and self.status not in ['completed']:
+            return timezone.now().date() > self.due_date
+        return False
+
+
+class TimeEntry(models.Model):
+    """Time tracking model"""
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    project = models.ForeignKey(Project, on_delete=models.CASCADE, related_name='time_entries')
+    task = models.ForeignKey(Task, on_delete=models.SET_NULL, null=True, blank=True, related_name='time_entries')
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='time_entries')
+    description = models.TextField()
+    hours = models.DecimalField(max_digits=5, decimal_places=2)
+    date = models.DateField(default=timezone.now)
+    is_billable = models.BooleanField(default=True)
+    hourly_rate = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    notes = models.TextField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['-date', '-created_at']
+        verbose_name_plural = 'Time entries'
+
+    def __str__(self):
+        return f"{self.project.name} - {self.hours}h on {self.date}"
+
+    @property
+    def total_amount(self):
+        if self.hourly_rate:
+            return self.hours * self.hourly_rate
+        return 0
+
+
+class ActivityLog(models.Model):
+    """Activity log for tracking all system changes"""
+    ACTION_CHOICES = [
+        ('created', 'Created'),
+        ('updated', 'Updated'),
+        ('deleted', 'Deleted'),
+        ('viewed', 'Viewed'),
+        ('sent', 'Sent'),
+    ]
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    user = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, related_name='activity_logs')
+    action = models.CharField(max_length=20, choices=ACTION_CHOICES)
+    model_name = models.CharField(max_length=100)
+    object_id = models.CharField(max_length=100)
+    object_repr = models.CharField(max_length=255)
+    changes = models.JSONField(null=True, blank=True)
+    ip_address = models.GenericIPAddressField(null=True, blank=True)
+    timestamp = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-timestamp']
+        verbose_name_plural = 'Activity logs'
+
+    def __str__(self):
+        return f"{self.user} {self.action} {self.model_name} at {self.timestamp}"
+
+
+class Document(models.Model):
+    """Document attachments for clients, projects, invoices, quotes"""
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    file = models.FileField(upload_to='documents/')
+    name = models.CharField(max_length=255)
+    description = models.TextField(blank=True)
+    uploaded_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, related_name='uploaded_documents')
+
+    # Generic foreign key to attach to any model
+    content_type = models.ForeignKey(ContentType, on_delete=models.CASCADE)
+    object_id = models.CharField(max_length=100)
+    content_object = GenericForeignKey('content_type', 'object_id')
+
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return self.name
+
+    @property
+    def file_extension(self):
+        return self.file.name.split('.')[-1].lower() if self.file else ''
+
+    @property
+    def file_size(self):
+        try:
+            return self.file.size
+        except:
+            return 0

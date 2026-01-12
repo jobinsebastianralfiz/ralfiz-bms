@@ -7,6 +7,9 @@ import sys
 def main():
     """Run administrative tasks."""
     os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'config.settings')
+    # Set library path for WeasyPrint on macOS
+    if sys.platform == 'darwin':
+        os.environ.setdefault('DYLD_LIBRARY_PATH', '/opt/homebrew/lib')
     try:
         from django.core.management import execute_from_command_line
     except ImportError as exc:

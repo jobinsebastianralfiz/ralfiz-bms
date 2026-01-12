@@ -1,0 +1,105 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Send Invoice - Ralfiz BMS{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title">Send Invoice via Email</h1>
+    <p class="page-subtitle mb-0">{{ invoice.invoice_number }} - {{ invoice.client.name }}</p>
+  </div>
+</div>
+
+<form method="post">
+  {% csrf_token %}
+  <div class="row">
+    <div class="col-8">
+      <div class="card">
+        <div class="card-header">
+          <h3 class="card-title"><i class="fas fa-envelope"></i> Email Details</h3>
+        </div>
+        <div class="card-body">
+          <div class="row">
+            <div class="col-12" style="padding: 0.5rem;">
+              <label class="form-label">To <span class="text-danger">*</span></label>
+              <input type="email" class="form-control" name="to_email" value="{{ invoice.client.email }}" required>
+            </div>
+          </div>
+          <div class="row">
+            <div class="col-12" style="padding: 0.5rem;">
+              <label class="form-label">Subject <span class="text-danger">*</span></label>
+              <input type="text" class="form-control" name="subject" value="{{ default_subject }}" required>
+            </div>
+          </div>
+          <div class="row">
+            <div class="col-12" style="padding: 0.5rem;">
+              <label class="form-label">Message</label>
+              <textarea class="form-control" name="message" rows="8">{{ default_message }}</textarea>
+            </div>
+          </div>
+          <div class="row">
+            <div class="col-12" style="padding: 0.5rem;">
+              <div class="alert alert-info">
+                <i class="fas fa-info-circle"></i>
+                The invoice PDF will be automatically attached to this email.
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-4">
+      <div class="card mb-4">
+        <div class="card-header">
+          <h3 class="card-title"><i class="fas fa-file-invoice"></i> Invoice Summary</h3>
+        </div>
+        <div class="card-body">
+          <div class="mb-2">
+            <strong>Invoice:</strong> {{ invoice.invoice_number }}
+          </div>
+          <div class="mb-2">
+            <strong>Client:</strong> {{ invoice.client.name }}
+          </div>
+          <div class="mb-2">
+            <strong>Amount:</strong> &#8377;{{ invoice.total_amount|floatformat:0 }}
+          </div>
+          <div class="mb-2">
+            <strong>Balance:</strong> &#8377;{{ invoice.balance_due|floatformat:0 }}
+          </div>
+          <div class="mb-2">
+            <strong>Due:</strong> {{ invoice.due_date|date:"d M Y"|default:"-" }}
+          </div>
+          <div>
+            <strong>Status:</strong> <span class="status-badge {{ invoice.status }}">{{ invoice.get_status_display }}</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <h3 class="card-title"><i class="fas fa-paper-plane"></i> Actions</h3>
+        </div>
+        <div class="card-body">
+          {% if company.smtp_host and company.smtp_user %}
+          <button type="submit" class="btn btn-primary w-100 mb-2">
+            <i class="fas fa-paper-plane"></i> Send Email
+          </button>
+          {% else %}
+          <div class="alert alert-warning mb-2">
+            <i class="fas fa-exclamation-triangle"></i>
+            Email not configured. <a href="{% url 'settings' %}">Configure SMTP</a>
+          </div>
+          <button type="submit" class="btn btn-primary w-100 mb-2" disabled>
+            <i class="fas fa-paper-plane"></i> Send Email
+          </button>
+          {% endif %}
+          <a href="{% url 'invoice_detail' invoice.pk %}" class="btn btn-outline-secondary w-100">
+            <i class="fas fa-times"></i> Cancel
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+</form>
+{% endblock %}

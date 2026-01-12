@@ -25,18 +25,18 @@
 
 <!-- Stats Cards -->
 <div class="row mb-4">
-  <div class="col-3 col-md-6 col-sm-12" style="padding: 0.75rem;">
+  <div class="col-4 col-md-6 col-sm-12" style="padding: 0.75rem;">
     <div class="card stat-card">
       <div class="stat-card-header">
         <div class="stat-card-icon success">
           <i class="fas fa-rupee-sign"></i>
         </div>
       </div>
-      <div class="stat-card-value">&#8377;{{ total_received|floatformat:0|default:"0" }}</div>
-      <div class="stat-card-label">Total Received (This Year)</div>
+      <div class="stat-card-value">&#8377;{{ total_payments|floatformat:0|default:"0" }}</div>
+      <div class="stat-card-label">Total Received</div>
     </div>
   </div>
-  <div class="col-3 col-md-6 col-sm-12" style="padding: 0.75rem;">
+  <div class="col-4 col-md-6 col-sm-12" style="padding: 0.75rem;">
     <div class="card stat-card">
       <div class="stat-card-header">
         <div class="stat-card-icon primary">
@@ -47,26 +47,45 @@
       <div class="stat-card-label">This Month</div>
     </div>
   </div>
-  <div class="col-3 col-md-6 col-sm-12" style="padding: 0.75rem;">
+  <div class="col-4 col-md-6 col-sm-12" style="padding: 0.75rem;">
     <div class="card stat-card">
       <div class="stat-card-header">
         <div class="stat-card-icon info">
           <i class="fas fa-exchange-alt"></i>
         </div>
       </div>
-      <div class="stat-card-value">{{ total_transactions|default:"0" }}</div>
+      <div class="stat-card-value">{{ payment_count|default:"0" }}</div>
       <div class="stat-card-label">Total Transactions</div>
     </div>
   </div>
-  <div class="col-3 col-md-6 col-sm-12" style="padding: 0.75rem;">
-    <div class="card stat-card">
-      <div class="stat-card-header">
-        <div class="stat-card-icon warning">
-          <i class="fas fa-hourglass-half"></i>
-        </div>
+</div>
+
+<!-- Charts Row -->
+<div class="row mb-4">
+  <div class="col-8 col-md-12" style="padding: 0.75rem;">
+    <div class="card">
+      <div class="card-header">
+        <h3 class="card-title">
+          <i class="fas fa-chart-bar text-primary me-2"></i>
+          Monthly Payments (Last 6 Months)
+        </h3>
       </div>
-      <div class="stat-card-value">&#8377;{{ outstanding|floatformat:0|default:"0" }}</div>
-      <div class="stat-card-label">Outstanding</div>
+      <div class="card-body">
+        <canvas id="monthlyPaymentsChart" height="120"></canvas>
+      </div>
+    </div>
+  </div>
+  <div class="col-4 col-md-12" style="padding: 0.75rem;">
+    <div class="card">
+      <div class="card-header">
+        <h3 class="card-title">
+          <i class="fas fa-chart-pie text-success me-2"></i>
+          By Payment Method
+        </h3>
+      </div>
+      <div class="card-body">
+        <canvas id="paymentMethodChart" height="180"></canvas>
+      </div>
     </div>
   </div>
 </div>
@@ -75,24 +94,13 @@
 <div class="card mb-4">
   <div class="card-body">
     <form method="get" class="row align-items-end">
-      <div class="col-3 col-md-6 col-sm-12" style="padding: 0.5rem;">
+      <div class="col-4 col-md-6 col-sm-12" style="padding: 0.5rem;">
         <div class="form-group mb-0">
           <label class="form-label">Search</label>
-          <input type="text" class="form-control" name="search" placeholder="Search by invoice, client..." value="{{ search }}">
+          <input type="text" class="form-control" name="search" placeholder="Search by invoice, client, transaction ID..." value="{{ search }}">
         </div>
       </div>
-      <div class="col-3 col-md-6 col-sm-12" style="padding: 0.5rem;">
-        <div class="form-group mb-0">
-          <label class="form-label">Client</label>
-          <select class="form-control" name="client">
-            <option value="">All Clients</option>
-            {% for c in clients %}
-            <option value="{{ c.pk }}" {% if client == c.pk|stringformat:"s" %}selected{% endif %}>{{ c.name }}</option>
-            {% endfor %}
-          </select>
-        </div>
-      </div>
-      <div class="col-3 col-md-6 col-sm-12" style="padding: 0.5rem;">
+      <div class="col-4 col-md-6 col-sm-12" style="padding: 0.5rem;">
         <div class="form-group mb-0">
           <label class="form-label">Payment Method</label>
           <select class="form-control" name="method">
@@ -103,7 +111,7 @@
           </select>
         </div>
       </div>
-      <div class="col-3 col-md-6 col-sm-12" style="padding: 0.5rem;">
+      <div class="col-4 col-md-6 col-sm-12" style="padding: 0.5rem;">
         <button type="submit" class="btn btn-primary w-100">
           <i class="fas fa-filter me-2"></i>Apply Filters
         </button>
@@ -114,6 +122,9 @@
 
 <!-- Payments Table -->
 <div class="card">
+  <div class="card-header">
+    <h3 class="card-title">Payment History</h3>
+  </div>
   <div class="table-wrapper">
     <table class="table">
       <thead>
@@ -124,7 +135,7 @@
           <th>Amount</th>
           <th>Method</th>
           <th>Transaction ID</th>
-          <th>Recorded By</th>
+          <th>Notes</th>
         </tr>
       </thead>
       <tbody>
@@ -139,7 +150,7 @@
           </td>
           <td class="fw-medium text-success">&#8377;{{ payment.amount|floatformat:0 }}</td>
           <td>
-            <span class="badge {% if payment.payment_method == 'bank_transfer' %}badge-info{% elif payment.payment_method == 'upi' %}badge-success{% elif payment.payment_method == 'cheque' %}badge-warning{% else %}badge-secondary{% endif %}">
+            <span class="badge {% if payment.payment_method == 'bank_transfer' %}badge-info{% elif payment.payment_method == 'upi' %}badge-success{% elif payment.payment_method == 'cheque' %}badge-warning{% elif payment.payment_method == 'cash' %}badge-secondary{% else %}badge-primary{% endif %}">
               {{ payment.get_payment_method_display }}
             </span>
           </td>
@@ -150,11 +161,8 @@
             -
             {% endif %}
           </td>
-          <td>
-            <div class="d-flex align-items-center gap-2">
-              <div class="avatar avatar-sm">{{ payment.recorded_by.first_name|slice:":1"|upper }}{{ payment.recorded_by.last_name|slice:":1"|upper|default:"U" }}</div>
-              <span>{{ payment.recorded_by.get_full_name|default:payment.recorded_by.username }}</span>
-            </div>
+          <td class="text-muted">
+            {{ payment.notes|truncatewords:5|default:"-" }}
           </td>
         </tr>
         {% empty %}
@@ -166,4 +174,107 @@
     </table>
   </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  const colors = {
+    primary: '#3b82f6',
+    success: '#10b981',
+    warning: '#f59e0b',
+    danger: '#ef4444',
+    info: '#06b6d4',
+    secondary: '#6b7280',
+    purple: '#8b5cf6',
+    pink: '#ec4899'
+  };
+
+  // Monthly Payments Chart
+  const monthlyCtx = document.getElementById('monthlyPaymentsChart');
+  if (monthlyCtx) {
+    new Chart(monthlyCtx, {
+      type: 'bar',
+      data: {
+        labels: {{ monthly_labels|safe }},
+        datasets: [{
+          label: 'Payments Received',
+          data: {{ monthly_data|safe }},
+          backgroundColor: colors.success,
+          borderRadius: 8,
+          barThickness: 40
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            callbacks: {
+              label: function(context) {
+                return '₹' + context.parsed.y.toLocaleString('en-IN');
+              }
+            }
+          }
+        },
+        scales: {
+          y: {
+            beginAtZero: true,
+            ticks: {
+              callback: function(value) {
+                return '₹' + (value / 1000).toFixed(0) + 'k';
+              }
+            },
+            grid: { color: 'rgba(0,0,0,0.05)' }
+          },
+          x: { grid: { display: false } }
+        }
+      }
+    });
+  }
+
+  // Payment Method Chart
+  const methodCtx = document.getElementById('paymentMethodChart');
+  if (methodCtx) {
+    const methodLabels = {{ method_labels|safe }};
+    const methodData = {{ method_data|safe }};
+
+    if (methodLabels.length > 0) {
+      new Chart(methodCtx, {
+        type: 'doughnut',
+        data: {
+          labels: methodLabels,
+          datasets: [{
+            data: methodData,
+            backgroundColor: [colors.success, colors.primary, colors.warning, colors.info, colors.purple, colors.pink, colors.secondary],
+            borderWidth: 0,
+            hoverOffset: 4
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: {
+              position: 'bottom',
+              labels: { padding: 15, usePointStyle: true }
+            },
+            tooltip: {
+              callbacks: {
+                label: function(context) {
+                  return context.label + ': ₹' + context.parsed.toLocaleString('en-IN');
+                }
+              }
+            }
+          },
+          cutout: '60%'
+        }
+      });
+    } else {
+      methodCtx.parentElement.innerHTML = '<div class="text-center text-muted py-4">No payment data available</div>';
+    }
+  }
+});
+</script>
 {% endblock %}

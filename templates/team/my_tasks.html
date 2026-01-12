@@ -1,0 +1,105 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}My Tasks - Ralfiz BMS{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title">My Tasks</h1>
+    <p class="page-subtitle mb-0">Tasks assigned to you</p>
+  </div>
+  <div class="page-actions">
+    <a href="{% url 'team_dashboard' %}" class="btn btn-outline-secondary">
+      <i class="fas fa-arrow-left"></i> Back to Dashboard
+    </a>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header">
+    <h3 class="card-title"><i class="fas fa-tasks"></i> All My Tasks</h3>
+    <div class="card-actions">
+      <form method="get" class="d-flex gap-2">
+        <select name="status" class="form-control" style="width: auto;" onchange="this.form.submit()">
+          <option value="">All Status</option>
+          {% for key, value in status_choices %}
+          <option value="{{ key }}" {% if selected_status == key %}selected{% endif %}>{{ value }}</option>
+          {% endfor %}
+        </select>
+        <select name="priority" class="form-control" style="width: auto;" onchange="this.form.submit()">
+          <option value="">All Priority</option>
+          {% for key, value in priority_choices %}
+          <option value="{{ key }}" {% if selected_priority == key %}selected{% endif %}>{{ value }}</option>
+          {% endfor %}
+        </select>
+      </form>
+    </div>
+  </div>
+  <div class="card-body p-0">
+    {% if tasks %}
+    <div class="table-responsive">
+      <table class="table table-hover mb-0">
+        <thead>
+          <tr>
+            <th>Task</th>
+            <th>Project</th>
+            <th>Status</th>
+            <th>Priority</th>
+            <th>Due Date</th>
+            <th class="text-end">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for task in tasks %}
+          <tr>
+            <td>
+              <a href="{% url 'task_detail' task.pk %}"><strong>{{ task.title }}</strong></a>
+              {% if task.description %}
+              <br><small class="text-muted">{{ task.description|truncatewords:10 }}</small>
+              {% endif %}
+            </td>
+            <td>{{ task.project.name }}</td>
+            <td>
+              <span class="status-badge {{ task.status }}">{{ task.get_status_display }}</span>
+            </td>
+            <td>
+              <span class="priority-badge {{ task.priority }}">{{ task.get_priority_display }}</span>
+            </td>
+            <td>
+              {% if task.due_date %}
+                {% now "Y-m-d" as today %}
+                {% if task.due_date|date:"Y-m-d" < today %}
+                <span class="text-danger"><i class="fas fa-exclamation-circle"></i> {{ task.due_date|date:"M d" }}</span>
+                {% else %}
+                {{ task.due_date|date:"M d, Y" }}
+                {% endif %}
+              {% else %}
+              <span class="text-muted">-</span>
+              {% endif %}
+            </td>
+            <td class="text-end">
+              <div class="btn-group">
+                <a href="{% url 'task_detail' task.pk %}" class="btn btn-sm btn-outline-primary" title="View">
+                  <i class="fas fa-eye"></i>
+                </a>
+                <a href="{% url 'timeentry_create' %}?task={{ task.pk }}" class="btn btn-sm btn-outline-success" title="Log Time">
+                  <i class="fas fa-clock"></i>
+                </a>
+              </div>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <div class="empty-state">
+      <i class="fas fa-check-circle text-success"></i>
+      <h3>No Tasks</h3>
+      <p>{% if selected_status or selected_priority %}No tasks match your filters.{% else %}You have no tasks assigned.{% endif %}</p>
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

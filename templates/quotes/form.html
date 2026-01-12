@@ -47,7 +47,7 @@
                 <select class="form-control" id="client" name="client" required>
                   <option value="">Select client</option>
                   {% for client in clients %}
-                  <option value="{{ client.pk }}" {% if quote.client.pk == client.pk %}selected{% endif %}>{{ client.name }}</option>
+                  <option value="{{ client.pk }}" {% if quote.client_id and quote.client_id == client.pk %}selected{% endif %}>{{ client.name }}</option>
                   {% endfor %}
                 </select>
               </div>
@@ -58,7 +58,7 @@
                 <select class="form-control" id="project" name="project">
                   <option value="">Select project (optional)</option>
                   {% for project in projects %}
-                  <option value="{{ project.pk }}" {% if quote.project.pk == project.pk %}selected{% endif %}>{{ project.name }}</option>
+                  <option value="{{ project.pk }}" {% if quote.project_id and quote.project_id == project.pk %}selected{% endif %}>{{ project.name }}</option>
                   {% endfor %}
                 </select>
                 <div class="form-text">Leave empty for new project quote</div>

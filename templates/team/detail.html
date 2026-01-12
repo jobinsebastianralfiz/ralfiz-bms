@@ -1,0 +1,276 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ member.name }} - Team Member - Ralfiz BMS{% endblock %}
+
+{% block breadcrumb %}
+<a href="{% url 'dashboard' %}" class="breadcrumb-item">Dashboard</a>
+<span class="breadcrumb-separator">/</span>
+<a href="{% url 'team_list' %}" class="breadcrumb-item">Team Members</a>
+<span class="breadcrumb-separator">/</span>
+<span class="breadcrumb-item active">{{ member.name }}</span>
+{% endblock %}
+
+{% block content %}
+<!-- Page Header -->
+<div class="page-header">
+  <div class="d-flex align-items-center gap-4">
+    <div class="avatar avatar-xl" style="background: var(--primary); color: white;">
+      {{ member.name|slice:":1"|upper }}
+    </div>
+    <div>
+      <div class="d-flex align-items-center gap-3 mb-2">
+        <h1 class="page-title mb-0">{{ member.name }}</h1>
+        {% if member.is_active %}
+        <span class="badge" style="background: var(--success-bg); color: var(--success);">Active</span>
+        {% else %}
+        <span class="badge" style="background: var(--danger-bg); color: var(--danger);">Inactive</span>
+        {% endif %}
+      </div>
+      <p class="page-subtitle mb-0">
+        <span class="badge" style="background: var(--primary-bg); color: var(--primary);">{{ member.get_role_display }}</span>
+        {% if member.is_freelancer %}
+        <span class="badge ms-1" style="background: var(--warning-bg); color: var(--warning);">Freelancer</span>
+        {% else %}
+        <span class="badge ms-1" style="background: var(--info-bg); color: var(--info);">Permanent</span>
+        {% endif %}
+        {% if member.user %}
+        <span class="text-muted ms-2"><i class="fas fa-key"></i> Has login access</span>
+        {% endif %}
+      </p>
+    </div>
+  </div>
+  <div class="page-actions">
+    <a href="{% url 'team_update' member.pk %}" class="btn btn-primary">
+      <i class="fas fa-edit"></i> Edit
+    </a>
+    <a href="{% url 'team_delete' member.pk %}" class="btn btn-danger">
+      <i class="fas fa-trash-alt"></i> Delete
+    </a>
+  </div>
+</div>
+
+<!-- Stats Cards -->
+<div class="row mb-4">
+  <div class="col-3 col-md-6 col-sm-12" style="padding: 0.75rem;">
+    <div class="card stat-card">
+      <div class="stat-card-header">
+        <div class="stat-card-icon primary">
+          <i class="fas fa-list"></i>
+        </div>
+      </div>
+      <div class="stat-card-value">{{ tasks_todo }}</div>
+      <div class="stat-card-label">To Do</div>
+    </div>
+  </div>
+  <div class="col-3 col-md-6 col-sm-12" style="padding: 0.75rem;">
+    <div class="card stat-card">
+      <div class="stat-card-header">
+        <div class="stat-card-icon warning">
+          <i class="fas fa-spinner"></i>
+        </div>
+      </div>
+      <div class="stat-card-value">{{ tasks_in_progress }}</div>
+      <div class="stat-card-label">In Progress</div>
+    </div>
+  </div>
+  <div class="col-3 col-md-6 col-sm-12" style="padding: 0.75rem;">
+    <div class="card stat-card">
+      <div class="stat-card-header">
+        <div class="stat-card-icon info">
+          <i class="fas fa-eye"></i>
+        </div>
+      </div>
+      <div class="stat-card-value">{{ tasks_review }}</div>
+      <div class="stat-card-label">In Review</div>
+    </div>
+  </div>
+  <div class="col-3 col-md-6 col-sm-12" style="padding: 0.75rem;">
+    <div class="card stat-card">
+      <div class="stat-card-header">
+        <div class="stat-card-icon success">
+          <i class="fas fa-check-circle"></i>
+        </div>
+      </div>
+      <div class="stat-card-value">{{ tasks_completed }}</div>
+      <div class="stat-card-label">Completed</div>
+    </div>
+  </div>
+</div>
+
+<div class="row">
+  <!-- Left Column - Member Info -->
+  <div class="col-4 col-md-12" style="padding: 0.75rem;">
+    <!-- Contact Information -->
+    <div class="card mb-4">
+      <div class="card-header">
+        <h3 class="card-title"><i class="fas fa-user me-2 text-primary"></i> Contact Information</h3>
+      </div>
+      <div class="card-body">
+        {% if member.email %}
+        <div class="mb-3">
+          <div class="text-sm text-muted mb-1">Email</div>
+          <div>
+            <a href="mailto:{{ member.email }}">
+              <i class="fas fa-envelope me-2 text-muted"></i>{{ member.email }}
+            </a>
+          </div>
+        </div>
+        {% endif %}
+        {% if member.phone %}
+        <div class="mb-3">
+          <div class="text-sm text-muted mb-1">Phone</div>
+          <div>
+            <a href="tel:{{ member.phone }}">
+              <i class="fas fa-phone me-2 text-muted"></i>{{ member.phone }}
+            </a>
+          </div>
+        </div>
+        {% endif %}
+        <div class="mb-3">
+          <div class="text-sm text-muted mb-1">Employment Type</div>
+          <div class="fw-medium">
+            {% if member.is_freelancer %}
+            Freelancer
+            {% if member.hourly_rate %}@ &#8377;{{ member.hourly_rate }}/hour{% endif %}
+            {% else %}
+            Permanent Employee
+            {% if member.monthly_salary %}@ &#8377;{{ member.monthly_salary }}/month{% endif %}
+            {% endif %}
+          </div>
+        </div>
+        {% if member.is_freelancer and total_hours %}
+        <div>
+          <div class="text-sm text-muted mb-1">Total Hours Logged</div>
+          <div class="fw-medium">{{ total_hours }} hours</div>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Assigned Projects -->
+    <div class="card mb-4">
+      <div class="card-header">
+        <h3 class="card-title"><i class="fas fa-folder-open me-2 text-warning"></i> Assigned Projects</h3>
+      </div>
+      <div class="card-body">
+        {% if assigned_projects %}
+        {% for project in assigned_projects %}
+        <div class="d-flex align-items-center gap-3 {% if not forloop.last %}mb-3{% endif %} p-2 rounded" style="background: var(--bg-hover);">
+          <div class="avatar avatar-sm" style="background: var(--info); color: white;">
+            <i class="fas fa-folder" style="font-size: 0.75rem;"></i>
+          </div>
+          <div class="flex-1">
+            <a href="{% url 'project_detail' project.pk %}" class="fw-medium">{{ project.name }}</a>
+            <div class="text-sm text-muted">{{ project.client.name }}</div>
+          </div>
+          <span class="status-badge {{ project.status }}">{{ project.get_status_display }}</span>
+        </div>
+        {% endfor %}
+        {% else %}
+        <div class="text-center text-muted py-3">
+          <i class="fas fa-folder-open mb-2" style="font-size: 1.5rem; display: block;"></i>
+          <p class="mb-0">No projects assigned yet.</p>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Notes -->
+    {% if member.notes %}
+    <div class="card">
+      <div class="card-header">
+        <h3 class="card-title"><i class="fas fa-sticky-note me-2 text-info"></i> Notes</h3>
+      </div>
+      <div class="card-body">
+        <div class="text-secondary">{{ member.notes|linebreaks }}</div>
+      </div>
+    </div>
+    {% endif %}
+  </div>
+
+  <!-- Right Column - Tasks & Time -->
+  <div class="col-8 col-md-12" style="padding: 0.75rem;">
+    <!-- Active Tasks -->
+    <div class="card mb-4">
+      <div class="card-header">
+        <h3 class="card-title"><i class="fas fa-tasks me-2 text-primary"></i> Active Tasks</h3>
+      </div>
+      {% if recent_tasks %}
+      <div class="table-wrapper">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>Task</th>
+              <th>Project</th>
+              <th>Status</th>
+              <th>Priority</th>
+              <th>Due Date</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for task in recent_tasks %}
+            <tr>
+              <td>
+                <a href="{% url 'task_detail' task.pk %}" class="fw-medium">{{ task.title }}</a>
+              </td>
+              <td>{{ task.project.name }}</td>
+              <td><span class="status-badge {{ task.status }}">{{ task.get_status_display }}</span></td>
+              <td><span class="priority-badge {{ task.priority }}">{{ task.get_priority_display }}</span></td>
+              <td>{{ task.due_date|date:"d M Y"|default:"-" }}</td>
+              <td class="text-right">
+                <a href="{% url 'task_detail' task.pk %}" class="btn btn-sm btn-ghost btn-icon">
+                  <i class="fas fa-arrow-right"></i>
+                </a>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}
+      <div class="card-body">
+        <div class="text-center text-muted py-4">
+          <i class="fas fa-check-circle text-success mb-2" style="font-size: 2rem; display: block;"></i>
+          <p class="mb-0">No active tasks</p>
+        </div>
+      </div>
+      {% endif %}
+    </div>
+
+    {% if member.is_freelancer and time_entries %}
+    <!-- Recent Time Entries -->
+    <div class="card">
+      <div class="card-header">
+        <h3 class="card-title"><i class="fas fa-clock me-2 text-info"></i> Recent Time Entries</h3>
+      </div>
+      <div class="table-wrapper">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>Project</th>
+              <th>Task</th>
+              <th>Hours</th>
+              <th>Description</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for entry in time_entries %}
+            <tr>
+              <td>{{ entry.date|date:"d M Y" }}</td>
+              <td>{{ entry.project.name }}</td>
+              <td>{{ entry.task.title|default:"-" }}</td>
+              <td><span class="fw-medium">{{ entry.hours }}h</span></td>
+              <td>{{ entry.description|truncatewords:10 }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

@@ -2,6 +2,37 @@
  * Ralfiz BMS - JavaScript Application
  */
 
+// ==================== Theme Toggle (Dark Mode) ====================
+function initTheme() {
+  const savedTheme = localStorage.getItem('theme') || 'light';
+  document.documentElement.setAttribute('data-theme', savedTheme);
+  updateThemeIcon(savedTheme);
+}
+
+function toggleTheme() {
+  const currentTheme = document.documentElement.getAttribute('data-theme') || 'light';
+  const newTheme = currentTheme === 'light' ? 'dark' : 'light';
+  document.documentElement.setAttribute('data-theme', newTheme);
+  localStorage.setItem('theme', newTheme);
+  updateThemeIcon(newTheme);
+}
+
+function updateThemeIcon(theme) {
+  const icon = document.getElementById('themeIcon');
+  if (icon) {
+    icon.className = theme === 'dark' ? 'fas fa-sun' : 'fas fa-moon';
+  }
+}
+
+// Initialize theme on page load
+initTheme();
+
+// Theme toggle button event listener
+const themeToggle = document.getElementById('themeToggle');
+if (themeToggle) {
+  themeToggle.addEventListener('click', toggleTheme);
+}
+
 // ==================== Sidebar Toggle ====================
 const sidebar = document.getElementById('sidebar');
 const sidebarToggle = document.getElementById('sidebarToggle');
@@ -349,6 +380,119 @@ function switchTab(tabId) {
 
 // ==================== Initialize ====================
 document.addEventListener('DOMContentLoaded', () => {
-  // Add any initialization code here
   console.log('Ralfiz BMS initialized');
+
+  // ==================== Global Search ====================
+  const globalSearchInput = document.getElementById('globalSearch');
+
+  if (globalSearchInput) {
+    let searchTimeout;
+    let searchDropdown;
+
+    // Create search results dropdown
+    function createSearchDropdown() {
+      if (searchDropdown) return;
+
+      searchDropdown = document.createElement('div');
+      searchDropdown.className = 'search-dropdown';
+      searchDropdown.innerHTML = '<div class="search-loading">Searching...</div>';
+      globalSearchInput.parentElement.appendChild(searchDropdown);
+    }
+
+    // Hide dropdown
+    function hideSearchDropdown() {
+      if (searchDropdown) {
+        searchDropdown.remove();
+        searchDropdown = null;
+      }
+    }
+
+    // Render search results
+    function renderSearchResults(results) {
+      if (!searchDropdown) return;
+
+      if (results.length === 0) {
+        searchDropdown.innerHTML = '<div class="search-no-results">No results found</div>';
+        return;
+      }
+
+      const typeIcons = {
+        client: 'primary',
+        project: 'info',
+        invoice: 'success',
+        quote: 'warning',
+        credential: 'secondary'
+      };
+
+      let html = '<div class="search-results">';
+      results.forEach(result => {
+        const colorClass = typeIcons[result.type] || 'primary';
+        html += `
+          <a href="${result.url}" class="search-result-item">
+            <div class="search-result-icon ${colorClass}">
+              <i class="fas ${result.icon}"></i>
+            </div>
+            <div class="search-result-content">
+              <div class="search-result-title">${result.title}</div>
+              <div class="search-result-subtitle">${result.subtitle}</div>
+            </div>
+            <span class="search-result-type">${result.type}</span>
+          </a>
+        `;
+      });
+      html += '</div>';
+      searchDropdown.innerHTML = html;
+    }
+
+    // Handle search input
+    globalSearchInput.addEventListener('input', (e) => {
+      const query = e.target.value.trim();
+
+      clearTimeout(searchTimeout);
+
+      if (query.length < 2) {
+        hideSearchDropdown();
+        return;
+      }
+
+      createSearchDropdown();
+      searchDropdown.innerHTML = '<div class="search-loading"><i class="fas fa-spinner fa-spin"></i> Searching...</div>';
+
+      searchTimeout = setTimeout(() => {
+        fetch(`/search/?q=${encodeURIComponent(query)}`, {
+          credentials: 'same-origin'
+        })
+          .then(response => {
+            if (!response.ok) {
+              throw new Error('Search failed');
+            }
+            return response.json();
+          })
+          .then(data => {
+            renderSearchResults(data.results);
+          })
+          .catch(error => {
+            console.error('Search error:', error);
+            if (searchDropdown) {
+              searchDropdown.innerHTML = '<div class="search-no-results">Error searching</div>';
+            }
+          });
+      }, 300);
+    });
+
+    // Hide dropdown when clicking outside
+    document.addEventListener('click', (e) => {
+      if (!globalSearchInput.parentElement.contains(e.target)) {
+        hideSearchDropdown();
+      }
+    });
+
+    // Handle keyboard navigation
+    globalSearchInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        hideSearchDropdown();
+        globalSearchInput.blur();
+      }
+    });
+  }
 });

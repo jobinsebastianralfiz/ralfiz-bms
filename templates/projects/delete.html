@@ -1,0 +1,88 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Delete {{ project.name }} - Ralfiz BMS{% endblock %}
+
+{% block breadcrumb %}
+<a href="{% url 'dashboard' %}" class="breadcrumb-item">Dashboard</a>
+<span class="breadcrumb-separator">/</span>
+<a href="{% url 'project_list' %}" class="breadcrumb-item">Projects</a>
+<span class="breadcrumb-separator">/</span>
+<a href="{% url 'project_detail' project.pk %}" class="breadcrumb-item">{{ project.name }}</a>
+<span class="breadcrumb-separator">/</span>
+<span class="breadcrumb-item active">Delete</span>
+{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-6 col-md-8 col-sm-12" style="padding: 0.75rem;">
+    <div class="card">
+      <div class="card-header" style="background: var(--danger-bg); border-bottom-color: #fecaca;">
+        <div class="d-flex align-items-center gap-3">
+          <div style="width: 48px; height: 48px; background: var(--danger); border-radius: var(--border-radius); display: flex; align-items: center; justify-content: center;">
+            <i class="fas fa-exclamation-triangle text-white" style="font-size: 1.25rem;"></i>
+          </div>
+          <div>
+            <h3 class="card-title mb-0" style="color: var(--danger);">Delete Project</h3>
+            <p class="text-sm mb-0" style="color: var(--danger);">This action cannot be undone</p>
+          </div>
+        </div>
+      </div>
+      <div class="card-body">
+        <p class="text-secondary mb-4">
+          Are you sure you want to delete the project <strong>"{{ project.name }}"</strong>?
+        </p>
+
+        <!-- Project Summary -->
+        <div class="p-3 rounded mb-4" style="background: var(--bg-body);">
+          <div class="mb-3">
+            <div class="fw-medium">{{ project.name }}</div>
+            <div class="text-sm text-muted">{{ project.client.name }} {% if project.client.company_name %}({{ project.client.company_name }}){% endif %}</div>
+          </div>
+          <div class="row">
+            <div class="col-4">
+              <div class="text-sm text-muted">Credentials</div>
+              <div class="fw-medium">{{ project.credentials.count }}</div>
+            </div>
+            <div class="col-4">
+              <div class="text-sm text-muted">Invoices</div>
+              <div class="fw-medium">{{ project.invoices.count }}</div>
+            </div>
+            <div class="col-4">
+              <div class="text-sm text-muted">Quotes</div>
+              <div class="fw-medium">{{ project.quotes.count }}</div>
+            </div>
+          </div>
+        </div>
+
+        {% if project.credentials.count > 0 or project.invoices.count > 0 or project.quotes.count > 0 %}
+        <div class="alert alert-warning">
+          <i class="fas fa-info-circle alert-icon"></i>
+          <div class="alert-content">
+            <div class="alert-title">Cannot delete this project</div>
+            <p class="alert-text mb-0">
+              This project has associated records. Please delete or reassign the following first:
+              {% if project.credentials.count > 0 %}{{ project.credentials.count }} credential(s){% endif %}
+              {% if project.invoices.count > 0 %}{% if project.credentials.count > 0 %}, {% endif %}{{ project.invoices.count }} invoice(s){% endif %}
+              {% if project.quotes.count > 0 %}{% if project.credentials.count > 0 or project.invoices.count > 0 %}, {% endif %}{{ project.quotes.count }} quote(s){% endif %}
+            </p>
+          </div>
+        </div>
+        {% endif %}
+
+        <form method="post" class="d-flex gap-3 justify-content-end mt-4">
+          {% csrf_token %}
+          <a href="{% url 'project_detail' project.pk %}" class="btn btn-outline-secondary">
+            <i class="fas fa-arrow-left"></i>
+            Cancel
+          </a>
+          <button type="submit" class="btn btn-danger" {% if project.credentials.count > 0 or project.invoices.count > 0 or project.quotes.count > 0 %}disabled{% endif %}>
+            <i class="fas fa-trash-alt"></i>
+            Delete Project
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

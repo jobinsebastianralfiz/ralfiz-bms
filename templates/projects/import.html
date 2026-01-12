@@ -1,0 +1,103 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Import Projects - Ralfiz BMS{% endblock %}
+
+{% block breadcrumb %}
+<a href="{% url 'dashboard' %}" class="breadcrumb-item">Dashboard</a>
+<span class="breadcrumb-separator">/</span>
+<a href="{% url 'project_list' %}" class="breadcrumb-item">Projects</a>
+<span class="breadcrumb-separator">/</span>
+<span class="breadcrumb-item active">Import</span>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title">Import Projects</h1>
+    <p class="page-subtitle mb-0">Import multiple projects from an Excel file</p>
+  </div>
+</div>
+
+<div class="row">
+  <div class="col-8 col-md-12" style="padding: 0.75rem;">
+    <div class="card">
+      <div class="card-header">
+        <h3 class="card-title">
+          <i class="fas fa-file-excel text-success me-2"></i>
+          Upload Excel File
+        </h3>
+      </div>
+      <div class="card-body">
+        <form method="post" enctype="multipart/form-data">
+          {% csrf_token %}
+          <div class="form-group">
+            <label class="form-label">Excel File (.xlsx)</label>
+            <input type="file" class="form-control" name="excel_file" accept=".xlsx,.xls" required>
+            <div class="form-text">Upload an Excel file with project data. Make sure clients exist before importing.</div>
+          </div>
+          <div class="d-flex gap-2 mt-4">
+            <button type="submit" class="btn btn-primary">
+              <i class="fas fa-upload me-2"></i>Import Projects
+            </button>
+            <a href="{% url 'project_list' %}" class="btn btn-outline-secondary">Cancel</a>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-4 col-md-12" style="padding: 0.75rem;">
+    <div class="card mb-4">
+      <div class="card-header">
+        <h3 class="card-title">
+          <i class="fas fa-download text-primary me-2"></i>
+          Template
+        </h3>
+      </div>
+      <div class="card-body">
+        <p class="text-secondary mb-3">Download the sample template to see the required format.</p>
+        <a href="{% url 'project_import' %}?template=1" class="btn btn-outline-primary w-100">
+          <i class="fas fa-file-download me-2"></i>Download Template
+        </a>
+      </div>
+    </div>
+
+    <div class="card" style="background: var(--info-light); border-color: var(--info);">
+      <div class="card-body">
+        <h4 class="text-info mb-3">
+          <i class="fas fa-info-circle me-2"></i>Column Format
+        </h4>
+        <table class="table table-sm" style="font-size: 0.875rem;">
+          <tbody>
+            <tr>
+              <td class="fw-medium">Project Name*</td>
+              <td class="text-secondary">Required</td>
+            </tr>
+            <tr>
+              <td class="fw-medium">Client Name/Email*</td>
+              <td class="text-secondary">Required, must exist</td>
+            </tr>
+            <tr>
+              <td class="fw-medium">Type</td>
+              <td class="text-secondary">website, mobile_app, etc.</td>
+            </tr>
+            <tr>
+              <td class="fw-medium">Status</td>
+              <td class="text-secondary">planning, in_progress, etc.</td>
+            </tr>
+            <tr>
+              <td class="fw-medium">Description</td>
+              <td class="text-secondary">Optional</td>
+            </tr>
+          </tbody>
+        </table>
+        <div class="mt-3 text-sm text-secondary">
+          <strong>Valid Types:</strong> website, mobile_app, webapp, ecommerce, maintenance, other<br>
+          <strong>Valid Statuses:</strong> planning, in_progress, on_hold, completed, cancelled
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

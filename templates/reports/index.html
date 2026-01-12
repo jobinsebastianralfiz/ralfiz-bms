@@ -12,14 +12,14 @@
 {% block content %}
 <div class="page-header">
   <div>
-    <h1 class="page-title">Reports</h1>
-    <p class="page-subtitle mb-0">Business analytics and reports</p>
+    <h1 class="page-title">Reports & Analytics</h1>
+    <p class="page-subtitle mb-0">Business analytics and financial reports</p>
   </div>
 </div>
 
 <!-- Stats Cards -->
 <div class="row mb-4">
-  <div class="col-4 col-md-6 col-sm-12" style="padding: 0.75rem;">
+  <div class="col-3 col-md-6 col-sm-12" style="padding: 0.75rem;">
     <div class="card stat-card">
       <div class="stat-card-header">
         <div class="stat-card-icon success">
@@ -30,7 +30,7 @@
       <div class="stat-card-label">Total Revenue</div>
     </div>
   </div>
-  <div class="col-4 col-md-6 col-sm-12" style="padding: 0.75rem;">
+  <div class="col-3 col-md-6 col-sm-12" style="padding: 0.75rem;">
     <div class="card stat-card">
       <div class="stat-card-header">
         <div class="stat-card-icon primary">
@@ -41,7 +41,7 @@
       <div class="stat-card-label">This Month</div>
     </div>
   </div>
-  <div class="col-4 col-md-6 col-sm-12" style="padding: 0.75rem;">
+  <div class="col-3 col-md-6 col-sm-12" style="padding: 0.75rem;">
     <div class="card stat-card">
       <div class="stat-card-header">
         <div class="stat-card-icon warning">
@@ -50,6 +50,117 @@
       </div>
       <div class="stat-card-value">&#8377;{{ outstanding|floatformat:0|default:"0" }}</div>
       <div class="stat-card-label">Outstanding</div>
+    </div>
+  </div>
+  <div class="col-3 col-md-6 col-sm-12" style="padding: 0.75rem;">
+    <div class="card stat-card">
+      <div class="stat-card-header">
+        <div class="stat-card-icon info">
+          <i class="fas fa-percentage"></i>
+        </div>
+      </div>
+      <div class="stat-card-value">{{ collection_rate|floatformat:1 }}%</div>
+      <div class="stat-card-label">Collection Rate</div>
+    </div>
+  </div>
+</div>
+
+<!-- Revenue Chart (Full Width) -->
+<div class="row mb-4">
+  <div class="col-12" style="padding: 0.75rem;">
+    <div class="card">
+      <div class="card-header">
+        <h3 class="card-title">
+          <i class="fas fa-chart-area text-primary me-2"></i>
+          Revenue vs Invoiced (Last 12 Months)
+        </h3>
+      </div>
+      <div class="card-body">
+        <canvas id="revenueComparisonChart" height="100"></canvas>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Charts Row -->
+<div class="row mb-4">
+  <div class="col-6 col-md-12" style="padding: 0.75rem;">
+    <div class="card">
+      <div class="card-header">
+        <h3 class="card-title">
+          <i class="fas fa-users text-info me-2"></i>
+          Top Clients by Revenue
+        </h3>
+      </div>
+      <div class="card-body">
+        <canvas id="clientRevenueChart" height="200"></canvas>
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-md-12" style="padding: 0.75rem;">
+    <div class="card">
+      <div class="card-header">
+        <h3 class="card-title">
+          <i class="fas fa-folder text-warning me-2"></i>
+          Revenue by Project Type
+        </h3>
+      </div>
+      <div class="card-body">
+        <canvas id="projectTypeChart" height="200"></canvas>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Quarterly Chart -->
+<div class="row mb-4">
+  <div class="col-6 col-md-12" style="padding: 0.75rem;">
+    <div class="card">
+      <div class="card-header">
+        <h3 class="card-title">
+          <i class="fas fa-chart-bar text-success me-2"></i>
+          Quarterly Revenue
+        </h3>
+      </div>
+      <div class="card-body">
+        <canvas id="quarterlyChart" height="180"></canvas>
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-md-12" style="padding: 0.75rem;">
+    <div class="card">
+      <div class="card-header">
+        <h3 class="card-title">
+          <i class="fas fa-tachometer-alt text-primary me-2"></i>
+          Business Summary
+        </h3>
+      </div>
+      <div class="card-body">
+        <div class="d-flex align-items-center gap-3 p-3 rounded mb-3" style="background: var(--bg-hover);">
+          <div class="avatar avatar-sm" style="background: var(--primary);"><i class="fas fa-users"></i></div>
+          <div class="flex-1">
+            <div class="fw-medium">Active Clients</div>
+            <div class="text-sm text-muted">Total active client accounts</div>
+          </div>
+          <div class="fw-bold text-lg">{{ total_clients }}</div>
+        </div>
+        <div class="d-flex align-items-center gap-3 p-3 rounded mb-3" style="background: var(--bg-hover);">
+          <div class="avatar avatar-sm" style="background: var(--info);"><i class="fas fa-folder-open"></i></div>
+          <div class="flex-1">
+            <div class="fw-medium">Projects Completed</div>
+            <div class="text-sm text-muted">Out of {{ total_projects }} total projects</div>
+          </div>
+          <div class="fw-bold text-lg">{{ completed_projects }}</div>
+        </div>
+        <div class="d-flex align-items-center gap-3 p-3 rounded" style="background: var(--bg-hover);">
+          <div class="avatar avatar-sm" style="background: var(--success);"><i class="fas fa-file-invoice-dollar"></i></div>
+          <div class="flex-1">
+            <div class="fw-medium">Invoices Paid</div>
+            <div class="text-sm text-muted">Out of {{ total_invoices }} total invoices</div>
+          </div>
+          <div class="fw-bold text-lg">{{ paid_invoices }}</div>
+        </div>
+      </div>
     </div>
   </div>
 </div>
@@ -120,4 +231,222 @@
     </div>
   </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  const colors = {
+    primary: '#3b82f6',
+    success: '#10b981',
+    warning: '#f59e0b',
+    danger: '#ef4444',
+    info: '#06b6d4',
+    secondary: '#6b7280',
+    purple: '#8b5cf6',
+    pink: '#ec4899'
+  };
+
+  // Revenue Comparison Chart (Line)
+  const revenueCompCtx = document.getElementById('revenueComparisonChart');
+  if (revenueCompCtx) {
+    new Chart(revenueCompCtx, {
+      type: 'line',
+      data: {
+        labels: {{ monthly_revenue_labels|safe }},
+        datasets: [{
+          label: 'Revenue Received',
+          data: {{ monthly_revenue_data|safe }},
+          borderColor: colors.success,
+          backgroundColor: 'rgba(16, 185, 129, 0.1)',
+          fill: true,
+          tension: 0.4,
+          pointBackgroundColor: colors.success,
+          pointBorderColor: '#fff',
+          pointBorderWidth: 2,
+          pointRadius: 4
+        }, {
+          label: 'Invoiced Amount',
+          data: {{ monthly_invoiced_data|safe }},
+          borderColor: colors.primary,
+          backgroundColor: 'transparent',
+          borderDash: [5, 5],
+          tension: 0.4,
+          pointBackgroundColor: colors.primary,
+          pointBorderColor: '#fff',
+          pointBorderWidth: 2,
+          pointRadius: 4
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: {
+            position: 'top',
+            labels: { usePointStyle: true, padding: 20 }
+          },
+          tooltip: {
+            callbacks: {
+              label: function(context) {
+                return context.dataset.label + ': ₹' + context.parsed.y.toLocaleString('en-IN');
+              }
+            }
+          }
+        },
+        scales: {
+          y: {
+            beginAtZero: true,
+            ticks: {
+              callback: function(value) {
+                return '₹' + (value / 1000).toFixed(0) + 'k';
+              }
+            },
+            grid: { color: 'rgba(0,0,0,0.05)' }
+          },
+          x: { grid: { display: false } }
+        }
+      }
+    });
+  }
+
+  // Client Revenue Chart (Horizontal Bar)
+  const clientCtx = document.getElementById('clientRevenueChart');
+  if (clientCtx) {
+    const clientLabels = {{ client_labels|safe }};
+    const clientData = {{ client_data|safe }};
+
+    if (clientLabels.length > 0) {
+      new Chart(clientCtx, {
+        type: 'bar',
+        data: {
+          labels: clientLabels,
+          datasets: [{
+            label: 'Revenue',
+            data: clientData,
+            backgroundColor: [colors.primary, colors.info, colors.success, colors.warning, colors.purple],
+            borderRadius: 6,
+            barThickness: 25
+          }]
+        },
+        options: {
+          indexAxis: 'y',
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              callbacks: {
+                label: function(context) {
+                  return '₹' + context.parsed.x.toLocaleString('en-IN');
+                }
+              }
+            }
+          },
+          scales: {
+            x: {
+              beginAtZero: true,
+              ticks: {
+                callback: function(value) {
+                  return '₹' + (value / 1000).toFixed(0) + 'k';
+                }
+              },
+              grid: { color: 'rgba(0,0,0,0.05)' }
+            },
+            y: { grid: { display: false } }
+          }
+        }
+      });
+    } else {
+      clientCtx.parentElement.innerHTML = '<div class="text-center text-muted py-4">No client revenue data available</div>';
+    }
+  }
+
+  // Project Type Revenue Chart (Doughnut)
+  const projectTypeCtx = document.getElementById('projectTypeChart');
+  if (projectTypeCtx) {
+    const ptLabels = {{ project_type_labels|safe }};
+    const ptData = {{ project_type_data|safe }};
+
+    if (ptLabels.length > 0) {
+      new Chart(projectTypeCtx, {
+        type: 'doughnut',
+        data: {
+          labels: ptLabels,
+          datasets: [{
+            data: ptData,
+            backgroundColor: [colors.primary, colors.success, colors.warning, colors.info, colors.purple, colors.pink, colors.secondary],
+            borderWidth: 0,
+            hoverOffset: 4
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: {
+              position: 'right',
+              labels: { padding: 15, usePointStyle: true }
+            },
+            tooltip: {
+              callbacks: {
+                label: function(context) {
+                  return context.label + ': ₹' + context.parsed.toLocaleString('en-IN');
+                }
+              }
+            }
+          },
+          cutout: '55%'
+        }
+      });
+    } else {
+      projectTypeCtx.parentElement.innerHTML = '<div class="text-center text-muted py-4">No project type data available</div>';
+    }
+  }
+
+  // Quarterly Revenue Chart (Bar)
+  const quarterlyCtx = document.getElementById('quarterlyChart');
+  if (quarterlyCtx) {
+    new Chart(quarterlyCtx, {
+      type: 'bar',
+      data: {
+        labels: {{ quarterly_labels|safe }},
+        datasets: [{
+          label: 'Quarterly Revenue',
+          data: {{ quarterly_data|safe }},
+          backgroundColor: [colors.info, colors.primary, colors.success, colors.warning],
+          borderRadius: 8,
+          barThickness: 50
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            callbacks: {
+              label: function(context) {
+                return '₹' + context.parsed.y.toLocaleString('en-IN');
+              }
+            }
+          }
+        },
+        scales: {
+          y: {
+            beginAtZero: true,
+            ticks: {
+              callback: function(value) {
+                return '₹' + (value / 1000).toFixed(0) + 'k';
+              }
+            },
+            grid: { color: 'rgba(0,0,0,0.05)' }
+          },
+          x: { grid: { display: false } }
+        }
+      }
+    });
+  }
+});
+</script>
 {% endblock %}

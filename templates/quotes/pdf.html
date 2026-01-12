@@ -3,11 +3,16 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>{{ quote.quote_number }} - Ralfiz Technologies</title>
+  <title>{{ quote.quote_number }} - {{ company.company_name|default:"Ralfiz Technologies" }}</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <style>
+    @page {
+      size: A4;
+      margin: 15mm;
+    }
+
     * {
       box-sizing: border-box;
       margin: 0;
@@ -16,8 +21,8 @@
 
     body {
       font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-      font-size: 14px;
-      line-height: 1.5;
+      font-size: 11px;
+      line-height: 1.4;
       color: #1e293b;
       background: #f1f5f9;
     }
@@ -25,7 +30,7 @@
     .quote-container {
       max-width: 800px;
       margin: 60px auto 40px;
-      padding: 40px;
+      padding: 25px;
       background: white;
       box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
       border-radius: 8px;
@@ -89,37 +94,38 @@
       align-items: flex-start;
       margin-bottom: 20px;
       padding-bottom: 15px;
-      border-bottom: 3px solid #0d9488;
+      border-bottom: 2px solid #0d9488;
     }
 
     .company-info {
-      max-width: 300px;
+      max-width: 280px;
     }
 
     .company-logo {
       display: flex;
       align-items: center;
-      gap: 12px;
-      margin-bottom: 16px;
+      gap: 10px;
+      margin-bottom: 8px;
     }
 
     .logo-icon {
-      width: 48px;
-      height: 48px;
+      width: 36px;
+      height: 36px;
       background: linear-gradient(135deg, #0d9488, #14b8a6);
-      border-radius: 8px;
+      border-radius: 6px;
       display: flex;
       align-items: center;
       justify-content: center;
       color: white;
       font-weight: 700;
-      font-size: 24px;
+      font-size: 18px;
     }
 
     .company-name {
-      font-size: 24px;
+      font-size: 16px;
       font-weight: 700;
       color: #0f172a;
+      white-space: nowrap;
     }
 
     .company-name span {
@@ -127,9 +133,9 @@
     }
 
     .company-details {
-      font-size: 13px;
+      font-size: 10px;
       color: #64748b;
-      line-height: 1.6;
+      line-height: 1.5;
     }
 
     .quote-title-section {
@@ -137,25 +143,25 @@
     }
 
     .quote-title {
-      font-size: 36px;
+      font-size: 24px;
       font-weight: 700;
       color: #0d9488;
-      margin-bottom: 8px;
+      margin-bottom: 4px;
     }
 
     .quote-number {
-      font-size: 16px;
+      font-size: 12px;
       color: #64748b;
-      margin-bottom: 16px;
+      margin-bottom: 8px;
     }
 
     .quote-meta {
-      font-size: 13px;
+      font-size: 10px;
       color: #64748b;
     }
 
     .quote-meta div {
-      margin-bottom: 4px;
+      margin-bottom: 2px;
     }
 
     .quote-meta strong {
@@ -164,13 +170,13 @@
 
     .status-badge {
       display: inline-block;
-      padding: 6px 16px;
-      font-size: 12px;
+      padding: 4px 10px;
+      font-size: 9px;
       font-weight: 600;
       text-transform: uppercase;
       letter-spacing: 0.05em;
-      border-radius: 20px;
-      margin-top: 12px;
+      border-radius: 12px;
+      margin-top: 6px;
     }
 
     .status-badge.draft {
@@ -201,7 +207,7 @@
     /* Billing Section */
     .billing-section {
       display: flex;
-      gap: 60px;
+      gap: 30px;
       margin-bottom: 15px;
     }
 
@@ -210,44 +216,44 @@
     }
 
     .billing-label {
-      font-size: 11px;
+      font-size: 9px;
       font-weight: 600;
       text-transform: uppercase;
       letter-spacing: 0.05em;
       color: #0d9488;
-      margin-bottom: 8px;
+      margin-bottom: 4px;
     }
 
     .billing-name {
-      font-size: 16px;
+      font-size: 12px;
       font-weight: 600;
       color: #1e293b;
-      margin-bottom: 8px;
+      margin-bottom: 4px;
     }
 
     .billing-details {
-      font-size: 13px;
+      font-size: 10px;
       color: #64748b;
-      line-height: 1.6;
+      line-height: 1.5;
     }
 
     /* Project Description */
     .project-section {
       background: #f8fafc;
-      padding: 12px 16px;
-      border-radius: 8px;
-      margin-bottom: 20px;
+      padding: 10px 12px;
+      border-radius: 6px;
+      margin-bottom: 15px;
     }
 
     .project-title {
-      font-size: 18px;
+      font-size: 12px;
       font-weight: 600;
       color: #1e293b;
-      margin-bottom: 8px;
+      margin-bottom: 4px;
     }
 
     .project-description {
-      font-size: 13px;
+      font-size: 10px;
       color: #64748b;
     }
 
@@ -263,14 +269,14 @@
 
     .items-table th {
       background: #f1f5f9;
-      padding: 12px 16px;
+      padding: 6px 10px;
       text-align: left;
-      font-size: 11px;
+      font-size: 9px;
       font-weight: 600;
       text-transform: uppercase;
       letter-spacing: 0.05em;
       color: #64748b;
-      border-bottom: 2px solid #e2e8f0;
+      border-bottom: 1px solid #e2e8f0;
     }
 
     .items-table th:last-child,
@@ -279,42 +285,43 @@
     }
 
     .items-table td {
-      padding: 16px;
+      padding: 8px 10px;
       border-bottom: 1px solid #e2e8f0;
       vertical-align: top;
+      font-size: 10px;
     }
 
     .item-description {
       font-weight: 500;
       color: #1e293b;
-      margin-bottom: 4px;
+      margin-bottom: 2px;
     }
 
     .item-details {
-      font-size: 12px;
+      font-size: 9px;
       color: #64748b;
     }
 
     .items-table tbody tr:last-child td {
-      border-bottom: 2px solid #e2e8f0;
+      border-bottom: 1px solid #e2e8f0;
     }
 
     /* Totals */
     .totals-section {
       display: flex;
       justify-content: flex-end;
-      margin-bottom: 20px;
+      margin-bottom: 15px;
     }
 
     .totals-table {
-      width: 300px;
+      width: 220px;
     }
 
     .totals-row {
       display: flex;
       justify-content: space-between;
-      padding: 8px 0;
-      font-size: 14px;
+      padding: 4px 0;
+      font-size: 10px;
     }
 
     .totals-row.subtotal {
@@ -323,13 +330,13 @@
 
     .totals-row.total {
       border-top: 2px solid #0d9488;
-      padding-top: 16px;
-      margin-top: 8px;
+      padding-top: 8px;
+      margin-top: 4px;
     }
 
     .totals-row.total .label,
     .totals-row.total .value {
-      font-size: 18px;
+      font-size: 12px;
       font-weight: 700;
       color: #0d9488;
     }
@@ -343,76 +350,60 @@
       color: #1e293b;
     }
 
-    /* Validity Notice */
-    .validity-section {
-      background: #fef3c7;
-      border: 1px solid #fcd34d;
-      padding: 10px 16px;
-      border-radius: 8px;
-      margin-bottom: 15px;
-      text-align: center;
-    }
-
-    .validity-text {
-      font-size: 14px;
-      color: #92400e;
-      font-weight: 500;
-    }
-
     /* Terms */
     .terms-section {
-      margin-bottom: 15px;
+      margin-bottom: 12px;
     }
 
     .terms-label {
-      font-size: 11px;
+      font-size: 9px;
       font-weight: 600;
       text-transform: uppercase;
       letter-spacing: 0.05em;
       color: #0d9488;
-      margin-bottom: 12px;
+      margin-bottom: 4px;
     }
 
     .terms-content {
-      font-size: 12px;
+      font-size: 9px;
       color: #64748b;
-      line-height: 1.8;
+      line-height: 1.5;
     }
 
     /* Signature Section */
     .signature-section {
       display: flex;
       gap: 40px;
-      margin-bottom: 40px;
+      margin-bottom: 15px;
     }
 
     .signature-block {
       flex: 1;
-      padding-top: 60px;
+      padding-top: 30px;
       border-top: 1px solid #e2e8f0;
     }
 
     .signature-label {
-      font-size: 12px;
+      font-size: 9px;
       color: #64748b;
     }
 
     /* Footer */
     .quote-footer {
       text-align: center;
-      padding-top: 30px;
+      padding-top: 12px;
       border-top: 1px solid #e2e8f0;
     }
 
     .thank-you {
-      font-size: 18px;
+      font-size: 12px;
       font-weight: 600;
       color: #0d9488;
-      margin-bottom: 8px;
+      margin-bottom: 4px;
     }
 
     .footer-note {
-      font-size: 12px;
+      font-size: 9px;
       color: #94a3b8;
     }
 
@@ -426,7 +417,7 @@
 
       .quote-container {
         margin: 0;
-        padding: 20px;
+        padding: 15px;
         box-shadow: none;
         border-radius: 0;
       }
@@ -460,22 +451,27 @@
   <div class="quote-container">
     <!-- Header -->
     <div class="quote-header">
-      <div class="company-info">
+      <div class="company-info" style="flex: 1;">
         <div class="company-logo">
-          <div class="logo-icon">R</div>
-          <div class="company-name">Ralfiz<span>Tech</span></div>
+          {% if company.logo %}
+          <img src="{{ company.logo.url }}" alt="{{ company.company_name }}" style="width: 36px; height: 36px; object-fit: contain; border-radius: 6px;">
+          {% else %}
+          <div class="logo-icon">{{ company.company_name|slice:":1"|upper|default:"R" }}</div>
+          {% endif %}
+          <div>
+            <div class="company-name">{{ company.company_name|default:"Ralfiz Technologies" }}</div>
+            {% if company.tagline %}<div style="font-size: 9px; color: #64748b;">{{ company.tagline }}</div>{% endif %}
+          </div>
         </div>
         <div class="company-details">
-          Ralfiz Technologies Pvt. Ltd.<br>
-          123 Tech Park, Cyber City<br>
-          Kozhikode, Kerala 673001<br>
-          <br>
-          Phone: +91 98765 43210<br>
-          Email: quotes@ralfiz.com
-          {% if with_gst %}<br>GSTIN: 32XYZAB1234C1Z5{% endif %}
+          {{ company.address|linebreaksbr|default:"" }}
+          {% if company.phone %}<br>Phone: {{ company.phone }}{% endif %}
+          {% if company.email %}<br>Email: {{ company.email }}{% endif %}
+          {% if company.gst_number %}<br>GSTIN: {{ company.gst_number }}{% endif %}
+          {% if company.hsn_code %}<br>HSN/SAC: {{ company.hsn_code }}{% endif %}
         </div>
       </div>
-      <div class="quote-title-section">
+      <div class="quote-title-section" style="flex-shrink: 0; margin-left: 30px;">
         <div class="quote-title">QUOTATION</div>
         <div class="quote-number">#{{ quote.quote_number }}</div>
         <div class="quote-meta">
@@ -487,7 +483,7 @@
     </div>
 
     <!-- Billing Section -->
-    <div class="billing-section" style="margin-bottom: 20px;">
+    <div class="billing-section">
       <div class="billing-block">
         <div class="billing-label">Prepared For</div>
         <div class="billing-name">{{ quote.client.company_name|default:quote.client.name }}</div>
@@ -531,7 +527,7 @@
           </tr>
           {% empty %}
           <tr>
-            <td colspan="4" style="text-align: center; padding: 40px; color: #64748b;">No line items</td>
+            <td colspan="4" style="text-align: center; padding: 20px; color: #64748b;">No line items</td>
           </tr>
           {% endfor %}
         </tbody>
@@ -569,7 +565,7 @@
           <span class="label">Total</span>
           <span class="value">&#8377;{{ taxable_amount|floatformat:2 }}</span>
         </div>
-        <div class="totals-row" style="font-size: 12px;">
+        <div class="totals-row" style="font-size: 9px;">
           <span class="label">GST Extra as applicable</span>
           <span class="value"></span>
         </div>
@@ -579,7 +575,7 @@
 
     <!-- Validity Notice -->
     {% if quote.valid_until %}
-    <div style="font-size: 11px; color: #92400e; text-align: right; margin-bottom: 15px;">
+    <div style="font-size: 9px; color: #92400e; text-align: right; margin-bottom: 12px;">
       <strong>Valid until {{ quote.valid_until|date:"d F Y" }}</strong> - Prices may change after this date.
     </div>
     {% endif %}
@@ -600,21 +596,21 @@
     {% endif %}
 
     <!-- Signature Section -->
-    <div class="signature-section" style="gap: 60px; margin-bottom: 20px;">
-      <div class="signature-block" style="padding-top: 40px;">
-        <div class="signature-label">For Ralfiz Technologies</div>
+    <div class="signature-section">
+      <div class="signature-block">
+        <div class="signature-label">For {{ company.company_name|default:"Ralfiz Technologies" }}</div>
       </div>
-      <div class="signature-block" style="padding-top: 40px;">
+      <div class="signature-block">
         <div class="signature-label">Client Acceptance</div>
       </div>
     </div>
 
     <!-- Footer -->
     <div class="quote-footer">
-      <div class="thank-you">Thank you for considering Ralfiz Technologies!</div>
+      <div class="thank-you">Thank you for considering {{ company.company_name|default:"Ralfiz Technologies" }}!</div>
       <div class="footer-note">
         If you have any questions about this quote, please contact<br>
-        quotes@ralfiz.com | +91 98765 43210
+        {{ company.email|default:"" }}{% if company.email and company.phone %} | {% endif %}{{ company.phone|default:"" }}
       </div>
     </div>
   </div>

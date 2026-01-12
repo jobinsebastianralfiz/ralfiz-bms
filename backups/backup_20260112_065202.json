@@ -1,0 +1,1357 @@
+{
+  "created_at": "2026-01-12T06:52:02.847440+00:00",
+  "version": "1.0",
+  "data": {
+    "clients": [
+      {
+        "model": "core.client",
+        "pk": "22dea436-fb20-4d81-8442-139a169cfc21",
+        "fields": {
+          "name": "Vijay Thomas",
+          "company_name": "BlueSky Travels",
+          "email": "vijay@bluesky.com",
+          "phone": "+91 65432 10987",
+          "whatsapp": "",
+          "address": "654 Tourism Plaza, Kochi, Kerala 682001",
+          "gst_number": "",
+          "priority": "low",
+          "notes": "Travel agency, seasonal business",
+          "is_active": true,
+          "created_at": "2026-01-11T07:15:33.411Z",
+          "updated_at": "2026-01-11T07:15:33.411Z"
+        }
+      },
+      {
+        "model": "core.client",
+        "pk": "362dffdd-18cb-4e2e-a786-8a44caa1f6c6",
+        "fields": {
+          "name": "Sneha Nair",
+          "company_name": "GreenLeaf Organics",
+          "email": "sneha@greenleaf.in",
+          "phone": "+91 76543 21098",
+          "whatsapp": "+91 76543 21098",
+          "address": "321 Organic Farm, Thrissur, Kerala 680001",
+          "gst_number": "32MNOPQ9012R3S7",
+          "priority": "medium",
+          "notes": "E-commerce client, needs regular updates",
+          "is_active": true,
+          "created_at": "2026-01-11T07:15:33.410Z",
+          "updated_at": "2026-01-11T07:15:33.410Z"
+        }
+      },
+      {
+        "model": "core.client",
+        "pk": "6f9e42a1-9745-4aa2-99ef-38afc1b8705b",
+        "fields": {
+          "name": "Arun Kumar",
+          "company_name": "EduHub Academy",
+          "email": "arun@eduhub.edu",
+          "phone": "+91 87654 32109",
+          "whatsapp": "",
+          "address": "789 Education Lane, Malappuram, Kerala 676001",
+          "gst_number": "",
+          "priority": "medium",
+          "notes": "Educational institution, budget conscious",
+          "is_active": true,
+          "created_at": "2026-01-11T07:15:33.410Z",
+          "updated_at": "2026-01-11T07:15:33.410Z"
+        }
+      },
+      {
+        "model": "core.client",
+        "pk": "44b193c0-abd3-4ee9-8c15-f92359529cc2",
+        "fields": {
+          "name": "Dr. Priya Menon",
+          "company_name": "MediCare Hospital",
+          "email": "priya@medicare.in",
+          "phone": "+91 94567 89012",
+          "whatsapp": "+91 94567 89012",
+          "address": "456 Hospital Road, Kannur, Kerala 670001",
+          "gst_number": "32FGHIJ5678K2L6",
+          "priority": "high",
+          "notes": "Healthcare client, requires HIPAA compliance",
+          "is_active": true,
+          "created_at": "2026-01-11T07:15:33.409Z",
+          "updated_at": "2026-01-11T07:15:33.410Z"
+        }
+      },
+      {
+        "model": "core.client",
+        "pk": "6a09ab8e-ddb6-4688-b58a-f7966d24512a",
+        "fields": {
+          "name": "Rahul Sharma",
+          "company_name": "TechStart Solutions",
+          "email": "rahul@techstart.com",
+          "phone": "+91 98765 43210",
+          "whatsapp": "+91 98765 43210",
+          "address": "123 Tech Park, Kozhikode, Kerala 673001",
+          "gst_number": "32ABCDE1234F1Z5",
+          "priority": "high",
+          "notes": "Long-term client, prefers WhatsApp communication",
+          "is_active": true,
+          "created_at": "2026-01-11T07:15:33.409Z",
+          "updated_at": "2026-01-11T07:15:33.409Z"
+        }
+      }
+    ],
+    "projects": [
+      {
+        "model": "core.project",
+        "pk": "5523ec1f-5dd4-40dc-b0d6-d88e3552932b",
+        "fields": {
+          "client": "22dea436-fb20-4d81-8442-139a169cfc21",
+          "name": "Travel Booking Website",
+          "project_type": "website",
+          "description": "Tour packages and booking website",
+          "status": "completed",
+          "estimated_budget": "120000.00",
+          "final_amount": "125000.00",
+          "start_date": "2025-09-13",
+          "deadline": "2025-11-12",
+          "completed_date": "2025-11-07",
+          "tech_stack": "WordPress, WooCommerce",
+          "github_repo": "",
+          "live_url": "https://bluesky-travels.com",
+          "notes": "",
+          "created_at": "2026-01-11T07:17:10.234Z",
+          "updated_at": "2026-01-11T07:17:10.234Z"
+        }
+      },
+      {
+        "model": "core.project",
+        "pk": "381561df-dd8f-4706-a46f-1def3623d283",
+        "fields": {
+          "client": "362dffdd-18cb-4e2e-a786-8a44caa1f6c6",
+          "name": "Mobile App",
+          "project_type": "mobile_app",
+          "description": "iOS and Android app for online ordering",
+          "status": "lead",
+          "estimated_budget": "300000.00",
+          "final_amount": null,
+          "start_date": null,
+          "deadline": null,
+          "completed_date": null,
+          "tech_stack": "",
+          "github_repo": "",
+          "live_url": "",
+          "notes": "Client interested, waiting for e-commerce to complete first",
+          "created_at": "2026-01-11T07:17:10.233Z",
+          "updated_at": "2026-01-11T07:17:10.233Z"
+        }
+      },
+      {
+        "model": "core.project",
+        "pk": "44c27559-2583-405d-9f52-694bf1e1ab50",
+        "fields": {
+          "client": "362dffdd-18cb-4e2e-a786-8a44caa1f6c6",
+          "name": "E-Commerce Platform",
+          "project_type": "ecommerce",
+          "description": "Online store for organic products",
+          "status": "in_progress",
+          "estimated_budget": "180000.00",
+          "final_amount": null,
+          "start_date": "2026-01-01",
+          "deadline": "2026-03-02",
+          "completed_date": null,
+          "tech_stack": "Django, React, Stripe, PostgreSQL",
+          "github_repo": "",
+          "live_url": "",
+          "notes": "",
+          "created_at": "2026-01-11T07:17:10.233Z",
+          "updated_at": "2026-01-11T07:17:10.233Z"
+        }
+      },
+      {
+        "model": "core.project",
+        "pk": "a7c8a62c-17f2-43c0-a701-3e8224b3bba0",
+        "fields": {
+          "client": "6f9e42a1-9745-4aa2-99ef-38afc1b8705b",
+          "name": "Learning Management System",
+          "project_type": "web_app",
+          "description": "Online LMS for course delivery and assessments",
+          "status": "in_progress",
+          "estimated_budget": "200000.00",
+          "final_amount": null,
+          "start_date": "2025-12-22",
+          "deadline": "2026-02-25",
+          "completed_date": null,
+          "tech_stack": "Django, React, PostgreSQL, AWS S3",
+          "github_repo": "",
+          "live_url": "",
+          "notes": "",
+          "created_at": "2026-01-11T07:17:10.232Z",
+          "updated_at": "2026-01-11T07:17:10.232Z"
+        }
+      },
+      {
+        "model": "core.project",
+        "pk": "3cfe577c-5a86-4dc7-b905-1243036fc6f5",
+        "fields": {
+          "client": "44b193c0-abd3-4ee9-8c15-f92359529cc2",
+          "name": "Hospital Website",
+          "project_type": "website",
+          "description": "Informational website with doctor profiles",
+          "status": "completed",
+          "estimated_budget": "80000.00",
+          "final_amount": "85000.00",
+          "start_date": "2025-10-13",
+          "deadline": "2025-12-12",
+          "completed_date": "2025-12-07",
+          "tech_stack": "WordPress, Elementor",
+          "github_repo": "",
+          "live_url": "https://medicare-hospital.com",
+          "notes": "",
+          "created_at": "2026-01-11T07:17:10.232Z",
+          "updated_at": "2026-01-11T07:17:10.232Z"
+        }
+      },
+      {
+        "model": "core.project",
+        "pk": "1fd30cee-4bba-4b7a-8703-fe255c586262",
+        "fields": {
+          "client": "44b193c0-abd3-4ee9-8c15-f92359529cc2",
+          "name": "Patient Portal",
+          "project_type": "web_app",
+          "description": "Online patient portal for appointments and records",
+          "status": "review",
+          "estimated_budget": "350000.00",
+          "final_amount": null,
+          "start_date": "2025-11-12",
+          "deadline": "2026-01-26",
+          "completed_date": null,
+          "tech_stack": "Django, React, PostgreSQL, Redis",
+          "github_repo": "https://github.com/ralfiz/medicare-portal",
+          "live_url": "",
+          "notes": "",
+          "created_at": "2026-01-11T07:17:10.231Z",
+          "updated_at": "2026-01-11T07:17:10.231Z"
+        }
+      },
+      {
+        "model": "core.project",
+        "pk": "791b45ef-c5c4-4b8e-a48e-57c72da936bb",
+        "fields": {
+          "client": "6a09ab8e-ddb6-4688-b58a-f7966d24512a",
+          "name": "Inventory Management System",
+          "project_type": "web_app",
+          "description": "Custom inventory management web application",
+          "status": "in_progress",
+          "estimated_budget": "250000.00",
+          "final_amount": null,
+          "start_date": "2025-12-27",
+          "deadline": "2026-03-12",
+          "completed_date": null,
+          "tech_stack": "Django, Vue.js, PostgreSQL",
+          "github_repo": "",
+          "live_url": "",
+          "notes": "",
+          "created_at": "2026-01-11T07:17:10.231Z",
+          "updated_at": "2026-01-11T07:17:10.231Z"
+        }
+      },
+      {
+        "model": "core.project",
+        "pk": "400841cf-3419-4658-9d79-3d76a9643a29",
+        "fields": {
+          "client": "6a09ab8e-ddb6-4688-b58a-f7966d24512a",
+          "name": "Corporate Website Redesign",
+          "project_type": "website",
+          "description": "Complete redesign of corporate website with modern UI/UX",
+          "status": "in_progress",
+          "estimated_budget": "150000.00",
+          "final_amount": null,
+          "start_date": "2025-12-12",
+          "deadline": "2026-02-10",
+          "completed_date": null,
+          "tech_stack": "Django, React, PostgreSQL, Tailwind CSS",
+          "github_repo": "",
+          "live_url": "",
+          "notes": "",
+          "created_at": "2026-01-11T07:17:10.230Z",
+          "updated_at": "2026-01-11T07:17:10.230Z"
+        }
+      }
+    ],
+    "credentials": [
+      {
+        "model": "core.credential",
+        "pk": "1cef75c2-5c9c-4bb0-a8ab-43417a6b236b",
+        "fields": {
+          "project": "5523ec1f-5dd4-40dc-b0d6-d88e3552932b",
+          "credential_type": "admin_panel",
+          "name": "WooCommerce Admin",
+          "provider": "WordPress",
+          "url": "https://bluesky-travels.com/wp-admin",
+          "ip_address": null,
+          "username": "bluesky_woo",
+          "password": "WC@BlueSky2026",
+          "ssh_key": "",
+          "port": null,
+          "purchase_date": null,
+          "expiry_date": null,
+          "auto_renew": false,
+          "renewal_cost": null,
+          "notes": "",
+          "is_active": true,
+          "created_at": "2026-01-11T07:18:22.052Z",
+          "updated_at": "2026-01-11T07:18:22.052Z"
+        }
+      },
+      {
+        "model": "core.credential",
+        "pk": "c8468b49-ae6d-49f9-ad22-3711899161e0",
+        "fields": {
+          "project": "44c27559-2583-405d-9f52-694bf1e1ab50",
+          "credential_type": "api",
+          "name": "Razorpay Gateway",
+          "provider": "Razorpay",
+          "url": "https://dashboard.razorpay.com",
+          "ip_address": null,
+          "username": "rzp_live_xxxxxxxxx",
+          "password": "xxxxxxxxxxxxxxxx",
+          "ssh_key": "",
+          "port": null,
+          "purchase_date": null,
+          "expiry_date": null,
+          "auto_renew": false,
+          "renewal_cost": null,
+          "notes": "",
+          "is_active": true,
+          "created_at": "2026-01-11T07:18:22.051Z",
+          "updated_at": "2026-01-11T07:18:22.051Z"
+        }
+      },
+      {
+        "model": "core.credential",
+        "pk": "7e559d83-6061-4d23-b10c-8c30df1dff72",
+        "fields": {
+          "project": "44c27559-2583-405d-9f52-694bf1e1ab50",
+          "credential_type": "api",
+          "name": "Stripe Payment Gateway",
+          "provider": "Stripe",
+          "url": "https://dashboard.stripe.com",
+          "ip_address": null,
+          "username": "sk_live_xxxxxxxxxxxxx",
+          "password": "pk_live_xxxxxxxxxxxxx",
+          "ssh_key": "",
+          "port": null,
+          "purchase_date": null,
+          "expiry_date": null,
+          "auto_renew": false,
+          "renewal_cost": null,
+          "notes": "",
+          "is_active": true,
+          "created_at": "2026-01-11T07:18:22.050Z",
+          "updated_at": "2026-01-11T07:18:22.050Z"
+        }
+      },
+      {
+        "model": "core.credential",
+        "pk": "2fa4e5ea-b873-465f-8442-f0b8b5efb7aa",
+        "fields": {
+          "project": "a7c8a62c-17f2-43c0-a701-3e8224b3bba0",
+          "credential_type": "api",
+          "name": "AWS S3 Storage",
+          "provider": "AWS S3",
+          "url": "",
+          "ip_address": null,
+          "username": "AKIAIOSFODNN7EXAMPLE",
+          "password": "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",
+          "ssh_key": "",
+          "port": null,
+          "purchase_date": null,
+          "expiry_date": null,
+          "auto_renew": false,
+          "renewal_cost": null,
+          "notes": "Access key for video storage bucket",
+          "is_active": true,
+          "created_at": "2026-01-11T07:18:22.049Z",
+          "updated_at": "2026-01-11T07:18:22.049Z"
+        }
+      },
+      {
+        "model": "core.credential",
+        "pk": "4158d146-a980-4652-ba16-bf05171d747b",
+        "fields": {
+          "project": "3cfe577c-5a86-4dc7-b905-1243036fc6f5",
+          "credential_type": "admin_panel",
+          "name": "WordPress Admin",
+          "provider": "WordPress",
+          "url": "https://medicare-hospital.com/wp-admin",
+          "ip_address": null,
+          "username": "admin",
+          "password": "WP@Medicare2026",
+          "ssh_key": "",
+          "port": null,
+          "purchase_date": null,
+          "expiry_date": null,
+          "auto_renew": false,
+          "renewal_cost": null,
+          "notes": "",
+          "is_active": true,
+          "created_at": "2026-01-11T07:18:22.047Z",
+          "updated_at": "2026-01-11T07:18:22.047Z"
+        }
+      },
+      {
+        "model": "core.credential",
+        "pk": "3792dfce-0956-408c-8a3e-e0ffbadfa34d",
+        "fields": {
+          "project": "1fd30cee-4bba-4b7a-8703-fe255c586262",
+          "credential_type": "email",
+          "name": "SMTP - SendGrid",
+          "provider": "SendGrid",
+          "url": "https://app.sendgrid.com",
+          "ip_address": null,
+          "username": "medicare-portal",
+          "password": "SG.xxxxxxxxxxxx",
+          "ssh_key": "",
+          "port": null,
+          "purchase_date": null,
+          "expiry_date": null,
+          "auto_renew": false,
+          "renewal_cost": null,
+          "notes": "",
+          "is_active": true,
+          "created_at": "2026-01-11T07:18:22.046Z",
+          "updated_at": "2026-01-11T07:18:22.046Z"
+        }
+      },
+      {
+        "model": "core.credential",
+        "pk": "4168458a-f15a-49af-a062-7198915cda60",
+        "fields": {
+          "project": "791b45ef-c5c4-4b8e-a48e-57c72da936bb",
+          "credential_type": "database",
+          "name": "PostgreSQL Database",
+          "provider": "AWS RDS",
+          "url": "inventory-db.abc123.ap-south-1.rds.amazonaws.com",
+          "ip_address": null,
+          "username": "inventory_admin",
+          "password": "DB#Secure2026",
+          "ssh_key": "",
+          "port": null,
+          "purchase_date": null,
+          "expiry_date": null,
+          "auto_renew": false,
+          "renewal_cost": null,
+          "notes": "",
+          "is_active": true,
+          "created_at": "2026-01-11T07:18:22.045Z",
+          "updated_at": "2026-01-11T07:18:22.045Z"
+        }
+      },
+      {
+        "model": "core.credential",
+        "pk": "3e3a3117-0b8c-4d98-be92-21c2af11e044",
+        "fields": {
+          "project": "791b45ef-c5c4-4b8e-a48e-57c72da936bb",
+          "credential_type": "hosting",
+          "name": "AWS Account",
+          "provider": "Amazon Web Services",
+          "url": "https://console.aws.amazon.com",
+          "ip_address": null,
+          "username": "techstart-inventory",
+          "password": "AWS@Inv2026!",
+          "ssh_key": "",
+          "port": null,
+          "purchase_date": null,
+          "expiry_date": null,
+          "auto_renew": false,
+          "renewal_cost": null,
+          "notes": "",
+          "is_active": true,
+          "created_at": "2026-01-11T07:18:22.044Z",
+          "updated_at": "2026-01-11T07:18:22.044Z"
+        }
+      },
+      {
+        "model": "core.credential",
+        "pk": "d250aaa8-244f-455c-a747-cdcdd2d04e05",
+        "fields": {
+          "project": "44c27559-2583-405d-9f52-694bf1e1ab50",
+          "credential_type": "domain",
+          "name": "greenleaf.in Domain",
+          "provider": "BigRock",
+          "url": "https://bigrock.in",
+          "ip_address": null,
+          "username": "greenleaf_admin",
+          "password": "BR@Green2026",
+          "ssh_key": "",
+          "port": null,
+          "purchase_date": null,
+          "expiry_date": "2026-01-09",
+          "auto_renew": false,
+          "renewal_cost": null,
+          "notes": "URGENT: Domain expired, needs immediate renewal!",
+          "is_active": true,
+          "created_at": "2026-01-11T07:18:22.049Z",
+          "updated_at": "2026-01-11T07:18:22.049Z"
+        }
+      },
+      {
+        "model": "core.credential",
+        "pk": "bf68f0c6-5e01-4d64-83ea-953245479d21",
+        "fields": {
+          "project": "400841cf-3419-4658-9d79-3d76a9643a29",
+          "credential_type": "domain",
+          "name": "techstart.com Domain",
+          "provider": "GoDaddy",
+          "url": "https://dcc.godaddy.com",
+          "ip_address": null,
+          "username": "techstart_admin",
+          "password": "Ts@2026#Secure",
+          "ssh_key": "",
+          "port": null,
+          "purchase_date": null,
+          "expiry_date": "2026-01-16",
+          "auto_renew": false,
+          "renewal_cost": null,
+          "notes": "Auto-renewal disabled, needs manual renewal",
+          "is_active": true,
+          "created_at": "2026-01-11T07:18:22.042Z",
+          "updated_at": "2026-01-11T07:18:22.042Z"
+        }
+      },
+      {
+        "model": "core.credential",
+        "pk": "58bc236d-1d44-470a-baec-f835035ae466",
+        "fields": {
+          "project": "1fd30cee-4bba-4b7a-8703-fe255c586262",
+          "credential_type": "ssl",
+          "name": "SSL Certificate",
+          "provider": "Let's Encrypt",
+          "url": "",
+          "ip_address": null,
+          "username": "",
+          "password": "",
+          "ssh_key": "",
+          "port": null,
+          "purchase_date": null,
+          "expiry_date": "2026-01-26",
+          "auto_renew": false,
+          "renewal_cost": null,
+          "notes": "Auto-renewal configured via certbot",
+          "is_active": true,
+          "created_at": "2026-01-11T07:18:22.046Z",
+          "updated_at": "2026-01-11T07:18:22.046Z"
+        }
+      },
+      {
+        "model": "core.credential",
+        "pk": "1bd31294-8381-4e3d-b390-81246209a0c5",
+        "fields": {
+          "project": "1fd30cee-4bba-4b7a-8703-fe255c586262",
+          "credential_type": "domain",
+          "name": "medicare-portal.com Domain",
+          "provider": "Namecheap",
+          "url": "https://namecheap.com",
+          "ip_address": null,
+          "username": "medicare_admin",
+          "password": "MC@Domain2026",
+          "ssh_key": "",
+          "port": null,
+          "purchase_date": null,
+          "expiry_date": "2026-04-11",
+          "auto_renew": false,
+          "renewal_cost": null,
+          "notes": "",
+          "is_active": true,
+          "created_at": "2026-01-11T07:18:22.045Z",
+          "updated_at": "2026-01-11T07:18:22.045Z"
+        }
+      },
+      {
+        "model": "core.credential",
+        "pk": "4feda9c2-ca7a-4c4f-a1c4-5c0644e48c7a",
+        "fields": {
+          "project": "400841cf-3419-4658-9d79-3d76a9643a29",
+          "credential_type": "hosting",
+          "name": "Hosting - DigitalOcean",
+          "provider": "DigitalOcean",
+          "url": "https://cloud.digitalocean.com",
+          "ip_address": null,
+          "username": "techstart@gmail.com",
+          "password": "DO#Secure2026",
+          "ssh_key": "",
+          "port": null,
+          "purchase_date": null,
+          "expiry_date": "2026-07-10",
+          "auto_renew": false,
+          "renewal_cost": null,
+          "notes": "",
+          "is_active": true,
+          "created_at": "2026-01-11T07:18:22.043Z",
+          "updated_at": "2026-01-11T07:18:22.043Z"
+        }
+      },
+      {
+        "model": "core.credential",
+        "pk": "e07d1631-15a4-4904-ac1a-5a955a4cf66a",
+        "fields": {
+          "project": "a7c8a62c-17f2-43c0-a701-3e8224b3bba0",
+          "credential_type": "domain",
+          "name": "eduhub.edu Domain",
+          "provider": "Google Domains",
+          "url": "https://domains.google.com",
+          "ip_address": null,
+          "username": "admin@eduhub.edu",
+          "password": "GD@Edu2026",
+          "ssh_key": "",
+          "port": null,
+          "purchase_date": null,
+          "expiry_date": "2026-07-30",
+          "auto_renew": false,
+          "renewal_cost": null,
+          "notes": "",
+          "is_active": true,
+          "created_at": "2026-01-11T07:18:22.048Z",
+          "updated_at": "2026-01-11T07:18:22.048Z"
+        }
+      },
+      {
+        "model": "core.credential",
+        "pk": "9ff93c37-d43b-4fd0-b48f-5b8eaefe4018",
+        "fields": {
+          "project": "5523ec1f-5dd4-40dc-b0d6-d88e3552932b",
+          "credential_type": "domain",
+          "name": "bluesky-travels.com Domain",
+          "provider": "GoDaddy",
+          "url": "https://dcc.godaddy.com",
+          "ip_address": null,
+          "username": "bluesky_admin",
+          "password": "GD@BlueSky2026",
+          "ssh_key": "",
+          "port": null,
+          "purchase_date": null,
+          "expiry_date": "2026-11-07",
+          "auto_renew": false,
+          "renewal_cost": null,
+          "notes": "",
+          "is_active": true,
+          "created_at": "2026-01-11T07:18:22.051Z",
+          "updated_at": "2026-01-11T07:18:22.051Z"
+        }
+      },
+      {
+        "model": "core.credential",
+        "pk": "5f36bfd2-90ca-492e-ae87-4ea03884416b",
+        "fields": {
+          "project": "3cfe577c-5a86-4dc7-b905-1243036fc6f5",
+          "credential_type": "hosting",
+          "name": "cPanel Hosting",
+          "provider": "Bluehost",
+          "url": "https://box1234.bluehost.com:2083",
+          "ip_address": null,
+          "username": "medicare_cpanel",
+          "password": "BH#Hosting2026",
+          "ssh_key": "",
+          "port": null,
+          "purchase_date": null,
+          "expiry_date": "2027-01-11",
+          "auto_renew": false,
+          "renewal_cost": null,
+          "notes": "",
+          "is_active": true,
+          "created_at": "2026-01-11T07:18:22.048Z",
+          "updated_at": "2026-01-11T07:18:22.048Z"
+        }
+      }
+    ],
+    "quotes": [
+      {
+        "model": "core.quote",
+        "pk": "5f1cedcf-6cd5-4d47-8200-0b1c04e1edcc",
+        "fields": {
+          "quote_number": "QT20260004",
+          "client": "6f9e42a1-9745-4aa2-99ef-38afc1b8705b",
+          "project": null,
+          "title": "Mobile Learning App",
+          "description": "",
+          "status": "draft",
+          "subtotal": "200000.00",
+          "discount": "0.00",
+          "tax_rate": "18.00",
+          "tax_amount": "36000.00",
+          "total_amount": "236000.00",
+          "issue_date": "2026-01-11",
+          "valid_until": "2026-02-10",
+          "terms": "",
+          "notes": "",
+          "created_at": "2026-01-11T07:20:37.540Z",
+          "updated_at": "2026-01-11T07:22:32.590Z"
+        }
+      },
+      {
+        "model": "core.quote",
+        "pk": "b8529e8d-d0d2-44e3-880c-57725ebd8924",
+        "fields": {
+          "quote_number": "QT20260003",
+          "client": "362dffdd-18cb-4e2e-a786-8a44caa1f6c6",
+          "project": "381561df-dd8f-4706-a46f-1def3623d283",
+          "title": "Mobile App Development Proposal",
+          "description": "",
+          "status": "sent",
+          "subtotal": "290000.00",
+          "discount": "0.00",
+          "tax_rate": "18.00",
+          "tax_amount": "52200.00",
+          "total_amount": "342200.00",
+          "issue_date": "2026-01-06",
+          "valid_until": "2026-02-05",
+          "terms": "",
+          "notes": "",
+          "created_at": "2026-01-11T07:20:37.538Z",
+          "updated_at": "2026-01-11T07:22:32.590Z"
+        }
+      },
+      {
+        "model": "core.quote",
+        "pk": "1d26cd2c-4d46-4bf6-a48a-198a51443908",
+        "fields": {
+          "quote_number": "QT20260002",
+          "client": "44b193c0-abd3-4ee9-8c15-f92359529cc2",
+          "project": "1fd30cee-4bba-4b7a-8703-fe255c586262",
+          "title": "Patient Portal Development",
+          "description": "",
+          "status": "accepted",
+          "subtotal": "275000.00",
+          "discount": "0.00",
+          "tax_rate": "18.00",
+          "tax_amount": "49500.00",
+          "total_amount": "324500.00",
+          "issue_date": "2025-10-28",
+          "valid_until": "2025-11-27",
+          "terms": "",
+          "notes": "",
+          "created_at": "2026-01-11T07:20:37.535Z",
+          "updated_at": "2026-01-11T07:22:32.591Z"
+        }
+      },
+      {
+        "model": "core.quote",
+        "pk": "88693463-436d-4eb2-96e7-a515370fe631",
+        "fields": {
+          "quote_number": "QT20260001",
+          "client": "6a09ab8e-ddb6-4688-b58a-f7966d24512a",
+          "project": "400841cf-3419-4658-9d79-3d76a9643a29",
+          "title": "Corporate Website Redesign Proposal",
+          "description": "",
+          "status": "accepted",
+          "subtotal": "140000.00",
+          "discount": "0.00",
+          "tax_rate": "18.00",
+          "tax_amount": "25200.00",
+          "total_amount": "165200.00",
+          "issue_date": "2025-11-27",
+          "valid_until": "2025-12-27",
+          "terms": "",
+          "notes": "Includes 3 months free maintenance",
+          "created_at": "2026-01-11T07:20:37.532Z",
+          "updated_at": "2026-01-11T07:22:32.592Z"
+        }
+      }
+    ],
+    "quote_items": [
+      {
+        "model": "core.quoteitem",
+        "pk": "59d9461f-ab31-4d33-9be4-7e2dfc75b7e1",
+        "fields": {
+          "quote": "88693463-436d-4eb2-96e7-a515370fe631",
+          "description": "UI/UX Design",
+          "details": "",
+          "quantity": "1.00",
+          "unit_price": "40000.00",
+          "amount": "40000.00",
+          "order": 0
+        }
+      },
+      {
+        "model": "core.quoteitem",
+        "pk": "00b72d50-17ca-4aad-b907-9ac2a87c47e4",
+        "fields": {
+          "quote": "88693463-436d-4eb2-96e7-a515370fe631",
+          "description": "Frontend Development",
+          "details": "",
+          "quantity": "1.00",
+          "unit_price": "50000.00",
+          "amount": "50000.00",
+          "order": 0
+        }
+      },
+      {
+        "model": "core.quoteitem",
+        "pk": "bb21975f-3e4d-44ce-94c3-eca95ecd18b3",
+        "fields": {
+          "quote": "88693463-436d-4eb2-96e7-a515370fe631",
+          "description": "Backend Development",
+          "details": "",
+          "quantity": "1.00",
+          "unit_price": "35000.00",
+          "amount": "35000.00",
+          "order": 0
+        }
+      },
+      {
+        "model": "core.quoteitem",
+        "pk": "e68c6e4b-e787-47ed-a492-d1aa0819b7f8",
+        "fields": {
+          "quote": "88693463-436d-4eb2-96e7-a515370fe631",
+          "description": "Testing & Deployment",
+          "details": "",
+          "quantity": "1.00",
+          "unit_price": "15000.00",
+          "amount": "15000.00",
+          "order": 0
+        }
+      },
+      {
+        "model": "core.quoteitem",
+        "pk": "9bb98f34-de72-4714-a0ce-e39f8a823270",
+        "fields": {
+          "quote": "1d26cd2c-4d46-4bf6-a48a-198a51443908",
+          "description": "Requirements Analysis",
+          "details": "",
+          "quantity": "1.00",
+          "unit_price": "25000.00",
+          "amount": "25000.00",
+          "order": 0
+        }
+      },
+      {
+        "model": "core.quoteitem",
+        "pk": "f2fb8419-74a8-4dde-8a76-12068affef43",
+        "fields": {
+          "quote": "1d26cd2c-4d46-4bf6-a48a-198a51443908",
+          "description": "UI/UX Design",
+          "details": "",
+          "quantity": "1.00",
+          "unit_price": "50000.00",
+          "amount": "50000.00",
+          "order": 0
+        }
+      },
+      {
+        "model": "core.quoteitem",
+        "pk": "9aaeae4b-29ac-4e5b-8ec8-d69167cd1f49",
+        "fields": {
+          "quote": "1d26cd2c-4d46-4bf6-a48a-198a51443908",
+          "description": "Full Stack Development",
+          "details": "",
+          "quantity": "1.00",
+          "unit_price": "150000.00",
+          "amount": "150000.00",
+          "order": 0
+        }
+      },
+      {
+        "model": "core.quoteitem",
+        "pk": "1289113b-3283-417a-b180-c545a7d7d8e9",
+        "fields": {
+          "quote": "1d26cd2c-4d46-4bf6-a48a-198a51443908",
+          "description": "Security Audit",
+          "details": "",
+          "quantity": "1.00",
+          "unit_price": "30000.00",
+          "amount": "30000.00",
+          "order": 0
+        }
+      },
+      {
+        "model": "core.quoteitem",
+        "pk": "45ce899e-61c2-4c20-96e1-56dfa6d65562",
+        "fields": {
+          "quote": "1d26cd2c-4d46-4bf6-a48a-198a51443908",
+          "description": "Training & Documentation",
+          "details": "",
+          "quantity": "1.00",
+          "unit_price": "20000.00",
+          "amount": "20000.00",
+          "order": 0
+        }
+      },
+      {
+        "model": "core.quoteitem",
+        "pk": "13566400-dbfd-4621-95c5-f3cb894d1dd5",
+        "fields": {
+          "quote": "b8529e8d-d0d2-44e3-880c-57725ebd8924",
+          "description": "iOS App Development",
+          "details": "",
+          "quantity": "1.00",
+          "unit_price": "120000.00",
+          "amount": "120000.00",
+          "order": 0
+        }
+      },
+      {
+        "model": "core.quoteitem",
+        "pk": "60725c69-5080-49b7-bc6c-5e66887aea87",
+        "fields": {
+          "quote": "b8529e8d-d0d2-44e3-880c-57725ebd8924",
+          "description": "Android App Development",
+          "details": "",
+          "quantity": "1.00",
+          "unit_price": "120000.00",
+          "amount": "120000.00",
+          "order": 0
+        }
+      },
+      {
+        "model": "core.quoteitem",
+        "pk": "ddd37a27-583d-41f3-8fb8-754307bffe93",
+        "fields": {
+          "quote": "b8529e8d-d0d2-44e3-880c-57725ebd8924",
+          "description": "API Integration",
+          "details": "",
+          "quantity": "1.00",
+          "unit_price": "40000.00",
+          "amount": "40000.00",
+          "order": 0
+        }
+      },
+      {
+        "model": "core.quoteitem",
+        "pk": "0a3ef8c3-a8e3-4425-a09e-142d3bd819af",
+        "fields": {
+          "quote": "b8529e8d-d0d2-44e3-880c-57725ebd8924",
+          "description": "App Store Submission",
+          "details": "",
+          "quantity": "1.00",
+          "unit_price": "10000.00",
+          "amount": "10000.00",
+          "order": 0
+        }
+      },
+      {
+        "model": "core.quoteitem",
+        "pk": "7cf94425-d46f-49fe-b43c-44b43845dd2c",
+        "fields": {
+          "quote": "5f1cedcf-6cd5-4d47-8200-0b1c04e1edcc",
+          "description": "Mobile App Development",
+          "details": "",
+          "quantity": "1.00",
+          "unit_price": "150000.00",
+          "amount": "150000.00",
+          "order": 0
+        }
+      },
+      {
+        "model": "core.quoteitem",
+        "pk": "0572d33b-a40f-4ed0-82f7-9440a4fe172d",
+        "fields": {
+          "quote": "5f1cedcf-6cd5-4d47-8200-0b1c04e1edcc",
+          "description": "Offline Mode Feature",
+          "details": "",
+          "quantity": "1.00",
+          "unit_price": "50000.00",
+          "amount": "50000.00",
+          "order": 0
+        }
+      }
+    ],
+    "invoices": [
+      {
+        "model": "core.invoice",
+        "pk": "32c07a78-e21c-47da-890c-d682d2e13812",
+        "fields": {
+          "invoice_number": "INV20260006",
+          "client": "6f9e42a1-9745-4aa2-99ef-38afc1b8705b",
+          "project": "a7c8a62c-17f2-43c0-a701-3e8224b3bba0",
+          "quote": null,
+          "title": "LMS Development - Phase 1",
+          "description": "",
+          "status": "draft",
+          "subtotal": "85000.00",
+          "discount": "0.00",
+          "tax_rate": "18.00",
+          "tax_amount": "15300.00",
+          "total_amount": "100300.00",
+          "amount_paid": "0.00",
+          "issue_date": "2026-01-11",
+          "due_date": "2026-01-26",
+          "terms": "",
+          "notes": "",
+          "created_at": "2026-01-11T07:23:22.676Z",
+          "updated_at": "2026-01-11T07:23:22.677Z"
+        }
+      },
+      {
+        "model": "core.invoice",
+        "pk": "285103d2-4d98-4e9e-9142-789577a086e5",
+        "fields": {
+          "invoice_number": "INV20260005",
+          "client": "362dffdd-18cb-4e2e-a786-8a44caa1f6c6",
+          "project": "44c27559-2583-405d-9f52-694bf1e1ab50",
+          "quote": null,
+          "title": "E-Commerce - Development Phase 1",
+          "description": "",
+          "status": "sent",
+          "subtotal": "80000.00",
+          "discount": "0.00",
+          "tax_rate": "18.00",
+          "tax_amount": "14400.00",
+          "total_amount": "94400.00",
+          "amount_paid": "0.00",
+          "issue_date": "2026-01-06",
+          "due_date": "2026-01-21",
+          "terms": "",
+          "notes": "",
+          "created_at": "2026-01-11T07:23:22.673Z",
+          "updated_at": "2026-01-11T07:23:22.675Z"
+        }
+      },
+      {
+        "model": "core.invoice",
+        "pk": "95b47852-b5ac-4999-9119-af5858ed8dc6",
+        "fields": {
+          "invoice_number": "INV20260004",
+          "client": "44b193c0-abd3-4ee9-8c15-f92359529cc2",
+          "project": "1fd30cee-4bba-4b7a-8703-fe255c586262",
+          "quote": null,
+          "title": "Patient Portal - Milestone 1",
+          "description": "",
+          "status": "overdue",
+          "subtotal": "75000.00",
+          "discount": "0.00",
+          "tax_rate": "18.00",
+          "tax_amount": "13500.00",
+          "total_amount": "88500.00",
+          "amount_paid": "0.00",
+          "issue_date": "2025-11-27",
+          "due_date": "2025-12-27",
+          "terms": "",
+          "notes": "",
+          "created_at": "2026-01-11T07:23:22.671Z",
+          "updated_at": "2026-01-11T07:23:22.673Z"
+        }
+      },
+      {
+        "model": "core.invoice",
+        "pk": "35cc87e3-97a7-40ea-8405-9c8781140146",
+        "fields": {
+          "invoice_number": "INV20260003",
+          "client": "6a09ab8e-ddb6-4688-b58a-f7966d24512a",
+          "project": "400841cf-3419-4658-9d79-3d76a9643a29",
+          "quote": "88693463-436d-4eb2-96e7-a515370fe631",
+          "title": "Website Redesign - Advance Payment",
+          "description": "",
+          "status": "partial",
+          "subtotal": "62500.00",
+          "discount": "0.00",
+          "tax_rate": "18.00",
+          "tax_amount": "11250.00",
+          "total_amount": "73750.00",
+          "amount_paid": "50000.00",
+          "issue_date": "2025-12-17",
+          "due_date": "2026-01-01",
+          "terms": "",
+          "notes": "",
+          "created_at": "2026-01-11T07:23:22.668Z",
+          "updated_at": "2026-01-11T07:23:22.670Z"
+        }
+      },
+      {
+        "model": "core.invoice",
+        "pk": "12c04105-55bf-4e4f-ba13-1268ab4b5a8c",
+        "fields": {
+          "invoice_number": "INV20260002",
+          "client": "22dea436-fb20-4d81-8442-139a169cfc21",
+          "project": "5523ec1f-5dd4-40dc-b0d6-d88e3552932b",
+          "quote": null,
+          "title": "Travel Website - Complete Project",
+          "description": "",
+          "status": "paid",
+          "subtotal": "120000.00",
+          "discount": "0.00",
+          "tax_rate": "18.00",
+          "tax_amount": "21600.00",
+          "total_amount": "141600.00",
+          "amount_paid": "141600.00",
+          "issue_date": "2025-11-02",
+          "due_date": "2025-11-17",
+          "terms": "",
+          "notes": "",
+          "created_at": "2026-01-11T07:23:22.664Z",
+          "updated_at": "2026-01-11T07:23:22.667Z"
+        }
+      },
+      {
+        "model": "core.invoice",
+        "pk": "f9aaba43-d556-445d-8c6f-7cae5ca509be",
+        "fields": {
+          "invoice_number": "INV20260001",
+          "client": "44b193c0-abd3-4ee9-8c15-f92359529cc2",
+          "project": "3cfe577c-5a86-4dc7-b905-1243036fc6f5",
+          "quote": null,
+          "title": "Hospital Website - Final Payment",
+          "description": "",
+          "status": "paid",
+          "subtotal": "85000.00",
+          "discount": "0.00",
+          "tax_rate": "18.00",
+          "tax_amount": "15300.00",
+          "total_amount": "100300.00",
+          "amount_paid": "100300.00",
+          "issue_date": "2025-12-02",
+          "due_date": "2025-12-17",
+          "terms": "",
+          "notes": "",
+          "created_at": "2026-01-11T07:23:22.660Z",
+          "updated_at": "2026-01-11T07:23:22.663Z"
+        }
+      }
+    ],
+    "invoice_items": [
+      {
+        "model": "core.invoiceitem",
+        "pk": "11752162-61cb-4440-af69-ceb019185f4b",
+        "fields": {
+          "invoice": "f9aaba43-d556-445d-8c6f-7cae5ca509be",
+          "description": "Website Design & Development",
+          "details": "",
+          "quantity": "1.00",
+          "unit_price": "70000.00",
+          "amount": "70000.00",
+          "order": 0
+        }
+      },
+      {
+        "model": "core.invoiceitem",
+        "pk": "8d2bc4f0-187b-415d-90a8-f8f0c65a072b",
+        "fields": {
+          "invoice": "f9aaba43-d556-445d-8c6f-7cae5ca509be",
+          "description": "Content Management System",
+          "details": "",
+          "quantity": "1.00",
+          "unit_price": "15000.00",
+          "amount": "15000.00",
+          "order": 0
+        }
+      },
+      {
+        "model": "core.invoiceitem",
+        "pk": "f5305f1d-2ecd-43bb-91ca-d2c5f4e01228",
+        "fields": {
+          "invoice": "12c04105-55bf-4e4f-ba13-1268ab4b5a8c",
+          "description": "Website Development",
+          "details": "",
+          "quantity": "1.00",
+          "unit_price": "80000.00",
+          "amount": "80000.00",
+          "order": 0
+        }
+      },
+      {
+        "model": "core.invoiceitem",
+        "pk": "9504625f-a37d-42ef-b84f-f298b59a3282",
+        "fields": {
+          "invoice": "12c04105-55bf-4e4f-ba13-1268ab4b5a8c",
+          "description": "Booking System Integration",
+          "details": "",
+          "quantity": "1.00",
+          "unit_price": "30000.00",
+          "amount": "30000.00",
+          "order": 0
+        }
+      },
+      {
+        "model": "core.invoiceitem",
+        "pk": "d3364f8e-4da8-41eb-8770-0adc553f4502",
+        "fields": {
+          "invoice": "12c04105-55bf-4e4f-ba13-1268ab4b5a8c",
+          "description": "Payment Gateway Setup",
+          "details": "",
+          "quantity": "1.00",
+          "unit_price": "10000.00",
+          "amount": "10000.00",
+          "order": 0
+        }
+      },
+      {
+        "model": "core.invoiceitem",
+        "pk": "41aa5f50-961f-424a-b8e5-e9e3ec017f52",
+        "fields": {
+          "invoice": "35cc87e3-97a7-40ea-8405-9c8781140146",
+          "description": "UI/UX Design (50% Advance)",
+          "details": "",
+          "quantity": "1.00",
+          "unit_price": "20000.00",
+          "amount": "20000.00",
+          "order": 0
+        }
+      },
+      {
+        "model": "core.invoiceitem",
+        "pk": "e823359a-27fc-4b11-9c7f-cba5e3b2831c",
+        "fields": {
+          "invoice": "35cc87e3-97a7-40ea-8405-9c8781140146",
+          "description": "Frontend Development (50% Advance)",
+          "details": "",
+          "quantity": "1.00",
+          "unit_price": "25000.00",
+          "amount": "25000.00",
+          "order": 0
+        }
+      },
+      {
+        "model": "core.invoiceitem",
+        "pk": "e28d97be-b859-4f77-b0d0-138fe209ca00",
+        "fields": {
+          "invoice": "35cc87e3-97a7-40ea-8405-9c8781140146",
+          "description": "Backend Development (50% Advance)",
+          "details": "",
+          "quantity": "1.00",
+          "unit_price": "17500.00",
+          "amount": "17500.00",
+          "order": 0
+        }
+      },
+      {
+        "model": "core.invoiceitem",
+        "pk": "140c3518-52e4-4833-a83c-d1882c1d5975",
+        "fields": {
+          "invoice": "95b47852-b5ac-4999-9119-af5858ed8dc6",
+          "description": "Requirements & Design Phase",
+          "details": "",
+          "quantity": "1.00",
+          "unit_price": "75000.00",
+          "amount": "75000.00",
+          "order": 0
+        }
+      },
+      {
+        "model": "core.invoiceitem",
+        "pk": "651cdf3b-d9c0-4617-a551-10069b38e97b",
+        "fields": {
+          "invoice": "285103d2-4d98-4e9e-9142-789577a086e5",
+          "description": "E-Commerce Platform Setup",
+          "details": "",
+          "quantity": "1.00",
+          "unit_price": "50000.00",
+          "amount": "50000.00",
+          "order": 0
+        }
+      },
+      {
+        "model": "core.invoiceitem",
+        "pk": "4f21d682-95a8-47d8-a552-dd6a7ccede66",
+        "fields": {
+          "invoice": "285103d2-4d98-4e9e-9142-789577a086e5",
+          "description": "Product Catalog Module",
+          "details": "",
+          "quantity": "1.00",
+          "unit_price": "30000.00",
+          "amount": "30000.00",
+          "order": 0
+        }
+      },
+      {
+        "model": "core.invoiceitem",
+        "pk": "3b209d4c-afed-4844-95fe-30a212300697",
+        "fields": {
+          "invoice": "32c07a78-e21c-47da-890c-d682d2e13812",
+          "description": "Core LMS Development",
+          "details": "",
+          "quantity": "1.00",
+          "unit_price": "60000.00",
+          "amount": "60000.00",
+          "order": 0
+        }
+      },
+      {
+        "model": "core.invoiceitem",
+        "pk": "9ee11148-f157-4b8c-9f91-d838285957cb",
+        "fields": {
+          "invoice": "32c07a78-e21c-47da-890c-d682d2e13812",
+          "description": "Video Streaming Integration",
+          "details": "",
+          "quantity": "1.00",
+          "unit_price": "25000.00",
+          "amount": "25000.00",
+          "order": 0
+        }
+      }
+    ],
+    "payments": [
+      {
+        "model": "core.payment",
+        "pk": "3e68b4a4-9a24-4458-ab29-2d5407a44287",
+        "fields": {
+          "invoice": "35cc87e3-97a7-40ea-8405-9c8781140146",
+          "amount": "50000.00",
+          "payment_date": "2025-12-22",
+          "payment_method": "bank_transfer",
+          "transaction_id": "NEFT2026010010",
+          "notes": "",
+          "created_at": "2026-01-11T07:23:22.670Z"
+        }
+      },
+      {
+        "model": "core.payment",
+        "pk": "3de99091-89ca-4674-8b76-0f67f468c0e4",
+        "fields": {
+          "invoice": "f9aaba43-d556-445d-8c6f-7cae5ca509be",
+          "amount": "100300.00",
+          "payment_date": "2025-12-12",
+          "payment_method": "bank_transfer",
+          "transaction_id": "NEFT2026010001",
+          "notes": "",
+          "created_at": "2026-01-11T07:23:22.662Z"
+        }
+      },
+      {
+        "model": "core.payment",
+        "pk": "f58c0523-e9e7-470b-8c69-19513520ec7a",
+        "fields": {
+          "invoice": "12c04105-55bf-4e4f-ba13-1268ab4b5a8c",
+          "amount": "70800.00",
+          "payment_date": "2025-11-17",
+          "payment_method": "bank_transfer",
+          "transaction_id": "NEFT2025120002",
+          "notes": "",
+          "created_at": "2026-01-11T07:23:22.666Z"
+        }
+      },
+      {
+        "model": "core.payment",
+        "pk": "742674cb-5d37-4d3a-9b06-dc964e0b6ef9",
+        "fields": {
+          "invoice": "12c04105-55bf-4e4f-ba13-1268ab4b5a8c",
+          "amount": "70800.00",
+          "payment_date": "2025-11-07",
+          "payment_method": "upi",
+          "transaction_id": "UPI2025120001",
+          "notes": "",
+          "created_at": "2026-01-11T07:23:22.666Z"
+        }
+      }
+    ],
+    "company_settings": [
+      {
+        "model": "core.companysettings",
+        "pk": 1,
+        "fields": {
+          "company_name": "Ralfiz Technologies",
+          "tagline": "Rise to Next Level",
+          "email": "info@ralfiz.com",
+          "phone": "9895663498",
+          "address": "KIMS Avenue\r\nPattambi Road, Perinthalmanna\r\n679322",
+          "gst_number": "32ABCFR0455R1ZY",
+          "pan_number": "",
+          "hsn_code": "8471",
+          "logo": "company/ralfiz_logo_2.svg",
+          "bank_name": "South Indian Bank",
+          "bank_account_number": "053705300004871",
+          "bank_ifsc": "SIBL0000537",
+          "bank_branch": "Perinthalmanna",
+          "upi_id": "ralfiz@hdfcbank.com",
+          "invoice_prefix": "INV",
+          "quote_prefix": "QT",
+          "default_tax_rate": "18.00",
+          "invoice_terms": "",
+          "quote_terms": ""
+        }
+      }
+    ]
+  }
+}

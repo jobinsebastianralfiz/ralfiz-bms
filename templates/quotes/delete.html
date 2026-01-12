@@ -1,0 +1,90 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Delete {{ quote.quote_number }} - Ralfiz BMS{% endblock %}
+
+{% block breadcrumb %}
+<a href="{% url 'dashboard' %}" class="breadcrumb-item">Dashboard</a>
+<span class="breadcrumb-separator">/</span>
+<a href="{% url 'quote_list' %}" class="breadcrumb-item">Quotes</a>
+<span class="breadcrumb-separator">/</span>
+<a href="{% url 'quote_detail' quote.pk %}" class="breadcrumb-item">{{ quote.quote_number }}</a>
+<span class="breadcrumb-separator">/</span>
+<span class="breadcrumb-item active">Delete</span>
+{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-6 col-md-8 col-sm-12" style="padding: 0.75rem;">
+    <div class="card">
+      <div class="card-header" style="background: var(--danger-bg); border-bottom-color: #fecaca;">
+        <div class="d-flex align-items-center gap-3">
+          <div style="width: 48px; height: 48px; background: var(--danger); border-radius: var(--border-radius); display: flex; align-items: center; justify-content: center;">
+            <i class="fas fa-exclamation-triangle text-white" style="font-size: 1.25rem;"></i>
+          </div>
+          <div>
+            <h3 class="card-title mb-0" style="color: var(--danger);">Delete Quote</h3>
+            <p class="text-sm mb-0" style="color: var(--danger);">This action cannot be undone</p>
+          </div>
+        </div>
+      </div>
+      <div class="card-body">
+        <p class="text-secondary mb-4">
+          Are you sure you want to delete the quote <strong>"{{ quote.quote_number }}"</strong>?
+        </p>
+
+        <!-- Quote Summary -->
+        <div class="p-3 rounded mb-4" style="background: var(--bg-body);">
+          <div class="d-flex align-items-center justify-content-between mb-3">
+            <div>
+              <div class="fw-medium">{{ quote.quote_number }}</div>
+              <div class="text-sm text-muted">{{ quote.title }}</div>
+            </div>
+            <span class="status-badge {{ quote.status }}">{{ quote.get_status_display }}</span>
+          </div>
+          <div class="row">
+            <div class="col-4">
+              <div class="text-sm text-muted">Client</div>
+              <div class="fw-medium">{{ quote.client.name }}</div>
+            </div>
+            <div class="col-4">
+              <div class="text-sm text-muted">Amount</div>
+              <div class="fw-medium">&#8377;{{ quote.total_amount|floatformat:0 }}</div>
+            </div>
+            <div class="col-4">
+              <div class="text-sm text-muted">Line Items</div>
+              <div class="fw-medium">{{ quote.items.count }}</div>
+            </div>
+          </div>
+        </div>
+
+        {% with has_invoice=quote.invoices.exists %}
+        {% if has_invoice %}
+        <div class="alert alert-warning">
+          <i class="fas fa-info-circle alert-icon"></i>
+          <div class="alert-content">
+            <div class="alert-title">Cannot delete this quote</div>
+            <p class="alert-text mb-0">
+              This quote has been converted to an invoice. Delete the associated invoice first.
+            </p>
+          </div>
+        </div>
+        {% endif %}
+        {% endwith %}
+
+        <form method="post" class="d-flex gap-3 justify-content-end mt-4">
+          {% csrf_token %}
+          <a href="{% url 'quote_detail' quote.pk %}" class="btn btn-outline-secondary">
+            <i class="fas fa-arrow-left"></i>
+            Cancel
+          </a>
+          <button type="submit" class="btn btn-danger">
+            <i class="fas fa-trash-alt"></i>
+            Delete Quote
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

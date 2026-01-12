@@ -49,12 +49,24 @@
   <div class="page-actions">
     <a href="{% url 'invoice_pdf' invoice.pk %}" class="btn btn-outline-secondary" target="_blank">
       <i class="fas fa-file-pdf"></i>
+      View PDF
+    </a>
+    <a href="{% url 'invoice_pdf' invoice.pk %}?download=1" class="btn btn-outline-secondary">
+      <i class="fas fa-download"></i>
       Download PDF
     </a>
-    <button class="btn btn-outline-primary" onclick="sendReminder()">
-      <i class="fas fa-envelope"></i>
-      Send Reminder
-    </button>
+    <a href="{% url 'invoice_pdf' invoice.pk %}?gst=1" class="btn btn-outline-secondary" target="_blank">
+      <i class="fas fa-file-pdf"></i>
+      PDF with GST
+    </a>
+    <a href="{% url 'invoice_pdf' invoice.pk %}?gst=1&download=1" class="btn btn-outline-secondary">
+      <i class="fas fa-download"></i>
+      Download GST PDF
+    </a>
+    <a href="{% url 'invoice_clone' invoice.pk %}" class="btn btn-outline-primary">
+      <i class="fas fa-copy"></i>
+      Duplicate
+    </a>
     <a href="{% url 'payment_create' %}?invoice={{ invoice.pk }}" class="btn btn-success">
       <i class="fas fa-plus"></i>
       Record Payment
@@ -62,6 +74,10 @@
     <a href="{% url 'invoice_update' invoice.pk %}" class="btn btn-primary">
       <i class="fas fa-edit"></i>
       Edit Invoice
+    </a>
+    <a href="{% url 'invoice_delete' invoice.pk %}" class="btn btn-danger">
+      <i class="fas fa-trash-alt"></i>
+      Delete
     </a>
   </div>
 </div>
@@ -261,7 +277,7 @@
               </td>
               <td class="text-center">{{ item.quantity|floatformat:0 }}</td>
               <td class="text-end">&#8377;{{ item.unit_price|floatformat:2 }}</td>
-              <td class="text-end fw-medium">&#8377;{{ item.total|floatformat:2 }}</td>
+              <td class="text-end fw-medium">&#8377;{{ item.amount|floatformat:2 }}</td>
             </tr>
             {% empty %}
             <tr>
@@ -332,12 +348,3 @@
 </div>
 {% endblock %}
 
-{% block extra_js %}
-<script>
-function sendReminder() {
-  if (confirm('Send payment reminder to {{ invoice.client.email }}?')) {
-    alert('Payment reminder sent successfully!');
-  }
-}
-</script>
-{% endblock %}

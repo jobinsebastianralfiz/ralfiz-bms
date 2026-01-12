@@ -1,0 +1,198 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{% if member %}Edit Team Member{% else %}Add Team Member{% endif %} - Ralfiz BMS{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title">{% if member %}Edit Team Member{% else %}Add Team Member{% endif %}</h1>
+    <p class="page-subtitle mb-0">{% if member %}Update team member details{% else %}Add a new team member{% endif %}</p>
+  </div>
+</div>
+
+<form method="post">
+  {% csrf_token %}
+  <div class="row">
+    <div class="col-8">
+      <div class="card">
+        <div class="card-header">
+          <h3 class="card-title"><i class="fas fa-user"></i> Member Details</h3>
+        </div>
+        <div class="card-body">
+          <div class="row">
+            <div class="col-6" style="padding: 0.5rem;">
+              <label class="form-label">Name <span class="text-danger">*</span></label>
+              <input type="text" class="form-control" name="name" value="{{ member.name|default:'' }}" required>
+            </div>
+            <div class="col-6" style="padding: 0.5rem;">
+              <label class="form-label">Role <span class="text-danger">*</span></label>
+              <select class="form-control" name="role" required>
+                {% for key, value in role_choices %}
+                <option value="{{ key }}" {% if member.role == key %}selected{% endif %}>{{ value }}</option>
+                {% endfor %}
+              </select>
+            </div>
+          </div>
+          <div class="row">
+            <div class="col-6" style="padding: 0.5rem;">
+              <label class="form-label">Email</label>
+              <input type="email" class="form-control" name="email" value="{{ member.email|default:'' }}">
+            </div>
+            <div class="col-6" style="padding: 0.5rem;">
+              <label class="form-label">Phone</label>
+              <input type="text" class="form-control" name="phone" value="{{ member.phone|default:'' }}">
+            </div>
+          </div>
+          <div class="row">
+            <div class="col-6" style="padding: 0.5rem;">
+              <label class="form-label">Employment Type <span class="text-danger">*</span></label>
+              <select class="form-control" name="employment_type" id="employment_type" onchange="togglePayFields()" required>
+                {% for key, value in employment_type_choices %}
+                <option value="{{ key }}" {% if member.employment_type == key %}selected{% endif %}>{{ value }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="col-6" style="padding: 0.5rem;">
+              <label class="form-label">Status</label>
+              <select class="form-control" name="is_active">
+                <option value="true" {% if member.is_active or not member %}selected{% endif %}>Active</option>
+                <option value="false" {% if member and not member.is_active %}selected{% endif %}>Inactive</option>
+              </select>
+            </div>
+          </div>
+          <div class="row">
+            <div class="col-6" style="padding: 0.5rem;" id="salary-field">
+              <label class="form-label">Monthly Salary</label>
+              <div class="input-group">
+                <span class="input-group-text">&#8377;</span>
+                <input type="number" class="form-control" name="monthly_salary" step="0.01" value="{{ member.monthly_salary|default:'' }}">
+              </div>
+              <small class="text-muted">For permanent employees</small>
+            </div>
+            <div class="col-6" style="padding: 0.5rem; display: none;" id="hourly-field">
+              <label class="form-label">Hourly Rate</label>
+              <div class="input-group">
+                <span class="input-group-text">&#8377;</span>
+                <input type="number" class="form-control" name="hourly_rate" step="0.01" value="{{ member.hourly_rate|default:'' }}">
+              </div>
+              <small class="text-muted">For freelancers</small>
+            </div>
+          </div>
+          <div class="row">
+            <div class="col-12" style="padding: 0.5rem;">
+              <label class="form-label">Notes</label>
+              <textarea class="form-control" name="notes" rows="3">{{ member.notes|default:'' }}</textarea>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {% if not member %}
+      <!-- Login Account Section (only for new members) -->
+      <div class="card mt-3">
+        <div class="card-header">
+          <h3 class="card-title"><i class="fas fa-key"></i> Login Account</h3>
+        </div>
+        <div class="card-body">
+          <div class="form-check mb-3">
+            <input type="checkbox" class="form-check-input" name="create_account" id="create_account" onchange="toggleAccountFields()">
+            <label class="form-check-label" for="create_account">
+              <strong>Create login account</strong>
+              <br><small class="text-muted">Allow this team member to login and view their tasks</small>
+            </label>
+          </div>
+          <div id="account-fields" style="display: none;">
+            <div class="mb-3">
+              <label class="form-label">Username <span class="text-danger">*</span></label>
+              <input type="text" class="form-control" name="username" id="username">
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Password <span class="text-danger">*</span></label>
+              <input type="password" class="form-control" name="password" id="password">
+              <small class="text-muted">Member can change this after first login</small>
+            </div>
+          </div>
+        </div>
+      </div>
+      {% elif member.user %}
+      <!-- Existing Account Info -->
+      <div class="card mt-3">
+        <div class="card-header">
+          <h3 class="card-title"><i class="fas fa-key"></i> Login Account</h3>
+        </div>
+        <div class="card-body">
+          <p class="mb-1"><i class="fas fa-check-circle text-success"></i> Has login account</p>
+          <p class="mb-0"><strong>Username:</strong> {{ member.user.username }}</p>
+        </div>
+      </div>
+      {% endif %}
+    </div>
+    <div class="col-4">
+      <div class="card">
+        <div class="card-header">
+          <h3 class="card-title"><i class="fas fa-save"></i> Actions</h3>
+        </div>
+        <div class="card-body">
+          <button type="submit" class="btn btn-primary w-100 mb-2">
+            <i class="fas fa-save"></i> {% if member %}Update Member{% else %}Add Member{% endif %}
+          </button>
+          <a href="{% url 'team_list' %}" class="btn btn-outline-secondary w-100">
+            <i class="fas fa-times"></i> Cancel
+          </a>
+        </div>
+      </div>
+
+      {% if member %}
+      <div class="card mt-3">
+        <div class="card-header">
+          <h3 class="card-title"><i class="fas fa-info-circle"></i> Info</h3>
+        </div>
+        <div class="card-body">
+          <p class="mb-1"><strong>Created:</strong> {{ member.created_at|date:"M d, Y" }}</p>
+          <p class="mb-0"><strong>Updated:</strong> {{ member.updated_at|date:"M d, Y" }}</p>
+        </div>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+</form>
+
+<script>
+function toggleAccountFields() {
+  const checkbox = document.getElementById('create_account');
+  const fields = document.getElementById('account-fields');
+  const username = document.getElementById('username');
+  const password = document.getElementById('password');
+
+  if (checkbox.checked) {
+    fields.style.display = 'block';
+    username.required = true;
+    password.required = true;
+  } else {
+    fields.style.display = 'none';
+    username.required = false;
+    password.required = false;
+  }
+}
+
+function togglePayFields() {
+  const employmentType = document.getElementById('employment_type').value;
+  const salaryField = document.getElementById('salary-field');
+  const hourlyField = document.getElementById('hourly-field');
+
+  if (employmentType === 'freelancer') {
+    salaryField.style.display = 'none';
+    hourlyField.style.display = 'block';
+  } else {
+    salaryField.style.display = 'block';
+    hourlyField.style.display = 'none';
+  }
+}
+
+// Run on page load to set initial state
+document.addEventListener('DOMContentLoaded', function() {
+  togglePayFields();
+});
+</script>
+{% endblock %}

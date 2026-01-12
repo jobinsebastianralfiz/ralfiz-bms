@@ -82,19 +82,35 @@
   <div class="page-actions">
     <a href="{% url 'quote_pdf' quote.pk %}" class="btn btn-outline-secondary" target="_blank">
       <i class="fas fa-file-pdf"></i>
+      View PDF
+    </a>
+    <a href="{% url 'quote_pdf' quote.pk %}?download=1" class="btn btn-outline-secondary">
+      <i class="fas fa-download"></i>
       Download PDF
     </a>
-    <button class="btn btn-outline-primary" onclick="duplicateQuote()">
+    <a href="{% url 'quote_pdf' quote.pk %}?gst=1" class="btn btn-outline-secondary" target="_blank">
+      <i class="fas fa-file-pdf"></i>
+      PDF with GST
+    </a>
+    <a href="{% url 'quote_pdf' quote.pk %}?gst=1&download=1" class="btn btn-outline-secondary">
+      <i class="fas fa-download"></i>
+      Download GST PDF
+    </a>
+    <a href="{% url 'quote_clone' quote.pk %}" class="btn btn-outline-primary">
       <i class="fas fa-copy"></i>
       Duplicate
-    </button>
-    <a href="{% url 'invoice_create' %}?quote={{ quote.pk }}" class="btn btn-success">
+    </a>
+    <a href="{% url 'quote_convert' quote.pk %}" class="btn btn-success">
       <i class="fas fa-exchange-alt"></i>
       Convert to Invoice
     </a>
     <a href="{% url 'quote_update' quote.pk %}" class="btn btn-primary">
       <i class="fas fa-edit"></i>
       Edit Quote
+    </a>
+    <a href="{% url 'quote_delete' quote.pk %}" class="btn btn-danger">
+      <i class="fas fa-trash-alt"></i>
+      Delete
     </a>
   </div>
 </div>
@@ -329,12 +345,3 @@
 </div>
 {% endblock %}
 
-{% block extra_js %}
-<script>
-function duplicateQuote() {
-  if (confirm('Create a duplicate of this quote?')) {
-    window.location.href = '{% url "quote_create" %}?duplicate={{ quote.pk }}';
-  }
-}
-</script>
-{% endblock %}

@@ -8,9 +8,14 @@ https://docs.djangoproject.com/en/6.0/howto/deployment/wsgi/
 """
 
 import os
+import sys
 
 from django.core.wsgi import get_wsgi_application
 
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'config.settings')
+
+# Set library path for WeasyPrint on macOS
+if sys.platform == 'darwin':
+    os.environ.setdefault('DYLD_LIBRARY_PATH', '/opt/homebrew/lib')
 
 application = get_wsgi_application()

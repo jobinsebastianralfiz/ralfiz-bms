@@ -1,0 +1,114 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{% if expense %}Edit Expense{% else %}Add Expense{% endif %} - Ralfiz BMS{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title">{% if expense %}Edit Expense{% else %}Add Expense{% endif %}</h1>
+    <p class="page-subtitle mb-0">{% if expense %}Update expense details{% else %}Record a new expense{% endif %}</p>
+  </div>
+</div>
+
+<form method="post" enctype="multipart/form-data">
+  {% csrf_token %}
+  <div class="row">
+    <div class="col-8">
+      <div class="card">
+        <div class="card-header">
+          <h3 class="card-title"><i class="fas fa-receipt"></i> Expense Details</h3>
+        </div>
+        <div class="card-body">
+          <div class="row">
+            <div class="col-6" style="padding: 0.5rem;">
+              <label class="form-label">Vendor / Merchant <span class="text-danger">*</span></label>
+              <input type="text" class="form-control" name="vendor" value="{{ expense.vendor|default:'' }}" required>
+            </div>
+            <div class="col-6" style="padding: 0.5rem;">
+              <label class="form-label">Amount <span class="text-danger">*</span></label>
+              <input type="number" step="0.01" class="form-control" name="amount" value="{{ expense.amount|default:'' }}" required>
+            </div>
+          </div>
+          <div class="row">
+            <div class="col-6" style="padding: 0.5rem;">
+              <label class="form-label">Category <span class="text-danger">*</span></label>
+              <select class="form-control" name="category" required>
+                <option value="">Select Category</option>
+                {% for key, value in category_choices %}
+                <option value="{{ key }}" {% if expense.category == key %}selected{% endif %}>{{ value }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="col-6" style="padding: 0.5rem;">
+              <label class="form-label">Date <span class="text-danger">*</span></label>
+              <input type="date" class="form-control" name="date" value="{{ expense.date|date:'Y-m-d'|default:'' }}" required>
+            </div>
+          </div>
+          <div class="row">
+            <div class="col-6" style="padding: 0.5rem;">
+              <label class="form-label">Project</label>
+              <select class="form-control" name="project">
+                <option value="">No Project</option>
+                {% for project in projects %}
+                <option value="{{ project.pk }}" {% if expense.project_id == project.pk %}selected{% endif %}>{{ project.name }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="col-6" style="padding: 0.5rem;">
+              <label class="form-label">Payment Method</label>
+              <select class="form-control" name="payment_method">
+                {% for key, value in payment_method_choices %}
+                <option value="{{ key }}" {% if expense.payment_method == key %}selected{% endif %}>{{ value }}</option>
+                {% endfor %}
+              </select>
+            </div>
+          </div>
+          <div class="row">
+            <div class="col-12" style="padding: 0.5rem;">
+              <label class="form-label">Description</label>
+              <textarea class="form-control" name="description" rows="2">{{ expense.description|default:'' }}</textarea>
+            </div>
+          </div>
+          <div class="row">
+            <div class="col-6" style="padding: 0.5rem;">
+              <label class="form-label">Receipt</label>
+              <input type="file" class="form-control" name="receipt" accept="image/*,.pdf">
+              {% if expense.receipt %}
+              <small class="text-muted">Current: <a href="{{ expense.receipt.url }}" target="_blank">View Receipt</a></small>
+              {% endif %}
+            </div>
+            <div class="col-6" style="padding: 0.5rem; display: flex; align-items: center; padding-top: 2rem;">
+              <label class="form-check">
+                <input type="checkbox" name="is_billable" {% if expense.is_billable %}checked{% endif %}>
+                <span class="form-check-label">Billable to client</span>
+              </label>
+            </div>
+          </div>
+          <div class="row">
+            <div class="col-12" style="padding: 0.5rem;">
+              <label class="form-label">Notes</label>
+              <textarea class="form-control" name="notes" rows="2">{{ expense.notes|default:'' }}</textarea>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-4">
+      <div class="card">
+        <div class="card-header">
+          <h3 class="card-title"><i class="fas fa-save"></i> Actions</h3>
+        </div>
+        <div class="card-body">
+          <button type="submit" class="btn btn-primary w-100 mb-2">
+            <i class="fas fa-save"></i> {% if expense %}Update Expense{% else %}Save Expense{% endif %}
+          </button>
+          <a href="{% url 'expense_list' %}" class="btn btn-outline-secondary w-100">
+            <i class="fas fa-times"></i> Cancel
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+</form>
+{% endblock %}

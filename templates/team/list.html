@@ -1,0 +1,131 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Team Members - Ralfiz BMS{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title">Team Members</h1>
+    <p class="page-subtitle mb-0">Manage your team: permanent employees and freelancers</p>
+  </div>
+  <div class="page-actions">
+    <a href="{% url 'team_create' %}" class="btn btn-primary">
+      <i class="fas fa-plus"></i> Add Team Member
+    </a>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header">
+    <h3 class="card-title"><i class="fas fa-user-friends"></i> All Team Members</h3>
+    <div class="card-actions">
+      <form method="get" class="d-flex gap-2">
+        <select name="role" class="form-control" style="width: auto;" onchange="this.form.submit()">
+          <option value="">All Roles</option>
+          {% for key, value in role_choices %}
+          <option value="{{ key }}" {% if selected_role == key %}selected{% endif %}>{{ value }}</option>
+          {% endfor %}
+        </select>
+        <input type="text" name="search" class="form-control" placeholder="Search..." value="{{ search }}" style="width: 200px;">
+        <button type="submit" class="btn btn-outline-primary"><i class="fas fa-search"></i></button>
+      </form>
+    </div>
+  </div>
+  <div class="card-body p-0">
+    {% if members %}
+    <div class="table-responsive">
+      <table class="table table-hover mb-0">
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th>Role</th>
+            <th>Type</th>
+            <th>Email</th>
+            <th>Phone</th>
+            <th>Pay</th>
+            <th>Status</th>
+            <th class="text-end">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for member in members %}
+          <tr>
+            <td>
+              <div class="d-flex align-items-center gap-2">
+                <div class="avatar avatar-sm" style="background: var(--primary); color: white;">
+                  {{ member.name|slice:":1"|upper }}
+                </div>
+                <div>
+                  <a href="{% url 'team_detail' member.pk %}" class="fw-medium">{{ member.name }}</a>
+                  {% if member.user %}
+                  <br><small class="text-muted"><i class="fas fa-key"></i> Has login</small>
+                  {% endif %}
+                </div>
+              </div>
+            </td>
+            <td>
+              <span class="badge
+                {% if member.role == 'developer' %}bg-primary
+                {% elif member.role == 'designer' %}bg-purple
+                {% elif member.role == 'project_manager' %}bg-info
+                {% elif member.role == 'qa' %}bg-success
+                {% elif member.role == 'devops' %}bg-danger
+                {% else %}bg-secondary{% endif %}">
+                {{ member.get_role_display }}
+              </span>
+            </td>
+            <td>
+              {% if member.employment_type == 'freelancer' %}
+              <span class="badge bg-warning text-dark">Freelancer</span>
+              {% else %}
+              <span class="badge bg-primary">Permanent</span>
+              {% endif %}
+            </td>
+            <td>{{ member.email|default:"-" }}</td>
+            <td>{{ member.phone|default:"-" }}</td>
+            <td>
+              {% if member.employment_type == 'freelancer' %}
+                {% if member.hourly_rate %}&#8377;{{ member.hourly_rate }}/hr{% else %}-{% endif %}
+              {% else %}
+                {% if member.monthly_salary %}&#8377;{{ member.monthly_salary }}/mo{% else %}-{% endif %}
+              {% endif %}
+            </td>
+            <td>
+              {% if member.is_active %}
+              <span class="badge bg-success">Active</span>
+              {% else %}
+              <span class="badge bg-secondary">Inactive</span>
+              {% endif %}
+            </td>
+            <td class="text-end">
+              <div class="btn-group">
+                <a href="{% url 'team_detail' member.pk %}" class="btn btn-sm btn-ghost btn-icon" title="View">
+                  <i class="fas fa-eye"></i>
+                </a>
+                <a href="{% url 'team_update' member.pk %}" class="btn btn-sm btn-ghost btn-icon" title="Edit">
+                  <i class="fas fa-edit"></i>
+                </a>
+                <a href="{% url 'team_delete' member.pk %}" class="btn btn-sm btn-ghost btn-icon text-danger" title="Delete">
+                  <i class="fas fa-trash"></i>
+                </a>
+              </div>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <div class="empty-state">
+      <i class="fas fa-user-friends"></i>
+      <h3>No Team Members Found</h3>
+      <p>{% if search or selected_role %}No team members match your search criteria.{% else %}Add your first team member to get started.{% endif %}</p>
+      <a href="{% url 'team_create' %}" class="btn btn-primary">
+        <i class="fas fa-plus"></i> Add Team Member
+      </a>
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

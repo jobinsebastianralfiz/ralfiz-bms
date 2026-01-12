@@ -1,0 +1,96 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Activity Log - Ralfiz BMS{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title">Activity Log</h1>
+    <p class="page-subtitle mb-0">Track all system activities</p>
+  </div>
+</div>
+
+<!-- Filters -->
+<div class="card mb-4">
+  <div class="card-body">
+    <form method="get" class="row align-items-end">
+      <div class="col-3" style="padding: 0.5rem;">
+        <label class="form-label">Action</label>
+        <select class="form-control" name="action">
+          <option value="">All Actions</option>
+          {% for key, value in action_choices %}
+          <option value="{{ key }}" {% if selected_action == key %}selected{% endif %}>{{ value }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-3" style="padding: 0.5rem;">
+        <label class="form-label">Model</label>
+        <select class="form-control" name="model">
+          <option value="">All Models</option>
+          {% for name in model_names %}
+          <option value="{{ name }}" {% if selected_model == name %}selected{% endif %}>{{ name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-2" style="padding: 0.5rem;">
+        <button type="submit" class="btn btn-outline-secondary w-100">
+          <i class="fas fa-filter"></i> Filter
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Activity Log -->
+<div class="card">
+  <div class="table-wrapper">
+    <table class="table">
+      <thead>
+        <tr>
+          <th>Timestamp</th>
+          <th>User</th>
+          <th>Action</th>
+          <th>Model</th>
+          <th>Object</th>
+          <th>IP Address</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for log in logs %}
+        <tr>
+          <td>
+            <span class="fw-medium">{{ log.timestamp|date:"d M Y" }}</span>
+            <div class="text-sm text-muted">{{ log.timestamp|time:"H:i:s" }}</div>
+          </td>
+          <td>
+            {% if log.user %}
+            {{ log.user.get_full_name|default:log.user.username }}
+            {% else %}
+            <span class="text-muted">System</span>
+            {% endif %}
+          </td>
+          <td>
+            <span class="badge
+              {% if log.action == 'created' %}badge-success
+              {% elif log.action == 'updated' %}badge-info
+              {% elif log.action == 'deleted' %}badge-danger
+              {% elif log.action == 'sent' %}badge-primary
+              {% else %}badge-secondary{% endif %}">
+              {{ log.get_action_display }}
+            </span>
+          </td>
+          <td>{{ log.model_name }}</td>
+          <td>{{ log.object_repr|truncatechars:40 }}</td>
+          <td class="text-muted">{{ log.ip_address|default:"-" }}</td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="6" class="text-center py-4 text-muted">No activity logs found</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}
