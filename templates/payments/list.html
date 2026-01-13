@@ -136,6 +136,7 @@
           <th>Method</th>
           <th>Transaction ID</th>
           <th>Notes</th>
+          <th style="width: 80px;">Actions</th>
         </tr>
       </thead>
       <tbody>
@@ -164,10 +165,18 @@
           <td class="text-muted">
             {{ payment.notes|truncatewords:5|default:"-" }}
           </td>
+          <td>
+            <a href="{% url 'payment_receipt' payment.pk %}" class="btn btn-ghost btn-sm btn-icon" title="View Receipt">
+              <i class="fas fa-receipt"></i>
+            </a>
+            <a href="{% url 'payment_receipt' payment.pk %}?download=1" class="btn btn-ghost btn-sm btn-icon" title="Download Receipt">
+              <i class="fas fa-download"></i>
+            </a>
+          </td>
         </tr>
         {% empty %}
         <tr>
-          <td colspan="7" class="text-center py-4 text-muted">No payments found</td>
+          <td colspan="8" class="text-center py-4 text-muted">No payments found</td>
         </tr>
         {% endfor %}
       </tbody>

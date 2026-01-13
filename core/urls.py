@@ -55,6 +55,7 @@ urlpatterns = [
     # Payments
     path('payments/', views.payment_list, name='payment_list'),
     path('payments/create/', views.payment_create, name='payment_create'),
+    path('payments/<uuid:pk>/receipt/', views.payment_receipt, name='payment_receipt'),
 
     # Settings & Reports
     path('settings/', views.settings_view, name='settings'),

@@ -1479,6 +1479,49 @@ def payment_create(request):
     })
 
 
+@login_required
+def payment_receipt(request, pk):
+    """Generate receipt for a payment"""
+    payment = get_object_or_404(
+        Payment.objects.select_related('invoice', 'invoice__client'),
+        pk=pk
+    )
+
+    # Get company settings
+    company = CompanySettings.get_settings()
+
+    # Generate receipt number based on payment
+    receipt_number = f"REC{payment.payment_date.strftime('%Y%m%d')}{str(payment.pk)[:8].upper()}"
+
+    context = {
+        'payment': payment,
+        'invoice': payment.invoice,
+        'client': payment.invoice.client,
+        'company': company,
+        'receipt_number': receipt_number,
+    }
+
+    download = request.GET.get('download', '0') == '1'
+
+    # If download requested, generate PDF
+    if download:
+        try:
+            from weasyprint import HTML
+            from django.template.loader import render_to_string
+
+            html_string = render_to_string('payments/receipt.html', context)
+            html = HTML(string=html_string, base_url=request.build_absolute_uri('/'))
+            pdf = html.write_pdf()
+
+            response = HttpResponse(pdf, content_type='application/pdf')
+            response['Content-Disposition'] = f'attachment; filename="receipt_{receipt_number}.pdf"'
+            return response
+        except ImportError:
+            messages.warning(request, 'PDF generation requires WeasyPrint. Showing printable view instead.')
+
+    return render(request, 'payments/receipt.html', context)
+
+
 # ============== Settings & Reports ==============
 
 @login_required
