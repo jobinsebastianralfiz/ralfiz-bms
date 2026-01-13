@@ -343,14 +343,17 @@ def project_detail(request, pk):
     from django.db.models import Sum
     from decimal import Decimal
 
+    # Total project cost (use final_amount if set, otherwise estimated_budget)
+    total_project_cost = project.final_amount or project.estimated_budget or Decimal('0')
+
     # Total invoiced amount for this project
     total_invoiced = invoices.aggregate(total=Sum('total_amount'))['total'] or Decimal('0')
 
     # Total amount received (sum of all payments)
     amount_received = payments.aggregate(total=Sum('amount'))['total'] or Decimal('0')
 
-    # Pending amount
-    pending_amount = total_invoiced - amount_received
+    # Pending amount = Total Project Cost - Amount Received
+    pending_amount = total_project_cost - amount_received
 
     context = {
         'project': project,
@@ -358,6 +361,7 @@ def project_detail(request, pk):
         'invoices': invoices,
         'quotes': quotes,
         'payments': payments,
+        'total_project_cost': total_project_cost,
         'total_invoiced': total_invoiced,
         'amount_received': amount_received,
         'pending_amount': pending_amount,
