@@ -1024,8 +1024,8 @@ def invoice_detail(request, pk):
         pk=pk
     )
 
-    # Auto-recalculate totals if items exist but subtotal is 0
-    if invoice.items.exists() and invoice.subtotal == 0:
+    # Always recalculate totals to ensure they match current items and tax rate
+    if invoice.items.exists():
         invoice.calculate_totals()
 
     return render(request, 'invoices/detail.html', {'invoice': invoice})
