@@ -349,13 +349,16 @@ class Invoice(models.Model):
     def half_tax_rate(self):
         """Half of tax rate for CGST/SGST display"""
         from decimal import Decimal
-        return (self.tax_rate or Decimal('18')) / 2
+        tax_rate = self.tax_rate if self.tax_rate is not None else Decimal('0')
+        return tax_rate / 2
 
     def calculate_totals(self):
         from decimal import Decimal
         self.subtotal = sum(item.amount for item in self.items.all()) or Decimal('0')
         taxable_amount = self.subtotal - (self.discount or Decimal('0'))
-        self.tax_amount = taxable_amount * ((self.tax_rate or Decimal('18')) / 100)
+        # Use tax_rate as-is (0 means no tax), only default to 0 if None
+        tax_rate = self.tax_rate if self.tax_rate is not None else Decimal('0')
+        self.tax_amount = taxable_amount * (tax_rate / 100)
         self.total_amount = taxable_amount + self.tax_amount
         self.save()
 

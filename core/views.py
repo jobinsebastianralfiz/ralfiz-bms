@@ -806,7 +806,8 @@ def quote_pdf(request, pk):
 
     # Calculate amounts
     taxable_amount = quote.subtotal - (quote.discount or Decimal('0'))
-    tax_rate = Decimal(str(quote.tax_rate or 18))
+    # Use quote's tax_rate (0 means no tax), only default to 0 if None
+    tax_rate = Decimal(str(quote.tax_rate)) if quote.tax_rate is not None else Decimal('0')
 
     cgst_amount = Decimal('0')
     sgst_amount = Decimal('0')
@@ -1222,7 +1223,8 @@ def invoice_pdf(request, pk):
 
     # Calculate amounts
     taxable_amount = invoice.subtotal - (invoice.discount or Decimal('0'))
-    tax_rate = Decimal(str(invoice.tax_rate or 18))
+    # Use invoice's tax_rate (0 means no tax), only default to 0 if None
+    tax_rate = Decimal(str(invoice.tax_rate)) if invoice.tax_rate is not None else Decimal('0')
 
     cgst_amount = Decimal('0')
     sgst_amount = Decimal('0')
