@@ -671,7 +671,21 @@ def quote_create(request):
     projects = Project.objects.select_related('client').all()
 
     if request.method == 'POST':
-        from decimal import Decimal
+        from decimal import Decimal, InvalidOperation
+
+        # Safe tax_rate conversion - default to 0 if empty or invalid
+        try:
+            tax_rate_val = request.POST.get('tax_rate', '0')
+            tax_rate = Decimal(tax_rate_val) if tax_rate_val else Decimal('0')
+        except (InvalidOperation, ValueError):
+            tax_rate = Decimal('0')
+
+        # Safe discount conversion
+        try:
+            discount_val = request.POST.get('discount', '0')
+            discount = Decimal(discount_val) if discount_val else Decimal('0')
+        except (InvalidOperation, ValueError):
+            discount = Decimal('0')
 
         quote = Quote.objects.create(
             client_id=request.POST.get('client'),
@@ -681,8 +695,8 @@ def quote_create(request):
             issue_date=request.POST.get('issue_date') or timezone.now().date(),
             valid_until=request.POST.get('valid_until') or None,
             status=request.POST.get('status', 'draft'),
-            discount=request.POST.get('discount', 0) or 0,
-            tax_rate=request.POST.get('tax_rate', 18),
+            discount=discount,
+            tax_rate=tax_rate,
             notes=request.POST.get('notes', ''),
             terms=request.POST.get('terms', ''),
         )
@@ -730,7 +744,7 @@ def quote_update(request, pk):
     projects = Project.objects.select_related('client').all()
 
     if request.method == 'POST':
-        from decimal import Decimal
+        from decimal import Decimal, InvalidOperation
 
         quote.client_id = request.POST.get('client')
         quote.project_id = request.POST.get('project') or None
@@ -739,8 +753,20 @@ def quote_update(request, pk):
         quote.issue_date = request.POST.get('issue_date')
         quote.valid_until = request.POST.get('valid_until') or None
         quote.status = request.POST.get('status', 'draft')
-        quote.discount = request.POST.get('discount', 0) or 0
-        quote.tax_rate = request.POST.get('tax_rate', 18)
+
+        # Safe decimal conversion - default to 0 if empty
+        try:
+            discount_val = request.POST.get('discount', '0')
+            quote.discount = Decimal(discount_val) if discount_val else Decimal('0')
+        except (InvalidOperation, ValueError):
+            quote.discount = Decimal('0')
+
+        try:
+            tax_rate_val = request.POST.get('tax_rate', '0')
+            quote.tax_rate = Decimal(tax_rate_val) if tax_rate_val else Decimal('0')
+        except (InvalidOperation, ValueError):
+            quote.tax_rate = Decimal('0')
+
         quote.notes = request.POST.get('notes', '')
         quote.terms = request.POST.get('terms', '')
         quote.save()
@@ -1473,7 +1499,15 @@ def settings_view(request):
         company.bank_ifsc = request.POST.get('bank_ifsc', '')
         company.bank_branch = request.POST.get('bank_branch', '')
         company.upi_id = request.POST.get('upi_id', '')
-        company.default_tax_rate = request.POST.get('default_tax_rate', 18)
+
+        # Safe default_tax_rate conversion - default to 0 if empty
+        from decimal import Decimal, InvalidOperation
+        try:
+            tax_rate_val = request.POST.get('default_tax_rate', '0')
+            company.default_tax_rate = Decimal(tax_rate_val) if tax_rate_val else Decimal('0')
+        except (InvalidOperation, ValueError):
+            company.default_tax_rate = Decimal('0')
+
         company.invoice_terms = request.POST.get('invoice_terms', '')
         company.quote_terms = request.POST.get('quote_terms', '')
 
