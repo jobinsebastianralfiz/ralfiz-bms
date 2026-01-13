@@ -16,15 +16,15 @@
 
     body {
       font-family: 'Inter', sans-serif;
-      font-size: 14px;
-      line-height: 1.5;
+      font-size: 12px;
+      line-height: 1.4;
       color: #1e293b;
       background: #f1f5f9;
-      padding: 2rem;
+      padding: 1rem;
     }
 
     .receipt-container {
-      max-width: 800px;
+      max-width: 700px;
       margin: 0 auto;
       background: white;
       box-shadow: 0 4px 24px rgba(0, 0, 0, 0.1);
@@ -34,27 +34,27 @@
     .receipt-header {
       background: linear-gradient(135deg, #0d9488 0%, #0f766e 100%);
       color: white;
-      padding: 2rem;
+      padding: 1rem 1.5rem;
       display: flex;
       justify-content: space-between;
-      align-items: flex-start;
+      align-items: center;
     }
 
     .company-logo {
       display: flex;
       align-items: center;
-      gap: 0.75rem;
+      gap: 0.5rem;
     }
 
     .logo-icon {
-      width: 48px;
-      height: 48px;
+      width: 36px;
+      height: 36px;
       background: rgba(255, 255, 255, 0.2);
-      border-radius: 10px;
+      border-radius: 8px;
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 1.5rem;
+      font-size: 1.1rem;
       font-weight: 700;
     }
 
@@ -62,17 +62,12 @@
       width: 100%;
       height: 100%;
       object-fit: contain;
-      border-radius: 10px;
+      border-radius: 8px;
     }
 
     .company-name {
-      font-size: 1.5rem;
+      font-size: 1.1rem;
       font-weight: 700;
-    }
-
-    .company-name span {
-      opacity: 0.8;
-      font-weight: 400;
     }
 
     .receipt-title {
@@ -80,86 +75,88 @@
     }
 
     .receipt-title h1 {
-      font-size: 2rem;
+      font-size: 1.25rem;
       font-weight: 700;
-      margin-bottom: 0.25rem;
+      margin-bottom: 0.1rem;
       text-transform: uppercase;
-      letter-spacing: 2px;
+      letter-spacing: 1px;
     }
 
     .receipt-number {
-      font-size: 1rem;
+      font-size: 0.8rem;
       opacity: 0.9;
     }
 
     /* Body */
     .receipt-body {
-      padding: 2rem;
+      padding: 1rem 1.5rem;
       position: relative;
     }
 
-    /* Success Badge */
+    /* Success Badge - Compact */
     .payment-success {
       background: #dcfce7;
-      border: 2px solid #22c55e;
-      border-radius: 12px;
-      padding: 1.5rem;
+      border: 1px solid #22c55e;
+      border-radius: 8px;
+      padding: 0.75rem;
       text-align: center;
-      margin-bottom: 2rem;
+      margin-bottom: 1rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.75rem;
     }
 
     .success-icon {
-      width: 60px;
-      height: 60px;
+      width: 32px;
+      height: 32px;
       background: #22c55e;
       border-radius: 50%;
       display: flex;
       align-items: center;
       justify-content: center;
-      margin: 0 auto 1rem;
+      flex-shrink: 0;
     }
 
     .success-icon svg {
-      width: 32px;
-      height: 32px;
+      width: 18px;
+      height: 18px;
       color: white;
     }
 
     .success-text {
-      font-size: 1.25rem;
+      font-size: 0.95rem;
       font-weight: 600;
       color: #166534;
-      margin-bottom: 0.25rem;
     }
 
     .success-subtext {
-      color: #15803d;
-      font-size: 0.875rem;
+      display: none;
     }
 
     /* Details Grid */
     .details-grid {
       display: grid;
       grid-template-columns: 1fr 1fr;
-      gap: 2rem;
-      margin-bottom: 2rem;
+      gap: 1rem;
+      margin-bottom: 1rem;
     }
 
     .detail-section h3 {
-      font-size: 0.75rem;
+      font-size: 0.65rem;
       text-transform: uppercase;
-      letter-spacing: 1px;
+      letter-spacing: 0.5px;
       color: #64748b;
-      margin-bottom: 0.75rem;
-      padding-bottom: 0.5rem;
-      border-bottom: 2px solid #e2e8f0;
+      margin-bottom: 0.4rem;
+      padding-bottom: 0.3rem;
+      border-bottom: 1px solid #e2e8f0;
     }
 
     .detail-row {
       display: flex;
       justify-content: space-between;
-      margin-bottom: 0.5rem;
-      font-size: 0.938rem;
+      margin-bottom: 0.25rem;
+      font-size: 0.8rem;
     }
 
     .detail-row .label {
@@ -171,26 +168,26 @@
       color: #1e293b;
     }
 
-    /* Amount Box */
+    /* Amount Box - Compact */
     .amount-box {
       background: linear-gradient(135deg, #f0fdfa 0%, #ccfbf1 100%);
-      border: 2px solid #0d9488;
-      border-radius: 12px;
-      padding: 1.5rem;
+      border: 1px solid #0d9488;
+      border-radius: 8px;
+      padding: 0.75rem;
       text-align: center;
-      margin-bottom: 2rem;
+      margin-bottom: 1rem;
     }
 
     .amount-label {
-      font-size: 0.875rem;
+      font-size: 0.7rem;
       color: #0d9488;
       text-transform: uppercase;
-      letter-spacing: 1px;
-      margin-bottom: 0.5rem;
+      letter-spacing: 0.5px;
+      margin-bottom: 0.2rem;
     }
 
     .amount-value {
-      font-size: 2.5rem;
+      font-size: 1.5rem;
       font-weight: 700;
       color: #0d9488;
     }
@@ -198,17 +195,17 @@
     /* Invoice Reference */
     .invoice-reference {
       background: #f8fafc;
-      border-radius: 8px;
-      padding: 1rem;
-      margin-bottom: 2rem;
+      border-radius: 6px;
+      padding: 0.6rem;
+      margin-bottom: 1rem;
     }
 
     .invoice-reference h3 {
-      font-size: 0.75rem;
+      font-size: 0.65rem;
       text-transform: uppercase;
-      letter-spacing: 1px;
+      letter-spacing: 0.5px;
       color: #64748b;
-      margin-bottom: 0.75rem;
+      margin-bottom: 0.4rem;
     }
 
     .invoice-table {
@@ -218,20 +215,20 @@
 
     .invoice-table th,
     .invoice-table td {
-      padding: 0.75rem;
+      padding: 0.4rem 0.5rem;
       text-align: left;
       border-bottom: 1px solid #e2e8f0;
     }
 
     .invoice-table th {
-      font-size: 0.75rem;
+      font-size: 0.6rem;
       text-transform: uppercase;
       color: #64748b;
       font-weight: 600;
     }
 
     .invoice-table td {
-      font-size: 0.875rem;
+      font-size: 0.75rem;
     }
 
     .invoice-link {
@@ -241,9 +238,9 @@
 
     .status-badge {
       display: inline-block;
-      padding: 0.25rem 0.75rem;
-      border-radius: 20px;
-      font-size: 0.75rem;
+      padding: 0.15rem 0.5rem;
+      border-radius: 10px;
+      font-size: 0.65rem;
       font-weight: 500;
     }
 
@@ -257,37 +254,38 @@
       color: #166534;
     }
 
-    /* Notes */
+    /* Notes - Compact */
     .receipt-notes {
-      background: #fffbeb;
-      border-left: 4px solid #f59e0b;
-      padding: 1rem;
-      margin-bottom: 2rem;
-      font-size: 0.875rem;
-      color: #92400e;
+      background: #f8fafc;
+      border-left: 3px solid #94a3b8;
+      padding: 0.5rem 0.75rem;
+      margin-bottom: 1rem;
+      font-size: 0.7rem;
+      color: #64748b;
     }
 
     .receipt-notes strong {
-      display: block;
-      margin-bottom: 0.25rem;
+      display: inline;
+      margin-right: 0.25rem;
     }
 
-    /* Footer */
+    /* Footer - Compact */
     .receipt-footer {
-      border-top: 2px solid #e2e8f0;
-      padding-top: 1.5rem;
+      border-top: 1px solid #e2e8f0;
+      padding-top: 0.75rem;
       display: flex;
       justify-content: space-between;
       align-items: flex-end;
     }
 
     .footer-left {
-      font-size: 0.813rem;
+      font-size: 0.7rem;
       color: #64748b;
+      line-height: 1.3;
     }
 
     .footer-left p {
-      margin-bottom: 0.25rem;
+      margin-bottom: 0.1rem;
     }
 
     .authorized-signature {
@@ -295,33 +293,34 @@
     }
 
     .signature-line {
-      width: 200px;
+      width: 140px;
       border-top: 1px solid #1e293b;
-      padding-top: 0.5rem;
-      margin-top: 2rem;
+      padding-top: 0.3rem;
+      margin-top: 1rem;
     }
 
     .signature-name {
       font-weight: 600;
       color: #1e293b;
+      font-size: 0.75rem;
     }
 
     .signature-title {
-      font-size: 0.813rem;
+      font-size: 0.65rem;
       color: #64748b;
     }
 
-    /* Watermark */
+    /* Watermark - Smaller */
     .watermark {
       position: absolute;
       top: 50%;
       left: 50%;
       transform: translate(-50%, -50%) rotate(-30deg);
-      font-size: 6rem;
+      font-size: 4rem;
       font-weight: 700;
-      color: rgba(34, 197, 94, 0.08);
+      color: rgba(34, 197, 94, 0.06);
       text-transform: uppercase;
-      letter-spacing: 10px;
+      letter-spacing: 8px;
       pointer-events: none;
       white-space: nowrap;
     }
@@ -329,22 +328,22 @@
     /* Print Button (hide in print) */
     .print-actions {
       text-align: center;
-      margin-bottom: 1.5rem;
+      margin-bottom: 1rem;
       display: flex;
       justify-content: center;
-      gap: 1rem;
+      gap: 0.75rem;
     }
 
     .print-btn {
       display: inline-flex;
       align-items: center;
-      gap: 0.5rem;
-      padding: 0.75rem 1.5rem;
+      gap: 0.4rem;
+      padding: 0.5rem 1rem;
       background: #0d9488;
       color: white;
       border: none;
-      border-radius: 8px;
-      font-size: 0.938rem;
+      border-radius: 6px;
+      font-size: 0.8rem;
       font-weight: 500;
       cursor: pointer;
       transition: background 0.2s;
@@ -363,6 +362,11 @@
       background: #475569;
     }
 
+    .print-btn svg {
+      width: 16px;
+      height: 16px;
+    }
+
     @media print {
       body {
         background: white;
@@ -376,6 +380,12 @@
       .print-actions {
         display: none;
       }
+    }
+
+    /* PDF-specific styles for single page */
+    @page {
+      size: A4;
+      margin: 10mm;
     }
   </style>
 </head>
