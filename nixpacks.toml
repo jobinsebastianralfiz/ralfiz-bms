@@ -1,12 +1,2 @@
 [phases.setup]
 nixPkgs = ["python312", "gcc"]
-
-[phases.build]
-dependsOn = ["setup"]
-cmds = [
-    "pip install -r requirements.txt",
-    "python manage.py collectstatic --noinput"
-]
-
-[start]
-cmd = "python manage.py migrate && gunicorn config.wsgi:application --bind 0.0.0.0:$PORT"
