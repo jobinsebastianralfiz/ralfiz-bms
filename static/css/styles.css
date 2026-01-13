@@ -1703,7 +1703,11 @@ select.form-control {
 /* -------------------- Responsive -------------------- */
 @media (max-width: 1024px) {
   .sidebar {
+    position: fixed;
     transform: translateX(-100%);
+    z-index: 1000;
+    height: 100vh;
+    box-shadow: var(--shadow-xl);
   }
 
   .sidebar.show {
@@ -1715,15 +1719,29 @@ select.form-control {
   }
 
   .sidebar-toggle {
-    display: block;
+    display: flex;
   }
 
   .navbar-search {
-    display: none;
+    max-width: 200px;
   }
 
   .col-md-6 { flex: 0 0 50%; max-width: 50%; }
   .col-md-12 { flex: 0 0 100%; max-width: 100%; }
+
+  /* Sidebar overlay when open */
+  .sidebar-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 999;
+  }
+
+  .sidebar.show + .sidebar-overlay,
+  .sidebar-overlay.show {
+    display: block;
+  }
 }
 
 @media (max-width: 768px) {
@@ -1736,11 +1754,14 @@ select.form-control {
   .page-actions {
     width: 100%;
     flex-wrap: wrap;
+    gap: 0.5rem;
   }
 
   .page-actions .btn {
     flex: 1;
-    min-width: 120px;
+    min-width: 100px;
+    font-size: 0.8125rem;
+    padding: 0.5rem 0.75rem;
   }
 
   .col-sm-12 { flex: 0 0 100%; max-width: 100%; }
@@ -1755,16 +1776,23 @@ select.form-control {
     display: none;
   }
 
+  /* Hide search on mobile */
+  .navbar-search {
+    display: none;
+  }
+
   /* Improved table responsiveness */
   .table-wrapper {
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
+    margin: 0 -1rem;
+    padding: 0 1rem;
   }
 
   .table th,
   .table td {
     white-space: nowrap;
-    padding: 0.5rem;
+    padding: 0.5rem 0.75rem;
     font-size: 0.8125rem;
   }
 
@@ -1792,6 +1820,11 @@ select.form-control {
 
   .btn-sm {
     min-height: 36px;
+    padding: 0.375rem 0.75rem;
+  }
+
+  .btn-icon {
+    min-height: auto;
   }
 
   /* Cards on mobile */
@@ -1801,6 +1834,12 @@ select.form-control {
 
   .card-body {
     padding: 1rem;
+  }
+
+  .card-header {
+    padding: 0.875rem 1rem;
+    flex-wrap: wrap;
+    gap: 0.5rem;
   }
 
   /* Better modal on mobile */
@@ -1815,6 +1854,10 @@ select.form-control {
   }
 
   /* Navbar adjustments */
+  .navbar {
+    padding: 0.5rem 1rem;
+  }
+
   .navbar-actions {
     gap: 0.25rem;
   }
@@ -1822,6 +1865,12 @@ select.form-control {
   .navbar-action-btn {
     width: 36px;
     height: 36px;
+  }
+
+  /* Breadcrumb */
+  .breadcrumb {
+    font-size: 0.75rem;
+    flex-wrap: wrap;
   }
 
   /* Kanban board scrollable */
@@ -1832,6 +1881,51 @@ select.form-control {
   .kanban-column {
     flex: 0 0 250px;
   }
+
+  /* Status badges */
+  .status-badge {
+    font-size: 0.7rem;
+    padding: 0.2rem 0.5rem;
+  }
+
+  /* Stat cards */
+  .stat-card {
+    padding: 1rem;
+  }
+
+  .stat-card-value {
+    font-size: 1.25rem;
+  }
+
+  .stat-card-label {
+    font-size: 0.75rem;
+  }
+
+  /* Avatar sizes */
+  .avatar-xl {
+    width: 48px;
+    height: 48px;
+    font-size: 1.25rem;
+  }
+
+  /* Form groups */
+  .form-group {
+    margin-bottom: 1rem;
+  }
+
+  .form-label {
+    font-size: 0.8125rem;
+    margin-bottom: 0.375rem;
+  }
+
+  .form-control {
+    padding: 0.625rem 0.875rem;
+    font-size: 0.875rem;
+  }
+
+  /* Gap utilities */
+  .gap-4 { gap: 1rem; }
+  .gap-3 { gap: 0.75rem; }
 }
 
 /* Extra small devices */
