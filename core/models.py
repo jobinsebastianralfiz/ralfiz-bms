@@ -292,7 +292,7 @@ class Invoice(models.Model):
     total_amount = models.DecimalField(max_digits=12, decimal_places=2, default=0)
     amount_paid = models.DecimalField(max_digits=12, decimal_places=2, default=0)
     issue_date = models.DateField(default=timezone.now)
-    due_date = models.DateField()
+    due_date = models.DateField(null=True, blank=True)
     terms = models.TextField(blank=True)
     notes = models.TextField(blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
@@ -325,6 +325,28 @@ class Invoice(models.Model):
         if self.due_date and self.status not in ['paid', 'cancelled']:
             return timezone.now().date() > self.due_date
         return False
+
+    @property
+    def days_until_due(self):
+        if self.due_date:
+            delta = self.due_date - timezone.now().date()
+            return delta.days
+        return 0
+
+    @property
+    def cgst_amount(self):
+        """Calculate CGST (half of total tax)"""
+        return self.tax_amount / 2
+
+    @property
+    def sgst_amount(self):
+        """Calculate SGST (half of total tax)"""
+        return self.tax_amount / 2
+
+    @property
+    def half_tax_rate(self):
+        """Half of tax rate for CGST/SGST display"""
+        return self.tax_rate / 2
 
     def calculate_totals(self):
         self.subtotal = sum(item.amount for item in self.items.all())
