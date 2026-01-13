@@ -1079,10 +1079,14 @@ def invoice_create(request):
     today = timezone.now().date()
     due_date_default = today + timezone.timedelta(days=15)
 
+    # Get company settings for default terms
+    company = CompanySettings.get_settings()
+
     return render(request, 'invoices/form.html', {
         'clients': clients,
         'projects': projects,
         'quotes': quotes,
+        'company': company,
         'form_title': 'Create New Invoice',
         'status_choices': Invoice.STATUS_CHOICES,
         'today': today.isoformat(),
@@ -1167,11 +1171,15 @@ def invoice_update(request, pk):
     today = timezone.now().date()
     due_date_default = today + timezone.timedelta(days=15)
 
+    # Get company settings for default terms
+    company = CompanySettings.get_settings()
+
     return render(request, 'invoices/form.html', {
         'invoice': invoice,
         'clients': clients,
         'projects': projects,
         'quotes': quotes,
+        'company': company,
         'form_title': 'Edit Invoice',
         'status_choices': Invoice.STATUS_CHOICES,
         'today': today.isoformat(),

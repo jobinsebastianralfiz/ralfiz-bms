@@ -168,9 +168,8 @@
         <div class="card-body">
           <div class="form-group">
             <label class="form-label" for="terms">Payment Terms</label>
-            <textarea class="form-control" id="terms" name="terms" rows="3">{{ invoice.terms|default:'1. Payment is due within 15 days of invoice date.
-2. Please include invoice number in payment reference.
-3. Late payments may incur additional charges.' }}</textarea>
+            <textarea class="form-control" id="terms" name="terms" rows="3">{% if invoice.terms %}{{ invoice.terms }}{% else %}{{ company.invoice_terms }}{% endif %}</textarea>
+            <div class="form-text">Default terms can be set in <a href="{% url 'settings' %}">Settings</a></div>
           </div>
           <div class="form-group mb-0">
             <label class="form-label" for="notes">Internal Notes</label>
