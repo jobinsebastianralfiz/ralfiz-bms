@@ -1132,6 +1132,10 @@ def invoice_update(request, pk):
         messages.success(request, f'Invoice "{invoice.invoice_number}" updated successfully.')
         return redirect('invoice_detail', pk=invoice.pk)
 
+    # Get today's date and default due date (15 days from now) for form defaults
+    today = timezone.now().date()
+    due_date_default = today + timezone.timedelta(days=15)
+
     return render(request, 'invoices/form.html', {
         'invoice': invoice,
         'clients': clients,
@@ -1139,6 +1143,8 @@ def invoice_update(request, pk):
         'quotes': quotes,
         'form_title': 'Edit Invoice',
         'status_choices': Invoice.STATUS_CHOICES,
+        'today': today.isoformat(),
+        'due_date_default': due_date_default.isoformat(),
     })
 
 

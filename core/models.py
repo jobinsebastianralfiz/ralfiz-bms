@@ -336,22 +336,26 @@ class Invoice(models.Model):
     @property
     def cgst_amount(self):
         """Calculate CGST (half of total tax)"""
-        return self.tax_amount / 2
+        from decimal import Decimal
+        return (self.tax_amount or Decimal('0')) / 2
 
     @property
     def sgst_amount(self):
         """Calculate SGST (half of total tax)"""
-        return self.tax_amount / 2
+        from decimal import Decimal
+        return (self.tax_amount or Decimal('0')) / 2
 
     @property
     def half_tax_rate(self):
         """Half of tax rate for CGST/SGST display"""
-        return self.tax_rate / 2
+        from decimal import Decimal
+        return (self.tax_rate or Decimal('18')) / 2
 
     def calculate_totals(self):
-        self.subtotal = sum(item.amount for item in self.items.all())
-        taxable_amount = self.subtotal - self.discount
-        self.tax_amount = taxable_amount * (self.tax_rate / 100)
+        from decimal import Decimal
+        self.subtotal = sum(item.amount for item in self.items.all()) or Decimal('0')
+        taxable_amount = self.subtotal - (self.discount or Decimal('0'))
+        self.tax_amount = taxable_amount * ((self.tax_rate or Decimal('18')) / 100)
         self.total_amount = taxable_amount + self.tax_amount
         self.save()
 
