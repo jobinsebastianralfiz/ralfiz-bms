@@ -3,103 +3,542 @@
 
 {% block title %}My Tasks - Ralfiz BMS{% endblock %}
 
-{% block content %}
-<div class="page-header">
-  <div>
-    <h1 class="page-title">My Tasks</h1>
-    <p class="page-subtitle mb-0">Tasks assigned to you</p>
-  </div>
-  <div class="page-actions">
-    <a href="{% url 'team_dashboard' %}" class="btn btn-outline-secondary">
-      <i class="fas fa-arrow-left"></i> Back to Dashboard
-    </a>
-  </div>
-</div>
+{% block extra_css %}
+<style>
+  /* Slack-inspired My Tasks View - Theme Aware */
+  .slack-tasks-container {
+    background: var(--bg-body);
+    min-height: calc(100vh - 120px);
+    margin: -1.5rem;
+    padding: 0;
+  }
 
-<div class="card">
-  <div class="card-header">
-    <h3 class="card-title"><i class="fas fa-tasks"></i> All My Tasks</h3>
-    <div class="card-actions">
-      <form method="get" class="d-flex gap-2">
-        <select name="status" class="form-control" style="width: auto;" onchange="this.form.submit()">
+  /* Slack-style Header */
+  .slack-tasks-header {
+    background: var(--primary);
+    padding: 16px 24px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+
+  .slack-tasks-header-left {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+
+  .slack-tasks-header-left h1 {
+    color: white;
+    font-size: 18px;
+    font-weight: 700;
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .slack-tasks-header-left h1 i {
+    font-size: 18px;
+  }
+
+  .slack-task-count {
+    background: rgba(255,255,255,0.2);
+    color: white;
+    padding: 4px 10px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: 600;
+  }
+
+  .slack-tasks-filters {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+  }
+
+  .slack-filter-select {
+    background: rgba(255,255,255,0.15);
+    border: 1px solid rgba(255,255,255,0.3);
+    color: white;
+    padding: 8px 14px;
+    border-radius: 6px;
+    font-size: 13px;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+
+  .slack-filter-select:hover {
+    background: rgba(255,255,255,0.25);
+  }
+
+  .slack-filter-select option {
+    color: var(--text-primary);
+    background: var(--bg-card);
+  }
+
+  .slack-btn {
+    background: rgba(255,255,255,0.15);
+    border: 1px solid rgba(255,255,255,0.3);
+    color: white;
+    padding: 8px 14px;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.15s;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .slack-btn:hover {
+    background: rgba(255,255,255,0.25);
+    color: white;
+    text-decoration: none;
+  }
+
+  /* Main Content */
+  .slack-tasks-content {
+    padding: 20px 24px;
+  }
+
+  /* Task List Panel */
+  .slack-task-panel {
+    background: var(--bg-card);
+    border-radius: 8px;
+    box-shadow: var(--shadow);
+    border: 1px solid var(--border-color);
+    overflow: hidden;
+  }
+
+  .slack-panel-header {
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--border-color);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .slack-panel-title {
+    font-weight: 700;
+    font-size: 15px;
+    color: var(--text-primary);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .slack-panel-title i {
+    color: var(--primary);
+  }
+
+  /* Task Items - Slack Message Style */
+  .slack-task-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+  }
+
+  .slack-task-item {
+    display: flex;
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--border-color);
+    transition: background 0.1s;
+    cursor: pointer;
+    gap: 16px;
+    align-items: flex-start;
+  }
+
+  .slack-task-item:hover {
+    background: var(--bg-hover);
+  }
+
+  .slack-task-item:last-child {
+    border-bottom: none;
+  }
+
+  /* Status Checkbox Style */
+  .slack-task-status {
+    flex-shrink: 0;
+    width: 20px;
+    height: 20px;
+    border-radius: 4px;
+    border: 2px solid var(--text-muted);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-top: 2px;
+  }
+
+  .slack-task-status.todo {
+    border-color: var(--text-muted);
+    background: transparent;
+  }
+
+  .slack-task-status.in_progress {
+    border-color: var(--info);
+    background: var(--info);
+  }
+
+  .slack-task-status.in_progress::after {
+    content: '';
+    width: 8px;
+    height: 8px;
+    background: white;
+    border-radius: 50%;
+  }
+
+  .slack-task-status.review {
+    border-color: var(--warning);
+    background: var(--warning);
+  }
+
+  .slack-task-status.review::after {
+    content: '\f06e';
+    font-family: 'Font Awesome 5 Free';
+    font-weight: 900;
+    font-size: 10px;
+    color: white;
+  }
+
+  .slack-task-status.completed {
+    border-color: var(--success);
+    background: var(--success);
+  }
+
+  .slack-task-status.completed::after {
+    content: '\f00c';
+    font-family: 'Font Awesome 5 Free';
+    font-weight: 900;
+    font-size: 10px;
+    color: white;
+  }
+
+  /* Task Content */
+  .slack-task-content {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .slack-task-title-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 6px;
+  }
+
+  .slack-task-title {
+    font-weight: 600;
+    font-size: 15px;
+    color: var(--text-primary);
+    text-decoration: none;
+  }
+
+  .slack-task-title:hover {
+    color: var(--primary);
+    text-decoration: underline;
+  }
+
+  .slack-task-priority {
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    padding: 3px 8px;
+    border-radius: 3px;
+  }
+
+  .slack-task-priority.urgent {
+    background: var(--danger-bg);
+    color: var(--danger);
+  }
+
+  .slack-task-priority.high {
+    background: var(--warning-bg);
+    color: #ff8c00;
+  }
+
+  .slack-task-priority.medium {
+    background: var(--warning-bg);
+    color: var(--warning);
+  }
+
+  .slack-task-priority.low {
+    background: var(--success-bg);
+    color: var(--success);
+  }
+
+  .slack-task-description {
+    font-size: 13px;
+    color: var(--text-secondary);
+    margin-bottom: 8px;
+    line-height: 1.4;
+  }
+
+  .slack-task-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    align-items: center;
+  }
+
+  .slack-task-meta-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    color: var(--text-secondary);
+  }
+
+  .slack-task-meta-item i {
+    font-size: 11px;
+    opacity: 0.7;
+  }
+
+  .slack-task-meta-item.overdue {
+    color: var(--danger);
+    font-weight: 600;
+  }
+
+  .slack-task-meta-item.overdue i {
+    opacity: 1;
+  }
+
+  .slack-project-tag {
+    background: var(--primary-bg);
+    color: var(--primary);
+    padding: 3px 8px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 500;
+  }
+
+  .slack-status-tag {
+    padding: 3px 8px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 600;
+  }
+
+  .slack-status-tag.todo {
+    background: var(--bg-hover);
+    color: var(--text-secondary);
+  }
+
+  .slack-status-tag.in_progress {
+    background: var(--info-bg);
+    color: var(--info);
+  }
+
+  .slack-status-tag.review {
+    background: var(--warning-bg);
+    color: var(--warning);
+  }
+
+  .slack-status-tag.completed {
+    background: var(--success-bg);
+    color: var(--success);
+  }
+
+  /* Task Actions */
+  .slack-task-actions {
+    display: flex;
+    gap: 8px;
+    flex-shrink: 0;
+  }
+
+  .slack-action-btn {
+    width: 32px;
+    height: 32px;
+    border-radius: 6px;
+    border: 1px solid var(--border-color);
+    background: var(--bg-card);
+    color: var(--text-secondary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.15s;
+    text-decoration: none;
+    font-size: 13px;
+  }
+
+  .slack-action-btn:hover {
+    background: var(--primary);
+    border-color: var(--primary);
+    color: white;
+  }
+
+  .slack-action-btn.log-time:hover {
+    background: var(--success);
+    border-color: var(--success);
+  }
+
+  /* Empty State */
+  .slack-empty-state {
+    text-align: center;
+    padding: 60px 20px;
+  }
+
+  .slack-empty-icon {
+    width: 64px;
+    height: 64px;
+    background: var(--bg-hover);
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 16px;
+    font-size: 28px;
+    color: var(--text-muted);
+  }
+
+  .slack-empty-state h3 {
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin: 0 0 8px;
+  }
+
+  .slack-empty-state p {
+    font-size: 14px;
+    color: var(--text-secondary);
+    margin: 0;
+  }
+
+  /* Responsive */
+  @media (max-width: 768px) {
+    .slack-tasks-header {
+      flex-direction: column;
+      gap: 12px;
+      align-items: flex-start;
+    }
+
+    .slack-tasks-filters {
+      width: 100%;
+      flex-wrap: wrap;
+    }
+
+    .slack-filter-select {
+      flex: 1;
+      min-width: 120px;
+    }
+
+    .slack-task-item {
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .slack-task-actions {
+      align-self: flex-end;
+    }
+
+    .slack-task-meta {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 8px;
+    }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="slack-tasks-container">
+  <!-- Slack-style Header -->
+  <div class="slack-tasks-header">
+    <div class="slack-tasks-header-left">
+      <h1><i class="fas fa-tasks"></i> My Tasks</h1>
+      <span class="slack-task-count">{{ tasks|length }} tasks</span>
+    </div>
+    <div class="slack-tasks-filters">
+      <form method="get" style="display: flex; gap: 10px;">
+        <select name="status" class="slack-filter-select" onchange="this.form.submit()">
           <option value="">All Status</option>
           {% for key, value in status_choices %}
           <option value="{{ key }}" {% if selected_status == key %}selected{% endif %}>{{ value }}</option>
           {% endfor %}
         </select>
-        <select name="priority" class="form-control" style="width: auto;" onchange="this.form.submit()">
+        <select name="priority" class="slack-filter-select" onchange="this.form.submit()">
           <option value="">All Priority</option>
           {% for key, value in priority_choices %}
           <option value="{{ key }}" {% if selected_priority == key %}selected{% endif %}>{{ value }}</option>
           {% endfor %}
         </select>
       </form>
+      <a href="{% url 'team_dashboard' %}" class="slack-btn">
+        <i class="fas fa-arrow-left"></i> Dashboard
+      </a>
     </div>
   </div>
-  <div class="card-body p-0">
-    {% if tasks %}
-    <div class="table-responsive">
-      <table class="table table-hover mb-0">
-        <thead>
-          <tr>
-            <th>Task</th>
-            <th>Project</th>
-            <th>Status</th>
-            <th>Priority</th>
-            <th>Due Date</th>
-            <th class="text-end">Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          {% for task in tasks %}
-          <tr>
-            <td>
-              <a href="{% url 'task_detail' task.pk %}"><strong>{{ task.title }}</strong></a>
-              {% if task.description %}
-              <br><small class="text-muted">{{ task.description|truncatewords:10 }}</small>
-              {% endif %}
-            </td>
-            <td>{{ task.project.name }}</td>
-            <td>
-              <span class="status-badge {{ task.status }}">{{ task.get_status_display }}</span>
-            </td>
-            <td>
-              <span class="priority-badge {{ task.priority }}">{{ task.get_priority_display }}</span>
-            </td>
-            <td>
+
+  <!-- Main Content -->
+  <div class="slack-tasks-content">
+    <div class="slack-task-panel">
+      <div class="slack-panel-header">
+        <div class="slack-panel-title">
+          <i class="fas fa-clipboard-list"></i>
+          Assigned to You
+        </div>
+      </div>
+
+      {% if tasks %}
+      <ul class="slack-task-list">
+        {% for task in tasks %}
+        <li class="slack-task-item" onclick="if(event.target.tagName !== 'A') window.location='{% url 'task_detail' task.pk %}'">
+          <div class="slack-task-status {{ task.status }}"></div>
+          <div class="slack-task-content">
+            <div class="slack-task-title-row">
+              <a href="{% url 'task_detail' task.pk %}" class="slack-task-title">{{ task.title }}</a>
+              <span class="slack-task-priority {{ task.priority }}">{{ task.get_priority_display }}</span>
+            </div>
+            {% if task.description %}
+            <div class="slack-task-description">{{ task.description|truncatewords:20 }}</div>
+            {% endif %}
+            <div class="slack-task-meta">
+              <span class="slack-project-tag">
+                <i class="fas fa-folder"></i> {{ task.project.name }}
+              </span>
+              <span class="slack-status-tag {{ task.status }}">{{ task.get_status_display }}</span>
               {% if task.due_date %}
-                {% now "Y-m-d" as today %}
-                {% if task.due_date|date:"Y-m-d" < today %}
-                <span class="text-danger"><i class="fas fa-exclamation-circle"></i> {{ task.due_date|date:"M d" }}</span>
-                {% else %}
-                {{ task.due_date|date:"M d, Y" }}
-                {% endif %}
+              {% now "Y-m-d" as today %}
+              {% if task.due_date|date:"Y-m-d" < today and task.status != 'completed' %}
+              <span class="slack-task-meta-item overdue">
+                <i class="fas fa-exclamation-circle"></i> Overdue: {{ task.due_date|date:"M d, Y" }}
+              </span>
               {% else %}
-              <span class="text-muted">-</span>
+              <span class="slack-task-meta-item">
+                <i class="fas fa-calendar-alt"></i> Due: {{ task.due_date|date:"M d, Y" }}
+              </span>
               {% endif %}
-            </td>
-            <td class="text-end">
-              <div class="btn-group">
-                <a href="{% url 'task_detail' task.pk %}" class="btn btn-sm btn-outline-primary" title="View">
-                  <i class="fas fa-eye"></i>
-                </a>
-                <a href="{% url 'timeentry_create' %}?task={{ task.pk }}" class="btn btn-sm btn-outline-success" title="Log Time">
-                  <i class="fas fa-clock"></i>
-                </a>
-              </div>
-            </td>
-          </tr>
-          {% endfor %}
-        </tbody>
-      </table>
+              {% endif %}
+            </div>
+          </div>
+          <div class="slack-task-actions">
+            <a href="{% url 'task_detail' task.pk %}" class="slack-action-btn" title="View Details">
+              <i class="fas fa-eye"></i>
+            </a>
+            <a href="{% url 'timeentry_create' %}?task={{ task.pk }}" class="slack-action-btn log-time" title="Log Time">
+              <i class="fas fa-clock"></i>
+            </a>
+          </div>
+        </li>
+        {% endfor %}
+      </ul>
+      {% else %}
+      <div class="slack-empty-state">
+        <div class="slack-empty-icon">
+          <i class="fas fa-check-circle"></i>
+        </div>
+        <h3>No Tasks Found</h3>
+        <p>{% if selected_status or selected_priority %}No tasks match your current filters. Try adjusting your filters.{% else %}You don't have any tasks assigned to you yet.{% endif %}</p>
+      </div>
+      {% endif %}
     </div>
-    {% else %}
-    <div class="empty-state">
-      <i class="fas fa-check-circle text-success"></i>
-      <h3>No Tasks</h3>
-      <p>{% if selected_status or selected_priority %}No tasks match your filters.{% else %}You have no tasks assigned.{% endif %}</p>
-    </div>
-    {% endif %}
   </div>
 </div>
 {% endblock %}

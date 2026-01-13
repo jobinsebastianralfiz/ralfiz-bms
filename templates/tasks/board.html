@@ -5,454 +5,604 @@
 
 {% block extra_css %}
 <style>
-  /* Modern Kanban Board */
-  .board-header {
-    background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
-    border-radius: var(--border-radius-lg);
-    padding: 1.5rem 2rem;
-    margin-bottom: 1.5rem;
-    color: white;
+  /* Slack-inspired Task Board - Theme Aware */
+  .slack-board-container {
+    background: var(--bg-body);
+    min-height: calc(100vh - 120px);
+    margin: -1.5rem;
+    padding: 0;
+  }
+
+  /* Slack-style Header */
+  .slack-header {
+    background: var(--primary);
+    padding: 12px 20px;
     display: flex;
     justify-content: space-between;
     align-items: center;
+    position: sticky;
+    top: 0;
+    z-index: 100;
   }
-  .board-header h1 {
-    font-size: 1.5rem;
+
+  .slack-header-left {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .slack-header-left h1 {
+    color: white;
+    font-size: 18px;
     font-weight: 700;
     margin: 0;
-  }
-  .board-header p {
-    margin: 0.25rem 0 0;
-    opacity: 0.85;
-    font-size: 0.9rem;
-  }
-  .board-filters {
     display: flex;
-    gap: 0.75rem;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .slack-header-left h1 i {
+    font-size: 16px;
+    opacity: 0.9;
+  }
+
+  .slack-channel-info {
+    color: rgba(255,255,255,0.85);
+    font-size: 13px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .slack-header-actions {
+    display: flex;
+    gap: 8px;
     align-items: center;
   }
-  .board-filters select {
+
+  .slack-filter-select {
     background: rgba(255,255,255,0.15);
     border: 1px solid rgba(255,255,255,0.3);
     color: white;
-    padding: 0.5rem 1rem;
-    border-radius: 8px;
-    min-width: 180px;
+    padding: 6px 12px;
+    border-radius: 6px;
+    font-size: 13px;
+    cursor: pointer;
+    transition: all 0.15s;
   }
-  .board-filters select option {
+
+  .slack-filter-select:hover {
+    background: rgba(255,255,255,0.25);
+  }
+
+  .slack-filter-select option {
     color: var(--text-primary);
     background: var(--bg-card);
   }
-  .board-filters .btn-light {
-    background: white;
-    color: #3b82f6;
-    border: none;
+
+  .slack-btn {
+    background: rgba(255,255,255,0.15);
+    border: 1px solid rgba(255,255,255,0.3);
+    color: white;
+    padding: 6px 12px;
+    border-radius: 6px;
+    font-size: 13px;
     font-weight: 500;
+    cursor: pointer;
+    transition: all 0.15s;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
   }
 
-  .kanban-board {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 1rem;
-    min-height: calc(100vh - 300px);
-  }
-  @media (max-width: 1200px) {
-    .kanban-board {
-      grid-template-columns: repeat(2, 1fr);
-    }
-  }
-  @media (max-width: 768px) {
-    .kanban-board {
-      grid-template-columns: 1fr;
-    }
+  .slack-btn:hover {
+    background: rgba(255,255,255,0.25);
+    color: white;
+    text-decoration: none;
   }
 
-  .kanban-column {
+  .slack-btn-primary {
+    background: white;
+    color: var(--primary);
+    border: none;
+  }
+
+  .slack-btn-primary:hover {
+    background: rgba(255,255,255,0.9);
+    color: var(--primary-hover);
+  }
+
+  /* Kanban Board Layout */
+  .slack-kanban {
+    display: flex;
+    gap: 12px;
+    padding: 16px 20px;
+    overflow-x: auto;
+    min-height: calc(100vh - 180px);
+  }
+
+  /* Slack-style Columns */
+  .slack-column {
     background: var(--bg-card);
-    border-radius: var(--border-radius-lg);
-    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    min-width: 300px;
+    max-width: 300px;
     display: flex;
     flex-direction: column;
-    max-height: calc(100vh - 280px);
+    box-shadow: var(--shadow);
+    border: 1px solid var(--border-color);
   }
 
-  .kanban-column-header {
-    padding: 1rem 1.25rem;
+  .slack-column-header {
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--border-color);
     display: flex;
     justify-content: space-between;
     align-items: center;
-    border-bottom: 1px solid var(--border-color);
-    flex-shrink: 0;
   }
-  .column-title {
+
+  .slack-column-title {
     display: flex;
     align-items: center;
-    gap: 0.75rem;
-    font-weight: 600;
-    font-size: 0.9rem;
+    gap: 8px;
+    font-weight: 700;
+    font-size: 14px;
+    color: var(--text-primary);
   }
-  .column-icon {
-    width: 32px;
-    height: 32px;
-    border-radius: 8px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 0.85rem;
+
+  .slack-status-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 3px;
   }
-  .column-count {
+
+  .slack-status-dot.todo { background: var(--text-muted); }
+  .slack-status-dot.progress { background: var(--info); }
+  .slack-status-dot.review { background: var(--warning); }
+  .slack-status-dot.done { background: var(--success); }
+
+  .slack-column-count {
     background: var(--bg-hover);
-    padding: 0.25rem 0.75rem;
-    border-radius: 9999px;
-    font-size: 0.8rem;
-    font-weight: 600;
     color: var(--text-secondary);
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-size: 12px;
+    font-weight: 600;
   }
 
-  .column-todo .column-icon { background: #f1f5f9; color: #64748b; }
-  .column-todo .column-count { background: #f1f5f9; color: #64748b; }
-
-  .column-progress .column-icon { background: #dbeafe; color: #3b82f6; }
-  .column-progress .column-count { background: #dbeafe; color: #3b82f6; }
-
-  .column-review .column-icon { background: #fef3c7; color: #d97706; }
-  .column-review .column-count { background: #fef3c7; color: #d97706; }
-
-  .column-done .column-icon { background: #d1fae5; color: #059669; }
-  .column-done .column-count { background: #d1fae5; color: #059669; }
-
-  .kanban-cards {
-    padding: 0.75rem;
+  .slack-column-body {
+    padding: 8px;
     overflow-y: auto;
     flex: 1;
+    max-height: calc(100vh - 240px);
   }
 
-  .kanban-card {
-    background: var(--bg-body);
+  /* Slack-style Task Cards */
+  .slack-task-card {
+    background: var(--bg-card);
     border: 1px solid var(--border-color);
-    border-radius: 10px;
-    padding: 1rem;
-    margin-bottom: 0.75rem;
+    border-radius: 8px;
+    padding: 12px;
+    margin-bottom: 8px;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all 0.1s ease;
     position: relative;
   }
-  .kanban-card:hover {
+
+  .slack-task-card:hover {
     border-color: var(--primary);
-    box-shadow: 0 4px 12px rgba(0,0,0,0.08);
-    transform: translateY(-2px);
+    box-shadow: 0 0 0 1px var(--primary);
   }
-  .kanban-card:last-child {
+
+  .slack-task-card:last-child {
     margin-bottom: 0;
   }
 
-  .card-priority {
+  .slack-card-priority-bar {
     position: absolute;
-    top: 0;
-    left: 1rem;
+    left: 0;
+    top: 12px;
+    bottom: 12px;
     width: 3px;
-    height: 40%;
-    border-radius: 0 0 3px 3px;
+    border-radius: 0 2px 2px 0;
   }
-  .card-priority.high { background: #ef4444; }
-  .card-priority.medium { background: #f59e0b; }
-  .card-priority.low { background: #10b981; }
 
-  .card-title {
+  .slack-card-priority-bar.urgent { background: var(--danger); }
+  .slack-card-priority-bar.high { background: #ff8c00; }
+  .slack-card-priority-bar.medium { background: var(--warning); }
+  .slack-card-priority-bar.low { background: var(--success); }
+
+  .slack-card-content {
+    padding-left: 8px;
+  }
+
+  .slack-card-title {
     font-weight: 600;
-    font-size: 0.9rem;
+    font-size: 14px;
     color: var(--text-primary);
-    margin-bottom: 0.75rem;
-    padding-right: 1rem;
+    margin-bottom: 8px;
     line-height: 1.4;
   }
 
-  .card-meta {
+  .slack-card-title:hover {
+    color: var(--primary);
+  }
+
+  .slack-card-meta {
     display: flex;
     flex-wrap: wrap;
-    gap: 0.5rem;
-    margin-bottom: 0.75rem;
+    gap: 6px;
+    margin-bottom: 10px;
   }
-  .card-tag {
+
+  .slack-tag {
     display: inline-flex;
     align-items: center;
-    gap: 0.35rem;
-    padding: 0.25rem 0.6rem;
-    border-radius: 6px;
-    font-size: 0.7rem;
+    gap: 4px;
+    padding: 3px 8px;
+    border-radius: 4px;
+    font-size: 11px;
     font-weight: 500;
   }
-  .card-tag.project {
+
+  .slack-tag-project {
     background: var(--primary-bg);
     color: var(--primary);
   }
-  .card-tag.due {
-    background: #f1f5f9;
-    color: #64748b;
-  }
-  .card-tag.overdue {
-    background: #fef2f2;
-    color: #dc2626;
-  }
-  .card-tag.done {
-    background: #d1fae5;
-    color: #059669;
+
+  .slack-tag-due {
+    background: var(--bg-hover);
+    color: var(--text-secondary);
   }
 
-  .card-footer {
+  .slack-tag-overdue {
+    background: var(--danger-bg);
+    color: var(--danger);
+  }
+
+  .slack-tag-completed {
+    background: var(--success-bg);
+    color: var(--success);
+  }
+
+  .slack-card-footer {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding-top: 0.75rem;
+    padding-top: 10px;
     border-top: 1px solid var(--border-color);
   }
-  .card-assignee {
+
+  .slack-assignee {
     display: flex;
     align-items: center;
-    gap: 0.5rem;
+    gap: 8px;
   }
-  .assignee-avatar {
+
+  .slack-avatar {
     width: 24px;
     height: 24px;
-    border-radius: 6px;
-    background: var(--primary);
+    border-radius: 4px;
+    background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
     color: white;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 0.65rem;
-    font-weight: 600;
+    font-size: 11px;
+    font-weight: 700;
   }
-  .assignee-name {
-    font-size: 0.75rem;
-    color: var(--text-muted);
-  }
-  .card-priority-badge {
-    padding: 0.2rem 0.5rem;
-    border-radius: 4px;
-    font-size: 0.65rem;
-    font-weight: 600;
-    text-transform: uppercase;
-  }
-  .card-priority-badge.high { background: #fef2f2; color: #dc2626; }
-  .card-priority-badge.medium { background: #fffbeb; color: #d97706; }
-  .card-priority-badge.low { background: #f0fdf4; color: #16a34a; }
 
-  .empty-column {
+  .slack-assignee-name {
+    font-size: 12px;
+    color: var(--text-secondary);
+    font-weight: 500;
+  }
+
+  .slack-priority-label {
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    padding: 3px 6px;
+    border-radius: 3px;
+  }
+
+  .slack-priority-label.urgent {
+    background: var(--danger-bg);
+    color: var(--danger);
+  }
+
+  .slack-priority-label.high {
+    background: var(--warning-bg);
+    color: #ff8c00;
+  }
+
+  .slack-priority-label.medium {
+    background: var(--warning-bg);
+    color: var(--warning);
+  }
+
+  .slack-priority-label.low {
+    background: var(--success-bg);
+    color: var(--success);
+  }
+
+  /* Empty State */
+  .slack-empty {
     text-align: center;
-    padding: 2rem 1rem;
+    padding: 32px 16px;
+    color: var(--text-secondary);
+  }
+
+  .slack-empty-icon {
+    width: 48px;
+    height: 48px;
+    background: var(--bg-hover);
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 12px;
+    font-size: 20px;
     color: var(--text-muted);
   }
-  .empty-column i {
-    font-size: 2rem;
-    opacity: 0.3;
-    margin-bottom: 0.75rem;
-  }
-  .empty-column p {
+
+  .slack-empty p {
     margin: 0;
-    font-size: 0.85rem;
+    font-size: 13px;
+  }
+
+  /* Responsive */
+  @media (max-width: 1200px) {
+    .slack-column {
+      min-width: 280px;
+      max-width: 280px;
+    }
+  }
+
+  @media (max-width: 768px) {
+    .slack-header {
+      flex-direction: column;
+      gap: 12px;
+      align-items: flex-start;
+    }
+
+    .slack-header-actions {
+      width: 100%;
+      flex-wrap: wrap;
+    }
+
+    .slack-kanban {
+      padding: 12px;
+    }
+
+    .slack-column {
+      min-width: 260px;
+      max-width: 260px;
+    }
   }
 </style>
 {% endblock %}
 
 {% block content %}
-<!-- Board Header -->
-<div class="board-header">
-  <div>
-    <h1><i class="fas fa-columns me-2"></i>Task Board</h1>
-    <p>Drag and drop to organize your tasks</p>
+<div class="slack-board-container">
+  <!-- Slack-style Header -->
+  <div class="slack-header">
+    <div class="slack-header-left">
+      <h1><i class="fas fa-th-large"></i> Task Board</h1>
+      <span class="slack-channel-info">
+        <i class="fas fa-hashtag"></i> {{ todo_tasks|length|add:in_progress_tasks|length|add:review_tasks|length|add:completed_tasks|length }} tasks
+      </span>
+    </div>
+    <div class="slack-header-actions">
+      <form method="get" style="display: inline;">
+        <select name="project" class="slack-filter-select" onchange="this.form.submit()">
+          <option value="">All Projects</option>
+          {% for project in projects %}
+          <option value="{{ project.pk }}" {% if selected_project == project.pk|slugify %}selected{% endif %}>{{ project.name }}</option>
+          {% endfor %}
+        </select>
+      </form>
+      <a href="{% url 'task_list' %}" class="slack-btn">
+        <i class="fas fa-list"></i> List View
+      </a>
+      {% if not is_team_member %}
+      <a href="{% url 'task_create' %}?next=board" class="slack-btn slack-btn-primary">
+        <i class="fas fa-plus"></i> Add Task
+      </a>
+      {% endif %}
+    </div>
   </div>
-  <div class="board-filters">
-    <form method="get" class="d-flex gap-2">
-      <select name="project" onchange="this.form.submit()">
-        <option value="">All Projects</option>
-        {% for project in projects %}
-        <option value="{{ project.pk }}" {% if selected_project == project.pk|slugify %}selected{% endif %}>{{ project.name }}</option>
+
+  <!-- Slack-style Kanban Board -->
+  <div class="slack-kanban">
+    <!-- To Do Column -->
+    <div class="slack-column">
+      <div class="slack-column-header">
+        <div class="slack-column-title">
+          <span class="slack-status-dot todo"></span>
+          To Do
+        </div>
+        <span class="slack-column-count">{{ todo_tasks|length }}</span>
+      </div>
+      <div class="slack-column-body">
+        {% for task in todo_tasks %}
+        <div class="slack-task-card" onclick="window.location='{% url 'task_detail' task.pk %}'">
+          <div class="slack-card-priority-bar {{ task.priority }}"></div>
+          <div class="slack-card-content">
+            <div class="slack-card-title">{{ task.title }}</div>
+            <div class="slack-card-meta">
+              <span class="slack-tag slack-tag-project">
+                <i class="fas fa-folder"></i> {{ task.project.name|truncatechars:15 }}
+              </span>
+              {% if task.due_date %}
+              <span class="slack-tag {% if task.is_overdue %}slack-tag-overdue{% else %}slack-tag-due{% endif %}">
+                <i class="fas fa-calendar-alt"></i> {{ task.due_date|date:"M d" }}
+              </span>
+              {% endif %}
+            </div>
+            <div class="slack-card-footer">
+              {% if task.assigned_to %}
+              <div class="slack-assignee">
+                <div class="slack-avatar">{{ task.assigned_to.name|slice:":2"|upper }}</div>
+                <span class="slack-assignee-name">{{ task.assigned_to.name|truncatechars:12 }}</span>
+              </div>
+              {% else %}
+              <span class="slack-assignee-name" style="color: #b4b4b4;">Unassigned</span>
+              {% endif %}
+              <span class="slack-priority-label {{ task.priority }}">{{ task.get_priority_display }}</span>
+            </div>
+          </div>
+        </div>
+        {% empty %}
+        <div class="slack-empty">
+          <div class="slack-empty-icon"><i class="fas fa-inbox"></i></div>
+          <p>No tasks to do</p>
+        </div>
         {% endfor %}
-      </select>
-    </form>
-    <a href="{% url 'task_list' %}" class="btn btn-light">
-      <i class="fas fa-list me-1"></i>List View
-    </a>
-    {% if not is_team_member %}
-    <a href="{% url 'task_create' %}?next=board" class="btn btn-light">
-      <i class="fas fa-plus me-1"></i>Add Task
-    </a>
-    {% endif %}
-  </div>
-</div>
+      </div>
+    </div>
 
-<!-- Kanban Board -->
-<div class="kanban-board">
-  <!-- To Do Column -->
-  <div class="kanban-column column-todo">
-    <div class="kanban-column-header">
-      <div class="column-title">
-        <div class="column-icon"><i class="fas fa-circle"></i></div>
-        <span>To Do</span>
-      </div>
-      <span class="column-count">{{ todo_tasks|length }}</span>
-    </div>
-    <div class="kanban-cards">
-      {% for task in todo_tasks %}
-      <div class="kanban-card" onclick="window.location='{% url 'task_detail' task.pk %}'">
-        <div class="card-priority {{ task.priority }}"></div>
-        <div class="card-title">{{ task.title }}</div>
-        <div class="card-meta">
-          <span class="card-tag project"><i class="fas fa-folder"></i> {{ task.project.name|truncatechars:12 }}</span>
-          {% if task.due_date %}
-          <span class="card-tag {% if task.is_overdue %}overdue{% else %}due{% endif %}">
-            <i class="fas fa-calendar"></i> {{ task.due_date|date:"d M" }}
-          </span>
-          {% endif %}
+    <!-- In Progress Column -->
+    <div class="slack-column">
+      <div class="slack-column-header">
+        <div class="slack-column-title">
+          <span class="slack-status-dot progress"></span>
+          In Progress
         </div>
-        <div class="card-footer">
-          {% if task.assigned_to %}
-          <div class="card-assignee">
-            <div class="assignee-avatar">{{ task.assigned_to.name|slice:":1"|upper }}</div>
-            <span class="assignee-name">{{ task.assigned_to.name|truncatechars:10 }}</span>
+        <span class="slack-column-count">{{ in_progress_tasks|length }}</span>
+      </div>
+      <div class="slack-column-body">
+        {% for task in in_progress_tasks %}
+        <div class="slack-task-card" onclick="window.location='{% url 'task_detail' task.pk %}'">
+          <div class="slack-card-priority-bar {{ task.priority }}"></div>
+          <div class="slack-card-content">
+            <div class="slack-card-title">{{ task.title }}</div>
+            <div class="slack-card-meta">
+              <span class="slack-tag slack-tag-project">
+                <i class="fas fa-folder"></i> {{ task.project.name|truncatechars:15 }}
+              </span>
+              {% if task.due_date %}
+              <span class="slack-tag {% if task.is_overdue %}slack-tag-overdue{% else %}slack-tag-due{% endif %}">
+                <i class="fas fa-calendar-alt"></i> {{ task.due_date|date:"M d" }}
+              </span>
+              {% endif %}
+            </div>
+            <div class="slack-card-footer">
+              {% if task.assigned_to %}
+              <div class="slack-assignee">
+                <div class="slack-avatar">{{ task.assigned_to.name|slice:":2"|upper }}</div>
+                <span class="slack-assignee-name">{{ task.assigned_to.name|truncatechars:12 }}</span>
+              </div>
+              {% else %}
+              <span class="slack-assignee-name" style="color: #b4b4b4;">Unassigned</span>
+              {% endif %}
+              <span class="slack-priority-label {{ task.priority }}">{{ task.get_priority_display }}</span>
+            </div>
           </div>
-          {% else %}
-          <span class="assignee-name">Unassigned</span>
-          {% endif %}
-          <span class="card-priority-badge {{ task.priority }}">{{ task.get_priority_display }}</span>
         </div>
+        {% empty %}
+        <div class="slack-empty">
+          <div class="slack-empty-icon"><i class="fas fa-play-circle"></i></div>
+          <p>No tasks in progress</p>
+        </div>
+        {% endfor %}
       </div>
-      {% empty %}
-      <div class="empty-column">
-        <i class="fas fa-inbox"></i>
-        <p>No tasks to do</p>
-      </div>
-      {% endfor %}
     </div>
-  </div>
 
-  <!-- In Progress Column -->
-  <div class="kanban-column column-progress">
-    <div class="kanban-column-header">
-      <div class="column-title">
-        <div class="column-icon"><i class="fas fa-spinner"></i></div>
-        <span>In Progress</span>
-      </div>
-      <span class="column-count">{{ in_progress_tasks|length }}</span>
-    </div>
-    <div class="kanban-cards">
-      {% for task in in_progress_tasks %}
-      <div class="kanban-card" onclick="window.location='{% url 'task_detail' task.pk %}'">
-        <div class="card-priority {{ task.priority }}"></div>
-        <div class="card-title">{{ task.title }}</div>
-        <div class="card-meta">
-          <span class="card-tag project"><i class="fas fa-folder"></i> {{ task.project.name|truncatechars:12 }}</span>
-          {% if task.due_date %}
-          <span class="card-tag {% if task.is_overdue %}overdue{% else %}due{% endif %}">
-            <i class="fas fa-calendar"></i> {{ task.due_date|date:"d M" }}
-          </span>
-          {% endif %}
+    <!-- In Review Column -->
+    <div class="slack-column">
+      <div class="slack-column-header">
+        <div class="slack-column-title">
+          <span class="slack-status-dot review"></span>
+          In Review
         </div>
-        <div class="card-footer">
-          {% if task.assigned_to %}
-          <div class="card-assignee">
-            <div class="assignee-avatar">{{ task.assigned_to.name|slice:":1"|upper }}</div>
-            <span class="assignee-name">{{ task.assigned_to.name|truncatechars:10 }}</span>
+        <span class="slack-column-count">{{ review_tasks|length }}</span>
+      </div>
+      <div class="slack-column-body">
+        {% for task in review_tasks %}
+        <div class="slack-task-card" onclick="window.location='{% url 'task_detail' task.pk %}'">
+          <div class="slack-card-priority-bar {{ task.priority }}"></div>
+          <div class="slack-card-content">
+            <div class="slack-card-title">{{ task.title }}</div>
+            <div class="slack-card-meta">
+              <span class="slack-tag slack-tag-project">
+                <i class="fas fa-folder"></i> {{ task.project.name|truncatechars:15 }}
+              </span>
+              {% if task.due_date %}
+              <span class="slack-tag {% if task.is_overdue %}slack-tag-overdue{% else %}slack-tag-due{% endif %}">
+                <i class="fas fa-calendar-alt"></i> {{ task.due_date|date:"M d" }}
+              </span>
+              {% endif %}
+            </div>
+            <div class="slack-card-footer">
+              {% if task.assigned_to %}
+              <div class="slack-assignee">
+                <div class="slack-avatar">{{ task.assigned_to.name|slice:":2"|upper }}</div>
+                <span class="slack-assignee-name">{{ task.assigned_to.name|truncatechars:12 }}</span>
+              </div>
+              {% else %}
+              <span class="slack-assignee-name" style="color: #b4b4b4;">Unassigned</span>
+              {% endif %}
+              <span class="slack-priority-label {{ task.priority }}">{{ task.get_priority_display }}</span>
+            </div>
           </div>
-          {% else %}
-          <span class="assignee-name">Unassigned</span>
-          {% endif %}
-          <span class="card-priority-badge {{ task.priority }}">{{ task.get_priority_display }}</span>
         </div>
+        {% empty %}
+        <div class="slack-empty">
+          <div class="slack-empty-icon"><i class="fas fa-eye"></i></div>
+          <p>No tasks in review</p>
+        </div>
+        {% endfor %}
       </div>
-      {% empty %}
-      <div class="empty-column">
-        <i class="fas fa-play-circle"></i>
-        <p>No tasks in progress</p>
-      </div>
-      {% endfor %}
     </div>
-  </div>
 
-  <!-- Review Column -->
-  <div class="kanban-column column-review">
-    <div class="kanban-column-header">
-      <div class="column-title">
-        <div class="column-icon"><i class="fas fa-eye"></i></div>
-        <span>In Review</span>
-      </div>
-      <span class="column-count">{{ review_tasks|length }}</span>
-    </div>
-    <div class="kanban-cards">
-      {% for task in review_tasks %}
-      <div class="kanban-card" onclick="window.location='{% url 'task_detail' task.pk %}'">
-        <div class="card-priority {{ task.priority }}"></div>
-        <div class="card-title">{{ task.title }}</div>
-        <div class="card-meta">
-          <span class="card-tag project"><i class="fas fa-folder"></i> {{ task.project.name|truncatechars:12 }}</span>
-          {% if task.due_date %}
-          <span class="card-tag {% if task.is_overdue %}overdue{% else %}due{% endif %}">
-            <i class="fas fa-calendar"></i> {{ task.due_date|date:"d M" }}
-          </span>
-          {% endif %}
+    <!-- Completed Column -->
+    <div class="slack-column">
+      <div class="slack-column-header">
+        <div class="slack-column-title">
+          <span class="slack-status-dot done"></span>
+          Completed
         </div>
-        <div class="card-footer">
-          {% if task.assigned_to %}
-          <div class="card-assignee">
-            <div class="assignee-avatar">{{ task.assigned_to.name|slice:":1"|upper }}</div>
-            <span class="assignee-name">{{ task.assigned_to.name|truncatechars:10 }}</span>
+        <span class="slack-column-count">{{ completed_tasks|length }}</span>
+      </div>
+      <div class="slack-column-body">
+        {% for task in completed_tasks %}
+        <div class="slack-task-card" onclick="window.location='{% url 'task_detail' task.pk %}'">
+          <div class="slack-card-priority-bar {{ task.priority }}"></div>
+          <div class="slack-card-content">
+            <div class="slack-card-title">{{ task.title }}</div>
+            <div class="slack-card-meta">
+              <span class="slack-tag slack-tag-project">
+                <i class="fas fa-folder"></i> {{ task.project.name|truncatechars:15 }}
+              </span>
+              {% if task.completed_date %}
+              <span class="slack-tag slack-tag-completed">
+                <i class="fas fa-check-circle"></i> {{ task.completed_date|date:"M d" }}
+              </span>
+              {% endif %}
+            </div>
+            <div class="slack-card-footer">
+              {% if task.assigned_to %}
+              <div class="slack-assignee">
+                <div class="slack-avatar">{{ task.assigned_to.name|slice:":2"|upper }}</div>
+                <span class="slack-assignee-name">{{ task.assigned_to.name|truncatechars:12 }}</span>
+              </div>
+              {% else %}
+              <span class="slack-assignee-name" style="color: #b4b4b4;">Unassigned</span>
+              {% endif %}
+              <span class="slack-priority-label {{ task.priority }}">{{ task.get_priority_display }}</span>
+            </div>
           </div>
-          {% else %}
-          <span class="assignee-name">Unassigned</span>
-          {% endif %}
-          <span class="card-priority-badge {{ task.priority }}">{{ task.get_priority_display }}</span>
         </div>
-      </div>
-      {% empty %}
-      <div class="empty-column">
-        <i class="fas fa-search"></i>
-        <p>No tasks in review</p>
-      </div>
-      {% endfor %}
-    </div>
-  </div>
-
-  <!-- Completed Column -->
-  <div class="kanban-column column-done">
-    <div class="kanban-column-header">
-      <div class="column-title">
-        <div class="column-icon"><i class="fas fa-check"></i></div>
-        <span>Completed</span>
-      </div>
-      <span class="column-count">{{ completed_tasks|length }}</span>
-    </div>
-    <div class="kanban-cards">
-      {% for task in completed_tasks %}
-      <div class="kanban-card" onclick="window.location='{% url 'task_detail' task.pk %}'">
-        <div class="card-priority {{ task.priority }}"></div>
-        <div class="card-title">{{ task.title }}</div>
-        <div class="card-meta">
-          <span class="card-tag project"><i class="fas fa-folder"></i> {{ task.project.name|truncatechars:12 }}</span>
-          {% if task.completed_date %}
-          <span class="card-tag done">
-            <i class="fas fa-check-circle"></i> {{ task.completed_date|date:"d M" }}
-          </span>
-          {% endif %}
+        {% empty %}
+        <div class="slack-empty">
+          <div class="slack-empty-icon"><i class="fas fa-trophy"></i></div>
+          <p>No completed tasks</p>
         </div>
-        <div class="card-footer">
-          {% if task.assigned_to %}
-          <div class="card-assignee">
-            <div class="assignee-avatar">{{ task.assigned_to.name|slice:":1"|upper }}</div>
-            <span class="assignee-name">{{ task.assigned_to.name|truncatechars:10 }}</span>
-          </div>
-          {% else %}
-          <span class="assignee-name">Unassigned</span>
-          {% endif %}
-          <span class="card-priority-badge {{ task.priority }}">{{ task.get_priority_display }}</span>
-        </div>
+        {% endfor %}
       </div>
-      {% empty %}
-      <div class="empty-column">
-        <i class="fas fa-trophy"></i>
-        <p>No completed tasks</p>
-      </div>
-      {% endfor %}
     </div>
   </div>
 </div>
