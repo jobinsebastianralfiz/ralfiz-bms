@@ -1234,6 +1234,31 @@ select.form-control {
   border: 1px solid #bae6fd;
 }
 
+.alert-dismissible {
+  padding-right: 3rem;
+  position: relative;
+}
+
+.alert-close {
+  position: absolute;
+  right: 1rem;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  font-size: 1.25rem;
+  cursor: pointer;
+  opacity: 0.6;
+  transition: opacity 0.2s ease;
+  color: inherit;
+  padding: 0.25rem;
+  line-height: 1;
+}
+
+.alert-close:hover {
+  opacity: 1;
+}
+
 /* -------------------- Modals -------------------- */
 .modal-backdrop {
   position: fixed;
