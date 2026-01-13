@@ -319,15 +319,17 @@
                 <span class="text-danger">-&#8377;{{ invoice.discount|floatformat:2 }}</span>
               </div>
               {% endif %}
+              {% if invoice.tax_rate %}
               <div class="d-flex justify-content-between py-2">
                 <span class="text-muted">CGST ({{ invoice.half_tax_rate|floatformat:0 }}%)</span>
                 <span>&#8377;{{ invoice.cgst_amount|floatformat:2 }}</span>
               </div>
-              <div class="d-flex justify-content-between py-2" style="border-bottom: 1px solid var(--border-color);">
+              <div class="d-flex justify-content-between py-2">
                 <span class="text-muted">SGST ({{ invoice.half_tax_rate|floatformat:0 }}%)</span>
                 <span>&#8377;{{ invoice.sgst_amount|floatformat:2 }}</span>
               </div>
-              <div class="d-flex justify-content-between py-3" style="border-bottom: 1px solid var(--border-color);">
+              {% endif %}
+              <div class="d-flex justify-content-between py-3" style="border-top: 1px solid var(--border-color); border-bottom: 1px solid var(--border-color);">
                 <span class="fw-bold">Total</span>
                 <span class="fw-bold">&#8377;{{ invoice.total_amount|floatformat:2 }}</span>
               </div>

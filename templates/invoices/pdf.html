@@ -591,10 +591,6 @@
           <span class="label">Total</span>
           <span class="value">&#8377;{{ taxable_amount|floatformat:2 }}</span>
         </div>
-        <div class="totals-row" style="font-size: 12px;">
-          <span class="label">GST Extra as applicable</span>
-          <span class="value"></span>
-        </div>
         {% endif %}
         {% if invoice.amount_paid > 0 %}
         <div class="totals-row">
