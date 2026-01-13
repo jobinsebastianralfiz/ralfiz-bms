@@ -1038,7 +1038,21 @@ def invoice_create(request):
     quotes = Quote.objects.filter(status='accepted')
 
     if request.method == 'POST':
-        from decimal import Decimal
+        from decimal import Decimal, InvalidOperation
+
+        # Safe tax_rate conversion - default to 0 if empty or invalid
+        try:
+            tax_rate_val = request.POST.get('tax_rate', '0')
+            tax_rate = Decimal(tax_rate_val) if tax_rate_val else Decimal('0')
+        except (InvalidOperation, ValueError):
+            tax_rate = Decimal('0')
+
+        # Safe discount conversion
+        try:
+            discount_val = request.POST.get('discount', '0')
+            discount = Decimal(discount_val) if discount_val else Decimal('0')
+        except (InvalidOperation, ValueError):
+            discount = Decimal('0')
 
         invoice = Invoice.objects.create(
             client_id=request.POST.get('client'),
@@ -1049,8 +1063,8 @@ def invoice_create(request):
             issue_date=request.POST.get('issue_date') or timezone.now().date(),
             due_date=request.POST.get('due_date') or None,
             status=request.POST.get('status', 'draft'),
-            discount=Decimal(request.POST.get('discount', 0) or 0),
-            tax_rate=request.POST.get('tax_rate', 18),
+            discount=discount,
+            tax_rate=tax_rate,
             notes=request.POST.get('notes', ''),
             terms=request.POST.get('terms', ''),
         )
@@ -1113,18 +1127,18 @@ def invoice_update(request, pk):
         invoice.due_date = request.POST.get('due_date') or None
         invoice.status = request.POST.get('status', 'draft')
 
-        # Safe decimal conversion
+        # Safe decimal conversion - default to 0 if empty
         try:
-            discount_val = request.POST.get('discount', '0') or '0'
-            invoice.discount = Decimal(discount_val)
+            discount_val = request.POST.get('discount', '0')
+            invoice.discount = Decimal(discount_val) if discount_val else Decimal('0')
         except (InvalidOperation, ValueError):
             invoice.discount = Decimal('0')
 
         try:
-            tax_rate_val = request.POST.get('tax_rate', '18') or '18'
-            invoice.tax_rate = Decimal(tax_rate_val)
+            tax_rate_val = request.POST.get('tax_rate', '0')
+            invoice.tax_rate = Decimal(tax_rate_val) if tax_rate_val else Decimal('0')
         except (InvalidOperation, ValueError):
-            invoice.tax_rate = Decimal('18')
+            invoice.tax_rate = Decimal('0')
 
         invoice.notes = request.POST.get('notes', '')
         invoice.terms = request.POST.get('terms', '')
