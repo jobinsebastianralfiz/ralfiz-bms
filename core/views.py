@@ -1023,6 +1023,11 @@ def invoice_detail(request, pk):
         Invoice.objects.select_related('client', 'project').prefetch_related('items', 'payments'),
         pk=pk
     )
+
+    # Auto-recalculate totals if items exist but subtotal is 0
+    if invoice.items.exists() and invoice.subtotal == 0:
+        invoice.calculate_totals()
+
     return render(request, 'invoices/detail.html', {'invoice': invoice})
 
 
