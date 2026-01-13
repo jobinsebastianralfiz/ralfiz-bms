@@ -1093,18 +1093,30 @@ def invoice_update(request, pk):
     quotes = Quote.objects.filter(status='accepted')
 
     if request.method == 'POST':
-        from decimal import Decimal
+        from decimal import Decimal, InvalidOperation
 
         invoice.client_id = request.POST.get('client')
         invoice.project_id = request.POST.get('project') or None
         invoice.quote_id = request.POST.get('quote') or None
         invoice.title = request.POST.get('title')
         invoice.description = request.POST.get('description', '')
-        invoice.issue_date = request.POST.get('issue_date')
+        invoice.issue_date = request.POST.get('issue_date') or timezone.now().date()
         invoice.due_date = request.POST.get('due_date') or None
         invoice.status = request.POST.get('status', 'draft')
-        invoice.discount = Decimal(request.POST.get('discount', 0) or 0)
-        invoice.tax_rate = request.POST.get('tax_rate', 18)
+
+        # Safe decimal conversion
+        try:
+            discount_val = request.POST.get('discount', '0') or '0'
+            invoice.discount = Decimal(discount_val)
+        except (InvalidOperation, ValueError):
+            invoice.discount = Decimal('0')
+
+        try:
+            tax_rate_val = request.POST.get('tax_rate', '18') or '18'
+            invoice.tax_rate = Decimal(tax_rate_val)
+        except (InvalidOperation, ValueError):
+            invoice.tax_rate = Decimal('18')
+
         invoice.notes = request.POST.get('notes', '')
         invoice.terms = request.POST.get('terms', '')
         invoice.save()
@@ -1113,12 +1125,26 @@ def invoice_update(request, pk):
         invoice.items.all().delete()
 
         # Process line items
-        item_count = int(request.POST.get('item_count', 0))
+        try:
+            item_count = int(request.POST.get('item_count', 0) or 0)
+        except ValueError:
+            item_count = 0
+
         for i in range(1, item_count + 10):  # Check a few extra indices in case of gaps
             description = request.POST.get(f'item_description_{i}')
             if description:
-                quantity = Decimal(request.POST.get(f'item_quantity_{i}', 1) or 1)
-                unit_price = Decimal(request.POST.get(f'item_price_{i}', 0) or 0)
+                try:
+                    qty_val = request.POST.get(f'item_quantity_{i}', '1') or '1'
+                    quantity = Decimal(qty_val)
+                except (InvalidOperation, ValueError):
+                    quantity = Decimal('1')
+
+                try:
+                    price_val = request.POST.get(f'item_price_{i}', '0') or '0'
+                    unit_price = Decimal(price_val)
+                except (InvalidOperation, ValueError):
+                    unit_price = Decimal('0')
+
                 InvoiceItem.objects.create(
                     invoice=invoice,
                     description=description,
