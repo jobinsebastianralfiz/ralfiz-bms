@@ -339,12 +339,28 @@ def project_detail(request, pk):
     # Get all payments for invoices related to this project
     payments = Payment.objects.filter(invoice__project=project).select_related('invoice').order_by('-payment_date')
 
+    # Calculate financial stats
+    from django.db.models import Sum
+    from decimal import Decimal
+
+    # Total invoiced amount for this project
+    total_invoiced = invoices.aggregate(total=Sum('total_amount'))['total'] or Decimal('0')
+
+    # Total amount received (sum of all payments)
+    amount_received = payments.aggregate(total=Sum('amount'))['total'] or Decimal('0')
+
+    # Pending amount
+    pending_amount = total_invoiced - amount_received
+
     context = {
         'project': project,
         'credentials': credentials,
         'invoices': invoices,
         'quotes': quotes,
         'payments': payments,
+        'total_invoiced': total_invoiced,
+        'amount_received': amount_received,
+        'pending_amount': pending_amount,
     }
     return render(request, 'projects/detail.html', context)
 
