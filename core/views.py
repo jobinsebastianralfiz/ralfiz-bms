@@ -336,11 +336,15 @@ def project_detail(request, pk):
     invoices = project.invoices.all()
     quotes = project.quotes.all()
 
+    # Get all payments for invoices related to this project
+    payments = Payment.objects.filter(invoice__project=project).select_related('invoice').order_by('-payment_date')
+
     context = {
         'project': project,
         'credentials': credentials,
         'invoices': invoices,
         'quotes': quotes,
+        'payments': payments,
     }
     return render(request, 'projects/detail.html', context)
 
