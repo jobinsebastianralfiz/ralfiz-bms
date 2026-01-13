@@ -1061,8 +1061,7 @@ def invoice_create(request):
                     invoice=invoice,
                     description=description,
                     quantity=quantity,
-                    unit_price=unit_price,
-                    total=quantity * unit_price
+                    unit_price=unit_price
                 )
 
         # Recalculate totals
@@ -1124,8 +1123,7 @@ def invoice_update(request, pk):
                     invoice=invoice,
                     description=description,
                     quantity=quantity,
-                    unit_price=unit_price,
-                    total=quantity * unit_price
+                    unit_price=unit_price
                 )
 
         # Recalculate totals

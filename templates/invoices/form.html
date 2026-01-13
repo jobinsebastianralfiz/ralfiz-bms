@@ -333,7 +333,7 @@
 
 {% block extra_js %}
 <script>
-let lineItemCounter = {{ invoice.items.count|default:1 }};
+let lineItemCounter = {% if invoice %}{{ invoice.items.count }}{% else %}1{% endif %};
 
 function addLineItem() {
   lineItemCounter++;
