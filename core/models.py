@@ -194,6 +194,13 @@ class Quote(models.Model):
     total_amount = models.DecimalField(max_digits=12, decimal_places=2, default=0)
     issue_date = models.DateField(default=timezone.now)
     valid_until = models.DateField()
+
+    # Timeline & Deliverables
+    duration = models.CharField(max_length=100, blank=True, help_text='e.g., 4-6 weeks')
+    start_date = models.DateField(null=True, blank=True)
+    deliverables = models.TextField(blank=True)
+    payment_terms = models.CharField(max_length=50, default='50-50', blank=True)
+
     terms = models.TextField(blank=True)
     notes = models.TextField(blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
@@ -449,6 +456,8 @@ class CompanySettings(models.Model):
     invoice_prefix = models.CharField(max_length=10, default='INV')
     quote_prefix = models.CharField(max_length=10, default='QT')
     default_tax_rate = models.DecimalField(max_digits=5, decimal_places=2, default=18)
+    default_quote_validity_days = models.IntegerField(default=30, help_text='Default number of days a quote is valid')
+    default_payment_terms = models.CharField(max_length=50, default='50-50', blank=True, help_text='Default payment terms for quotes')
     invoice_terms = models.TextField(blank=True)
     quote_terms = models.TextField(blank=True)
 

@@ -224,21 +224,25 @@ e.g.:
         <div class="card-body">
           <div class="form-group">
             <label class="form-label" for="payment_terms">Payment Terms</label>
+            {% with current_payment_terms=quote.payment_terms|default:company.default_payment_terms|default:'50-50' %}
             <select class="form-control" id="payment_terms" name="payment_terms">
-              <option value="50-50" {% if quote.payment_terms == '50-50' %}selected{% endif %}>50% Advance, 50% on Completion</option>
-              <option value="30-30-40" {% if quote.payment_terms == '30-30-40' %}selected{% endif %}>30% Advance, 30% Mid-project, 40% on Completion</option>
-              <option value="100-advance" {% if quote.payment_terms == '100-advance' %}selected{% endif %}>100% Advance</option>
-              <option value="100-completion" {% if quote.payment_terms == '100-completion' %}selected{% endif %}>100% on Completion</option>
-              <option value="custom" {% if quote.payment_terms == 'custom' %}selected{% endif %}>Custom</option>
+              <option value="50-50" {% if current_payment_terms == '50-50' %}selected{% endif %}>50% Advance, 50% on Completion</option>
+              <option value="30-30-40" {% if current_payment_terms == '30-30-40' %}selected{% endif %}>30% Advance, 30% Mid-project, 40% on Completion</option>
+              <option value="100-advance" {% if current_payment_terms == '100-advance' %}selected{% endif %}>100% Advance</option>
+              <option value="100-completion" {% if current_payment_terms == '100-completion' %}selected{% endif %}>100% on Completion</option>
+              <option value="custom" {% if current_payment_terms == 'custom' %}selected{% endif %}>Custom</option>
             </select>
+            {% endwith %}
           </div>
           <div class="form-group">
             <label class="form-label" for="terms">Terms & Conditions</label>
-            <textarea class="form-control" id="terms" name="terms" rows="4">{{ quote.terms|default:'1. Quote valid for 30 days from date of issue.
+            {% with default_terms='1. Quote valid for 30 days from date of issue.
 2. Any changes to scope may result in revised pricing.
 3. Payment terms as agreed above.
 4. Development timeline begins after advance payment.
-5. Client to provide necessary assets and feedback within agreed timelines.' }}</textarea>
+5. Client to provide necessary assets and feedback within agreed timelines.' %}
+            <textarea class="form-control" id="terms" name="terms" rows="4">{% if quote.terms %}{{ quote.terms }}{% elif company.quote_terms %}{{ company.quote_terms }}{% else %}{{ default_terms }}{% endif %}</textarea>
+            {% endwith %}
           </div>
           <div class="form-group mb-0">
             <label class="form-label" for="notes">Internal Notes</label>

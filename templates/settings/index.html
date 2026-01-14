@@ -336,7 +336,7 @@
               <div class="col-6 col-sm-12" style="padding: 0.5rem;">
                 <div class="form-group">
                   <label class="form-label">Quote Validity (Days)</label>
-                  <input type="number" class="form-control" name="quote_validity" value="{{ company.quote_validity|default:'15' }}">
+                  <input type="number" class="form-control" name="default_quote_validity_days" value="{{ company.default_quote_validity_days|default:'30' }}" min="1">
                 </div>
               </div>
               <div class="col-6 col-sm-12" style="padding: 0.5rem;">
@@ -360,6 +360,16 @@
             <div class="form-group mb-4">
               <label class="form-label">Default Invoice Terms</label>
               <textarea class="form-control" name="invoice_terms" rows="4">{{ company.invoice_terms|default:'' }}</textarea>
+            </div>
+            <div class="form-group mb-4">
+              <label class="form-label">Default Payment Terms</label>
+              <select class="form-control" name="default_payment_terms">
+                <option value="50-50" {% if company.default_payment_terms == '50-50' %}selected{% endif %}>50% Advance, 50% on Completion</option>
+                <option value="30-30-40" {% if company.default_payment_terms == '30-30-40' %}selected{% endif %}>30% Advance, 30% Mid-project, 40% on Completion</option>
+                <option value="100-advance" {% if company.default_payment_terms == '100-advance' %}selected{% endif %}>100% Advance</option>
+                <option value="100-completion" {% if company.default_payment_terms == '100-completion' %}selected{% endif %}>100% on Completion</option>
+                <option value="custom" {% if company.default_payment_terms == 'custom' %}selected{% endif %}>Custom</option>
+              </select>
             </div>
             <div class="form-group mb-0">
               <label class="form-label">Default Quote Terms</label>

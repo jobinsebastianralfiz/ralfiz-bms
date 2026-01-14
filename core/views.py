@@ -711,6 +711,10 @@ def quote_create(request):
         except (InvalidOperation, ValueError):
             discount = Decimal('0')
 
+        # Parse start_date
+        start_date_val = request.POST.get('start_date', '')
+        start_date = start_date_val if start_date_val else None
+
         quote = Quote.objects.create(
             client_id=request.POST.get('client'),
             project_id=request.POST.get('project') or None,
@@ -723,6 +727,11 @@ def quote_create(request):
             tax_rate=tax_rate,
             notes=request.POST.get('notes', ''),
             terms=request.POST.get('terms', ''),
+            # Timeline & Deliverables
+            duration=request.POST.get('duration', ''),
+            start_date=start_date,
+            deliverables=request.POST.get('deliverables', ''),
+            payment_terms=request.POST.get('payment_terms', '50-50'),
         )
 
         # Process line items
@@ -746,10 +755,14 @@ def quote_create(request):
         messages.success(request, f'Quote "{quote.quote_number}" created successfully.')
         return redirect('quote_detail', pk=quote.pk)
 
-    # Default dates
+    # Get company settings for defaults
+    company = CompanySettings.get_settings()
+
+    # Default dates using settings
     from datetime import timedelta
     today = timezone.now().date()
-    valid_until_default = today + timedelta(days=30)
+    validity_days = company.default_quote_validity_days or 30
+    valid_until_default = today + timedelta(days=validity_days)
 
     return render(request, 'quotes/form.html', {
         'clients': clients,
@@ -758,6 +771,7 @@ def quote_create(request):
         'status_choices': Quote.STATUS_CHOICES,
         'today': today.strftime('%Y-%m-%d'),
         'valid_until_default': valid_until_default.strftime('%Y-%m-%d'),
+        'company': company,
     })
 
 
@@ -793,6 +807,14 @@ def quote_update(request, pk):
 
         quote.notes = request.POST.get('notes', '')
         quote.terms = request.POST.get('terms', '')
+
+        # Timeline & Deliverables
+        quote.duration = request.POST.get('duration', '')
+        start_date_val = request.POST.get('start_date', '')
+        quote.start_date = start_date_val if start_date_val else None
+        quote.deliverables = request.POST.get('deliverables', '')
+        quote.payment_terms = request.POST.get('payment_terms', '50-50')
+
         quote.save()
 
         # Delete existing items and recreate
@@ -819,10 +841,14 @@ def quote_update(request, pk):
         messages.success(request, f'Quote "{quote.quote_number}" updated successfully.')
         return redirect('quote_detail', pk=quote.pk)
 
-    # Default dates
+    # Get company settings for defaults
+    company = CompanySettings.get_settings()
+
+    # Default dates using settings
     from datetime import timedelta
     today = timezone.now().date()
-    valid_until_default = today + timedelta(days=30)
+    validity_days = company.default_quote_validity_days or 30
+    valid_until_default = today + timedelta(days=validity_days)
 
     return render(request, 'quotes/form.html', {
         'quote': quote,
@@ -832,6 +858,7 @@ def quote_update(request, pk):
         'status_choices': Quote.STATUS_CHOICES,
         'today': today.strftime('%Y-%m-%d'),
         'valid_until_default': valid_until_default.strftime('%Y-%m-%d'),
+        'company': company,
     })
 
 
@@ -944,8 +971,12 @@ def quote_clone(request, pk):
     # Create new quote with copied data
     from decimal import Decimal
 
+    # Get company settings for validity
+    company = CompanySettings.get_settings()
+    validity_days = company.default_quote_validity_days or 30
+
     today = timezone.now().date()
-    valid_until = today + timedelta(days=30)
+    valid_until = today + timedelta(days=validity_days)
 
     new_quote = Quote.objects.create(
         client=original_quote.client,
@@ -962,6 +993,10 @@ def quote_clone(request, pk):
         valid_until=valid_until,
         terms=original_quote.terms,
         notes=original_quote.notes,
+        # Copy timeline & deliverables
+        duration=original_quote.duration,
+        deliverables=original_quote.deliverables,
+        payment_terms=original_quote.payment_terms,
     )
 
     # Clone all items
@@ -1575,8 +1610,16 @@ def settings_view(request):
         except (InvalidOperation, ValueError):
             company.default_tax_rate = Decimal('0')
 
+        # Quote validity days
+        try:
+            validity_val = request.POST.get('default_quote_validity_days', '30')
+            company.default_quote_validity_days = int(validity_val) if validity_val else 30
+        except (ValueError, TypeError):
+            company.default_quote_validity_days = 30
+
         company.invoice_terms = request.POST.get('invoice_terms', '')
         company.quote_terms = request.POST.get('quote_terms', '')
+        company.default_payment_terms = request.POST.get('default_payment_terms', '50-50')
 
         if request.FILES.get('logo'):
             company.logo = request.FILES.get('logo')
