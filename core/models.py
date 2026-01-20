@@ -315,12 +315,18 @@ class Invoice(models.Model):
         if not self.invoice_number:
             settings = CompanySettings.get_settings()
             prefix = settings.invoice_prefix
-            # Find last invoice with the same prefix
-            last_invoice = Invoice.objects.filter(invoice_number__startswith=prefix).order_by('-id').first()
-            if last_invoice:
-                # Extract the number part after the prefix
-                last_number = int(last_invoice.invoice_number[len(prefix):])
-                new_number = last_number + 1
+            # Find the highest invoice number with the same prefix
+            matching_invoices = Invoice.objects.filter(invoice_number__startswith=prefix)
+            max_number = 0
+            for inv in matching_invoices:
+                try:
+                    num = int(inv.invoice_number[len(prefix):])
+                    if num > max_number:
+                        max_number = num
+                except (ValueError, IndexError):
+                    continue
+            if max_number > 0:
+                new_number = max_number + 1
             else:
                 # Use starting number from settings
                 new_number = settings.invoice_starting_number
