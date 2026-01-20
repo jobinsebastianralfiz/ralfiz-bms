@@ -313,14 +313,18 @@ class Invoice(models.Model):
 
     def save(self, *args, **kwargs):
         if not self.invoice_number:
-            year = timezone.now().year
-            last_invoice = Invoice.objects.filter(invoice_number__startswith=f'INV{year}').order_by('-invoice_number').first()
+            settings = CompanySettings.get_settings()
+            prefix = settings.invoice_prefix
+            # Find last invoice with the same prefix
+            last_invoice = Invoice.objects.filter(invoice_number__startswith=prefix).order_by('-id').first()
             if last_invoice:
-                last_number = int(last_invoice.invoice_number[-4:])
+                # Extract the number part after the prefix
+                last_number = int(last_invoice.invoice_number[len(prefix):])
                 new_number = last_number + 1
             else:
-                new_number = 1
-            self.invoice_number = f'INV{year}{new_number:04d}'
+                # Use starting number from settings
+                new_number = settings.invoice_starting_number
+            self.invoice_number = f'{prefix}{new_number}'
         super().save(*args, **kwargs)
 
     @property
@@ -453,7 +457,8 @@ class CompanySettings(models.Model):
     upi_id = models.CharField(max_length=100, blank=True, verbose_name='UPI ID')
 
     # Default settings
-    invoice_prefix = models.CharField(max_length=10, default='INV')
+    invoice_prefix = models.CharField(max_length=10, default='INVRT', help_text='Prefix for invoice numbers (e.g., INVRT)')
+    invoice_starting_number = models.IntegerField(default=201, help_text='Starting number for invoices (used when no invoices exist)')
     quote_prefix = models.CharField(max_length=10, default='QT')
     default_tax_rate = models.DecimalField(max_digits=5, decimal_places=2, default=18)
     default_quote_validity_days = models.IntegerField(default=30, help_text='Default number of days a quote is valid')
