@@ -777,89 +777,96 @@ def quote_create(request):
 
 @login_required
 def quote_update(request, pk):
-    quote = get_object_or_404(Quote.objects.prefetch_related('items'), pk=pk)
-    clients = Client.objects.filter(is_active=True)
-    projects = Project.objects.select_related('client').all()
+    import traceback
+    import sys
+    try:
+        quote = get_object_or_404(Quote.objects.prefetch_related('items'), pk=pk)
+        clients = Client.objects.filter(is_active=True)
+        projects = Project.objects.select_related('client').all()
 
-    if request.method == 'POST':
-        from decimal import Decimal, InvalidOperation
+        if request.method == 'POST':
+            from decimal import Decimal, InvalidOperation
 
-        quote.client_id = request.POST.get('client')
-        quote.project_id = request.POST.get('project') or None
-        quote.title = request.POST.get('title')
-        quote.description = request.POST.get('description', '')
-        quote.issue_date = request.POST.get('issue_date')
-        quote.valid_until = request.POST.get('valid_until') or None
-        quote.status = request.POST.get('status', 'draft')
+            quote.client_id = request.POST.get('client')
+            quote.project_id = request.POST.get('project') or None
+            quote.title = request.POST.get('title')
+            quote.description = request.POST.get('description', '')
+            quote.issue_date = request.POST.get('issue_date')
+            quote.valid_until = request.POST.get('valid_until') or None
+            quote.status = request.POST.get('status', 'draft')
 
-        # Safe decimal conversion - default to 0 if empty
-        try:
-            discount_val = request.POST.get('discount', '0')
-            quote.discount = Decimal(discount_val) if discount_val else Decimal('0')
-        except (InvalidOperation, ValueError):
-            quote.discount = Decimal('0')
+            # Safe decimal conversion - default to 0 if empty
+            try:
+                discount_val = request.POST.get('discount', '0')
+                quote.discount = Decimal(discount_val) if discount_val else Decimal('0')
+            except (InvalidOperation, ValueError):
+                quote.discount = Decimal('0')
 
-        try:
-            tax_rate_val = request.POST.get('tax_rate', '0')
-            quote.tax_rate = Decimal(tax_rate_val) if tax_rate_val else Decimal('0')
-        except (InvalidOperation, ValueError):
-            quote.tax_rate = Decimal('0')
+            try:
+                tax_rate_val = request.POST.get('tax_rate', '0')
+                quote.tax_rate = Decimal(tax_rate_val) if tax_rate_val else Decimal('0')
+            except (InvalidOperation, ValueError):
+                quote.tax_rate = Decimal('0')
 
-        quote.notes = request.POST.get('notes', '')
-        quote.terms = request.POST.get('terms', '')
+            quote.notes = request.POST.get('notes', '')
+            quote.terms = request.POST.get('terms', '')
 
-        # Timeline & Deliverables
-        quote.duration = request.POST.get('duration', '')
-        start_date_val = request.POST.get('start_date', '')
-        quote.start_date = start_date_val if start_date_val else None
-        quote.deliverables = request.POST.get('deliverables', '')
-        quote.payment_terms = request.POST.get('payment_terms', '50-50')
+            # Timeline & Deliverables
+            quote.duration = request.POST.get('duration', '')
+            start_date_val = request.POST.get('start_date', '')
+            quote.start_date = start_date_val if start_date_val else None
+            quote.deliverables = request.POST.get('deliverables', '')
+            quote.payment_terms = request.POST.get('payment_terms', '50-50')
 
-        quote.save()
+            quote.save()
 
-        # Delete existing items and recreate
-        quote.items.all().delete()
+            # Delete existing items and recreate
+            quote.items.all().delete()
 
-        # Process line items
-        item_count = int(request.POST.get('item_count', 0))
-        for i in range(1, item_count + 10):  # Check extra indices for dynamically added items
-            description = request.POST.get(f'item_description_{i}')
-            if description:
-                quantity = Decimal(request.POST.get(f'item_quantity_{i}', 1) or 1)
-                unit_price = Decimal(request.POST.get(f'item_price_{i}', 0) or 0)
-                QuoteItem.objects.create(
-                    quote=quote,
-                    description=description,
-                    quantity=quantity,
-                    unit_price=unit_price,
-                    amount=quantity * unit_price
-                )
+            # Process line items
+            item_count = int(request.POST.get('item_count', 0))
+            for i in range(1, item_count + 10):  # Check extra indices for dynamically added items
+                description = request.POST.get(f'item_description_{i}')
+                if description:
+                    quantity = Decimal(request.POST.get(f'item_quantity_{i}', 1) or 1)
+                    unit_price = Decimal(request.POST.get(f'item_price_{i}', 0) or 0)
+                    QuoteItem.objects.create(
+                        quote=quote,
+                        description=description,
+                        quantity=quantity,
+                        unit_price=unit_price,
+                        amount=quantity * unit_price
+                    )
 
-        # Recalculate totals
-        quote.calculate_totals()
+            # Recalculate totals
+            quote.calculate_totals()
 
-        messages.success(request, f'Quote "{quote.quote_number}" updated successfully.')
-        return redirect('quote_detail', pk=quote.pk)
+            messages.success(request, f'Quote "{quote.quote_number}" updated successfully.')
+            return redirect('quote_detail', pk=quote.pk)
 
-    # Get company settings for defaults
-    company = CompanySettings.get_settings()
+        # Get company settings for defaults
+        company = CompanySettings.get_settings()
 
-    # Default dates using settings
-    from datetime import timedelta
-    today = timezone.now().date()
-    validity_days = company.default_quote_validity_days or 30
-    valid_until_default = today + timedelta(days=validity_days)
+        # Default dates using settings
+        from datetime import timedelta
+        today = timezone.now().date()
+        validity_days = company.default_quote_validity_days or 30
+        valid_until_default = today + timedelta(days=validity_days)
 
-    return render(request, 'quotes/form.html', {
-        'quote': quote,
-        'clients': clients,
-        'projects': projects,
-        'form_title': 'Edit Quote',
-        'status_choices': Quote.STATUS_CHOICES,
-        'today': today.strftime('%Y-%m-%d'),
-        'valid_until_default': valid_until_default.strftime('%Y-%m-%d'),
-        'company': company,
-    })
+        return render(request, 'quotes/form.html', {
+            'quote': quote,
+            'clients': clients,
+            'projects': projects,
+            'form_title': 'Edit Quote',
+            'status_choices': Quote.STATUS_CHOICES,
+            'today': today.strftime('%Y-%m-%d'),
+            'valid_until_default': valid_until_default.strftime('%Y-%m-%d'),
+            'company': company,
+        })
+    except Exception as e:
+        print(f"ERROR in quote_update: {e}", file=sys.stderr)
+        print(traceback.format_exc(), file=sys.stderr)
+        raise
 
 
 @login_required
@@ -1620,6 +1627,15 @@ def settings_view(request):
         company.invoice_terms = request.POST.get('invoice_terms', '')
         company.quote_terms = request.POST.get('quote_terms', '')
         company.default_payment_terms = request.POST.get('default_payment_terms', '50-50')
+        company.invoice_prefix = request.POST.get('invoice_prefix', 'INVRT')
+        company.quote_prefix = request.POST.get('quote_prefix', 'QT')
+
+        # Invoice starting number
+        try:
+            starting_num = request.POST.get('invoice_starting_number', '201')
+            company.invoice_starting_number = int(starting_num) if starting_num else 201
+        except (ValueError, TypeError):
+            company.invoice_starting_number = 201
 
         if request.FILES.get('logo'):
             company.logo = request.FILES.get('logo')

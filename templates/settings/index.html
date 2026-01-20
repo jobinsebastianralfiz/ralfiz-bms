@@ -318,7 +318,15 @@
               <div class="col-6 col-sm-12" style="padding: 0.5rem;">
                 <div class="form-group">
                   <label class="form-label">Invoice Prefix</label>
-                  <input type="text" class="form-control" name="invoice_prefix" value="{{ company.invoice_prefix|default:'INV' }}">
+                  <input type="text" class="form-control" name="invoice_prefix" value="{{ company.invoice_prefix|default:'INVRT' }}">
+                  <div class="form-text">Prefix for invoice numbers (e.g., INVRT)</div>
+                </div>
+              </div>
+              <div class="col-6 col-sm-12" style="padding: 0.5rem;">
+                <div class="form-group">
+                  <label class="form-label">Invoice Starting Number</label>
+                  <input type="number" class="form-control" name="invoice_starting_number" value="{{ company.invoice_starting_number|default:'201' }}" min="1">
+                  <div class="form-text">Starting number for new invoices (used when no invoices exist)</div>
                 </div>
               </div>
               <div class="col-6 col-sm-12" style="padding: 0.5rem;">
