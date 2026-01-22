@@ -3504,3 +3504,167 @@ def get_client_ip(request):
     if x_forwarded_for:
         return x_forwarded_for.split(',')[0].strip()
     return request.META.get('REMOTE_ADDR')
+
+
+# ============== License Management Views ==============
+
+from licensing.models import License, LicenseKey, LicenseActivation
+
+@login_required
+def license_list(request):
+    """List all licenses"""
+    licenses = License.objects.select_related('key').order_by('-created_at')
+    
+    # Filters
+    status = request.GET.get('status', '')
+    search = request.GET.get('search', '')
+    
+    if status:
+        licenses = licenses.filter(status=status)
+    if search:
+        licenses = licenses.filter(
+            Q(license_code__icontains=search) |
+            Q(customer_name__icontains=search) |
+            Q(customer_email__icontains=search)
+        )
+    
+    context = {
+        'licenses': licenses,
+        'status': status,
+        'search': search,
+        'total_count': License.objects.count(),
+        'active_count': License.objects.filter(status='active').count(),
+        'expired_count': License.objects.filter(status='expired').count(),
+    }
+    return render(request, 'licenses/list.html', context)
+
+
+@login_required
+def license_create(request):
+    """Create a new license"""
+    if request.method == 'POST':
+        customer_name = request.POST.get('customer_name')
+        customer_email = request.POST.get('customer_email', '')
+        expires_at = request.POST.get('expires_at')
+        max_activations = int(request.POST.get('max_activations', 1))
+        features = request.POST.get('features', '')
+        notes = request.POST.get('notes', '')
+        
+        # Get active key
+        key = LicenseKey.objects.filter(is_active=True).first()
+        if not key:
+            messages.error(request, 'No active license key found. Please generate keys first.')
+            return redirect('license_list')
+        
+        from datetime import datetime
+        expires_at_date = datetime.strptime(expires_at, '%Y-%m-%d').date() if expires_at else None
+        
+        # Parse features
+        features_list = [f.strip() for f in features.split(',') if f.strip()] if features else []
+        
+        license = License.objects.create(
+            key=key,
+            customer_name=customer_name,
+            customer_email=customer_email,
+            expires_at=expires_at_date,
+            max_activations=max_activations,
+            features=features_list,
+            notes=notes,
+        )
+        
+        messages.success(request, f'License created: {license.license_code}')
+        return redirect('license_detail', pk=license.pk)
+    
+    from datetime import datetime, timedelta
+    default_expiry = datetime.now() + timedelta(days=365)
+    
+    context = {
+        'default_expiry': default_expiry.strftime('%Y-%m-%d'),
+    }
+    return render(request, 'licenses/form.html', context)
+
+
+@login_required
+def license_detail(request, pk):
+    """View license details"""
+    license = get_object_or_404(License, pk=pk)
+    activations = license.activations.order_by('-activated_at')
+    
+    context = {
+        'license': license,
+        'activations': activations,
+    }
+    return render(request, 'licenses/detail.html', context)
+
+
+@login_required
+def license_revoke(request, pk):
+    """Revoke a license"""
+    license = get_object_or_404(License, pk=pk)
+    
+    if request.method == 'POST':
+        license.status = 'revoked'
+        license.save()
+        
+        # Deactivate all activations
+        license.activations.update(is_active=False)
+        
+        messages.success(request, f'License {license.license_code} has been revoked.')
+        return redirect('license_list')
+    
+    return render(request, 'licenses/revoke.html', {'license': license})
+
+
+@login_required
+def license_generate_keys(request):
+    """Generate new RSA key pair"""
+    if request.method == 'POST':
+        from cryptography.hazmat.primitives import serialization
+        from cryptography.hazmat.primitives.asymmetric import rsa
+        from cryptography.hazmat.backends import default_backend
+        
+        # Generate key pair
+        private_key = rsa.generate_private_key(
+            public_exponent=65537,
+            key_size=4096,
+            backend=default_backend()
+        )
+        
+        # Serialize keys
+        private_pem = private_key.private_bytes(
+            encoding=serialization.Encoding.PEM,
+            format=serialization.PrivateFormat.TraditionalOpenSSL,
+            encryption_algorithm=serialization.NoEncryption()
+        ).decode('utf-8')
+        
+        public_pem = private_key.public_key().public_bytes(
+            encoding=serialization.Encoding.PEM,
+            format=serialization.PublicFormat.SubjectPublicKeyInfo
+        ).decode('utf-8')
+        
+        # Deactivate existing keys
+        LicenseKey.objects.update(is_active=False)
+        
+        # Create new key
+        key = LicenseKey.objects.create(
+            name='RetailEase Pro',
+            private_key=private_pem,
+            public_key=public_pem,
+            is_active=True,
+        )
+        
+        messages.success(request, 'New RSA key pair generated successfully!')
+        return redirect('license_keys')
+    
+    return redirect('license_keys')
+
+
+@login_required
+def license_keys(request):
+    """View and manage license keys"""
+    keys = LicenseKey.objects.order_by('-created_at')
+    
+    context = {
+        'keys': keys,
+    }
+    return render(request, 'licenses/keys.html', context)

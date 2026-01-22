@@ -1,0 +1,194 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Licenses - Ralfiz BMS{% endblock %}
+
+{% block breadcrumb %}
+<a href="{% url 'dashboard' %}" class="breadcrumb-item">Dashboard</a>
+<span class="breadcrumb-separator">/</span>
+<span class="breadcrumb-item active">Licenses</span>
+{% endblock %}
+
+{% block content %}
+<!-- Page Header -->
+<div class="page-header">
+  <div>
+    <h1 class="page-title">Software Licenses</h1>
+    <p class="page-subtitle mb-0">Manage RetailEase Pro license keys</p>
+  </div>
+  <div class="page-actions">
+    <a href="{% url 'license_keys' %}" class="btn btn-outline-secondary">
+      <i class="fas fa-key"></i>
+      Manage Keys
+    </a>
+    <a href="{% url 'license_create' %}" class="btn btn-primary">
+      <i class="fas fa-plus"></i>
+      Create License
+    </a>
+  </div>
+</div>
+
+<!-- Stats Cards -->
+<div class="row mb-4">
+  <div class="col-4 col-md-6 col-sm-12" style="padding: 0.5rem;">
+    <div class="card">
+      <div class="card-body">
+        <div class="d-flex align-items-center gap-3">
+          <div class="stats-icon bg-primary-light">
+            <i class="fas fa-certificate text-primary"></i>
+          </div>
+          <div>
+            <div class="text-sm text-muted">Total Licenses</div>
+            <div class="stats-value">{{ total_count }}</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="col-4 col-md-6 col-sm-12" style="padding: 0.5rem;">
+    <div class="card">
+      <div class="card-body">
+        <div class="d-flex align-items-center gap-3">
+          <div class="stats-icon bg-success-light">
+            <i class="fas fa-check-circle text-success"></i>
+          </div>
+          <div>
+            <div class="text-sm text-muted">Active</div>
+            <div class="stats-value">{{ active_count }}</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="col-4 col-md-6 col-sm-12" style="padding: 0.5rem;">
+    <div class="card">
+      <div class="card-body">
+        <div class="d-flex align-items-center gap-3">
+          <div class="stats-icon bg-warning-light">
+            <i class="fas fa-clock text-warning"></i>
+          </div>
+          <div>
+            <div class="text-sm text-muted">Expired</div>
+            <div class="stats-value">{{ expired_count }}</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Filters -->
+<div class="card mb-4">
+  <div class="card-body">
+    <form method="get" class="row align-items-end">
+      <div class="col-5 col-md-6 col-sm-12" style="padding: 0.5rem;">
+        <label class="form-label">Search</label>
+        <div class="navbar-search" style="width: 100%;">
+          <i class="fas fa-search"></i>
+          <input type="text" class="form-control" name="search" placeholder="Search by license code, customer..." value="{{ search }}" style="padding-left: 2.5rem; width: 100%;">
+        </div>
+      </div>
+      <div class="col-3 col-md-6 col-sm-12" style="padding: 0.5rem;">
+        <label class="form-label">Status</label>
+        <select class="form-control" name="status">
+          <option value="">All Status</option>
+          <option value="active" {% if status == 'active' %}selected{% endif %}>Active</option>
+          <option value="expired" {% if status == 'expired' %}selected{% endif %}>Expired</option>
+          <option value="revoked" {% if status == 'revoked' %}selected{% endif %}>Revoked</option>
+        </select>
+      </div>
+      <div class="col-2 col-md-6 col-sm-12" style="padding: 0.5rem;">
+        <button type="submit" class="btn btn-outline-secondary w-100">
+          <i class="fas fa-filter"></i>
+          Filter
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Licenses Table -->
+<div class="card">
+  <div class="table-wrapper">
+    <table class="table">
+      <thead>
+        <tr>
+          <th>License Code</th>
+          <th>Customer</th>
+          <th>Expires</th>
+          <th>Activations</th>
+          <th>Status</th>
+          <th style="width: 120px;">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for license in licenses %}
+        <tr>
+          <td>
+            <div class="d-flex align-items-center gap-3">
+              <div class="avatar bg-primary-light">
+                <i class="fas fa-certificate text-primary"></i>
+              </div>
+              <div>
+                <code class="fw-medium" style="font-size: 12px;">{{ license.license_code }}</code>
+                <div class="text-sm text-muted">Created {{ license.created_at|date:"M d, Y" }}</div>
+              </div>
+            </div>
+          </td>
+          <td>
+            <div class="text-sm">
+              <div class="fw-medium">{{ license.customer_name }}</div>
+              {% if license.customer_email %}<div class="text-muted">{{ license.customer_email }}</div>{% endif %}
+            </div>
+          </td>
+          <td>
+            {% if license.expires_at %}
+              {% if license.is_expired %}
+                <span class="text-danger">{{ license.expires_at|date:"M d, Y" }}</span>
+              {% else %}
+                <span>{{ license.expires_at|date:"M d, Y" }}</span>
+                <div class="text-sm text-muted">{{ license.days_until_expiry }} days left</div>
+              {% endif %}
+            {% else %}
+              <span class="text-muted">Never</span>
+            {% endif %}
+          </td>
+          <td>
+            <span class="fw-medium">{{ license.activation_count }}</span> / {{ license.max_activations }}
+          </td>
+          <td>
+            {% if license.status == 'active' %}
+            <span class="badge badge-success">Active</span>
+            {% elif license.status == 'expired' %}
+            <span class="badge badge-warning">Expired</span>
+            {% else %}
+            <span class="badge badge-danger">Revoked</span>
+            {% endif %}
+          </td>
+          <td>
+            <div class="table-actions">
+              <a href="{% url 'license_detail' license.pk %}" class="btn btn-sm btn-ghost btn-icon" title="View">
+                <i class="fas fa-eye"></i>
+              </a>
+              {% if license.status == 'active' %}
+              <a href="{% url 'license_revoke' license.pk %}" class="btn btn-sm btn-ghost btn-icon text-danger" title="Revoke">
+                <i class="fas fa-ban"></i>
+              </a>
+              {% endif %}
+            </div>
+          </td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="6" class="text-center py-4 text-muted">
+            <i class="fas fa-certificate mb-2" style="font-size: 2rem;"></i>
+            <p class="mb-0">No licenses found</p>
+            <a href="{% url 'license_create' %}" class="btn btn-primary btn-sm mt-3">Create First License</a>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

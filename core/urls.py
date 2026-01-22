@@ -123,4 +123,12 @@ urlpatterns = [
     path('my-dashboard/', views.team_dashboard, name='team_dashboard'),
     path('my-tasks/', views.my_tasks, name='my_tasks'),
     path('my-time/', views.my_time, name='my_time'),
+
+    # License Management
+    path('licenses/', views.license_list, name='license_list'),
+    path('licenses/create/', views.license_create, name='license_create'),
+    path('licenses/<uuid:pk>/', views.license_detail, name='license_detail'),
+    path('licenses/<uuid:pk>/revoke/', views.license_revoke, name='license_revoke'),
+    path('licenses/keys/', views.license_keys, name='license_keys'),
+    path('licenses/keys/generate/', views.license_generate_keys, name='license_generate_keys'),
 ]

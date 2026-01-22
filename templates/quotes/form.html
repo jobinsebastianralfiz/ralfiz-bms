@@ -236,13 +236,11 @@ e.g.:
           </div>
           <div class="form-group">
             <label class="form-label" for="terms">Terms & Conditions</label>
-            {% with default_terms='1. Quote valid for 30 days from date of issue.
+            <textarea class="form-control" id="terms" name="terms" rows="4">{% if quote.terms %}{{ quote.terms }}{% elif company.quote_terms %}{{ company.quote_terms }}{% else %}1. Quote valid for 30 days from date of issue.
 2. Any changes to scope may result in revised pricing.
 3. Payment terms as agreed above.
 4. Development timeline begins after advance payment.
-5. Client to provide necessary assets and feedback within agreed timelines.' %}
-            <textarea class="form-control" id="terms" name="terms" rows="4">{% if quote.terms %}{{ quote.terms }}{% elif company.quote_terms %}{{ company.quote_terms }}{% else %}{{ default_terms }}{% endif %}</textarea>
-            {% endwith %}
+5. Client to provide necessary assets and feedback within agreed timelines.{% endif %}</textarea>
           </div>
           <div class="form-group mb-0">
             <label class="form-label" for="notes">Internal Notes</label>

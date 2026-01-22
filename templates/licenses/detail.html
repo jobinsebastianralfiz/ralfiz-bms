@@ -1,0 +1,232 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}License {{ license.license_code }} - Ralfiz BMS{% endblock %}
+
+{% block extra_css %}
+<style>
+  .license-code {
+    font-family: 'Courier New', monospace;
+    font-size: 18px;
+    letter-spacing: 2px;
+    background: var(--bg-tertiary);
+    padding: 16px 24px;
+    border-radius: 8px;
+    word-break: break-all;
+  }
+  .copy-btn {
+    cursor: pointer;
+    padding: 8px 16px;
+    border-radius: 6px;
+    transition: all 0.2s;
+  }
+  .copy-btn:hover {
+    background: var(--hover-bg);
+  }
+</style>
+{% endblock %}
+
+{% block breadcrumb %}
+<a href="{% url 'dashboard' %}" class="breadcrumb-item">Dashboard</a>
+<span class="breadcrumb-separator">/</span>
+<a href="{% url 'license_list' %}" class="breadcrumb-item">Licenses</a>
+<span class="breadcrumb-separator">/</span>
+<span class="breadcrumb-item active">{{ license.license_code|truncatechars:20 }}</span>
+{% endblock %}
+
+{% block content %}
+<!-- Page Header -->
+<div class="page-header">
+  <div>
+    <h1 class="page-title">License Details</h1>
+    <p class="page-subtitle mb-0">{{ license.customer_name }}</p>
+  </div>
+  <div class="page-actions">
+    {% if license.status == 'active' %}
+    <a href="{% url 'license_revoke' license.pk %}" class="btn btn-outline-danger">
+      <i class="fas fa-ban"></i>
+      Revoke License
+    </a>
+    {% endif %}
+  </div>
+</div>
+
+<div class="row">
+  <div class="col-8 col-md-12" style="padding: 0.75rem;">
+    <!-- License Code Card -->
+    <div class="card mb-4">
+      <div class="card-header">
+        <h3 class="card-title">
+          <i class="fas fa-key me-2 text-primary"></i>
+          License Key
+        </h3>
+        <span class="copy-btn" onclick="copyLicenseCode()" title="Copy to clipboard">
+          <i class="fas fa-copy"></i> Copy
+        </span>
+      </div>
+      <div class="card-body">
+        <div class="license-code text-center" id="licenseCode">{{ license.license_code }}</div>
+        <p class="text-center text-muted mt-3 mb-0">
+          <small>Share this license key with the customer. It can only be activated on {{ license.max_activations }} device(s).</small>
+        </p>
+      </div>
+    </div>
+
+    <!-- Activations -->
+    <div class="card">
+      <div class="card-header">
+        <h3 class="card-title">
+          <i class="fas fa-desktop me-2 text-primary"></i>
+          Activations ({{ activations.count }}/{{ license.max_activations }})
+        </h3>
+      </div>
+      <div class="table-wrapper">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>Device</th>
+              <th>Machine ID</th>
+              <th>Activated</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for activation in activations %}
+            <tr>
+              <td>
+                <div class="d-flex align-items-center gap-2">
+                  <i class="fas fa-laptop text-muted"></i>
+                  <span>{{ activation.device_name|default:"Unknown Device" }}</span>
+                </div>
+              </td>
+              <td>
+                <code style="font-size: 11px;">{{ activation.machine_id|truncatechars:24 }}</code>
+              </td>
+              <td>{{ activation.activated_at|date:"M d, Y H:i" }}</td>
+              <td>
+                {% if activation.is_active %}
+                <span class="badge badge-success">Active</span>
+                {% else %}
+                <span class="badge badge-secondary">Deactivated</span>
+                {% endif %}
+              </td>
+            </tr>
+            {% empty %}
+            <tr>
+              <td colspan="4" class="text-center py-4 text-muted">
+                <i class="fas fa-desktop mb-2" style="font-size: 1.5rem;"></i>
+                <p class="mb-0">No activations yet</p>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-4 col-md-12" style="padding: 0.75rem;">
+    <!-- Status Card -->
+    <div class="card mb-4">
+      <div class="card-body text-center">
+        {% if license.status == 'active' %}
+        <div class="stats-icon bg-success-light mx-auto mb-3" style="width: 60px; height: 60px; border-radius: 50%;">
+          <i class="fas fa-check-circle text-success" style="font-size: 28px;"></i>
+        </div>
+        <h4 class="mb-1">Active</h4>
+        <p class="text-muted mb-0">License is valid</p>
+        {% elif license.status == 'expired' %}
+        <div class="stats-icon bg-warning-light mx-auto mb-3" style="width: 60px; height: 60px; border-radius: 50%;">
+          <i class="fas fa-clock text-warning" style="font-size: 28px;"></i>
+        </div>
+        <h4 class="mb-1">Expired</h4>
+        <p class="text-muted mb-0">License has expired</p>
+        {% else %}
+        <div class="stats-icon bg-danger-light mx-auto mb-3" style="width: 60px; height: 60px; border-radius: 50%;">
+          <i class="fas fa-ban text-danger" style="font-size: 28px;"></i>
+        </div>
+        <h4 class="mb-1">Revoked</h4>
+        <p class="text-muted mb-0">License has been revoked</p>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Details Card -->
+    <div class="card mb-4">
+      <div class="card-header">
+        <h3 class="card-title">Details</h3>
+      </div>
+      <div class="card-body">
+        <div class="detail-item mb-3">
+          <div class="text-sm text-muted">Customer</div>
+          <div class="fw-medium">{{ license.customer_name }}</div>
+        </div>
+        {% if license.customer_email %}
+        <div class="detail-item mb-3">
+          <div class="text-sm text-muted">Email</div>
+          <div>{{ license.customer_email }}</div>
+        </div>
+        {% endif %}
+        <div class="detail-item mb-3">
+          <div class="text-sm text-muted">Created</div>
+          <div>{{ license.created_at|date:"M d, Y H:i" }}</div>
+        </div>
+        <div class="detail-item mb-3">
+          <div class="text-sm text-muted">Expires</div>
+          <div>
+            {% if license.expires_at %}
+              {{ license.expires_at|date:"M d, Y" }}
+              {% if not license.is_expired %}
+              <span class="text-muted">({{ license.days_until_expiry }} days left)</span>
+              {% endif %}
+            {% else %}
+              Never
+            {% endif %}
+          </div>
+        </div>
+        {% if license.features %}
+        <div class="detail-item mb-0">
+          <div class="text-sm text-muted mb-2">Features</div>
+          <div>
+            {% for feature in license.features %}
+            <span class="badge badge-primary me-1">{{ feature }}</span>
+            {% endfor %}
+          </div>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+
+    {% if license.notes %}
+    <!-- Notes Card -->
+    <div class="card">
+      <div class="card-header">
+        <h3 class="card-title">Notes</h3>
+      </div>
+      <div class="card-body">
+        <p class="mb-0" style="white-space: pre-wrap;">{{ license.notes }}</p>
+      </div>
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function copyLicenseCode() {
+  const code = document.getElementById('licenseCode').textContent;
+  navigator.clipboard.writeText(code).then(() => {
+    // Show feedback
+    const btn = document.querySelector('.copy-btn');
+    const originalText = btn.innerHTML;
+    btn.innerHTML = '<i class="fas fa-check"></i> Copied!';
+    btn.style.color = 'var(--success)';
+    setTimeout(() => {
+      btn.innerHTML = originalText;
+      btn.style.color = '';
+    }, 2000);
+  });
+}
+</script>
+{% endblock %}

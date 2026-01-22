@@ -121,6 +121,10 @@
         <i class="fas fa-history"></i>
         <span>Activity Log</span>
       </a>
+      <a href="{% url 'license_list' %}" class="nav-item {% if 'license' in request.resolver_match.url_name %}active{% endif %}">
+        <i class="fas fa-certificate"></i>
+        <span>Licenses</span>
+      </a>
       <a href="{% url 'settings' %}" class="nav-item {% if 'setting' in request.resolver_match.url_name %}active{% endif %}">
         <i class="fas fa-cog"></i>
         <span>Settings</span>

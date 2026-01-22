@@ -1,0 +1,130 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Create License - Ralfiz BMS{% endblock %}
+
+{% block breadcrumb %}
+<a href="{% url 'dashboard' %}" class="breadcrumb-item">Dashboard</a>
+<span class="breadcrumb-separator">/</span>
+<a href="{% url 'license_list' %}" class="breadcrumb-item">Licenses</a>
+<span class="breadcrumb-separator">/</span>
+<span class="breadcrumb-item active">Create</span>
+{% endblock %}
+
+{% block content %}
+<!-- Page Header -->
+<div class="page-header">
+  <div>
+    <h1 class="page-title">Create License</h1>
+    <p class="page-subtitle mb-0">Generate a new software license key</p>
+  </div>
+</div>
+
+<form method="post">
+  {% csrf_token %}
+
+  <div class="row">
+    <div class="col-8 col-md-12" style="padding: 0.75rem;">
+      <!-- Customer Information -->
+      <div class="card mb-4">
+        <div class="card-header">
+          <h3 class="card-title">
+            <i class="fas fa-user me-2 text-primary"></i>
+            Customer Information
+          </h3>
+        </div>
+        <div class="card-body">
+          <div class="row">
+            <div class="col-6 col-sm-12" style="padding: 0.5rem;">
+              <div class="form-group">
+                <label class="form-label">Customer Name <span class="text-danger">*</span></label>
+                <input type="text" class="form-control" name="customer_name" required placeholder="Enter customer or business name">
+              </div>
+            </div>
+            <div class="col-6 col-sm-12" style="padding: 0.5rem;">
+              <div class="form-group">
+                <label class="form-label">Customer Email</label>
+                <input type="email" class="form-control" name="customer_email" placeholder="customer@example.com">
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- License Settings -->
+      <div class="card mb-4">
+        <div class="card-header">
+          <h3 class="card-title">
+            <i class="fas fa-cog me-2 text-primary"></i>
+            License Settings
+          </h3>
+        </div>
+        <div class="card-body">
+          <div class="row">
+            <div class="col-6 col-sm-12" style="padding: 0.5rem;">
+              <div class="form-group">
+                <label class="form-label">Expiry Date <span class="text-danger">*</span></label>
+                <input type="date" class="form-control" name="expires_at" value="{{ default_expiry }}" required>
+                <div class="form-text">License will expire at the end of this date</div>
+              </div>
+            </div>
+            <div class="col-6 col-sm-12" style="padding: 0.5rem;">
+              <div class="form-group">
+                <label class="form-label">Max Activations</label>
+                <input type="number" class="form-control" name="max_activations" value="1" min="1" max="100">
+                <div class="form-text">Number of devices that can activate this license</div>
+              </div>
+            </div>
+            <div class="col-12" style="padding: 0.5rem;">
+              <div class="form-group">
+                <label class="form-label">Features (comma separated)</label>
+                <input type="text" class="form-control" name="features" placeholder="pos, inventory, reports, backup">
+                <div class="form-text">Optional: Specify enabled features for this license</div>
+              </div>
+            </div>
+            <div class="col-12" style="padding: 0.5rem;">
+              <div class="form-group mb-0">
+                <label class="form-label">Notes</label>
+                <textarea class="form-control" name="notes" rows="3" placeholder="Internal notes about this license..."></textarea>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-4 col-md-12" style="padding: 0.75rem;">
+      <!-- Help Card -->
+      <div class="card mb-4">
+        <div class="card-header">
+          <h3 class="card-title">
+            <i class="fas fa-info-circle me-2 text-primary"></i>
+            About Licenses
+          </h3>
+        </div>
+        <div class="card-body">
+          <ul class="list-unstyled mb-0" style="font-size: 13px; line-height: 1.8;">
+            <li><i class="fas fa-check text-success me-2"></i>License key is auto-generated</li>
+            <li><i class="fas fa-check text-success me-2"></i>Cryptographically signed with RSA</li>
+            <li><i class="fas fa-check text-success me-2"></i>Works offline after activation</li>
+            <li><i class="fas fa-check text-success me-2"></i>Tied to machine hardware ID</li>
+            <li><i class="fas fa-check text-success me-2"></i>Can be revoked anytime</li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- Actions -->
+      <div class="card">
+        <div class="card-body">
+          <button type="submit" class="btn btn-primary w-100 mb-3">
+            <i class="fas fa-certificate me-2"></i>Generate License
+          </button>
+          <a href="{% url 'license_list' %}" class="btn btn-outline-secondary w-100">
+            Cancel
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+</form>
+{% endblock %}
