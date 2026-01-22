@@ -13,6 +13,7 @@ from .models import (
     Expense, TeamMember, Task, TimeEntry, ActivityLog, Document
 )
 from django.contrib.contenttypes.models import ContentType
+from licensing.models import License, LicenseKey, LicenseActivation
 
 
 # ============== Authentication Views ==============
@@ -3507,8 +3508,6 @@ def get_client_ip(request):
 
 
 # ============== License Management Views ==============
-
-from licensing.models import License, LicenseKey, LicenseActivation
 
 @login_required
 def license_list(request):
