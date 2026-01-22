@@ -142,19 +142,19 @@
             </div>
           </td>
           <td>
-            {% if license.expires_at %}
-              {% if license.is_expired %}
-                <span class="text-danger">{{ license.expires_at|date:"M d, Y" }}</span>
+            {% if license.valid_until %}
+              {% if not license.is_valid %}
+                <span class="text-danger">{{ license.valid_until|date:"M d, Y" }}</span>
               {% else %}
-                <span>{{ license.expires_at|date:"M d, Y" }}</span>
-                <div class="text-sm text-muted">{{ license.days_until_expiry }} days left</div>
+                <span>{{ license.valid_until|date:"M d, Y" }}</span>
+                <div class="text-sm text-muted">{{ license.days_remaining }} days left</div>
               {% endif %}
             {% else %}
               <span class="text-muted">Never</span>
             {% endif %}
           </td>
           <td>
-            <span class="fw-medium">{{ license.activation_count }}</span> / {{ license.max_activations }}
+            <span class="fw-medium">{{ license.current_activations }}</span> / {{ license.max_activations }}
           </td>
           <td>
             {% if license.status == 'active' %}

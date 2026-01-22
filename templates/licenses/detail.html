@@ -129,24 +129,24 @@
     <!-- Status Card -->
     <div class="card mb-4">
       <div class="card-body text-center">
-        {% if license.status == 'active' %}
+        {% if license.is_valid %}
         <div class="stats-icon bg-success-light mx-auto mb-3" style="width: 60px; height: 60px; border-radius: 50%;">
           <i class="fas fa-check-circle text-success" style="font-size: 28px;"></i>
         </div>
         <h4 class="mb-1">Active</h4>
         <p class="text-muted mb-0">License is valid</p>
-        {% elif license.status == 'expired' %}
-        <div class="stats-icon bg-warning-light mx-auto mb-3" style="width: 60px; height: 60px; border-radius: 50%;">
-          <i class="fas fa-clock text-warning" style="font-size: 28px;"></i>
-        </div>
-        <h4 class="mb-1">Expired</h4>
-        <p class="text-muted mb-0">License has expired</p>
-        {% else %}
+        {% elif license.status == 'revoked' %}
         <div class="stats-icon bg-danger-light mx-auto mb-3" style="width: 60px; height: 60px; border-radius: 50%;">
           <i class="fas fa-ban text-danger" style="font-size: 28px;"></i>
         </div>
         <h4 class="mb-1">Revoked</h4>
         <p class="text-muted mb-0">License has been revoked</p>
+        {% else %}
+        <div class="stats-icon bg-warning-light mx-auto mb-3" style="width: 60px; height: 60px; border-radius: 50%;">
+          <i class="fas fa-clock text-warning" style="font-size: 28px;"></i>
+        </div>
+        <h4 class="mb-1">Expired</h4>
+        <p class="text-muted mb-0">License has expired</p>
         {% endif %}
       </div>
     </div>
@@ -172,28 +172,24 @@
           <div>{{ license.created_at|date:"M d, Y H:i" }}</div>
         </div>
         <div class="detail-item mb-3">
-          <div class="text-sm text-muted">Expires</div>
+          <div class="text-sm text-muted">Valid Until</div>
           <div>
-            {% if license.expires_at %}
-              {{ license.expires_at|date:"M d, Y" }}
-              {% if not license.is_expired %}
-              <span class="text-muted">({{ license.days_until_expiry }} days left)</span>
+            {% if license.valid_until %}
+              {{ license.valid_until|date:"M d, Y" }}
+              {% if license.is_valid %}
+              <span class="text-muted">({{ license.days_remaining }} days left)</span>
               {% endif %}
             {% else %}
               Never
             {% endif %}
           </div>
         </div>
-        {% if license.features %}
         <div class="detail-item mb-0">
-          <div class="text-sm text-muted mb-2">Features</div>
+          <div class="text-sm text-muted">License Type</div>
           <div>
-            {% for feature in license.features %}
-            <span class="badge badge-primary me-1">{{ feature }}</span>
-            {% endfor %}
+            <span class="badge badge-primary">{{ license.get_license_type_display }}</span>
           </div>
         </div>
-        {% endif %}
       </div>
     </div>
 

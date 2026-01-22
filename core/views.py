@@ -3512,12 +3512,12 @@ def get_client_ip(request):
 @login_required
 def license_list(request):
     """List all licenses"""
-    licenses = License.objects.select_related('key').order_by('-created_at')
-    
+    licenses = License.objects.select_related('key_pair').order_by('-created_at')
+
     # Filters
     status = request.GET.get('status', '')
     search = request.GET.get('search', '')
-    
+
     if status:
         licenses = licenses.filter(status=status)
     if search:
@@ -3526,7 +3526,7 @@ def license_list(request):
             Q(customer_name__icontains=search) |
             Q(customer_email__icontains=search)
         )
-    
+
     context = {
         'licenses': licenses,
         'status': status,
@@ -3544,41 +3544,42 @@ def license_create(request):
     if request.method == 'POST':
         customer_name = request.POST.get('customer_name')
         customer_email = request.POST.get('customer_email', '')
-        expires_at = request.POST.get('expires_at')
+        customer_company = request.POST.get('customer_company', '')
+        valid_until = request.POST.get('valid_until')
+        license_type = request.POST.get('license_type', 'basic')
         max_activations = int(request.POST.get('max_activations', 1))
-        features = request.POST.get('features', '')
         notes = request.POST.get('notes', '')
-        
+
         # Get active key
-        key = LicenseKey.objects.filter(is_active=True).first()
-        if not key:
+        key_pair = LicenseKey.objects.filter(is_active=True).first()
+        if not key_pair:
             messages.error(request, 'No active license key found. Please generate keys first.')
             return redirect('license_list')
-        
+
         from datetime import datetime
-        expires_at_date = datetime.strptime(expires_at, '%Y-%m-%d').date() if expires_at else None
-        
-        # Parse features
-        features_list = [f.strip() for f in features.split(',') if f.strip()] if features else []
-        
+        from django.utils import timezone
+        valid_until_date = timezone.make_aware(datetime.strptime(valid_until, '%Y-%m-%d')) if valid_until else None
+
         license = License.objects.create(
-            key=key,
+            key_pair=key_pair,
             customer_name=customer_name,
-            customer_email=customer_email,
-            expires_at=expires_at_date,
+            customer_email=customer_email or f"{customer_name.lower().replace(' ', '.')}@example.com",
+            customer_company=customer_company,
+            license_type=license_type,
+            valid_until=valid_until_date,
             max_activations=max_activations,
-            features=features_list,
             notes=notes,
         )
-        
-        messages.success(request, f'License created: {license.license_code}')
+
+        messages.success(request, f'License created successfully!')
         return redirect('license_detail', pk=license.pk)
-    
+
     from datetime import datetime, timedelta
     default_expiry = datetime.now() + timedelta(days=365)
-    
+
     context = {
         'default_expiry': default_expiry.strftime('%Y-%m-%d'),
+        'license_types': License.LICENSE_TYPE_CHOICES,
     }
     return render(request, 'licenses/form.html', context)
 

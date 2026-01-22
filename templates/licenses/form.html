@@ -63,8 +63,18 @@
           <div class="row">
             <div class="col-6 col-sm-12" style="padding: 0.5rem;">
               <div class="form-group">
-                <label class="form-label">Expiry Date <span class="text-danger">*</span></label>
-                <input type="date" class="form-control" name="expires_at" value="{{ default_expiry }}" required>
+                <label class="form-label">License Type</label>
+                <select class="form-control" name="license_type">
+                  {% for value, label in license_types %}
+                  <option value="{{ value }}" {% if value == 'basic' %}selected{% endif %}>{{ label }}</option>
+                  {% endfor %}
+                </select>
+              </div>
+            </div>
+            <div class="col-6 col-sm-12" style="padding: 0.5rem;">
+              <div class="form-group">
+                <label class="form-label">Valid Until <span class="text-danger">*</span></label>
+                <input type="date" class="form-control" name="valid_until" value="{{ default_expiry }}" required>
                 <div class="form-text">License will expire at the end of this date</div>
               </div>
             </div>
@@ -75,11 +85,10 @@
                 <div class="form-text">Number of devices that can activate this license</div>
               </div>
             </div>
-            <div class="col-12" style="padding: 0.5rem;">
+            <div class="col-6 col-sm-12" style="padding: 0.5rem;">
               <div class="form-group">
-                <label class="form-label">Features (comma separated)</label>
-                <input type="text" class="form-control" name="features" placeholder="pos, inventory, reports, backup">
-                <div class="form-text">Optional: Specify enabled features for this license</div>
+                <label class="form-label">Company (Optional)</label>
+                <input type="text" class="form-control" name="customer_company" placeholder="Customer's company name">
               </div>
             </div>
             <div class="col-12" style="padding: 0.5rem;">
