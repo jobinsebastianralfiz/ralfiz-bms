@@ -8,7 +8,8 @@ from django.utils import timezone
 from django.core.files.base import ContentFile
 
 from licensing.models import License, LicenseActivation
-from .models import Business, Counter, Backup, SyncLog, APIToken, AppConfig
+from core.models import CompanySettings
+from .models import Business, Counter, Backup, SyncLog, APIToken
 
 
 def get_client_ip(request):
@@ -78,70 +79,65 @@ def get_app_config(request):
     platform = request.GET.get('platform', 'desktop')
     app_version = request.GET.get('app_version', '')
 
-    config = AppConfig.get_config()
+    # Get settings from CompanySettings (shared with your admin panel)
+    settings = CompanySettings.get_settings()
 
     # Check maintenance mode
-    if config.maintenance_mode:
+    if settings.retailease_maintenance_mode:
         return JsonResponse({
             'maintenance_mode': True,
-            'maintenance_message': config.maintenance_message,
+            'maintenance_message': settings.retailease_maintenance_message,
         })
 
     # Determine which Google Client ID to return based on platform
-    google_client_id = config.google_client_id  # Default (desktop)
-    if platform == 'ios' and config.google_client_id_ios:
-        google_client_id = config.google_client_id_ios
-    elif platform == 'android' and config.google_client_id_android:
-        google_client_id = config.google_client_id_android
+    google_client_id = settings.google_client_id  # Default (desktop)
+    if platform == 'ios' and settings.google_client_id_ios:
+        google_client_id = settings.google_client_id_ios
+    elif platform == 'android' and settings.google_client_id_android:
+        google_client_id = settings.google_client_id_android
 
     response_data = {
         'maintenance_mode': False,
 
         # Google OAuth
         'google': {
-            'client_id': google_client_id,
-            'reversed_client_id': config.google_reversed_client_id,
-            'enabled': config.google_drive_enabled and bool(google_client_id),
+            'client_id': google_client_id or '',
+            'reversed_client_id': settings.google_reversed_client_id or '',
+            'enabled': settings.retailease_google_drive_enabled and bool(google_client_id),
         },
 
         # Feature flags
         'features': {
-            'google_drive_backup': config.google_drive_enabled,
-            'server_backup': config.server_backup_enabled,
-            'local_backup': config.local_backup_enabled,
+            'google_drive_backup': settings.retailease_google_drive_enabled,
+            'server_backup': settings.retailease_server_backup_enabled,
+            'local_backup': settings.retailease_local_backup_enabled,
         },
 
         # App version info
         'app': {
-            'min_version': config.min_app_version,
-            'latest_version': config.latest_app_version,
-            'update_url': config.app_update_url,
-            'force_update': config.force_update,
+            'min_version': settings.retailease_min_version or '1.0.0',
+            'latest_version': settings.retailease_latest_version or '1.0.0',
+            'update_url': settings.retailease_update_url or '',
+            'force_update': settings.retailease_force_update,
         },
 
         # Support info
         'support': {
-            'email': config.support_email,
-            'phone': config.support_phone,
-            'whatsapp': config.support_whatsapp,
-        },
-
-        # Legal
-        'legal': {
-            'terms_url': config.terms_url,
-            'privacy_url': config.privacy_url,
+            'email': settings.retailease_support_email or 'support@ralfizdigital.in',
+            'phone': settings.retailease_support_phone or '',
+            'whatsapp': settings.retailease_support_whatsapp or '',
         },
 
         'server_time': timezone.now().isoformat(),
     }
 
     # Check if app needs update
-    if app_version and config.force_update:
-        from packaging import version
+    if app_version and settings.retailease_force_update:
         try:
-            if version.parse(app_version) < version.parse(config.min_app_version):
+            from packaging import version
+            if version.parse(app_version) < version.parse(settings.retailease_min_version):
                 response_data['update_required'] = True
-                response_data['update_message'] = f'Please update to version {config.min_app_version} or later.'
+                response_data['update_message'] = f'Please update to version {settings.retailease_min_version} or later.'
         except Exception:
             pass  # Ignore version parsing errors
 

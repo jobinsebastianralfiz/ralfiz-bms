@@ -117,6 +117,10 @@
             <i class="fas fa-bell"></i>
             <span>Notifications</span>
           </a>
+          <a class="settings-nav-item" onclick="switchSettingsTab('retailease')">
+            <i class="fas fa-mobile-alt"></i>
+            <span>RetailEase App</span>
+          </a>
         </nav>
       </div>
     </div>
@@ -441,6 +445,201 @@
                 <input type="checkbox" name="notify_quote_accepted" {% if company.notify_quote_accepted %}checked{% endif %}>
                 <span class="toggle-slider"></span>
               </label>
+            </div>
+          </div>
+          <div class="card-footer d-flex justify-content-end">
+            <button type="submit" class="btn btn-primary">
+              <i class="fas fa-save me-2"></i>Save Changes
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- RetailEase App Settings -->
+      <div class="settings-panel d-none" id="retailease-panel">
+        <!-- Google OAuth -->
+        <div class="card mb-4">
+          <div class="card-header">
+            <h3 class="card-title">
+              <i class="fab fa-google me-2 text-primary"></i>
+              Google Drive Backup
+            </h3>
+          </div>
+          <div class="card-body">
+            <div class="alert alert-info mb-4">
+              <i class="fas fa-info-circle me-2"></i>
+              These credentials allow RetailEase Pro to backup data to Google Drive. Get them from <a href="https://console.cloud.google.com" target="_blank">Google Cloud Console</a>.
+            </div>
+            <div class="row">
+              <div class="col-12" style="padding: 0.5rem;">
+                <div class="form-group">
+                  <label class="form-label">OAuth Client ID (Desktop)</label>
+                  <input type="text" class="form-control" name="google_client_id" value="{{ company.google_client_id|default:'' }}" placeholder="xxxxx.apps.googleusercontent.com">
+                  <div class="form-text">Used for macOS, Windows, and Linux apps</div>
+                </div>
+              </div>
+              <div class="col-6 col-sm-12" style="padding: 0.5rem;">
+                <div class="form-group">
+                  <label class="form-label">OAuth Client ID (iOS)</label>
+                  <input type="text" class="form-control" name="google_client_id_ios" value="{{ company.google_client_id_ios|default:'' }}" placeholder="Leave empty to use desktop ID">
+                </div>
+              </div>
+              <div class="col-6 col-sm-12" style="padding: 0.5rem;">
+                <div class="form-group">
+                  <label class="form-label">OAuth Client ID (Android)</label>
+                  <input type="text" class="form-control" name="google_client_id_android" value="{{ company.google_client_id_android|default:'' }}" placeholder="Leave empty to use desktop ID">
+                </div>
+              </div>
+              <div class="col-12" style="padding: 0.5rem;">
+                <div class="form-group mb-0">
+                  <label class="form-label">Reversed Client ID (iOS)</label>
+                  <input type="text" class="form-control" name="google_reversed_client_id" value="{{ company.google_reversed_client_id|default:'' }}" placeholder="com.googleusercontent.apps.xxxxx">
+                  <div class="form-text">For iOS URL scheme configuration</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Feature Flags -->
+        <div class="card mb-4">
+          <div class="card-header">
+            <h3 class="card-title">
+              <i class="fas fa-toggle-on me-2 text-primary"></i>
+              Backup Features
+            </h3>
+          </div>
+          <div class="card-body">
+            <div class="settings-item d-flex justify-content-between align-items-center py-3 border-bottom">
+              <div>
+                <div class="fw-medium">Google Drive Backup</div>
+                <div class="text-sm text-muted">Allow users to backup to Google Drive</div>
+              </div>
+              <label class="toggle-switch">
+                <input type="checkbox" name="retailease_google_drive_enabled" {% if company.retailease_google_drive_enabled %}checked{% endif %}>
+                <span class="toggle-slider"></span>
+              </label>
+            </div>
+            <div class="settings-item d-flex justify-content-between align-items-center py-3 border-bottom">
+              <div>
+                <div class="fw-medium">Server Backup</div>
+                <div class="text-sm text-muted">Allow users to backup to your server</div>
+              </div>
+              <label class="toggle-switch">
+                <input type="checkbox" name="retailease_server_backup_enabled" {% if company.retailease_server_backup_enabled %}checked{% endif %}>
+                <span class="toggle-slider"></span>
+              </label>
+            </div>
+            <div class="settings-item d-flex justify-content-between align-items-center py-3">
+              <div>
+                <div class="fw-medium">Local Backup</div>
+                <div class="text-sm text-muted">Allow users to backup to local folder</div>
+              </div>
+              <label class="toggle-switch">
+                <input type="checkbox" name="retailease_local_backup_enabled" {% if company.retailease_local_backup_enabled %}checked{% endif %}>
+                <span class="toggle-slider"></span>
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <!-- App Version -->
+        <div class="card mb-4">
+          <div class="card-header">
+            <h3 class="card-title">
+              <i class="fas fa-code-branch me-2 text-primary"></i>
+              App Version Control
+            </h3>
+          </div>
+          <div class="card-body">
+            <div class="row">
+              <div class="col-6 col-sm-12" style="padding: 0.5rem;">
+                <div class="form-group">
+                  <label class="form-label">Minimum Version</label>
+                  <input type="text" class="form-control" name="retailease_min_version" value="{{ company.retailease_min_version|default:'1.0.0' }}" placeholder="1.0.0">
+                  <div class="form-text">Users below this version will be prompted to update</div>
+                </div>
+              </div>
+              <div class="col-6 col-sm-12" style="padding: 0.5rem;">
+                <div class="form-group">
+                  <label class="form-label">Latest Version</label>
+                  <input type="text" class="form-control" name="retailease_latest_version" value="{{ company.retailease_latest_version|default:'1.0.0' }}" placeholder="1.0.0">
+                </div>
+              </div>
+              <div class="col-12" style="padding: 0.5rem;">
+                <div class="form-group">
+                  <label class="form-label">Update Download URL</label>
+                  <input type="url" class="form-control" name="retailease_update_url" value="{{ company.retailease_update_url|default:'' }}" placeholder="https://example.com/download">
+                </div>
+              </div>
+            </div>
+            <div class="settings-item d-flex justify-content-between align-items-center py-3 mt-2">
+              <div>
+                <div class="fw-medium">Force Update</div>
+                <div class="text-sm text-muted">Block app until users update to minimum version</div>
+              </div>
+              <label class="toggle-switch">
+                <input type="checkbox" name="retailease_force_update" {% if company.retailease_force_update %}checked{% endif %}>
+                <span class="toggle-slider"></span>
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <!-- Maintenance Mode -->
+        <div class="card mb-4">
+          <div class="card-header">
+            <h3 class="card-title">
+              <i class="fas fa-tools me-2 text-primary"></i>
+              Maintenance Mode
+            </h3>
+          </div>
+          <div class="card-body">
+            <div class="settings-item d-flex justify-content-between align-items-center py-3 border-bottom">
+              <div>
+                <div class="fw-medium">Enable Maintenance Mode</div>
+                <div class="text-sm text-muted">Show maintenance message to all app users</div>
+              </div>
+              <label class="toggle-switch">
+                <input type="checkbox" name="retailease_maintenance_mode" {% if company.retailease_maintenance_mode %}checked{% endif %}>
+                <span class="toggle-slider"></span>
+              </label>
+            </div>
+            <div class="form-group mt-3 mb-0">
+              <label class="form-label">Maintenance Message</label>
+              <textarea class="form-control" name="retailease_maintenance_message" rows="3" placeholder="We're currently performing maintenance. Please try again later.">{{ company.retailease_maintenance_message|default:'' }}</textarea>
+            </div>
+          </div>
+        </div>
+
+        <!-- Support -->
+        <div class="card">
+          <div class="card-header">
+            <h3 class="card-title">
+              <i class="fas fa-headset me-2 text-primary"></i>
+              Support Contact
+            </h3>
+          </div>
+          <div class="card-body">
+            <div class="row">
+              <div class="col-4 col-sm-12" style="padding: 0.5rem;">
+                <div class="form-group mb-0">
+                  <label class="form-label">Support Email</label>
+                  <input type="email" class="form-control" name="retailease_support_email" value="{{ company.retailease_support_email|default:'support@ralfizdigital.in' }}">
+                </div>
+              </div>
+              <div class="col-4 col-sm-12" style="padding: 0.5rem;">
+                <div class="form-group mb-0">
+                  <label class="form-label">Support Phone</label>
+                  <input type="tel" class="form-control" name="retailease_support_phone" value="{{ company.retailease_support_phone|default:'' }}">
+                </div>
+              </div>
+              <div class="col-4 col-sm-12" style="padding: 0.5rem;">
+                <div class="form-group mb-0">
+                  <label class="form-label">WhatsApp</label>
+                  <input type="tel" class="form-control" name="retailease_support_whatsapp" value="{{ company.retailease_support_whatsapp|default:'' }}">
+                </div>
+              </div>
             </div>
           </div>
           <div class="card-footer d-flex justify-content-end">

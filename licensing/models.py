@@ -75,7 +75,7 @@ class LicenseKey(models.Model):
 
 class License(models.Model):
     """Model to store issued licenses"""
-    
+
     LICENSE_TYPE_CHOICES = [
         ('trial', 'Trial (30 days)'),
         ('basic', 'Basic (1 year)'),
@@ -83,17 +83,26 @@ class License(models.Model):
         ('enterprise', 'Enterprise (1 year)'),
         ('lifetime', 'Lifetime'),
     ]
-    
+
     STATUS_CHOICES = [
         ('active', 'Active'),
         ('expired', 'Expired'),
         ('revoked', 'Revoked'),
         ('suspended', 'Suspended'),
     ]
-    
+
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     key_pair = models.ForeignKey(LicenseKey, on_delete=models.PROTECT, related_name='licenses')
-    
+
+    # Link to Client (optional - for tracking)
+    client = models.ForeignKey(
+        'core.Client',
+        on_delete=models.SET_NULL,
+        null=True, blank=True,
+        related_name='licenses',
+        help_text='Link this license to an existing client'
+    )
+
     # Customer Information
     customer_name = models.CharField(max_length=200)
     customer_email = models.EmailField()
