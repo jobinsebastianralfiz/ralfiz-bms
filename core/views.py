@@ -206,6 +206,8 @@ def client_list(request):
 
 @login_required
 def client_detail(request, pk):
+    from retailease.models import Backup, Business
+
     client = get_object_or_404(Client, pk=pk)
     projects = client.projects.all()
     invoices = client.invoices.all()
@@ -215,6 +217,11 @@ def client_detail(request, pk):
     # Get payments through invoices
     payments = Payment.objects.filter(invoice__client=client).order_by('-payment_date')
 
+    # Get backups through: Client -> Licenses -> Businesses -> Backups
+    license_ids = licenses.values_list('id', flat=True)
+    businesses = Business.objects.filter(license_id__in=license_ids)
+    backups = Backup.objects.filter(business__in=businesses).select_related('business', 'counter').order_by('-created_at')
+
     context = {
         'client': client,
         'projects': projects,
@@ -222,6 +229,7 @@ def client_detail(request, pk):
         'quotes': quotes,
         'licenses': licenses,
         'payments': payments,
+        'backups': backups,
     }
     return render(request, 'clients/detail.html', context)
 

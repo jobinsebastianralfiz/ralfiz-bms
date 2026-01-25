@@ -287,6 +287,9 @@
           <button class="tab-item" data-tab="retaileaseTab" onclick="switchTab('retaileaseTab')">
             <i class="fas fa-mobile-alt me-2"></i>RetailEase App
           </button>
+          <button class="tab-item" data-tab="backupsTab" onclick="switchTab('backupsTab')">
+            <i class="fas fa-cloud-upload-alt me-2"></i>Backups
+          </button>
         </div>
       </div>
 
@@ -643,6 +646,88 @@
     </div>
   </div>
 </div>
+
+      <!-- Backups Tab -->
+      <div class="tab-content d-none" id="backupsTab">
+        <div class="card">
+          <div class="card-header">
+            <h3 class="card-title">
+              <i class="fas fa-cloud-upload-alt me-2 text-primary"></i>
+              Server Backups
+            </h3>
+          </div>
+          <div class="table-wrapper">
+            <table class="table">
+              <thead>
+                <tr>
+                  <th>Backup</th>
+                  <th>Business</th>
+                  <th>Counter</th>
+                  <th>Size</th>
+                  <th>Type</th>
+                  <th>Created</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for backup in backups %}
+                <tr>
+                  <td>
+                    <div class="d-flex align-items-center gap-2">
+                      <div class="avatar bg-primary-light">
+                        <i class="fas fa-database text-primary"></i>
+                      </div>
+                      <div>
+                        <div class="text-sm fw-medium">{{ backup.filename|truncatechars:30 }}</div>
+                        <div class="text-xs text-muted">{{ backup.checksum|slice:":12" }}...</div>
+                      </div>
+                    </div>
+                  </td>
+                  <td>
+                    <span class="text-sm">{{ backup.business.name }}</span>
+                  </td>
+                  <td>
+                    <span class="text-sm">{{ backup.counter.name|default:"-" }}</span>
+                  </td>
+                  <td>
+                    <span class="text-sm">{{ backup.file_size|filesizeformat }}</span>
+                  </td>
+                  <td>
+                    {% if backup.backup_type == 'manual' %}
+                    <span class="badge badge-primary">Manual</span>
+                    {% elif backup.backup_type == 'auto' %}
+                    <span class="badge badge-secondary">Auto</span>
+                    {% else %}
+                    <span class="badge badge-warning">Pre-Restore</span>
+                    {% endif %}
+                  </td>
+                  <td>
+                    <span class="text-sm">{{ backup.created_at|date:"M d, Y H:i" }}</span>
+                  </td>
+                  <td>
+                    {% if backup.status == 'completed' %}
+                    <span class="badge badge-success">Completed</span>
+                    {% elif backup.status == 'failed' %}
+                    <span class="badge badge-danger">Failed</span>
+                    {% else %}
+                    <span class="badge badge-warning">{{ backup.status|title }}</span>
+                    {% endif %}
+                  </td>
+                </tr>
+                {% empty %}
+                <tr>
+                  <td colspan="7" class="text-center py-4 text-muted">
+                    <i class="fas fa-cloud-upload-alt mb-2" style="font-size: 2rem;"></i>
+                    <p class="mb-0">No backups found for this client</p>
+                    <small>Backups will appear here when the RetailEase app uploads them</small>
+                  </td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
 {% endblock %}
 
 {% block extra_js %}
