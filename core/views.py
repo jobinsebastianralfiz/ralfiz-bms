@@ -3631,10 +3631,20 @@ def license_create(request):
     from datetime import datetime, timedelta
     default_expiry = datetime.now() + timedelta(days=365)
 
+    # Check if client is pre-selected from query param
+    preselected_client = None
+    client_id = request.GET.get('client', '')
+    if client_id:
+        try:
+            preselected_client = Client.objects.get(pk=client_id)
+        except Client.DoesNotExist:
+            pass
+
     context = {
         'default_expiry': default_expiry.strftime('%Y-%m-%d'),
         'license_types': License.LICENSE_TYPE_CHOICES,
         'clients': Client.objects.filter(is_active=True).order_by('company_name', 'name'),
+        'preselected_client': preselected_client,
     }
     return render(request, 'licenses/form.html', context)
 

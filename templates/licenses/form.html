@@ -39,7 +39,8 @@
             <select class="form-control" name="client" id="clientSelect">
               <option value="">-- No client linked --</option>
               {% for c in clients %}
-              <option value="{{ c.pk }}" data-name="{{ c.name }}" data-email="{{ c.email }}" data-company="{{ c.company_name }}">
+              <option value="{{ c.pk }}" data-name="{{ c.name }}" data-email="{{ c.email }}" data-company="{{ c.company_name }}"
+                      {% if preselected_client and preselected_client.pk == c.pk %}selected{% endif %}>
                 {{ c.company_name|default:c.name }} {% if c.company_name %}({{ c.name }}){% endif %}
               </option>
               {% endfor %}
@@ -62,13 +63,15 @@
             <div class="col-6 col-sm-12" style="padding: 0.5rem;">
               <div class="form-group">
                 <label class="form-label">Customer Name <span class="text-danger">*</span></label>
-                <input type="text" class="form-control" name="customer_name" id="customerName" required placeholder="Enter customer or business name">
+                <input type="text" class="form-control" name="customer_name" id="customerName" required placeholder="Enter customer or business name"
+                       value="{% if preselected_client %}{{ preselected_client.company_name|default:preselected_client.name }}{% endif %}">
               </div>
             </div>
             <div class="col-6 col-sm-12" style="padding: 0.5rem;">
               <div class="form-group">
                 <label class="form-label">Customer Email</label>
-                <input type="email" class="form-control" name="customer_email" id="customerEmail" placeholder="customer@example.com">
+                <input type="email" class="form-control" name="customer_email" id="customerEmail" placeholder="customer@example.com"
+                       value="{% if preselected_client %}{{ preselected_client.email }}{% endif %}">
               </div>
             </div>
           </div>
@@ -112,7 +115,8 @@
             <div class="col-6 col-sm-12" style="padding: 0.5rem;">
               <div class="form-group">
                 <label class="form-label">Company (Optional)</label>
-                <input type="text" class="form-control" name="customer_company" placeholder="Customer's company name">
+                <input type="text" class="form-control" name="customer_company" placeholder="Customer's company name"
+                       value="{% if preselected_client %}{{ preselected_client.company_name }}{% endif %}">
               </div>
             </div>
             <div class="col-12" style="padding: 0.5rem;">
