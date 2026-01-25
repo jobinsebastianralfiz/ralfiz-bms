@@ -88,6 +88,7 @@
               <th>Machine ID</th>
               <th>Activated</th>
               <th>Status</th>
+              <th style="width: 120px;">Actions</th>
             </tr>
           </thead>
           <tbody>
@@ -96,7 +97,7 @@
               <td>
                 <div class="d-flex align-items-center gap-2">
                   <i class="fas fa-laptop text-muted"></i>
-                  <span>{{ activation.device_name|default:"Unknown Device" }}</span>
+                  <span>{{ activation.machine_name|default:"Unknown Device" }}</span>
                 </div>
               </td>
               <td>
@@ -110,10 +111,28 @@
                 <span class="badge badge-secondary">Deactivated</span>
                 {% endif %}
               </td>
+              <td>
+                <div class="table-actions">
+                  {% if activation.is_active %}
+                  <form method="post" action="{% url 'license_deactivate_device' license.pk activation.pk %}" style="display: inline;">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-sm btn-ghost btn-icon text-warning" title="Deactivate" onclick="return confirm('Deactivate this device?');">
+                      <i class="fas fa-pause"></i>
+                    </button>
+                  </form>
+                  {% endif %}
+                  <form method="post" action="{% url 'license_delete_activation' license.pk activation.pk %}" style="display: inline;">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-sm btn-ghost btn-icon text-danger" title="Delete" onclick="return confirm('Delete this activation? The device will need to re-activate.');">
+                      <i class="fas fa-trash"></i>
+                    </button>
+                  </form>
+                </div>
+              </td>
             </tr>
             {% empty %}
             <tr>
-              <td colspan="4" class="text-center py-4 text-muted">
+              <td colspan="5" class="text-center py-4 text-muted">
                 <i class="fas fa-desktop mb-2" style="font-size: 1.5rem;"></i>
                 <p class="mb-0">No activations yet</p>
               </td>

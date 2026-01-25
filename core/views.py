@@ -3663,6 +3663,47 @@ def license_detail(request, pk):
 
 
 @login_required
+def license_deactivate_device(request, pk, activation_id):
+    """Deactivate a specific device activation"""
+    license = get_object_or_404(License, pk=pk)
+    activation = get_object_or_404(LicenseActivation, pk=activation_id, license=license)
+
+    if request.method == 'POST':
+        # Deactivate the activation
+        activation.is_active = False
+        activation.save()
+
+        # Update the license activation count
+        license.current_activations = license.activations.filter(is_active=True).count()
+        license.save(update_fields=['current_activations'])
+
+        messages.success(request, f'Device "{activation.machine_name or "Unknown Device"}" has been deactivated.')
+        return redirect('license_detail', pk=pk)
+
+    return redirect('license_detail', pk=pk)
+
+
+@login_required
+def license_delete_activation(request, pk, activation_id):
+    """Delete a device activation completely"""
+    license = get_object_or_404(License, pk=pk)
+    activation = get_object_or_404(LicenseActivation, pk=activation_id, license=license)
+
+    if request.method == 'POST':
+        device_name = activation.machine_name or "Unknown Device"
+        activation.delete()
+
+        # Update the license activation count
+        license.current_activations = license.activations.filter(is_active=True).count()
+        license.save(update_fields=['current_activations'])
+
+        messages.success(request, f'Device "{device_name}" has been removed.')
+        return redirect('license_detail', pk=pk)
+
+    return redirect('license_detail', pk=pk)
+
+
+@login_required
 def license_revoke(request, pk):
     """Revoke a license"""
     license = get_object_or_404(License, pk=pk)
