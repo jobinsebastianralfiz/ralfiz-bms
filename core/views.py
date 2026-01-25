@@ -210,14 +210,58 @@ def client_detail(request, pk):
     projects = client.projects.all()
     invoices = client.invoices.all()
     quotes = client.quotes.all()
+    licenses = client.licenses.all()  # Licenses linked to this client
+
+    # Get payments through invoices
+    payments = Payment.objects.filter(invoice__client=client).order_by('-payment_date')
 
     context = {
         'client': client,
         'projects': projects,
         'invoices': invoices,
         'quotes': quotes,
+        'licenses': licenses,
+        'payments': payments,
     }
     return render(request, 'clients/detail.html', context)
+
+
+@login_required
+def client_update_retailease(request, pk):
+    """Update RetailEase App settings for a client"""
+    client = get_object_or_404(Client, pk=pk)
+
+    if request.method == 'POST':
+        # Google OAuth Credentials
+        client.google_client_id = request.POST.get('google_client_id', '')
+        client.google_client_id_ios = request.POST.get('google_client_id_ios', '')
+        client.google_client_id_android = request.POST.get('google_client_id_android', '')
+        client.google_reversed_client_id = request.POST.get('google_reversed_client_id', '')
+
+        # Backup Features
+        client.retailease_google_drive_enabled = 'retailease_google_drive_enabled' in request.POST
+        client.retailease_server_backup_enabled = 'retailease_server_backup_enabled' in request.POST
+        client.retailease_local_backup_enabled = 'retailease_local_backup_enabled' in request.POST
+
+        # App Version Control
+        client.retailease_min_version = request.POST.get('retailease_min_version', '1.0.0')
+        client.retailease_latest_version = request.POST.get('retailease_latest_version', '1.0.0')
+        client.retailease_update_url = request.POST.get('retailease_update_url', '')
+        client.retailease_force_update = 'retailease_force_update' in request.POST
+
+        # Maintenance Mode
+        client.retailease_maintenance_mode = 'retailease_maintenance_mode' in request.POST
+        client.retailease_maintenance_message = request.POST.get('retailease_maintenance_message', '')
+
+        # Support Contact
+        client.retailease_support_email = request.POST.get('retailease_support_email', '')
+        client.retailease_support_phone = request.POST.get('retailease_support_phone', '')
+        client.retailease_support_whatsapp = request.POST.get('retailease_support_whatsapp', '')
+
+        client.save()
+        messages.success(request, 'RetailEase App settings updated successfully.')
+
+    return redirect('client_detail', pk=pk)
 
 
 @login_required

@@ -29,6 +29,47 @@ class Client(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
+    # RetailEase App Configuration (per-client)
+    # Google OAuth Credentials
+    google_client_id = models.CharField(
+        max_length=200, blank=True,
+        verbose_name='Google OAuth Client ID (Desktop)',
+        help_text='OAuth 2.0 Client ID for desktop apps (macOS/Windows/Linux)'
+    )
+    google_client_id_ios = models.CharField(
+        max_length=200, blank=True,
+        verbose_name='Google OAuth Client ID (iOS)'
+    )
+    google_client_id_android = models.CharField(
+        max_length=200, blank=True,
+        verbose_name='Google OAuth Client ID (Android)'
+    )
+    google_reversed_client_id = models.CharField(
+        max_length=200, blank=True,
+        verbose_name='Reversed Client ID (for iOS)',
+        help_text='e.g., com.googleusercontent.apps.xxxxx'
+    )
+
+    # Backup Feature Flags
+    retailease_google_drive_enabled = models.BooleanField(default=True, verbose_name='Google Drive Backup')
+    retailease_server_backup_enabled = models.BooleanField(default=True, verbose_name='Server Backup')
+    retailease_local_backup_enabled = models.BooleanField(default=True, verbose_name='Local Backup')
+
+    # App Version Control
+    retailease_min_version = models.CharField(max_length=20, default='1.0.0', verbose_name='Min App Version')
+    retailease_latest_version = models.CharField(max_length=20, default='1.0.0', verbose_name='Latest App Version')
+    retailease_update_url = models.URLField(blank=True, verbose_name='App Update URL')
+    retailease_force_update = models.BooleanField(default=False, verbose_name='Force Update')
+
+    # Maintenance Mode (per-client)
+    retailease_maintenance_mode = models.BooleanField(default=False, verbose_name='Maintenance Mode')
+    retailease_maintenance_message = models.TextField(blank=True, verbose_name='Maintenance Message')
+
+    # Support Contact (per-client)
+    retailease_support_email = models.EmailField(blank=True, verbose_name='Support Email')
+    retailease_support_phone = models.CharField(max_length=20, blank=True, verbose_name='Support Phone')
+    retailease_support_whatsapp = models.CharField(max_length=20, blank=True, verbose_name='Support WhatsApp')
+
     class Meta:
         ordering = ['-created_at']
 

@@ -16,6 +16,7 @@ urlpatterns = [
     path('clients/<uuid:pk>/', views.client_detail, name='client_detail'),
     path('clients/<uuid:pk>/edit/', views.client_update, name='client_update'),
     path('clients/<uuid:pk>/delete/', views.client_delete, name='client_delete'),
+    path('clients/<uuid:pk>/retailease/', views.client_update_retailease, name='client_update_retailease'),
 
     # Projects
     path('projects/', views.project_list, name='project_list'),

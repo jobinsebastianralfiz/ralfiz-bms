@@ -8,7 +8,7 @@ from django.utils import timezone
 from django.core.files.base import ContentFile
 
 from licensing.models import License, LicenseActivation
-from core.models import CompanySettings
+from core.models import CompanySettings, Client
 from .models import Business, Counter, Backup, SyncLog, APIToken
 
 
@@ -68,76 +68,133 @@ def token_required(f):
 @require_http_methods(["GET"])
 def get_app_config(request):
     """
-    Get public app configuration including Google OAuth credentials.
+    Get app configuration including Google OAuth credentials.
     This endpoint does NOT require authentication so the app can
     fetch config before user logs in.
 
     Query params:
     - platform: 'macos' | 'windows' | 'linux' | 'ios' | 'android'
     - app_version: '1.0.0'
+    - license_id: UUID of the license (optional - for client-specific config)
     """
     platform = request.GET.get('platform', 'desktop')
     app_version = request.GET.get('app_version', '')
+    license_id = request.GET.get('license_id', '')
 
-    # Get settings from CompanySettings (shared with your admin panel)
-    settings = CompanySettings.get_settings()
+    # Try to get client-specific config via license
+    client = None
+    if license_id:
+        try:
+            license = License.objects.select_related('client').get(id=license_id)
+            client = license.client
+        except (License.DoesNotExist, ValueError):
+            pass
+
+    # Get fallback settings from CompanySettings
+    company_settings = CompanySettings.get_settings()
+
+    # Use client settings if available, otherwise fall back to company settings
+    if client:
+        # Client-specific configuration
+        maintenance_mode = client.retailease_maintenance_mode
+        maintenance_message = client.retailease_maintenance_message
+
+        google_client_id = client.google_client_id
+        google_client_id_ios = client.google_client_id_ios
+        google_client_id_android = client.google_client_id_android
+        google_reversed_client_id = client.google_reversed_client_id
+
+        google_drive_enabled = client.retailease_google_drive_enabled
+        server_backup_enabled = client.retailease_server_backup_enabled
+        local_backup_enabled = client.retailease_local_backup_enabled
+
+        min_version = client.retailease_min_version or '1.0.0'
+        latest_version = client.retailease_latest_version or '1.0.0'
+        update_url = client.retailease_update_url or ''
+        force_update = client.retailease_force_update
+
+        support_email = client.retailease_support_email or company_settings.retailease_support_email or 'support@ralfizdigital.in'
+        support_phone = client.retailease_support_phone or company_settings.retailease_support_phone or ''
+        support_whatsapp = client.retailease_support_whatsapp or company_settings.retailease_support_whatsapp or ''
+    else:
+        # Fallback to global company settings
+        maintenance_mode = company_settings.retailease_maintenance_mode
+        maintenance_message = company_settings.retailease_maintenance_message
+
+        google_client_id = company_settings.google_client_id
+        google_client_id_ios = company_settings.google_client_id_ios
+        google_client_id_android = company_settings.google_client_id_android
+        google_reversed_client_id = company_settings.google_reversed_client_id
+
+        google_drive_enabled = company_settings.retailease_google_drive_enabled
+        server_backup_enabled = company_settings.retailease_server_backup_enabled
+        local_backup_enabled = company_settings.retailease_local_backup_enabled
+
+        min_version = company_settings.retailease_min_version or '1.0.0'
+        latest_version = company_settings.retailease_latest_version or '1.0.0'
+        update_url = company_settings.retailease_update_url or ''
+        force_update = company_settings.retailease_force_update
+
+        support_email = company_settings.retailease_support_email or 'support@ralfizdigital.in'
+        support_phone = company_settings.retailease_support_phone or ''
+        support_whatsapp = company_settings.retailease_support_whatsapp or ''
 
     # Check maintenance mode
-    if settings.retailease_maintenance_mode:
+    if maintenance_mode:
         return JsonResponse({
             'maintenance_mode': True,
-            'maintenance_message': settings.retailease_maintenance_message,
+            'maintenance_message': maintenance_message,
         })
 
     # Determine which Google Client ID to return based on platform
-    google_client_id = settings.google_client_id  # Default (desktop)
-    if platform == 'ios' and settings.google_client_id_ios:
-        google_client_id = settings.google_client_id_ios
-    elif platform == 'android' and settings.google_client_id_android:
-        google_client_id = settings.google_client_id_android
+    final_google_client_id = google_client_id  # Default (desktop)
+    if platform == 'ios' and google_client_id_ios:
+        final_google_client_id = google_client_id_ios
+    elif platform == 'android' and google_client_id_android:
+        final_google_client_id = google_client_id_android
 
     response_data = {
         'maintenance_mode': False,
 
         # Google OAuth
         'google': {
-            'client_id': google_client_id or '',
-            'reversed_client_id': settings.google_reversed_client_id or '',
-            'enabled': settings.retailease_google_drive_enabled and bool(google_client_id),
+            'client_id': final_google_client_id or '',
+            'reversed_client_id': google_reversed_client_id or '',
+            'enabled': google_drive_enabled and bool(final_google_client_id),
         },
 
         # Feature flags
         'features': {
-            'google_drive_backup': settings.retailease_google_drive_enabled,
-            'server_backup': settings.retailease_server_backup_enabled,
-            'local_backup': settings.retailease_local_backup_enabled,
+            'google_drive_backup': google_drive_enabled,
+            'server_backup': server_backup_enabled,
+            'local_backup': local_backup_enabled,
         },
 
         # App version info
         'app': {
-            'min_version': settings.retailease_min_version or '1.0.0',
-            'latest_version': settings.retailease_latest_version or '1.0.0',
-            'update_url': settings.retailease_update_url or '',
-            'force_update': settings.retailease_force_update,
+            'min_version': min_version,
+            'latest_version': latest_version,
+            'update_url': update_url,
+            'force_update': force_update,
         },
 
         # Support info
         'support': {
-            'email': settings.retailease_support_email or 'support@ralfizdigital.in',
-            'phone': settings.retailease_support_phone or '',
-            'whatsapp': settings.retailease_support_whatsapp or '',
+            'email': support_email,
+            'phone': support_phone,
+            'whatsapp': support_whatsapp,
         },
 
         'server_time': timezone.now().isoformat(),
     }
 
     # Check if app needs update
-    if app_version and settings.retailease_force_update:
+    if app_version and force_update:
         try:
             from packaging import version
-            if version.parse(app_version) < version.parse(settings.retailease_min_version):
+            if version.parse(app_version) < version.parse(min_version):
                 response_data['update_required'] = True
-                response_data['update_message'] = f'Please update to version {settings.retailease_min_version} or later.'
+                response_data['update_message'] = f'Please update to version {min_version} or later.'
         except Exception:
             pass  # Ignore version parsing errors
 
