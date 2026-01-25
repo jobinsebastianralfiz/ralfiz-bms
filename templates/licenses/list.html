@@ -115,6 +115,7 @@
         <tr>
           <th>License Code</th>
           <th>Customer</th>
+          <th>Linked Client</th>
           <th>Expires</th>
           <th>Activations</th>
           <th>Status</th>
@@ -140,6 +141,15 @@
               <div class="fw-medium">{{ license.customer_name }}</div>
               {% if license.customer_email %}<div class="text-muted">{{ license.customer_email }}</div>{% endif %}
             </div>
+          </td>
+          <td>
+            {% if license.client %}
+            <a href="{% url 'client_detail' license.client.pk %}" class="text-primary">
+              {{ license.client.company_name|default:license.client.name|truncatechars:20 }}
+            </a>
+            {% else %}
+            <span class="text-muted">-</span>
+            {% endif %}
           </td>
           <td>
             {% if license.valid_until %}
@@ -180,7 +190,7 @@
         </tr>
         {% empty %}
         <tr>
-          <td colspan="6" class="text-center py-4 text-muted">
+          <td colspan="7" class="text-center py-4 text-muted">
             <i class="fas fa-certificate mb-2" style="font-size: 2rem;"></i>
             <p class="mb-0">No licenses found</p>
             <a href="{% url 'license_create' %}" class="btn btn-primary btn-sm mt-3">Create First License</a>

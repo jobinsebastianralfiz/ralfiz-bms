@@ -151,6 +151,32 @@
       </div>
     </div>
 
+    <!-- Linked Client Card -->
+    {% if license.client %}
+    <div class="card mb-4">
+      <div class="card-header">
+        <h3 class="card-title">
+          <i class="fas fa-link me-2 text-primary"></i>
+          Linked Client
+        </h3>
+      </div>
+      <div class="card-body">
+        <div class="d-flex align-items-center gap-3 mb-3">
+          <div class="avatar">{{ license.client.name|slice:":2"|upper }}</div>
+          <div>
+            <div class="fw-medium">{{ license.client.company_name|default:license.client.name }}</div>
+            {% if license.client.company_name %}
+            <div class="text-sm text-muted">{{ license.client.name }}</div>
+            {% endif %}
+          </div>
+        </div>
+        <a href="{% url 'client_detail' license.client.pk %}" class="btn btn-outline-primary btn-sm w-100">
+          <i class="fas fa-external-link-alt me-2"></i>View Client
+        </a>
+      </div>
+    </div>
+    {% endif %}
+
     <!-- Details Card -->
     <div class="card mb-4">
       <div class="card-header">

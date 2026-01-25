@@ -50,14 +50,19 @@ class LicenseActivationInline(admin.TabularInline):
 
 @admin.register(License)
 class LicenseAdmin(admin.ModelAdmin):
-    list_display = ['customer_name', 'customer_email', 'license_type', 'status_badge', 'valid_until', 'days_left', 'activations_display']
-    list_filter = ['license_type', 'status', 'key_pair']
-    search_fields = ['customer_name', 'customer_email', 'customer_company', 'id']
+    list_display = ['customer_name', 'client_name', 'customer_email', 'license_type', 'status_badge', 'valid_until', 'days_left', 'activations_display']
+    list_filter = ['license_type', 'status', 'key_pair', 'client']
+    search_fields = ['customer_name', 'customer_email', 'customer_company', 'id', 'client__name', 'client__company_name']
     readonly_fields = ['id', 'license_code_display', 'created_at', 'updated_at', 'current_activations']
     date_hierarchy = 'created_at'
     inlines = [LicenseActivationInline]
-    
+    autocomplete_fields = ['client']  # For easier client selection
+
     fieldsets = (
+        ('Link to Client', {
+            'fields': ('client',),
+            'description': 'Link this license to an existing client for RetailEase app configuration.'
+        }),
         ('Customer Information', {
             'fields': ('customer_name', 'customer_email', 'customer_company', 'customer_phone')
         }),
@@ -80,6 +85,12 @@ class LicenseAdmin(admin.ModelAdmin):
             'classes': ('collapse',)
         }),
     )
+
+    def client_name(self, obj):
+        if obj.client:
+            return obj.client.company_name or obj.client.name
+        return '-'
+    client_name.short_description = 'Linked Client'
     
     def status_badge(self, obj):
         colors = {

@@ -25,6 +25,30 @@
 
   <div class="row">
     <div class="col-8 col-md-12" style="padding: 0.75rem;">
+      <!-- Link to Client -->
+      <div class="card mb-4">
+        <div class="card-header">
+          <h3 class="card-title">
+            <i class="fas fa-link me-2 text-primary"></i>
+            Link to Client
+          </h3>
+        </div>
+        <div class="card-body">
+          <div class="form-group mb-0">
+            <label class="form-label">Select Client (Optional)</label>
+            <select class="form-control" name="client" id="clientSelect">
+              <option value="">-- No client linked --</option>
+              {% for c in clients %}
+              <option value="{{ c.pk }}" data-name="{{ c.name }}" data-email="{{ c.email }}" data-company="{{ c.company_name }}">
+                {{ c.company_name|default:c.name }} {% if c.company_name %}({{ c.name }}){% endif %}
+              </option>
+              {% endfor %}
+            </select>
+            <div class="form-text">Link this license to a client for RetailEase app configuration (Google Drive backup, etc.)</div>
+          </div>
+        </div>
+      </div>
+
       <!-- Customer Information -->
       <div class="card mb-4">
         <div class="card-header">
@@ -38,13 +62,13 @@
             <div class="col-6 col-sm-12" style="padding: 0.5rem;">
               <div class="form-group">
                 <label class="form-label">Customer Name <span class="text-danger">*</span></label>
-                <input type="text" class="form-control" name="customer_name" required placeholder="Enter customer or business name">
+                <input type="text" class="form-control" name="customer_name" id="customerName" required placeholder="Enter customer or business name">
               </div>
             </div>
             <div class="col-6 col-sm-12" style="padding: 0.5rem;">
               <div class="form-group">
                 <label class="form-label">Customer Email</label>
-                <input type="email" class="form-control" name="customer_email" placeholder="customer@example.com">
+                <input type="email" class="form-control" name="customer_email" id="customerEmail" placeholder="customer@example.com">
               </div>
             </div>
           </div>
@@ -136,4 +160,27 @@
     </div>
   </div>
 </form>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Auto-fill customer info when client is selected
+document.getElementById('clientSelect').addEventListener('change', function() {
+  const selectedOption = this.options[this.selectedIndex];
+  if (selectedOption.value) {
+    const name = selectedOption.getAttribute('data-name');
+    const email = selectedOption.getAttribute('data-email');
+    const company = selectedOption.getAttribute('data-company');
+
+    document.getElementById('customerName').value = company || name;
+    document.getElementById('customerEmail').value = email || '';
+
+    // Also fill company field if exists
+    const companyField = document.querySelector('input[name="customer_company"]');
+    if (companyField && company) {
+      companyField.value = company;
+    }
+  }
+});
+</script>
 {% endblock %}

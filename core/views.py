@@ -3556,7 +3556,7 @@ def get_client_ip(request):
 @login_required
 def license_list(request):
     """List all licenses"""
-    licenses = License.objects.select_related('key_pair').order_by('-created_at')
+    licenses = License.objects.select_related('key_pair', 'client').order_by('-created_at')
 
     # Filters
     status = request.GET.get('status', '')
@@ -3593,6 +3593,7 @@ def license_create(request):
         license_type = request.POST.get('license_type', 'basic')
         max_activations = int(request.POST.get('max_activations', 1))
         notes = request.POST.get('notes', '')
+        client_id = request.POST.get('client', '')
 
         # Get active key
         key_pair = LicenseKey.objects.filter(is_active=True).first()
@@ -3604,8 +3605,17 @@ def license_create(request):
         from django.utils import timezone
         valid_until_date = timezone.make_aware(datetime.strptime(valid_until, '%Y-%m-%d')) if valid_until else None
 
+        # Get client if specified
+        client = None
+        if client_id:
+            try:
+                client = Client.objects.get(pk=client_id)
+            except Client.DoesNotExist:
+                pass
+
         license = License.objects.create(
             key_pair=key_pair,
+            client=client,
             customer_name=customer_name,
             customer_email=customer_email or f"{customer_name.lower().replace(' ', '.')}@example.com",
             customer_company=customer_company,
@@ -3624,6 +3634,7 @@ def license_create(request):
     context = {
         'default_expiry': default_expiry.strftime('%Y-%m-%d'),
         'license_types': License.LICENSE_TYPE_CHOICES,
+        'clients': Client.objects.filter(is_active=True).order_by('company_name', 'name'),
     }
     return render(request, 'licenses/form.html', context)
 
