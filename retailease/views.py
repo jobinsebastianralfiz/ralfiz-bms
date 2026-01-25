@@ -8,7 +8,7 @@ from django.utils import timezone
 from django.core.files.base import ContentFile
 
 from licensing.models import License, LicenseActivation
-from .models import Business, Counter, Backup, SyncLog, APIToken
+from .models import Business, Counter, Backup, SyncLog, APIToken, AppConfig
 
 
 def get_client_ip(request):
@@ -57,6 +57,95 @@ def token_required(f):
 
         return f(request, *args, **kwargs)
     return decorated
+
+
+# ============================================
+# PUBLIC CONFIG ENDPOINT (No Auth Required)
+# ============================================
+
+@csrf_exempt
+@require_http_methods(["GET"])
+def get_app_config(request):
+    """
+    Get public app configuration including Google OAuth credentials.
+    This endpoint does NOT require authentication so the app can
+    fetch config before user logs in.
+
+    Query params:
+    - platform: 'macos' | 'windows' | 'linux' | 'ios' | 'android'
+    - app_version: '1.0.0'
+    """
+    platform = request.GET.get('platform', 'desktop')
+    app_version = request.GET.get('app_version', '')
+
+    config = AppConfig.get_config()
+
+    # Check maintenance mode
+    if config.maintenance_mode:
+        return JsonResponse({
+            'maintenance_mode': True,
+            'maintenance_message': config.maintenance_message,
+        })
+
+    # Determine which Google Client ID to return based on platform
+    google_client_id = config.google_client_id  # Default (desktop)
+    if platform == 'ios' and config.google_client_id_ios:
+        google_client_id = config.google_client_id_ios
+    elif platform == 'android' and config.google_client_id_android:
+        google_client_id = config.google_client_id_android
+
+    response_data = {
+        'maintenance_mode': False,
+
+        # Google OAuth
+        'google': {
+            'client_id': google_client_id,
+            'reversed_client_id': config.google_reversed_client_id,
+            'enabled': config.google_drive_enabled and bool(google_client_id),
+        },
+
+        # Feature flags
+        'features': {
+            'google_drive_backup': config.google_drive_enabled,
+            'server_backup': config.server_backup_enabled,
+            'local_backup': config.local_backup_enabled,
+        },
+
+        # App version info
+        'app': {
+            'min_version': config.min_app_version,
+            'latest_version': config.latest_app_version,
+            'update_url': config.app_update_url,
+            'force_update': config.force_update,
+        },
+
+        # Support info
+        'support': {
+            'email': config.support_email,
+            'phone': config.support_phone,
+            'whatsapp': config.support_whatsapp,
+        },
+
+        # Legal
+        'legal': {
+            'terms_url': config.terms_url,
+            'privacy_url': config.privacy_url,
+        },
+
+        'server_time': timezone.now().isoformat(),
+    }
+
+    # Check if app needs update
+    if app_version and config.force_update:
+        from packaging import version
+        try:
+            if version.parse(app_version) < version.parse(config.min_app_version):
+                response_data['update_required'] = True
+                response_data['update_message'] = f'Please update to version {config.min_app_version} or later.'
+        except Exception:
+            pass  # Ignore version parsing errors
+
+    return JsonResponse(response_data)
 
 
 # ============================================

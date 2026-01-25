@@ -1,6 +1,6 @@
 from django.contrib import admin
 from django.utils.html import format_html
-from .models import Business, Counter, Backup, SyncLog, APIToken
+from .models import Business, Counter, Backup, SyncLog, APIToken, AppConfig
 
 
 @admin.register(Business)
@@ -186,3 +186,49 @@ class APITokenAdmin(admin.ModelAdmin):
     def token_preview(self, obj):
         return f"{obj.token[:8]}...{obj.token[-8:]}" if obj.token else '-'
     token_preview.short_description = 'Token'
+
+
+@admin.register(AppConfig)
+class AppConfigAdmin(admin.ModelAdmin):
+    list_display = ('key', 'google_drive_enabled', 'server_backup_enabled', 'maintenance_mode', 'min_app_version', 'updated_at')
+    readonly_fields = ('key', 'created_at', 'updated_at')
+
+    fieldsets = (
+        ('Google OAuth Configuration', {
+            'fields': (
+                'google_client_id',
+                'google_client_id_ios',
+                'google_client_id_android',
+                'google_reversed_client_id',
+            ),
+            'description': 'Enter your Google OAuth 2.0 credentials from Google Cloud Console.'
+        }),
+        ('Feature Flags', {
+            'fields': ('google_drive_enabled', 'server_backup_enabled', 'local_backup_enabled')
+        }),
+        ('App Version Control', {
+            'fields': ('min_app_version', 'latest_app_version', 'app_update_url', 'force_update')
+        }),
+        ('Maintenance Mode', {
+            'fields': ('maintenance_mode', 'maintenance_message'),
+            'classes': ('collapse',)
+        }),
+        ('Support Information', {
+            'fields': ('support_email', 'support_phone', 'support_whatsapp')
+        }),
+        ('Legal URLs', {
+            'fields': ('terms_url', 'privacy_url'),
+            'classes': ('collapse',)
+        }),
+        ('System', {
+            'fields': ('key', 'created_at', 'updated_at'),
+            'classes': ('collapse',)
+        }),
+    )
+
+    def has_add_permission(self, request):
+        # Only allow one config (singleton pattern)
+        return not AppConfig.objects.exists()
+
+    def has_delete_permission(self, request, obj=None):
+        return False

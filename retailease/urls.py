@@ -4,6 +4,9 @@ from . import views
 app_name = 'retailease'
 
 urlpatterns = [
+    # Public Config (No Auth Required)
+    path('config/', views.get_app_config, name='app_config'),
+
     # Authentication
     path('auth/', views.authenticate, name='authenticate'),
     path('auth/logout/', views.logout, name='logout'),

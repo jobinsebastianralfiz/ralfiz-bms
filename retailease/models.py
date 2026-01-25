@@ -335,3 +335,105 @@ class APIToken(models.Model):
         """Update last used timestamp"""
         self.last_used_at = timezone.now()
         self.save(update_fields=['last_used_at'])
+
+
+class AppConfig(models.Model):
+    """
+    Global application configuration that can be fetched by clients.
+    Stores Google OAuth credentials and other settings that shouldn't be
+    hardcoded in the Flutter app (avoiding rebuilds for each client).
+    """
+    # Singleton key
+    key = models.CharField(max_length=50, unique=True, default='default')
+
+    # Google OAuth Configuration
+    google_client_id = models.CharField(
+        max_length=200,
+        blank=True,
+        help_text="Google OAuth 2.0 Client ID for desktop apps"
+    )
+    google_client_id_ios = models.CharField(
+        max_length=200,
+        blank=True,
+        help_text="Google OAuth 2.0 Client ID for iOS (if different)"
+    )
+    google_client_id_android = models.CharField(
+        max_length=200,
+        blank=True,
+        help_text="Google OAuth 2.0 Client ID for Android (if different)"
+    )
+    google_reversed_client_id = models.CharField(
+        max_length=200,
+        blank=True,
+        help_text="Reversed Client ID for iOS URL scheme"
+    )
+
+    # Feature Flags
+    google_drive_enabled = models.BooleanField(
+        default=True,
+        help_text="Enable Google Drive backup feature"
+    )
+    server_backup_enabled = models.BooleanField(
+        default=True,
+        help_text="Enable Server backup feature"
+    )
+    local_backup_enabled = models.BooleanField(
+        default=True,
+        help_text="Enable Local backup feature"
+    )
+
+    # App Settings
+    min_app_version = models.CharField(
+        max_length=20,
+        default='1.0.0',
+        help_text="Minimum required app version"
+    )
+    latest_app_version = models.CharField(
+        max_length=20,
+        default='1.0.0',
+        help_text="Latest available app version"
+    )
+    app_update_url = models.URLField(
+        blank=True,
+        help_text="URL to download app update"
+    )
+    force_update = models.BooleanField(
+        default=False,
+        help_text="Force users to update if below min_app_version"
+    )
+
+    # Maintenance Mode
+    maintenance_mode = models.BooleanField(
+        default=False,
+        help_text="Enable maintenance mode (shows message to users)"
+    )
+    maintenance_message = models.TextField(
+        blank=True,
+        help_text="Message to show during maintenance"
+    )
+
+    # Support Information
+    support_email = models.EmailField(default='support@ralfizdigital.in')
+    support_phone = models.CharField(max_length=20, blank=True)
+    support_whatsapp = models.CharField(max_length=20, blank=True)
+
+    # Terms and Privacy URLs
+    terms_url = models.URLField(blank=True)
+    privacy_url = models.URLField(blank=True)
+
+    # Timestamps
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = "App Configuration"
+        verbose_name_plural = "App Configuration"
+
+    def __str__(self):
+        return f"App Config ({self.key})"
+
+    @classmethod
+    def get_config(cls):
+        """Get the default config, creating if it doesn't exist"""
+        config, _ = cls.objects.get_or_create(key='default')
+        return config
