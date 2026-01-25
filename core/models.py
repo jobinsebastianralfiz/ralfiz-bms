@@ -49,6 +49,11 @@ class Client(models.Model):
         verbose_name='Reversed Client ID (for iOS)',
         help_text='e.g., com.googleusercontent.apps.xxxxx'
     )
+    google_client_secret = models.CharField(
+        max_length=200, blank=True,
+        verbose_name='Google OAuth Client Secret',
+        help_text='Client Secret for desktop OAuth (required for macOS/Windows/Linux)'
+    )
 
     # Backup Feature Flags
     retailease_google_drive_enabled = models.BooleanField(default=True, verbose_name='Google Drive Backup')

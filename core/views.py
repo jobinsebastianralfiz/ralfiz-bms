@@ -242,6 +242,7 @@ def client_update_retailease(request, pk):
     if request.method == 'POST':
         # Google OAuth Credentials
         client.google_client_id = request.POST.get('google_client_id', '')
+        client.google_client_secret = request.POST.get('google_client_secret', '')
         client.google_client_id_ios = request.POST.get('google_client_id_ios', '')
         client.google_client_id_android = request.POST.get('google_client_id_android', '')
         client.google_reversed_client_id = request.POST.get('google_reversed_client_id', '')

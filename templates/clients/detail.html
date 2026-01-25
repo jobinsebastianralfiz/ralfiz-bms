@@ -516,6 +516,18 @@
                   <small class="text-muted">For macOS, Windows, Linux</small>
                 </div>
                 <div class="col-6 mb-3">
+                  <label class="form-label">Client Secret (Desktop)</label>
+                  <div class="input-group">
+                    <input type="password" class="form-control" name="google_client_secret" id="clientSecret"
+                           value="{{ client.google_client_secret|default:'' }}"
+                           placeholder="GOCSPX-xxxxxxxxxxxxxx">
+                    <button type="button" class="btn btn-outline-secondary" onclick="toggleSecretVisibility()">
+                      <i class="fas fa-eye" id="secretToggleIcon"></i>
+                    </button>
+                  </div>
+                  <small class="text-muted">Required for desktop OAuth</small>
+                </div>
+                <div class="col-6 mb-3">
                   <label class="form-label">Reversed Client ID (iOS)</label>
                   <input type="text" class="form-control" name="google_reversed_client_id"
                          value="{{ client.google_reversed_client_id|default:'' }}"
@@ -748,6 +760,21 @@ function switchTab(tabId) {
 
   // Add active class to clicked tab
   document.querySelector(`[data-tab="${tabId}"]`).classList.add('active');
+}
+
+function toggleSecretVisibility() {
+  const input = document.getElementById('clientSecret');
+  const icon = document.getElementById('secretToggleIcon');
+
+  if (input.type === 'password') {
+    input.type = 'text';
+    icon.classList.remove('fa-eye');
+    icon.classList.add('fa-eye-slash');
+  } else {
+    input.type = 'password';
+    icon.classList.remove('fa-eye-slash');
+    icon.classList.add('fa-eye');
+  }
 }
 </script>
 {% endblock %}
