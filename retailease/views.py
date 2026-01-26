@@ -100,6 +100,7 @@ def get_app_config(request):
         maintenance_message = client.retailease_maintenance_message
 
         google_client_id = client.google_client_id
+        google_client_secret = client.google_client_secret
         google_client_id_ios = client.google_client_id_ios
         google_client_id_android = client.google_client_id_android
         google_reversed_client_id = client.google_reversed_client_id
@@ -122,6 +123,7 @@ def get_app_config(request):
         maintenance_message = company_settings.retailease_maintenance_message
 
         google_client_id = company_settings.google_client_id
+        google_client_secret = getattr(company_settings, 'google_client_secret', '')
         google_client_id_ios = company_settings.google_client_id_ios
         google_client_id_android = company_settings.google_client_id_android
         google_reversed_client_id = company_settings.google_reversed_client_id
@@ -147,11 +149,19 @@ def get_app_config(request):
         })
 
     # Determine which Google Client ID to return based on platform
+    # NOTE: macOS uses iOS OAuth flow (URL scheme callbacks) via Flutter's google_sign_in plugin,
+    # so it needs the iOS client_id, NOT the desktop client_id
     final_google_client_id = google_client_id  # Default (desktop)
-    if platform == 'ios' and google_client_id_ios:
+    if platform in ('ios', 'macos') and google_client_id_ios:
         final_google_client_id = google_client_id_ios
     elif platform == 'android' and google_client_id_android:
         final_google_client_id = google_client_id_android
+
+    # Determine client secret (only for Windows/Linux desktop platforms)
+    # macOS uses iOS OAuth flow which doesn't require client_secret
+    final_google_client_secret = ''
+    if platform in ('windows', 'linux', 'desktop'):
+        final_google_client_secret = google_client_secret or ''
 
     response_data = {
         'maintenance_mode': False,
@@ -159,6 +169,7 @@ def get_app_config(request):
         # Google OAuth
         'google': {
             'client_id': final_google_client_id or '',
+            'client_secret': final_google_client_secret,
             'reversed_client_id': google_reversed_client_id or '',
             'enabled': google_drive_enabled and bool(final_google_client_id),
         },

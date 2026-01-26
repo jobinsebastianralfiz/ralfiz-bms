@@ -34,11 +34,12 @@ class Client(models.Model):
     google_client_id = models.CharField(
         max_length=200, blank=True,
         verbose_name='Google OAuth Client ID (Desktop)',
-        help_text='OAuth 2.0 Client ID for desktop apps (macOS/Windows/Linux)'
+        help_text='OAuth 2.0 Client ID for Windows/Linux (Desktop type in Google Cloud Console)'
     )
     google_client_id_ios = models.CharField(
         max_length=200, blank=True,
-        verbose_name='Google OAuth Client ID (iOS)'
+        verbose_name='Google OAuth Client ID (iOS/macOS)',
+        help_text='OAuth 2.0 Client ID for iOS & macOS (iOS type in Google Cloud Console)'
     )
     google_client_id_android = models.CharField(
         max_length=200, blank=True,
@@ -46,13 +47,13 @@ class Client(models.Model):
     )
     google_reversed_client_id = models.CharField(
         max_length=200, blank=True,
-        verbose_name='Reversed Client ID (for iOS)',
-        help_text='e.g., com.googleusercontent.apps.xxxxx'
+        verbose_name='Reversed Client ID (for iOS/macOS)',
+        help_text='e.g., com.googleusercontent.apps.xxxxx - Used for URL scheme callback'
     )
     google_client_secret = models.CharField(
         max_length=200, blank=True,
         verbose_name='Google OAuth Client Secret',
-        help_text='Client Secret for desktop OAuth (required for macOS/Windows/Linux)'
+        help_text='Client Secret for Windows/Linux only (not needed for iOS/macOS/Android)'
     )
 
     # Backup Feature Flags
@@ -532,23 +533,23 @@ class CompanySettings(models.Model):
     # Google OAuth for backup
     google_client_id = models.CharField(
         max_length=200, blank=True,
-        verbose_name='Google OAuth Client ID',
-        help_text='Desktop app client ID from Google Cloud Console'
+        verbose_name='Google OAuth Client ID (Desktop)',
+        help_text='OAuth 2.0 Client ID for Windows/Linux (Desktop type in Google Cloud Console)'
     )
     google_client_id_ios = models.CharField(
         max_length=200, blank=True,
-        verbose_name='Google OAuth Client ID (iOS)',
-        help_text='iOS app client ID (if different)'
+        verbose_name='Google OAuth Client ID (iOS/macOS)',
+        help_text='OAuth 2.0 Client ID for iOS & macOS (iOS type in Google Cloud Console)'
     )
     google_client_id_android = models.CharField(
         max_length=200, blank=True,
         verbose_name='Google OAuth Client ID (Android)',
-        help_text='Android app client ID (if different)'
+        help_text='OAuth 2.0 Client ID for Android (Android type in Google Cloud Console)'
     )
     google_reversed_client_id = models.CharField(
         max_length=200, blank=True,
-        verbose_name='Reversed Client ID',
-        help_text='For iOS URL scheme (com.googleusercontent.apps.XXX)'
+        verbose_name='Reversed Client ID (for iOS/macOS)',
+        help_text='e.g., com.googleusercontent.apps.xxxxx - Used for URL scheme callback'
     )
 
     # RetailEase Feature Flags
