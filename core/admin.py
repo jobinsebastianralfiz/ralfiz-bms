@@ -1,17 +1,160 @@
 from django.contrib import admin
+from django.utils.html import format_html
+from django.utils import timezone
 from .models import (
     Client, Project, Credential, Quote, QuoteItem,
     Invoice, InvoiceItem, Payment, CompanySettings,
     Expense, TeamMember, Task, TimeEntry, ActivityLog, Document
 )
+from licensing.models import License
+
+
+class ClientLicenseInline(admin.StackedInline):
+    """Inline to manage licenses from the Client detail page"""
+    model = License
+    extra = 0
+    can_delete = False
+    show_change_link = True
+    verbose_name = "License"
+    verbose_name_plural = "Licenses"
+
+    fields = [
+        'license_status_display',
+        ('license_type', 'status'),
+        ('valid_from', 'valid_until'),
+        ('billing_cycle', 'auto_renew'),
+        ('current_activations', 'max_activations'),
+        'renewal_info',
+    ]
+    readonly_fields = ['license_status_display', 'current_activations', 'renewal_info']
+
+    def license_status_display(self, obj):
+        """Show license status with visual indicators"""
+        if not obj.pk:
+            return '-'
+
+        days = obj.days_remaining()
+        valid_until = obj.valid_until.strftime('%Y-%m-%d') if obj.valid_until else '-'
+
+        if obj.status == 'revoked':
+            return format_html(
+                '<div style="padding: 10px; background: #f8d7da; border-radius: 5px; margin-bottom: 10px;">'
+                '<span style="color: #721c24; font-size: 14px;">&#10006; <strong>REVOKED</strong></span>'
+                '</div>'
+            )
+        elif obj.status == 'suspended':
+            return format_html(
+                '<div style="padding: 10px; background: #fff3cd; border-radius: 5px; margin-bottom: 10px;">'
+                '<span style="color: #856404; font-size: 14px;">&#9888; <strong>SUSPENDED</strong></span>'
+                '</div>'
+            )
+        elif days <= 0:
+            return format_html(
+                '<div style="padding: 10px; background: #f8d7da; border-radius: 5px; margin-bottom: 10px;">'
+                '<span style="color: #721c24; font-size: 14px;">&#10006; <strong>EXPIRED</strong></span> '
+                '<span style="color: #666;">(expired on {})</span><br>'
+                '<small style="color: #721c24;">Update the "Valid until" date below and save to renew.</small>'
+                '</div>',
+                valid_until
+            )
+        elif days <= 7:
+            return format_html(
+                '<div style="padding: 10px; background: #f8d7da; border-radius: 5px; margin-bottom: 10px;">'
+                '<span style="color: #721c24; font-size: 14px;">&#9888; <strong>{} days remaining</strong></span> '
+                '<span style="color: #666;">(expires {})</span><br>'
+                '<small style="color: #721c24;">License expiring soon! Update "Valid until" date to extend.</small>'
+                '</div>',
+                days, valid_until
+            )
+        elif days <= 30:
+            return format_html(
+                '<div style="padding: 10px; background: #fff3cd; border-radius: 5px; margin-bottom: 10px;">'
+                '<span style="color: #856404; font-size: 14px;">&#9888; <strong>{} days remaining</strong></span> '
+                '<span style="color: #666;">(expires {})</span>'
+                '</div>',
+                days, valid_until
+            )
+        else:
+            return format_html(
+                '<div style="padding: 10px; background: #d4edda; border-radius: 5px; margin-bottom: 10px;">'
+                '<span style="color: #155724; font-size: 14px;">&#10004; <strong>{} days remaining</strong></span> '
+                '<span style="color: #666;">(expires {})</span>'
+                '</div>',
+                days, valid_until
+            )
+    license_status_display.short_description = 'Status Overview'
+
+    def renewal_info(self, obj):
+        """Show renewal history"""
+        if not obj.pk:
+            return '-'
+
+        info_parts = []
+        if obj.renewal_count > 0:
+            info_parts.append(f'Renewed {obj.renewal_count} time(s)')
+        if obj.last_renewed_at:
+            info_parts.append(f'Last renewed: {obj.last_renewed_at.strftime("%Y-%m-%d %H:%M")}')
+
+        if info_parts:
+            return ' | '.join(info_parts)
+        return 'Never renewed'
+    renewal_info.short_description = 'Renewal History'
 
 
 @admin.register(Client)
 class ClientAdmin(admin.ModelAdmin):
-    list_display = ['name', 'company_name', 'email', 'phone', 'priority', 'is_active', 'created_at']
+    list_display = ['name', 'company_name', 'email', 'phone', 'priority', 'license_status', 'is_active', 'created_at']
     list_filter = ['priority', 'is_active', 'created_at']
     search_fields = ['name', 'company_name', 'email', 'phone']
     ordering = ['-created_at']
+    inlines = [ClientLicenseInline]
+
+    def license_status(self, obj):
+        """Show license status in list view"""
+        license = obj.licenses.first()
+        if not license:
+            return format_html('<span style="color: #999;">No License</span>')
+
+        days = license.days_remaining()
+        if license.status in ['revoked', 'suspended']:
+            return format_html('<span style="color: #6c757d;">{}</span>', license.status.title())
+        elif days <= 0:
+            return format_html('<span style="color: #dc3545; font-weight: bold;">Expired</span>')
+        elif days <= 7:
+            return format_html('<span style="color: #dc3545;">{} days</span>', days)
+        elif days <= 30:
+            return format_html('<span style="color: #ffc107;">{} days</span>', days)
+        else:
+            return format_html('<span style="color: #28a745;">{} days</span>', days)
+    license_status.short_description = 'License'
+
+    def save_formset(self, request, form, formset, change):
+        """Handle license updates including renewal tracking"""
+        if formset.model == License:
+            instances = formset.save(commit=False)
+            for instance in instances:
+                # Check if valid_until was extended (renewal)
+                if instance.pk:
+                    old_instance = License.objects.get(pk=instance.pk)
+                    if instance.valid_until > old_instance.valid_until:
+                        # License was extended - track as renewal
+                        instance.renewal_count += 1
+                        instance.last_renewed_at = timezone.now()
+                        instance.status = 'active'  # Reactivate if was expired
+
+                        # Add renewal note
+                        renewal_note = f"\n[{timezone.now().isoformat()}] Renewed via admin from {old_instance.valid_until.date()} to {instance.valid_until.date()}"
+                        instance.notes = (instance.notes or '') + renewal_note
+
+                        # Regenerate license code with new expiry
+                        instance.license_code = instance.generate_license_code()
+
+                instance.save()
+
+            for obj in formset.deleted_objects:
+                obj.delete()
+        else:
+            formset.save()
 
 
 @admin.register(Project)
