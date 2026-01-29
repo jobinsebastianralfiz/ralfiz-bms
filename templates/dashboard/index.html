@@ -566,6 +566,82 @@
 
   <!-- Right Column - Sidebar -->
   <div class="col-4 col-md-12" style="padding: 0.5rem;">
+    <!-- License Status Card -->
+    <div class="chart-card mb-4">
+      <div class="chart-card-header">
+        <h3 class="chart-card-title">
+          <i class="fas fa-key me-2 text-primary"></i>License Status
+        </h3>
+        <button type="button" class="btn btn-sm btn-outline-primary" id="syncLicensesBtn" onclick="syncLicenses()">
+          <i class="fas fa-sync-alt me-1"></i>Sync
+        </button>
+      </div>
+      <div class="chart-card-body">
+        <!-- License Stats -->
+        <div class="d-flex justify-content-between align-items-center mb-3 pb-3 border-bottom">
+          <div class="text-center flex-1">
+            <div class="fw-bold text-success" style="font-size: 1.5rem;" id="activeLicenseCount">{{ active_licenses }}</div>
+            <div class="text-sm text-muted">Active</div>
+          </div>
+          <div class="text-center flex-1">
+            <div class="fw-bold text-warning" style="font-size: 1.5rem;" id="expiringLicenseCount">{{ expiring_licenses }}</div>
+            <div class="text-sm text-muted">Expiring</div>
+          </div>
+          <div class="text-center flex-1">
+            <div class="fw-bold text-danger" style="font-size: 1.5rem;" id="expiredLicenseCount">{{ expired_licenses }}</div>
+            <div class="text-sm text-muted">Expired</div>
+          </div>
+        </div>
+
+        <!-- Expiring Soon Alerts -->
+        {% if licenses_expiring_soon %}
+        <div class="mb-3">
+          <div class="text-sm text-muted mb-2"><i class="fas fa-exclamation-triangle text-warning me-1"></i>Expiring Soon</div>
+          {% for license in licenses_expiring_soon %}
+          <div class="d-flex align-items-center gap-2 py-2 border-bottom">
+            <div class="flex-1">
+              <div class="fw-medium text-sm">{{ license.customer_name }}</div>
+              <div class="text-xs text-warning">{{ license.valid_until|date:"d M Y" }} ({{ license.days_remaining }} days)</div>
+            </div>
+            <a href="{% url 'license_detail' license.pk %}" class="btn btn-sm btn-ghost btn-icon">
+              <i class="fas fa-arrow-right"></i>
+            </a>
+          </div>
+          {% endfor %}
+        </div>
+        {% endif %}
+
+        <!-- Expired Licenses -->
+        {% if licenses_expired %}
+        <div>
+          <div class="text-sm text-muted mb-2"><i class="fas fa-times-circle text-danger me-1"></i>Expired</div>
+          {% for license in licenses_expired %}
+          <div class="d-flex align-items-center gap-2 py-2 border-bottom">
+            <div class="flex-1">
+              <div class="fw-medium text-sm">{{ license.customer_name }}</div>
+              <div class="text-xs text-danger">Expired {{ license.valid_until|date:"d M Y" }}</div>
+            </div>
+            <a href="{% url 'license_detail' license.pk %}" class="btn btn-sm btn-ghost btn-icon" title="Renew">
+              <i class="fas fa-arrow-right"></i>
+            </a>
+          </div>
+          {% endfor %}
+        </div>
+        {% endif %}
+
+        {% if not licenses_expiring_soon and not licenses_expired %}
+        <div class="text-center text-muted py-2">
+          <i class="fas fa-check-circle text-success mb-2" style="font-size: 1.5rem;"></i>
+          <p class="mb-0 text-sm">All licenses healthy</p>
+        </div>
+        {% endif %}
+
+        <a href="{% url 'license_list' %}" class="btn btn-outline-primary btn-sm w-100 mt-3">
+          <i class="fas fa-list me-1"></i>View All Licenses
+        </a>
+      </div>
+    </div>
+
     <!-- Project Status -->
     <div class="chart-card mb-4">
       <div class="chart-card-header">
@@ -648,6 +724,68 @@
 
 {% block extra_js %}
 <script>
+// License Sync Function
+function syncLicenses() {
+  const btn = document.getElementById('syncLicensesBtn');
+  const originalHtml = btn.innerHTML;
+
+  // Show loading state
+  btn.disabled = true;
+  btn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Syncing...';
+
+  // Make AJAX request
+  fetch('{% url "sync_licenses" %}', {
+    method: 'POST',
+    headers: {
+      'X-CSRFToken': '{{ csrf_token }}',
+      'X-Requested-With': 'XMLHttpRequest',
+      'Content-Type': 'application/json',
+    },
+  })
+  .then(response => response.json())
+  .then(data => {
+    if (data.success) {
+      // Update the counts
+      document.getElementById('activeLicenseCount').textContent = data.stats.active;
+      document.getElementById('expiringLicenseCount').textContent = data.stats.expiring_soon;
+      document.getElementById('expiredLicenseCount').textContent = data.stats.expired;
+
+      // Show success
+      btn.innerHTML = '<i class="fas fa-check me-1"></i>Synced!';
+      btn.classList.remove('btn-outline-primary');
+      btn.classList.add('btn-success');
+
+      // Show notification
+      if (data.stats.updated > 0) {
+        alert(data.message);
+      }
+
+      // Reset button after delay
+      setTimeout(() => {
+        btn.innerHTML = originalHtml;
+        btn.classList.remove('btn-success');
+        btn.classList.add('btn-outline-primary');
+        btn.disabled = false;
+      }, 2000);
+    } else {
+      throw new Error(data.message || 'Sync failed');
+    }
+  })
+  .catch(error => {
+    console.error('Sync error:', error);
+    btn.innerHTML = '<i class="fas fa-exclamation-triangle me-1"></i>Error';
+    btn.classList.remove('btn-outline-primary');
+    btn.classList.add('btn-danger');
+
+    setTimeout(() => {
+      btn.innerHTML = originalHtml;
+      btn.classList.remove('btn-danger');
+      btn.classList.add('btn-outline-primary');
+      btn.disabled = false;
+    }, 2000);
+  });
+}
+
 document.addEventListener('DOMContentLoaded', function() {
   const colors = {
     primary: '#0d9488',

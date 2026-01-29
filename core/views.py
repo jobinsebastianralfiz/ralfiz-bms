@@ -81,6 +81,32 @@ def dashboard(request):
         is_active=True
     ).select_related('project', 'project__client')[:5]
 
+    # License statistics
+    from licensing.models import License
+    all_licenses = License.objects.all()
+    active_licenses = all_licenses.filter(status='active', valid_until__gte=timezone.now()).count()
+    expiring_licenses = all_licenses.filter(
+        status='active',
+        valid_until__gte=timezone.now(),
+        valid_until__lte=timezone.now() + timedelta(days=30)
+    ).count()
+    expired_licenses = all_licenses.filter(
+        Q(status='expired') | Q(valid_until__lt=timezone.now())
+    ).count()
+    total_licenses = all_licenses.count()
+
+    # Get licenses expiring soon for alerts
+    licenses_expiring_soon = License.objects.filter(
+        status='active',
+        valid_until__gte=timezone.now(),
+        valid_until__lte=timezone.now() + timedelta(days=30)
+    ).select_related('client').order_by('valid_until')[:5]
+
+    # Get expired licenses for alerts
+    licenses_expired = License.objects.filter(
+        Q(status='expired') | Q(valid_until__lt=timezone.now(), status='active')
+    ).select_related('client').order_by('-valid_until')[:5]
+
     # Overdue invoices
     overdue_invoices = Invoice.objects.filter(
         due_date__lt=timezone.now().date(),
@@ -155,6 +181,13 @@ def dashboard(request):
         'overdue_invoices': overdue_invoices,
         'recent_payments': recent_payments,
         'recent_invoices': recent_invoices,
+        # License data
+        'active_licenses': active_licenses,
+        'expiring_licenses': expiring_licenses,
+        'expired_licenses': expired_licenses,
+        'total_licenses': total_licenses,
+        'licenses_expiring_soon': licenses_expiring_soon,
+        'licenses_expired': licenses_expired,
         # Chart data as JSON
         'monthly_revenue_labels': json.dumps(monthly_revenue_labels),
         'monthly_revenue_data': json.dumps(monthly_revenue_data),
@@ -3768,6 +3801,69 @@ def license_update(request, pk):
         return redirect('license_detail', pk=pk)
 
     return redirect('license_detail', pk=pk)
+
+
+@login_required
+def sync_licenses(request):
+    """
+    Sync all licenses - check validity and update expired status.
+    Returns JSON with sync results for AJAX calls.
+    """
+    from licensing.models import License
+    from django.http import JsonResponse
+
+    if request.method == 'POST':
+        now = timezone.now()
+        updated_count = 0
+        expired_count = 0
+        active_count = 0
+        expiring_soon_count = 0
+
+        # Get all licenses
+        licenses = License.objects.all()
+
+        for license in licenses:
+            original_status = license.status
+
+            # Check if license should be expired
+            if license.valid_until < now and license.status == 'active':
+                license.status = 'expired'
+                license.save(update_fields=['status'])
+                updated_count += 1
+                expired_count += 1
+            elif license.valid_until >= now and license.status == 'expired':
+                # License was renewed - reactivate it
+                license.status = 'active'
+                license.save(update_fields=['status'])
+                updated_count += 1
+                active_count += 1
+            elif license.status == 'active':
+                active_count += 1
+                # Check if expiring soon (within 30 days)
+                if license.valid_until <= now + timedelta(days=30):
+                    expiring_soon_count += 1
+            else:
+                if license.status == 'expired':
+                    expired_count += 1
+
+        # Return JSON for AJAX
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            return JsonResponse({
+                'success': True,
+                'message': f'Sync complete! {updated_count} license(s) updated.',
+                'stats': {
+                    'total': licenses.count(),
+                    'active': active_count,
+                    'expired': expired_count,
+                    'expiring_soon': expiring_soon_count,
+                    'updated': updated_count,
+                }
+            })
+
+        messages.success(request, f'License sync complete! {updated_count} license(s) updated.')
+        return redirect('dashboard')
+
+    return redirect('dashboard')
 
 
 @login_required

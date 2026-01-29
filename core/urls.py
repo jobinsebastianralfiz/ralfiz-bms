@@ -131,6 +131,7 @@ urlpatterns = [
     path('licenses/<uuid:pk>/', views.license_detail, name='license_detail'),
     path('licenses/<uuid:pk>/update/', views.license_update, name='license_update'),
     path('licenses/<uuid:pk>/revoke/', views.license_revoke, name='license_revoke'),
+    path('licenses/sync/', views.sync_licenses, name='sync_licenses'),
     path('licenses/<uuid:pk>/deactivate/<uuid:activation_id>/', views.license_deactivate_device, name='license_deactivate_device'),
     path('licenses/<uuid:pk>/delete-activation/<uuid:activation_id>/', views.license_delete_activation, name='license_delete_activation'),
     path('licenses/keys/', views.license_keys, name='license_keys'),
