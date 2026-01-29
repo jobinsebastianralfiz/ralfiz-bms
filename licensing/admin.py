@@ -53,7 +53,7 @@ class LicenseAdmin(admin.ModelAdmin):
     list_display = ['customer_name', 'client_name', 'customer_email', 'license_type', 'status_badge', 'valid_until', 'days_left', 'activations_display']
     list_filter = ['license_type', 'status', 'key_pair', 'client']
     search_fields = ['customer_name', 'customer_email', 'customer_company', 'id', 'client__name', 'client__company_name']
-    readonly_fields = ['id', 'license_code_display', 'created_at', 'updated_at', 'current_activations']
+    readonly_fields = ['id', 'license_code_display', 'created_at', 'updated_at', 'current_activations', 'days_remaining_display', 'renewal_count', 'last_renewed_at']
     date_hierarchy = 'created_at'
     inlines = [LicenseActivationInline]
     autocomplete_fields = ['client']  # For easier client selection
@@ -69,12 +69,20 @@ class LicenseAdmin(admin.ModelAdmin):
         ('License Configuration', {
             'fields': ('key_pair', 'license_type', 'max_activations', 'current_activations')
         }),
-        ('Validity', {
-            'fields': ('status', 'valid_from', 'valid_until')
+        ('Validity & Renewal', {
+            'fields': ('status', 'valid_from', 'valid_until', 'days_remaining_display'),
+            'description': 'Edit "Valid until" date to extend/renew the license. Changes are saved when you click Save.'
+        }),
+        ('Subscription Settings', {
+            'fields': ('billing_cycle', 'auto_renew', 'grace_period_days'),
+        }),
+        ('Renewal History', {
+            'fields': ('renewal_count', 'last_renewed_at'),
+            'classes': ('collapse',),
         }),
         ('License Code', {
             'fields': ('license_code_display',),
-            'description': 'This is the code to provide to the customer.'
+            'description': 'This is the code to provide to the customer. It auto-regenerates when validity changes.'
         }),
         ('Notes', {
             'fields': ('notes',),
@@ -116,6 +124,39 @@ class LicenseAdmin(admin.ModelAdmin):
             return format_html('<span style="color: orange;">{} days</span>', days)
         return f'{days} days'
     days_left.short_description = 'Days Remaining'
+
+    def days_remaining_display(self, obj):
+        """Display days remaining with color coding for detail view"""
+        if not obj.pk:
+            return '-'
+        days = obj.days_remaining()
+        if obj.status in ['revoked', 'suspended']:
+            return format_html(
+                '<span style="color: #6c757d; font-size: 16px; font-weight: bold;">{}</span>',
+                obj.get_status_display()
+            )
+        elif days <= 0:
+            return format_html(
+                '<span style="color: #dc3545; font-size: 16px; font-weight: bold;">EXPIRED</span>'
+                '<br><small>Change "Valid until" date below and Save to renew</small>'
+            )
+        elif days <= 7:
+            return format_html(
+                '<span style="color: #dc3545; font-size: 16px; font-weight: bold;">{} days remaining</span>'
+                '<br><small style="color: #dc3545;">Expiring very soon!</small>',
+                days
+            )
+        elif days <= 30:
+            return format_html(
+                '<span style="color: #ffc107; font-size: 16px; font-weight: bold;">{} days remaining</span>',
+                days
+            )
+        else:
+            return format_html(
+                '<span style="color: #28a745; font-size: 16px; font-weight: bold;">{} days remaining</span>',
+                days
+            )
+    days_remaining_display.short_description = 'Current Status'
     
     def activations_display(self, obj):
         return f'{obj.current_activations}/{obj.max_activations}'
