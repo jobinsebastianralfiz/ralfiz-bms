@@ -168,24 +168,28 @@ def validate_license(request):
 def check_license(request):
     """
     Quick check if a license is still valid (for periodic checks).
-    
+    Also returns updated license info if it was renewed on the backend.
+
     POST body:
     {
         "license_id": "uuid",
         "machine_id": "abc123..."
     }
+
+    Response includes 'renewed' flag if license was renewed since last check.
     """
     try:
         data = json.loads(request.body)
         license_id = data.get('license_id', '').strip()
         machine_id = data.get('machine_id', '').strip()
-        
+        last_known_expiry = data.get('last_known_expiry', '')  # ISO format
+
         if not license_id or not machine_id:
             return JsonResponse({
                 'valid': False,
                 'error': 'License ID and Machine ID are required'
             }, status=400)
-        
+
         try:
             license_obj = License.objects.get(id=license_id)
         except License.DoesNotExist:
@@ -193,14 +197,7 @@ def check_license(request):
                 'valid': False,
                 'error': 'License not found'
             }, status=400)
-        
-        # Check if valid
-        if not license_obj.is_valid():
-            return JsonResponse({
-                'valid': False,
-                'error': 'License expired or invalid'
-            }, status=400)
-        
+
         # Check activation
         try:
             activation = LicenseActivation.objects.get(
@@ -216,13 +213,57 @@ def check_license(request):
                 'valid': False,
                 'error': 'Machine not activated'
             }, status=400)
-        
-        return JsonResponse({
+
+        # Check if license is valid or in grace period
+        is_valid = license_obj.is_valid()
+        in_grace_period = license_obj.is_in_grace_period() if hasattr(license_obj, 'is_in_grace_period') else False
+
+        # Check if license was renewed (expiry date changed)
+        was_renewed = False
+        if last_known_expiry:
+            try:
+                from datetime import datetime
+                last_expiry = datetime.fromisoformat(last_known_expiry.replace('Z', '+00:00'))
+                if timezone.is_naive(last_expiry):
+                    last_expiry = timezone.make_aware(last_expiry)
+                was_renewed = license_obj.valid_until > last_expiry
+            except (ValueError, TypeError):
+                pass
+
+        if not is_valid and not in_grace_period:
+            return JsonResponse({
+                'valid': False,
+                'error': 'License expired',
+                'expired': True,
+                'valid_until': license_obj.valid_until.isoformat(),
+                'can_renew': True,
+                'billing_cycle': license_obj.billing_cycle,
+            }, status=400)
+
+        response_data = {
             'valid': True,
             'days_remaining': license_obj.days_remaining(),
-            'valid_until': license_obj.valid_until.isoformat()
-        })
-        
+            'valid_until': license_obj.valid_until.isoformat(),
+            'renewed': was_renewed,
+            'in_grace_period': in_grace_period,
+            'billing_cycle': license_obj.billing_cycle,
+            'license_type': license_obj.license_type,
+        }
+
+        # If renewed, include full license data so client can update local storage
+        if was_renewed:
+            response_data['license'] = {
+                'id': str(license_obj.id),
+                'type': license_obj.license_type,
+                'customer_name': license_obj.customer_name,
+                'customer_email': license_obj.customer_email,
+                'valid_until': license_obj.valid_until.isoformat(),
+                'days_remaining': license_obj.days_remaining(),
+                'renewal_count': license_obj.renewal_count,
+            }
+
+        return JsonResponse(response_data)
+
     except json.JSONDecodeError:
         return JsonResponse({
             'valid': False,
@@ -231,6 +272,170 @@ def check_license(request):
     except Exception as e:
         return JsonResponse({
             'valid': False,
+            'error': str(e)
+        }, status=500)
+
+
+@csrf_exempt
+@require_http_methods(["POST"])
+def renew_license(request):
+    """
+    Renew a license (called after payment is confirmed).
+    This is typically called by admin/payment webhook, not directly by app.
+
+    POST body:
+    {
+        "license_id": "uuid",
+        "admin_key": "secret-admin-key",  # For security
+        "extend_days": 365,  # Optional, defaults to billing cycle
+        "payment_reference": "PAY123"  # Optional, for audit
+    }
+    """
+    try:
+        data = json.loads(request.body)
+        license_id = data.get('license_id', '').strip()
+        admin_key = data.get('admin_key', '').strip()
+        extend_days = data.get('extend_days')
+        payment_reference = data.get('payment_reference', '')
+
+        # Simple admin key check (in production, use proper auth)
+        # You should set this in Django settings
+        from django.conf import settings
+        expected_key = getattr(settings, 'LICENSE_ADMIN_KEY', 'retailease-admin-secret')
+
+        if admin_key != expected_key:
+            return JsonResponse({
+                'success': False,
+                'error': 'Unauthorized'
+            }, status=401)
+
+        if not license_id:
+            return JsonResponse({
+                'success': False,
+                'error': 'License ID is required'
+            }, status=400)
+
+        try:
+            license_obj = License.objects.get(id=license_id)
+        except License.DoesNotExist:
+            return JsonResponse({
+                'success': False,
+                'error': 'License not found'
+            }, status=404)
+
+        # Renew the license
+        old_valid_until = license_obj.valid_until
+        new_valid_until = license_obj.renew(extend_days=extend_days)
+
+        # Add note about renewal
+        renewal_note = f"\n[{timezone.now().isoformat()}] Renewed from {old_valid_until.date()} to {new_valid_until.date()}"
+        if payment_reference:
+            renewal_note += f" (Payment: {payment_reference})"
+        license_obj.notes += renewal_note
+        license_obj.save(update_fields=['notes'])
+
+        return JsonResponse({
+            'success': True,
+            'license': {
+                'id': str(license_obj.id),
+                'customer_name': license_obj.customer_name,
+                'old_valid_until': old_valid_until.isoformat(),
+                'new_valid_until': new_valid_until.isoformat(),
+                'days_remaining': license_obj.days_remaining(),
+                'renewal_count': license_obj.renewal_count,
+            }
+        })
+
+    except json.JSONDecodeError:
+        return JsonResponse({
+            'success': False,
+            'error': 'Invalid JSON'
+        }, status=400)
+    except Exception as e:
+        return JsonResponse({
+            'success': False,
+            'error': str(e)
+        }, status=500)
+
+
+@csrf_exempt
+@require_http_methods(["POST"])
+def refresh_license(request):
+    """
+    Refresh license data from server (called by app to get latest license info).
+    If license was renewed on backend, returns updated license data.
+
+    POST body:
+    {
+        "license_id": "uuid",
+        "machine_id": "abc123..."
+    }
+    """
+    try:
+        data = json.loads(request.body)
+        license_id = data.get('license_id', '').strip()
+        machine_id = data.get('machine_id', '').strip()
+
+        if not license_id or not machine_id:
+            return JsonResponse({
+                'success': False,
+                'error': 'License ID and Machine ID are required'
+            }, status=400)
+
+        try:
+            license_obj = License.objects.get(id=license_id)
+        except License.DoesNotExist:
+            return JsonResponse({
+                'success': False,
+                'error': 'License not found'
+            }, status=404)
+
+        # Verify machine is activated
+        try:
+            activation = LicenseActivation.objects.get(
+                license=license_obj,
+                machine_id=machine_id,
+                is_active=True
+            )
+            activation.last_check = timezone.now()
+            activation.save(update_fields=['last_check'])
+        except LicenseActivation.DoesNotExist:
+            return JsonResponse({
+                'success': False,
+                'error': 'Machine not activated for this license'
+            }, status=403)
+
+        # Return full license data
+        is_valid = license_obj.is_valid()
+        in_grace_period = license_obj.is_in_grace_period() if hasattr(license_obj, 'is_in_grace_period') else False
+
+        return JsonResponse({
+            'success': True,
+            'valid': is_valid or in_grace_period,
+            'in_grace_period': in_grace_period,
+            'license': {
+                'id': str(license_obj.id),
+                'type': license_obj.license_type,
+                'customer_name': license_obj.customer_name,
+                'customer_email': license_obj.customer_email,
+                'valid_from': license_obj.valid_from.isoformat(),
+                'valid_until': license_obj.valid_until.isoformat(),
+                'days_remaining': license_obj.days_remaining(),
+                'status': license_obj.status,
+                'billing_cycle': license_obj.billing_cycle,
+                'renewal_count': license_obj.renewal_count,
+                'last_renewed_at': license_obj.last_renewed_at.isoformat() if license_obj.last_renewed_at else None,
+            }
+        })
+
+    except json.JSONDecodeError:
+        return JsonResponse({
+            'success': False,
+            'error': 'Invalid JSON'
+        }, status=400)
+    except Exception as e:
+        return JsonResponse({
+            'success': False,
             'error': str(e)
         }, status=500)
 

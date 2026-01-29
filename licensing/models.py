@@ -91,6 +91,13 @@ class License(models.Model):
         ('suspended', 'Suspended'),
     ]
 
+    BILLING_CYCLE_CHOICES = [
+        ('monthly', 'Monthly'),
+        ('quarterly', 'Quarterly'),
+        ('yearly', 'Yearly'),
+        ('lifetime', 'Lifetime (One-time)'),
+    ]
+
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     key_pair = models.ForeignKey(LicenseKey, on_delete=models.PROTECT, related_name='licenses')
 
@@ -108,24 +115,31 @@ class License(models.Model):
     customer_email = models.EmailField()
     customer_company = models.CharField(max_length=200, blank=True)
     customer_phone = models.CharField(max_length=20, blank=True)
-    
+
     # License Details
     license_type = models.CharField(max_length=20, choices=LICENSE_TYPE_CHOICES, default='basic')
     machine_id = models.CharField(max_length=64, blank=True, help_text="Hardware fingerprint (filled on activation)")
     max_activations = models.PositiveIntegerField(default=1)
     current_activations = models.PositiveIntegerField(default=0)
-    
+
     # Validity
     issued_at = models.DateTimeField(auto_now_add=True)
     valid_from = models.DateTimeField(default=timezone.now)
     valid_until = models.DateTimeField()
-    
+
+    # Subscription & Billing
+    billing_cycle = models.CharField(max_length=20, choices=BILLING_CYCLE_CHOICES, default='yearly')
+    auto_renew = models.BooleanField(default=False, help_text="Auto-renew when payment received")
+    grace_period_days = models.PositiveIntegerField(default=7, help_text="Days after expiry before full lockout")
+    last_renewed_at = models.DateTimeField(null=True, blank=True)
+    renewal_count = models.PositiveIntegerField(default=0)
+
     # Status
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='active')
-    
+
     # The actual license key (signed data)
     license_code = models.TextField(blank=True, help_text="The signed license code to give to customer")
-    
+
     # Metadata
     notes = models.TextField(blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
@@ -215,6 +229,50 @@ class License(models.Model):
             return 0
         remaining = self.valid_until - timezone.now()
         return max(0, remaining.days)
+
+    def is_in_grace_period(self):
+        """Check if license is in grace period (expired but within grace days)"""
+        if self.status != 'active':
+            return False
+        now = timezone.now()
+        if now <= self.valid_until:
+            return False
+        grace_end = self.valid_until + timedelta(days=self.grace_period_days)
+        return now <= grace_end
+
+    def renew(self, extend_days=None):
+        """
+        Renew the license by extending valid_until.
+        If extend_days is not provided, uses billing_cycle to determine duration.
+        Returns the new valid_until date.
+        """
+        if extend_days is None:
+            # Determine days based on billing cycle
+            cycle_days = {
+                'monthly': 30,
+                'quarterly': 90,
+                'yearly': 365,
+                'lifetime': 36500,  # 100 years
+            }
+            extend_days = cycle_days.get(self.billing_cycle, 365)
+
+        # If currently expired, extend from now; otherwise extend from valid_until
+        now = timezone.now()
+        if now > self.valid_until:
+            new_valid_until = now + timedelta(days=extend_days)
+        else:
+            new_valid_until = self.valid_until + timedelta(days=extend_days)
+
+        self.valid_until = new_valid_until
+        self.last_renewed_at = now
+        self.renewal_count += 1
+        self.status = 'active'
+
+        # Regenerate license code with new expiry
+        self.license_code = self.generate_license_code()
+        self.save()
+
+        return new_valid_until
     
     @classmethod
     def validate_license_code(cls, license_code, public_key_pem, machine_id=None):
