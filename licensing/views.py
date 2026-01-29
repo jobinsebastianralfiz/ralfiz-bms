@@ -365,6 +365,10 @@ def refresh_license(request):
     Refresh license data from server (called by app to get latest license info).
     If license was renewed on backend, returns updated license data.
 
+    IMPORTANT: This endpoint should ALWAYS return the current license state,
+    including when the license has been deactivated, revoked, suspended, or expired.
+    The client uses this to sync local state with server state.
+
     POST body:
     {
         "license_id": "uuid",
@@ -379,6 +383,7 @@ def refresh_license(request):
         if not license_id or not machine_id:
             return JsonResponse({
                 'success': False,
+                'valid': False,
                 'error': 'License ID and Machine ID are required'
             }, status=400)
 
@@ -387,31 +392,115 @@ def refresh_license(request):
         except License.DoesNotExist:
             return JsonResponse({
                 'success': False,
+                'valid': False,
                 'error': 'License not found'
             }, status=404)
+
+        # Check license status FIRST before checking machine activation
+        # This ensures deactivated/revoked licenses are caught even if machine is valid
+        if license_obj.status == 'revoked':
+            return JsonResponse({
+                'success': False,
+                'valid': False,
+                'error': 'License has been revoked',
+                'status': 'revoked',
+                'license': {
+                    'id': str(license_obj.id),
+                    'type': license_obj.license_type,
+                    'customer_name': license_obj.customer_name,
+                    'customer_email': license_obj.customer_email,
+                    'valid_until': license_obj.valid_until.isoformat(),
+                    'status': license_obj.status,
+                }
+            })
+
+        if license_obj.status == 'suspended':
+            return JsonResponse({
+                'success': False,
+                'valid': False,
+                'error': 'License has been suspended. Please contact support.',
+                'status': 'suspended',
+                'license': {
+                    'id': str(license_obj.id),
+                    'type': license_obj.license_type,
+                    'customer_name': license_obj.customer_name,
+                    'customer_email': license_obj.customer_email,
+                    'valid_until': license_obj.valid_until.isoformat(),
+                    'status': license_obj.status,
+                }
+            })
 
         # Verify machine is activated
         try:
             activation = LicenseActivation.objects.get(
                 license=license_obj,
-                machine_id=machine_id,
-                is_active=True
+                machine_id=machine_id
             )
+
+            # Check if this specific activation is deactivated
+            if not activation.is_active:
+                return JsonResponse({
+                    'success': False,
+                    'valid': False,
+                    'error': 'This device has been deactivated. Please reactivate.',
+                    'status': 'device_deactivated',
+                    'license': {
+                        'id': str(license_obj.id),
+                        'type': license_obj.license_type,
+                        'customer_name': license_obj.customer_name,
+                        'status': license_obj.status,
+                    }
+                })
+
             activation.last_check = timezone.now()
             activation.save(update_fields=['last_check'])
         except LicenseActivation.DoesNotExist:
             return JsonResponse({
                 'success': False,
+                'valid': False,
                 'error': 'Machine not activated for this license'
             }, status=403)
 
-        # Return full license data
+        # Check validity and grace period
         is_valid = license_obj.is_valid()
-        in_grace_period = license_obj.is_in_grace_period() if hasattr(license_obj, 'is_in_grace_period') else False
+        in_grace_period = license_obj.is_in_grace_period()
 
+        # Check if license is expired (status might still be 'active' but date passed)
+        now = timezone.now()
+        is_expired = now > license_obj.valid_until
+
+        # Update status to expired if needed
+        if is_expired and license_obj.status == 'active' and not in_grace_period:
+            license_obj.status = 'expired'
+            license_obj.save(update_fields=['status', 'updated_at'])
+
+        # If expired and not in grace period, return error with full info
+        if is_expired and not in_grace_period:
+            return JsonResponse({
+                'success': False,
+                'valid': False,
+                'error': 'License has expired',
+                'status': 'expired',
+                'in_grace_period': False,
+                'license': {
+                    'id': str(license_obj.id),
+                    'type': license_obj.license_type,
+                    'customer_name': license_obj.customer_name,
+                    'customer_email': license_obj.customer_email,
+                    'valid_from': license_obj.valid_from.isoformat(),
+                    'valid_until': license_obj.valid_until.isoformat(),
+                    'days_remaining': 0,
+                    'status': 'expired',
+                    'billing_cycle': license_obj.billing_cycle,
+                    'renewal_count': license_obj.renewal_count,
+                    'last_renewed_at': license_obj.last_renewed_at.isoformat() if license_obj.last_renewed_at else None,
+                }
+            })
+
+        # License is valid (or in grace period)
         return JsonResponse({
             'success': True,
-            'valid': is_valid or in_grace_period,
+            'valid': True,
             'in_grace_period': in_grace_period,
             'license': {
                 'id': str(license_obj.id),
