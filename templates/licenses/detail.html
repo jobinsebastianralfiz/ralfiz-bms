@@ -196,6 +196,98 @@
     </div>
     {% endif %}
 
+    <!-- Edit Validity Card -->
+    <div class="card mb-4">
+      <div class="card-header">
+        <h3 class="card-title">
+          <i class="fas fa-edit me-2 text-primary"></i>
+          Edit License
+        </h3>
+      </div>
+      <div class="card-body">
+        <form method="post" action="{% url 'license_update' license.pk %}">
+          {% csrf_token %}
+
+          <!-- Current Status Display -->
+          <div class="mb-3 p-3 rounded" style="background: {% if license.is_valid %}#d4edda{% elif license.status == 'revoked' %}#f8d7da{% else %}#fff3cd{% endif %};">
+            <div class="d-flex align-items-center gap-2">
+              {% if license.is_valid %}
+              <i class="fas fa-check-circle text-success"></i>
+              <span class="text-success fw-medium">{{ license.days_remaining }} days remaining</span>
+              {% elif license.status == 'revoked' %}
+              <i class="fas fa-ban text-danger"></i>
+              <span class="text-danger fw-medium">License Revoked</span>
+              {% else %}
+              <i class="fas fa-exclamation-triangle text-warning"></i>
+              <span class="text-warning fw-medium">License Expired</span>
+              {% endif %}
+            </div>
+          </div>
+
+          <!-- Valid Until -->
+          <div class="mb-3">
+            <label class="form-label">Valid Until <span class="text-danger">*</span></label>
+            <input type="date" class="form-control" name="valid_until"
+                   value="{{ license.valid_until|date:'Y-m-d' }}" required>
+            <small class="text-muted">Change this date to extend/renew the license</small>
+          </div>
+
+          <!-- Status -->
+          <div class="mb-3">
+            <label class="form-label">Status</label>
+            <select class="form-select" name="status">
+              <option value="active" {% if license.status == 'active' %}selected{% endif %}>Active</option>
+              <option value="expired" {% if license.status == 'expired' %}selected{% endif %}>Expired</option>
+              <option value="suspended" {% if license.status == 'suspended' %}selected{% endif %}>Suspended</option>
+            </select>
+          </div>
+
+          <!-- Billing Cycle -->
+          <div class="mb-3">
+            <label class="form-label">Billing Cycle</label>
+            <select class="form-select" name="billing_cycle">
+              <option value="monthly" {% if license.billing_cycle == 'monthly' %}selected{% endif %}>Monthly</option>
+              <option value="quarterly" {% if license.billing_cycle == 'quarterly' %}selected{% endif %}>Quarterly</option>
+              <option value="yearly" {% if license.billing_cycle == 'yearly' %}selected{% endif %}>Yearly</option>
+              <option value="lifetime" {% if license.billing_cycle == 'lifetime' %}selected{% endif %}>Lifetime</option>
+            </select>
+          </div>
+
+          <!-- Max Activations -->
+          <div class="mb-3">
+            <label class="form-label">Max Activations</label>
+            <input type="number" class="form-control" name="max_activations"
+                   value="{{ license.max_activations }}" min="1" max="100">
+          </div>
+
+          <!-- Quick Extend Buttons -->
+          <div class="mb-3">
+            <label class="form-label">Quick Extend</label>
+            <div class="d-flex gap-2 flex-wrap">
+              <button type="button" class="btn btn-outline-primary btn-sm" onclick="extendLicense(30)">+30 Days</button>
+              <button type="button" class="btn btn-outline-primary btn-sm" onclick="extendLicense(90)">+90 Days</button>
+              <button type="button" class="btn btn-outline-primary btn-sm" onclick="extendLicense(365)">+1 Year</button>
+            </div>
+          </div>
+
+          <button type="submit" class="btn btn-primary w-100">
+            <i class="fas fa-save me-2"></i>Save Changes
+          </button>
+        </form>
+
+        {% if license.renewal_count > 0 %}
+        <hr class="my-3">
+        <div class="text-sm text-muted">
+          <i class="fas fa-history me-1"></i>
+          Renewed {{ license.renewal_count }} time(s)
+          {% if license.last_renewed_at %}
+          <br>Last renewed: {{ license.last_renewed_at|date:"M d, Y H:i" }}
+          {% endif %}
+        </div>
+        {% endif %}
+      </div>
+    </div>
+
     <!-- Details Card -->
     <div class="card mb-4">
       <div class="card-header">
@@ -268,6 +360,31 @@ function copyLicenseCode() {
       btn.style.color = '';
     }, 2000);
   });
+}
+
+function extendLicense(days) {
+  const dateInput = document.querySelector('input[name="valid_until"]');
+  let currentDate = dateInput.value ? new Date(dateInput.value) : new Date();
+
+  // If expired, start from today
+  if (currentDate < new Date()) {
+    currentDate = new Date();
+  }
+
+  // Add the days
+  currentDate.setDate(currentDate.getDate() + days);
+
+  // Format as YYYY-MM-DD
+  const year = currentDate.getFullYear();
+  const month = String(currentDate.getMonth() + 1).padStart(2, '0');
+  const day = String(currentDate.getDate()).padStart(2, '0');
+  dateInput.value = `${year}-${month}-${day}`;
+
+  // Visual feedback
+  dateInput.style.backgroundColor = '#d4edda';
+  setTimeout(() => {
+    dateInput.style.backgroundColor = '';
+  }, 1000);
 }
 </script>
 {% endblock %}

@@ -3713,6 +3713,64 @@ def license_delete_activation(request, pk, activation_id):
 
 
 @login_required
+def license_update(request, pk):
+    """Update license details including validity dates"""
+    license = get_object_or_404(License, pk=pk)
+
+    if request.method == 'POST':
+        from datetime import datetime
+
+        # Get form data
+        valid_until_str = request.POST.get('valid_until', '')
+        status = request.POST.get('status', license.status)
+        billing_cycle = request.POST.get('billing_cycle', license.billing_cycle)
+        max_activations = request.POST.get('max_activations', license.max_activations)
+        notes = request.POST.get('notes', license.notes)
+
+        # Track if validity was extended (for renewal tracking)
+        old_valid_until = license.valid_until
+
+        # Update validity date
+        if valid_until_str:
+            try:
+                new_valid_until = datetime.strptime(valid_until_str, '%Y-%m-%d')
+                from django.utils import timezone
+                if timezone.is_naive(new_valid_until):
+                    new_valid_until = timezone.make_aware(new_valid_until)
+
+                # Check if this is a renewal (extension)
+                if new_valid_until > old_valid_until:
+                    license.renewal_count += 1
+                    license.last_renewed_at = timezone.now()
+                    # Add renewal note
+                    renewal_note = f"\n[{timezone.now().strftime('%Y-%m-%d %H:%M')}] Renewed from {old_valid_until.strftime('%Y-%m-%d')} to {new_valid_until.strftime('%Y-%m-%d')}"
+                    license.notes = (license.notes or '') + renewal_note
+
+                license.valid_until = new_valid_until
+            except ValueError:
+                messages.error(request, 'Invalid date format.')
+                return redirect('license_detail', pk=pk)
+
+        # Update other fields
+        license.status = status
+        license.billing_cycle = billing_cycle
+        try:
+            license.max_activations = int(max_activations)
+        except (ValueError, TypeError):
+            pass
+
+        # Regenerate license code if validity changed
+        if license.valid_until != old_valid_until:
+            license.license_code = license.generate_license_code()
+
+        license.save()
+        messages.success(request, 'License updated successfully!')
+        return redirect('license_detail', pk=pk)
+
+    return redirect('license_detail', pk=pk)
+
+
+@login_required
 def license_revoke(request, pk):
     """Revoke a license"""
     license = get_object_or_404(License, pk=pk)
