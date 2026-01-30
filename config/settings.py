@@ -134,3 +134,7 @@ MESSAGE_TAGS = {
     messages.WARNING: 'warning',
     messages.ERROR: 'danger',
 }
+
+# License API settings
+LICENSE_ADMIN_KEY = os.getenv('LICENSE_ADMIN_KEY', 'retailease-admin-secret')
+RETAILEASE_WEBSITE_API_KEY = os.getenv('RETAILEASE_WEBSITE_API_KEY', 'retailease-website-secret')

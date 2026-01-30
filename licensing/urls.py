@@ -10,4 +10,5 @@ urlpatterns = [
     path('renew/', views.renew_license, name='renew'),
     path('deactivate/', views.deactivate_license, name='deactivate'),
     path('public-key/', views.get_public_key, name='public_key'),
+    path('by-email/', views.get_licenses_by_email, name='licenses_by_email'),
 ]

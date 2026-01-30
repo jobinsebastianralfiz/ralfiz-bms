@@ -594,7 +594,128 @@ def get_public_key(request):
         return JsonResponse({
             'error': 'No active key pair'
         }, status=500)
-    
+
     return JsonResponse({
         'public_key': key_pair.public_key
     })
+
+
+@csrf_exempt
+@require_http_methods(["POST"])
+def get_licenses_by_email(request):
+    """
+    Get all licenses for a customer email.
+    Used by RetailEase website to show licenses in user dashboard.
+
+    POST body:
+    {
+        "email": "customer@example.com",
+        "api_key": "retailease-website-secret-key"
+    }
+
+    Response:
+    {
+        "success": true,
+        "licenses": [
+            {
+                "id": "uuid",
+                "license_type": "basic",
+                "status": "active",
+                "valid_from": "iso-datetime",
+                "valid_until": "iso-datetime",
+                "days_remaining": 365,
+                "billing_cycle": "yearly",
+                "customer_name": "John Doe",
+                "customer_company": "ABC Store",
+                "max_activations": 1,
+                "current_activations": 0,
+                "created_at": "iso-datetime"
+            }
+        ]
+    }
+    """
+    try:
+        data = json.loads(request.body)
+        email = data.get('email', '').strip().lower()
+        api_key = data.get('api_key', '').strip()
+
+        if not email:
+            return JsonResponse({
+                'success': False,
+                'error': 'Email is required'
+            }, status=400)
+
+        # Verify API key (shared secret between RetailEase website and ralfizdigital)
+        from django.conf import settings
+        expected_key = getattr(settings, 'RETAILEASE_WEBSITE_API_KEY', 'retailease-website-secret')
+
+        if api_key != expected_key:
+            return JsonResponse({
+                'success': False,
+                'error': 'Invalid API key'
+            }, status=401)
+
+        # Fetch all licenses for this email
+        # Search by both License's customer_email AND linked Client's email
+        from django.db.models import Q
+        licenses = License.objects.filter(
+            Q(customer_email__iexact=email) | Q(client__email__iexact=email)
+        ).select_related('client').distinct().order_by('-created_at')
+
+        licenses_data = []
+        for lic in licenses:
+            # Update status if expired
+            if lic.status == 'active' and not lic.is_valid() and not lic.is_in_grace_period():
+                lic.status = 'expired'
+                lic.save(update_fields=['status', 'updated_at'])
+
+            license_data = {
+                'id': str(lic.id),
+                'license_type': lic.license_type,
+                'license_type_display': lic.get_license_type_display(),
+                'status': lic.status,
+                'status_display': lic.get_status_display(),
+                'valid_from': lic.valid_from.isoformat(),
+                'valid_until': lic.valid_until.isoformat(),
+                'days_remaining': lic.days_remaining(),
+                'is_valid': lic.is_valid(),
+                'in_grace_period': lic.is_in_grace_period(),
+                'billing_cycle': lic.billing_cycle,
+                'billing_cycle_display': lic.get_billing_cycle_display(),
+                'customer_name': lic.customer_name,
+                'customer_company': lic.customer_company,
+                'max_activations': lic.max_activations,
+                'current_activations': lic.current_activations,
+                'renewal_count': lic.renewal_count,
+                'created_at': lic.created_at.isoformat(),
+            }
+
+            # Include client info if linked
+            if lic.client:
+                license_data['client'] = {
+                    'id': str(lic.client.id),
+                    'name': lic.client.name,
+                    'company_name': lic.client.company_name,
+                    'email': lic.client.email,
+                    'phone': lic.client.phone,
+                }
+
+            licenses_data.append(license_data)
+
+        return JsonResponse({
+            'success': True,
+            'email': email,
+            'count': len(licenses_data),
+            'licenses': licenses_data
+        })
+
+    except json.JSONDecodeError:
+        return JsonResponse({
+            'success': False,
+            'error': 'Invalid JSON'
+        }, status=400)
+    except Exception as e:
+        return JsonResponse({
+            'success': False,
+            'error': str(e)
+        }, status=500)
