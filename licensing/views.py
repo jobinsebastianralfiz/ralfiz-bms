@@ -671,6 +671,7 @@ def get_licenses_by_email(request):
 
             license_data = {
                 'id': str(lic.id),
+                'license_code': lic.license_code,
                 'license_type': lic.license_type,
                 'license_type_display': lic.get_license_type_display(),
                 'status': lic.status,
