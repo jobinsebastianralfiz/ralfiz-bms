@@ -1,81 +1,173 @@
 {% extends 'base.html' %}
 {% load static %}
 
-{% block title %}Edit: {{ profile.user.get_full_name|default:profile.user.username }} - Intern CRM{% endblock %}
+{% block title %}{% if profile %}Edit Intern{% else %}Add Intern{% endif %} - Intern CRM{% endblock %}
 
 {% block breadcrumb %}
 <a href="{% url 'dashboard' %}" class="breadcrumb-item">Dashboard</a>
 <span class="breadcrumb-separator">/</span>
 <a href="{% url 'crm:intern_list' %}" class="breadcrumb-item">Interns</a>
 <span class="breadcrumb-separator">/</span>
-<a href="{% url 'crm:intern_profile_detail' pk=profile.pk %}" class="breadcrumb-item">{{ profile.user.get_full_name|default:profile.user.username }}</a>
-<span class="breadcrumb-separator">/</span>
-<span class="breadcrumb-item active">Edit</span>
+<span class="breadcrumb-item active">{% if profile %}Edit{% else %}Add Intern{% endif %}</span>
 {% endblock %}
 
 {% block content %}
 <div class="page-header">
   <div>
-    <h1 class="page-title">Edit: {{ profile.user.get_full_name|default:profile.user.username }}</h1>
-  </div>
-  <div class="page-actions">
-    <a href="{% url 'crm:intern_profile_detail' pk=profile.pk %}" class="btn btn-outline-secondary">
-      <i class="fas fa-arrow-left"></i> Back
-    </a>
+    <h1 class="page-title">{% if profile %}Edit Intern{% else %}Add New Intern{% endif %}</h1>
+    <p class="page-subtitle mb-0">{% if profile %}Update intern details{% else %}Create a new intern with login account{% endif %}</p>
   </div>
 </div>
 
-<div class="card">
-  <div class="card-body">
-    <form method="post">
-      {% csrf_token %}
-      <div class="row" style="gap: 1rem 0;">
-        <div class="col-6">
-          <label class="form-label">Intern</label>
-          <input type="text" class="form-control" value="{{ profile.user.get_full_name|default:profile.user.username }}" disabled>
+<form method="post">
+  {% csrf_token %}
+  <div class="row">
+    <div class="col-8">
+      <!-- Personal Details -->
+      <div class="card">
+        <div class="card-header">
+          <h3 class="card-title"><i class="fas fa-user"></i> Personal Details</h3>
         </div>
-        <div class="col-6">
-          <label class="form-label">Intern Type <span class="text-danger">*</span></label>
-          <select name="intern_type" class="form-control" required>
-            {% for value, label in intern_type_choices %}
-            <option value="{{ value }}" {% if profile.intern_type == value %}selected{% endif %}>{{ label }}</option>
-            {% endfor %}
-          </select>
-        </div>
-        <div class="col-6">
-          <label class="form-label">Status</label>
-          <select name="status" class="form-control">
-            {% for value, label in status_choices %}
-            <option value="{{ value }}" {% if profile.status == value %}selected{% endif %}>{{ label }}</option>
-            {% endfor %}
-          </select>
-        </div>
-        <div class="col-6">
-          <label class="form-label">Supervisor</label>
-          <select name="supervisor" class="form-control">
-            <option value="">-- No Supervisor --</option>
-            {% for sup in supervisors %}
-            <option value="{{ sup.pk }}" {% if profile.supervisor_id == sup.pk %}selected{% endif %}>{{ sup.get_full_name|default:sup.username }}</option>
-            {% endfor %}
-          </select>
-        </div>
-        <div class="col-6">
-          <label class="form-label">Default Commission (%)</label>
-          <input type="number" name="default_commission_percentage" class="form-control" min="0" max="100" step="0.01" value="{{ profile.default_commission_percentage }}">
-        </div>
-        <div class="col-6">
-          <label class="form-label">Joining Date</label>
-          <input type="date" name="joining_date" class="form-control" value="{{ profile.joining_date|date:'Y-m-d'|default:'' }}">
+        <div class="card-body">
+          <div class="row">
+            <div class="col-6" style="padding: 0.5rem;">
+              <label class="form-label">First Name <span class="text-danger">*</span></label>
+              <input type="text" class="form-control" name="first_name" value="{{ profile.user.first_name|default:'' }}" required>
+            </div>
+            <div class="col-6" style="padding: 0.5rem;">
+              <label class="form-label">Last Name</label>
+              <input type="text" class="form-control" name="last_name" value="{{ profile.user.last_name|default:'' }}">
+            </div>
+          </div>
+          <div class="row">
+            <div class="col-6" style="padding: 0.5rem;">
+              <label class="form-label">Email</label>
+              <input type="email" class="form-control" name="email" value="{{ profile.user.email|default:'' }}">
+            </div>
+            <div class="col-6" style="padding: 0.5rem;">
+              <label class="form-label">Phone</label>
+              <input type="text" class="form-control" name="phone" value="{{ profile.phone|default:'' }}">
+            </div>
+          </div>
         </div>
       </div>
 
-      <div class="mt-4 d-flex gap-2">
-        <button type="submit" class="btn btn-primary">
-          <i class="fas fa-check"></i> Update Profile
-        </button>
-        <a href="{% url 'crm:intern_profile_detail' pk=profile.pk %}" class="btn btn-outline-secondary">Cancel</a>
+      <!-- Intern Profile Details -->
+      <div class="card mt-3">
+        <div class="card-header">
+          <h3 class="card-title"><i class="fas fa-user-graduate"></i> Intern Profile</h3>
+        </div>
+        <div class="card-body">
+          <div class="row">
+            <div class="col-6" style="padding: 0.5rem;">
+              <label class="form-label">Intern Type <span class="text-danger">*</span></label>
+              <select name="intern_type" class="form-control" required>
+                {% for value, label in intern_type_choices %}
+                <option value="{{ value }}" {% if profile.intern_type == value %}selected{% endif %}>{{ label }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="col-6" style="padding: 0.5rem;">
+              <label class="form-label">Status</label>
+              <select name="status" class="form-control">
+                {% for value, label in status_choices %}
+                <option value="{{ value }}" {% if profile.status == value %}selected{% elif not profile and value == 'active' %}selected{% endif %}>{{ label }}</option>
+                {% endfor %}
+              </select>
+            </div>
+          </div>
+          <div class="row">
+            <div class="col-6" style="padding: 0.5rem;">
+              <label class="form-label">Supervisor</label>
+              <select name="supervisor" class="form-control">
+                <option value="">-- No Supervisor --</option>
+                {% for sup in supervisors %}
+                <option value="{{ sup.pk }}" {% if profile.supervisor_id == sup.pk %}selected{% endif %}>{{ sup.get_full_name|default:sup.username }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="col-6" style="padding: 0.5rem;">
+              <label class="form-label">Default Commission (%)</label>
+              <input type="number" name="default_commission_percentage" class="form-control" min="0" max="100" step="0.01" value="{{ profile.default_commission_percentage|default:'5.00' }}">
+            </div>
+          </div>
+          <div class="row">
+            <div class="col-6" style="padding: 0.5rem;">
+              <label class="form-label">Joining Date</label>
+              <input type="date" name="joining_date" class="form-control" value="{{ profile.joining_date|date:'Y-m-d'|default:'' }}">
+            </div>
+          </div>
+        </div>
       </div>
-    </form>
+
+      {% if not profile %}
+      <!-- Login Account (only for new interns) -->
+      <div class="card mt-3">
+        <div class="card-header">
+          <h3 class="card-title"><i class="fas fa-key"></i> Login Account</h3>
+        </div>
+        <div class="card-body">
+          <div class="row">
+            <div class="col-6" style="padding: 0.5rem;">
+              <label class="form-label">Username <span class="text-danger">*</span></label>
+              <input type="text" class="form-control" name="username" required>
+              <small class="text-muted">Used to login to the system</small>
+            </div>
+            <div class="col-6" style="padding: 0.5rem;">
+              <label class="form-label">Password <span class="text-danger">*</span></label>
+              <input type="password" class="form-control" name="password" required>
+              <small class="text-muted">Intern can change this after first login</small>
+            </div>
+          </div>
+        </div>
+      </div>
+      {% elif profile.user %}
+      <!-- Existing Account Info -->
+      <div class="card mt-3">
+        <div class="card-header">
+          <h3 class="card-title"><i class="fas fa-key"></i> Login Account</h3>
+        </div>
+        <div class="card-body">
+          <p class="mb-1"><i class="fas fa-check-circle text-success"></i> Has login account</p>
+          <p class="mb-0"><strong>Username:</strong> {{ profile.user.username }}</p>
+        </div>
+      </div>
+      {% endif %}
+    </div>
+
+    <div class="col-4">
+      <div class="card">
+        <div class="card-header">
+          <h3 class="card-title"><i class="fas fa-save"></i> Actions</h3>
+        </div>
+        <div class="card-body">
+          <button type="submit" class="btn btn-primary w-100 mb-2">
+            <i class="fas fa-save"></i> {% if profile %}Update Intern{% else %}Add Intern{% endif %}
+          </button>
+          {% if profile %}
+          <a href="{% url 'crm:intern_profile_detail' pk=profile.pk %}" class="btn btn-outline-secondary w-100">
+            <i class="fas fa-times"></i> Cancel
+          </a>
+          {% else %}
+          <a href="{% url 'crm:intern_list' %}" class="btn btn-outline-secondary w-100">
+            <i class="fas fa-times"></i> Cancel
+          </a>
+          {% endif %}
+        </div>
+      </div>
+
+      {% if profile %}
+      <div class="card mt-3">
+        <div class="card-header">
+          <h3 class="card-title"><i class="fas fa-info-circle"></i> Info</h3>
+        </div>
+        <div class="card-body">
+          <p class="mb-1"><strong>Created:</strong> {{ profile.created_at|date:"M d, Y" }}</p>
+          <p class="mb-0"><strong>Updated:</strong> {{ profile.updated_at|date:"M d, Y" }}</p>
+        </div>
+      </div>
+      {% endif %}
+    </div>
   </div>
-</div>
+</form>
 {% endblock %}

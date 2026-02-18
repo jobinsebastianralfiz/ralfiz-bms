@@ -693,6 +693,53 @@ def intern_list(request):
 
 
 @login_required
+def intern_create(request):
+    if not is_admin(request.user):
+        messages.error(request, 'Access denied.')
+        return redirect('crm:lead_list')
+
+    if request.method == 'POST':
+        first_name = request.POST.get('first_name', '').strip()
+        last_name = request.POST.get('last_name', '').strip()
+        email = request.POST.get('email', '').strip()
+        phone = request.POST.get('phone', '').strip()
+        username = request.POST.get('username', '').strip()
+        password = request.POST.get('password', '')
+
+        if not first_name or not username or not password:
+            messages.error(request, 'First name, username, and password are required.')
+            return render(request, 'crm/interns/form.html', _intern_form_context(request))
+
+        if User.objects.filter(username=username).exists():
+            messages.error(request, f'Username "{username}" already exists.')
+            return render(request, 'crm/interns/form.html', _intern_form_context(request))
+
+        user = User.objects.create_user(
+            username=username,
+            password=password,
+            first_name=first_name,
+            last_name=last_name,
+            email=email,
+        )
+
+        profile = InternProfile.objects.create(
+            user=user,
+            intern_type=request.POST.get('intern_type', 'digital'),
+            supervisor_id=request.POST.get('supervisor') or None,
+            default_commission_percentage=request.POST.get('default_commission_percentage', 5.00) or 5.00,
+            status=request.POST.get('status', 'active'),
+            joining_date=request.POST.get('joining_date') or None,
+        )
+
+        messages.success(request, f'Intern "{user.get_full_name()}" added successfully with login account.')
+        return redirect('crm:intern_profile_detail', pk=profile.pk)
+
+    context = _intern_form_context(request)
+    context['form_title'] = 'Add New Intern'
+    return render(request, 'crm/interns/form.html', context)
+
+
+@login_required
 def intern_profile_detail(request, pk):
     if not is_admin(request.user):
         messages.error(request, 'Access denied.')
@@ -725,27 +772,39 @@ def intern_profile_edit(request, pk):
         messages.error(request, 'Access denied.')
         return redirect('crm:lead_list')
 
-    profile = get_object_or_404(InternProfile, pk=pk)
+    profile = get_object_or_404(InternProfile.objects.select_related('user'), pk=pk)
 
     if request.method == 'POST':
+        # Update user personal details
+        user = profile.user
+        user.first_name = request.POST.get('first_name', user.first_name).strip()
+        user.last_name = request.POST.get('last_name', user.last_name).strip()
+        user.email = request.POST.get('email', user.email).strip()
+        user.save()
+
+        # Update intern profile
         profile.intern_type = request.POST.get('intern_type', profile.intern_type)
         profile.status = request.POST.get('status', profile.status)
         profile.supervisor_id = request.POST.get('supervisor') or None
         profile.default_commission_percentage = request.POST.get(
             'default_commission_percentage', profile.default_commission_percentage
-        )
+        ) or profile.default_commission_percentage
         profile.joining_date = request.POST.get('joining_date') or None
         profile.save()
 
-        messages.success(request, f'Profile for {profile.user} updated successfully.')
+        messages.success(request, f'Profile for {profile.user.get_full_name() or profile.user.username} updated successfully.')
         return redirect('crm:intern_profile_detail', pk=profile.pk)
 
-    supervisors = User.objects.filter(is_superuser=True, is_active=True) | User.objects.filter(is_staff=True, is_active=True)
+    context = _intern_form_context(request)
+    context['profile'] = profile
+    context['form_title'] = f'Edit: {profile.user.get_full_name() or profile.user.username}'
+    return render(request, 'crm/interns/form.html', context)
 
-    context = {
-        'profile': profile,
+
+def _intern_form_context(request):
+    supervisors = User.objects.filter(is_superuser=True, is_active=True) | User.objects.filter(is_staff=True, is_active=True)
+    return {
         'intern_type_choices': InternProfile.INTERN_TYPE_CHOICES,
         'status_choices': InternProfile.STATUS_CHOICES,
         'supervisors': supervisors.distinct(),
     }
-    return render(request, 'crm/interns/form.html', context)

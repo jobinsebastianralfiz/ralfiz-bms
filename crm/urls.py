@@ -32,6 +32,7 @@ urlpatterns = [
 
     # Interns
     path('interns/', views.intern_list, name='intern_list'),
+    path('interns/create/', views.intern_create, name='intern_create'),
     path('interns/<int:pk>/', views.intern_profile_detail, name='intern_profile_detail'),
     path('interns/<int:pk>/edit/', views.intern_profile_edit, name='intern_profile_edit'),
 ]
