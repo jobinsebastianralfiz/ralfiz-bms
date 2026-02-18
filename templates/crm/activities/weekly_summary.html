@@ -1,0 +1,98 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Weekly Summary - Intern CRM{% endblock %}
+
+{% block breadcrumb %}
+<a href="{% url 'dashboard' %}" class="breadcrumb-item">Dashboard</a>
+<span class="breadcrumb-separator">/</span>
+<a href="{% url 'crm:activity_list' %}" class="breadcrumb-item">Activities</a>
+<span class="breadcrumb-separator">/</span>
+<span class="breadcrumb-item active">Weekly Summary</span>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title">Weekly Activity Summary</h1>
+    <p class="page-subtitle mb-0">Aggregated intern performance data</p>
+  </div>
+  <div class="page-actions">
+    <a href="{% url 'crm:activity_list' %}" class="btn btn-outline-secondary">
+      <i class="fas fa-arrow-left"></i> Back
+    </a>
+  </div>
+</div>
+
+<!-- Date Range -->
+<div class="card mb-4">
+  <div class="card-body">
+    <form method="get" class="row align-items-end">
+      <div class="col-4" style="padding: 0.5rem;">
+        <label class="form-label">Start Date</label>
+        <input type="date" name="start_date" class="form-control" value="{{ start_date }}">
+      </div>
+      <div class="col-4" style="padding: 0.5rem;">
+        <label class="form-label">End Date</label>
+        <input type="date" name="end_date" class="form-control" value="{{ end_date }}">
+      </div>
+      <div class="col-2" style="padding: 0.5rem;">
+        <button type="submit" class="btn btn-outline-secondary w-100">
+          <i class="fas fa-filter"></i> Filter
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Summary Table -->
+<div class="card">
+  <div class="card-body">
+    <h3 class="card-title">{{ start_date }} to {{ end_date }}</h3>
+  </div>
+  <div class="table-wrapper">
+    <table class="table">
+      <thead>
+        <tr>
+          <th>Intern</th>
+          <th>Days</th>
+          <th>Posts</th>
+          <th>Reels</th>
+          <th>DMs</th>
+          <th>Digital Leads</th>
+          <th>Calls</th>
+          <th>Visits</th>
+          <th>Demos</th>
+          <th>Field Leads</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in summary %}
+        <tr>
+          <td class="fw-medium">
+            {{ row.intern__first_name }} {{ row.intern__last_name }}
+            {% if not row.intern__first_name %}{{ row.intern__username }}{% endif %}
+          </td>
+          <td>{{ row.days_logged }}</td>
+          <td>{{ row.total_posts|default:0 }}</td>
+          <td>{{ row.total_reels|default:0 }}</td>
+          <td>{{ row.total_dms|default:0 }}</td>
+          <td>{{ row.total_digital_leads|default:0 }}</td>
+          <td>{{ row.total_calls|default:0 }}</td>
+          <td>{{ row.total_visits|default:0 }}</td>
+          <td>{{ row.total_demos|default:0 }}</td>
+          <td>{{ row.total_field_leads|default:0 }}</td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="10" class="text-center py-4 text-muted">
+            <i class="fas fa-chart-bar mb-2" style="font-size: 2rem;"></i>
+            <p class="mb-0">No activity data for this period</p>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

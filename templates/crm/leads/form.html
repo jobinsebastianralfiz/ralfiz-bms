@@ -1,0 +1,130 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ form_title }} - Intern CRM{% endblock %}
+
+{% block breadcrumb %}
+<a href="{% url 'dashboard' %}" class="breadcrumb-item">Dashboard</a>
+<span class="breadcrumb-separator">/</span>
+<a href="{% url 'crm:lead_list' %}" class="breadcrumb-item">Leads</a>
+<span class="breadcrumb-separator">/</span>
+<span class="breadcrumb-item active">{{ form_title }}</span>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title">{{ form_title }}</h1>
+  </div>
+  <div class="page-actions">
+    {% if lead %}
+    <a href="{% url 'crm:lead_detail' pk=lead.pk %}" class="btn btn-outline-secondary">
+      <i class="fas fa-arrow-left"></i> Back
+    </a>
+    {% else %}
+    <a href="{% url 'crm:lead_list' %}" class="btn btn-outline-secondary">
+      <i class="fas fa-arrow-left"></i> Back
+    </a>
+    {% endif %}
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-body">
+    <form method="post" id="leadForm">
+      {% csrf_token %}
+      <div class="row" style="gap: 1rem 0;">
+        <div class="col-6">
+          <label class="form-label">Contact Person <span class="text-danger">*</span></label>
+          <input type="text" name="contact_person" class="form-control" value="{{ lead.contact_person|default:'' }}" required>
+        </div>
+        <div class="col-6">
+          <label class="form-label">Company Name</label>
+          <input type="text" name="company_name" class="form-control" value="{{ lead.company_name|default:'' }}">
+        </div>
+        <div class="col-6">
+          <label class="form-label">Phone <span class="text-danger">*</span></label>
+          <input type="text" name="phone" id="phoneInput" class="form-control" value="{{ lead.phone|default:'' }}" required>
+          <div id="duplicateWarning" class="text-warning text-sm mt-1" style="display:none;"></div>
+        </div>
+        <div class="col-6">
+          <label class="form-label">Email</label>
+          <input type="email" name="email" id="emailInput" class="form-control" value="{{ lead.email|default:'' }}">
+        </div>
+        <div class="col-4">
+          <label class="form-label">Status</label>
+          <select name="status" class="form-control">
+            {% for value, label in status_choices %}
+            <option value="{{ value }}" {% if lead.status == value %}selected{% elif not lead and value == 'new' %}selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-4">
+          <label class="form-label">Source</label>
+          <select name="source" class="form-control">
+            {% for value, label in source_choices %}
+            <option value="{{ value }}" {% if lead.source == value %}selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-4">
+          <label class="form-label">Assigned To</label>
+          <select name="assigned_to" class="form-control">
+            <option value="">-- Select --</option>
+            {% for intern in interns %}
+            <option value="{{ intern.pk }}" {% if lead.assigned_to_id == intern.pk %}selected{% endif %}>{{ intern.get_full_name|default:intern.username }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-4">
+          <label class="form-label">Next Follow-up Date</label>
+          <input type="date" name="next_follow_up_date" class="form-control" value="{{ lead.next_follow_up_date|date:'Y-m-d'|default:'' }}">
+        </div>
+        <div class="col-4">
+          <label class="form-label">Closing Probability (%)</label>
+          <input type="number" name="closing_probability" class="form-control" min="0" max="100" value="{{ lead.closing_probability|default:0 }}">
+        </div>
+        <div class="col-12">
+          <label class="form-label">Notes</label>
+          <textarea name="notes" class="form-control" rows="3">{{ lead.notes|default:'' }}</textarea>
+        </div>
+      </div>
+
+      <div class="mt-4 d-flex gap-2">
+        <button type="submit" class="btn btn-primary">
+          <i class="fas fa-check"></i> {% if lead %}Update Lead{% else %}Create Lead{% endif %}
+        </button>
+        {% if lead %}
+        <a href="{% url 'crm:lead_detail' pk=lead.pk %}" class="btn btn-outline-secondary">Cancel</a>
+        {% else %}
+        <a href="{% url 'crm:lead_list' %}" class="btn btn-outline-secondary">Cancel</a>
+        {% endif %}
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  function checkDuplicate() {
+    var phone = document.getElementById('phoneInput').value;
+    var email = document.getElementById('emailInput').value;
+    if (!phone && !email) return;
+    fetch("{% url 'crm:lead_check_duplicate' %}?phone=" + encodeURIComponent(phone) + "&email=" + encodeURIComponent(email))
+      .then(r => r.json())
+      .then(data => {
+        var warning = document.getElementById('duplicateWarning');
+        if (data.duplicates && data.duplicates.length > 0) {
+          var d = data.duplicates[0];
+          warning.innerHTML = '<i class="fas fa-exclamation-triangle"></i> Possible duplicate: ' + d.contact_person + ' (' + d.phone + ') - ' + d.status;
+          warning.style.display = 'block';
+        } else {
+          warning.style.display = 'none';
+        }
+      });
+  }
+  document.getElementById('phoneInput').addEventListener('blur', checkDuplicate);
+  document.getElementById('emailInput').addEventListener('blur', checkDuplicate);
+</script>
+{% endblock %}

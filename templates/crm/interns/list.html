@@ -1,0 +1,81 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Interns - Intern CRM{% endblock %}
+
+{% block breadcrumb %}
+<a href="{% url 'dashboard' %}" class="breadcrumb-item">Dashboard</a>
+<span class="breadcrumb-separator">/</span>
+<span class="breadcrumb-item active">Interns</span>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title">Intern Profiles</h1>
+    <p class="page-subtitle mb-0">Manage intern profiles and view performance</p>
+  </div>
+</div>
+
+<div class="card">
+  <div class="table-wrapper">
+    <table class="table">
+      <thead>
+        <tr>
+          <th>Intern</th>
+          <th>Type</th>
+          <th>Supervisor</th>
+          <th>Status</th>
+          <th>Leads</th>
+          <th>Activities</th>
+          <th>Demos</th>
+          <th style="width: 120px;">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for item in intern_data %}
+        <tr>
+          <td>
+            <div>
+              <span class="fw-medium d-block">{{ item.profile.user.get_full_name|default:item.profile.user.username }}</span>
+              <span class="text-sm text-muted">{{ item.profile.user.email }}</span>
+            </div>
+          </td>
+          <td>
+            <span class="badge badge-{% if item.profile.intern_type == 'digital' %}info{% else %}warning{% endif %}">
+              {{ item.profile.get_intern_type_display }}
+            </span>
+          </td>
+          <td>{{ item.profile.supervisor.get_full_name|default:item.profile.supervisor.username|default:"-" }}</td>
+          <td>
+            <span class="badge badge-{% if item.profile.status == 'active' %}success{% elif item.profile.status == 'completed' %}info{% else %}secondary{% endif %}">
+              {{ item.profile.get_status_display }}
+            </span>
+          </td>
+          <td>{{ item.lead_count }}</td>
+          <td>{{ item.activity_count }}</td>
+          <td>{{ item.demo_count }}</td>
+          <td>
+            <div class="table-actions">
+              <a href="{% url 'crm:intern_profile_detail' pk=item.profile.pk %}" class="btn btn-sm btn-ghost btn-icon" title="View">
+                <i class="fas fa-eye"></i>
+              </a>
+              <a href="{% url 'crm:intern_profile_edit' pk=item.profile.pk %}" class="btn btn-sm btn-ghost btn-icon" title="Edit">
+                <i class="fas fa-edit"></i>
+              </a>
+            </div>
+          </td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="8" class="text-center py-4 text-muted">
+            <i class="fas fa-user-graduate mb-2" style="font-size: 2rem;"></i>
+            <p class="mb-0">No intern profiles found</p>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

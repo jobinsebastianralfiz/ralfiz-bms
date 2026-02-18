@@ -1,0 +1,100 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ form_title|default:"Demo" }} - Intern CRM{% endblock %}
+
+{% block breadcrumb %}
+<a href="{% url 'dashboard' %}" class="breadcrumb-item">Dashboard</a>
+<span class="breadcrumb-separator">/</span>
+<a href="{% url 'crm:demo_list' %}" class="breadcrumb-item">Demos</a>
+<span class="breadcrumb-separator">/</span>
+<span class="breadcrumb-item active">{{ form_title|default:"Demo" }}</span>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title">{{ form_title|default:"Demo" }}</h1>
+  </div>
+  <div class="page-actions">
+    {% if demo %}
+    <a href="{% url 'crm:demo_detail' pk=demo.pk %}" class="btn btn-outline-secondary">
+      <i class="fas fa-arrow-left"></i> Back
+    </a>
+    {% else %}
+    <a href="{% url 'crm:demo_list' %}" class="btn btn-outline-secondary">
+      <i class="fas fa-arrow-left"></i> Back
+    </a>
+    {% endif %}
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-body">
+    <form method="post">
+      {% csrf_token %}
+      <div class="row" style="gap: 1rem 0;">
+        <div class="col-6">
+          <label class="form-label">Lead <span class="text-danger">*</span></label>
+          {% if demo %}
+          <input type="text" class="form-control" value="{{ demo.lead.contact_person }}{% if demo.lead.company_name %} ({{ demo.lead.company_name }}){% endif %}" disabled>
+          {% else %}
+          <select name="lead" class="form-control" required>
+            <option value="">-- Select Lead --</option>
+            {% for lead in leads %}
+            <option value="{{ lead.pk }}" {% if request.GET.lead == lead.pk|stringformat:"d" %}selected{% endif %}>
+              {{ lead.contact_person }}{% if lead.company_name %} ({{ lead.company_name }}){% endif %}
+            </option>
+            {% endfor %}
+          </select>
+          {% endif %}
+        </div>
+        <div class="col-6">
+          <label class="form-label">Scheduled Date & Time <span class="text-danger">*</span></label>
+          <input type="datetime-local" name="scheduled_date" class="form-control" value="{{ demo.scheduled_date|date:'Y-m-d\TH:i'|default:'' }}" required>
+        </div>
+        <div class="col-4">
+          <label class="form-label">Status</label>
+          <select name="status" class="form-control">
+            {% for value, label in status_choices %}
+            <option value="{{ value }}" {% if demo.status == value %}selected{% elif not demo and value == 'scheduled' %}selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-4">
+          <label class="form-label">Conducted By</label>
+          <select name="conducted_by" class="form-control">
+            <option value="">-- Select --</option>
+            {% for intern in interns %}
+            <option value="{{ intern.pk }}" {% if demo.conducted_by_id == intern.pk %}selected{% endif %}>{{ intern.get_full_name|default:intern.username }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-4">
+          <label class="form-label">Closing Probability (%)</label>
+          <input type="number" name="closing_probability" class="form-control" min="0" max="100" value="{{ demo.closing_probability|default:0 }}">
+        </div>
+        <div class="col-12">
+          <label class="form-label">Location</label>
+          <input type="text" name="location" class="form-control" value="{{ demo.location|default:'' }}" placeholder="Office / Client site / Online">
+        </div>
+        <div class="col-12">
+          <label class="form-label">Outcome Notes</label>
+          <textarea name="outcome_notes" class="form-control" rows="3">{{ demo.outcome_notes|default:'' }}</textarea>
+        </div>
+      </div>
+
+      <div class="mt-4 d-flex gap-2">
+        <button type="submit" class="btn btn-primary">
+          <i class="fas fa-check"></i> {% if demo %}Update Demo{% else %}Schedule Demo{% endif %}
+        </button>
+        {% if demo %}
+        <a href="{% url 'crm:demo_detail' pk=demo.pk %}" class="btn btn-outline-secondary">Cancel</a>
+        {% else %}
+        <a href="{% url 'crm:demo_list' %}" class="btn btn-outline-secondary">Cancel</a>
+        {% endif %}
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

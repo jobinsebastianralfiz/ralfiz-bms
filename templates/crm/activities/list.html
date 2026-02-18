@@ -1,0 +1,145 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Daily Activities - Intern CRM{% endblock %}
+
+{% block breadcrumb %}
+<a href="{% url 'dashboard' %}" class="breadcrumb-item">Dashboard</a>
+<span class="breadcrumb-separator">/</span>
+<span class="breadcrumb-item active">Daily Activities</span>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title">Daily Activities</h1>
+    <p class="page-subtitle mb-0">Track intern daily productivity</p>
+  </div>
+  <div class="page-actions">
+    <a href="{% url 'crm:activity_weekly_summary' %}" class="btn btn-outline-secondary">
+      <i class="fas fa-chart-bar"></i> Weekly Summary
+    </a>
+    <a href="{% url 'crm:activity_create' %}" class="btn btn-primary">
+      <i class="fas fa-plus"></i> Log Activity
+    </a>
+  </div>
+</div>
+
+<!-- Filters -->
+<div class="card mb-4">
+  <div class="card-body">
+    <form method="get" class="row align-items-end">
+      <div class="col-3" style="padding: 0.5rem;">
+        <label class="form-label">Date</label>
+        <input type="date" name="date" class="form-control" value="{{ date_filter }}">
+      </div>
+      {% if request.user.is_superuser or request.user.is_staff %}
+      <div class="col-3" style="padding: 0.5rem;">
+        <label class="form-label">Intern</label>
+        <select name="intern" class="form-control">
+          <option value="">All Interns</option>
+          {% for intern in interns %}
+          <option value="{{ intern.pk }}" {% if intern_filter == intern.pk|stringformat:"d" %}selected{% endif %}>{{ intern.get_full_name|default:intern.username }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      {% endif %}
+      <div class="col-3" style="padding: 0.5rem;">
+        <label class="form-label">Approval Status</label>
+        <select name="approval_status" class="form-control">
+          <option value="">All</option>
+          {% for value, label in approval_choices %}
+          <option value="{{ value }}" {% if approval_filter == value %}selected{% endif %}>{{ label }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-2" style="padding: 0.5rem;">
+        <button type="submit" class="btn btn-outline-secondary w-100">
+          <i class="fas fa-filter"></i> Filter
+        </button>
+      </div>
+      <div class="col-1" style="padding: 0.5rem;">
+        <a href="{% url 'crm:activity_list' %}" class="btn btn-ghost w-100">Reset</a>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Activities Table -->
+<div class="card">
+  <div class="table-wrapper">
+    <table class="table">
+      <thead>
+        <tr>
+          <th>Intern</th>
+          <th>Date</th>
+          <th>Type</th>
+          <th>Key Metrics</th>
+          <th>Approval</th>
+          <th style="width: 160px;">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for activity in activities %}
+        <tr>
+          <td class="fw-medium">{{ activity.intern.get_full_name|default:activity.intern.username }}</td>
+          <td>{{ activity.date|date:"d M Y" }}</td>
+          <td>
+            <span class="badge badge-{% if activity.intern_type == 'digital' %}info{% else %}success{% endif %}">
+              {{ activity.get_intern_type_display }}
+            </span>
+          </td>
+          <td class="text-sm">
+            {% if activity.intern_type == 'digital' %}
+              Posts: {{ activity.social_media_posts }} | Reels: {{ activity.reels_created }} | DMs: {{ activity.dms_sent }} | Leads: {{ activity.digital_leads_generated }}
+            {% else %}
+              Calls: {{ activity.calls_made }} | Visits: {{ activity.visits_done }} | Demos: {{ activity.demos_conducted }} | Leads: {{ activity.field_leads_generated }}
+            {% endif %}
+          </td>
+          <td>
+            <span class="badge badge-{% if activity.approval_status == 'pending' %}warning{% elif activity.approval_status == 'approved' %}success{% elif activity.approval_status == 'rejected' %}danger{% endif %}">
+              {{ activity.get_approval_status_display }}
+            </span>
+          </td>
+          <td>
+            <div class="table-actions">
+              {% if not request.user.intern_profile or activity.is_editable %}
+              <a href="{% url 'crm:activity_edit' pk=activity.pk %}" class="btn btn-sm btn-ghost btn-icon" title="Edit">
+                <i class="fas fa-edit"></i>
+              </a>
+              {% endif %}
+
+              {% if request.user.is_superuser or request.user.is_staff %}
+              {% if activity.approval_status == 'pending' %}
+              <form method="post" action="{% url 'crm:activity_approve' pk=activity.pk %}" style="display:inline;">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="approve">
+                <button type="submit" class="btn btn-sm btn-ghost btn-icon" title="Approve" style="color: var(--success);">
+                  <i class="fas fa-check"></i>
+                </button>
+              </form>
+              <form method="post" action="{% url 'crm:activity_approve' pk=activity.pk %}" style="display:inline;">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="reject">
+                <button type="submit" class="btn btn-sm btn-ghost btn-icon" title="Reject" style="color: var(--danger);">
+                  <i class="fas fa-times"></i>
+                </button>
+              </form>
+              {% endif %}
+              {% endif %}
+            </div>
+          </td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="6" class="text-center py-4 text-muted">
+            <i class="fas fa-clipboard-check mb-2" style="font-size: 2rem;"></i>
+            <p class="mb-0">No activities found</p>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

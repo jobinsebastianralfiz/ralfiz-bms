@@ -37,6 +37,7 @@ INSTALLED_APPS = [
     'core',
     'licensing',
     'retailease',
+    'crm',
 ]
 
 MIDDLEWARE = [

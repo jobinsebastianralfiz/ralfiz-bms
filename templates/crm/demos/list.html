@@ -1,0 +1,121 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Demos - Intern CRM{% endblock %}
+
+{% block breadcrumb %}
+<a href="{% url 'dashboard' %}" class="breadcrumb-item">Dashboard</a>
+<span class="breadcrumb-separator">/</span>
+<span class="breadcrumb-item active">Demos</span>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title">Demos</h1>
+    <p class="page-subtitle mb-0">Schedule and track demos</p>
+  </div>
+  <div class="page-actions">
+    <a href="{% url 'crm:demo_create' %}" class="btn btn-primary">
+      <i class="fas fa-plus"></i> Schedule Demo
+    </a>
+  </div>
+</div>
+
+<!-- Filters -->
+<div class="card mb-4">
+  <div class="card-body">
+    <form method="get" class="row align-items-end">
+      <div class="col-3" style="padding: 0.5rem;">
+        <label class="form-label">Status</label>
+        <select name="status" class="form-control">
+          <option value="">All Status</option>
+          {% for value, label in status_choices %}
+          <option value="{{ value }}" {% if status_filter == value %}selected{% endif %}>{{ label }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-3" style="padding: 0.5rem;">
+        <label class="form-label">Date</label>
+        <input type="date" name="date" class="form-control" value="{{ date_filter }}">
+      </div>
+      {% if request.user.is_superuser or request.user.is_staff %}
+      <div class="col-3" style="padding: 0.5rem;">
+        <label class="form-label">Conducted By</label>
+        <select name="conducted_by" class="form-control">
+          <option value="">All</option>
+          {% for intern in interns %}
+          <option value="{{ intern.pk }}" {% if conductor_filter == intern.pk|stringformat:"d" %}selected{% endif %}>{{ intern.get_full_name|default:intern.username }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      {% endif %}
+      <div class="col-2" style="padding: 0.5rem;">
+        <button type="submit" class="btn btn-outline-secondary w-100">
+          <i class="fas fa-filter"></i> Filter
+        </button>
+      </div>
+      <div class="col-1" style="padding: 0.5rem;">
+        <a href="{% url 'crm:demo_list' %}" class="btn btn-ghost w-100">Reset</a>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Demos Table -->
+<div class="card">
+  <div class="table-wrapper">
+    <table class="table">
+      <thead>
+        <tr>
+          <th>Lead</th>
+          <th>Scheduled Date</th>
+          <th>Status</th>
+          <th>Conducted By</th>
+          <th>Probability</th>
+          <th>Location</th>
+          <th style="width: 120px;">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for demo in demos %}
+        <tr>
+          <td>
+            <div>
+              <a href="{% url 'crm:lead_detail' pk=demo.lead.pk %}" class="fw-medium d-block">{{ demo.lead.contact_person }}</a>
+              {% if demo.lead.company_name %}<span class="text-sm text-muted">{{ demo.lead.company_name }}</span>{% endif %}
+            </div>
+          </td>
+          <td>{{ demo.scheduled_date|date:"d M Y, h:i A" }}</td>
+          <td>
+            <span class="badge badge-{% if demo.status == 'scheduled' %}info{% elif demo.status == 'completed' %}success{% elif demo.status == 'rescheduled' %}warning{% elif demo.status == 'cancelled' %}danger{% elif demo.status == 'converted' %}success{% endif %}">
+              {{ demo.get_status_display }}
+            </span>
+          </td>
+          <td>{{ demo.conducted_by.get_full_name|default:demo.conducted_by.username|default:"-" }}</td>
+          <td>{{ demo.closing_probability }}%</td>
+          <td class="text-sm">{{ demo.location|default:"-"|truncatewords:5 }}</td>
+          <td>
+            <div class="table-actions">
+              <a href="{% url 'crm:demo_detail' pk=demo.pk %}" class="btn btn-sm btn-ghost btn-icon" title="View">
+                <i class="fas fa-eye"></i>
+              </a>
+              <a href="{% url 'crm:demo_edit' pk=demo.pk %}" class="btn btn-sm btn-ghost btn-icon" title="Edit">
+                <i class="fas fa-edit"></i>
+              </a>
+            </div>
+          </td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="7" class="text-center py-4 text-muted">
+            <i class="fas fa-desktop mb-2" style="font-size: 2rem;"></i>
+            <p class="mb-0">No demos found</p>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

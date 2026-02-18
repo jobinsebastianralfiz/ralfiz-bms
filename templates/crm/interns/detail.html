@@ -1,0 +1,280 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ profile.user.get_full_name|default:profile.user.username }} - Intern CRM{% endblock %}
+
+{% block breadcrumb %}
+<a href="{% url 'dashboard' %}" class="breadcrumb-item">Dashboard</a>
+<span class="breadcrumb-separator">/</span>
+<a href="{% url 'crm:intern_list' %}" class="breadcrumb-item">Interns</a>
+<span class="breadcrumb-separator">/</span>
+<span class="breadcrumb-item active">{{ profile.user.get_full_name|default:profile.user.username }}</span>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title">{{ profile.user.get_full_name|default:profile.user.username }}</h1>
+    <p class="page-subtitle mb-0">
+      <span class="badge badge-{% if profile.intern_type == 'digital' %}info{% else %}warning{% endif %}">{{ profile.get_intern_type_display }}</span>
+      <span class="badge badge-{% if profile.status == 'active' %}success{% elif profile.status == 'completed' %}info{% else %}secondary{% endif %} ms-1">{{ profile.get_status_display }}</span>
+    </p>
+  </div>
+  <div class="page-actions">
+    <a href="{% url 'crm:intern_profile_edit' pk=profile.pk %}" class="btn btn-outline-secondary">
+      <i class="fas fa-edit"></i> Edit
+    </a>
+    <a href="{% url 'crm:intern_list' %}" class="btn btn-outline-secondary">
+      <i class="fas fa-arrow-left"></i> Back
+    </a>
+  </div>
+</div>
+
+<!-- Stats Cards -->
+<div class="row mb-4">
+  <div class="col-3" style="padding: 0.75rem;">
+    <div class="card stat-card">
+      <div class="stat-card-header">
+        <div class="stat-card-icon primary">
+          <i class="fas fa-user-tag"></i>
+        </div>
+      </div>
+      <div class="stat-card-value">{{ lead_stats.total|default:0 }}</div>
+      <div class="stat-card-label">Total Leads</div>
+    </div>
+  </div>
+  <div class="col-3" style="padding: 0.75rem;">
+    <div class="card stat-card">
+      <div class="stat-card-header">
+        <div class="stat-card-icon success">
+          <i class="fas fa-check-circle"></i>
+        </div>
+      </div>
+      <div class="stat-card-value">{{ lead_stats.converted|default:0 }}</div>
+      <div class="stat-card-label">Converted</div>
+    </div>
+  </div>
+  <div class="col-3" style="padding: 0.75rem;">
+    <div class="card stat-card">
+      <div class="stat-card-header">
+        <div class="stat-card-icon info">
+          <i class="fas fa-clipboard-check"></i>
+        </div>
+      </div>
+      <div class="stat-card-value">{{ recent_activities|length }}</div>
+      <div class="stat-card-label">Recent Activities</div>
+    </div>
+  </div>
+  <div class="col-3" style="padding: 0.75rem;">
+    <div class="card stat-card">
+      <div class="stat-card-header">
+        <div class="stat-card-icon warning">
+          <i class="fas fa-desktop"></i>
+        </div>
+      </div>
+      <div class="stat-card-value">{{ demos|length }}</div>
+      <div class="stat-card-label">Demos</div>
+    </div>
+  </div>
+</div>
+
+<div class="row">
+  <!-- Left Column - Profile Info -->
+  <div class="col-4" style="padding: 0.75rem;">
+    <div class="card mb-4">
+      <div class="card-body">
+        <h3 class="card-title">Profile Information</h3>
+        <div class="mb-3">
+          <span class="text-muted text-sm d-block">Username</span>
+          {{ profile.user.username }}
+        </div>
+        <div class="mb-3">
+          <span class="text-muted text-sm d-block">Email</span>
+          {% if profile.user.email %}<a href="mailto:{{ profile.user.email }}">{{ profile.user.email }}</a>{% else %}-{% endif %}
+        </div>
+        <div class="mb-3">
+          <span class="text-muted text-sm d-block">Intern Type</span>
+          {{ profile.get_intern_type_display }}
+        </div>
+        <div class="mb-3">
+          <span class="text-muted text-sm d-block">Supervisor</span>
+          {{ profile.supervisor.get_full_name|default:profile.supervisor.username|default:"-" }}
+        </div>
+        <div class="mb-3">
+          <span class="text-muted text-sm d-block">Commission Rate</span>
+          {{ profile.default_commission_percentage }}%
+        </div>
+        <div class="mb-3">
+          <span class="text-muted text-sm d-block">Joining Date</span>
+          {{ profile.joining_date|date:"d M Y"|default:"-" }}
+        </div>
+        <div>
+          <span class="text-muted text-sm d-block">Profile Created</span>
+          {{ profile.created_at|date:"d M Y, h:i A" }}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Right Column - Leads, Activities, Demos -->
+  <div class="col-8" style="padding: 0.75rem;">
+    <!-- Recent Leads -->
+    <div class="card mb-4">
+      <div class="card-body">
+        <h3 class="card-title">Recent Leads</h3>
+      </div>
+      {% if leads %}
+      <div class="table-wrapper">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>Contact</th>
+              <th>Status</th>
+              <th>Source</th>
+              <th>Created</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for lead in leads %}
+            <tr>
+              <td>
+                <a href="{% url 'crm:lead_detail' pk=lead.pk %}" class="fw-medium">{{ lead.contact_person }}</a>
+                {% if lead.company_name %}<br><span class="text-sm text-muted">{{ lead.company_name }}</span>{% endif %}
+              </td>
+              <td>
+                <span class="badge badge-{% if lead.status == 'converted' %}success{% elif lead.status == 'lost' %}danger{% elif lead.status == 'new' %}info{% else %}secondary{% endif %}">
+                  {{ lead.get_status_display }}
+                </span>
+              </td>
+              <td class="text-sm">{{ lead.get_source_display }}</td>
+              <td class="text-sm">{{ lead.created_at|date:"d M Y" }}</td>
+              <td>
+                <a href="{% url 'crm:lead_detail' pk=lead.pk %}" class="btn btn-sm btn-ghost btn-icon">
+                  <i class="fas fa-arrow-right"></i>
+                </a>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}
+      <div class="card-body pt-0">
+        <p class="text-muted text-center mb-0">No leads assigned yet</p>
+      </div>
+      {% endif %}
+    </div>
+
+    <!-- Recent Activities -->
+    <div class="card mb-4">
+      <div class="card-body">
+        <h3 class="card-title">Recent Activities (Last 7 Days)</h3>
+      </div>
+      {% if recent_activities %}
+      <div class="table-wrapper">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>Type</th>
+              {% if profile.intern_type == 'digital' %}
+              <th>Posts</th>
+              <th>Reels</th>
+              <th>DMs</th>
+              <th>Leads</th>
+              {% else %}
+              <th>Calls</th>
+              <th>Visits</th>
+              <th>Demos</th>
+              <th>Leads</th>
+              {% endif %}
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for act in recent_activities %}
+            <tr>
+              <td>{{ act.date|date:"d M Y" }}</td>
+              <td>
+                <span class="badge badge-{% if act.intern_type == 'digital' %}info{% else %}warning{% endif %}">
+                  {{ act.get_intern_type_display }}
+                </span>
+              </td>
+              {% if profile.intern_type == 'digital' %}
+              <td>{{ act.social_media_posts }}</td>
+              <td>{{ act.reels_created }}</td>
+              <td>{{ act.dms_sent }}</td>
+              <td>{{ act.digital_leads_generated }}</td>
+              {% else %}
+              <td>{{ act.calls_made }}</td>
+              <td>{{ act.visits_done }}</td>
+              <td>{{ act.demos_conducted }}</td>
+              <td>{{ act.field_leads_generated }}</td>
+              {% endif %}
+              <td>
+                <span class="badge badge-{% if act.approval_status == 'pending' %}warning{% elif act.approval_status == 'approved' %}success{% elif act.approval_status == 'rejected' %}danger{% endif %}">
+                  {{ act.get_approval_status_display }}
+                </span>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}
+      <div class="card-body pt-0">
+        <p class="text-muted text-center mb-0">No recent activities</p>
+      </div>
+      {% endif %}
+    </div>
+
+    <!-- Recent Demos -->
+    <div class="card">
+      <div class="card-body">
+        <h3 class="card-title">Recent Demos</h3>
+      </div>
+      {% if demos %}
+      <div class="table-wrapper">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>Lead</th>
+              <th>Scheduled</th>
+              <th>Status</th>
+              <th>Probability</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for demo in demos %}
+            <tr>
+              <td>
+                <a href="{% url 'crm:lead_detail' pk=demo.lead.pk %}" class="fw-medium">{{ demo.lead.contact_person }}</a>
+              </td>
+              <td class="text-sm">{{ demo.scheduled_date|date:"d M Y, h:i A" }}</td>
+              <td>
+                <span class="badge badge-{% if demo.status == 'scheduled' %}info{% elif demo.status == 'completed' %}success{% elif demo.status == 'rescheduled' %}warning{% elif demo.status == 'cancelled' %}danger{% elif demo.status == 'converted' %}success{% endif %}">
+                  {{ demo.get_status_display }}
+                </span>
+              </td>
+              <td>{{ demo.closing_probability }}%</td>
+              <td>
+                <a href="{% url 'crm:demo_detail' pk=demo.pk %}" class="btn btn-sm btn-ghost btn-icon">
+                  <i class="fas fa-arrow-right"></i>
+                </a>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}
+      <div class="card-body pt-0">
+        <p class="text-muted text-center mb-0">No demos conducted yet</p>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}

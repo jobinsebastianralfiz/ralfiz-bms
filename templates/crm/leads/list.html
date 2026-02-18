@@ -1,0 +1,135 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Leads - Intern CRM{% endblock %}
+
+{% block breadcrumb %}
+<a href="{% url 'dashboard' %}" class="breadcrumb-item">Dashboard</a>
+<span class="breadcrumb-separator">/</span>
+<span class="breadcrumb-item active">Leads</span>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title">Leads</h1>
+    <p class="page-subtitle mb-0">Manage prospect leads</p>
+  </div>
+  <div class="page-actions">
+    <a href="{% url 'crm:lead_create' %}" class="btn btn-primary">
+      <i class="fas fa-plus"></i> New Lead
+    </a>
+  </div>
+</div>
+
+<!-- Filters -->
+<div class="card mb-4">
+  <div class="card-body">
+    <form method="get" class="row align-items-end">
+      <div class="col-3" style="padding: 0.5rem;">
+        <label class="form-label">Search</label>
+        <div class="navbar-search" style="width: 100%;">
+          <i class="fas fa-search"></i>
+          <input type="text" class="form-control" name="search" placeholder="Name, company, phone..." value="{{ search }}" style="padding-left: 2.5rem; width: 100%;">
+        </div>
+      </div>
+      <div class="col-2" style="padding: 0.5rem;">
+        <label class="form-label">Status</label>
+        <select class="form-control" name="status">
+          <option value="">All Status</option>
+          {% for value, label in status_choices %}
+          <option value="{{ value }}" {% if status_filter == value %}selected{% endif %}>{{ label }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-2" style="padding: 0.5rem;">
+        <label class="form-label">Source</label>
+        <select class="form-control" name="source">
+          <option value="">All Sources</option>
+          {% for value, label in source_choices %}
+          <option value="{{ value }}" {% if source_filter == value %}selected{% endif %}>{{ label }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      {% if request.user.is_superuser or request.user.is_staff %}
+      <div class="col-2" style="padding: 0.5rem;">
+        <label class="form-label">Assigned To</label>
+        <select class="form-control" name="assigned_to">
+          <option value="">All Interns</option>
+          {% for intern in interns %}
+          <option value="{{ intern.pk }}" {% if assigned_filter == intern.pk|stringformat:"d" %}selected{% endif %}>{{ intern.get_full_name|default:intern.username }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      {% endif %}
+      <div class="col-2" style="padding: 0.5rem;">
+        <button type="submit" class="btn btn-outline-secondary w-100">
+          <i class="fas fa-filter"></i> Filter
+        </button>
+      </div>
+      <div class="col-1" style="padding: 0.5rem;">
+        <a href="{% url 'crm:lead_list' %}" class="btn btn-ghost w-100">Reset</a>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Leads Table -->
+<div class="card">
+  <div class="table-wrapper">
+    <table class="table">
+      <thead>
+        <tr>
+          <th>Contact Person</th>
+          <th>Phone</th>
+          <th>Status</th>
+          <th>Source</th>
+          <th>Assigned To</th>
+          <th>Follow-up</th>
+          <th>Prob.</th>
+          <th style="width: 120px;">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for lead in leads %}
+        <tr>
+          <td>
+            <div>
+              <a href="{% url 'crm:lead_detail' pk=lead.pk %}" class="fw-medium d-block">{{ lead.contact_person }}</a>
+              <span class="text-sm text-muted">{{ lead.company_name|default:"" }}</span>
+            </div>
+          </td>
+          <td><span class="text-sm">{{ lead.phone }}</span></td>
+          <td>
+            <span class="badge badge-{% if lead.status == 'new' %}info{% elif lead.status == 'contacted' %}primary{% elif lead.status == 'interested' %}warning{% elif lead.status == 'demo_scheduled' %}secondary{% elif lead.status == 'follow_up' %}dark{% elif lead.status == 'converted' %}success{% elif lead.status == 'lost' %}danger{% endif %}">
+              {{ lead.get_status_display }}
+            </span>
+          </td>
+          <td><span class="text-sm">{{ lead.get_source_display }}</span></td>
+          <td><span class="text-sm">{{ lead.assigned_to.get_full_name|default:lead.assigned_to.username|default:"-" }}</span></td>
+          <td><span class="text-sm">{{ lead.next_follow_up_date|date:"d M Y"|default:"-" }}</span></td>
+          <td><span class="text-sm">{{ lead.closing_probability }}%</span></td>
+          <td>
+            <div class="table-actions">
+              <a href="{% url 'crm:lead_detail' pk=lead.pk %}" class="btn btn-sm btn-ghost btn-icon" title="View">
+                <i class="fas fa-eye"></i>
+              </a>
+              <a href="{% url 'crm:lead_edit' pk=lead.pk %}" class="btn btn-sm btn-ghost btn-icon" title="Edit">
+                <i class="fas fa-edit"></i>
+              </a>
+            </div>
+          </td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="8" class="text-center py-4 text-muted">
+            <i class="fas fa-user-tag mb-2" style="font-size: 2rem;"></i>
+            <p class="mb-0">No leads found</p>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

@@ -96,6 +96,26 @@
     </div>
 
     <div class="nav-section">
+      <div class="nav-section-title">Intern CRM</div>
+      <a href="{% url 'crm:lead_list' %}" class="nav-item {% if 'lead' in request.resolver_match.url_name %}active{% endif %}">
+        <i class="fas fa-user-tag"></i>
+        <span>Leads</span>
+      </a>
+      <a href="{% url 'crm:activity_list' %}" class="nav-item {% if request.resolver_match.url_name == 'activity_list' or request.resolver_match.url_name == 'activity_create' or request.resolver_match.url_name == 'activity_edit' %}active{% endif %}">
+        <i class="fas fa-clipboard-check"></i>
+        <span>Daily Activities</span>
+      </a>
+      <a href="{% url 'crm:demo_list' %}" class="nav-item {% if 'demo' in request.resolver_match.url_name %}active{% endif %}">
+        <i class="fas fa-desktop"></i>
+        <span>Demos</span>
+      </a>
+      <a href="{% url 'crm:intern_list' %}" class="nav-item {% if 'intern' in request.resolver_match.url_name %}active{% endif %}">
+        <i class="fas fa-user-graduate"></i>
+        <span>Interns</span>
+      </a>
+    </div>
+
+    <div class="nav-section">
       <div class="nav-section-title">Billing</div>
       <a href="{% url 'quote_list' %}" class="nav-item {% if 'quote' in request.resolver_match.url_name %}active{% endif %}">
         <i class="fas fa-file-alt"></i>
