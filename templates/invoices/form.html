@@ -171,9 +171,13 @@
             <textarea class="form-control" id="terms" name="terms" rows="3">{% if invoice.terms %}{{ invoice.terms }}{% else %}{{ company.invoice_terms }}{% endif %}</textarea>
             <div class="form-text">Default terms can be set in <a href="{% url 'settings' %}">Settings</a></div>
           </div>
+          <div class="form-group">
+            <label class="form-label" for="client_notes">Client Notes</label>
+            <textarea class="form-control" id="client_notes" name="client_notes" rows="2" placeholder="Notes visible to the client on the invoice/PDF">{{ invoice.client_notes|default:'' }}</textarea>
+          </div>
           <div class="form-group mb-0">
             <label class="form-label" for="notes">Internal Notes</label>
-            <textarea class="form-control" id="notes" name="notes" rows="2" placeholder="Notes visible only to your team">{{ invoice.notes|default:'' }}</textarea>
+            <textarea class="form-control" id="notes" name="notes" rows="2" placeholder="Notes visible only to your team (not shown on invoice)">{{ invoice.notes|default:'' }}</textarea>
           </div>
         </div>
       </div>

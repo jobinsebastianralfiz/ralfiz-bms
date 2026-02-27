@@ -305,14 +305,14 @@
       <div class="card-body">
         <div class="row">
           <div class="col-6">
-            {% if quote.notes %}
+            {% if quote.client_notes %}
             <div class="text-sm text-muted mb-2">Notes</div>
             <div class="text-secondary text-sm">
-              {{ quote.notes|linebreaks }}
+              {{ quote.client_notes|linebreaks }}
             </div>
             {% endif %}
             {% if quote.terms %}
-            <div class="text-sm text-muted mb-2 {% if quote.notes %}mt-3{% endif %}">Terms & Conditions</div>
+            <div class="text-sm text-muted mb-2 {% if quote.client_notes %}mt-3{% endif %}">Terms & Conditions</div>
             <div class="text-secondary text-sm">
               {{ quote.terms|linebreaks }}
             </div>

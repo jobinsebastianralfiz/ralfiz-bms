@@ -644,10 +644,10 @@
     </div>
     {% endif %}
 
-    {% if invoice.notes %}
+    {% if invoice.client_notes %}
     <div class="terms-section">
       <div class="terms-label">Notes</div>
-      <div class="terms-content">{{ invoice.notes|linebreaksbr }}</div>
+      <div class="terms-content">{{ invoice.client_notes|linebreaksbr }}</div>
     </div>
     {% endif %}
 

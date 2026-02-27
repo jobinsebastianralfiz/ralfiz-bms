@@ -249,6 +249,7 @@ class Quote(models.Model):
     payment_terms = models.CharField(max_length=50, default='50-50', blank=True)
 
     terms = models.TextField(blank=True)
+    client_notes = models.TextField(blank=True, help_text='Notes visible to the client on the quote')
     notes = models.TextField(blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -348,6 +349,7 @@ class Invoice(models.Model):
     issue_date = models.DateField(default=timezone.now)
     due_date = models.DateField(null=True, blank=True)
     terms = models.TextField(blank=True)
+    client_notes = models.TextField(blank=True, help_text='Notes visible to the client on the invoice')
     notes = models.TextField(blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)

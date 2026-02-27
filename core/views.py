@@ -813,6 +813,7 @@ def quote_create(request):
             discount=discount,
             tax_rate=tax_rate,
             notes=request.POST.get('notes', ''),
+            client_notes=request.POST.get('client_notes', ''),
             terms=request.POST.get('terms', ''),
             # Timeline & Deliverables
             duration=request.POST.get('duration', ''),
@@ -896,6 +897,7 @@ def quote_update(request, pk):
                 quote.tax_rate = Decimal('0')
 
             quote.notes = request.POST.get('notes', '')
+            quote.client_notes = request.POST.get('client_notes', '')
             quote.terms = request.POST.get('terms', '')
 
             # Timeline & Deliverables
@@ -1086,6 +1088,7 @@ def quote_clone(request, pk):
         issue_date=today,
         valid_until=valid_until,
         terms=original_quote.terms,
+        client_notes=original_quote.client_notes,
         notes=original_quote.notes,
         # Copy timeline & deliverables
         duration=original_quote.duration,
@@ -1146,6 +1149,7 @@ def quote_convert(request, pk):
         issue_date=today,
         due_date=due_date,
         terms=quote.terms,
+        client_notes=quote.client_notes,
         notes=quote.notes,
     )
 
@@ -1246,6 +1250,7 @@ def invoice_create(request):
             discount=discount,
             tax_rate=tax_rate,
             notes=request.POST.get('notes', ''),
+            client_notes=request.POST.get('client_notes', ''),
             terms=request.POST.get('terms', ''),
         )
 
@@ -1321,6 +1326,7 @@ def invoice_update(request, pk):
             invoice.tax_rate = Decimal('0')
 
         invoice.notes = request.POST.get('notes', '')
+        invoice.client_notes = request.POST.get('client_notes', '')
         invoice.terms = request.POST.get('terms', '')
         invoice.save()
 
@@ -1510,6 +1516,7 @@ def invoice_clone(request, pk):
         issue_date=today,
         due_date=due_date,
         terms=original_invoice.terms,
+        client_notes=original_invoice.client_notes,
         notes=original_invoice.notes,
     )
 
