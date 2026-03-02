@@ -52,6 +52,7 @@ urlpatterns = [
     path('invoices/<uuid:pk>/pdf/', views.invoice_pdf, name='invoice_pdf'),
     path('invoices/<uuid:pk>/delete/', views.invoice_delete, name='invoice_delete'),
     path('invoices/<uuid:pk>/clone/', views.invoice_clone, name='invoice_clone'),
+    path('invoices/<uuid:pk>/update-number/', views.invoice_update_number, name='invoice_update_number'),
 
     # Payments
     path('payments/', views.payment_list, name='payment_list'),

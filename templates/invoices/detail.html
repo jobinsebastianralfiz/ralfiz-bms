@@ -179,7 +179,20 @@
       <div class="card-body">
         <div class="mb-3">
           <div class="text-sm text-muted mb-1">Invoice Number</div>
-          <div class="fw-medium">{{ invoice.invoice_number }}</div>
+          <div class="d-flex align-items-center gap-2">
+            <span id="invoiceNumberDisplay" class="fw-medium">{{ invoice.invoice_number }}</span>
+            <button type="button" class="btn btn-ghost btn-sm btn-icon" onclick="toggleInvoiceNumberEdit()" title="Edit Invoice Number">
+              <i class="fas fa-pencil-alt text-muted" style="font-size: 0.75rem;"></i>
+            </button>
+          </div>
+          <div id="invoiceNumberEdit" style="display: none;" class="mt-2">
+            <form method="post" action="{% url 'invoice_update_number' invoice.pk %}" class="d-flex align-items-center gap-2">
+              {% csrf_token %}
+              <input type="text" class="form-control form-control-sm" name="invoice_number" value="{{ invoice.invoice_number }}" style="width: 160px;">
+              <button type="submit" class="btn btn-sm btn-primary"><i class="fas fa-check"></i></button>
+              <button type="button" class="btn btn-sm btn-outline-secondary" onclick="toggleInvoiceNumberEdit()"><i class="fas fa-times"></i></button>
+            </form>
+          </div>
         </div>
         <div class="mb-3">
           <div class="text-sm text-muted mb-1">Issue Date</div>
@@ -357,5 +370,25 @@
     </div>
   </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function toggleInvoiceNumberEdit() {
+  const display = document.getElementById('invoiceNumberDisplay');
+  const editForm = document.getElementById('invoiceNumberEdit');
+  const editBtn = display.nextElementSibling;
+  if (editForm.style.display === 'none') {
+    editForm.style.display = 'block';
+    display.style.display = 'none';
+    editBtn.style.display = 'none';
+    editForm.querySelector('input').focus();
+  } else {
+    editForm.style.display = 'none';
+    display.style.display = '';
+    editBtn.style.display = '';
+  }
+}
+</script>
 {% endblock %}
 

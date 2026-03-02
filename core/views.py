@@ -1401,6 +1401,23 @@ def invoice_update(request, pk):
 
 
 @login_required
+def invoice_update_number(request, pk):
+    """Quick inline update for invoice number from detail page."""
+    invoice = get_object_or_404(Invoice, pk=pk)
+    if request.method == 'POST':
+        new_number = request.POST.get('invoice_number', '').strip()
+        if new_number and new_number != invoice.invoice_number:
+            # Check uniqueness
+            if Invoice.objects.filter(invoice_number=new_number).exclude(pk=pk).exists():
+                messages.error(request, f'Invoice number "{new_number}" is already in use.')
+            else:
+                invoice.invoice_number = new_number
+                invoice.save()
+                messages.success(request, f'Invoice number updated to "{new_number}".')
+    return redirect('invoice_detail', pk=pk)
+
+
+@login_required
 def invoice_pdf(request, pk):
     """Generate PDF for an invoice"""
     from django.http import HttpResponse
