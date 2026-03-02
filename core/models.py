@@ -333,7 +333,7 @@ class Invoice(models.Model):
     ]
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    invoice_number = models.CharField(max_length=20, unique=True, editable=False)
+    invoice_number = models.CharField(max_length=20, unique=True, blank=True)
     client = models.ForeignKey(Client, on_delete=models.CASCADE, related_name='invoices')
     project = models.ForeignKey(Project, on_delete=models.SET_NULL, null=True, blank=True, related_name='invoices')
     quote = models.ForeignKey(Quote, on_delete=models.SET_NULL, null=True, blank=True, related_name='invoices')

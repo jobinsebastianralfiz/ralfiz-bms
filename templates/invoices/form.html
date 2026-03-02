@@ -76,6 +76,13 @@
           <div class="row">
             <div class="col-12" style="padding: 0.5rem;">
               <div class="form-group">
+                <label class="form-label" for="invoice_number">Invoice Number</label>
+                <input type="text" class="form-control" id="invoice_number" name="invoice_number" value="{{ invoice.invoice_number|default:'' }}" placeholder="Leave blank to auto-generate">
+                <div class="form-text">Leave blank to auto-generate the next number in sequence</div>
+              </div>
+            </div>
+            <div class="col-12" style="padding: 0.5rem;">
+              <div class="form-group">
                 <label class="form-label" for="title">Invoice Title <span class="required">*</span></label>
                 <input type="text" class="form-control" id="title" name="title" value="{{ invoice.title|default:'' }}" placeholder="e.g., Website Development - Milestone 1" required>
               </div>

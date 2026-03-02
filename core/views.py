@@ -1238,7 +1238,7 @@ def invoice_create(request):
         except (InvalidOperation, ValueError):
             discount = Decimal('0')
 
-        invoice = Invoice.objects.create(
+        create_kwargs = dict(
             client_id=request.POST.get('client'),
             project_id=request.POST.get('project') or None,
             quote_id=request.POST.get('quote') or None,
@@ -1253,6 +1253,13 @@ def invoice_create(request):
             client_notes=request.POST.get('client_notes', ''),
             terms=request.POST.get('terms', ''),
         )
+
+        # Allow manual invoice number override
+        manual_invoice_number = request.POST.get('invoice_number', '').strip()
+        if manual_invoice_number:
+            create_kwargs['invoice_number'] = manual_invoice_number
+
+        invoice = Invoice.objects.create(**create_kwargs)
 
         # Process line items
         item_count = int(request.POST.get('item_count', 0))
@@ -1328,6 +1335,12 @@ def invoice_update(request, pk):
         invoice.notes = request.POST.get('notes', '')
         invoice.client_notes = request.POST.get('client_notes', '')
         invoice.terms = request.POST.get('terms', '')
+
+        # Allow manual invoice number override
+        manual_invoice_number = request.POST.get('invoice_number', '').strip()
+        if manual_invoice_number:
+            invoice.invoice_number = manual_invoice_number
+
         invoice.save()
 
         # Delete existing items and recreate

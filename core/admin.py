@@ -210,7 +210,7 @@ class InvoiceAdmin(admin.ModelAdmin):
     ordering = ['-created_at']
     autocomplete_fields = ['client', 'project', 'quote']
     inlines = [InvoiceItemInline, PaymentInline]
-    readonly_fields = ['invoice_number']
+    readonly_fields = []
 
 
 @admin.register(Payment)
