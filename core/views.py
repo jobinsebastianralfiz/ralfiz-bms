@@ -2833,6 +2833,19 @@ def team_detail(request, pk):
         time_entries = TimeEntry.objects.filter(user=member.user).select_related('project', 'task').order_by('-date')[:10]
         total_hours = TimeEntry.objects.filter(user=member.user).aggregate(total=Sum('hours'))['total'] or 0
 
+    # Get employee app data if linked
+    employee = None
+    leave_requests = []
+    work_assignments = []
+    recent_attendance = []
+    if member.user:
+        from employees.models import Employee, LeaveRequest, WorkAssignment, Attendance
+        employee = Employee.objects.filter(user=member.user).first()
+        if employee:
+            leave_requests = LeaveRequest.objects.filter(employee=employee).order_by('-created_at')[:10]
+            work_assignments = WorkAssignment.objects.filter(assigned_to=employee).order_by('-created_at')[:10]
+            recent_attendance = Attendance.objects.filter(employee=employee).order_by('-date')[:10]
+
     context = {
         'member': member,
         'assigned_projects': assigned_projects,
@@ -2843,6 +2856,10 @@ def team_detail(request, pk):
         'recent_tasks': recent_tasks,
         'time_entries': time_entries,
         'total_hours': total_hours,
+        'employee': employee,
+        'leave_requests': leave_requests,
+        'work_assignments': work_assignments,
+        'recent_attendance': recent_attendance,
     }
     return render(request, 'team/detail.html', context)
 
@@ -3974,3 +3991,172 @@ def license_keys(request):
         'keys': keys,
     }
     return render(request, 'licenses/keys.html', context)
+
+
+# ============================================================
+# HR & Admin - Employee Management Web Views
+# ============================================================
+
+@login_required
+def emp_employee_list(request):
+    """List all employees"""
+    from employees.models import Employee
+    employees = Employee.objects.select_related('user').all()
+    status_filter = request.GET.get('status', '')
+    dept_filter = request.GET.get('department', '')
+    if status_filter:
+        employees = employees.filter(status=status_filter)
+    if dept_filter:
+        employees = employees.filter(department=dept_filter)
+    context = {
+        'employees': employees,
+        'status_filter': status_filter,
+        'dept_filter': dept_filter,
+        'departments': Employee.DEPARTMENT_CHOICES,
+        'statuses': Employee.STATUS_CHOICES,
+    }
+    return render(request, 'hr/employee_list.html', context)
+
+
+@login_required
+def emp_employee_detail(request, pk):
+    """Employee detail with attendance, leave, work"""
+    from employees.models import Employee, Attendance, LeaveRequest, WorkAssignment
+    employee = get_object_or_404(Employee, pk=pk)
+    recent_attendance = Attendance.objects.filter(employee=employee).order_by('-date')[:15]
+    leave_requests = LeaveRequest.objects.filter(employee=employee).order_by('-created_at')[:10]
+    work_assignments = WorkAssignment.objects.filter(assigned_to=employee).order_by('-created_at')[:10]
+    context = {
+        'employee': employee,
+        'recent_attendance': recent_attendance,
+        'leave_requests': leave_requests,
+        'work_assignments': work_assignments,
+    }
+    return render(request, 'hr/employee_detail.html', context)
+
+
+@login_required
+def emp_leave_list(request):
+    """List leave requests with filtering"""
+    from employees.models import LeaveRequest
+    leaves = LeaveRequest.objects.select_related('employee__user', 'leave_type').order_by('-created_at')
+    status_filter = request.GET.get('status', '')
+    if status_filter:
+        leaves = leaves.filter(status=status_filter)
+    context = {
+        'leaves': leaves,
+        'status_filter': status_filter,
+    }
+    return render(request, 'hr/leave_list.html', context)
+
+
+@login_required
+def emp_leave_action(request, pk):
+    """Approve or reject a leave request"""
+    from employees.models import LeaveRequest, Notification
+    from employees.utils import send_push_notification
+    if request.method != 'POST':
+        return redirect('emp_leave_list')
+    leave = get_object_or_404(LeaveRequest, pk=pk)
+    action = request.POST.get('action')
+    if action in ('approve', 'reject'):
+        leave.status = 'approved' if action == 'approve' else 'rejected'
+        leave.reviewed_by = request.user
+        leave.review_notes = request.POST.get('notes', '')
+        leave.reviewed_at = timezone.now()
+        leave.save()
+        Notification.objects.create(
+            employee=leave.employee,
+            title=f'Leave {leave.get_status_display()}',
+            body=f'Your leave from {leave.start_date} to {leave.end_date} has been {leave.get_status_display().lower()}.',
+            notification_type='leave',
+        )
+        send_push_notification(
+            leave.employee,
+            f'Leave {leave.get_status_display()}',
+            f'Your leave from {leave.start_date} to {leave.end_date} has been {leave.get_status_display().lower()}.',
+        )
+        messages.success(request, f'Leave request {leave.get_status_display().lower()}.')
+    return redirect('emp_leave_list')
+
+
+@login_required
+def emp_attendance_list(request):
+    """View attendance records"""
+    from employees.models import Attendance, Employee
+    from datetime import date
+    month = int(request.GET.get('month', timezone.now().month))
+    year = int(request.GET.get('year', timezone.now().year))
+    employee_filter = request.GET.get('employee', '')
+    records = Attendance.objects.select_related('employee__user').filter(
+        date__month=month, date__year=year
+    ).order_by('-date', '-check_in')
+    if employee_filter:
+        records = records.filter(employee__pk=employee_filter)
+    employees = Employee.objects.filter(status='active').order_by('employee_id')
+    context = {
+        'records': records,
+        'employees': employees,
+        'month': month,
+        'year': year,
+        'employee_filter': employee_filter,
+    }
+    return render(request, 'hr/attendance_list.html', context)
+
+
+@login_required
+def emp_work_list(request):
+    """List work assignments"""
+    from employees.models import WorkAssignment, Employee
+    assignments = WorkAssignment.objects.select_related('assigned_to__user', 'assigned_by').order_by('-created_at')
+    status_filter = request.GET.get('status', '')
+    if status_filter:
+        assignments = assignments.filter(status=status_filter)
+    employees = Employee.objects.filter(status='active').order_by('employee_id')
+    context = {
+        'assignments': assignments,
+        'employees': employees,
+        'status_filter': status_filter,
+        'status_choices': WorkAssignment.STATUS_CHOICES,
+        'priority_choices': WorkAssignment.PRIORITY_CHOICES,
+    }
+    return render(request, 'hr/work_list.html', context)
+
+
+@login_required
+def emp_work_create(request):
+    """Create a new work assignment"""
+    from employees.models import WorkAssignment, Employee, Notification
+    from employees.utils import send_push_notification
+    if request.method == 'POST':
+        employee = get_object_or_404(Employee, pk=request.POST.get('employee'))
+        assignment = WorkAssignment.objects.create(
+            title=request.POST.get('title'),
+            description=request.POST.get('description', ''),
+            assigned_to=employee,
+            assigned_by=request.user,
+            priority=request.POST.get('priority', 'medium'),
+            due_date=request.POST.get('due_date') or None,
+        )
+        Notification.objects.create(
+            employee=employee,
+            title='New Work Assignment',
+            body=f'You have been assigned: {assignment.title}',
+            notification_type='work',
+        )
+        send_push_notification(
+            employee,
+            'New Work Assignment',
+            f'You have been assigned: {assignment.title}',
+        )
+        messages.success(request, 'Work assignment created and employee notified.')
+        return redirect('emp_work_list')
+    from employees.models import Employee
+    employees = Employee.objects.filter(status='active').order_by('employee_id')
+    projects = Project.objects.filter(status='active')
+    context = {
+        'employees': employees,
+        'projects': projects,
+        'priority_choices': WorkAssignment.PRIORITY_CHOICES,
+    }
+    return render(request, 'hr/work_create.html', context)

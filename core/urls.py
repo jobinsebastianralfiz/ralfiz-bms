@@ -137,4 +137,13 @@ urlpatterns = [
     path('licenses/<uuid:pk>/delete-activation/<uuid:activation_id>/', views.license_delete_activation, name='license_delete_activation'),
     path('licenses/keys/', views.license_keys, name='license_keys'),
     path('licenses/keys/generate/', views.license_generate_keys, name='license_generate_keys'),
+
+    # HR & Admin
+    path('hr/employees/', views.emp_employee_list, name='emp_employee_list'),
+    path('hr/employees/<uuid:pk>/', views.emp_employee_detail, name='emp_employee_detail'),
+    path('hr/attendance/', views.emp_attendance_list, name='emp_attendance_list'),
+    path('hr/leave/', views.emp_leave_list, name='emp_leave_list'),
+    path('hr/leave/<uuid:pk>/action/', views.emp_leave_action, name='emp_leave_action'),
+    path('hr/work/', views.emp_work_list, name='emp_work_list'),
+    path('hr/work/create/', views.emp_work_create, name='emp_work_create'),
 ]

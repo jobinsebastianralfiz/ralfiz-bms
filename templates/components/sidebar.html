@@ -116,6 +116,26 @@
     </div>
 
     <div class="nav-section">
+      <div class="nav-section-title">HR & Admin</div>
+      <a href="{% url 'emp_employee_list' %}" class="nav-item {% if 'emp_employee' in request.resolver_match.url_name %}active{% endif %}">
+        <i class="fas fa-id-badge"></i>
+        <span>Employees</span>
+      </a>
+      <a href="{% url 'emp_attendance_list' %}" class="nav-item {% if 'emp_attendance' in request.resolver_match.url_name %}active{% endif %}">
+        <i class="fas fa-fingerprint"></i>
+        <span>Attendance</span>
+      </a>
+      <a href="{% url 'emp_leave_list' %}" class="nav-item {% if 'emp_leave' in request.resolver_match.url_name %}active{% endif %}">
+        <i class="fas fa-calendar-minus"></i>
+        <span>Leave Requests</span>
+      </a>
+      <a href="{% url 'emp_work_list' %}" class="nav-item {% if 'emp_work' in request.resolver_match.url_name %}active{% endif %}">
+        <i class="fas fa-clipboard-list"></i>
+        <span>Work Assignments</span>
+      </a>
+    </div>
+
+    <div class="nav-section">
       <div class="nav-section-title">Billing</div>
       <a href="{% url 'quote_list' %}" class="nav-item {% if 'quote' in request.resolver_match.url_name %}active{% endif %}">
         <i class="fas fa-file-alt"></i>

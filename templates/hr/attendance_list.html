@@ -1,0 +1,94 @@
+{% extends 'base.html' %}
+{% block title %}Attendance - Ralfiz BMS{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title">Attendance</h1>
+    <p class="page-subtitle mb-0">View employee attendance records</p>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header">
+    <h3 class="card-title"><i class="fas fa-fingerprint"></i> Attendance Records</h3>
+    <div class="card-actions">
+      <form method="get" class="d-flex gap-2">
+        <select name="employee" class="form-control" style="width: auto;" onchange="this.form.submit()">
+          <option value="">All Employees</option>
+          {% for emp in employees %}
+          <option value="{{ emp.pk }}" {% if employee_filter == emp.pk|slugify %}selected{% endif %}>{{ emp.full_name }} ({{ emp.employee_id }})</option>
+          {% endfor %}
+        </select>
+        <select name="month" class="form-control" style="width: auto;" onchange="this.form.submit()">
+          {% for m in "123456789" %}
+          <option value="{{ forloop.counter }}" {% if month == forloop.counter %}selected{% endif %}>{{ forloop.counter }}</option>
+          {% endfor %}
+          <option value="10" {% if month == 10 %}selected{% endif %}>10</option>
+          <option value="11" {% if month == 11 %}selected{% endif %}>11</option>
+          <option value="12" {% if month == 12 %}selected{% endif %}>12</option>
+        </select>
+        <input type="number" name="year" class="form-control" style="width: 100px;" value="{{ year }}" onchange="this.form.submit()">
+      </form>
+    </div>
+  </div>
+  <div class="card-body p-0">
+    {% if records %}
+    <div class="table-responsive">
+      <table class="table table-hover mb-0">
+        <thead>
+          <tr>
+            <th>Employee</th>
+            <th>Date</th>
+            <th>Check In</th>
+            <th>Check Out</th>
+            <th>Hours</th>
+            <th>Status</th>
+            <th>Method</th>
+            <th>Face</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for a in records %}
+          <tr>
+            <td>
+              <div class="fw-medium">{{ a.employee.full_name }}</div>
+              <div class="text-sm text-muted">{{ a.employee.employee_id }}</div>
+            </td>
+            <td>{{ a.date|date:"d M Y" }}</td>
+            <td>{{ a.check_in|date:"H:i"|default:"-" }}</td>
+            <td>{{ a.check_out|date:"H:i"|default:"-" }}</td>
+            <td>{{ a.working_hours|default:"-" }}h</td>
+            <td>
+              {% if a.status == 'present' %}
+              <span class="badge" style="background: var(--success-bg); color: var(--success);">Present</span>
+              {% elif a.status == 'late' %}
+              <span class="badge" style="background: var(--warning-bg); color: var(--warning);">Late</span>
+              {% elif a.status == 'absent' %}
+              <span class="badge" style="background: var(--danger-bg); color: var(--danger);">Absent</span>
+              {% else %}
+              <span class="badge">{{ a.get_status_display }}</span>
+              {% endif %}
+            </td>
+            <td>{{ a.get_verification_method_display }}</td>
+            <td>
+              {% if a.face_verified %}
+              <i class="fas fa-check-circle text-success"></i>
+              {% else %}
+              <i class="fas fa-minus-circle text-muted"></i>
+              {% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <div class="text-center text-muted py-5">
+      <i class="fas fa-calendar-alt mb-3" style="font-size: 2rem; display: block;"></i>
+      <p class="mb-0">No attendance records for this period.</p>
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,97 @@
+{% extends 'base.html' %}
+{% block title %}Leave Requests - Ralfiz BMS{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title">Leave Requests</h1>
+    <p class="page-subtitle mb-0">Review and manage employee leave requests</p>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header">
+    <h3 class="card-title"><i class="fas fa-calendar-minus"></i> All Leave Requests</h3>
+    <div class="card-actions">
+      <form method="get" class="d-flex gap-2">
+        <select name="status" class="form-control" style="width: auto;" onchange="this.form.submit()">
+          <option value="">All Status</option>
+          <option value="pending" {% if status_filter == 'pending' %}selected{% endif %}>Pending</option>
+          <option value="approved" {% if status_filter == 'approved' %}selected{% endif %}>Approved</option>
+          <option value="rejected" {% if status_filter == 'rejected' %}selected{% endif %}>Rejected</option>
+          <option value="cancelled" {% if status_filter == 'cancelled' %}selected{% endif %}>Cancelled</option>
+        </select>
+      </form>
+    </div>
+  </div>
+  <div class="card-body p-0">
+    {% if leaves %}
+    <div class="table-responsive">
+      <table class="table table-hover mb-0">
+        <thead>
+          <tr>
+            <th>Employee</th>
+            <th>Leave Type</th>
+            <th>From</th>
+            <th>To</th>
+            <th>Days</th>
+            <th>Reason</th>
+            <th>Status</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for l in leaves %}
+          <tr>
+            <td>
+              <div class="d-flex align-items-center gap-2">
+                <div class="avatar avatar-sm" style="background: var(--primary); color: white;">
+                  {{ l.employee.full_name|slice:":1"|upper }}
+                </div>
+                <div>
+                  <div class="fw-medium">{{ l.employee.full_name }}</div>
+                  <div class="text-sm text-muted">{{ l.employee.employee_id }}</div>
+                </div>
+              </div>
+            </td>
+            <td>{{ l.leave_type.name|default:"N/A" }}</td>
+            <td>{{ l.start_date|date:"d M Y" }}</td>
+            <td>{{ l.end_date|date:"d M Y" }}</td>
+            <td>{{ l.total_days }}</td>
+            <td>{{ l.reason|truncatewords:8 }}</td>
+            <td>
+              {% if l.status == 'approved' %}
+              <span class="badge" style="background: var(--success-bg); color: var(--success);">Approved</span>
+              {% elif l.status == 'rejected' %}
+              <span class="badge" style="background: var(--danger-bg); color: var(--danger);">Rejected</span>
+              {% elif l.status == 'pending' %}
+              <span class="badge" style="background: var(--warning-bg); color: var(--warning);">Pending</span>
+              {% else %}
+              <span class="badge">{{ l.get_status_display }}</span>
+              {% endif %}
+            </td>
+            <td>
+              {% if l.status == 'pending' %}
+              <form method="post" action="{% url 'emp_leave_action' l.pk %}" class="d-inline">
+                {% csrf_token %}
+                <button name="action" value="approve" class="btn btn-sm btn-success" title="Approve"><i class="fas fa-check"></i></button>
+                <button name="action" value="reject" class="btn btn-sm btn-danger" title="Reject"><i class="fas fa-times"></i></button>
+              </form>
+              {% else %}
+              {% if l.reviewed_by %}<span class="text-sm text-muted">by {{ l.reviewed_by.get_full_name|default:l.reviewed_by.username }}</span>{% endif %}
+              {% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <div class="text-center text-muted py-5">
+      <i class="fas fa-calendar-check mb-3" style="font-size: 2rem; display: block;"></i>
+      <p class="mb-0">No leave requests found.</p>
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

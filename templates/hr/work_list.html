@@ -1,0 +1,104 @@
+{% extends 'base.html' %}
+{% block title %}Work Assignments - Ralfiz BMS{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title">Work Assignments</h1>
+    <p class="page-subtitle mb-0">Assign and track employee work</p>
+  </div>
+  <div class="page-actions">
+    <a href="{% url 'emp_work_create' %}" class="btn btn-primary">
+      <i class="fas fa-plus"></i> Assign Work
+    </a>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header">
+    <h3 class="card-title"><i class="fas fa-clipboard-list"></i> All Assignments</h3>
+    <div class="card-actions">
+      <form method="get" class="d-flex gap-2">
+        <select name="status" class="form-control" style="width: auto;" onchange="this.form.submit()">
+          <option value="">All Status</option>
+          {% for key, value in status_choices %}
+          <option value="{{ key }}" {% if status_filter == key %}selected{% endif %}>{{ value }}</option>
+          {% endfor %}
+        </select>
+      </form>
+    </div>
+  </div>
+  <div class="card-body p-0">
+    {% if assignments %}
+    <div class="table-responsive">
+      <table class="table table-hover mb-0">
+        <thead>
+          <tr>
+            <th>Title</th>
+            <th>Assigned To</th>
+            <th>Priority</th>
+            <th>Status</th>
+            <th>Due Date</th>
+            <th>Assigned By</th>
+            <th>Created</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for w in assignments %}
+          <tr>
+            <td>
+              <div class="fw-medium">{{ w.title }}</div>
+              {% if w.description %}<div class="text-sm text-muted">{{ w.description|truncatewords:10 }}</div>{% endif %}
+            </td>
+            <td>
+              <div class="d-flex align-items-center gap-2">
+                <div class="avatar avatar-sm" style="background: var(--primary); color: white;">
+                  {{ w.assigned_to.full_name|slice:":1"|upper }}
+                </div>
+                <div>
+                  <div class="fw-medium">{{ w.assigned_to.full_name }}</div>
+                  <div class="text-sm text-muted">{{ w.assigned_to.employee_id }}</div>
+                </div>
+              </div>
+            </td>
+            <td>
+              {% if w.priority == 'urgent' %}
+              <span class="badge" style="background: var(--danger-bg); color: var(--danger);">Urgent</span>
+              {% elif w.priority == 'high' %}
+              <span class="badge" style="background: var(--warning-bg); color: var(--warning);">High</span>
+              {% elif w.priority == 'medium' %}
+              <span class="badge" style="background: var(--info-bg); color: var(--info);">Medium</span>
+              {% else %}
+              <span class="badge">Low</span>
+              {% endif %}
+            </td>
+            <td>
+              {% if w.status == 'completed' %}
+              <span class="badge" style="background: var(--success-bg); color: var(--success);">Completed</span>
+              {% elif w.status == 'in_progress' %}
+              <span class="badge" style="background: var(--info-bg); color: var(--info);">In Progress</span>
+              {% elif w.status == 'assigned' %}
+              <span class="badge" style="background: var(--warning-bg); color: var(--warning);">Assigned</span>
+              {% elif w.status == 'on_hold' %}
+              <span class="badge" style="background: var(--secondary-bg); color: var(--secondary);">On Hold</span>
+              {% else %}
+              <span class="badge">{{ w.get_status_display }}</span>
+              {% endif %}
+            </td>
+            <td>{{ w.due_date|date:"d M Y"|default:"-" }}</td>
+            <td>{{ w.assigned_by.get_full_name|default:w.assigned_by.username|default:"-" }}</td>
+            <td>{{ w.created_at|date:"d M Y" }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <div class="text-center text-muted py-5">
+      <i class="fas fa-clipboard-check mb-3" style="font-size: 2rem; display: block;"></i>
+      <p class="mb-0">No work assignments found.</p>
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}
