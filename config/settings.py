@@ -33,17 +33,23 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'django.contrib.humanize',
+    # Third-party
+    'rest_framework',
+    'corsheaders',
+    'drf_spectacular',
     # Local apps
     'core',
     'licensing',
     'retailease',
     'crm',
+    'employees',
 ]
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'whitenoise.middleware.WhiteNoiseMiddleware',  # Whitenoise for static files
     'django.contrib.sessions.middleware.SessionMiddleware',
+    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
@@ -139,3 +145,48 @@ MESSAGE_TAGS = {
 # License API settings
 LICENSE_ADMIN_KEY = os.getenv('LICENSE_ADMIN_KEY', 'retailease-admin-secret')
 RETAILEASE_WEBSITE_API_KEY = os.getenv('RETAILEASE_WEBSITE_API_KEY', 'retailease-website-secret')
+
+# REST Framework
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': [
+        'rest_framework_simplejwt.authentication.JWTAuthentication',
+        'rest_framework.authentication.SessionAuthentication',
+    ],
+    'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
+    'PAGE_SIZE': 20,
+    'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
+}
+
+# Swagger / OpenAPI
+SPECTACULAR_SETTINGS = {
+    'TITLE': 'Ralfiz Employee Management API',
+    'DESCRIPTION': 'REST APIs for employee mobile app - attendance, leave, work assignments, notifications',
+    'VERSION': '1.0.0',
+    'SERVE_INCLUDE_SCHEMA': False,
+    'COMPONENT_SPLIT_REQUEST': True,
+    'TAGS': [
+        {'name': 'Auth', 'description': 'Authentication (JWT login, token refresh, password)'},
+        {'name': 'Profile', 'description': 'Employee profile & face photo'},
+        {'name': 'Attendance', 'description': 'Check-in/out with face, QR, location verification'},
+        {'name': 'Leave', 'description': 'Leave requests and balance'},
+        {'name': 'Work', 'description': 'Work assignments and status updates'},
+        {'name': 'Notifications', 'description': 'Push notifications'},
+        {'name': 'Admin', 'description': 'Admin endpoints for managing employees'},
+    ],
+}
+
+# JWT Settings
+from datetime import timedelta
+SIMPLE_JWT = {
+    'ACCESS_TOKEN_LIFETIME': timedelta(days=1),
+    'REFRESH_TOKEN_LIFETIME': timedelta(days=30),
+    'ROTATE_REFRESH_TOKENS': True,
+    'AUTH_HEADER_TYPES': ('Bearer',),
+}
+
+# CORS - allow mobile app
+CORS_ALLOW_ALL_ORIGINS = DEBUG
+CORS_ALLOWED_ORIGINS = os.getenv('CORS_ALLOWED_ORIGINS', '').split(',') if os.getenv('CORS_ALLOWED_ORIGINS') else []
+
+# Firebase (for push notifications)
+FIREBASE_CREDENTIALS_PATH = os.getenv('FIREBASE_CREDENTIALS_PATH', '')
