@@ -1,3 +1,4 @@
+import uuid
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth import login, logout, authenticate
@@ -4188,3 +4189,58 @@ def emp_leave_types(request):
         return redirect('emp_leave_types')
     leave_types = LeaveType.objects.all().order_by('name')
     return render(request, 'hr/leave_types.html', {'leave_types': leave_types})
+
+
+@login_required
+def emp_office_qr(request):
+    """Generate and manage office QR code sticker"""
+    import qrcode
+    import io
+    import base64
+    from employees.models import OfficeConfig
+
+    config = OfficeConfig.objects.first()
+
+    if request.method == 'POST':
+        action = request.POST.get('action')
+        if action == 'generate':
+            office_name = request.POST.get('office_name', 'Main Office')
+            latitude = request.POST.get('latitude') or None
+            longitude = request.POST.get('longitude') or None
+            # Generate a unique QR code value
+            qr_value = f"RALFIZ-OFFICE-{uuid.uuid4().hex[:12].upper()}"
+            if config:
+                config.qr_code = qr_value
+                config.office_name = office_name
+                config.latitude = latitude
+                config.longitude = longitude
+                config.save()
+            else:
+                config = OfficeConfig.objects.create(
+                    qr_code=qr_value,
+                    office_name=office_name,
+                    latitude=latitude,
+                    longitude=longitude,
+                )
+            messages.success(request, 'Office QR code generated! Print the QR code and place it in the office.')
+            return redirect('emp_office_qr')
+        elif action == 'delete' and config:
+            config.delete()
+            messages.success(request, 'Office QR code deleted.')
+            return redirect('emp_office_qr')
+
+    # Generate QR image for display
+    qr_image_b64 = None
+    if config:
+        qr = qrcode.QRCode(version=1, box_size=10, border=4)
+        qr.add_data(config.qr_code)
+        qr.make(fit=True)
+        img = qr.make_image(fill_color='black', back_color='white')
+        buffer = io.BytesIO()
+        img.save(buffer, format='PNG')
+        qr_image_b64 = base64.b64encode(buffer.getvalue()).decode()
+
+    return render(request, 'hr/office_qr.html', {
+        'config': config,
+        'qr_image': qr_image_b64,
+    })

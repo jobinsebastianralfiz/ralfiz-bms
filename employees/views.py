@@ -202,13 +202,20 @@ class CheckInView(APIView):
                         'error': f'You are {int(distance)}m away from office. Must be within {employee.allowed_radius_meters}m.',
                     }, status=status.HTTP_400_BAD_REQUEST)
 
-        # Verify QR code
+        # Verify QR code - supports static office QR sticker or daily QR
         qr_verified = False
         if data.get('qr_code') and method in ['qr', 'face_qr']:
-            qr = QRCode.objects.filter(code=data['qr_code'], is_active=True, date=today).first()
-            if not qr or qr.is_expired:
-                return Response({'error': 'Invalid or expired QR code'}, status=status.HTTP_400_BAD_REQUEST)
-            qr_verified = True
+            # Check static office QR sticker
+            from .models import OfficeConfig
+            if OfficeConfig.objects.filter(qr_code=data['qr_code']).exists():
+                qr_verified = True
+            else:
+                # Check daily QR codes
+                qr = QRCode.objects.filter(code=data['qr_code'], is_active=True, date=today).first()
+                if qr and not qr.is_expired:
+                    qr_verified = True
+            if not qr_verified:
+                return Response({'error': 'Invalid QR code. Please scan the office QR sticker.'}, status=status.HTTP_400_BAD_REQUEST)
 
         # Face verification - confidence comes from ML Kit on device
         face_verified = False
