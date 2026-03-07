@@ -144,6 +144,7 @@ urlpatterns = [
     path('hr/attendance/', views.emp_attendance_list, name='emp_attendance_list'),
     path('hr/leave/', views.emp_leave_list, name='emp_leave_list'),
     path('hr/leave/<uuid:pk>/action/', views.emp_leave_action, name='emp_leave_action'),
+    path('hr/leave/types/', views.emp_leave_types, name='emp_leave_types'),
     path('hr/work/', views.emp_work_list, name='emp_work_list'),
     path('hr/work/create/', views.emp_work_create, name='emp_work_create'),
 ]

@@ -4160,3 +4160,31 @@ def emp_work_create(request):
         'priority_choices': WorkAssignment.PRIORITY_CHOICES,
     }
     return render(request, 'hr/work_create.html', context)
+
+
+@login_required
+def emp_leave_types(request):
+    """Manage leave types"""
+    from employees.models import LeaveType
+    if request.method == 'POST':
+        action = request.POST.get('action')
+        if action == 'create':
+            LeaveType.objects.create(
+                name=request.POST.get('name'),
+                days_allowed=int(request.POST.get('days_allowed', 12)),
+                is_paid=request.POST.get('is_paid') == 'on',
+                is_active=True,
+            )
+            messages.success(request, 'Leave type created.')
+        elif action == 'toggle':
+            lt = get_object_or_404(LeaveType, pk=request.POST.get('pk'))
+            lt.is_active = not lt.is_active
+            lt.save()
+            messages.success(request, f'Leave type {"activated" if lt.is_active else "deactivated"}.')
+        elif action == 'delete':
+            lt = get_object_or_404(LeaveType, pk=request.POST.get('pk'))
+            lt.delete()
+            messages.success(request, 'Leave type deleted.')
+        return redirect('emp_leave_types')
+    leave_types = LeaveType.objects.all().order_by('name')
+    return render(request, 'hr/leave_types.html', {'leave_types': leave_types})

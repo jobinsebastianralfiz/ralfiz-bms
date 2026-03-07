@@ -125,9 +125,13 @@
         <i class="fas fa-fingerprint"></i>
         <span>Attendance</span>
       </a>
-      <a href="{% url 'emp_leave_list' %}" class="nav-item {% if 'emp_leave' in request.resolver_match.url_name %}active{% endif %}">
+      <a href="{% url 'emp_leave_list' %}" class="nav-item {% if request.resolver_match.url_name == 'emp_leave_list' or request.resolver_match.url_name == 'emp_leave_action' %}active{% endif %}">
         <i class="fas fa-calendar-minus"></i>
         <span>Leave Requests</span>
+      </a>
+      <a href="{% url 'emp_leave_types' %}" class="nav-item {% if request.resolver_match.url_name == 'emp_leave_types' %}active{% endif %}">
+        <i class="fas fa-list-alt"></i>
+        <span>Leave Types</span>
       </a>
       <a href="{% url 'emp_work_list' %}" class="nav-item {% if 'emp_work' in request.resolver_match.url_name %}active{% endif %}">
         <i class="fas fa-clipboard-list"></i>

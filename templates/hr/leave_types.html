@@ -1,0 +1,108 @@
+{% extends 'base.html' %}
+{% block title %}Leave Types - Ralfiz BMS{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title">Leave Types</h1>
+    <p class="page-subtitle mb-0">Configure leave types available for employees</p>
+  </div>
+</div>
+
+<div class="row">
+  <!-- Create Form -->
+  <div class="col-4 col-md-12" style="padding: 0.75rem;">
+    <div class="card">
+      <div class="card-header">
+        <h3 class="card-title"><i class="fas fa-plus me-2"></i> Add Leave Type</h3>
+      </div>
+      <div class="card-body">
+        <form method="post">
+          {% csrf_token %}
+          <input type="hidden" name="action" value="create">
+          <div class="mb-3">
+            <label class="form-label">Name *</label>
+            <input type="text" name="name" class="form-control" required placeholder="e.g. Casual Leave">
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Days Allowed (per year)</label>
+            <input type="number" name="days_allowed" class="form-control" value="12" min="1">
+          </div>
+          <div class="mb-3">
+            <label class="form-check">
+              <input type="checkbox" name="is_paid" class="form-check-input" checked>
+              <span class="form-check-label">Paid Leave</span>
+            </label>
+          </div>
+          <button type="submit" class="btn btn-primary w-100"><i class="fas fa-plus me-2"></i> Add Leave Type</button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- List -->
+  <div class="col-8 col-md-12" style="padding: 0.75rem;">
+    <div class="card">
+      <div class="card-header">
+        <h3 class="card-title"><i class="fas fa-list-alt"></i> All Leave Types</h3>
+      </div>
+      <div class="card-body p-0">
+        {% if leave_types %}
+        <div class="table-responsive">
+          <table class="table table-hover mb-0">
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>Days/Year</th>
+                <th>Paid</th>
+                <th>Status</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for lt in leave_types %}
+              <tr>
+                <td class="fw-medium">{{ lt.name }}</td>
+                <td>{{ lt.days_allowed }}</td>
+                <td>
+                  {% if lt.is_paid %}
+                  <span class="badge" style="background: var(--success-bg); color: var(--success);">Paid</span>
+                  {% else %}
+                  <span class="badge">Unpaid</span>
+                  {% endif %}
+                </td>
+                <td>
+                  {% if lt.is_active %}
+                  <span class="badge" style="background: var(--success-bg); color: var(--success);">Active</span>
+                  {% else %}
+                  <span class="badge" style="background: var(--danger-bg); color: var(--danger);">Inactive</span>
+                  {% endif %}
+                </td>
+                <td>
+                  <form method="post" class="d-inline">
+                    {% csrf_token %}
+                    <input type="hidden" name="pk" value="{{ lt.pk }}">
+                    <button name="action" value="toggle" class="btn btn-sm btn-ghost" title="{% if lt.is_active %}Deactivate{% else %}Activate{% endif %}">
+                      <i class="fas {% if lt.is_active %}fa-toggle-on text-success{% else %}fa-toggle-off text-muted{% endif %}"></i>
+                    </button>
+                    <button name="action" value="delete" class="btn btn-sm btn-ghost text-danger" title="Delete" onclick="return confirm('Delete this leave type?')">
+                      <i class="fas fa-trash"></i>
+                    </button>
+                  </form>
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        {% else %}
+        <div class="text-center text-muted py-5">
+          <i class="fas fa-list-alt mb-3" style="font-size: 2rem; display: block;"></i>
+          <p class="mb-0">No leave types configured. Add one using the form.</p>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
