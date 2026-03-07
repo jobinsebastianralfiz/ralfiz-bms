@@ -1,10 +1,55 @@
 from rest_framework_simplejwt.views import TokenObtainPairView
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from rest_framework import serializers
+from .models import Employee
 
 
 class EmployeeTokenSerializer(TokenObtainPairSerializer):
     """Custom JWT token that includes employee info in response"""
+
+    def _create_employee_from_team_member(self, user):
+        """Auto-create Employee profile from TeamMember if it exists"""
+        team_member = getattr(user, 'team_profile', None)
+        if team_member is None:
+            return None
+
+        # Map TeamMember fields to Employee fields
+        employment_type_map = {
+            'permanent': 'fulltime',
+            'freelancer': 'parttime',
+        }
+        role_to_dept_map = {
+            'developer': 'engineering',
+            'designer': 'design',
+            'project_manager': 'operations',
+            'qa': 'engineering',
+            'devops': 'engineering',
+            'other': 'other',
+        }
+
+        # Generate employee_id
+        last_emp = Employee.objects.order_by('-employee_id').first()
+        if last_emp and last_emp.employee_id.startswith('EMP'):
+            try:
+                num = int(last_emp.employee_id[3:]) + 1
+            except ValueError:
+                num = 1
+        else:
+            num = 1
+        employee_id = f'EMP{num:03d}'
+
+        employee = Employee.objects.create(
+            user=user,
+            employee_id=employee_id,
+            employment_type=employment_type_map.get(team_member.employment_type, 'fulltime'),
+            department=role_to_dept_map.get(team_member.role, 'other'),
+            designation=team_member.get_role_display(),
+            phone=team_member.phone or '',
+            monthly_salary=team_member.monthly_salary,
+            hourly_rate=team_member.hourly_rate,
+            status='active',
+        )
+        return employee
 
     def validate(self, attrs):
         data = super().validate(attrs)
@@ -21,20 +66,23 @@ class EmployeeTokenSerializer(TokenObtainPairSerializer):
 
         try:
             employee = user.employee_profile
-            data['employee'] = {
-                'id': str(employee.id),
-                'employee_id': employee.employee_id,
-                'employment_type': employee.employment_type,
-                'department': employee.department,
-                'designation': employee.designation,
-                'status': employee.status,
-                'has_face_registered': bool(employee.face_photo),
-            }
-        except Exception:
-            raise serializers.ValidationError('No employee profile found for this user.')
+        except Employee.DoesNotExist:
+            employee = self._create_employee_from_team_member(user)
+            if employee is None:
+                raise serializers.ValidationError('No employee profile found for this user.')
 
-        if hasattr(user, 'employee_profile') and user.employee_profile.status != 'active':
+        if employee.status != 'active':
             raise serializers.ValidationError('Your account is inactive. Contact admin.')
+
+        data['employee'] = {
+            'id': str(employee.id),
+            'employee_id': employee.employee_id,
+            'employment_type': employee.employment_type,
+            'department': employee.department,
+            'designation': employee.designation,
+            'status': employee.status,
+            'has_face_registered': bool(employee.face_photo),
+        }
 
         return data
 
