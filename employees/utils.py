@@ -48,11 +48,24 @@ def init_firebase():
         import firebase_admin
         from firebase_admin import credentials
         import os
+        import json
 
+        if firebase_admin._apps:
+            return
+
+        # Option 1: JSON string in env var (recommended for Railway)
+        cred_json = os.getenv('FIREBASE_CREDENTIALS_JSON')
+        if cred_json:
+            cred = credentials.Certificate(json.loads(cred_json))
+            firebase_admin.initialize_app(cred)
+            logger.info('Firebase Admin SDK initialized from JSON env var')
+            return
+
+        # Option 2: File path
         cred_path = os.getenv('FIREBASE_CREDENTIALS_PATH')
-        if cred_path and not firebase_admin._apps:
+        if cred_path:
             cred = credentials.Certificate(cred_path)
             firebase_admin.initialize_app(cred)
-            logger.info('Firebase Admin SDK initialized')
+            logger.info('Firebase Admin SDK initialized from file')
     except Exception as e:
         logger.warning(f'Firebase init failed: {e}')
