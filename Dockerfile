@@ -26,4 +26,4 @@ COPY . .
 # Railway sets PORT env var
 CMD python manage.py collectstatic --noinput && \
     python manage.py migrate && \
-    gunicorn config.wsgi:application --bind 0.0.0.0:${PORT:-8080}
+    gunicorn config.wsgi:application --bind 0.0.0.0:${PORT:-8080} --timeout 120
