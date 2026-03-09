@@ -119,41 +119,60 @@ def generate_face_encoding(image_path):
 
     try:
         from PIL import Image
+        import numpy as np
 
-        # Resize large images to avoid slow processing and detection issues
+        # Open and normalize the image
         pil_image = Image.open(image_path)
+        logger.info(f'Original image: {image_path}, size: {pil_image.size}, mode: {pil_image.mode}')
 
-        # Convert RGBA/P to RGB (face_recognition needs RGB)
-        if pil_image.mode in ('RGBA', 'P', 'LA'):
+        # Convert to RGB (face_recognition only works with RGB)
+        if pil_image.mode != 'RGB':
             pil_image = pil_image.convert('RGB')
-            pil_image.save(image_path)
 
+        # Resize large images
         max_dimension = 1200
         if max(pil_image.size) > max_dimension:
             pil_image.thumbnail((max_dimension, max_dimension))
-            pil_image.save(image_path)
 
-        logger.info(f'Processing face image: {image_path}, size: {pil_image.size}, mode: {pil_image.mode}')
+        # Save as JPEG to ensure clean format
+        clean_path = image_path.rsplit('.', 1)[0] + '_clean.jpg'
+        pil_image.save(clean_path, 'JPEG', quality=95)
 
-        image = face_recognition.load_image_file(image_path)
-        logger.info(f'Image loaded, shape: {image.shape}')
+        # Load with face_recognition (uses numpy array)
+        image = face_recognition.load_image_file(clean_path)
+        logger.info(f'Image loaded, shape: {image.shape}, dtype: {image.dtype}')
 
-        # Try HOG detector first (faster)
+        # Try HOG detector
         face_locations = face_recognition.face_locations(image, model='hog')
-        logger.info(f'HOG detection: {len(face_locations)} faces found')
+        logger.info(f'HOG detection: {len(face_locations)} faces')
 
         if not face_locations:
-            # Try with upsampling for small faces
+            # Upsample for small/distant faces
             face_locations = face_recognition.face_locations(image, number_of_times_to_upsample=2, model='hog')
-            logger.info(f'HOG upsampled detection: {len(face_locations)} faces found')
+            logger.info(f'HOG upsampled: {len(face_locations)} faces')
 
         if not face_locations:
-            logger.warning(f'No face detected in image: {image_path}')
+            # Last resort: try CNN model (more accurate but slower)
+            try:
+                face_locations = face_recognition.face_locations(image, model='cnn')
+                logger.info(f'CNN detection: {len(face_locations)} faces')
+            except Exception as cnn_err:
+                logger.warning(f'CNN detection failed (expected on CPU): {cnn_err}')
+
+        # Clean up temp file
+        import os
+        try:
+            os.unlink(clean_path)
+        except OSError:
+            pass
+
+        if not face_locations:
+            logger.warning(f'No face detected in image after all attempts: {image_path}')
             return None
 
         encodings = face_recognition.face_encodings(image, known_face_locations=face_locations)
         if encodings:
-            logger.info(f'Face encoding generated successfully')
+            logger.info(f'Face encoding generated successfully, {len(face_locations)} face(s)')
             return encodings[0].tolist()
         return None
     except Exception as e:

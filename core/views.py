@@ -4037,10 +4037,14 @@ def emp_employee_detail(request, pk):
                 employee.save(update_fields=['face_encoding'])
                 messages.success(request, 'Face photo uploaded and encoding generated successfully.')
             else:
-                employee.face_photo = None
+                # Keep the photo but warn about encoding failure
                 employee.face_encoding = None
-                employee.save(update_fields=['face_photo', 'face_encoding'])
-                messages.error(request, 'No face detected in the uploaded photo. Please upload a clear face photo.')
+                employee.save(update_fields=['face_encoding'])
+                messages.warning(request,
+                    'Face photo saved but no face was detected for encoding. '
+                    'Try a different photo: front-facing, well-lit, clear face visible. '
+                    f'Photo saved at: {employee.face_photo.name}'
+                )
         else:
             messages.error(request, 'Please select a photo to upload.')
         return redirect('emp_employee_detail', pk=pk)
