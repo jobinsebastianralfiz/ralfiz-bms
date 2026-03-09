@@ -192,19 +192,25 @@ class CheckInView(APIView):
         data = serializer.validated_data
         method = data.get('verification_method', 'face')
 
-        # Verify location if provided
+        # Verify location - required for all methods to prevent remote check-in
         location_verified = False
-        if data.get('latitude') and data.get('longitude'):
-            if employee.office_latitude and employee.office_longitude:
-                distance = haversine_distance(
-                    data['latitude'], data['longitude'],
-                    employee.office_latitude, employee.office_longitude
-                )
-                location_verified = distance <= employee.allowed_radius_meters
-                if not location_verified and method in ['location', 'face_location']:
-                    return Response({
-                        'error': f'You are {int(distance)}m away from office. Must be within {employee.allowed_radius_meters}m.',
-                    }, status=status.HTTP_400_BAD_REQUEST)
+        if not data.get('latitude') or not data.get('longitude'):
+            return Response({'error': 'Location is required for check-in.'},
+                            status=status.HTTP_400_BAD_REQUEST)
+
+        if employee.office_latitude and employee.office_longitude:
+            distance = haversine_distance(
+                data['latitude'], data['longitude'],
+                employee.office_latitude, employee.office_longitude
+            )
+            location_verified = distance <= employee.allowed_radius_meters
+            if not location_verified:
+                return Response({
+                    'error': f'You are {int(distance)}m away from office. Must be within {employee.allowed_radius_meters}m.',
+                }, status=status.HTTP_400_BAD_REQUEST)
+        else:
+            # No office location configured for this employee, skip location check
+            location_verified = True
 
         # Verify QR code - supports static office QR sticker or daily QR
         qr_verified = False
