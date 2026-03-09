@@ -173,10 +173,16 @@ class ChangePasswordView(APIView):
 
 @extend_schema(tags=['Attendance'], request=CheckInSerializer)
 class CheckInView(APIView):
-    """Mark attendance check-in with face/QR/location verification. Face matching uses Google ML Kit on device - send confidence score."""
+    """Mark attendance check-in with face/QR/location verification."""
     permission_classes = [IsAuthenticated]
 
     def post(self, request):
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.info(f'Check-in request from {request.user.username}, method: {request.data.get("verification_method")}, '
+                     f'has_face_photo: {"face_photo" in request.FILES}, has_qr: {bool(request.data.get("qr_code"))}, '
+                     f'has_lat: {bool(request.data.get("latitude"))}')
+
         employee = get_employee(request.user)
         if not employee:
             return Response({'error': 'Employee profile not found'}, status=status.HTTP_404_NOT_FOUND)

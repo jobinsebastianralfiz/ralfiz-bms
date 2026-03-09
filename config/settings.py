@@ -142,6 +142,28 @@ MESSAGE_TAGS = {
     messages.ERROR: 'danger',
 }
 
+# Logging - output to console for Railway
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'handlers': {
+        'console': {
+            'class': 'logging.StreamHandler',
+        },
+    },
+    'root': {
+        'handlers': ['console'],
+        'level': 'INFO',
+    },
+    'loggers': {
+        'employees': {
+            'handlers': ['console'],
+            'level': 'INFO',
+            'propagate': False,
+        },
+    },
+}
+
 # License API settings
 LICENSE_ADMIN_KEY = os.getenv('LICENSE_ADMIN_KEY', 'retailease-admin-secret')
 RETAILEASE_WEBSITE_API_KEY = os.getenv('RETAILEASE_WEBSITE_API_KEY', 'retailease-website-secret')
