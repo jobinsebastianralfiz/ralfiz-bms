@@ -113,24 +113,39 @@ def generate_face_encoding(image_path):
     """Generate face encoding from an image file. Returns list or None."""
     try:
         import face_recognition
+    except ImportError:
+        logger.error('face_recognition not installed. Install with: pip install face-recognition')
+        return None
+
+    try:
         from PIL import Image
 
         # Resize large images to avoid slow processing and detection issues
         pil_image = Image.open(image_path)
+
+        # Convert RGBA/P to RGB (face_recognition needs RGB)
+        if pil_image.mode in ('RGBA', 'P', 'LA'):
+            pil_image = pil_image.convert('RGB')
+            pil_image.save(image_path)
+
         max_dimension = 1200
         if max(pil_image.size) > max_dimension:
             pil_image.thumbnail((max_dimension, max_dimension))
             pil_image.save(image_path)
 
-        image = face_recognition.load_image_file(image_path)
+        logger.info(f'Processing face image: {image_path}, size: {pil_image.size}, mode: {pil_image.mode}')
 
-        # Try HOG detector first (faster), fall back to CNN if no face found
+        image = face_recognition.load_image_file(image_path)
+        logger.info(f'Image loaded, shape: {image.shape}')
+
+        # Try HOG detector first (faster)
         face_locations = face_recognition.face_locations(image, model='hog')
+        logger.info(f'HOG detection: {len(face_locations)} faces found')
+
         if not face_locations:
-            face_locations = face_recognition.face_locations(image, model='cnn')
-        if not face_locations:
-            # Try with number_of_times_to_upsample for small faces
+            # Try with upsampling for small faces
             face_locations = face_recognition.face_locations(image, number_of_times_to_upsample=2, model='hog')
+            logger.info(f'HOG upsampled detection: {len(face_locations)} faces found')
 
         if not face_locations:
             logger.warning(f'No face detected in image: {image_path}')
@@ -138,10 +153,11 @@ def generate_face_encoding(image_path):
 
         encodings = face_recognition.face_encodings(image, known_face_locations=face_locations)
         if encodings:
+            logger.info(f'Face encoding generated successfully')
             return encodings[0].tolist()
         return None
     except Exception as e:
-        logger.error(f'Face encoding generation failed: {e}')
+        logger.error(f'Face encoding generation failed: {e}', exc_info=True)
         return None
 
 
