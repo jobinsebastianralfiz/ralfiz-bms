@@ -57,7 +57,10 @@ def compare_faces(reference_image_path, check_in_image):
 
         # Load reference image
         ref_image = face_recognition.load_image_file(reference_image_path)
-        ref_encodings = face_recognition.face_encodings(ref_image)
+        ref_locations = face_recognition.face_locations(ref_image, model='hog')
+        if not ref_locations:
+            ref_locations = face_recognition.face_locations(ref_image, number_of_times_to_upsample=2, model='hog')
+        ref_encodings = face_recognition.face_encodings(ref_image, known_face_locations=ref_locations) if ref_locations else []
         if not ref_encodings:
             logger.warning('No face found in reference photo')
             return False, 0.0, 'No face found in your registered photo. Please re-register your face.'
@@ -79,7 +82,10 @@ def compare_faces(reference_image_path, check_in_image):
         else:
             checkin_image = face_recognition.load_image_file(check_in_image)
 
-        checkin_encodings = face_recognition.face_encodings(checkin_image)
+        checkin_locations = face_recognition.face_locations(checkin_image, model='hog')
+        if not checkin_locations:
+            checkin_locations = face_recognition.face_locations(checkin_image, number_of_times_to_upsample=2, model='hog')
+        checkin_encodings = face_recognition.face_encodings(checkin_image, known_face_locations=checkin_locations) if checkin_locations else []
         if not checkin_encodings:
             return False, 0.0, 'No face detected in your selfie. Please try again.'
 
@@ -107,8 +113,30 @@ def generate_face_encoding(image_path):
     """Generate face encoding from an image file. Returns list or None."""
     try:
         import face_recognition
+        from PIL import Image
+
+        # Resize large images to avoid slow processing and detection issues
+        pil_image = Image.open(image_path)
+        max_dimension = 1200
+        if max(pil_image.size) > max_dimension:
+            pil_image.thumbnail((max_dimension, max_dimension))
+            pil_image.save(image_path)
+
         image = face_recognition.load_image_file(image_path)
-        encodings = face_recognition.face_encodings(image)
+
+        # Try HOG detector first (faster), fall back to CNN if no face found
+        face_locations = face_recognition.face_locations(image, model='hog')
+        if not face_locations:
+            face_locations = face_recognition.face_locations(image, model='cnn')
+        if not face_locations:
+            # Try with number_of_times_to_upsample for small faces
+            face_locations = face_recognition.face_locations(image, number_of_times_to_upsample=2, model='hog')
+
+        if not face_locations:
+            logger.warning(f'No face detected in image: {image_path}')
+            return None
+
+        encodings = face_recognition.face_encodings(image, known_face_locations=face_locations)
         if encodings:
             return encodings[0].tolist()
         return None
