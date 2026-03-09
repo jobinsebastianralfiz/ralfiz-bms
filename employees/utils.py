@@ -73,18 +73,38 @@ def compare_faces(reference_image_path, check_in_image):
                 for chunk in check_in_image.chunks():
                     tmp.write(chunk)
                 tmp_path = tmp.name
-            try:
-                checkin_image = face_recognition.load_image_file(tmp_path)
-            finally:
-                os.unlink(tmp_path)
             # Reset file pointer so Django can still save it
             check_in_image.seek(0)
         else:
-            checkin_image = face_recognition.load_image_file(check_in_image)
+            tmp_path = check_in_image
+
+        # Fix EXIF orientation (front camera images are often rotated)
+        try:
+            from PIL import Image, ImageOps
+            pil_img = Image.open(tmp_path)
+            pil_img = ImageOps.exif_transpose(pil_img)
+            if pil_img.mode != 'RGB':
+                pil_img = pil_img.convert('RGB')
+            fixed_path = tmp_path + '_fixed.jpg'
+            pil_img.save(fixed_path, 'JPEG', quality=95)
+            checkin_image = face_recognition.load_image_file(fixed_path)
+            logger.info(f'Selfie loaded: shape={checkin_image.shape}')
+            os.unlink(fixed_path)
+        except Exception as img_err:
+            logger.warning(f'Image fix failed, loading raw: {img_err}')
+            checkin_image = face_recognition.load_image_file(tmp_path)
+
+        if hasattr(check_in_image, 'read'):
+            try:
+                os.unlink(tmp_path)
+            except OSError:
+                pass
 
         checkin_locations = face_recognition.face_locations(checkin_image, model='hog')
+        logger.info(f'Selfie HOG: {len(checkin_locations)} faces')
         if not checkin_locations:
             checkin_locations = face_recognition.face_locations(checkin_image, number_of_times_to_upsample=2, model='hog')
+            logger.info(f'Selfie HOG upsampled: {len(checkin_locations)} faces')
         checkin_encodings = face_recognition.face_encodings(checkin_image, known_face_locations=checkin_locations) if checkin_locations else []
         if not checkin_encodings:
             return False, 0.0, 'No face detected in your selfie. Please try again.'
