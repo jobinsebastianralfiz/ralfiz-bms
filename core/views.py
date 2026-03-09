@@ -4023,7 +4023,35 @@ def emp_employee_list(request):
 def emp_employee_detail(request, pk):
     """Employee detail with attendance, leave, work"""
     from employees.models import Employee, Attendance, LeaveRequest, WorkAssignment
+    from employees.utils import generate_face_encoding
     employee = get_object_or_404(Employee, pk=pk)
+
+    if request.method == 'POST' and request.POST.get('action') == 'upload_face':
+        face_photo = request.FILES.get('face_photo')
+        if face_photo:
+            employee.face_photo = face_photo
+            employee.save()
+            encoding = generate_face_encoding(employee.face_photo.path)
+            if encoding:
+                employee.face_encoding = encoding
+                employee.save(update_fields=['face_encoding'])
+                messages.success(request, 'Face photo uploaded and encoding generated successfully.')
+            else:
+                employee.face_photo = None
+                employee.face_encoding = None
+                employee.save(update_fields=['face_photo', 'face_encoding'])
+                messages.error(request, 'No face detected in the uploaded photo. Please upload a clear face photo.')
+        else:
+            messages.error(request, 'Please select a photo to upload.')
+        return redirect('emp_employee_detail', pk=pk)
+
+    if request.method == 'POST' and request.POST.get('action') == 'remove_face':
+        employee.face_photo = None
+        employee.face_encoding = None
+        employee.save(update_fields=['face_photo', 'face_encoding'])
+        messages.success(request, 'Face photo removed.')
+        return redirect('emp_employee_detail', pk=pk)
+
     recent_attendance = Attendance.objects.filter(employee=employee).order_by('-date')[:15]
     leave_requests = LeaveRequest.objects.filter(employee=employee).order_by('-created_at')[:10]
     work_assignments = WorkAssignment.objects.filter(assigned_to=employee).order_by('-created_at')[:10]

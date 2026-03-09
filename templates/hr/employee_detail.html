@@ -67,6 +67,50 @@
         {% endif %}
       </div>
     </div>
+
+    <!-- Face Recognition Photo -->
+    <div class="card mb-4">
+      <div class="card-header">
+        <h3 class="card-title"><i class="fas fa-camera me-2 text-info"></i> Face Recognition</h3>
+      </div>
+      <div class="card-body">
+        {% if employee.face_photo %}
+        <div class="text-center mb-3">
+          <img src="{{ employee.face_photo.url }}" alt="Face photo" style="width: 150px; height: 150px; object-fit: cover; border-radius: 12px; border: 2px solid var(--border-color);">
+        </div>
+        <div class="d-flex align-items-center justify-content-center gap-2 mb-3">
+          <span class="badge" style="background: var(--success-bg); color: var(--success);"><i class="fas fa-check me-1"></i>Face Registered</span>
+          {% if employee.face_encoding %}
+          <span class="badge" style="background: var(--info-bg); color: var(--info);"><i class="fas fa-fingerprint me-1"></i>Encoding Ready</span>
+          {% endif %}
+        </div>
+        <form method="post" action="" class="text-center">
+          {% csrf_token %}
+          <input type="hidden" name="action" value="remove_face">
+          <button type="submit" class="btn btn-sm btn-outline-danger" onclick="return confirm('Remove face photo?')">
+            <i class="fas fa-trash me-1"></i> Remove Photo
+          </button>
+        </form>
+        {% else %}
+        <div class="text-center mb-3">
+          <div style="width: 150px; height: 150px; margin: 0 auto; border-radius: 12px; background: var(--bg-secondary); display: flex; align-items: center; justify-content: center;">
+            <i class="fas fa-user-slash text-muted" style="font-size: 2.5rem;"></i>
+          </div>
+        </div>
+        <p class="text-muted text-center text-sm mb-3">No face photo registered. Upload a clear face photo for attendance verification.</p>
+        {% endif %}
+        <form method="post" action="" enctype="multipart/form-data" class="mt-2">
+          {% csrf_token %}
+          <input type="hidden" name="action" value="upload_face">
+          <div class="mb-2">
+            <input type="file" name="face_photo" accept="image/*" class="form-control form-control-sm" required>
+          </div>
+          <button type="submit" class="btn btn-sm btn-primary w-100">
+            <i class="fas fa-upload me-1"></i> {% if employee.face_photo %}Update{% else %}Upload{% endif %} Face Photo
+          </button>
+        </form>
+      </div>
+    </div>
   </div>
 
   <!-- Right Column -->
