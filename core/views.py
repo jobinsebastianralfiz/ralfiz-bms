@@ -3692,8 +3692,12 @@ def license_create(request):
         notes = request.POST.get('notes', '')
         client_id = request.POST.get('client', '')
 
-        # Get active key
-        key_pair = LicenseKey.objects.filter(is_active=True).first()
+        # Get key pair (selected or first active)
+        key_pair_id = request.POST.get('key_pair', '')
+        if key_pair_id:
+            key_pair = LicenseKey.objects.filter(pk=key_pair_id, is_active=True).first()
+        else:
+            key_pair = LicenseKey.objects.filter(is_active=True).first()
         if not key_pair:
             messages.error(request, 'No active license key found. Please generate keys first.')
             return redirect('license_list')
@@ -3742,6 +3746,7 @@ def license_create(request):
         'license_types': License.LICENSE_TYPE_CHOICES,
         'clients': Client.objects.filter(is_active=True).order_by('company_name', 'name'),
         'preselected_client': preselected_client,
+        'key_pairs': LicenseKey.objects.filter(is_active=True).order_by('name'),
     }
     return render(request, 'licenses/form.html', context)
 
@@ -3946,40 +3951,39 @@ def license_generate_keys(request):
         from cryptography.hazmat.primitives import serialization
         from cryptography.hazmat.primitives.asymmetric import rsa
         from cryptography.hazmat.backends import default_backend
-        
+
+        key_name = request.POST.get('key_name', '').strip() or 'Default'
+
         # Generate key pair
         private_key = rsa.generate_private_key(
             public_exponent=65537,
             key_size=4096,
             backend=default_backend()
         )
-        
+
         # Serialize keys
         private_pem = private_key.private_bytes(
             encoding=serialization.Encoding.PEM,
             format=serialization.PrivateFormat.TraditionalOpenSSL,
             encryption_algorithm=serialization.NoEncryption()
         ).decode('utf-8')
-        
+
         public_pem = private_key.public_key().public_bytes(
             encoding=serialization.Encoding.PEM,
             format=serialization.PublicFormat.SubjectPublicKeyInfo
         ).decode('utf-8')
-        
-        # Deactivate existing keys
-        LicenseKey.objects.update(is_active=False)
-        
-        # Create new key
+
+        # Create new key (don't deactivate others — multiple products supported)
         key = LicenseKey.objects.create(
-            name='RetailEase Pro',
+            name=key_name,
             private_key=private_pem,
             public_key=public_pem,
             is_active=True,
         )
-        
-        messages.success(request, 'New RSA key pair generated successfully!')
+
+        messages.success(request, f'New RSA key pair "{key_name}" generated successfully!')
         return redirect('license_keys')
-    
+
     return redirect('license_keys')
 
 

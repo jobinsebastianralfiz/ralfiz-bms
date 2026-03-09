@@ -35,12 +35,32 @@
     <p class="page-subtitle mb-0">Manage cryptographic keys for license signing</p>
   </div>
   <div class="page-actions">
-    <form method="post" action="{% url 'license_generate_keys' %}" style="display: inline;">
+    <button type="button" class="btn btn-primary" onclick="document.getElementById('generateForm').style.display = document.getElementById('generateForm').style.display === 'none' ? 'block' : 'none'">
+      <i class="fas fa-plus"></i>
+      Generate New Key Pair
+    </button>
+  </div>
+</div>
+
+<!-- Generate Form (hidden by default) -->
+<div id="generateForm" class="card mb-4" style="display: none;">
+  <div class="card-body">
+    <form method="post" action="{% url 'license_generate_keys' %}">
       {% csrf_token %}
-      <button type="submit" class="btn btn-primary" onclick="return confirm('Generate new RSA key pair? This will deactivate the current key.')">
-        <i class="fas fa-sync-alt"></i>
-        Generate New Keys
-      </button>
+      <div class="row align-items-end">
+        <div class="col-6" style="padding: 0.5rem;">
+          <label class="form-label">Key Name (product name)</label>
+          <input type="text" name="key_name" class="form-control" placeholder="e.g. InterioDesk Pro, RetailEase Pro" required>
+        </div>
+        <div class="col-3" style="padding: 0.5rem;">
+          <button type="submit" class="btn btn-primary w-100" onclick="return confirm('Generate new RSA 4096-bit key pair?')">
+            <i class="fas fa-key me-1"></i> Generate
+          </button>
+        </div>
+        <div class="col-3" style="padding: 0.5rem;">
+          <button type="button" class="btn btn-outline-secondary w-100" onclick="document.getElementById('generateForm').style.display='none'">Cancel</button>
+        </div>
+      </div>
     </form>
   </div>
 </div>
@@ -48,8 +68,8 @@
 <!-- Info Alert -->
 <div class="alert alert-info mb-4">
   <i class="fas fa-info-circle me-2"></i>
-  <strong>Important:</strong> The public key below must be embedded in your Flutter app (license_service.dart).
-  Regenerating keys will invalidate all existing licenses until they are re-activated.
+  <strong>Important:</strong> Each product (RetailEase, InterioDesk, etc.) should have its own key pair.
+  The public key must be embedded in the corresponding Flutter app.
 </div>
 
 {% for key in keys %}
@@ -97,11 +117,12 @@
     <i class="fas fa-key mb-3" style="font-size: 3rem; color: var(--text-muted);"></i>
     <h4>No Keys Generated</h4>
     <p class="text-muted mb-4">Generate RSA keys to start creating licenses</p>
-    <form method="post" action="{% url 'license_generate_keys' %}">
+    <form method="post" action="{% url 'license_generate_keys' %}" class="d-flex align-items-end gap-3 justify-content-center">
       {% csrf_token %}
+      <input type="text" name="key_name" class="form-control" placeholder="Key name (e.g. InterioDesk Pro)" required style="max-width: 300px;">
       <button type="submit" class="btn btn-primary">
         <i class="fas fa-plus me-2"></i>
-        Generate RSA Key Pair
+        Generate Key Pair
       </button>
     </form>
   </div>
