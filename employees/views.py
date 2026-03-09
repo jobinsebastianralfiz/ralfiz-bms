@@ -24,7 +24,7 @@ from .serializers import (
     WorkAssignmentSerializer, WorkUpdateSerializer, WorkStatusUpdateSerializer,
     NotificationSerializer, ChangePasswordSerializer,
 )
-from .utils import send_push_notification
+from .utils import send_push_notification, compare_faces, generate_face_encoding
 
 
 def get_employee(user):
@@ -121,12 +121,16 @@ class FacePhotoUploadView(APIView):
             return Response({'error': 'face_photo is required'}, status=status.HTTP_400_BAD_REQUEST)
 
         employee.face_photo = face_photo
-        if face_encoding:
-            import json
-            try:
-                employee.face_encoding = json.loads(face_encoding) if isinstance(face_encoding, str) else face_encoding
-            except (json.JSONDecodeError, TypeError):
-                return Response({'error': 'Invalid face_encoding format'}, status=status.HTTP_400_BAD_REQUEST)
+        employee.save()
+
+        # Auto-generate face encoding from the uploaded photo
+        encoding = generate_face_encoding(employee.face_photo.path)
+        if encoding is None:
+            employee.face_photo = None
+            employee.save()
+            return Response({'error': 'No face detected in the uploaded photo. Please upload a clear face photo.'},
+                            status=status.HTTP_400_BAD_REQUEST)
+        employee.face_encoding = encoding
         employee.save()
 
         return Response({
@@ -217,11 +221,29 @@ class CheckInView(APIView):
             if not qr_verified:
                 return Response({'error': 'Invalid QR code. Please scan the office QR sticker.'}, status=status.HTTP_400_BAD_REQUEST)
 
-        # Face verification - confidence comes from ML Kit on device
+        # Face verification - server-side comparison against reference photo
         face_verified = False
-        face_confidence = data.get('face_confidence')
-        if face_confidence is not None and method in ['face', 'face_qr', 'face_location']:
-            face_verified = face_confidence >= 0.75  # Minimum confidence threshold
+        face_confidence = None
+        if method in ['face', 'face_qr', 'face_location']:
+            face_photo = data.get('face_photo')
+            if not face_photo:
+                return Response({'error': 'Face photo (selfie) is required for face verification.'},
+                                status=status.HTTP_400_BAD_REQUEST)
+            if not employee.face_photo:
+                return Response({'error': 'No reference face photo registered. Please register your face first.'},
+                                status=status.HTTP_400_BAD_REQUEST)
+
+            is_match, face_confidence, error_msg = compare_faces(
+                employee.face_photo.path, face_photo
+            )
+            if error_msg:
+                return Response({'error': error_msg}, status=status.HTTP_400_BAD_REQUEST)
+            if not is_match:
+                return Response({
+                    'error': 'Face verification failed. The selfie does not match your registered face.',
+                    'confidence': face_confidence,
+                }, status=status.HTTP_403_FORBIDDEN)
+            face_verified = True
 
         attendance = Attendance.objects.create(
             employee=employee,

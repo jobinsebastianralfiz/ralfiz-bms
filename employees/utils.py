@@ -42,6 +42,81 @@ def send_push_notification(employee, title, body, data=None):
         return False
 
 
+def compare_faces(reference_image_path, check_in_image):
+    """
+    Compare a check-in selfie against the employee's stored reference photo.
+    Returns (is_match, confidence) tuple.
+    - reference_image_path: path to the stored reference face photo
+    - check_in_image: InMemoryUploadedFile or path to the check-in selfie
+    """
+    try:
+        import face_recognition
+        import numpy as np
+        import tempfile
+        import os
+
+        # Load reference image
+        ref_image = face_recognition.load_image_file(reference_image_path)
+        ref_encodings = face_recognition.face_encodings(ref_image)
+        if not ref_encodings:
+            logger.warning('No face found in reference photo')
+            return False, 0.0, 'No face found in your registered photo. Please re-register your face.'
+
+        ref_encoding = ref_encodings[0]
+
+        # Load check-in image (handle uploaded file)
+        if hasattr(check_in_image, 'read'):
+            with tempfile.NamedTemporaryFile(suffix='.jpg', delete=False) as tmp:
+                for chunk in check_in_image.chunks():
+                    tmp.write(chunk)
+                tmp_path = tmp.name
+            try:
+                checkin_image = face_recognition.load_image_file(tmp_path)
+            finally:
+                os.unlink(tmp_path)
+            # Reset file pointer so Django can still save it
+            check_in_image.seek(0)
+        else:
+            checkin_image = face_recognition.load_image_file(check_in_image)
+
+        checkin_encodings = face_recognition.face_encodings(checkin_image)
+        if not checkin_encodings:
+            return False, 0.0, 'No face detected in your selfie. Please try again.'
+
+        checkin_encoding = checkin_encodings[0]
+
+        # Compare faces - face_distance returns euclidean distance (lower = more similar)
+        face_distance = face_recognition.face_distance([ref_encoding], checkin_encoding)[0]
+
+        # Convert distance to confidence (0-1 scale, higher = better match)
+        confidence = max(0.0, 1.0 - face_distance)
+
+        is_match = confidence >= 0.55  # ~0.45 distance threshold (stricter than default 0.6)
+
+        return is_match, round(confidence, 4), None
+
+    except ImportError:
+        logger.error('face_recognition package not installed')
+        return False, 0.0, 'Face recognition not available on server.'
+    except Exception as e:
+        logger.error(f'Face comparison failed: {e}')
+        return False, 0.0, f'Face verification error: {str(e)}'
+
+
+def generate_face_encoding(image_path):
+    """Generate face encoding from an image file. Returns list or None."""
+    try:
+        import face_recognition
+        image = face_recognition.load_image_file(image_path)
+        encodings = face_recognition.face_encodings(image)
+        if encodings:
+            return encodings[0].tolist()
+        return None
+    except Exception as e:
+        logger.error(f'Face encoding generation failed: {e}')
+        return None
+
+
 def init_firebase():
     """Initialize Firebase Admin SDK. Call once at startup."""
     try:
