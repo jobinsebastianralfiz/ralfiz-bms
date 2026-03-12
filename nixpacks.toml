@@ -1,2 +1,16 @@
 [phases.setup]
-nixPkgs = ["python312", "gcc", "cmake", "pkg-config", "openblas", "libpng", "libjpeg"]
+nixPkgs = [
+  "python312",
+  "gcc",
+  "gfortran",
+  "cmake",
+  "pkg-config",
+  "openblas",
+  "lapack",
+  "libpng",
+  "libjpeg",
+  "libffi",
+  "cairo",
+  "pango",
+  "gdk-pixbuf",
+]
