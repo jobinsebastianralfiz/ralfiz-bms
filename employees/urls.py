@@ -11,6 +11,11 @@ urlpatterns = [
     path('auth/login/', EmployeeTokenObtainView.as_view(), name='login'),
     path('auth/token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
     path('auth/change-password/', views.ChangePasswordView.as_view(), name='change_password'),
+    path('auth/delete-account/', views.DeleteAccountView.as_view(), name='delete_account'),
+
+    # ---- Public Pages ----
+    path('privacy-policy/', views.privacy_policy, name='privacy_policy'),
+    path('data-retention-policy/', views.data_retention_policy, name='data_retention_policy'),
 
     # ---- Employee App APIs ----
     path('dashboard/', views.DashboardView.as_view(), name='dashboard'),

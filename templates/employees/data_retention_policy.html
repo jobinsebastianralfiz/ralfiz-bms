@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Data Retention Policy - Ralfiz Digital</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            color: #2D2D2D;
+            background: #F8F7FF;
+            line-height: 1.7;
+        }
+        .header {
+            background: linear-gradient(135deg, #5BACD8, #9B5DE5);
+            color: white;
+            padding: 48px 24px;
+            text-align: center;
+        }
+        .header h1 { font-size: 28px; font-weight: 800; }
+        .header p { margin-top: 8px; opacity: 0.8; font-size: 14px; }
+        .container {
+            max-width: 720px;
+            margin: 0 auto;
+            padding: 32px 24px 64px;
+        }
+        h2 {
+            font-size: 20px;
+            font-weight: 700;
+            margin: 32px 0 12px;
+            color: #6366F1;
+        }
+        h3 {
+            font-size: 16px;
+            font-weight: 600;
+            margin: 20px 0 8px;
+        }
+        p, li { font-size: 15px; margin-bottom: 10px; }
+        ul { padding-left: 24px; margin-bottom: 12px; }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 16px 0 24px;
+            font-size: 14px;
+        }
+        th, td {
+            padding: 12px 16px;
+            text-align: left;
+            border-bottom: 1px solid #EDE9FE;
+        }
+        th {
+            background: #6366F1;
+            color: white;
+            font-weight: 600;
+        }
+        tr:hover { background: #F3F1FE; }
+        .updated {
+            font-size: 13px;
+            color: #8E8E93;
+            margin-top: 48px;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>Data Retention Policy</h1>
+        <p>Ralfiz Digital - Employee Portal</p>
+    </div>
+    <div class="container">
+        <h2>1. Purpose</h2>
+        <p>This Data Retention Policy outlines how long Ralfiz Digital retains personal data collected through the Employee Portal mobile application, and the procedures for data deletion. This policy ensures compliance with applicable data protection regulations including GDPR, Apple App Store Guidelines, and Google Play Store Policies.</p>
+
+        <h2>2. Data Retention Periods</h2>
+        <p>We retain different categories of data for different periods based on business needs and legal requirements:</p>
+
+        <table>
+            <thead>
+                <tr>
+                    <th>Data Category</th>
+                    <th>Retention Period</th>
+                    <th>Basis</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>Employee Profile</td>
+                    <td>Duration of employment + 1 year</td>
+                    <td>Employment contract</td>
+                </tr>
+                <tr>
+                    <td>Attendance Records</td>
+                    <td>Duration of employment + 1 year</td>
+                    <td>Legal/payroll compliance</td>
+                </tr>
+                <tr>
+                    <td>Face Photo & Encoding</td>
+                    <td>Duration of employment</td>
+                    <td>Attendance verification</td>
+                </tr>
+                <tr>
+                    <td>Attendance Selfies</td>
+                    <td>90 days</td>
+                    <td>Verification audit</td>
+                </tr>
+                <tr>
+                    <td>Location Data</td>
+                    <td>Duration of employment + 6 months</td>
+                    <td>Attendance verification</td>
+                </tr>
+                <tr>
+                    <td>Leave Requests</td>
+                    <td>Duration of employment + 1 year</td>
+                    <td>HR records</td>
+                </tr>
+                <tr>
+                    <td>Work Assignments</td>
+                    <td>Duration of employment + 6 months</td>
+                    <td>Project management</td>
+                </tr>
+                <tr>
+                    <td>Push Notification Tokens</td>
+                    <td>Until logout or token refresh</td>
+                    <td>Service delivery</td>
+                </tr>
+                <tr>
+                    <td>Notifications</td>
+                    <td>6 months</td>
+                    <td>Communication records</td>
+                </tr>
+                <tr>
+                    <td>Authentication Credentials</td>
+                    <td>Duration of employment</td>
+                    <td>Account security</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <h2>3. Account Deletion</h2>
+        <p>Employees can request immediate deletion of their account and all associated data at any time through the App. When an account is deleted:</p>
+        <ul>
+            <li>All personal profile information is permanently removed</li>
+            <li>Face photos and biometric encoding data are permanently destroyed</li>
+            <li>Attendance records are permanently deleted</li>
+            <li>Leave requests and work assignments are permanently deleted</li>
+            <li>Push notification tokens are deactivated and removed</li>
+            <li>All notification records are deleted</li>
+            <li>The user authentication account is permanently removed</li>
+        </ul>
+        <p>Account deletion is immediate and irreversible. No data recovery is possible after deletion.</p>
+
+        <h2>4. Automatic Data Cleanup</h2>
+        <p>The following data is automatically cleaned up:</p>
+        <ul>
+            <li><strong>Expired QR Codes:</strong> Daily attendance QR codes are deactivated at the end of each day</li>
+            <li><strong>Inactive Device Tokens:</strong> Push notification tokens that fail delivery are automatically deactivated</li>
+        </ul>
+
+        <h2>5. Data After Employment Ends</h2>
+        <p>When an employee leaves Ralfiz Digital:</p>
+        <ul>
+            <li>The employee account is deactivated immediately</li>
+            <li>Face recognition data is deleted within 30 days of termination</li>
+            <li>Remaining data is retained according to the retention periods in Section 2, after which it is permanently deleted</li>
+            <li>The employee may request immediate deletion of all data at any time by contacting us</li>
+        </ul>
+
+        <h2>6. Data Storage & Security</h2>
+        <ul>
+            <li>All data is stored on secure servers with encryption at rest and in transit</li>
+            <li>Access to stored data is restricted to authorized personnel only</li>
+            <li>Biometric data (face encodings) are stored as irreversible mathematical vectors — the original face cannot be reconstructed from this data</li>
+            <li>Regular security audits are conducted to ensure data protection</li>
+        </ul>
+
+        <h2>7. Your Rights</h2>
+        <p>You have the right to:</p>
+        <ul>
+            <li><strong>Request Deletion:</strong> Delete your account and all data through the App or by contacting us</li>
+            <li><strong>Access Your Data:</strong> View all data we hold about you through the App</li>
+            <li><strong>Data Portability:</strong> Request an export of your data</li>
+            <li><strong>Rectification:</strong> Correct any inaccurate data through the App or by contacting HR</li>
+        </ul>
+
+        <h2>8. Contact Us</h2>
+        <p>For any questions about this Data Retention Policy, data deletion requests, or to exercise your rights, please contact:</p>
+        <ul>
+            <li><strong>Email:</strong> info@ralfizdigital.com</li>
+            <li><strong>Company:</strong> Ralfiz Digital</li>
+        </ul>
+
+        <p class="updated">Last updated: March 12, 2026</p>
+    </div>
+</body>
+</html>

@@ -24,6 +24,8 @@ from .serializers import (
     WorkAssignmentSerializer, WorkUpdateSerializer, WorkStatusUpdateSerializer,
     NotificationSerializer, ChangePasswordSerializer,
 )
+from django.shortcuts import render
+
 from .utils import send_push_notification, compare_faces, generate_face_encoding
 
 
@@ -896,5 +898,60 @@ class AdminSendNotificationView(APIView):
             for emp in Employee.objects.filter(status='active'):
                 send_push_notification(emp, title, body)
             return Response({'message': 'Broadcast sent', 'id': str(notif.id)})
+
+
+# ============================================================
+# Account Deletion (for App Store / Play Store compliance)
+# ============================================================
+
+@extend_schema(tags=['Auth'])
+class DeleteAccountView(APIView):
+    """
+    Delete own employee account and all associated data.
+    Required by Apple App Store and Google Play Store policies.
+    """
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        employee = get_employee(request.user)
+        if not employee:
+            return Response({'error': 'Employee profile not found'}, status=status.HTTP_404_NOT_FOUND)
+
+        password = request.data.get('password')
+        if not password:
+            return Response({'error': 'Password is required to confirm account deletion'},
+                            status=status.HTTP_400_BAD_REQUEST)
+
+        if not request.user.check_password(password):
+            return Response({'error': 'Incorrect password'}, status=status.HTTP_400_BAD_REQUEST)
+
+        user = request.user
+
+        # Delete all employee-related data
+        DeviceToken.objects.filter(employee=employee).delete()
+        Notification.objects.filter(employee=employee).delete()
+        WorkUpdate.objects.filter(employee=employee).delete()
+        Attendance.objects.filter(employee=employee).delete()
+        LeaveRequest.objects.filter(employee=employee).delete()
+
+        # Delete employee profile and user account
+        employee.delete()
+        user.delete()
+
+        return Response({'message': 'Your account and all associated data have been permanently deleted.'})
+
+
+# ============================================================
+# Public Pages (Privacy Policy, Data Retention)
+# ============================================================
+
+def privacy_policy(request):
+    """Public privacy policy page for App Store / Play Store"""
+    return render(request, 'employees/privacy_policy.html')
+
+
+def data_retention_policy(request):
+    """Public data retention policy page for App Store / Play Store"""
+    return render(request, 'employees/data_retention_policy.html')
 
 
