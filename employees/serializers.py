@@ -69,7 +69,7 @@ class CheckInSerializer(serializers.Serializer):
     face_photo = serializers.ImageField(required=False, help_text='Selfie for verification')
     qr_code = serializers.CharField(required=False, help_text='Scanned QR code value')
     verification_method = serializers.ChoiceField(
-        choices=['face', 'qr', 'location', 'face_qr', 'face_location'],
+        choices=['face', 'qr', 'location', 'face_qr', 'face_location', 'face_local'],
         default='face'
     )
 

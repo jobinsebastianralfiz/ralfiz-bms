@@ -113,6 +113,7 @@ class Attendance(models.Model):
         ('location', 'Location'),
         ('face_qr', 'Face + QR'),
         ('face_location', 'Face + Location'),
+        ('face_local', 'Face (On-Device) + QR'),
         ('manual', 'Manual (Admin)'),
     ]
 

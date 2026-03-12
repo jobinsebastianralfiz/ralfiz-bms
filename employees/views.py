@@ -222,7 +222,7 @@ class CheckInView(APIView):
 
         # Verify QR code - supports static office QR sticker or daily QR
         qr_verified = False
-        if data.get('qr_code') and method in ['qr', 'face_qr']:
+        if data.get('qr_code') and method in ['qr', 'face_qr', 'face_local']:
             # Check static office QR sticker
             from .models import OfficeConfig
             if OfficeConfig.objects.filter(qr_code=data['qr_code']).exists():
@@ -235,10 +235,25 @@ class CheckInView(APIView):
             if not qr_verified:
                 return Response({'error': 'Invalid QR code. Please scan the office QR sticker.'}, status=status.HTTP_400_BAD_REQUEST)
 
-        # Face verification - server-side comparison against reference photo
+        # Face verification
         face_verified = False
         face_confidence = None
-        if method in ['face', 'face_qr', 'face_location']:
+
+        # On-device face verification (ML Kit on mobile) - QR + location still verified server-side
+        if method == 'face_local':
+            face_photo = data.get('face_photo')
+            if not face_photo:
+                return Response({'error': 'Face photo (selfie) is required.'},
+                                status=status.HTTP_400_BAD_REQUEST)
+            if not qr_verified:
+                return Response({'error': 'QR verification is required with face_local method.'},
+                                status=status.HTTP_400_BAD_REQUEST)
+            # Trust on-device face detection - app already verified face presence via ML Kit
+            face_verified = True
+            face_confidence = float(data.get('face_confidence', 0.8))
+
+        # Server-side face comparison against reference photo
+        elif method in ['face', 'face_qr', 'face_location']:
             face_photo = data.get('face_photo')
             if not face_photo:
                 return Response({'error': 'Face photo (selfie) is required for face verification.'},
