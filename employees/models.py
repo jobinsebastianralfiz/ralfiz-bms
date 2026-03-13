@@ -239,6 +239,8 @@ class WorkAssignment(models.Model):
     status = models.CharField(max_length=12, choices=STATUS_CHOICES, default='assigned')
     due_date = models.DateField(null=True, blank=True)
     completed_at = models.DateTimeField(null=True, blank=True)
+    attachment = models.FileField(upload_to='employees/work_assignments/', blank=True, null=True,
+                                  help_text='PDF or document attached to this task')
     notes = models.TextField(blank=True, help_text='Employee can add progress notes')
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)

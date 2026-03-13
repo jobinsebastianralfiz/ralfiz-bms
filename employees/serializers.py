@@ -122,11 +122,11 @@ class WorkAssignmentSerializer(serializers.ModelSerializer):
         fields = [
             'id', 'title', 'description', 'priority', 'status',
             'due_date', 'completed_at', 'assigned_by_name', 'project_name',
-            'is_overdue', 'notes', 'updates', 'created_at', 'updated_at',
+            'is_overdue', 'attachment', 'notes', 'updates', 'created_at', 'updated_at',
         ]
         read_only_fields = [
             'id', 'title', 'description', 'priority', 'due_date',
-            'assigned_by_name', 'project_name', 'created_at', 'updated_at',
+            'assigned_by_name', 'project_name', 'attachment', 'created_at', 'updated_at',
         ]
 
     def get_updates(self, obj):

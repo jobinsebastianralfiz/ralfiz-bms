@@ -94,10 +94,15 @@ class LeaveRequestAdmin(admin.ModelAdmin):
 @admin.register(WorkAssignment)
 class WorkAssignmentAdmin(admin.ModelAdmin):
     list_display = ['title', 'assigned_to', 'assigned_by', 'priority',
-                    'status', 'due_date', 'is_overdue']
+                    'status', 'due_date', 'is_overdue', 'has_attachment']
     list_filter = ['priority', 'status']
     search_fields = ['title', 'assigned_to__employee_id']
     readonly_fields = ['id', 'created_at', 'updated_at']
+
+    def has_attachment(self, obj):
+        return bool(obj.attachment)
+    has_attachment.boolean = True
+    has_attachment.short_description = 'Attachment'
 
 
 @admin.register(WorkUpdate)

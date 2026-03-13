@@ -798,6 +798,7 @@ class AdminWorkAssignView(APIView):
             project_id=data.get('project_id'),
             priority=data.get('priority', 'medium'),
             due_date=data.get('due_date'),
+            attachment=request.FILES.get('attachment'),
         )
 
         # Notify employee
