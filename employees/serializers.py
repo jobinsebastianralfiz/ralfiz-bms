@@ -180,23 +180,49 @@ class ChangePasswordSerializer(serializers.Serializer):
     new_password = serializers.CharField(required=True, min_length=6)
 
 
+class ClassParticipantSerializer(serializers.ModelSerializer):
+    full_name = serializers.ReadOnlyField()
+    profile_photo = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Employee
+        fields = ['id', 'employee_id', 'full_name', 'department', 'designation', 'profile_photo']
+
+    def get_profile_photo(self, obj):
+        photo = obj.profile_photo or obj.face_photo
+        if photo:
+            request = self.context.get('request')
+            if request:
+                return request.build_absolute_uri(photo.url)
+            return photo.url
+        return None
+
+
 class ScheduledClassSerializer(serializers.ModelSerializer):
     is_upcoming = serializers.ReadOnlyField()
     created_by_name = serializers.CharField(source='created_by.get_full_name', read_only=True, default='')
     intern_count = serializers.SerializerMethodField()
+    participants = serializers.SerializerMethodField()
 
     class Meta:
         model = ScheduledClass
         fields = [
             'id', 'title', 'description', 'date', 'start_time', 'end_time',
             'instructor', 'location', 'status', 'attachment', 'notes',
-            'is_upcoming', 'created_by_name', 'intern_count',
+            'is_upcoming', 'created_by_name', 'intern_count', 'participants',
             'created_at', 'updated_at',
         ]
         read_only_fields = ['id', 'created_by_name', 'created_at', 'updated_at']
 
     def get_intern_count(self, obj):
         return obj.interns.count()
+
+    def get_participants(self, obj):
+        interns = obj.interns.all()
+        if not interns.exists():
+            # Empty means all interns
+            interns = Employee.objects.filter(employment_type='intern', status='active')
+        return ClassParticipantSerializer(interns, many=True, context=self.context).data
 
 
 class DashboardSerializer(serializers.Serializer):
