@@ -16,6 +16,7 @@ class UserSerializer(serializers.ModelSerializer):
 class EmployeeProfileSerializer(serializers.ModelSerializer):
     user = UserSerializer(read_only=True)
     full_name = serializers.ReadOnlyField()
+    profile_photo = serializers.SerializerMethodField()
 
     class Meta:
         model = Employee
@@ -26,6 +27,15 @@ class EmployeeProfileSerializer(serializers.ModelSerializer):
             'face_photo', 'office_latitude', 'office_longitude',
             'allowed_radius_meters', 'full_name', 'created_at',
         ]
+
+    def get_profile_photo(self, obj):
+        photo = obj.profile_photo or obj.face_photo
+        if photo:
+            request = self.context.get('request')
+            if request:
+                return request.build_absolute_uri(photo.url)
+            return photo.url
+        return None
         read_only_fields = [
             'id', 'employee_id', 'employment_type', 'department',
             'designation', 'joining_date', 'status', 'office_latitude',
@@ -35,11 +45,21 @@ class EmployeeProfileSerializer(serializers.ModelSerializer):
 
 class EmployeeListSerializer(serializers.ModelSerializer):
     full_name = serializers.ReadOnlyField()
+    profile_photo = serializers.SerializerMethodField()
 
     class Meta:
         model = Employee
         fields = ['id', 'employee_id', 'full_name', 'employment_type',
                   'department', 'designation', 'status', 'profile_photo']
+
+    def get_profile_photo(self, obj):
+        photo = obj.profile_photo or obj.face_photo
+        if photo:
+            request = self.context.get('request')
+            if request:
+                return request.build_absolute_uri(photo.url)
+            return photo.url
+        return None
 
 
 class DeviceTokenSerializer(serializers.ModelSerializer):

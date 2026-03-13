@@ -76,8 +76,9 @@ class EmployeeTokenSerializer(TokenObtainPairSerializer):
 
         request = self.context.get('request')
         profile_photo_url = None
-        if employee.profile_photo and request:
-            profile_photo_url = request.build_absolute_uri(employee.profile_photo.url)
+        photo = employee.profile_photo or employee.face_photo
+        if photo and request:
+            profile_photo_url = request.build_absolute_uri(photo.url)
 
         data['employee'] = {
             'id': str(employee.id),

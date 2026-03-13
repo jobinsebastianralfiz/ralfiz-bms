@@ -4243,7 +4243,24 @@ def emp_work_detail(request, pk):
             assignment.completed_at = timezone.now()
 
         assignment.save()
-        messages.success(request, 'Work assignment updated.')
+
+        # Notify the assigned employee about the update
+        from employees.models import Notification
+        from employees.utils import send_push_notification
+        Notification.objects.create(
+            employee=assignment.assigned_to,
+            title='Work Assignment Updated',
+            body=f'Your assignment "{assignment.title}" has been updated.',
+            notification_type='work',
+            data={'assignment_id': str(assignment.id)},
+        )
+        send_push_notification(
+            assignment.assigned_to,
+            'Work Assignment Updated',
+            f'Your assignment "{assignment.title}" has been updated.',
+        )
+
+        messages.success(request, 'Work assignment updated and employee notified.')
         return redirect('emp_work_detail', pk=pk)
 
     employees = Employee.objects.filter(status='active').order_by('employee_id')
