@@ -141,6 +141,7 @@ urlpatterns = [
     # HR & Admin
     path('hr/employees/', views.emp_employee_list, name='emp_employee_list'),
     path('hr/employees/<uuid:pk>/', views.emp_employee_detail, name='emp_employee_detail'),
+    path('hr/employees/<uuid:pk>/delete/', views.emp_employee_delete, name='emp_employee_delete'),
     path('hr/attendance/', views.emp_attendance_list, name='emp_attendance_list'),
     path('hr/leave/', views.emp_leave_list, name='emp_leave_list'),
     path('hr/leave/<uuid:pk>/action/', views.emp_leave_action, name='emp_leave_action'),

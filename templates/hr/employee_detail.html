@@ -6,6 +6,8 @@
   <div class="d-flex align-items-center gap-4">
     {% if employee.profile_photo %}
     <img src="{{ employee.profile_photo.url }}" alt="{{ employee.full_name }}" style="width: 64px; height: 64px; border-radius: 50%; object-fit: cover; border: 2px solid var(--border-color);">
+    {% elif employee.face_photo %}
+    <img src="{{ employee.face_photo.url }}" alt="{{ employee.full_name }}" style="width: 64px; height: 64px; border-radius: 50%; object-fit: cover; border: 2px solid var(--border-color);">
     {% else %}
     <div class="avatar avatar-xl" style="background: var(--primary); color: white;">
       {{ employee.full_name|slice:":1"|upper }}
@@ -26,6 +28,12 @@
         <span class="text-muted ms-2">{{ employee.designation }}</span>
       </p>
     </div>
+  </div>
+  <div class="page-actions">
+    <form method="post" action="{% url 'emp_employee_delete' employee.pk %}" onsubmit="return confirm('Are you sure you want to delete this employee? This will remove all their attendance, leave, and work records. The team member profile (if any) will be kept.')">
+      {% csrf_token %}
+      <button type="submit" class="btn btn-danger"><i class="fas fa-trash me-1"></i> Delete Employee</button>
+    </form>
   </div>
 </div>
 

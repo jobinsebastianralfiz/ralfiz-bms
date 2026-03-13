@@ -4089,6 +4089,29 @@ def emp_employee_detail(request, pk):
 
 
 @login_required
+def emp_employee_delete(request, pk):
+    """Delete an employee and their related data, keeping the User and TeamMember intact"""
+    from employees.models import Employee, Attendance, LeaveRequest, WorkAssignment, WorkUpdate, Notification, DeviceToken
+    if request.method != 'POST':
+        return redirect('emp_employee_list')
+
+    employee = get_object_or_404(Employee, pk=pk)
+    name = employee.full_name
+
+    # Delete employee-related data (keep User and TeamMember)
+    DeviceToken.objects.filter(employee=employee).delete()
+    Notification.objects.filter(employee=employee).delete()
+    WorkUpdate.objects.filter(employee=employee).delete()
+    Attendance.objects.filter(employee=employee).delete()
+    LeaveRequest.objects.filter(employee=employee).delete()
+    WorkAssignment.objects.filter(assigned_to=employee).delete()
+    employee.delete()
+
+    messages.success(request, f'Employee "{name}" and all related records deleted. User account and team member profile are preserved.')
+    return redirect('emp_employee_list')
+
+
+@login_required
 def emp_leave_list(request):
     """List leave requests with filtering"""
     from employees.models import LeaveRequest
