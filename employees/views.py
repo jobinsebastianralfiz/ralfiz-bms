@@ -74,7 +74,7 @@ class DashboardView(APIView):
             'unread_notifications': Notification.objects.filter(employee=employee, is_read=False).count(),
             'recent_assignments': WorkAssignmentSerializer(
                 WorkAssignment.objects.filter(assigned_to=employee).exclude(status='cancelled')[:5],
-                many=True
+                many=True, context={'request': request}
             ).data,
         }
         return Response(data)

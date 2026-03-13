@@ -74,6 +74,11 @@ class EmployeeTokenSerializer(TokenObtainPairSerializer):
         if employee.status != 'active':
             raise serializers.ValidationError('Your account is inactive. Contact admin.')
 
+        request = self.context.get('request')
+        profile_photo_url = None
+        if employee.profile_photo and request:
+            profile_photo_url = request.build_absolute_uri(employee.profile_photo.url)
+
         data['employee'] = {
             'id': str(employee.id),
             'employee_id': employee.employee_id,
@@ -81,6 +86,7 @@ class EmployeeTokenSerializer(TokenObtainPairSerializer):
             'department': employee.department,
             'designation': employee.designation,
             'status': employee.status,
+            'profile_photo': profile_photo_url,
             'has_face_registered': bool(employee.face_photo),
         }
 
