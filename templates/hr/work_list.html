@@ -41,6 +41,7 @@
             <th>Due Date</th>
             <th>Assigned By</th>
             <th>Created</th>
+            <th>Actions</th>
           </tr>
         </thead>
         <tbody>
@@ -88,6 +89,19 @@
             <td>{{ w.due_date|date:"d M Y"|default:"-" }}</td>
             <td>{{ w.assigned_by.get_full_name|default:w.assigned_by.username|default:"-" }}</td>
             <td>{{ w.created_at|date:"d M Y" }}</td>
+            <td>
+              <div class="d-flex gap-1">
+                <a href="{% url 'emp_work_detail' w.pk %}" class="btn btn-sm btn-ghost" title="Edit">
+                  <i class="fas fa-edit"></i>
+                </a>
+                <form method="post" action="{% url 'emp_work_delete' w.pk %}" onsubmit="return confirm('Delete this assignment?')">
+                  {% csrf_token %}
+                  <button type="submit" class="btn btn-sm btn-ghost text-danger" title="Delete">
+                    <i class="fas fa-trash"></i>
+                  </button>
+                </form>
+              </div>
+            </td>
           </tr>
           {% endfor %}
         </tbody>

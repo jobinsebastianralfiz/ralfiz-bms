@@ -148,4 +148,6 @@ urlpatterns = [
     path('hr/office-qr/', views.emp_office_qr, name='emp_office_qr'),
     path('hr/work/', views.emp_work_list, name='emp_work_list'),
     path('hr/work/create/', views.emp_work_create, name='emp_work_create'),
+    path('hr/work/<uuid:pk>/', views.emp_work_detail, name='emp_work_detail'),
+    path('hr/work/<uuid:pk>/delete/', views.emp_work_delete, name='emp_work_delete'),
 ]

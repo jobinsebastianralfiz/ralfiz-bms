@@ -1,0 +1,149 @@
+{% extends 'base.html' %}
+{% block title %}{{ assignment.title }} - Ralfiz BMS{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title">Edit Work Assignment</h1>
+    <p class="page-subtitle mb-0">Update assignment details</p>
+  </div>
+  <div class="page-actions">
+    <a href="{% url 'emp_work_list' %}" class="btn btn-ghost"><i class="fas fa-arrow-left me-1"></i> Back</a>
+    <form method="post" action="{% url 'emp_work_delete' assignment.pk %}" class="d-inline" onsubmit="return confirm('Are you sure you want to delete this assignment?')">
+      {% csrf_token %}
+      <button type="submit" class="btn btn-danger"><i class="fas fa-trash me-1"></i> Delete</button>
+    </form>
+  </div>
+</div>
+
+<div class="row">
+  <div class="col-8">
+    <div class="card">
+      <div class="card-header">
+        <h3 class="card-title"><i class="fas fa-edit me-2"></i> Assignment Details</h3>
+      </div>
+      <div class="card-body">
+        <form method="post" enctype="multipart/form-data">
+          {% csrf_token %}
+          <div class="row mb-3">
+            <div class="col-8">
+              <label class="form-label">Title *</label>
+              <input type="text" name="title" class="form-control" required value="{{ assignment.title }}">
+            </div>
+            <div class="col-4">
+              <label class="form-label">Priority</label>
+              <select name="priority" class="form-control">
+                {% for key, value in priority_choices %}
+                <option value="{{ key }}" {% if assignment.priority == key %}selected{% endif %}>{{ value }}</option>
+                {% endfor %}
+              </select>
+            </div>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Description</label>
+            <textarea name="description" class="form-control" rows="3">{{ assignment.description }}</textarea>
+          </div>
+          <div class="row mb-3">
+            <div class="col-4">
+              <label class="form-label">Assign To *</label>
+              <select name="employee" class="form-control" required>
+                {% for emp in employees %}
+                <option value="{{ emp.pk }}" {% if assignment.assigned_to_id == emp.pk %}selected{% endif %}>{{ emp.full_name }} ({{ emp.employee_id }})</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="col-4">
+              <label class="form-label">Status</label>
+              <select name="status" class="form-control">
+                {% for key, value in status_choices %}
+                <option value="{{ key }}" {% if assignment.status == key %}selected{% endif %}>{{ value }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="col-4">
+              <label class="form-label">Due Date</label>
+              <input type="date" name="due_date" class="form-control" value="{{ assignment.due_date|date:'Y-m-d'|default:'' }}">
+            </div>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Attachment</label>
+            {% if assignment.attachment %}
+            <div class="mb-2 d-flex align-items-center gap-2">
+              <a href="{{ assignment.attachment.url }}" target="_blank" class="btn btn-sm btn-ghost">
+                <i class="fas fa-paperclip me-1"></i> {{ assignment.attachment.name|cut:"employees/work_assignments/" }}
+              </a>
+              <label class="form-check-label">
+                <input type="checkbox" name="remove_attachment" value="1" class="form-check-input"> Remove
+              </label>
+            </div>
+            {% endif %}
+            <input type="file" name="attachment" class="form-control">
+            <small class="text-muted">PDF, images, or other documents (optional)</small>
+          </div>
+          <div class="d-flex gap-2">
+            <button type="submit" class="btn btn-primary"><i class="fas fa-save me-2"></i> Save Changes</button>
+            <a href="{% url 'emp_work_list' %}" class="btn btn-ghost">Cancel</a>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-4">
+    <div class="card">
+      <div class="card-header">
+        <h3 class="card-title"><i class="fas fa-info-circle me-2"></i> Info</h3>
+      </div>
+      <div class="card-body">
+        <div class="mb-2">
+          <span class="text-muted">Assigned By:</span><br>
+          <strong>{{ assignment.assigned_by.get_full_name|default:assignment.assigned_by.username|default:"-" }}</strong>
+        </div>
+        <div class="mb-2">
+          <span class="text-muted">Created:</span><br>
+          <strong>{{ assignment.created_at|date:"d M Y, H:i" }}</strong>
+        </div>
+        <div class="mb-2">
+          <span class="text-muted">Last Updated:</span><br>
+          <strong>{{ assignment.updated_at|date:"d M Y, H:i" }}</strong>
+        </div>
+        {% if assignment.completed_at %}
+        <div class="mb-2">
+          <span class="text-muted">Completed At:</span><br>
+          <strong>{{ assignment.completed_at|date:"d M Y, H:i" }}</strong>
+        </div>
+        {% endif %}
+        {% if assignment.is_overdue %}
+        <div class="mt-2">
+          <span class="badge" style="background: var(--danger-bg); color: var(--danger);">Overdue</span>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+
+    {% if updates %}
+    <div class="card mt-3">
+      <div class="card-header">
+        <h3 class="card-title"><i class="fas fa-comments me-2"></i> Updates ({{ updates|length }})</h3>
+      </div>
+      <div class="card-body p-0">
+        <div class="list-group list-group-flush">
+          {% for u in updates %}
+          <div class="list-group-item">
+            <div class="d-flex justify-content-between">
+              <strong>{{ u.employee.full_name }}</strong>
+              <small class="text-muted">{{ u.created_at|date:"d M Y, H:i" }}</small>
+            </div>
+            <p class="mb-1 mt-1">{{ u.message }}</p>
+            {% if u.attachment %}
+            <a href="{{ u.attachment.url }}" target="_blank" class="text-sm"><i class="fas fa-paperclip"></i> {{ u.attachment.name|cut:"employees/work_updates/" }}</a>
+            {% endif %}
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

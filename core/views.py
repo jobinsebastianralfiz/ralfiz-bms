@@ -4174,6 +4174,7 @@ def emp_work_create(request):
             assigned_by=request.user,
             priority=request.POST.get('priority', 'medium'),
             due_date=request.POST.get('due_date') or None,
+            attachment=request.FILES.get('attachment'),
         )
         Notification.objects.create(
             employee=employee,
@@ -4197,6 +4198,59 @@ def emp_work_create(request):
         'priority_choices': WorkAssignment.PRIORITY_CHOICES,
     }
     return render(request, 'hr/work_create.html', context)
+
+
+@login_required
+def emp_work_detail(request, pk):
+    """View and edit a work assignment"""
+    from employees.models import WorkAssignment, Employee, WorkUpdate
+    assignment = get_object_or_404(WorkAssignment, pk=pk)
+
+    if request.method == 'POST':
+        assignment.title = request.POST.get('title', assignment.title)
+        assignment.description = request.POST.get('description', assignment.description)
+        assignment.priority = request.POST.get('priority', assignment.priority)
+        assignment.status = request.POST.get('status', assignment.status)
+        assignment.due_date = request.POST.get('due_date') or None
+
+        employee_id = request.POST.get('employee')
+        if employee_id:
+            assignment.assigned_to = get_object_or_404(Employee, pk=employee_id)
+
+        if request.FILES.get('attachment'):
+            assignment.attachment = request.FILES['attachment']
+        elif request.POST.get('remove_attachment'):
+            assignment.attachment = None
+
+        if assignment.status == 'completed' and not assignment.completed_at:
+            from django.utils import timezone
+            assignment.completed_at = timezone.now()
+
+        assignment.save()
+        messages.success(request, 'Work assignment updated.')
+        return redirect('emp_work_detail', pk=pk)
+
+    employees = Employee.objects.filter(status='active').order_by('employee_id')
+    updates = WorkUpdate.objects.filter(assignment=assignment).select_related('employee__user').order_by('-created_at')
+    context = {
+        'assignment': assignment,
+        'employees': employees,
+        'updates': updates,
+        'status_choices': WorkAssignment.STATUS_CHOICES,
+        'priority_choices': WorkAssignment.PRIORITY_CHOICES,
+    }
+    return render(request, 'hr/work_detail.html', context)
+
+
+@login_required
+def emp_work_delete(request, pk):
+    """Delete a work assignment"""
+    from employees.models import WorkAssignment
+    assignment = get_object_or_404(WorkAssignment, pk=pk)
+    if request.method == 'POST':
+        assignment.delete()
+        messages.success(request, 'Work assignment deleted.')
+    return redirect('emp_work_list')
 
 
 @login_required
