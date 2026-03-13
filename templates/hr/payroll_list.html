@@ -1,0 +1,118 @@
+{% extends 'base.html' %}
+{% block title %}Payroll - {{ month_name }} {{ year }} - Ralfiz BMS{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title">Payroll</h1>
+    <p class="page-subtitle mb-0">Salary & stipend management with leave deductions</p>
+  </div>
+  <div class="page-actions">
+    <form method="post" onsubmit="return confirm('Generate payroll for {{ month_name }} {{ year }} for all active employees?')">
+      {% csrf_token %}
+      <input type="hidden" name="action" value="generate">
+      <div class="d-flex gap-2">
+        <input type="number" name="working_days" value="26" class="form-control" style="width: 80px;" title="Working days">
+        <button type="submit" class="btn btn-primary"><i class="fas fa-calculator me-1"></i> Generate Payroll</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div class="card mb-4">
+  <div class="card-header">
+    <h3 class="card-title"><i class="fas fa-money-bill-wave"></i> {{ month_name }} {{ year }}</h3>
+    <div class="card-actions">
+      <form method="get" class="d-flex gap-2">
+        <select name="month" class="form-control" style="width: auto;" onchange="this.form.submit()">
+          {% for m_num, m_name in months %}
+          <option value="{{ m_num }}" {% if month == m_num %}selected{% endif %}>{{ m_name }}</option>
+          {% endfor %}
+        </select>
+        <select name="year" class="form-control" style="width: auto;" onchange="this.form.submit()">
+          {% for y in years %}
+          <option value="{{ y }}" {% if year == y %}selected{% endif %}>{{ y }}</option>
+          {% endfor %}
+        </select>
+      </form>
+    </div>
+  </div>
+  <div class="card-body p-0">
+    {% if payrolls %}
+    <div class="table-responsive">
+      <table class="table table-hover mb-0">
+        <thead>
+          <tr>
+            <th>Employee</th>
+            <th class="text-end">Base Salary</th>
+            <th class="text-center">Present</th>
+            <th class="text-center">Paid Leave</th>
+            <th class="text-center">Unpaid Leave</th>
+            <th class="text-center">Absent</th>
+            <th class="text-end">Leave Ded.</th>
+            <th class="text-end">Bonus</th>
+            <th class="text-end">Other Ded.</th>
+            <th class="text-end">Net Pay</th>
+            <th>Status</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for p in payrolls %}
+          <tr>
+            <td>
+              <div class="fw-medium">{{ p.employee.full_name }}</div>
+              <div class="text-sm text-muted">{{ p.employee.employee_id }} &middot; {{ p.employee.get_employment_type_display }}</div>
+            </td>
+            <td class="text-end">{{ p.base_salary }}</td>
+            <td class="text-center">{{ p.days_present }}/{{ p.working_days }}</td>
+            <td class="text-center">{{ p.paid_leave_days }}</td>
+            <td class="text-center">{{ p.unpaid_leave_days }}</td>
+            <td class="text-center">{{ p.days_absent }}</td>
+            <td class="text-end text-danger">{% if p.leave_deduction %}-{{ p.leave_deduction }}{% else %}0{% endif %}</td>
+            <td class="text-end text-success">{% if p.bonus %}+{{ p.bonus }}{% else %}0{% endif %}</td>
+            <td class="text-end text-danger">{% if p.deductions %}-{{ p.deductions }}{% else %}0{% endif %}</td>
+            <td class="text-end fw-bold">{{ p.net_pay }}</td>
+            <td>
+              {% if p.status == 'draft' %}
+              <span class="badge" style="background: var(--warning-bg); color: var(--warning);">Draft</span>
+              {% elif p.status == 'confirmed' %}
+              <span class="badge" style="background: var(--info-bg); color: var(--info);">Confirmed</span>
+              {% elif p.status == 'paid' %}
+              <span class="badge" style="background: var(--success-bg); color: var(--success);">Paid</span>
+              {% endif %}
+            </td>
+            <td>
+              <form method="post" class="d-flex gap-1">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="update_status">
+                <input type="hidden" name="payroll_id" value="{{ p.pk }}">
+                {% if p.status == 'draft' %}
+                <button name="new_status" value="confirmed" class="btn btn-sm btn-ghost" title="Confirm"><i class="fas fa-check text-info"></i></button>
+                {% endif %}
+                {% if p.status == 'confirmed' %}
+                <button name="new_status" value="paid" class="btn btn-sm btn-ghost" title="Mark Paid"><i class="fas fa-check-double text-success"></i></button>
+                {% endif %}
+              </form>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+        <tfoot>
+          <tr class="fw-bold" style="background: var(--bg-secondary);">
+            <td colspan="9" class="text-end">Total Net Pay:</td>
+            <td class="text-end">{{ total_net }}</td>
+            <td colspan="2"></td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+    {% else %}
+    <div class="text-center text-muted py-5">
+      <i class="fas fa-file-invoice-dollar mb-3" style="font-size: 2rem; display: block;"></i>
+      <p class="mb-0">No payroll records for {{ month_name }} {{ year }}. Click "Generate Payroll" to create.</p>
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

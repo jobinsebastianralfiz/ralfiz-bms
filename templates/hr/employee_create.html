@@ -1,0 +1,127 @@
+{% extends 'base.html' %}
+{% block title %}Add Employee - Ralfiz BMS{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title">Add Employee</h1>
+    <p class="page-subtitle mb-0">Create a new employee profile</p>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header">
+    <h3 class="card-title"><i class="fas fa-user-plus me-2"></i> New Employee</h3>
+  </div>
+  <div class="card-body">
+    <form method="post">
+      {% csrf_token %}
+
+      {% if available_users %}
+      <div class="mb-4 p-3" style="background: var(--bg-secondary); border-radius: 8px;">
+        <label class="form-label fw-medium">Link to Existing User (optional)</label>
+        <select name="existing_user" class="form-control" id="existingUser" onchange="toggleNewUser(this)">
+          <option value="">-- Create New User --</option>
+          {% for u in available_users %}
+          <option value="{{ u.pk }}">{{ u.get_full_name|default:u.username }} ({{ u.username }})</option>
+          {% endfor %}
+        </select>
+        <small class="text-muted">Select a user who doesn't have an employee profile yet, or create a new one below.</small>
+      </div>
+      {% endif %}
+
+      <div id="newUserFields">
+        <h6 class="text-muted mb-3">Login Credentials</h6>
+        <div class="row mb-3">
+          <div class="col-4">
+            <label class="form-label">Username *</label>
+            <input type="text" name="username" class="form-control" placeholder="login username">
+          </div>
+          <div class="col-4">
+            <label class="form-label">Password</label>
+            <input type="text" name="password" class="form-control" value="changeme123" placeholder="Initial password">
+          </div>
+          <div class="col-4">
+            <label class="form-label">Email</label>
+            <input type="email" name="email" class="form-control" placeholder="email@example.com">
+          </div>
+        </div>
+        <div class="row mb-3">
+          <div class="col-6">
+            <label class="form-label">First Name</label>
+            <input type="text" name="first_name" class="form-control">
+          </div>
+          <div class="col-6">
+            <label class="form-label">Last Name</label>
+            <input type="text" name="last_name" class="form-control">
+          </div>
+        </div>
+        <hr class="my-4">
+      </div>
+
+      <h6 class="text-muted mb-3">Employee Details</h6>
+      <div class="row mb-3">
+        <div class="col-4">
+          <label class="form-label">Employee ID</label>
+          <input type="text" name="employee_id" class="form-control" placeholder="Auto-generated if empty">
+        </div>
+        <div class="col-4">
+          <label class="form-label">Employment Type *</label>
+          <select name="employment_type" class="form-control">
+            {% for key, value in employment_types %}
+            <option value="{{ key }}" {% if key == 'fulltime' %}selected{% endif %}>{{ value }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-4">
+          <label class="form-label">Department</label>
+          <select name="department" class="form-control">
+            {% for key, value in departments %}
+            <option value="{{ key }}">{{ value }}</option>
+            {% endfor %}
+          </select>
+        </div>
+      </div>
+      <div class="row mb-3">
+        <div class="col-6">
+          <label class="form-label">Designation</label>
+          <input type="text" name="designation" class="form-control" placeholder="e.g. Flutter Developer, Intern">
+        </div>
+        <div class="col-6">
+          <label class="form-label">Phone</label>
+          <input type="text" name="phone" class="form-control">
+        </div>
+      </div>
+      <div class="row mb-3">
+        <div class="col-6">
+          <label class="form-label">Monthly Salary</label>
+          <input type="number" name="monthly_salary" class="form-control" step="0.01" placeholder="For full-time employees">
+        </div>
+        <div class="col-6">
+          <label class="form-label">Hourly Rate</label>
+          <input type="number" name="hourly_rate" class="form-control" step="0.01" placeholder="For part-time/freelancers">
+        </div>
+      </div>
+      <div class="mb-3">
+        <label class="form-label">Address</label>
+        <textarea name="address" class="form-control" rows="2"></textarea>
+      </div>
+      <div class="mb-3">
+        <label class="form-label">Emergency Contact</label>
+        <input type="text" name="emergency_contact" class="form-control">
+      </div>
+
+      <div class="d-flex gap-2">
+        <button type="submit" class="btn btn-primary"><i class="fas fa-user-plus me-2"></i> Create Employee</button>
+        <a href="{% url 'emp_employee_list' %}" class="btn btn-ghost">Cancel</a>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+function toggleNewUser(select) {
+  document.getElementById('newUserFields').style.display = select.value ? 'none' : 'block';
+}
+</script>
+{% endblock %}

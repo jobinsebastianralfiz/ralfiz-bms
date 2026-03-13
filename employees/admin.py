@@ -2,7 +2,7 @@ from django.contrib import admin
 from django.utils.html import format_html
 from .models import (
     Employee, DeviceToken, Attendance, LeaveType, LeaveRequest,
-    WorkAssignment, WorkUpdate, Notification, QRCode, ScheduledClass
+    WorkAssignment, WorkUpdate, Notification, QRCode, ScheduledClass, Payroll
 )
 from .utils import generate_face_encoding
 
@@ -135,4 +135,13 @@ class ScheduledClassAdmin(admin.ModelAdmin):
     list_filter = ['status', 'date']
     search_fields = ['title', 'instructor']
     filter_horizontal = ['interns']
+    readonly_fields = ['id', 'created_at', 'updated_at']
+
+
+@admin.register(Payroll)
+class PayrollAdmin(admin.ModelAdmin):
+    list_display = ['employee', 'month', 'year', 'base_salary', 'leave_deduction',
+                    'bonus', 'deductions', 'net_pay', 'status']
+    list_filter = ['status', 'year', 'month']
+    search_fields = ['employee__employee_id', 'employee__user__first_name']
     readonly_fields = ['id', 'created_at', 'updated_at']

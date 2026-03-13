@@ -385,3 +385,62 @@ class ScheduledClass(models.Model):
         if self.date == today and self.end_time > timezone.now().time():
             return True
         return False
+
+
+class Payroll(models.Model):
+    """Monthly payroll/stipend record for an employee"""
+    STATUS_CHOICES = [
+        ('draft', 'Draft'),
+        ('confirmed', 'Confirmed'),
+        ('paid', 'Paid'),
+    ]
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    employee = models.ForeignKey(Employee, on_delete=models.CASCADE, related_name='payrolls')
+    month = models.IntegerField(help_text='Month (1-12)')
+    year = models.IntegerField()
+
+    # Base pay
+    base_salary = models.DecimalField(max_digits=12, decimal_places=2, default=0,
+                                       help_text='Monthly salary or stipend')
+
+    # Attendance
+    working_days = models.IntegerField(default=0, help_text='Total working days in the month')
+    days_present = models.IntegerField(default=0)
+    days_absent = models.IntegerField(default=0, help_text='Unpaid leave / absent days')
+
+    # Leave deductions
+    paid_leave_days = models.IntegerField(default=0)
+    unpaid_leave_days = models.IntegerField(default=0)
+    leave_deduction = models.DecimalField(max_digits=12, decimal_places=2, default=0,
+                                           help_text='Amount deducted for unpaid leave')
+
+    # Additions & deductions
+    bonus = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    deductions = models.DecimalField(max_digits=12, decimal_places=2, default=0,
+                                      help_text='Other deductions (tax, etc.)')
+
+    # Final
+    net_pay = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    status = models.CharField(max_length=10, choices=STATUS_CHOICES, default='draft')
+    notes = models.TextField(blank=True)
+
+    generated_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['-year', '-month']
+        unique_together = ['employee', 'month', 'year']
+
+    def __str__(self):
+        return f"{self.employee.employee_id} - {self.month}/{self.year} - {self.net_pay}"
+
+    def calculate(self):
+        """Calculate net pay based on salary, attendance, and leave"""
+        if self.working_days > 0:
+            per_day = self.base_salary / self.working_days
+            self.leave_deduction = per_day * self.unpaid_leave_days
+        else:
+            self.leave_deduction = 0
+        self.net_pay = self.base_salary - self.leave_deduction + self.bonus - self.deductions

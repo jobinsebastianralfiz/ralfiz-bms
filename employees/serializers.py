@@ -2,7 +2,7 @@ from rest_framework import serializers
 from django.contrib.auth.models import User
 from .models import (
     Employee, DeviceToken, Attendance, LeaveType, LeaveRequest,
-    WorkAssignment, WorkUpdate, Notification, QRCode, ScheduledClass
+    WorkAssignment, WorkUpdate, Notification, QRCode, ScheduledClass, Payroll
 )
 
 
@@ -223,6 +223,28 @@ class ScheduledClassSerializer(serializers.ModelSerializer):
             # Empty means all interns
             interns = Employee.objects.filter(employment_type='intern', status='active')
         return ClassParticipantSerializer(interns, many=True, context=self.context).data
+
+
+class PayrollSerializer(serializers.ModelSerializer):
+    employee_name = serializers.CharField(source='employee.full_name', read_only=True)
+    employee_id_display = serializers.CharField(source='employee.employee_id', read_only=True)
+    month_name = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Payroll
+        fields = [
+            'id', 'employee', 'employee_name', 'employee_id_display',
+            'month', 'year', 'month_name', 'base_salary',
+            'working_days', 'days_present', 'days_absent',
+            'paid_leave_days', 'unpaid_leave_days', 'leave_deduction',
+            'bonus', 'deductions', 'net_pay', 'status', 'notes',
+            'created_at', 'updated_at',
+        ]
+        read_only_fields = ['id', 'employee_name', 'employee_id_display', 'created_at', 'updated_at']
+
+    def get_month_name(self, obj):
+        import calendar
+        return calendar.month_name[obj.month]
 
 
 class DashboardSerializer(serializers.Serializer):

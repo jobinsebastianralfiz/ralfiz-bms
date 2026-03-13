@@ -4013,12 +4013,18 @@ def emp_employee_list(request):
         employees = employees.filter(status=status_filter)
     if dept_filter:
         employees = employees.filter(department=dept_filter)
+
+    # Count team members without employee profiles
+    linked_user_ids = Employee.objects.values_list('user_id', flat=True)
+    unlinked_count = TeamMember.objects.filter(user__isnull=False).exclude(user_id__in=linked_user_ids).count()
+
     context = {
         'employees': employees,
         'status_filter': status_filter,
         'dept_filter': dept_filter,
         'departments': Employee.DEPARTMENT_CHOICES,
         'statuses': Employee.STATUS_CHOICES,
+        'unlinked_team_members': unlinked_count,
     }
     return render(request, 'hr/employee_list.html', context)
 
@@ -4046,6 +4052,8 @@ def emp_employee_detail(request, pk):
         employee.emergency_contact = request.POST.get('emergency_contact', employee.emergency_contact)
         employee.address = request.POST.get('address', employee.address)
         employee.joining_date = request.POST.get('joining_date') or employee.joining_date
+        employee.monthly_salary = request.POST.get('monthly_salary') or None
+        employee.hourly_rate = request.POST.get('hourly_rate') or None
         employee.save()
         messages.success(request, 'Employee information updated.')
         return redirect('emp_employee_detail', pk=pk)
@@ -4131,6 +4139,121 @@ def emp_employee_delete(request, pk):
     employee.delete()
 
     messages.success(request, f'Employee "{name}" and all related records deleted. User account and team member profile are preserved.')
+    return redirect('emp_employee_list')
+
+
+@login_required
+def emp_employee_create(request):
+    """Create a new employee"""
+    from employees.models import Employee
+    from django.contrib.auth.models import User
+
+    if request.method == 'POST':
+        # Create or get User
+        user_id = request.POST.get('existing_user')
+        if user_id:
+            user = get_object_or_404(User, pk=user_id)
+            if hasattr(user, 'employee_profile'):
+                messages.error(request, 'This user already has an employee profile.')
+                return redirect('emp_employee_create')
+        else:
+            username = request.POST.get('username', '').strip()
+            if not username:
+                messages.error(request, 'Username is required.')
+                return redirect('emp_employee_create')
+            if User.objects.filter(username=username).exists():
+                messages.error(request, 'Username already exists.')
+                return redirect('emp_employee_create')
+            user = User.objects.create_user(
+                username=username,
+                password=request.POST.get('password', 'changeme123'),
+                first_name=request.POST.get('first_name', ''),
+                last_name=request.POST.get('last_name', ''),
+                email=request.POST.get('email', ''),
+            )
+
+        # Generate employee ID
+        last_emp = Employee.objects.order_by('-employee_id').first()
+        if last_emp and last_emp.employee_id.startswith('EMP'):
+            try:
+                num = int(last_emp.employee_id[3:]) + 1
+            except ValueError:
+                num = 1
+        else:
+            num = 1
+        employee_id = request.POST.get('employee_id') or f'EMP{num:03d}'
+
+        Employee.objects.create(
+            user=user,
+            employee_id=employee_id,
+            employment_type=request.POST.get('employment_type', 'fulltime'),
+            department=request.POST.get('department', 'engineering'),
+            designation=request.POST.get('designation', ''),
+            phone=request.POST.get('phone', ''),
+            emergency_contact=request.POST.get('emergency_contact', ''),
+            address=request.POST.get('address', ''),
+            status='active',
+            monthly_salary=request.POST.get('monthly_salary') or None,
+            hourly_rate=request.POST.get('hourly_rate') or None,
+        )
+        messages.success(request, f'Employee created. Login: {user.username} / {request.POST.get("password", "changeme123")}')
+        return redirect('emp_employee_list')
+
+    # Get users who don't have employee profiles yet
+    linked_user_ids = Employee.objects.values_list('user_id', flat=True)
+    available_users = User.objects.exclude(pk__in=linked_user_ids).order_by('first_name', 'username')
+
+    context = {
+        'available_users': available_users,
+        'employment_types': Employee.EMPLOYMENT_TYPE_CHOICES,
+        'departments': Employee.DEPARTMENT_CHOICES,
+    }
+    return render(request, 'hr/employee_create.html', context)
+
+
+@login_required
+def emp_employee_import(request):
+    """Import all team members as employees"""
+    from employees.models import Employee
+
+    if request.method != 'POST':
+        return redirect('emp_employee_list')
+
+    linked_user_ids = Employee.objects.values_list('user_id', flat=True)
+    unlinked = TeamMember.objects.filter(user__isnull=False).exclude(user_id__in=linked_user_ids)
+
+    employment_type_map = {'permanent': 'fulltime', 'freelancer': 'parttime'}
+    role_to_dept_map = {
+        'developer': 'engineering', 'designer': 'design',
+        'project_manager': 'operations', 'qa': 'engineering',
+        'devops': 'engineering', 'other': 'other',
+    }
+
+    count = 0
+    for tm in unlinked:
+        last_emp = Employee.objects.order_by('-employee_id').first()
+        if last_emp and last_emp.employee_id.startswith('EMP'):
+            try:
+                num = int(last_emp.employee_id[3:]) + 1
+            except ValueError:
+                num = 1
+        else:
+            num = 1
+
+        Employee.objects.create(
+            user=tm.user,
+            employee_id=f'EMP{num:03d}',
+            employment_type=employment_type_map.get(tm.employment_type, 'fulltime'),
+            department=role_to_dept_map.get(tm.role, 'other'),
+            designation=tm.get_role_display(),
+            phone=tm.phone or '',
+            monthly_salary=tm.monthly_salary,
+            hourly_rate=tm.hourly_rate,
+            status='active',
+        )
+        count += 1
+
+    messages.success(request, f'{count} team member(s) imported as employees.')
     return redirect('emp_employee_list')
 
 
@@ -4551,3 +4674,96 @@ def emp_class_delete(request, pk):
         scheduled_class.delete()
         messages.success(request, 'Class deleted.')
     return redirect('emp_class_list')
+
+
+@login_required
+def emp_payroll_list(request):
+    """List payroll records, generate payroll"""
+    from employees.models import Payroll, Employee, Attendance, LeaveRequest
+    from employees.utils import send_push_notification
+    import calendar
+
+    now = timezone.now()
+    month = int(request.GET.get('month', now.month))
+    year = int(request.GET.get('year', now.year))
+
+    # Generate payroll
+    if request.method == 'POST' and request.POST.get('action') == 'generate':
+        working_days = int(request.POST.get('working_days', 26))
+        employees = Employee.objects.filter(status='active')
+        count = 0
+
+        for emp in employees:
+            if Payroll.objects.filter(employee=emp, month=month, year=year).exists():
+                continue
+
+            base = emp.monthly_salary or 0
+            attendance = Attendance.objects.filter(employee=emp, date__month=month, date__year=year)
+            days_present = attendance.filter(status__in=['present', 'late', 'work_from_home']).count()
+            half_days = attendance.filter(status='half_day').count()
+            days_present += half_days * 0.5
+
+            approved_leaves = LeaveRequest.objects.filter(
+                employee=emp, status='approved',
+                start_date__month=month, start_date__year=year,
+            )
+            paid_leave_days = 0
+            unpaid_leave_days = 0
+            for lr in approved_leaves:
+                if lr.leave_type and lr.leave_type.is_paid:
+                    paid_leave_days += lr.total_days
+                else:
+                    unpaid_leave_days += lr.total_days
+
+            days_absent = max(0, working_days - int(days_present) - paid_leave_days - unpaid_leave_days)
+
+            payroll = Payroll(
+                employee=emp, month=month, year=year,
+                base_salary=base, working_days=working_days,
+                days_present=int(days_present), days_absent=days_absent,
+                paid_leave_days=paid_leave_days, unpaid_leave_days=unpaid_leave_days,
+                generated_by=request.user,
+            )
+            payroll.calculate()
+            payroll.save()
+            count += 1
+
+        messages.success(request, f'Payroll generated for {count} employee(s).')
+        return redirect(f'/hr/payroll/?month={month}&year={year}')
+
+    # Update status
+    if request.method == 'POST' and request.POST.get('action') == 'update_status':
+        payroll_id = request.POST.get('payroll_id')
+        new_status = request.POST.get('new_status')
+        payroll = get_object_or_404(Payroll, pk=payroll_id)
+        payroll.status = new_status
+        payroll.save()
+        if new_status in ['confirmed', 'paid']:
+            from employees.models import Notification
+            Notification.objects.create(
+                employee=payroll.employee,
+                title=f'Payslip {payroll.get_status_display()}',
+                body=f'Your payslip for {calendar.month_name[payroll.month]} {payroll.year} is {payroll.get_status_display().lower()}. Net: {payroll.net_pay}',
+                notification_type='general',
+            )
+            send_push_notification(payroll.employee, f'Payslip {payroll.get_status_display()}',
+                                   f'Net pay for {calendar.month_name[payroll.month]}: {payroll.net_pay}')
+        messages.success(request, f'Payroll status updated to {new_status}.')
+        return redirect(f'/hr/payroll/?month={month}&year={year}')
+
+    payrolls = Payroll.objects.filter(month=month, year=year).select_related('employee__user')
+    total_net = sum(p.net_pay for p in payrolls)
+
+    months = [(i, calendar.month_name[i]) for i in range(1, 13)]
+    years = list(range(now.year - 1, now.year + 2))
+
+    context = {
+        'payrolls': payrolls,
+        'month': month,
+        'year': year,
+        'month_name': calendar.month_name[month],
+        'months': months,
+        'years': years,
+        'total_net': total_net,
+    }
+    return render(request, 'hr/payroll_list.html', context)

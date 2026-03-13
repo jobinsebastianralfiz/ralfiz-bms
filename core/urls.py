@@ -140,6 +140,8 @@ urlpatterns = [
 
     # HR & Admin
     path('hr/employees/', views.emp_employee_list, name='emp_employee_list'),
+    path('hr/employees/create/', views.emp_employee_create, name='emp_employee_create'),
+    path('hr/employees/import/', views.emp_employee_import, name='emp_employee_import'),
     path('hr/employees/<uuid:pk>/', views.emp_employee_detail, name='emp_employee_detail'),
     path('hr/employees/<uuid:pk>/delete/', views.emp_employee_delete, name='emp_employee_delete'),
     path('hr/attendance/', views.emp_attendance_list, name='emp_attendance_list'),
@@ -157,4 +159,7 @@ urlpatterns = [
     path('hr/classes/create/', views.emp_class_create, name='emp_class_create'),
     path('hr/classes/<uuid:pk>/', views.emp_class_detail, name='emp_class_detail'),
     path('hr/classes/<uuid:pk>/delete/', views.emp_class_delete, name='emp_class_delete'),
+
+    # Payroll
+    path('hr/payroll/', views.emp_payroll_list, name='emp_payroll_list'),
 ]

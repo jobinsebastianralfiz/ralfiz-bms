@@ -14,7 +14,7 @@ from drf_spectacular.utils import extend_schema, extend_schema_view, OpenApiPara
 
 from .models import (
     Employee, DeviceToken, Attendance, LeaveType, LeaveRequest,
-    WorkAssignment, WorkUpdate, Notification, QRCode, ScheduledClass
+    WorkAssignment, WorkUpdate, Notification, QRCode, ScheduledClass, Payroll
 )
 from .serializers import (
     EmployeeProfileSerializer, EmployeeListSerializer,
@@ -23,6 +23,7 @@ from .serializers import (
     LeaveTypeSerializer, LeaveRequestSerializer, LeaveRequestCreateSerializer,
     WorkAssignmentSerializer, WorkUpdateSerializer, WorkStatusUpdateSerializer,
     NotificationSerializer, ChangePasswordSerializer, ScheduledClassSerializer,
+    PayrollSerializer,
 )
 from django.shortcuts import render
 
@@ -669,6 +670,46 @@ class ScheduledClassDetailView(APIView):
         return Response(ScheduledClassSerializer(scheduled_class, context={'request': request}).data)
 
 
+# ---- Payroll/Salary APIs (for employee app) ----
+
+@extend_schema(tags=['Payroll'], parameters=[
+    OpenApiParameter(name='year', type=int, required=False),
+])
+class PayslipListView(generics.ListAPIView):
+    """List own payslips/salary records"""
+    serializer_class = PayrollSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        employee = get_employee(self.request.user)
+        if not employee:
+            return Payroll.objects.none()
+
+        qs = Payroll.objects.filter(employee=employee).exclude(status='draft')
+        year = self.request.query_params.get('year')
+        if year:
+            qs = qs.filter(year=int(year))
+        return qs
+
+
+@extend_schema(tags=['Payroll'])
+class PayslipDetailView(APIView):
+    """View a specific payslip"""
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, pk):
+        employee = get_employee(request.user)
+        if not employee:
+            return Response({'error': 'Employee profile not found'}, status=status.HTTP_404_NOT_FOUND)
+
+        try:
+            payroll = Payroll.objects.exclude(status='draft').get(pk=pk, employee=employee)
+        except Payroll.DoesNotExist:
+            return Response({'error': 'Payslip not found'}, status=status.HTTP_404_NOT_FOUND)
+
+        return Response(PayrollSerializer(payroll).data)
+
+
 # ---- Notification APIs ----
 
 @extend_schema(tags=['Notifications'])
@@ -1133,6 +1174,144 @@ class AdminScheduledClassDetailView(APIView):
             return Response({'error': 'Class not found'}, status=status.HTTP_404_NOT_FOUND)
         scheduled_class.delete()
         return Response({'message': 'Class deleted'}, status=status.HTTP_204_NO_CONTENT)
+
+
+@extend_schema(tags=['Admin'])
+class AdminPayrollGenerateView(APIView):
+    """Admin: Generate payroll for a month. Auto-calculates leave deductions."""
+    permission_classes = [IsAdminUser]
+
+    def post(self, request):
+        month = int(request.data.get('month', timezone.now().month))
+        year = int(request.data.get('year', timezone.now().year))
+        working_days = int(request.data.get('working_days', 26))
+        employee_id = request.data.get('employee_id')  # None = all active employees
+
+        if employee_id:
+            employees = Employee.objects.filter(pk=employee_id, status='active')
+        else:
+            employees = Employee.objects.filter(status='active')
+
+        results = []
+        for emp in employees:
+            # Skip if already generated
+            if Payroll.objects.filter(employee=emp, month=month, year=year).exists():
+                continue
+
+            base = emp.monthly_salary or 0
+
+            # Calculate attendance
+            attendance = Attendance.objects.filter(
+                employee=emp, date__month=month, date__year=year
+            )
+            days_present = attendance.filter(status__in=['present', 'late', 'work_from_home']).count()
+            half_days = attendance.filter(status='half_day').count()
+            days_present += half_days * 0.5
+
+            # Calculate leave
+            approved_leaves = LeaveRequest.objects.filter(
+                employee=emp, status='approved',
+                start_date__month=month, start_date__year=year,
+            )
+            paid_leave_days = 0
+            unpaid_leave_days = 0
+            for lr in approved_leaves:
+                if lr.leave_type and lr.leave_type.is_paid:
+                    paid_leave_days += lr.total_days
+                else:
+                    unpaid_leave_days += lr.total_days
+
+            # Also count absent days not covered by leave
+            days_absent = max(0, working_days - int(days_present) - paid_leave_days - unpaid_leave_days)
+
+            payroll = Payroll(
+                employee=emp,
+                month=month,
+                year=year,
+                base_salary=base,
+                working_days=working_days,
+                days_present=int(days_present),
+                days_absent=days_absent,
+                paid_leave_days=paid_leave_days,
+                unpaid_leave_days=unpaid_leave_days,
+                generated_by=request.user,
+            )
+            payroll.calculate()
+            payroll.save()
+            results.append(PayrollSerializer(payroll).data)
+
+        return Response({
+            'message': f'Payroll generated for {len(results)} employee(s)',
+            'payrolls': results,
+        }, status=status.HTTP_201_CREATED)
+
+
+@extend_schema(tags=['Admin'])
+class AdminPayrollListView(APIView):
+    """Admin: List all payroll records for a month"""
+    permission_classes = [IsAdminUser]
+
+    def get(self, request):
+        month = int(request.query_params.get('month', timezone.now().month))
+        year = int(request.query_params.get('year', timezone.now().year))
+        qs = Payroll.objects.filter(month=month, year=year).select_related('employee__user')
+        return Response(PayrollSerializer(qs, many=True).data)
+
+
+@extend_schema(tags=['Admin'])
+class AdminPayrollDetailView(APIView):
+    """Admin: View/update a payroll record"""
+    permission_classes = [IsAdminUser]
+
+    def get(self, request, pk):
+        try:
+            payroll = Payroll.objects.get(pk=pk)
+        except Payroll.DoesNotExist:
+            return Response({'error': 'Payroll not found'}, status=status.HTTP_404_NOT_FOUND)
+        return Response(PayrollSerializer(payroll).data)
+
+    def patch(self, request, pk):
+        try:
+            payroll = Payroll.objects.get(pk=pk)
+        except Payroll.DoesNotExist:
+            return Response({'error': 'Payroll not found'}, status=status.HTTP_404_NOT_FOUND)
+
+        data = request.data
+        for field in ['base_salary', 'working_days', 'days_present', 'days_absent',
+                       'paid_leave_days', 'unpaid_leave_days', 'bonus', 'deductions',
+                       'status', 'notes']:
+            if field in data:
+                setattr(payroll, field, data[field])
+
+        payroll.calculate()
+        payroll.save()
+
+        # Notify employee when payslip is confirmed or paid
+        if data.get('status') in ['confirmed', 'paid']:
+            Notification.objects.create(
+                employee=payroll.employee,
+                title=f'Payslip {payroll.get_status_display()}',
+                body=f'Your payslip for {payroll.month}/{payroll.year} is now {payroll.get_status_display().lower()}. Net pay: {payroll.net_pay}',
+                notification_type='general',
+                data={'payroll_id': str(payroll.id)},
+            )
+            send_push_notification(
+                payroll.employee,
+                f'Payslip {payroll.get_status_display()}',
+                f'Your payslip for {payroll.month}/{payroll.year}: Net pay {payroll.net_pay}',
+            )
+
+        return Response(PayrollSerializer(payroll).data)
+
+    def delete(self, request, pk):
+        try:
+            payroll = Payroll.objects.get(pk=pk)
+        except Payroll.DoesNotExist:
+            return Response({'error': 'Payroll not found'}, status=status.HTTP_404_NOT_FOUND)
+        if payroll.status == 'paid':
+            return Response({'error': 'Cannot delete a paid payroll record'}, status=status.HTTP_400_BAD_REQUEST)
+        payroll.delete()
+        return Response({'message': 'Payroll deleted'}, status=status.HTTP_204_NO_CONTENT)
 
 
 # ============================================================

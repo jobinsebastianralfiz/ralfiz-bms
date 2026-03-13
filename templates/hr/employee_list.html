@@ -7,6 +7,17 @@
     <h1 class="page-title">Employees</h1>
     <p class="page-subtitle mb-0">Manage employee profiles, attendance, and leave</p>
   </div>
+  <div class="page-actions d-flex gap-2">
+    {% if unlinked_team_members %}
+    <form method="post" action="{% url 'emp_employee_import' %}" onsubmit="return confirm('This will create Employee profiles for all team members who don\'t have one yet. Continue?')">
+      {% csrf_token %}
+      <button type="submit" class="btn btn-ghost"><i class="fas fa-file-import me-1"></i> Import Team Members ({{ unlinked_team_members }})</button>
+    </form>
+    {% endif %}
+    <a href="{% url 'emp_employee_create' %}" class="btn btn-primary">
+      <i class="fas fa-plus"></i> Add Employee
+    </a>
+  </div>
 </div>
 
 <div class="card">

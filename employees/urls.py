@@ -45,6 +45,10 @@ urlpatterns = [
     path('classes/', views.ScheduledClassListView.as_view(), name='class_list'),
     path('classes/<uuid:pk>/', views.ScheduledClassDetailView.as_view(), name='class_detail'),
 
+    # Payslips (employee view)
+    path('payslips/', views.PayslipListView.as_view(), name='payslip_list'),
+    path('payslips/<uuid:pk>/', views.PayslipDetailView.as_view(), name='payslip_detail'),
+
     # Notifications
     path('notifications/', views.NotificationListView.as_view(), name='notifications'),
     path('notifications/read/', views.NotificationMarkReadView.as_view(), name='notifications_read_all'),
@@ -64,4 +68,9 @@ urlpatterns = [
     # Admin: Scheduled Classes
     path('admin/classes/', views.AdminScheduledClassListCreateView.as_view(), name='admin_class_list'),
     path('admin/classes/<uuid:pk>/', views.AdminScheduledClassDetailView.as_view(), name='admin_class_detail'),
+
+    # Admin: Payroll
+    path('admin/payroll/generate/', views.AdminPayrollGenerateView.as_view(), name='admin_payroll_generate'),
+    path('admin/payroll/', views.AdminPayrollListView.as_view(), name='admin_payroll_list'),
+    path('admin/payroll/<uuid:pk>/', views.AdminPayrollDetailView.as_view(), name='admin_payroll_detail'),
 ]
