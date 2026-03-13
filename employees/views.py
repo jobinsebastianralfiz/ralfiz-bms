@@ -98,6 +98,9 @@ class ProfileView(APIView):
 
         allowed_fields = ['phone', 'emergency_contact', 'address', 'profile_photo']
         data = {k: v for k, v in request.data.items() if k in allowed_fields}
+        # Files come via request.FILES, not request.data
+        if 'profile_photo' in request.FILES:
+            data['profile_photo'] = request.FILES['profile_photo']
 
         serializer = EmployeeProfileSerializer(employee, data=data, partial=True, context={'request': request})
         if serializer.is_valid():
