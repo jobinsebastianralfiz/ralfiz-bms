@@ -2,7 +2,7 @@ from django.contrib import admin
 from django.utils.html import format_html
 from .models import (
     Employee, DeviceToken, Attendance, LeaveType, LeaveRequest,
-    WorkAssignment, WorkUpdate, Notification, QRCode
+    WorkAssignment, WorkUpdate, Notification, QRCode, ScheduledClass
 )
 from .utils import generate_face_encoding
 
@@ -127,3 +127,12 @@ class DeviceTokenAdmin(admin.ModelAdmin):
 class QRCodeAdmin(admin.ModelAdmin):
     list_display = ['code', 'date', 'is_active', 'expires_at']
     list_filter = ['is_active', 'date']
+
+
+@admin.register(ScheduledClass)
+class ScheduledClassAdmin(admin.ModelAdmin):
+    list_display = ['title', 'date', 'start_time', 'end_time', 'instructor', 'status']
+    list_filter = ['status', 'date']
+    search_fields = ['title', 'instructor']
+    filter_horizontal = ['interns']
+    readonly_fields = ['id', 'created_at', 'updated_at']

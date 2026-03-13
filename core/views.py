@@ -4390,3 +4390,139 @@ def emp_office_qr(request):
         'config': config,
         'qr_image': qr_image_b64,
     })
+
+
+@login_required
+def emp_class_list(request):
+    """List and manage scheduled classes for interns"""
+    from employees.models import ScheduledClass, Employee, Notification
+    from employees.utils import send_push_notification
+
+    status_filter = request.GET.get('status', '')
+    classes = ScheduledClass.objects.select_related('created_by').order_by('-date', '-start_time')
+    if status_filter:
+        classes = classes.filter(status=status_filter)
+
+    context = {
+        'classes': classes,
+        'status_filter': status_filter,
+        'status_choices': ScheduledClass.STATUS_CHOICES,
+    }
+    return render(request, 'hr/class_list.html', context)
+
+
+@login_required
+def emp_class_create(request):
+    """Create a new scheduled class"""
+    from employees.models import ScheduledClass, Employee, Notification
+    from employees.utils import send_push_notification
+
+    if request.method == 'POST':
+        scheduled_class = ScheduledClass.objects.create(
+            title=request.POST.get('title'),
+            description=request.POST.get('description', ''),
+            date=request.POST.get('date'),
+            start_time=request.POST.get('start_time'),
+            end_time=request.POST.get('end_time'),
+            instructor=request.POST.get('instructor', ''),
+            location=request.POST.get('location', ''),
+            notes=request.POST.get('notes', ''),
+            attachment=request.FILES.get('attachment'),
+            created_by=request.user,
+        )
+
+        intern_ids = request.POST.getlist('interns')
+        if intern_ids:
+            scheduled_class.interns.set(intern_ids)
+            interns = Employee.objects.filter(pk__in=intern_ids)
+        else:
+            interns = Employee.objects.filter(employment_type='intern', status='active')
+
+        for intern in interns:
+            Notification.objects.create(
+                employee=intern,
+                title='New Class Scheduled',
+                body=f'{scheduled_class.title} on {scheduled_class.date} at {scheduled_class.start_time.strftime("%I:%M %p")}',
+                notification_type='general',
+                data={'class_id': str(scheduled_class.id)},
+            )
+            send_push_notification(intern, 'New Class Scheduled', f'{scheduled_class.title} on {scheduled_class.date}')
+
+        messages.success(request, 'Class scheduled and interns notified.')
+        return redirect('emp_class_list')
+
+    interns = Employee.objects.filter(employment_type='intern', status='active').order_by('employee_id')
+    context = {
+        'interns': interns,
+    }
+    return render(request, 'hr/class_create.html', context)
+
+
+@login_required
+def emp_class_detail(request, pk):
+    """View and edit a scheduled class"""
+    from employees.models import ScheduledClass, Employee, Notification
+    from employees.utils import send_push_notification
+
+    scheduled_class = get_object_or_404(ScheduledClass, pk=pk)
+
+    if request.method == 'POST':
+        scheduled_class.title = request.POST.get('title', scheduled_class.title)
+        scheduled_class.description = request.POST.get('description', scheduled_class.description)
+        scheduled_class.date = request.POST.get('date', scheduled_class.date)
+        scheduled_class.start_time = request.POST.get('start_time', scheduled_class.start_time)
+        scheduled_class.end_time = request.POST.get('end_time', scheduled_class.end_time)
+        scheduled_class.instructor = request.POST.get('instructor', scheduled_class.instructor)
+        scheduled_class.location = request.POST.get('location', scheduled_class.location)
+        scheduled_class.status = request.POST.get('status', scheduled_class.status)
+        scheduled_class.notes = request.POST.get('notes', scheduled_class.notes)
+
+        if request.FILES.get('attachment'):
+            scheduled_class.attachment = request.FILES['attachment']
+        elif request.POST.get('remove_attachment'):
+            scheduled_class.attachment = None
+
+        scheduled_class.save()
+
+        intern_ids = request.POST.getlist('interns')
+        scheduled_class.interns.set(intern_ids)
+
+        # Notify assigned interns about update
+        if intern_ids:
+            interns = Employee.objects.filter(pk__in=intern_ids)
+        else:
+            interns = Employee.objects.filter(employment_type='intern', status='active')
+
+        for intern in interns:
+            Notification.objects.create(
+                employee=intern,
+                title='Class Updated',
+                body=f'"{scheduled_class.title}" on {scheduled_class.date} has been updated.',
+                notification_type='general',
+                data={'class_id': str(scheduled_class.id)},
+            )
+            send_push_notification(intern, 'Class Updated', f'"{scheduled_class.title}" has been updated.')
+
+        messages.success(request, 'Class updated and interns notified.')
+        return redirect('emp_class_detail', pk=pk)
+
+    interns = Employee.objects.filter(employment_type='intern', status='active').order_by('employee_id')
+    assigned_intern_ids = list(scheduled_class.interns.values_list('pk', flat=True))
+    context = {
+        'scheduled_class': scheduled_class,
+        'interns': interns,
+        'assigned_intern_ids': assigned_intern_ids,
+        'status_choices': ScheduledClass.STATUS_CHOICES,
+    }
+    return render(request, 'hr/class_detail.html', context)
+
+
+@login_required
+def emp_class_delete(request, pk):
+    """Delete a scheduled class"""
+    from employees.models import ScheduledClass
+    if request.method == 'POST':
+        scheduled_class = get_object_or_404(ScheduledClass, pk=pk)
+        scheduled_class.delete()
+        messages.success(request, 'Class deleted.')
+    return redirect('emp_class_list')

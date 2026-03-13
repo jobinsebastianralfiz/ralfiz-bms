@@ -2,7 +2,7 @@ from rest_framework import serializers
 from django.contrib.auth.models import User
 from .models import (
     Employee, DeviceToken, Attendance, LeaveType, LeaveRequest,
-    WorkAssignment, WorkUpdate, Notification, QRCode
+    WorkAssignment, WorkUpdate, Notification, QRCode, ScheduledClass
 )
 
 
@@ -178,6 +178,25 @@ class NotificationSerializer(serializers.ModelSerializer):
 class ChangePasswordSerializer(serializers.Serializer):
     old_password = serializers.CharField(required=True)
     new_password = serializers.CharField(required=True, min_length=6)
+
+
+class ScheduledClassSerializer(serializers.ModelSerializer):
+    is_upcoming = serializers.ReadOnlyField()
+    created_by_name = serializers.CharField(source='created_by.get_full_name', read_only=True, default='')
+    intern_count = serializers.SerializerMethodField()
+
+    class Meta:
+        model = ScheduledClass
+        fields = [
+            'id', 'title', 'description', 'date', 'start_time', 'end_time',
+            'instructor', 'location', 'status', 'attachment', 'notes',
+            'is_upcoming', 'created_by_name', 'intern_count',
+            'created_at', 'updated_at',
+        ]
+        read_only_fields = ['id', 'created_by_name', 'created_at', 'updated_at']
+
+    def get_intern_count(self, obj):
+        return obj.interns.count()
 
 
 class DashboardSerializer(serializers.Serializer):

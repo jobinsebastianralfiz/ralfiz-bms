@@ -1,0 +1,100 @@
+{% extends 'base.html' %}
+{% block title %}Scheduled Classes - Ralfiz BMS{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title">Scheduled Classes</h1>
+    <p class="page-subtitle mb-0">Manage training sessions and classes for interns</p>
+  </div>
+  <div class="page-actions">
+    <a href="{% url 'emp_class_create' %}" class="btn btn-primary">
+      <i class="fas fa-plus"></i> Schedule Class
+    </a>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header">
+    <h3 class="card-title"><i class="fas fa-chalkboard-teacher"></i> All Classes</h3>
+    <div class="card-actions">
+      <form method="get" class="d-flex gap-2">
+        <select name="status" class="form-control" style="width: auto;" onchange="this.form.submit()">
+          <option value="">All Status</option>
+          {% for key, value in status_choices %}
+          <option value="{{ key }}" {% if status_filter == key %}selected{% endif %}>{{ value }}</option>
+          {% endfor %}
+        </select>
+      </form>
+    </div>
+  </div>
+  <div class="card-body p-0">
+    {% if classes %}
+    <div class="table-responsive">
+      <table class="table table-hover mb-0">
+        <thead>
+          <tr>
+            <th>Title</th>
+            <th>Date</th>
+            <th>Time</th>
+            <th>Instructor</th>
+            <th>Location</th>
+            <th>Status</th>
+            <th>Interns</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for c in classes %}
+          <tr>
+            <td>
+              <div class="fw-medium">{{ c.title }}</div>
+              {% if c.description %}<div class="text-sm text-muted">{{ c.description|truncatewords:10 }}</div>{% endif %}
+            </td>
+            <td>{{ c.date|date:"d M Y" }}</td>
+            <td>{{ c.start_time|time:"h:i A" }} - {{ c.end_time|time:"h:i A" }}</td>
+            <td>{{ c.instructor|default:"-" }}</td>
+            <td>{{ c.location|default:"-" }}</td>
+            <td>
+              {% if c.status == 'scheduled' %}
+              <span class="badge" style="background: var(--info-bg); color: var(--info);">Scheduled</span>
+              {% elif c.status == 'in_progress' %}
+              <span class="badge" style="background: var(--warning-bg); color: var(--warning);">In Progress</span>
+              {% elif c.status == 'completed' %}
+              <span class="badge" style="background: var(--success-bg); color: var(--success);">Completed</span>
+              {% elif c.status == 'cancelled' %}
+              <span class="badge" style="background: var(--danger-bg); color: var(--danger);">Cancelled</span>
+              {% endif %}
+            </td>
+            <td>
+              {% with count=c.interns.count %}
+                {% if count %}{{ count }} intern{{ count|pluralize }}{% else %}All interns{% endif %}
+              {% endwith %}
+            </td>
+            <td>
+              <div class="d-flex gap-1">
+                <a href="{% url 'emp_class_detail' c.pk %}" class="btn btn-sm btn-ghost" title="Edit">
+                  <i class="fas fa-edit"></i>
+                </a>
+                <form method="post" action="{% url 'emp_class_delete' c.pk %}" onsubmit="return confirm('Delete this class?')">
+                  {% csrf_token %}
+                  <button type="submit" class="btn btn-sm btn-ghost text-danger" title="Delete">
+                    <i class="fas fa-trash"></i>
+                  </button>
+                </form>
+              </div>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <div class="text-center text-muted py-5">
+      <i class="fas fa-chalkboard mb-3" style="font-size: 2rem; display: block;"></i>
+      <p class="mb-0">No classes scheduled yet.</p>
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

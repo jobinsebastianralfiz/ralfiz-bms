@@ -41,6 +41,10 @@ urlpatterns = [
     path('work/<uuid:pk>/status/', views.WorkStatusUpdateView.as_view(), name='work_status'),
     path('work/<uuid:pk>/update/', views.WorkUpdateCreateView.as_view(), name='work_update'),
 
+    # Scheduled Classes (for interns)
+    path('classes/', views.ScheduledClassListView.as_view(), name='class_list'),
+    path('classes/<uuid:pk>/', views.ScheduledClassDetailView.as_view(), name='class_detail'),
+
     # Notifications
     path('notifications/', views.NotificationListView.as_view(), name='notifications'),
     path('notifications/read/', views.NotificationMarkReadView.as_view(), name='notifications_read_all'),
@@ -56,4 +60,8 @@ urlpatterns = [
     path('admin/attendance/report/', views.AdminAttendanceReportView.as_view(), name='admin_attendance_report'),
     path('admin/attendance/qr/', views.AdminGenerateQRView.as_view(), name='admin_generate_qr'),
     path('admin/notifications/send/', views.AdminSendNotificationView.as_view(), name='admin_send_notification'),
+
+    # Admin: Scheduled Classes
+    path('admin/classes/', views.AdminScheduledClassListCreateView.as_view(), name='admin_class_list'),
+    path('admin/classes/<uuid:pk>/', views.AdminScheduledClassDetailView.as_view(), name='admin_class_detail'),
 ]

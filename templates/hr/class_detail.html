@@ -1,0 +1,133 @@
+{% extends 'base.html' %}
+{% block title %}{{ scheduled_class.title }} - Ralfiz BMS{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title">Edit Class</h1>
+    <p class="page-subtitle mb-0">Update class details</p>
+  </div>
+  <div class="page-actions">
+    <a href="{% url 'emp_class_list' %}" class="btn btn-ghost"><i class="fas fa-arrow-left me-1"></i> Back</a>
+    <form method="post" action="{% url 'emp_class_delete' scheduled_class.pk %}" class="d-inline" onsubmit="return confirm('Are you sure you want to delete this class?')">
+      {% csrf_token %}
+      <button type="submit" class="btn btn-danger"><i class="fas fa-trash me-1"></i> Delete</button>
+    </form>
+  </div>
+</div>
+
+<div class="row">
+  <div class="col-8">
+    <div class="card">
+      <div class="card-header">
+        <h3 class="card-title"><i class="fas fa-edit me-2"></i> Class Details</h3>
+      </div>
+      <div class="card-body">
+        <form method="post" enctype="multipart/form-data">
+          {% csrf_token %}
+          <div class="row mb-3">
+            <div class="col-8">
+              <label class="form-label">Title *</label>
+              <input type="text" name="title" class="form-control" required value="{{ scheduled_class.title }}">
+            </div>
+            <div class="col-4">
+              <label class="form-label">Status</label>
+              <select name="status" class="form-control">
+                {% for key, value in status_choices %}
+                <option value="{{ key }}" {% if scheduled_class.status == key %}selected{% endif %}>{{ value }}</option>
+                {% endfor %}
+              </select>
+            </div>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Description</label>
+            <textarea name="description" class="form-control" rows="3">{{ scheduled_class.description }}</textarea>
+          </div>
+          <div class="row mb-3">
+            <div class="col-4">
+              <label class="form-label">Date *</label>
+              <input type="date" name="date" class="form-control" required value="{{ scheduled_class.date|date:'Y-m-d' }}">
+            </div>
+            <div class="col-4">
+              <label class="form-label">Start Time *</label>
+              <input type="time" name="start_time" class="form-control" required value="{{ scheduled_class.start_time|time:'H:i' }}">
+            </div>
+            <div class="col-4">
+              <label class="form-label">End Time *</label>
+              <input type="time" name="end_time" class="form-control" required value="{{ scheduled_class.end_time|time:'H:i' }}">
+            </div>
+          </div>
+          <div class="row mb-3">
+            <div class="col-6">
+              <label class="form-label">Instructor</label>
+              <input type="text" name="instructor" class="form-control" value="{{ scheduled_class.instructor }}">
+            </div>
+            <div class="col-6">
+              <label class="form-label">Location</label>
+              <input type="text" name="location" class="form-control" value="{{ scheduled_class.location }}">
+            </div>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Attachment</label>
+            {% if scheduled_class.attachment %}
+            <div class="mb-2 d-flex align-items-center gap-2">
+              <a href="{{ scheduled_class.attachment.url }}" target="_blank" class="btn btn-sm btn-ghost">
+                <i class="fas fa-paperclip me-1"></i> {{ scheduled_class.attachment.name|cut:"employees/class_materials/" }}
+              </a>
+              <label class="form-check-label">
+                <input type="checkbox" name="remove_attachment" value="1" class="form-check-input"> Remove
+              </label>
+            </div>
+            {% endif %}
+            <input type="file" name="attachment" class="form-control">
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Assign to Interns</label>
+            <select name="interns" class="form-control" multiple style="min-height: 120px;">
+              {% for intern in interns %}
+              <option value="{{ intern.pk }}" {% if intern.pk in assigned_intern_ids %}selected{% endif %}>{{ intern.full_name }} ({{ intern.employee_id }})</option>
+              {% endfor %}
+            </select>
+            <small class="text-muted">Hold Ctrl/Cmd to select multiple. Leave empty to include all interns.</small>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Notes</label>
+            <textarea name="notes" class="form-control" rows="2">{{ scheduled_class.notes }}</textarea>
+          </div>
+          <div class="d-flex gap-2">
+            <button type="submit" class="btn btn-primary"><i class="fas fa-save me-2"></i> Save & Notify</button>
+            <a href="{% url 'emp_class_list' %}" class="btn btn-ghost">Cancel</a>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-4">
+    <div class="card">
+      <div class="card-header">
+        <h3 class="card-title"><i class="fas fa-info-circle me-2"></i> Info</h3>
+      </div>
+      <div class="card-body">
+        <div class="mb-2">
+          <span class="text-muted">Created By:</span><br>
+          <strong>{{ scheduled_class.created_by.get_full_name|default:scheduled_class.created_by.username|default:"-" }}</strong>
+        </div>
+        <div class="mb-2">
+          <span class="text-muted">Created:</span><br>
+          <strong>{{ scheduled_class.created_at|date:"d M Y, H:i" }}</strong>
+        </div>
+        <div class="mb-2">
+          <span class="text-muted">Last Updated:</span><br>
+          <strong>{{ scheduled_class.updated_at|date:"d M Y, H:i" }}</strong>
+        </div>
+        {% if scheduled_class.is_upcoming %}
+        <div class="mt-2">
+          <span class="badge" style="background: var(--info-bg); color: var(--info);">Upcoming</span>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

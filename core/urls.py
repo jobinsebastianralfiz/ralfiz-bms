@@ -151,4 +151,10 @@ urlpatterns = [
     path('hr/work/create/', views.emp_work_create, name='emp_work_create'),
     path('hr/work/<uuid:pk>/', views.emp_work_detail, name='emp_work_detail'),
     path('hr/work/<uuid:pk>/delete/', views.emp_work_delete, name='emp_work_delete'),
+
+    # Scheduled Classes
+    path('hr/classes/', views.emp_class_list, name='emp_class_list'),
+    path('hr/classes/create/', views.emp_class_create, name='emp_class_create'),
+    path('hr/classes/<uuid:pk>/', views.emp_class_detail, name='emp_class_detail'),
+    path('hr/classes/<uuid:pk>/delete/', views.emp_class_delete, name='emp_class_delete'),
 ]

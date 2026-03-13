@@ -341,3 +341,47 @@ class QRCode(models.Model):
     @property
     def is_expired(self):
         return timezone.now() > self.expires_at
+
+
+class ScheduledClass(models.Model):
+    """Scheduled classes/training sessions for interns"""
+    STATUS_CHOICES = [
+        ('scheduled', 'Scheduled'),
+        ('in_progress', 'In Progress'),
+        ('completed', 'Completed'),
+        ('cancelled', 'Cancelled'),
+    ]
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    title = models.CharField(max_length=255)
+    description = models.TextField(blank=True)
+    date = models.DateField()
+    start_time = models.TimeField()
+    end_time = models.TimeField()
+    instructor = models.CharField(max_length=255, blank=True, help_text='Name of the instructor/trainer')
+    location = models.CharField(max_length=255, blank=True, help_text='Room, link, or address')
+    status = models.CharField(max_length=12, choices=STATUS_CHOICES, default='scheduled')
+    interns = models.ManyToManyField(Employee, related_name='scheduled_classes', blank=True,
+                                     help_text='Leave empty to include all interns')
+    attachment = models.FileField(upload_to='employees/class_materials/', blank=True, null=True,
+                                  help_text='Study material or agenda')
+    notes = models.TextField(blank=True)
+    created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, related_name='created_classes')
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['date', 'start_time']
+        verbose_name_plural = 'Scheduled Classes'
+
+    def __str__(self):
+        return f"{self.title} - {self.date}"
+
+    @property
+    def is_upcoming(self):
+        today = timezone.now().date()
+        if self.date > today:
+            return True
+        if self.date == today and self.end_time > timezone.now().time():
+            return True
+        return False

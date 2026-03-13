@@ -137,6 +137,10 @@
         <i class="fas fa-clipboard-list"></i>
         <span>Work Assignments</span>
       </a>
+      <a href="{% url 'emp_class_list' %}" class="nav-item {% if 'emp_class' in request.resolver_match.url_name %}active{% endif %}">
+        <i class="fas fa-chalkboard-teacher"></i>
+        <span>Intern Classes</span>
+      </a>
       <a href="{% url 'emp_office_qr' %}" class="nav-item {% if request.resolver_match.url_name == 'emp_office_qr' %}active{% endif %}">
         <i class="fas fa-qrcode"></i>
         <span>Office QR Code</span>

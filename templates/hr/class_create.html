@@ -1,0 +1,78 @@
+{% extends 'base.html' %}
+{% block title %}Schedule Class - Ralfiz BMS{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title">Schedule Class</h1>
+    <p class="page-subtitle mb-0">Create a new training session for interns</p>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header">
+    <h3 class="card-title"><i class="fas fa-plus me-2"></i> New Class</h3>
+  </div>
+  <div class="card-body">
+    <form method="post" enctype="multipart/form-data">
+      {% csrf_token %}
+      <div class="row mb-3">
+        <div class="col-8">
+          <label class="form-label">Title *</label>
+          <input type="text" name="title" class="form-control" required placeholder="e.g. Flutter Basics, UI/UX Workshop">
+        </div>
+        <div class="col-4">
+          <label class="form-label">Instructor</label>
+          <input type="text" name="instructor" class="form-control" placeholder="Instructor name">
+        </div>
+      </div>
+      <div class="mb-3">
+        <label class="form-label">Description</label>
+        <textarea name="description" class="form-control" rows="3" placeholder="What will be covered in this class..."></textarea>
+      </div>
+      <div class="row mb-3">
+        <div class="col-4">
+          <label class="form-label">Date *</label>
+          <input type="date" name="date" class="form-control" required>
+        </div>
+        <div class="col-4">
+          <label class="form-label">Start Time *</label>
+          <input type="time" name="start_time" class="form-control" required>
+        </div>
+        <div class="col-4">
+          <label class="form-label">End Time *</label>
+          <input type="time" name="end_time" class="form-control" required>
+        </div>
+      </div>
+      <div class="row mb-3">
+        <div class="col-6">
+          <label class="form-label">Location</label>
+          <input type="text" name="location" class="form-control" placeholder="Room name, Google Meet link, etc.">
+        </div>
+        <div class="col-6">
+          <label class="form-label">Attachment</label>
+          <input type="file" name="attachment" class="form-control">
+          <small class="text-muted">Study material, agenda, etc.</small>
+        </div>
+      </div>
+      <div class="mb-3">
+        <label class="form-label">Assign to Interns</label>
+        <select name="interns" class="form-control" multiple style="min-height: 120px;">
+          {% for intern in interns %}
+          <option value="{{ intern.pk }}">{{ intern.full_name }} ({{ intern.employee_id }})</option>
+          {% endfor %}
+        </select>
+        <small class="text-muted">Hold Ctrl/Cmd to select multiple. Leave empty to include all interns.</small>
+      </div>
+      <div class="mb-3">
+        <label class="form-label">Notes</label>
+        <textarea name="notes" class="form-control" rows="2" placeholder="Additional notes..."></textarea>
+      </div>
+      <div class="d-flex gap-2">
+        <button type="submit" class="btn btn-primary"><i class="fas fa-calendar-plus me-2"></i> Schedule & Notify</button>
+        <a href="{% url 'emp_class_list' %}" class="btn btn-ghost">Cancel</a>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

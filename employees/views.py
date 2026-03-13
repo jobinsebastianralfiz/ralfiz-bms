@@ -14,7 +14,7 @@ from drf_spectacular.utils import extend_schema, extend_schema_view, OpenApiPara
 
 from .models import (
     Employee, DeviceToken, Attendance, LeaveType, LeaveRequest,
-    WorkAssignment, WorkUpdate, Notification, QRCode
+    WorkAssignment, WorkUpdate, Notification, QRCode, ScheduledClass
 )
 from .serializers import (
     EmployeeProfileSerializer, EmployeeListSerializer,
@@ -22,7 +22,7 @@ from .serializers import (
     CheckInSerializer, CheckOutSerializer,
     LeaveTypeSerializer, LeaveRequestSerializer, LeaveRequestCreateSerializer,
     WorkAssignmentSerializer, WorkUpdateSerializer, WorkStatusUpdateSerializer,
-    NotificationSerializer, ChangePasswordSerializer,
+    NotificationSerializer, ChangePasswordSerializer, ScheduledClassSerializer,
 )
 from django.shortcuts import render
 
@@ -617,6 +617,58 @@ class WorkUpdateCreateView(APIView):
         return Response(WorkUpdateSerializer(update).data, status=status.HTTP_201_CREATED)
 
 
+# ---- Scheduled Classes APIs (for interns) ----
+
+@extend_schema(tags=['Classes'], parameters=[
+    OpenApiParameter(name='status', type=str, required=False),
+    OpenApiParameter(name='upcoming', type=bool, required=False),
+])
+class ScheduledClassListView(generics.ListAPIView):
+    """List scheduled classes for the logged-in intern"""
+    serializer_class = ScheduledClassSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        employee = get_employee(self.request.user)
+        if not employee:
+            return ScheduledClass.objects.none()
+
+        # Classes where this intern is assigned, or all-intern classes (empty interns list)
+        qs = ScheduledClass.objects.filter(
+            Q(interns=employee) | Q(interns__isnull=True)
+        ).distinct()
+
+        status_filter = self.request.query_params.get('status')
+        if status_filter:
+            qs = qs.filter(status=status_filter)
+
+        if self.request.query_params.get('upcoming') == 'true':
+            from datetime import date as dt_date
+            qs = qs.filter(date__gte=dt_date.today(), status__in=['scheduled', 'in_progress'])
+
+        return qs
+
+
+@extend_schema(tags=['Classes'])
+class ScheduledClassDetailView(APIView):
+    """View scheduled class details"""
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, pk):
+        employee = get_employee(request.user)
+        if not employee:
+            return Response({'error': 'Employee profile not found'}, status=status.HTTP_404_NOT_FOUND)
+
+        try:
+            scheduled_class = ScheduledClass.objects.filter(
+                Q(interns=employee) | Q(interns__isnull=True)
+            ).distinct().get(pk=pk)
+        except ScheduledClass.DoesNotExist:
+            return Response({'error': 'Class not found'}, status=status.HTTP_404_NOT_FOUND)
+
+        return Response(ScheduledClassSerializer(scheduled_class, context={'request': request}).data)
+
+
 # ---- Notification APIs ----
 
 @extend_schema(tags=['Notifications'])
@@ -976,6 +1028,109 @@ class AdminSendNotificationView(APIView):
             for emp in Employee.objects.filter(status='active'):
                 send_push_notification(emp, title, body)
             return Response({'message': 'Broadcast sent', 'id': str(notif.id)})
+
+
+@extend_schema(tags=['Admin'])
+class AdminScheduledClassListCreateView(APIView):
+    """Admin: List all scheduled classes or create a new one"""
+    permission_classes = [IsAdminUser]
+
+    def get(self, request):
+        qs = ScheduledClass.objects.all()
+        status_filter = request.query_params.get('status')
+        if status_filter:
+            qs = qs.filter(status=status_filter)
+        return Response(ScheduledClassSerializer(qs, many=True, context={'request': request}).data)
+
+    def post(self, request):
+        data = request.data
+        scheduled_class = ScheduledClass.objects.create(
+            title=data.get('title', ''),
+            description=data.get('description', ''),
+            date=data.get('date'),
+            start_time=data.get('start_time'),
+            end_time=data.get('end_time'),
+            instructor=data.get('instructor', ''),
+            location=data.get('location', ''),
+            status=data.get('status', 'scheduled'),
+            notes=data.get('notes', ''),
+            attachment=request.FILES.get('attachment'),
+            created_by=request.user,
+        )
+
+        # Assign specific interns or notify all interns
+        intern_ids = data.getlist('intern_ids') if hasattr(data, 'getlist') else data.get('intern_ids', [])
+        if intern_ids:
+            scheduled_class.interns.set(intern_ids)
+
+        # Notify interns
+        if intern_ids:
+            interns = Employee.objects.filter(pk__in=intern_ids)
+        else:
+            interns = Employee.objects.filter(employment_type='intern', status='active')
+
+        for intern in interns:
+            Notification.objects.create(
+                employee=intern,
+                title='New Class Scheduled',
+                body=f'{scheduled_class.title} on {scheduled_class.date} at {scheduled_class.start_time.strftime("%I:%M %p")}',
+                notification_type='general',
+                data={'class_id': str(scheduled_class.id)},
+            )
+            send_push_notification(
+                intern,
+                'New Class Scheduled',
+                f'{scheduled_class.title} on {scheduled_class.date}',
+            )
+
+        return Response(ScheduledClassSerializer(scheduled_class, context={'request': request}).data,
+                        status=status.HTTP_201_CREATED)
+
+
+@extend_schema(tags=['Admin'])
+class AdminScheduledClassDetailView(APIView):
+    """Admin: View, update, or delete a scheduled class"""
+    permission_classes = [IsAdminUser]
+
+    def get(self, request, pk):
+        try:
+            scheduled_class = ScheduledClass.objects.get(pk=pk)
+        except ScheduledClass.DoesNotExist:
+            return Response({'error': 'Class not found'}, status=status.HTTP_404_NOT_FOUND)
+        return Response(ScheduledClassSerializer(scheduled_class, context={'request': request}).data)
+
+    def patch(self, request, pk):
+        try:
+            scheduled_class = ScheduledClass.objects.get(pk=pk)
+        except ScheduledClass.DoesNotExist:
+            return Response({'error': 'Class not found'}, status=status.HTTP_404_NOT_FOUND)
+
+        data = request.data
+        for field in ['title', 'description', 'date', 'start_time', 'end_time',
+                       'instructor', 'location', 'status', 'notes']:
+            if field in data:
+                setattr(scheduled_class, field, data[field])
+
+        if 'attachment' in request.FILES:
+            scheduled_class.attachment = request.FILES['attachment']
+        elif data.get('remove_attachment'):
+            scheduled_class.attachment = None
+
+        scheduled_class.save()
+
+        intern_ids = data.getlist('intern_ids') if hasattr(data, 'getlist') else data.get('intern_ids')
+        if intern_ids is not None:
+            scheduled_class.interns.set(intern_ids)
+
+        return Response(ScheduledClassSerializer(scheduled_class, context={'request': request}).data)
+
+    def delete(self, request, pk):
+        try:
+            scheduled_class = ScheduledClass.objects.get(pk=pk)
+        except ScheduledClass.DoesNotExist:
+            return Response({'error': 'Class not found'}, status=status.HTTP_404_NOT_FOUND)
+        scheduled_class.delete()
+        return Response({'message': 'Class deleted'}, status=status.HTTP_204_NO_CONTENT)
 
 
 # ============================================================
