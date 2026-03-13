@@ -52,6 +52,7 @@ urlpatterns = [
     path('admin/leaves/', views.AdminLeaveReviewView.as_view(), name='admin_leaves'),
     path('admin/leaves/<uuid:pk>/review/', views.AdminLeaveReviewView.as_view(), name='admin_leave_review'),
     path('admin/work/assign/', views.AdminWorkAssignView.as_view(), name='admin_work_assign'),
+    path('admin/work/<uuid:pk>/', views.AdminWorkAssignDetailView.as_view(), name='admin_work_detail'),
     path('admin/attendance/report/', views.AdminAttendanceReportView.as_view(), name='admin_attendance_report'),
     path('admin/attendance/qr/', views.AdminGenerateQRView.as_view(), name='admin_generate_qr'),
     path('admin/notifications/send/', views.AdminSendNotificationView.as_view(), name='admin_send_notification'),

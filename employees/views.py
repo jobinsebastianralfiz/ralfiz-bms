@@ -819,6 +819,65 @@ class AdminWorkAssignView(APIView):
 
 
 @extend_schema(tags=['Admin'])
+class AdminWorkAssignDetailView(APIView):
+    """Admin: View, update, or delete a work assignment"""
+    permission_classes = [IsAdminUser]
+
+    def get(self, request, pk):
+        try:
+            assignment = WorkAssignment.objects.get(pk=pk)
+        except WorkAssignment.DoesNotExist:
+            return Response({'error': 'Assignment not found'}, status=status.HTTP_404_NOT_FOUND)
+
+        return Response(WorkAssignmentSerializer(assignment).data)
+
+    def patch(self, request, pk):
+        try:
+            assignment = WorkAssignment.objects.get(pk=pk)
+        except WorkAssignment.DoesNotExist:
+            return Response({'error': 'Assignment not found'}, status=status.HTTP_404_NOT_FOUND)
+
+        data = request.data
+        allowed_fields = ['title', 'description', 'priority', 'status', 'due_date', 'notes']
+        for field in allowed_fields:
+            if field in data:
+                setattr(assignment, field, data[field])
+
+        # Handle employee reassignment
+        if 'employee_id' in data:
+            try:
+                assignment.assigned_to = Employee.objects.get(pk=data['employee_id'])
+            except Employee.DoesNotExist:
+                return Response({'error': 'Employee not found'}, status=status.HTTP_404_NOT_FOUND)
+
+        # Handle project change
+        if 'project_id' in data:
+            assignment.project_id = data['project_id'] or None
+
+        # Handle attachment
+        if 'attachment' in request.FILES:
+            assignment.attachment = request.FILES['attachment']
+        elif data.get('remove_attachment'):
+            assignment.attachment = None
+
+        if data.get('status') == 'completed' and not assignment.completed_at:
+            assignment.completed_at = timezone.now()
+
+        assignment.save()
+
+        return Response(WorkAssignmentSerializer(assignment).data)
+
+    def delete(self, request, pk):
+        try:
+            assignment = WorkAssignment.objects.get(pk=pk)
+        except WorkAssignment.DoesNotExist:
+            return Response({'error': 'Assignment not found'}, status=status.HTTP_404_NOT_FOUND)
+
+        assignment.delete()
+        return Response({'message': 'Assignment deleted'}, status=status.HTTP_204_NO_CONTENT)
+
+
+@extend_schema(tags=['Admin'])
 class AdminAttendanceReportView(APIView):
     """Admin: View attendance report"""
     permission_classes = [IsAdminUser]
