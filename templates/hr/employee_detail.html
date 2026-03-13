@@ -45,38 +45,67 @@
         <h3 class="card-title"><i class="fas fa-user me-2 text-primary"></i> Information</h3>
       </div>
       <div class="card-body">
-        <div class="mb-3">
-          <div class="text-sm text-muted mb-1">Employment Type</div>
-          <div class="fw-medium">{{ employee.get_employment_type_display }}</div>
-        </div>
-        {% if employee.phone %}
-        <div class="mb-3">
-          <div class="text-sm text-muted mb-1">Phone</div>
-          <div><a href="tel:{{ employee.phone }}"><i class="fas fa-phone me-2 text-muted"></i>{{ employee.phone }}</a></div>
-        </div>
-        {% endif %}
-        {% if employee.user.email %}
-        <div class="mb-3">
-          <div class="text-sm text-muted mb-1">Email</div>
-          <div><a href="mailto:{{ employee.user.email }}"><i class="fas fa-envelope me-2 text-muted"></i>{{ employee.user.email }}</a></div>
-        </div>
-        {% endif %}
-        <div class="mb-3">
-          <div class="text-sm text-muted mb-1">Joining Date</div>
-          <div class="fw-medium">{{ employee.joining_date|date:"d M Y" }}</div>
-        </div>
-        {% if employee.address %}
-        <div class="mb-3">
-          <div class="text-sm text-muted mb-1">Address</div>
-          <div>{{ employee.address }}</div>
-        </div>
-        {% endif %}
-        {% if employee.emergency_contact %}
-        <div>
-          <div class="text-sm text-muted mb-1">Emergency Contact</div>
-          <div>{{ employee.emergency_contact }}</div>
-        </div>
-        {% endif %}
+        <form method="post">
+          {% csrf_token %}
+          <input type="hidden" name="action" value="edit_info">
+          <div class="mb-3">
+            <label class="form-label text-sm text-muted">First Name</label>
+            <input type="text" name="first_name" class="form-control form-control-sm" value="{{ employee.user.first_name }}">
+          </div>
+          <div class="mb-3">
+            <label class="form-label text-sm text-muted">Last Name</label>
+            <input type="text" name="last_name" class="form-control form-control-sm" value="{{ employee.user.last_name }}">
+          </div>
+          <div class="mb-3">
+            <label class="form-label text-sm text-muted">Email</label>
+            <input type="email" name="email" class="form-control form-control-sm" value="{{ employee.user.email }}">
+          </div>
+          <div class="mb-3">
+            <label class="form-label text-sm text-muted">Employment Type</label>
+            <select name="employment_type" class="form-control form-control-sm">
+              {% for key, value in employment_types %}
+              <option value="{{ key }}" {% if employee.employment_type == key %}selected{% endif %}>{{ value }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="mb-3">
+            <label class="form-label text-sm text-muted">Department</label>
+            <select name="department" class="form-control form-control-sm">
+              {% for key, value in departments %}
+              <option value="{{ key }}" {% if employee.department == key %}selected{% endif %}>{{ value }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="mb-3">
+            <label class="form-label text-sm text-muted">Designation</label>
+            <input type="text" name="designation" class="form-control form-control-sm" value="{{ employee.designation }}">
+          </div>
+          <div class="mb-3">
+            <label class="form-label text-sm text-muted">Status</label>
+            <select name="status" class="form-control form-control-sm">
+              {% for key, value in statuses %}
+              <option value="{{ key }}" {% if employee.status == key %}selected{% endif %}>{{ value }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="mb-3">
+            <label class="form-label text-sm text-muted">Phone</label>
+            <input type="text" name="phone" class="form-control form-control-sm" value="{{ employee.phone }}">
+          </div>
+          <div class="mb-3">
+            <label class="form-label text-sm text-muted">Emergency Contact</label>
+            <input type="text" name="emergency_contact" class="form-control form-control-sm" value="{{ employee.emergency_contact }}">
+          </div>
+          <div class="mb-3">
+            <label class="form-label text-sm text-muted">Address</label>
+            <textarea name="address" class="form-control form-control-sm" rows="2">{{ employee.address }}</textarea>
+          </div>
+          <div class="mb-3">
+            <label class="form-label text-sm text-muted">Joining Date</label>
+            <input type="date" name="joining_date" class="form-control form-control-sm" value="{{ employee.joining_date|date:'Y-m-d' }}">
+          </div>
+          <button type="submit" class="btn btn-sm btn-primary w-100"><i class="fas fa-save me-1"></i> Save Changes</button>
+        </form>
       </div>
     </div>
 

@@ -4030,6 +4030,26 @@ def emp_employee_detail(request, pk):
     from employees.utils import generate_face_encoding
     employee = get_object_or_404(Employee, pk=pk)
 
+    if request.method == 'POST' and request.POST.get('action') == 'edit_info':
+        # Update User fields
+        employee.user.first_name = request.POST.get('first_name', employee.user.first_name)
+        employee.user.last_name = request.POST.get('last_name', employee.user.last_name)
+        employee.user.email = request.POST.get('email', employee.user.email)
+        employee.user.save()
+
+        # Update Employee fields
+        employee.employment_type = request.POST.get('employment_type', employee.employment_type)
+        employee.department = request.POST.get('department', employee.department)
+        employee.designation = request.POST.get('designation', employee.designation)
+        employee.status = request.POST.get('status', employee.status)
+        employee.phone = request.POST.get('phone', employee.phone)
+        employee.emergency_contact = request.POST.get('emergency_contact', employee.emergency_contact)
+        employee.address = request.POST.get('address', employee.address)
+        employee.joining_date = request.POST.get('joining_date') or employee.joining_date
+        employee.save()
+        messages.success(request, 'Employee information updated.')
+        return redirect('emp_employee_detail', pk=pk)
+
     if request.method == 'POST' and request.POST.get('action') == 'upload_profile_photo':
         profile_photo = request.FILES.get('profile_photo')
         if profile_photo:
@@ -4084,6 +4104,9 @@ def emp_employee_detail(request, pk):
         'recent_attendance': recent_attendance,
         'leave_requests': leave_requests,
         'work_assignments': work_assignments,
+        'employment_types': Employee.EMPLOYMENT_TYPE_CHOICES,
+        'departments': Employee.DEPARTMENT_CHOICES,
+        'statuses': Employee.STATUS_CHOICES,
     }
     return render(request, 'hr/employee_detail.html', context)
 
