@@ -1058,6 +1058,8 @@ class AdminScheduledClassListCreateView(APIView):
             created_by=request.user,
         )
 
+        scheduled_class.refresh_from_db()
+
         # Assign specific interns or notify all interns
         intern_ids = data.getlist('intern_ids') if hasattr(data, 'getlist') else data.get('intern_ids', [])
         if intern_ids:

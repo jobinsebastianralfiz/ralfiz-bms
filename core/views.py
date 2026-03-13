@@ -4454,6 +4454,8 @@ def emp_class_create(request):
             created_by=request.user,
         )
 
+        scheduled_class.refresh_from_db()
+
         intern_ids = request.POST.getlist('interns')
         if intern_ids:
             scheduled_class.interns.set(intern_ids)
