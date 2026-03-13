@@ -4,9 +4,13 @@
 {% block content %}
 <div class="page-header">
   <div class="d-flex align-items-center gap-4">
+    {% if employee.profile_photo %}
+    <img src="{{ employee.profile_photo.url }}" alt="{{ employee.full_name }}" style="width: 64px; height: 64px; border-radius: 50%; object-fit: cover; border: 2px solid var(--border-color);">
+    {% else %}
     <div class="avatar avatar-xl" style="background: var(--primary); color: white;">
       {{ employee.full_name|slice:":1"|upper }}
     </div>
+    {% endif %}
     <div>
       <div class="d-flex align-items-center gap-3 mb-2">
         <h1 class="page-title mb-0">{{ employee.full_name }}</h1>
@@ -65,6 +69,44 @@
           <div>{{ employee.emergency_contact }}</div>
         </div>
         {% endif %}
+      </div>
+    </div>
+
+    <!-- Profile Photo -->
+    <div class="card mb-4">
+      <div class="card-header">
+        <h3 class="card-title"><i class="fas fa-image me-2 text-primary"></i> Profile Photo</h3>
+      </div>
+      <div class="card-body">
+        {% if employee.profile_photo %}
+        <div class="text-center mb-3">
+          <img src="{{ employee.profile_photo.url }}" alt="Profile photo" style="width: 150px; height: 150px; object-fit: cover; border-radius: 12px; border: 2px solid var(--border-color);">
+        </div>
+        <form method="post" action="" class="text-center mb-2">
+          {% csrf_token %}
+          <input type="hidden" name="action" value="remove_profile_photo">
+          <button type="submit" class="btn btn-sm btn-outline-danger" onclick="return confirm('Remove profile photo?')">
+            <i class="fas fa-trash me-1"></i> Remove Photo
+          </button>
+        </form>
+        {% else %}
+        <div class="text-center mb-3">
+          <div style="width: 150px; height: 150px; margin: 0 auto; border-radius: 12px; background: var(--bg-secondary); display: flex; align-items: center; justify-content: center;">
+            <i class="fas fa-user text-muted" style="font-size: 2.5rem;"></i>
+          </div>
+        </div>
+        <p class="text-muted text-center text-sm mb-3">No profile photo uploaded.</p>
+        {% endif %}
+        <form method="post" action="" enctype="multipart/form-data" class="mt-2">
+          {% csrf_token %}
+          <input type="hidden" name="action" value="upload_profile_photo">
+          <div class="mb-2">
+            <input type="file" name="profile_photo" accept="image/*" class="form-control form-control-sm" required>
+          </div>
+          <button type="submit" class="btn btn-sm btn-primary w-100">
+            <i class="fas fa-upload me-1"></i> {% if employee.profile_photo %}Update{% else %}Upload{% endif %} Profile Photo
+          </button>
+        </form>
       </div>
     </div>
 

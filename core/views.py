@@ -4030,6 +4030,22 @@ def emp_employee_detail(request, pk):
     from employees.utils import generate_face_encoding
     employee = get_object_or_404(Employee, pk=pk)
 
+    if request.method == 'POST' and request.POST.get('action') == 'upload_profile_photo':
+        profile_photo = request.FILES.get('profile_photo')
+        if profile_photo:
+            employee.profile_photo = profile_photo
+            employee.save(update_fields=['profile_photo'])
+            messages.success(request, 'Profile photo updated.')
+        else:
+            messages.error(request, 'Please select a photo.')
+        return redirect('emp_employee_detail', pk=pk)
+
+    if request.method == 'POST' and request.POST.get('action') == 'remove_profile_photo':
+        employee.profile_photo = None
+        employee.save(update_fields=['profile_photo'])
+        messages.success(request, 'Profile photo removed.')
+        return redirect('emp_employee_detail', pk=pk)
+
     if request.method == 'POST' and request.POST.get('action') == 'upload_face':
         face_photo = request.FILES.get('face_photo')
         if face_photo:
