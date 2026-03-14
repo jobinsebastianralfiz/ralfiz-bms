@@ -1461,6 +1461,191 @@ class OwnerExpenseListView(APIView):
         })
 
 
+# ---- Owner: Employee List & Detail ----
+
+@extend_schema(tags=['Owner'], parameters=[
+    OpenApiParameter(name='status', type=str, required=False, description='active|inactive|terminated|on_leave'),
+    OpenApiParameter(name='department', type=str, required=False),
+    OpenApiParameter(name='role', type=str, required=False, description='employee|intern|owner|partner'),
+    OpenApiParameter(name='search', type=str, required=False),
+])
+class OwnerEmployeeListView(APIView):
+    """Owner/Partner: List all employees"""
+    permission_classes = [IsAuthenticated, IsOwnerOrPartner]
+
+    def get(self, request):
+        employees = Employee.objects.select_related('user').all()
+
+        status_filter = request.query_params.get('status')
+        if status_filter:
+            employees = employees.filter(status=status_filter)
+
+        dept = request.query_params.get('department')
+        if dept:
+            employees = employees.filter(department=dept)
+
+        role = request.query_params.get('role')
+        if role:
+            employees = employees.filter(role=role)
+
+        search = request.query_params.get('search')
+        if search:
+            employees = employees.filter(
+                models.Q(user__first_name__icontains=search) |
+                models.Q(user__last_name__icontains=search) |
+                models.Q(employee_id__icontains=search) |
+                models.Q(user__email__icontains=search)
+            )
+
+        data = []
+        for emp in employees:
+            photo = emp.profile_photo or emp.face_photo
+            photo_url = request.build_absolute_uri(photo.url) if photo else None
+            data.append({
+                'id': str(emp.id),
+                'employee_id': emp.employee_id,
+                'name': emp.full_name,
+                'email': emp.user.email,
+                'phone': emp.phone,
+                'department': emp.department,
+                'department_display': emp.get_department_display(),
+                'designation': emp.designation,
+                'employment_type': emp.employment_type,
+                'employment_type_display': emp.get_employment_type_display(),
+                'role': emp.role,
+                'role_display': emp.get_role_display(),
+                'status': emp.status,
+                'status_display': emp.get_status_display(),
+                'joining_date': str(emp.joining_date) if emp.joining_date else None,
+                'profile_photo': photo_url,
+            })
+
+        return Response(data)
+
+
+@extend_schema(tags=['Owner'])
+class OwnerEmployeeDetailView(APIView):
+    """Owner/Partner: View single employee with attendance summary and leave info"""
+    permission_classes = [IsAuthenticated, IsOwnerOrPartner]
+
+    def get(self, request, pk):
+        from datetime import datetime
+        from decimal import Decimal
+
+        try:
+            emp = Employee.objects.select_related('user', 'supervisor').get(pk=pk)
+        except Employee.DoesNotExist:
+            return Response({'error': 'Employee not found'}, status=status.HTTP_404_NOT_FOUND)
+
+        today = date.today()
+        current_month_start = today.replace(day=1)
+
+        # Attendance stats for current month
+        month_attendance = Attendance.objects.filter(
+            employee=emp, date__gte=current_month_start, date__lte=today
+        )
+        total_present = month_attendance.filter(status='present').count()
+        total_absent = month_attendance.filter(status='absent').count()
+        total_late = month_attendance.filter(status='late').count()
+        total_hours = sum(
+            float(a.working_hours or 0) for a in month_attendance
+        )
+
+        # Recent attendance (last 10)
+        recent_attendance = Attendance.objects.filter(employee=emp).order_by('-date')[:10]
+        attendance_data = [{
+            'date': str(a.date),
+            'check_in': a.check_in.strftime('%H:%M') if a.check_in else None,
+            'check_out': a.check_out.strftime('%H:%M') if a.check_out else None,
+            'working_hours': str(a.working_hours) if a.working_hours else None,
+            'status': a.status,
+            'status_display': a.get_status_display(),
+            'verification_method': a.verification_method,
+        } for a in recent_attendance]
+
+        # Leave summary for current year
+        leave_data = []
+        leave_types = LeaveType.objects.filter(is_active=True)
+        for lt in leave_types:
+            used_days = 0
+            for lr in LeaveRequest.objects.filter(
+                employee=emp, leave_type=lt, status='approved',
+                start_date__year=today.year,
+            ):
+                used_days += lr.total_days
+            leave_data.append({
+                'leave_type': lt.name,
+                'total_allowed': lt.days_allowed,
+                'used': used_days,
+                'remaining': max(0, lt.days_allowed - used_days),
+            })
+
+        # Pending leave requests
+        pending_leaves = LeaveRequest.objects.filter(employee=emp, status='pending')
+        pending_leaves_data = [{
+            'id': str(l.id),
+            'leave_type': l.leave_type.name if l.leave_type else '',
+            'start_date': str(l.start_date),
+            'end_date': str(l.end_date),
+            'total_days': l.total_days,
+            'reason': l.reason,
+        } for l in pending_leaves]
+
+        # Active work assignments
+        assignments = WorkAssignment.objects.filter(
+            assigned_to=emp, status__in=['assigned', 'in_progress']
+        )
+        assignments_data = [{
+            'id': str(w.id),
+            'title': w.title,
+            'priority': w.priority,
+            'status': w.status,
+            'due_date': str(w.due_date) if w.due_date else None,
+        } for w in assignments]
+
+        photo = emp.profile_photo or emp.face_photo
+        photo_url = request.build_absolute_uri(photo.url) if photo else None
+
+        return Response({
+            'id': str(emp.id),
+            'employee_id': emp.employee_id,
+            'name': emp.full_name,
+            'first_name': emp.user.first_name,
+            'last_name': emp.user.last_name,
+            'email': emp.user.email,
+            'phone': emp.phone,
+            'emergency_contact': emp.emergency_contact,
+            'address': emp.address,
+            'date_of_birth': str(emp.date_of_birth) if emp.date_of_birth else None,
+            'joining_date': str(emp.joining_date) if emp.joining_date else None,
+            'department': emp.department,
+            'department_display': emp.get_department_display(),
+            'designation': emp.designation,
+            'employment_type': emp.employment_type,
+            'employment_type_display': emp.get_employment_type_display(),
+            'role': emp.role,
+            'role_display': emp.get_role_display(),
+            'status': emp.status,
+            'status_display': emp.get_status_display(),
+            'monthly_salary': str(emp.monthly_salary) if emp.monthly_salary else None,
+            'hourly_rate': str(emp.hourly_rate) if emp.hourly_rate else None,
+            'profile_photo': photo_url,
+            'has_face_registered': bool(emp.face_photo),
+            'supervisor': emp.supervisor.get_full_name() if emp.supervisor else None,
+            'attendance_summary': {
+                'month': today.strftime('%B %Y'),
+                'present': total_present,
+                'absent': total_absent,
+                'late': total_late,
+                'total_hours': round(total_hours, 1),
+            },
+            'recent_attendance': attendance_data,
+            'leave_balance': leave_data,
+            'pending_leaves': pending_leaves_data,
+            'active_assignments': assignments_data,
+        })
+
+
 # ---- Owner: Client CRUD ----
 
 @extend_schema(tags=['Owner'])

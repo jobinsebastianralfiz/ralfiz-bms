@@ -1092,6 +1092,58 @@ Response:
 }
 ```
 
+#### GET `/api/employees/owner/employees/?status=active&department=engineering&role=employee&search=john`
+```
+Response: [
+  {
+    "id": "uuid", "employee_id": "EMP001", "name": "John Doe",
+    "email": "john@ralfiz.com", "phone": "9876543210",
+    "department": "engineering", "department_display": "Engineering",
+    "designation": "Senior Developer",
+    "employment_type": "fulltime", "employment_type_display": "Full-Time",
+    "role": "employee", "role_display": "Employee",
+    "status": "active", "status_display": "Active",
+    "joining_date": "2025-06-15",
+    "profile_photo": "http://..."
+  }
+]
+```
+
+#### GET `/api/employees/owner/employees/<uuid>/`
+```
+Response:
+{
+  "id": "uuid", "employee_id": "EMP001", "name": "John Doe",
+  "first_name": "John", "last_name": "Doe",
+  "email": "john@ralfiz.com", "phone": "9876543210",
+  "emergency_contact": "Jane Doe - 1234567890", "address": "123 Street",
+  "date_of_birth": "1995-05-20", "joining_date": "2025-06-15",
+  "department": "engineering", "department_display": "Engineering",
+  "designation": "Senior Developer",
+  "employment_type": "fulltime", "employment_type_display": "Full-Time",
+  "role": "employee", "role_display": "Employee",
+  "status": "active", "status_display": "Active",
+  "monthly_salary": "50000.00", "hourly_rate": null,
+  "profile_photo": "http://...", "has_face_registered": true,
+  "supervisor": null,
+  "attendance_summary": {
+    "month": "March 2026", "present": 10, "absent": 1, "late": 2, "total_hours": 82.5
+  },
+  "recent_attendance": [
+    { "date": "2026-03-14", "check_in": "09:15", "check_out": "18:00", "working_hours": "8.75", "status": "present", "status_display": "Present", "verification_method": "face_local" }
+  ],
+  "leave_balance": [
+    { "leave_type": "Casual Leave", "total_allowed": 12, "used": 3, "remaining": 9 }
+  ],
+  "pending_leaves": [
+    { "id": "uuid", "leave_type": "Casual Leave", "start_date": "2026-03-20", "end_date": "2026-03-21", "total_days": 2, "reason": "Personal" }
+  ],
+  "active_assignments": [
+    { "id": "uuid", "title": "Fix login bug", "priority": "high", "status": "in_progress", "due_date": "2026-03-16" }
+  ]
+}
+```
+
 #### GET `/api/employees/owner/attendance/?start_date=2026-03-01&end_date=2026-03-14&employee_id=uuid`
 ```
 Response: [
