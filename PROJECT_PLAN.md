@@ -632,6 +632,777 @@ Implement PDF generation for quotes and invoices using WeasyPrint. Include compa
 
 ---
 
-*Document Version: 1.0*
-*Last Updated: January 2026*
+## 12. Employee Mobile App API Endpoints
+
+**Base URL:** `/api/employees/`
+**Auth:** JWT Bearer token (`Authorization: Bearer <access_token>`)
+**Content-Type:** `application/json` (unless file upload, then `multipart/form-data`)
+
+---
+
+### 12.1 Auth
+
+#### POST `/api/employees/auth/login/`
+Login and get JWT tokens with employee info.
+```
+Request:
+{
+  "username": "john",
+  "password": "secret123"
+}
+
+Response 200:
+{
+  "access": "eyJ...",
+  "refresh": "eyJ...",
+  "user": {
+    "id": 1,
+    "username": "john",
+    "first_name": "John",
+    "last_name": "Doe",
+    "email": "john@ralfiz.com"
+  },
+  "employee": {
+    "id": "uuid",
+    "employee_id": "EMP001",
+    "employment_type": "fulltime",
+    "role": "owner",          // employee | intern | owner | partner
+    "department": "engineering",
+    "designation": "Developer",
+    "status": "active",
+    "profile_photo": "http://...",
+    "has_face_registered": true
+  }
+}
+```
+
+#### POST `/api/employees/auth/token/refresh/`
+Refresh expired access token.
+```
+Request:  { "refresh": "eyJ..." }
+Response: { "access": "eyJ..." }
+```
+
+#### POST `/api/employees/auth/change-password/`
+```
+Request:  { "old_password": "old", "new_password": "new123" }
+Response: { "message": "Password changed successfully" }
+```
+
+#### DELETE `/api/employees/auth/delete-account/`
+```
+Request:  { "password": "current_password" }
+Response: { "message": "Account deleted successfully" }
+```
+
+---
+
+### 12.2 Dashboard & Profile
+
+#### GET `/api/employees/dashboard/`
+Employee dashboard overview.
+```
+Response 200:
+{
+  "employee": { ...EmployeeProfileSerializer... },
+  "today_attendance": { ...AttendanceSerializer... } | null,
+  "pending_leaves": 2,
+  "active_assignments": 3,
+  "unread_notifications": 5,
+  "recent_assignments": [ ...WorkAssignmentSerializer... ],
+  "upcoming_classes": [ ...ScheduledClassSerializer... ]   // only for role=intern
+}
+```
+
+#### GET `/api/employees/profile/`
+```
+Response: { ...EmployeeProfileSerializer (id, employee_id, full_name, employment_type, role, department, designation, phone, etc.)... }
+```
+
+#### PATCH `/api/employees/profile/`
+Update own profile (limited fields).
+```
+Request (multipart/form-data):
+  phone: "9876543210"
+  emergency_contact: "John Doe - 1234567890"
+  address: "123 Street"
+  profile_photo: <file>
+
+Response: { ...updated EmployeeProfileSerializer... }
+```
+
+#### POST `/api/employees/profile/face/` (multipart/form-data)
+Upload face photo for recognition.
+```
+Request:  face_photo: <image file>
+Response: { "message": "Face photo updated successfully", "face_photo": "http://..." }
+Error:    { "error": "No face detected in the uploaded photo..." }
+```
+
+#### GET `/api/employees/profile/face/`
+```
+Response: { "face_photo": "http://...", "face_encoding": "...", "has_face_registered": true }
+```
+
+#### POST `/api/employees/device-token/`
+Register FCM token for push notifications.
+```
+Request:  { "token": "fcm_token_string", "device_type": "android" }
+Response: { "message": "Device registered", "id": "uuid" }
+```
+
+---
+
+### 12.3 Attendance
+
+#### POST `/api/employees/attendance/check-in/` (multipart/form-data)
+```
+Request:
+{
+  "verification_method": "face_local",  // face | face_local | face_qr | face_location | qr | location
+  "latitude": 11.2588,
+  "longitude": 75.7804,
+  "qr_code": "office-qr-code-value",   // required for qr, face_qr, face_local
+  "face_photo": <image file>,           // required for face, face_qr, face_location, face_local
+  "face_confidence": 0.95               // optional, for face_local
+}
+
+Response 201:
+{
+  "message": "Checked in successfully",
+  "attendance": { ...AttendanceSerializer... }
+}
+
+Errors:
+  400: "Location is required for check-in."
+  400: "You are 500m away from office. Must be within 200m."
+  400: "Invalid QR code. Please scan the office QR sticker."
+  400: "No reference face photo registered. Please register your face first."
+  400: "Already checked in today"
+  403: "Face verification failed. The selfie does not match your registered face."
+```
+
+#### POST `/api/employees/attendance/check-out/`
+```
+Request:  { "latitude": 11.2588, "longitude": 75.7804 }
+Response: { "message": "Checked out successfully", "attendance": {...} }
+```
+
+#### GET `/api/employees/attendance/today/`
+```
+Response: { "checked_in": true, "checked_out": false, "attendance": {...} | null }
+```
+
+#### GET `/api/employees/attendance/history/?month=3&year=2026`
+```
+Response: [ { ...AttendanceSerializer (id, date, check_in, check_out, working_hours, status, verification_method)... }, ... ]
+```
+
+---
+
+### 12.4 Leave
+
+#### GET `/api/employees/leave/types/`
+```
+Response: [ { "id": "uuid", "name": "Casual Leave", "days_allowed": 12, "is_active": true }, ... ]
+```
+
+#### GET `/api/employees/leave/requests/?status=pending`
+```
+Response: [ { ...LeaveRequestSerializer (id, leave_type, start_date, end_date, total_days, reason, status)... }, ... ]
+```
+
+#### POST `/api/employees/leave/requests/`
+```
+Request:
+{
+  "leave_type": "uuid",
+  "start_date": "2026-03-20",
+  "end_date": "2026-03-21",
+  "reason": "Personal work"
+}
+
+Response 201: { ...LeaveRequestSerializer... }
+```
+
+#### POST `/api/employees/leave/requests/<uuid>/cancel/`
+```
+Response: { "message": "Leave request cancelled" }
+Error:    { "error": "Only pending requests can be cancelled" }
+```
+
+#### GET `/api/employees/leave/balance/`
+```
+Response: [
+  { "leave_type": "Casual Leave", "total_allowed": 12, "used": 3, "remaining": 9 },
+  { "leave_type": "Sick Leave", "total_allowed": 6, "used": 1, "remaining": 5 }
+]
+```
+
+---
+
+### 12.5 Work Assignments
+
+#### GET `/api/employees/work/?status=in_progress`
+```
+Response: [ { ...WorkAssignmentSerializer (id, title, description, priority, status, due_date, assigned_by, updates)... }, ... ]
+```
+
+#### GET `/api/employees/work/<uuid>/`
+```
+Response: { ...WorkAssignmentSerializer... }
+```
+
+#### POST `/api/employees/work/<uuid>/status/`
+Update assignment status.
+```
+Request:
+{
+  "status": "completed",   // assigned | in_progress | completed | on_hold
+  "message": "Done, deployed to staging"  // optional update message
+}
+
+Response: { "message": "Status updated", "assignment": {...} }
+```
+
+#### POST `/api/employees/work/<uuid>/update/` (multipart/form-data)
+Add update/note to assignment.
+```
+Request:  { "message": "Progress update text", "attachment": <file> }
+Response: { ...WorkUpdateSerializer (id, message, attachment, created_at)... }
+```
+
+---
+
+### 12.6 Scheduled Classes (Interns Only)
+
+Returns empty for non-intern roles.
+
+#### GET `/api/employees/classes/?status=scheduled&upcoming=true`
+```
+Response: [ { ...ScheduledClassSerializer (id, title, date, start_time, end_time, instructor, location, status, participants)... }, ... ]
+```
+
+#### GET `/api/employees/classes/<uuid>/`
+```
+Response: { ...ScheduledClassSerializer... }
+Error 403: "Scheduled classes are only available for interns."
+```
+
+---
+
+### 12.7 Payslips
+
+#### GET `/api/employees/payslips/?year=2026`
+```
+Response: [ { ...PayrollSerializer (id, month, year, basic_salary, deductions, net_salary, status, paid_date)... }, ... ]
+```
+
+#### GET `/api/employees/payslips/<uuid>/`
+```
+Response: { ...PayrollSerializer... }
+```
+
+---
+
+### 12.8 Notifications
+
+#### GET `/api/employees/notifications/`
+```
+Response: [ { "id": "uuid", "title": "New Leave Request", "body": "...", "notification_type": "leave", "is_read": false, "created_at": "..." }, ... ]
+```
+
+#### POST `/api/employees/notifications/read/`
+Mark all as read.
+```
+Response: { "message": "Marked as read" }
+```
+
+#### POST `/api/employees/notifications/<uuid>/read/`
+Mark single as read.
+```
+Response: { "message": "Marked as read" }
+```
+
+---
+
+### 12.9 Owner/Partner APIs — Read
+
+All require `role` = `owner` or `partner`. Returns `403` otherwise.
+
+#### GET `/api/employees/owner/dashboard/`
+```
+Response 200:
+{
+  "clients": { "total": 15, "active": 12 },
+  "projects": { "active": 8, "total": 25 },
+  "revenue": { "total": "5000000.00", "this_month": "350000.00", "outstanding": "120000.00" },
+  "expenses": { "total": "1200000.00", "this_month": "85000.00" },
+  "recent_payments": [
+    { "amount": "50000.00", "payment_date": "2026-03-10", "payment_method": "bank_transfer", "client_name": "TechStart", "invoice_number": "INV20260015" }
+  ],
+  "employees": { "total": 10, "fulltime": 5, "parttime": 2, "intern": 3 }
+}
+```
+
+#### GET `/api/employees/owner/clients/?search=tech`
+```
+Response: [
+  {
+    "id": "uuid", "name": "TechStart Solutions", "company_name": "TechStart Pvt Ltd",
+    "email": "info@techstart.com", "phone": "9876543210", "is_active": true,
+    "total_revenue": "350000.00", "pending_amount": "50000.00", "project_count": 3
+  }
+]
+```
+
+#### GET `/api/employees/owner/clients/<uuid>/`
+```
+Response:
+{
+  "id": "uuid", "name": "TechStart Solutions", "company_name": "...", "email": "...",
+  "phone": "...", "whatsapp": "...", "address": "...", "gst_number": "...",
+  "priority": "high", "is_active": true,
+  "total_invoiced": "500000.00", "total_paid": "350000.00", "balance_due": "150000.00",
+  "projects": [ { "id": "uuid", "name": "E-commerce", "status": "in_progress", ... } ],
+  "invoices": [ { "id": "uuid", "invoice_number": "INV20260001", "title": "...", "status": "paid", ... } ],
+  "quotes": [ { "id": "uuid", "quote_number": "QT20260001", "title": "...", "status": "sent", ... } ]
+}
+```
+
+#### GET `/api/employees/owner/projects/?status=in_progress&search=ecommerce`
+```
+Response: [
+  {
+    "id": "uuid", "name": "E-commerce Platform", "client_name": "TechStart",
+    "status": "in_progress", "project_type": "web_app",
+    "estimated_budget": "350000.00", "final_amount": "0",
+    "invoiced_amount": "200000.00", "paid_amount": "150000.00",
+    "start_date": "2026-01-15", "deadline": "2026-06-30"
+  }
+]
+```
+
+#### GET `/api/employees/owner/projects/<uuid>/`
+```
+Response:
+{
+  "id": "uuid", "name": "E-commerce Platform", "client_name": "TechStart",
+  "client_id": "uuid", "project_type": "web_app", "status": "in_progress",
+  "description": "...", "estimated_budget": "350000.00", "final_amount": "0",
+  "start_date": "2026-01-15", "deadline": "2026-06-30", "completed_date": null,
+  "tech_stack": "Django, Flutter", "github_repo": "...", "live_url": "...", "is_overdue": false,
+  "financial_summary": {
+    "total_invoiced": "200000.00", "total_paid": "150000.00",
+    "balance_due": "50000.00", "total_expenses": "25000.00"
+  },
+  "credentials": [
+    {
+      "id": "uuid", "credential_type": "server", "name": "Production Server",
+      "provider": "DigitalOcean", "url": "...", "ip_address": "...",
+      "username": "root", "password": "***", "ssh_key": "...", "port": 22,
+      "purchase_date": "2026-01-01", "expiry_date": "2027-01-01",
+      "auto_renew": true, "renewal_cost": "5000.00",
+      "is_active": true, "is_expired": false, "is_expiring_soon": false, "days_until_expiry": 292
+    }
+  ],
+  "invoices": [ { "id": "uuid", "invoice_number": "INV20260001", ... } ],
+  "expenses": [ { "id": "uuid", "category": "hosting", "amount": "5000.00", ... } ]
+}
+```
+
+#### GET `/api/employees/owner/invoices/?status=paid&client_id=uuid&search=INV`
+```
+Response: [
+  {
+    "id": "uuid", "invoice_number": "INV20260001", "title": "Phase 1 Payment",
+    "client_name": "TechStart", "project_name": "E-commerce",
+    "status": "paid", "total_amount": "100000.00",
+    "amount_paid": "100000.00", "balance_due": "0.00",
+    "issue_date": "2026-02-01", "due_date": "2026-02-15", "is_overdue": false
+  }
+]
+```
+
+#### GET `/api/employees/owner/invoices/<uuid>/`
+```
+Response:
+{
+  "id": "uuid", "invoice_number": "INV20260001", "title": "Phase 1 Payment",
+  "description": "...", "client_name": "TechStart", "client_id": "uuid",
+  "project_name": "E-commerce", "project_id": "uuid", "quote_number": null,
+  "status": "paid", "subtotal": "100000.00", "discount": "0.00",
+  "tax_rate": "18.00", "tax_amount": "18000.00",
+  "total_amount": "118000.00", "amount_paid": "118000.00", "balance_due": "0.00",
+  "issue_date": "2026-02-01", "due_date": "2026-02-15", "is_overdue": false,
+  "items": [
+    { "description": "Frontend Development", "details": "...", "quantity": "1", "unit_price": "50000.00", "amount": "50000.00" },
+    { "description": "Backend Development", "details": "...", "quantity": "1", "unit_price": "50000.00", "amount": "50000.00" }
+  ],
+  "payments": [
+    { "id": "uuid", "amount": "118000.00", "payment_date": "2026-02-10", "payment_method": "bank_transfer", "transaction_id": "TXN123", "notes": "" }
+  ]
+}
+```
+
+#### GET `/api/employees/owner/quotes/?status=sent&client_id=uuid`
+```
+Response: [
+  {
+    "id": "uuid", "quote_number": "QT20260001", "title": "Website Redesign Proposal",
+    "client_name": "TechStart", "project_name": "",
+    "status": "sent", "total_amount": "250000.00",
+    "issue_date": "2026-03-01", "valid_until": "2026-03-31", "is_expired": false
+  }
+]
+```
+
+#### GET `/api/employees/owner/expenses/?category=hosting&project_id=uuid&start_date=2026-01-01&end_date=2026-03-31`
+```
+Response:
+{
+  "total": "85000.00",
+  "count": 12,
+  "expenses": [
+    {
+      "id": "uuid", "category": "hosting", "amount": "5000.00", "date": "2026-03-01",
+      "vendor": "DigitalOcean", "description": "Monthly server cost",
+      "project_name": "E-commerce", "is_billable": true, "payment_method": "card"
+    }
+  ]
+}
+```
+
+#### GET `/api/employees/owner/financial-report/`
+```
+Response:
+{
+  "summary": {
+    "total_income": "2500000.00", "total_expenses": "800000.00",
+    "net_profit": "1700000.00", "collection_rate": 78.5
+  },
+  "monthly_trends": [
+    { "month": "Apr", "year": 2025, "income": "180000.00", "expenses": "60000.00", "profit": "120000.00" },
+    ...
+  ],
+  "revenue_by_client": [
+    { "client": "TechStart Solutions", "revenue": "500000.00" },
+    { "client": "MediCare Hospital", "revenue": "350000.00" }
+  ]
+}
+```
+
+#### GET `/api/employees/owner/attendance/?start_date=2026-03-01&end_date=2026-03-14&employee_id=uuid`
+```
+Response: [
+  {
+    "employee_id": "EMP001", "name": "John Doe", "department": "engineering",
+    "records": [ { ...AttendanceSerializer (id, date, check_in, check_out, working_hours, status)... } ]
+  }
+]
+```
+
+---
+
+### 12.10 Owner/Partner APIs — Create / Update / Delete
+
+All require `role` = `owner` or `partner`.
+
+#### POST `/api/employees/owner/clients/create/`
+```
+Request:
+{
+  "name": "New Client",           // required
+  "company_name": "Client Corp",
+  "email": "client@example.com",
+  "phone": "9876543210",
+  "whatsapp": "9876543210",
+  "address": "123 Main St",
+  "gst_number": "29ABCDE1234F1Z5",
+  "priority": "high",             // high | medium | low
+  "notes": "Referred by John"
+}
+
+Response 201: { "id": "uuid", "message": "Client created" }
+Error 400:    { "error": "Client name is required" }
+```
+
+#### PATCH `/api/employees/owner/clients/<uuid>/edit/`
+Partial update — send only fields you want to change.
+```
+Request:
+{
+  "name": "Updated Name",
+  "priority": "low",
+  "is_active": false
+}
+
+Response 200: { "message": "Client updated" }
+Error 404:    { "error": "Client not found" }
+```
+
+#### DELETE `/api/employees/owner/clients/<uuid>/edit/`
+```
+Response 204: { "message": "Client deleted" }
+Error 404:    { "error": "Client not found" }
+```
+
+---
+
+#### POST `/api/employees/owner/projects/create/`
+```
+Request:
+{
+  "name": "New Project",           // required
+  "client_id": "uuid",             // required
+  "project_type": "web_app",       // web_app | mobile_app | full_stack | api | maintenance | consulting | other
+  "description": "Project description",
+  "status": "lead",                // lead | proposal | negotiation | confirmed | in_progress | review | completed | on_hold | cancelled
+  "estimated_budget": 350000,
+  "final_amount": null,
+  "start_date": "2026-04-01",
+  "deadline": "2026-09-30",
+  "tech_stack": "Django, Flutter",
+  "github_repo": "https://github.com/...",
+  "live_url": "https://...",
+  "notes": ""
+}
+
+Response 201: { "id": "uuid", "message": "Project created" }
+Error 400:    { "error": "Project name and client_id are required" }
+Error 404:    { "error": "Client not found" }
+```
+
+#### PATCH `/api/employees/owner/projects/<uuid>/edit/`
+```
+Request:
+{
+  "status": "in_progress",
+  "final_amount": 400000,
+  "client_id": "new-client-uuid"    // reassign to different client
+}
+
+Response 200: { "message": "Project updated" }
+```
+
+#### DELETE `/api/employees/owner/projects/<uuid>/edit/`
+```
+Response 204: { "message": "Project deleted" }
+```
+
+---
+
+#### POST `/api/employees/owner/credentials/create/`
+```
+Request:
+{
+  "project_id": "uuid",            // required
+  "name": "Production Server",     // required
+  "credential_type": "server",     // server | domain | hosting | database | email | api | ssl | cdn | cloud | git | other
+  "provider": "DigitalOcean",
+  "url": "https://cloud.digitalocean.com",
+  "ip_address": "164.90.xxx.xxx",
+  "username": "root",
+  "password": "secure_password",
+  "ssh_key": "-----BEGIN RSA KEY-----...",
+  "port": 22,
+  "purchase_date": "2026-01-01",
+  "expiry_date": "2027-01-01",
+  "auto_renew": true,
+  "renewal_cost": 5000,
+  "notes": ""
+}
+
+Response 201: { "id": "uuid", "message": "Credential created" }
+Error 400:    { "error": "project_id and name are required" }
+Error 404:    { "error": "Project not found" }
+```
+
+#### PATCH `/api/employees/owner/credentials/<uuid>/edit/`
+```
+Request:
+{
+  "password": "new_password",
+  "expiry_date": "2028-01-01",
+  "is_active": false
+}
+
+Response 200: { "message": "Credential updated" }
+```
+
+#### DELETE `/api/employees/owner/credentials/<uuid>/edit/`
+```
+Response 204: { "message": "Credential deleted" }
+```
+
+---
+
+#### POST `/api/employees/owner/invoices/create/`
+```
+Request:
+{
+  "client_id": "uuid",             // required
+  "title": "Phase 1 Payment",      // required
+  "project_id": "uuid",            // optional
+  "description": "",
+  "status": "draft",               // draft | sent | viewed | partial | paid | overdue | cancelled
+  "discount": 0,
+  "tax_rate": 18,
+  "issue_date": "2026-03-15",
+  "due_date": "2026-03-30",
+  "terms": "Payment due within 15 days",
+  "client_notes": "Thank you for your business",
+  "notes": "Internal note",
+  "items": [                        // line items
+    { "description": "Frontend Development", "details": "React UI", "quantity": 1, "unit_price": 50000 },
+    { "description": "Backend API", "details": "Django REST", "quantity": 1, "unit_price": 50000 }
+  ]
+}
+
+Response 201: { "id": "uuid", "invoice_number": "INV20260005", "message": "Invoice created" }
+Error 400:    { "error": "client_id and title are required" }
+```
+
+#### PATCH `/api/employees/owner/invoices/<uuid>/edit/`
+If `items` is provided, existing items are deleted and replaced.
+```
+Request:
+{
+  "status": "sent",
+  "due_date": "2026-04-15",
+  "items": [
+    { "description": "Updated item", "quantity": 2, "unit_price": 60000 }
+  ]
+}
+
+Response 200: { "message": "Invoice updated" }
+```
+
+#### DELETE `/api/employees/owner/invoices/<uuid>/edit/`
+Cannot delete invoices with recorded payments.
+```
+Response 204: { "message": "Invoice deleted" }
+Error 400:    { "error": "Cannot delete invoice with payments recorded" }
+```
+
+---
+
+#### POST `/api/employees/owner/invoices/<uuid>/payments/`
+Record a payment against an invoice.
+```
+Request:
+{
+  "invoice_id": "uuid",            // required
+  "amount": 50000,                 // required
+  "payment_date": "2026-03-15",
+  "payment_method": "bank_transfer",  // bank_transfer | upi | cash | cheque | card | paypal | other
+  "transaction_id": "TXN456",
+  "notes": "Partial payment"
+}
+
+Response 201:
+{
+  "id": "uuid",
+  "message": "Payment recorded",
+  "invoice_status": "partial",
+  "amount_paid": "50000.00",
+  "balance_due": "68000.00"
+}
+```
+
+---
+
+#### POST `/api/employees/owner/quotes/create/`
+```
+Request:
+{
+  "client_id": "uuid",             // required
+  "title": "Website Redesign",     // required
+  "valid_until": "2026-04-30",     // required
+  "project_id": "uuid",            // optional
+  "description": "Complete redesign proposal",
+  "status": "draft",               // draft | sent | viewed | accepted | rejected | expired
+  "discount": 5000,
+  "tax_rate": 18,
+  "issue_date": "2026-03-15",
+  "duration": "3 months",
+  "start_date": "2026-04-01",
+  "deliverables": "Homepage, 5 inner pages, Mobile responsive",
+  "payment_terms": "50-50",
+  "terms": "Standard terms apply",
+  "client_notes": "",
+  "notes": "",
+  "items": [
+    { "description": "UI/UX Design", "details": "Figma mockups", "quantity": 1, "unit_price": 30000 },
+    { "description": "Development", "details": "Frontend + Backend", "quantity": 1, "unit_price": 120000 }
+  ]
+}
+
+Response 201: { "id": "uuid", "quote_number": "QT20260003", "message": "Quote created" }
+Error 400:    { "error": "client_id, title, and valid_until are required" }
+```
+
+#### PATCH `/api/employees/owner/quotes/<uuid>/edit/`
+If `items` is provided, existing items are deleted and replaced.
+```
+Request:
+{
+  "status": "sent",
+  "valid_until": "2026-05-15",
+  "items": [
+    { "description": "Updated scope", "quantity": 1, "unit_price": 200000 }
+  ]
+}
+
+Response 200: { "message": "Quote updated" }
+```
+
+#### DELETE `/api/employees/owner/quotes/<uuid>/edit/`
+```
+Response 204: { "message": "Quote deleted" }
+```
+
+---
+
+#### POST `/api/employees/owner/expenses/create/` (multipart/form-data for receipt upload)
+```
+Request:
+{
+  "category": "hosting",           // required
+  "amount": 5000,                  // required
+  "vendor": "DigitalOcean",        // required
+  "date": "2026-03-01",
+  "description": "Monthly server cost",
+  "receipt": <file>,               // optional image/pdf
+  "project_id": "uuid",            // optional
+  "is_billable": true,
+  "payment_method": "card",        // bank_transfer | upi | cash | cheque | card | paypal | other
+  "notes": ""
+}
+
+Response 201: { "id": "uuid", "message": "Expense created" }
+Error 400:    { "error": "amount, vendor, and category are required" }
+```
+
+#### PATCH `/api/employees/owner/expenses/<uuid>/edit/` (multipart/form-data for receipt)
+```
+Request:
+{
+  "amount": 6000,
+  "receipt": <file>,
+  "project_id": "new-project-uuid"
+}
+
+Response 200: { "message": "Expense updated" }
+```
+
+#### DELETE `/api/employees/owner/expenses/<uuid>/edit/`
+```
+Response 204: { "message": "Expense deleted" }
+```
+
+---
+
+*Document Version: 2.0*
+*Last Updated: March 2026*
 *For: Ralfiz Technologies*

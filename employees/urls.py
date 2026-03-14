@@ -67,6 +67,21 @@ urlpatterns = [
     path('owner/financial-report/', views.OwnerFinancialReportView.as_view(), name='owner_financial_report'),
     path('owner/attendance/', views.OwnerAttendanceView.as_view(), name='owner_attendance'),
 
+    # Owner/Partner CRUD
+    path('owner/clients/create/', views.OwnerClientCreateView.as_view(), name='owner_client_create'),
+    path('owner/clients/<uuid:pk>/edit/', views.OwnerClientUpdateDeleteView.as_view(), name='owner_client_edit'),
+    path('owner/projects/create/', views.OwnerProjectCreateView.as_view(), name='owner_project_create'),
+    path('owner/projects/<uuid:pk>/edit/', views.OwnerProjectUpdateDeleteView.as_view(), name='owner_project_edit'),
+    path('owner/credentials/create/', views.OwnerCredentialCreateView.as_view(), name='owner_credential_create'),
+    path('owner/credentials/<uuid:pk>/edit/', views.OwnerCredentialUpdateDeleteView.as_view(), name='owner_credential_edit'),
+    path('owner/invoices/create/', views.OwnerInvoiceCreateView.as_view(), name='owner_invoice_create'),
+    path('owner/invoices/<uuid:pk>/edit/', views.OwnerInvoiceUpdateDeleteView.as_view(), name='owner_invoice_edit'),
+    path('owner/invoices/<uuid:pk>/payments/', views.OwnerPaymentCreateView.as_view(), name='owner_payment_create'),
+    path('owner/quotes/create/', views.OwnerQuoteCreateView.as_view(), name='owner_quote_create'),
+    path('owner/quotes/<uuid:pk>/edit/', views.OwnerQuoteUpdateDeleteView.as_view(), name='owner_quote_edit'),
+    path('owner/expenses/create/', views.OwnerExpenseCreateView.as_view(), name='owner_expense_create'),
+    path('owner/expenses/<uuid:pk>/edit/', views.OwnerExpenseUpdateDeleteView.as_view(), name='owner_expense_edit'),
+
     # ---- Admin APIs ----
     path('admin/employees/', views.AdminEmployeeListView.as_view(), name='admin_employees'),
     path('admin/employees/<uuid:pk>/', views.AdminEmployeeDetailView.as_view(), name='admin_employee_detail'),

@@ -1461,6 +1461,519 @@ class OwnerExpenseListView(APIView):
         })
 
 
+# ---- Owner: Client CRUD ----
+
+@extend_schema(tags=['Owner'])
+class OwnerClientCreateView(APIView):
+    """Owner/Partner: Create a new client"""
+    permission_classes = [IsAuthenticated, IsOwnerOrPartner]
+
+    def post(self, request):
+        from core.models import Client
+        data = request.data
+        if not data.get('name'):
+            return Response({'error': 'Client name is required'}, status=status.HTTP_400_BAD_REQUEST)
+
+        client = Client.objects.create(
+            name=data.get('name', ''),
+            company_name=data.get('company_name', ''),
+            email=data.get('email', ''),
+            phone=data.get('phone', ''),
+            whatsapp=data.get('whatsapp', ''),
+            address=data.get('address', ''),
+            gst_number=data.get('gst_number', ''),
+            priority=data.get('priority', 'medium'),
+            notes=data.get('notes', ''),
+        )
+        return Response({'id': str(client.id), 'message': 'Client created'}, status=status.HTTP_201_CREATED)
+
+
+@extend_schema(tags=['Owner'])
+class OwnerClientUpdateDeleteView(APIView):
+    """Owner/Partner: Update or delete a client"""
+    permission_classes = [IsAuthenticated, IsOwnerOrPartner]
+
+    def patch(self, request, pk):
+        from core.models import Client
+        try:
+            client = Client.objects.get(pk=pk)
+        except Client.DoesNotExist:
+            return Response({'error': 'Client not found'}, status=status.HTTP_404_NOT_FOUND)
+
+        fields = ['name', 'company_name', 'email', 'phone', 'whatsapp', 'address',
+                  'gst_number', 'priority', 'notes', 'is_active']
+        for field in fields:
+            if field in request.data:
+                setattr(client, field, request.data[field])
+        client.save()
+        return Response({'message': 'Client updated'})
+
+    def delete(self, request, pk):
+        from core.models import Client
+        try:
+            client = Client.objects.get(pk=pk)
+        except Client.DoesNotExist:
+            return Response({'error': 'Client not found'}, status=status.HTTP_404_NOT_FOUND)
+        client.delete()
+        return Response({'message': 'Client deleted'}, status=status.HTTP_204_NO_CONTENT)
+
+
+# ---- Owner: Project CRUD ----
+
+@extend_schema(tags=['Owner'])
+class OwnerProjectCreateView(APIView):
+    """Owner/Partner: Create a new project"""
+    permission_classes = [IsAuthenticated, IsOwnerOrPartner]
+
+    def post(self, request):
+        from core.models import Project, Client
+        data = request.data
+        if not data.get('name') or not data.get('client_id'):
+            return Response({'error': 'Project name and client_id are required'}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            client = Client.objects.get(pk=data['client_id'])
+        except Client.DoesNotExist:
+            return Response({'error': 'Client not found'}, status=status.HTTP_404_NOT_FOUND)
+
+        project = Project.objects.create(
+            client=client,
+            name=data.get('name', ''),
+            project_type=data.get('project_type', 'web_app'),
+            description=data.get('description', ''),
+            status=data.get('status', 'lead'),
+            estimated_budget=data.get('estimated_budget'),
+            final_amount=data.get('final_amount'),
+            start_date=data.get('start_date') or None,
+            deadline=data.get('deadline') or None,
+            tech_stack=data.get('tech_stack', ''),
+            github_repo=data.get('github_repo', ''),
+            live_url=data.get('live_url', ''),
+            notes=data.get('notes', ''),
+        )
+        return Response({'id': str(project.id), 'message': 'Project created'}, status=status.HTTP_201_CREATED)
+
+
+@extend_schema(tags=['Owner'])
+class OwnerProjectUpdateDeleteView(APIView):
+    """Owner/Partner: Update or delete a project"""
+    permission_classes = [IsAuthenticated, IsOwnerOrPartner]
+
+    def patch(self, request, pk):
+        from core.models import Project
+        try:
+            project = Project.objects.get(pk=pk)
+        except Project.DoesNotExist:
+            return Response({'error': 'Project not found'}, status=status.HTTP_404_NOT_FOUND)
+
+        fields = ['name', 'project_type', 'description', 'status', 'estimated_budget',
+                  'final_amount', 'start_date', 'deadline', 'completed_date', 'tech_stack',
+                  'github_repo', 'live_url', 'notes']
+        for field in fields:
+            if field in request.data:
+                val = request.data[field]
+                if field in ('start_date', 'deadline', 'completed_date') and val == '':
+                    val = None
+                setattr(project, field, val)
+
+        if 'client_id' in request.data:
+            project.client_id = request.data['client_id']
+
+        project.save()
+        return Response({'message': 'Project updated'})
+
+    def delete(self, request, pk):
+        from core.models import Project
+        try:
+            project = Project.objects.get(pk=pk)
+        except Project.DoesNotExist:
+            return Response({'error': 'Project not found'}, status=status.HTTP_404_NOT_FOUND)
+        project.delete()
+        return Response({'message': 'Project deleted'}, status=status.HTTP_204_NO_CONTENT)
+
+
+# ---- Owner: Credential CRUD ----
+
+@extend_schema(tags=['Owner'])
+class OwnerCredentialCreateView(APIView):
+    """Owner/Partner: Add a credential to a project"""
+    permission_classes = [IsAuthenticated, IsOwnerOrPartner]
+
+    def post(self, request):
+        from core.models import Credential, Project
+        data = request.data
+        if not data.get('project_id') or not data.get('name'):
+            return Response({'error': 'project_id and name are required'}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            Project.objects.get(pk=data['project_id'])
+        except Project.DoesNotExist:
+            return Response({'error': 'Project not found'}, status=status.HTTP_404_NOT_FOUND)
+
+        cred = Credential.objects.create(
+            project_id=data['project_id'],
+            credential_type=data.get('credential_type', 'other'),
+            name=data.get('name', ''),
+            provider=data.get('provider', ''),
+            url=data.get('url', ''),
+            ip_address=data.get('ip_address') or None,
+            username=data.get('username', ''),
+            password=data.get('password', ''),
+            ssh_key=data.get('ssh_key', ''),
+            port=data.get('port') or None,
+            purchase_date=data.get('purchase_date') or None,
+            expiry_date=data.get('expiry_date') or None,
+            auto_renew=data.get('auto_renew', False),
+            renewal_cost=data.get('renewal_cost') or None,
+            notes=data.get('notes', ''),
+        )
+        return Response({'id': str(cred.id), 'message': 'Credential created'}, status=status.HTTP_201_CREATED)
+
+
+@extend_schema(tags=['Owner'])
+class OwnerCredentialUpdateDeleteView(APIView):
+    """Owner/Partner: Update or delete a credential"""
+    permission_classes = [IsAuthenticated, IsOwnerOrPartner]
+
+    def patch(self, request, pk):
+        from core.models import Credential
+        try:
+            cred = Credential.objects.get(pk=pk)
+        except Credential.DoesNotExist:
+            return Response({'error': 'Credential not found'}, status=status.HTTP_404_NOT_FOUND)
+
+        fields = ['credential_type', 'name', 'provider', 'url', 'ip_address', 'username',
+                  'password', 'ssh_key', 'port', 'purchase_date', 'expiry_date', 'auto_renew',
+                  'renewal_cost', 'notes', 'is_active']
+        for field in fields:
+            if field in request.data:
+                val = request.data[field]
+                if field in ('ip_address', 'port', 'purchase_date', 'expiry_date', 'renewal_cost') and val == '':
+                    val = None
+                setattr(cred, field, val)
+        cred.save()
+        return Response({'message': 'Credential updated'})
+
+    def delete(self, request, pk):
+        from core.models import Credential
+        try:
+            cred = Credential.objects.get(pk=pk)
+        except Credential.DoesNotExist:
+            return Response({'error': 'Credential not found'}, status=status.HTTP_404_NOT_FOUND)
+        cred.delete()
+        return Response({'message': 'Credential deleted'}, status=status.HTTP_204_NO_CONTENT)
+
+
+# ---- Owner: Invoice CRUD ----
+
+@extend_schema(tags=['Owner'])
+class OwnerInvoiceCreateView(APIView):
+    """Owner/Partner: Create an invoice"""
+    permission_classes = [IsAuthenticated, IsOwnerOrPartner]
+
+    def post(self, request):
+        from core.models import Invoice, InvoiceItem
+        data = request.data
+        if not data.get('client_id') or not data.get('title'):
+            return Response({'error': 'client_id and title are required'}, status=status.HTTP_400_BAD_REQUEST)
+
+        inv = Invoice(
+            client_id=data['client_id'],
+            project_id=data.get('project_id') or None,
+            title=data.get('title', ''),
+            description=data.get('description', ''),
+            status=data.get('status', 'draft'),
+            discount=data.get('discount', 0),
+            tax_rate=data.get('tax_rate', 0),
+            issue_date=data.get('issue_date') or None,
+            due_date=data.get('due_date') or None,
+            terms=data.get('terms', ''),
+            client_notes=data.get('client_notes', ''),
+            notes=data.get('notes', ''),
+        )
+        inv.save()
+
+        # Create line items
+        items = data.get('items', [])
+        for i, item in enumerate(items):
+            InvoiceItem.objects.create(
+                invoice=inv,
+                description=item.get('description', ''),
+                details=item.get('details', ''),
+                quantity=item.get('quantity', 1),
+                unit_price=item.get('unit_price', 0),
+                amount=float(item.get('quantity', 1)) * float(item.get('unit_price', 0)),
+                order=i,
+            )
+
+        inv.calculate_totals()
+        return Response({'id': str(inv.id), 'invoice_number': inv.invoice_number, 'message': 'Invoice created'},
+                        status=status.HTTP_201_CREATED)
+
+
+@extend_schema(tags=['Owner'])
+class OwnerInvoiceUpdateDeleteView(APIView):
+    """Owner/Partner: Update or delete an invoice"""
+    permission_classes = [IsAuthenticated, IsOwnerOrPartner]
+
+    def patch(self, request, pk):
+        from core.models import Invoice, InvoiceItem
+        try:
+            inv = Invoice.objects.get(pk=pk)
+        except Invoice.DoesNotExist:
+            return Response({'error': 'Invoice not found'}, status=status.HTTP_404_NOT_FOUND)
+
+        fields = ['title', 'description', 'status', 'discount', 'tax_rate',
+                  'issue_date', 'due_date', 'terms', 'client_notes', 'notes']
+        for field in fields:
+            if field in request.data:
+                val = request.data[field]
+                if field in ('due_date', 'issue_date') and val == '':
+                    val = None
+                setattr(inv, field, val)
+
+        if 'client_id' in request.data:
+            inv.client_id = request.data['client_id']
+        if 'project_id' in request.data:
+            inv.project_id = request.data['project_id'] or None
+
+        # Replace items if provided
+        if 'items' in request.data:
+            inv.items.all().delete()
+            for i, item in enumerate(request.data['items']):
+                InvoiceItem.objects.create(
+                    invoice=inv,
+                    description=item.get('description', ''),
+                    details=item.get('details', ''),
+                    quantity=item.get('quantity', 1),
+                    unit_price=item.get('unit_price', 0),
+                    amount=float(item.get('quantity', 1)) * float(item.get('unit_price', 0)),
+                    order=i,
+                )
+            inv.calculate_totals()
+        else:
+            inv.save()
+
+        return Response({'message': 'Invoice updated'})
+
+    def delete(self, request, pk):
+        from core.models import Invoice
+        try:
+            inv = Invoice.objects.get(pk=pk)
+        except Invoice.DoesNotExist:
+            return Response({'error': 'Invoice not found'}, status=status.HTTP_404_NOT_FOUND)
+        if inv.amount_paid > 0:
+            return Response({'error': 'Cannot delete invoice with payments recorded'}, status=status.HTTP_400_BAD_REQUEST)
+        inv.delete()
+        return Response({'message': 'Invoice deleted'}, status=status.HTTP_204_NO_CONTENT)
+
+
+# ---- Owner: Payment (Record payment against invoice) ----
+
+@extend_schema(tags=['Owner'])
+class OwnerPaymentCreateView(APIView):
+    """Owner/Partner: Record a payment against an invoice"""
+    permission_classes = [IsAuthenticated, IsOwnerOrPartner]
+
+    def post(self, request):
+        from core.models import Payment, Invoice
+        data = request.data
+        if not data.get('invoice_id') or not data.get('amount'):
+            return Response({'error': 'invoice_id and amount are required'}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            invoice = Invoice.objects.get(pk=data['invoice_id'])
+        except Invoice.DoesNotExist:
+            return Response({'error': 'Invoice not found'}, status=status.HTTP_404_NOT_FOUND)
+
+        payment = Payment.objects.create(
+            invoice=invoice,
+            amount=data['amount'],
+            payment_date=data.get('payment_date') or None,
+            payment_method=data.get('payment_method', 'bank_transfer'),
+            transaction_id=data.get('transaction_id', ''),
+            notes=data.get('notes', ''),
+        )
+        return Response({
+            'id': str(payment.id),
+            'message': 'Payment recorded',
+            'invoice_status': invoice.status,
+            'amount_paid': str(invoice.amount_paid),
+            'balance_due': str(invoice.balance_due),
+        }, status=status.HTTP_201_CREATED)
+
+
+# ---- Owner: Quote CRUD ----
+
+@extend_schema(tags=['Owner'])
+class OwnerQuoteCreateView(APIView):
+    """Owner/Partner: Create a quote"""
+    permission_classes = [IsAuthenticated, IsOwnerOrPartner]
+
+    def post(self, request):
+        from core.models import Quote, QuoteItem
+        data = request.data
+        if not data.get('client_id') or not data.get('title') or not data.get('valid_until'):
+            return Response({'error': 'client_id, title, and valid_until are required'},
+                            status=status.HTTP_400_BAD_REQUEST)
+
+        quote = Quote(
+            client_id=data['client_id'],
+            project_id=data.get('project_id') or None,
+            title=data.get('title', ''),
+            description=data.get('description', ''),
+            status=data.get('status', 'draft'),
+            discount=data.get('discount', 0),
+            tax_rate=data.get('tax_rate', 0),
+            issue_date=data.get('issue_date') or None,
+            valid_until=data['valid_until'],
+            duration=data.get('duration', ''),
+            start_date=data.get('start_date') or None,
+            deliverables=data.get('deliverables', ''),
+            payment_terms=data.get('payment_terms', '50-50'),
+            terms=data.get('terms', ''),
+            client_notes=data.get('client_notes', ''),
+            notes=data.get('notes', ''),
+        )
+        quote.save()
+
+        items = data.get('items', [])
+        for i, item in enumerate(items):
+            QuoteItem.objects.create(
+                quote=quote,
+                description=item.get('description', ''),
+                details=item.get('details', ''),
+                quantity=item.get('quantity', 1),
+                unit_price=item.get('unit_price', 0),
+                amount=float(item.get('quantity', 1)) * float(item.get('unit_price', 0)),
+                order=i,
+            )
+
+        quote.calculate_totals()
+        return Response({'id': str(quote.id), 'quote_number': quote.quote_number, 'message': 'Quote created'},
+                        status=status.HTTP_201_CREATED)
+
+
+@extend_schema(tags=['Owner'])
+class OwnerQuoteUpdateDeleteView(APIView):
+    """Owner/Partner: Update or delete a quote"""
+    permission_classes = [IsAuthenticated, IsOwnerOrPartner]
+
+    def patch(self, request, pk):
+        from core.models import Quote, QuoteItem
+        try:
+            quote = Quote.objects.get(pk=pk)
+        except Quote.DoesNotExist:
+            return Response({'error': 'Quote not found'}, status=status.HTTP_404_NOT_FOUND)
+
+        fields = ['title', 'description', 'status', 'discount', 'tax_rate',
+                  'issue_date', 'valid_until', 'duration', 'start_date',
+                  'deliverables', 'payment_terms', 'terms', 'client_notes', 'notes']
+        for field in fields:
+            if field in request.data:
+                val = request.data[field]
+                if field in ('issue_date', 'valid_until', 'start_date') and val == '':
+                    val = None
+                setattr(quote, field, val)
+
+        if 'client_id' in request.data:
+            quote.client_id = request.data['client_id']
+        if 'project_id' in request.data:
+            quote.project_id = request.data['project_id'] or None
+
+        if 'items' in request.data:
+            quote.items.all().delete()
+            for i, item in enumerate(request.data['items']):
+                QuoteItem.objects.create(
+                    quote=quote,
+                    description=item.get('description', ''),
+                    details=item.get('details', ''),
+                    quantity=item.get('quantity', 1),
+                    unit_price=item.get('unit_price', 0),
+                    amount=float(item.get('quantity', 1)) * float(item.get('unit_price', 0)),
+                    order=i,
+                )
+            quote.calculate_totals()
+        else:
+            quote.save()
+
+        return Response({'message': 'Quote updated'})
+
+    def delete(self, request, pk):
+        from core.models import Quote
+        try:
+            quote = Quote.objects.get(pk=pk)
+        except Quote.DoesNotExist:
+            return Response({'error': 'Quote not found'}, status=status.HTTP_404_NOT_FOUND)
+        quote.delete()
+        return Response({'message': 'Quote deleted'}, status=status.HTTP_204_NO_CONTENT)
+
+
+# ---- Owner: Expense CRUD ----
+
+@extend_schema(tags=['Owner'])
+class OwnerExpenseCreateView(APIView):
+    """Owner/Partner: Create an expense"""
+    permission_classes = [IsAuthenticated, IsOwnerOrPartner]
+
+    def post(self, request):
+        from core.models import Expense
+        data = request.data
+        if not data.get('amount') or not data.get('vendor') or not data.get('category'):
+            return Response({'error': 'amount, vendor, and category are required'},
+                            status=status.HTTP_400_BAD_REQUEST)
+
+        expense = Expense.objects.create(
+            category=data['category'],
+            amount=data['amount'],
+            date=data.get('date') or None,
+            vendor=data.get('vendor', ''),
+            description=data.get('description', ''),
+            receipt=request.FILES.get('receipt'),
+            project_id=data.get('project_id') or None,
+            is_billable=data.get('is_billable', False),
+            payment_method=data.get('payment_method', 'bank_transfer'),
+            notes=data.get('notes', ''),
+        )
+        return Response({'id': str(expense.id), 'message': 'Expense created'}, status=status.HTTP_201_CREATED)
+
+
+@extend_schema(tags=['Owner'])
+class OwnerExpenseUpdateDeleteView(APIView):
+    """Owner/Partner: Update or delete an expense"""
+    permission_classes = [IsAuthenticated, IsOwnerOrPartner]
+
+    def patch(self, request, pk):
+        from core.models import Expense
+        try:
+            expense = Expense.objects.get(pk=pk)
+        except Expense.DoesNotExist:
+            return Response({'error': 'Expense not found'}, status=status.HTTP_404_NOT_FOUND)
+
+        fields = ['category', 'amount', 'date', 'vendor', 'description',
+                  'is_billable', 'payment_method', 'notes']
+        for field in fields:
+            if field in request.data:
+                setattr(expense, field, request.data[field])
+
+        if 'project_id' in request.data:
+            expense.project_id = request.data['project_id'] or None
+        if 'receipt' in request.FILES:
+            expense.receipt = request.FILES['receipt']
+
+        expense.save()
+        return Response({'message': 'Expense updated'})
+
+    def delete(self, request, pk):
+        from core.models import Expense
+        try:
+            expense = Expense.objects.get(pk=pk)
+        except Expense.DoesNotExist:
+            return Response({'error': 'Expense not found'}, status=status.HTTP_404_NOT_FOUND)
+        expense.delete()
+        return Response({'message': 'Expense deleted'}, status=status.HTTP_204_NO_CONTENT)
+
+
 # ============================================================
 # Admin APIs (for managing employees from backend/admin panel)
 # ============================================================
