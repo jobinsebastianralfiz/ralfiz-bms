@@ -68,6 +68,25 @@ class EmployeeTokenSerializer(TokenObtainPairSerializer):
             employee = user.employee_profile
         except Employee.DoesNotExist:
             employee = self._create_employee_from_team_member(user)
+            if employee is None and (user.is_superuser or user.is_staff):
+                # Auto-create Employee for superusers/staff
+                last_emp = Employee.objects.order_by('-employee_id').first()
+                if last_emp and last_emp.employee_id.startswith('EMP'):
+                    try:
+                        num = int(last_emp.employee_id[3:]) + 1
+                    except ValueError:
+                        num = 1
+                else:
+                    num = 1
+                employee = Employee.objects.create(
+                    user=user,
+                    employee_id=f'EMP{num:03d}',
+                    employment_type='fulltime',
+                    role='owner' if user.is_superuser else 'employee',
+                    department='operations',
+                    designation='Admin',
+                    status='active',
+                )
             if employee is None:
                 raise serializers.ValidationError('No employee profile found for this user.')
 
