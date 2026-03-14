@@ -82,7 +82,7 @@ class DashboardView(APIView):
         }
 
         # Include class-related data only for interns
-        if employee.employment_type == 'intern':
+        if employee.role == 'intern':
             upcoming_classes = ScheduledClass.objects.filter(
                 Q(interns=employee) | Q(interns__isnull=True),
                 date__gte=today,
@@ -652,7 +652,7 @@ class ScheduledClassListView(generics.ListAPIView):
             return ScheduledClass.objects.none()
 
         # Only interns can see scheduled classes
-        if employee.employment_type != 'intern':
+        if employee.role != 'intern':
             return ScheduledClass.objects.none()
 
         # Classes where this intern is assigned, or all-intern classes (empty interns list)
@@ -681,7 +681,7 @@ class ScheduledClassDetailView(APIView):
         if not employee:
             return Response({'error': 'Employee profile not found'}, status=status.HTTP_404_NOT_FOUND)
 
-        if employee.employment_type != 'intern':
+        if employee.role != 'intern':
             return Response({'error': 'Scheduled classes are only available for interns.'},
                             status=status.HTTP_403_FORBIDDEN)
 
