@@ -12,6 +12,18 @@ class Employee(models.Model):
         ('parttime', 'Part-Time'),
     ]
 
+    ROLE_CHOICES = [
+        ('employee', 'Employee'),
+        ('intern', 'Intern'),
+        ('owner', 'Owner'),
+        ('partner', 'Partner'),
+    ]
+
+    INTERN_TYPE_CHOICES = [
+        ('digital', 'Digital Marketing'),
+        ('field', 'Field Marketing'),
+    ]
+
     STATUS_CHOICES = [
         ('active', 'Active'),
         ('inactive', 'Inactive'),
@@ -34,6 +46,7 @@ class Employee(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='employee_profile')
     employee_id = models.CharField(max_length=20, unique=True, help_text='Employee ID (e.g., EMP001)')
     employment_type = models.CharField(max_length=10, choices=EMPLOYMENT_TYPE_CHOICES)
+    role = models.CharField(max_length=10, choices=ROLE_CHOICES, default='employee')
     department = models.CharField(max_length=20, choices=DEPARTMENT_CHOICES, default='engineering')
     designation = models.CharField(max_length=100, blank=True)
     phone = models.CharField(max_length=20, blank=True)
@@ -61,6 +74,16 @@ class Employee(models.Model):
 
     profile_photo = models.ImageField(upload_to='employees/photos/', blank=True, null=True)
     notes = models.TextField(blank=True)
+
+    # Intern-specific fields (migrated from CRM InternProfile)
+    intern_type = models.CharField(max_length=10, choices=INTERN_TYPE_CHOICES, blank=True, default='',
+                                    help_text='Digital or Field marketing (for interns)')
+    commission_percentage = models.DecimalField(max_digits=5, decimal_places=2, default=5.00,
+                                                 help_text='Default commission percentage (for interns)')
+    supervisor = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True,
+                                    related_name='supervised_employees',
+                                    help_text='Supervisor (for interns)')
+
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

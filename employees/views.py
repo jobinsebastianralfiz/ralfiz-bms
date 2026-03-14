@@ -3,7 +3,8 @@ import math
 from datetime import date
 
 from django.contrib.auth.models import User
-from django.db.models import Q
+from django.db import models
+from django.db.models import Q, Sum
 from django.utils import timezone
 from rest_framework import status, generics, permissions
 from rest_framework.decorators import api_view, permission_classes
@@ -23,7 +24,8 @@ from .serializers import (
     LeaveTypeSerializer, LeaveRequestSerializer, LeaveRequestCreateSerializer,
     WorkAssignmentSerializer, WorkUpdateSerializer, WorkStatusUpdateSerializer,
     NotificationSerializer, ChangePasswordSerializer, ScheduledClassSerializer,
-    PayrollSerializer,
+    PayrollSerializer, OwnerClientSerializer, OwnerProjectSerializer,
+    OwnerAttendanceEmployeeSerializer,
 )
 from django.shortcuts import render
 
@@ -78,6 +80,18 @@ class DashboardView(APIView):
                 many=True, context={'request': request}
             ).data,
         }
+
+        # Include class-related data only for interns
+        if employee.employment_type == 'intern':
+            upcoming_classes = ScheduledClass.objects.filter(
+                Q(interns=employee) | Q(interns__isnull=True),
+                date__gte=today,
+                status__in=['scheduled', 'in_progress'],
+            ).distinct()[:5]
+            data['upcoming_classes'] = ScheduledClassSerializer(
+                upcoming_classes, many=True, context={'request': request}
+            ).data
+
         return Response(data)
 
 
@@ -245,6 +259,9 @@ class CheckInView(APIView):
 
         # On-device face verification (ML Kit on mobile) - QR + location still verified server-side
         if method == 'face_local':
+            if not employee.face_photo:
+                return Response({'error': 'No reference face photo registered. Please register your face first.'},
+                                status=status.HTTP_400_BAD_REQUEST)
             face_photo = data.get('face_photo')
             if not face_photo:
                 return Response({'error': 'Face photo (selfie) is required.'},
@@ -634,6 +651,10 @@ class ScheduledClassListView(generics.ListAPIView):
         if not employee:
             return ScheduledClass.objects.none()
 
+        # Only interns can see scheduled classes
+        if employee.employment_type != 'intern':
+            return ScheduledClass.objects.none()
+
         # Classes where this intern is assigned, or all-intern classes (empty interns list)
         qs = ScheduledClass.objects.filter(
             Q(interns=employee) | Q(interns__isnull=True)
@@ -659,6 +680,10 @@ class ScheduledClassDetailView(APIView):
         employee = get_employee(request.user)
         if not employee:
             return Response({'error': 'Employee profile not found'}, status=status.HTTP_404_NOT_FOUND)
+
+        if employee.employment_type != 'intern':
+            return Response({'error': 'Scheduled classes are only available for interns.'},
+                            status=status.HTTP_403_FORBIDDEN)
 
         try:
             scheduled_class = ScheduledClass.objects.filter(
@@ -766,6 +791,674 @@ class RegisterDeviceTokenView(APIView):
 
         token = serializer.save(employee=employee)
         return Response({'message': 'Device registered', 'id': str(token.id)}, status=status.HTTP_201_CREATED)
+
+
+# ============================================================
+# Owner/Partner APIs (business-level data)
+# ============================================================
+
+class IsOwnerOrPartner(permissions.BasePermission):
+    """Only allow owners or partners to access these views"""
+    def has_permission(self, request, view):
+        if not request.user or not request.user.is_authenticated:
+            return False
+        employee = get_employee(request.user)
+        return employee is not None and employee.role in ('owner', 'partner')
+
+
+@extend_schema(tags=['Owner'])
+class OwnerDashboardView(APIView):
+    """Owner/Partner dashboard with business-level data"""
+    permission_classes = [IsAuthenticated, IsOwnerOrPartner]
+
+    def get(self, request):
+        from core.models import Client, Project, Invoice, Payment, Expense
+        from django.db.models import Sum, Count, Q
+        from decimal import Decimal
+
+        today = date.today()
+        current_month_start = today.replace(day=1)
+
+        # Client stats
+        total_clients = Client.objects.count()
+        active_clients = Client.objects.filter(is_active=True).count()
+
+        # Project stats
+        active_projects = Project.objects.filter(
+            status__in=['confirmed', 'in_progress', 'review']
+        ).count()
+
+        # Revenue
+        total_revenue = Invoice.objects.filter(
+            status='paid'
+        ).aggregate(total=Sum('total_amount'))['total'] or Decimal('0')
+
+        month_revenue = Payment.objects.filter(
+            payment_date__gte=current_month_start,
+            payment_date__lte=today,
+        ).aggregate(total=Sum('amount'))['total'] or Decimal('0')
+
+        outstanding = Invoice.objects.filter(
+            status__in=['sent', 'viewed', 'partial', 'overdue']
+        ).aggregate(total=Sum('total_amount'))['total'] or Decimal('0')
+        outstanding_paid = Invoice.objects.filter(
+            status__in=['sent', 'viewed', 'partial', 'overdue']
+        ).aggregate(paid=Sum('amount_paid'))['paid'] or Decimal('0')
+        outstanding_amount = outstanding - outstanding_paid
+
+        # Recent payments
+        recent_payments = Payment.objects.select_related(
+            'invoice', 'invoice__client'
+        ).order_by('-payment_date')[:10]
+        recent_payments_data = [{
+            'amount': str(p.amount),
+            'payment_date': str(p.payment_date),
+            'payment_method': p.payment_method,
+            'client_name': p.invoice.client.name if p.invoice and p.invoice.client else '',
+            'invoice_number': p.invoice.invoice_number if p.invoice else '',
+        } for p in recent_payments]
+
+        # Expenses
+        total_expenses = Expense.objects.aggregate(total=Sum('amount'))['total'] or Decimal('0')
+        month_expenses = Expense.objects.filter(
+            date__gte=current_month_start, date__lte=today
+        ).aggregate(total=Sum('amount'))['total'] or Decimal('0')
+
+        # Employee counts
+        employees = Employee.objects.filter(status='active')
+        employee_counts = {
+            'total': employees.count(),
+            'fulltime': employees.filter(employment_type='fulltime').count(),
+            'parttime': employees.filter(employment_type='parttime').count(),
+            'intern': employees.filter(employment_type='intern').count(),
+        }
+
+        return Response({
+            'clients': {
+                'total': total_clients,
+                'active': active_clients,
+            },
+            'projects': {
+                'active': active_projects,
+                'total': Project.objects.count(),
+            },
+            'revenue': {
+                'total': str(total_revenue),
+                'this_month': str(month_revenue),
+                'outstanding': str(outstanding_amount),
+            },
+            'expenses': {
+                'total': str(total_expenses),
+                'this_month': str(month_expenses),
+            },
+            'recent_payments': recent_payments_data,
+            'employees': employee_counts,
+        })
+
+
+@extend_schema(tags=['Owner'])
+class OwnerClientListView(APIView):
+    """Owner/Partner: List all clients with revenue data"""
+    permission_classes = [IsAuthenticated, IsOwnerOrPartner]
+
+    def get(self, request):
+        from core.models import Client, Invoice, Project
+        from django.db.models import Sum, Count, Q
+        from decimal import Decimal
+
+        clients = Client.objects.all()
+        search = request.query_params.get('search')
+        if search:
+            clients = clients.filter(
+                Q(name__icontains=search) | Q(company_name__icontains=search)
+            )
+
+        data = []
+        for client in clients:
+            invoices = Invoice.objects.filter(client=client)
+            total_revenue = invoices.filter(status='paid').aggregate(
+                total=Sum('total_amount'))['total'] or Decimal('0')
+            total_paid = invoices.exclude(status__in=['draft', 'cancelled']).aggregate(
+                paid=Sum('amount_paid'))['paid'] or Decimal('0')
+            total_invoiced = invoices.exclude(status__in=['draft', 'cancelled']).aggregate(
+                total=Sum('total_amount'))['total'] or Decimal('0')
+            pending = total_invoiced - total_paid
+
+            data.append({
+                'id': str(client.id),
+                'name': client.name,
+                'company_name': client.company_name,
+                'email': client.email,
+                'phone': client.phone,
+                'is_active': client.is_active,
+                'total_revenue': str(total_revenue),
+                'pending_amount': str(pending),
+                'project_count': Project.objects.filter(client=client).count(),
+            })
+
+        return Response(data)
+
+
+@extend_schema(tags=['Owner'])
+class OwnerProjectListView(APIView):
+    """Owner/Partner: List all projects with financial data"""
+    permission_classes = [IsAuthenticated, IsOwnerOrPartner]
+
+    def get(self, request):
+        from core.models import Project, Invoice
+        from django.db.models import Sum, Q
+        from decimal import Decimal
+
+        projects = Project.objects.select_related('client').all()
+
+        status_filter = request.query_params.get('status')
+        if status_filter:
+            projects = projects.filter(status=status_filter)
+
+        search = request.query_params.get('search')
+        if search:
+            projects = projects.filter(
+                Q(name__icontains=search) | Q(client__name__icontains=search)
+            )
+
+        data = []
+        for project in projects:
+            invoices = Invoice.objects.filter(project=project).exclude(status__in=['draft', 'cancelled'])
+            invoiced = invoices.aggregate(total=Sum('total_amount'))['total'] or Decimal('0')
+            paid = invoices.aggregate(paid=Sum('amount_paid'))['paid'] or Decimal('0')
+
+            data.append({
+                'id': str(project.id),
+                'name': project.name,
+                'client_name': project.client.name if project.client else '',
+                'status': project.status,
+                'project_type': project.project_type,
+                'estimated_budget': str(project.estimated_budget or 0),
+                'final_amount': str(project.final_amount or 0),
+                'invoiced_amount': str(invoiced),
+                'paid_amount': str(paid),
+                'start_date': str(project.start_date) if project.start_date else None,
+                'deadline': str(project.deadline) if project.deadline else None,
+            })
+
+        return Response(data)
+
+
+@extend_schema(tags=['Owner'])
+class OwnerFinancialReportView(APIView):
+    """Owner/Partner: Financial report with trends"""
+    permission_classes = [IsAuthenticated, IsOwnerOrPartner]
+
+    def get(self, request):
+        from core.models import Client, Invoice, Payment, Expense
+        from django.db.models import Sum, Q
+        from decimal import Decimal
+        import calendar
+
+        today = date.today()
+
+        # Monthly trends for last 12 months
+        monthly_data = []
+        for i in range(11, -1, -1):
+            month = today.month - i
+            year = today.year
+            while month <= 0:
+                month += 12
+                year -= 1
+
+            month_payments = Payment.objects.filter(
+                payment_date__month=month, payment_date__year=year
+            ).aggregate(total=Sum('amount'))['total'] or Decimal('0')
+
+            month_expenses = Expense.objects.filter(
+                date__month=month, date__year=year
+            ).aggregate(total=Sum('amount'))['total'] or Decimal('0')
+
+            monthly_data.append({
+                'month': calendar.month_abbr[month],
+                'year': year,
+                'income': str(month_payments),
+                'expenses': str(month_expenses),
+                'profit': str(month_payments - month_expenses),
+            })
+
+        # Revenue by client (top 10)
+        revenue_by_client = []
+        for client in Client.objects.all():
+            paid = Invoice.objects.filter(
+                client=client, status='paid'
+            ).aggregate(total=Sum('total_amount'))['total'] or Decimal('0')
+            if paid > 0:
+                revenue_by_client.append({
+                    'client': client.name,
+                    'revenue': str(paid),
+                })
+        revenue_by_client.sort(key=lambda x: float(x['revenue']), reverse=True)
+        revenue_by_client = revenue_by_client[:10]
+
+        # Collection rate
+        total_invoiced = Invoice.objects.exclude(
+            status__in=['draft', 'cancelled']
+        ).aggregate(total=Sum('total_amount'))['total'] or Decimal('0')
+        total_collected = Invoice.objects.exclude(
+            status__in=['draft', 'cancelled']
+        ).aggregate(paid=Sum('amount_paid'))['paid'] or Decimal('0')
+        collection_rate = (float(total_collected) / float(total_invoiced) * 100) if total_invoiced else 0
+
+        # Total income vs expenses
+        total_income = Payment.objects.aggregate(total=Sum('amount'))['total'] or Decimal('0')
+        total_expenses = Expense.objects.aggregate(total=Sum('amount'))['total'] or Decimal('0')
+
+        return Response({
+            'summary': {
+                'total_income': str(total_income),
+                'total_expenses': str(total_expenses),
+                'net_profit': str(total_income - total_expenses),
+                'collection_rate': round(collection_rate, 1),
+            },
+            'monthly_trends': monthly_data,
+            'revenue_by_client': revenue_by_client,
+        })
+
+
+@extend_schema(tags=['Owner'], parameters=[
+    OpenApiParameter(name='start_date', type=str, required=False, description='YYYY-MM-DD'),
+    OpenApiParameter(name='end_date', type=str, required=False, description='YYYY-MM-DD'),
+    OpenApiParameter(name='employee_id', type=str, required=False),
+])
+class OwnerAttendanceView(APIView):
+    """Owner/Partner: View all employees' attendance"""
+    permission_classes = [IsAuthenticated, IsOwnerOrPartner]
+
+    def get(self, request):
+        from datetime import datetime
+
+        start_date_str = request.query_params.get('start_date')
+        end_date_str = request.query_params.get('end_date')
+        employee_id = request.query_params.get('employee_id')
+
+        today = date.today()
+        start = datetime.strptime(start_date_str, '%Y-%m-%d').date() if start_date_str else today.replace(day=1)
+        end = datetime.strptime(end_date_str, '%Y-%m-%d').date() if end_date_str else today
+
+        employees = Employee.objects.filter(status='active')
+        if employee_id:
+            employees = employees.filter(pk=employee_id)
+
+        data = []
+        for emp in employees:
+            records = Attendance.objects.filter(
+                employee=emp, date__gte=start, date__lte=end
+            )
+            data.append({
+                'employee_id': emp.employee_id,
+                'name': emp.full_name,
+                'department': emp.department,
+                'records': AttendanceSerializer(records, many=True).data,
+            })
+
+        return Response(data)
+
+
+@extend_schema(tags=['Owner'])
+class OwnerClientDetailView(APIView):
+    """Owner/Partner: View single client with projects, invoices, quotes"""
+    permission_classes = [IsAuthenticated, IsOwnerOrPartner]
+
+    def get(self, request, pk):
+        from core.models import Client, Project, Invoice, Quote
+        from decimal import Decimal
+
+        try:
+            client = Client.objects.get(pk=pk)
+        except Client.DoesNotExist:
+            return Response({'error': 'Client not found'}, status=status.HTTP_404_NOT_FOUND)
+
+        # Projects
+        projects = Project.objects.filter(client=client)
+        projects_data = [{
+            'id': str(p.id),
+            'name': p.name,
+            'status': p.status,
+            'project_type': p.project_type,
+            'estimated_budget': str(p.estimated_budget or 0),
+            'final_amount': str(p.final_amount or 0),
+            'start_date': str(p.start_date) if p.start_date else None,
+            'deadline': str(p.deadline) if p.deadline else None,
+        } for p in projects]
+
+        # Invoices
+        invoices = Invoice.objects.filter(client=client).exclude(status='draft')
+        invoices_data = [{
+            'id': str(inv.id),
+            'invoice_number': inv.invoice_number,
+            'title': inv.title,
+            'status': inv.status,
+            'total_amount': str(inv.total_amount),
+            'amount_paid': str(inv.amount_paid),
+            'balance_due': str(inv.balance_due),
+            'issue_date': str(inv.issue_date),
+            'due_date': str(inv.due_date) if inv.due_date else None,
+        } for inv in invoices]
+
+        # Quotes
+        quotes = Quote.objects.filter(client=client)
+        quotes_data = [{
+            'id': str(q.id),
+            'quote_number': q.quote_number,
+            'title': q.title,
+            'status': q.status,
+            'total_amount': str(q.total_amount),
+            'issue_date': str(q.issue_date),
+            'valid_until': str(q.valid_until),
+        } for q in quotes]
+
+        # Revenue stats
+        total_invoiced = invoices.aggregate(
+            total=models.Sum('total_amount'))['total'] or Decimal('0')
+        total_paid = invoices.aggregate(
+            paid=models.Sum('amount_paid'))['paid'] or Decimal('0')
+
+        return Response({
+            'id': str(client.id),
+            'name': client.name,
+            'company_name': client.company_name,
+            'email': client.email,
+            'phone': client.phone,
+            'whatsapp': client.whatsapp,
+            'address': client.address,
+            'gst_number': client.gst_number,
+            'priority': client.priority,
+            'is_active': client.is_active,
+            'total_invoiced': str(total_invoiced),
+            'total_paid': str(total_paid),
+            'balance_due': str(total_invoiced - total_paid),
+            'projects': projects_data,
+            'invoices': invoices_data,
+            'quotes': quotes_data,
+        })
+
+
+@extend_schema(tags=['Owner'])
+class OwnerProjectDetailView(APIView):
+    """Owner/Partner: View single project with credentials, invoices, expenses"""
+    permission_classes = [IsAuthenticated, IsOwnerOrPartner]
+
+    def get(self, request, pk):
+        from core.models import Project, Credential, Invoice, Expense
+        from decimal import Decimal
+
+        try:
+            project = Project.objects.select_related('client').get(pk=pk)
+        except Project.DoesNotExist:
+            return Response({'error': 'Project not found'}, status=status.HTTP_404_NOT_FOUND)
+
+        # Credentials
+        credentials = Credential.objects.filter(project=project)
+        credentials_data = [{
+            'id': str(c.id),
+            'credential_type': c.credential_type,
+            'name': c.name,
+            'provider': c.provider,
+            'url': c.url,
+            'ip_address': c.ip_address,
+            'username': c.username,
+            'password': c.password,
+            'ssh_key': c.ssh_key,
+            'port': c.port,
+            'purchase_date': str(c.purchase_date) if c.purchase_date else None,
+            'expiry_date': str(c.expiry_date) if c.expiry_date else None,
+            'auto_renew': c.auto_renew,
+            'renewal_cost': str(c.renewal_cost) if c.renewal_cost else None,
+            'is_active': c.is_active,
+            'is_expired': c.is_expired,
+            'is_expiring_soon': c.is_expiring_soon,
+            'days_until_expiry': c.days_until_expiry,
+        } for c in credentials]
+
+        # Invoices
+        invoices = Invoice.objects.filter(project=project).exclude(status='draft')
+        invoices_data = [{
+            'id': str(inv.id),
+            'invoice_number': inv.invoice_number,
+            'title': inv.title,
+            'status': inv.status,
+            'total_amount': str(inv.total_amount),
+            'amount_paid': str(inv.amount_paid),
+            'balance_due': str(inv.balance_due),
+            'issue_date': str(inv.issue_date),
+            'due_date': str(inv.due_date) if inv.due_date else None,
+        } for inv in invoices]
+
+        # Expenses
+        expenses = Expense.objects.filter(project=project)
+        expenses_data = [{
+            'id': str(e.id),
+            'category': e.category,
+            'amount': str(e.amount),
+            'date': str(e.date),
+            'vendor': e.vendor,
+            'description': e.description,
+            'is_billable': e.is_billable,
+            'payment_method': e.payment_method,
+        } for e in expenses]
+
+        # Financial summary
+        total_invoiced = invoices.aggregate(
+            total=models.Sum('total_amount'))['total'] or Decimal('0')
+        total_paid = invoices.aggregate(
+            paid=models.Sum('amount_paid'))['paid'] or Decimal('0')
+        total_expenses = expenses.aggregate(
+            total=models.Sum('amount'))['total'] or Decimal('0')
+
+        return Response({
+            'id': str(project.id),
+            'name': project.name,
+            'client_name': project.client.name if project.client else '',
+            'client_id': str(project.client.id) if project.client else None,
+            'project_type': project.project_type,
+            'status': project.status,
+            'description': project.description,
+            'estimated_budget': str(project.estimated_budget or 0),
+            'final_amount': str(project.final_amount or 0),
+            'start_date': str(project.start_date) if project.start_date else None,
+            'deadline': str(project.deadline) if project.deadline else None,
+            'completed_date': str(project.completed_date) if project.completed_date else None,
+            'tech_stack': project.tech_stack,
+            'github_repo': project.github_repo,
+            'live_url': project.live_url,
+            'is_overdue': project.is_overdue,
+            'financial_summary': {
+                'total_invoiced': str(total_invoiced),
+                'total_paid': str(total_paid),
+                'balance_due': str(total_invoiced - total_paid),
+                'total_expenses': str(total_expenses),
+            },
+            'credentials': credentials_data,
+            'invoices': invoices_data,
+            'expenses': expenses_data,
+        })
+
+
+@extend_schema(tags=['Owner'])
+class OwnerInvoiceListView(APIView):
+    """Owner/Partner: List all invoices"""
+    permission_classes = [IsAuthenticated, IsOwnerOrPartner]
+
+    def get(self, request):
+        from core.models import Invoice
+
+        invoices = Invoice.objects.select_related('client', 'project').all()
+
+        status_filter = request.query_params.get('status')
+        if status_filter:
+            invoices = invoices.filter(status=status_filter)
+
+        client_id = request.query_params.get('client_id')
+        if client_id:
+            invoices = invoices.filter(client_id=client_id)
+
+        search = request.query_params.get('search')
+        if search:
+            invoices = invoices.filter(
+                models.Q(invoice_number__icontains=search) |
+                models.Q(title__icontains=search) |
+                models.Q(client__name__icontains=search)
+            )
+
+        data = [{
+            'id': str(inv.id),
+            'invoice_number': inv.invoice_number,
+            'title': inv.title,
+            'client_name': inv.client.name if inv.client else '',
+            'project_name': inv.project.name if inv.project else '',
+            'status': inv.status,
+            'total_amount': str(inv.total_amount),
+            'amount_paid': str(inv.amount_paid),
+            'balance_due': str(inv.balance_due),
+            'issue_date': str(inv.issue_date),
+            'due_date': str(inv.due_date) if inv.due_date else None,
+            'is_overdue': inv.is_overdue,
+        } for inv in invoices]
+
+        return Response(data)
+
+
+@extend_schema(tags=['Owner'])
+class OwnerInvoiceDetailView(APIView):
+    """Owner/Partner: View single invoice with line items and payments"""
+    permission_classes = [IsAuthenticated, IsOwnerOrPartner]
+
+    def get(self, request, pk):
+        from core.models import Invoice
+
+        try:
+            inv = Invoice.objects.select_related('client', 'project', 'quote').get(pk=pk)
+        except Invoice.DoesNotExist:
+            return Response({'error': 'Invoice not found'}, status=status.HTTP_404_NOT_FOUND)
+
+        items = [{
+            'description': item.description,
+            'details': item.details,
+            'quantity': str(item.quantity),
+            'unit_price': str(item.unit_price),
+            'amount': str(item.amount),
+        } for item in inv.items.all()]
+
+        payments = [{
+            'id': str(p.id),
+            'amount': str(p.amount),
+            'payment_date': str(p.payment_date),
+            'payment_method': p.payment_method,
+            'transaction_id': p.transaction_id,
+            'notes': p.notes,
+        } for p in inv.payments.all()]
+
+        return Response({
+            'id': str(inv.id),
+            'invoice_number': inv.invoice_number,
+            'title': inv.title,
+            'description': inv.description,
+            'client_name': inv.client.name if inv.client else '',
+            'client_id': str(inv.client.id) if inv.client else None,
+            'project_name': inv.project.name if inv.project else '',
+            'project_id': str(inv.project.id) if inv.project else None,
+            'quote_number': inv.quote.quote_number if inv.quote else None,
+            'status': inv.status,
+            'subtotal': str(inv.subtotal),
+            'discount': str(inv.discount),
+            'tax_rate': str(inv.tax_rate),
+            'tax_amount': str(inv.tax_amount),
+            'total_amount': str(inv.total_amount),
+            'amount_paid': str(inv.amount_paid),
+            'balance_due': str(inv.balance_due),
+            'issue_date': str(inv.issue_date),
+            'due_date': str(inv.due_date) if inv.due_date else None,
+            'is_overdue': inv.is_overdue,
+            'items': items,
+            'payments': payments,
+        })
+
+
+@extend_schema(tags=['Owner'])
+class OwnerQuoteListView(APIView):
+    """Owner/Partner: List all quotes"""
+    permission_classes = [IsAuthenticated, IsOwnerOrPartner]
+
+    def get(self, request):
+        from core.models import Quote
+
+        quotes = Quote.objects.select_related('client', 'project').all()
+
+        status_filter = request.query_params.get('status')
+        if status_filter:
+            quotes = quotes.filter(status=status_filter)
+
+        client_id = request.query_params.get('client_id')
+        if client_id:
+            quotes = quotes.filter(client_id=client_id)
+
+        data = [{
+            'id': str(q.id),
+            'quote_number': q.quote_number,
+            'title': q.title,
+            'client_name': q.client.name if q.client else '',
+            'project_name': q.project.name if q.project else '',
+            'status': q.status,
+            'total_amount': str(q.total_amount),
+            'issue_date': str(q.issue_date),
+            'valid_until': str(q.valid_until),
+            'is_expired': q.is_expired,
+        } for q in quotes]
+
+        return Response(data)
+
+
+@extend_schema(tags=['Owner'])
+class OwnerExpenseListView(APIView):
+    """Owner/Partner: List all expenses"""
+    permission_classes = [IsAuthenticated, IsOwnerOrPartner]
+
+    def get(self, request):
+        from core.models import Expense
+        from decimal import Decimal
+
+        expenses = Expense.objects.select_related('project').all()
+
+        category = request.query_params.get('category')
+        if category:
+            expenses = expenses.filter(category=category)
+
+        project_id = request.query_params.get('project_id')
+        if project_id:
+            expenses = expenses.filter(project_id=project_id)
+
+        start_date = request.query_params.get('start_date')
+        end_date = request.query_params.get('end_date')
+        if start_date:
+            expenses = expenses.filter(date__gte=start_date)
+        if end_date:
+            expenses = expenses.filter(date__lte=end_date)
+
+        total = expenses.aggregate(total=models.Sum('amount'))['total'] or Decimal('0')
+
+        data = [{
+            'id': str(e.id),
+            'category': e.category,
+            'amount': str(e.amount),
+            'date': str(e.date),
+            'vendor': e.vendor,
+            'description': e.description,
+            'project_name': e.project.name if e.project else '',
+            'is_billable': e.is_billable,
+            'payment_method': e.payment_method,
+        } for e in expenses]
+
+        return Response({
+            'total': str(total),
+            'count': len(data),
+            'expenses': data,
+        })
 
 
 # ============================================================

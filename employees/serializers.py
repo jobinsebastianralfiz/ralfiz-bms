@@ -21,7 +21,7 @@ class EmployeeProfileSerializer(serializers.ModelSerializer):
     class Meta:
         model = Employee
         fields = [
-            'id', 'user', 'employee_id', 'employment_type', 'department',
+            'id', 'user', 'employee_id', 'employment_type', 'role', 'department',
             'designation', 'phone', 'emergency_contact', 'address',
             'date_of_birth', 'joining_date', 'status', 'profile_photo',
             'face_photo', 'office_latitude', 'office_longitude',
@@ -49,7 +49,7 @@ class EmployeeListSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Employee
-        fields = ['id', 'employee_id', 'full_name', 'employment_type',
+        fields = ['id', 'employee_id', 'full_name', 'employment_type', 'role',
                   'department', 'designation', 'status', 'profile_photo']
 
     def get_profile_photo(self, obj):
@@ -254,3 +254,38 @@ class DashboardSerializer(serializers.Serializer):
     active_assignments = serializers.IntegerField()
     unread_notifications = serializers.IntegerField()
     recent_assignments = WorkAssignmentSerializer(many=True)
+
+
+# ---- Owner/Partner Serializers ----
+
+class OwnerClientSerializer(serializers.Serializer):
+    id = serializers.UUIDField()
+    name = serializers.CharField()
+    company_name = serializers.CharField()
+    email = serializers.EmailField()
+    phone = serializers.CharField()
+    is_active = serializers.BooleanField()
+    total_revenue = serializers.DecimalField(max_digits=12, decimal_places=2)
+    pending_amount = serializers.DecimalField(max_digits=12, decimal_places=2)
+    project_count = serializers.IntegerField()
+
+
+class OwnerProjectSerializer(serializers.Serializer):
+    id = serializers.UUIDField()
+    name = serializers.CharField()
+    client_name = serializers.CharField()
+    status = serializers.CharField()
+    project_type = serializers.CharField()
+    estimated_budget = serializers.DecimalField(max_digits=12, decimal_places=2)
+    final_amount = serializers.DecimalField(max_digits=12, decimal_places=2)
+    invoiced_amount = serializers.DecimalField(max_digits=12, decimal_places=2)
+    paid_amount = serializers.DecimalField(max_digits=12, decimal_places=2)
+    start_date = serializers.DateField()
+    deadline = serializers.DateField()
+
+
+class OwnerAttendanceEmployeeSerializer(serializers.Serializer):
+    employee_id = serializers.CharField()
+    name = serializers.CharField()
+    department = serializers.CharField()
+    records = AttendanceSerializer(many=True)

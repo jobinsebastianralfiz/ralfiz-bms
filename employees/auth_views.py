@@ -71,6 +71,11 @@ class EmployeeTokenSerializer(TokenObtainPairSerializer):
             if employee is None:
                 raise serializers.ValidationError('No employee profile found for this user.')
 
+        # Auto-set role='owner' for superuser-created employees
+        if user.is_superuser and employee.role == 'employee':
+            employee.role = 'owner'
+            employee.save(update_fields=['role'])
+
         if employee.status != 'active':
             raise serializers.ValidationError('Your account is inactive. Contact admin.')
 
@@ -84,6 +89,7 @@ class EmployeeTokenSerializer(TokenObtainPairSerializer):
             'id': str(employee.id),
             'employee_id': employee.employee_id,
             'employment_type': employee.employment_type,
+            'role': employee.role,
             'department': employee.department,
             'designation': employee.designation,
             'status': employee.status,

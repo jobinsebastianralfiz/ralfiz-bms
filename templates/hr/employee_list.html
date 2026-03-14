@@ -51,6 +51,7 @@
             <th>Department</th>
             <th>Designation</th>
             <th>Type</th>
+            <th>Role</th>
             <th>Phone</th>
             <th>Status</th>
             <th class="text-end">Actions</th>
@@ -75,6 +76,17 @@
             <td>{{ emp.designation|default:"-" }}</td>
             <td>
               <span class="badge" style="background: var(--info-bg); color: var(--info);">{{ emp.get_employment_type_display }}</span>
+            </td>
+            <td>
+              {% if emp.role == 'owner' %}
+              <span class="badge" style="background: var(--primary-bg); color: var(--primary);">Owner</span>
+              {% elif emp.role == 'partner' %}
+              <span class="badge" style="background: var(--primary-bg); color: var(--primary);">Partner</span>
+              {% elif emp.role == 'intern' %}
+              <span class="badge" style="background: var(--warning-bg); color: var(--warning);">Intern</span>
+              {% else %}
+              <span class="badge">Employee</span>
+              {% endif %}
             </td>
             <td>{{ emp.phone|default:"-" }}</td>
             <td>

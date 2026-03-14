@@ -65,11 +65,19 @@
           <label class="form-label">Employee ID</label>
           <input type="text" name="employee_id" class="form-control" placeholder="Auto-generated if empty">
         </div>
-        <div class="col-4">
+        <div class="col-2">
           <label class="form-label">Employment Type *</label>
           <select name="employment_type" class="form-control">
             {% for key, value in employment_types %}
             <option value="{{ key }}" {% if key == 'fulltime' %}selected{% endif %}>{{ value }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-2">
+          <label class="form-label">Role</label>
+          <select name="role" class="form-control">
+            {% for key, value in roles %}
+            <option value="{{ key }}" {% if key == 'employee' %}selected{% endif %}>{{ value }}</option>
             {% endfor %}
           </select>
         </div>

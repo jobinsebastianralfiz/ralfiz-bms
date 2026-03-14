@@ -9,15 +9,15 @@ from .utils import generate_face_encoding
 
 @admin.register(Employee)
 class EmployeeAdmin(admin.ModelAdmin):
-    list_display = ['employee_id', 'full_name', 'employment_type', 'department',
+    list_display = ['employee_id', 'full_name', 'employment_type', 'role', 'department',
                     'designation', 'status', 'has_face_photo', 'joining_date']
-    list_filter = ['employment_type', 'department', 'status']
+    list_filter = ['employment_type', 'role', 'department', 'status']
     search_fields = ['employee_id', 'user__first_name', 'user__last_name', 'user__username']
     readonly_fields = ['id', 'created_at', 'updated_at', 'face_photo_preview']
 
     fieldsets = (
         ('Basic Info', {
-            'fields': ('id', 'user', 'employee_id', 'employment_type', 'department',
+            'fields': ('id', 'user', 'employee_id', 'employment_type', 'role', 'department',
                        'designation', 'status', 'joining_date'),
         }),
         ('Contact', {
@@ -30,6 +30,11 @@ class EmployeeAdmin(admin.ModelAdmin):
         }),
         ('Compensation', {
             'fields': ('monthly_salary', 'hourly_rate'),
+        }),
+        ('Intern Fields', {
+            'fields': ('intern_type', 'commission_percentage', 'supervisor'),
+            'classes': ('collapse',),
+            'description': 'Only applicable for interns (employment_type=intern).',
         }),
         ('Office Location', {
             'fields': ('office_latitude', 'office_longitude', 'allowed_radius_meters'),

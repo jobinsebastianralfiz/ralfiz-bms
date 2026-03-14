@@ -4045,6 +4045,7 @@ def emp_employee_detail(request, pk):
 
         # Update Employee fields
         employee.employment_type = request.POST.get('employment_type', employee.employment_type)
+        employee.role = request.POST.get('role', employee.role)
         employee.department = request.POST.get('department', employee.department)
         employee.designation = request.POST.get('designation', employee.designation)
         employee.status = request.POST.get('status', employee.status)
@@ -4113,6 +4114,7 @@ def emp_employee_detail(request, pk):
         'leave_requests': leave_requests,
         'work_assignments': work_assignments,
         'employment_types': Employee.EMPLOYMENT_TYPE_CHOICES,
+        'roles': Employee.ROLE_CHOICES,
         'departments': Employee.DEPARTMENT_CHOICES,
         'statuses': Employee.STATUS_CHOICES,
     }
@@ -4187,6 +4189,7 @@ def emp_employee_create(request):
             user=user,
             employee_id=employee_id,
             employment_type=request.POST.get('employment_type', 'fulltime'),
+            role=request.POST.get('role', 'employee'),
             department=request.POST.get('department', 'engineering'),
             designation=request.POST.get('designation', ''),
             phone=request.POST.get('phone', ''),
@@ -4206,6 +4209,7 @@ def emp_employee_create(request):
     context = {
         'available_users': available_users,
         'employment_types': Employee.EMPLOYMENT_TYPE_CHOICES,
+        'roles': Employee.ROLE_CHOICES,
         'departments': Employee.DEPARTMENT_CHOICES,
     }
     return render(request, 'hr/employee_create.html', context)

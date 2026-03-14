@@ -54,6 +54,19 @@ urlpatterns = [
     path('notifications/read/', views.NotificationMarkReadView.as_view(), name='notifications_read_all'),
     path('notifications/<uuid:pk>/read/', views.NotificationMarkReadView.as_view(), name='notification_read'),
 
+    # ---- Owner/Partner APIs ----
+    path('owner/dashboard/', views.OwnerDashboardView.as_view(), name='owner_dashboard'),
+    path('owner/clients/', views.OwnerClientListView.as_view(), name='owner_clients'),
+    path('owner/clients/<uuid:pk>/', views.OwnerClientDetailView.as_view(), name='owner_client_detail'),
+    path('owner/projects/', views.OwnerProjectListView.as_view(), name='owner_projects'),
+    path('owner/projects/<uuid:pk>/', views.OwnerProjectDetailView.as_view(), name='owner_project_detail'),
+    path('owner/invoices/', views.OwnerInvoiceListView.as_view(), name='owner_invoices'),
+    path('owner/invoices/<uuid:pk>/', views.OwnerInvoiceDetailView.as_view(), name='owner_invoice_detail'),
+    path('owner/quotes/', views.OwnerQuoteListView.as_view(), name='owner_quotes'),
+    path('owner/expenses/', views.OwnerExpenseListView.as_view(), name='owner_expenses'),
+    path('owner/financial-report/', views.OwnerFinancialReportView.as_view(), name='owner_financial_report'),
+    path('owner/attendance/', views.OwnerAttendanceView.as_view(), name='owner_attendance'),
+
     # ---- Admin APIs ----
     path('admin/employees/', views.AdminEmployeeListView.as_view(), name='admin_employees'),
     path('admin/employees/<uuid:pk>/', views.AdminEmployeeDetailView.as_view(), name='admin_employee_detail'),

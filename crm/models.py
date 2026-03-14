@@ -5,6 +5,8 @@ import re
 
 
 class InternProfile(models.Model):
+    """DEPRECATED: Use Employee model with employment_type='intern' instead.
+    Kept for backwards compatibility during migration period."""
     INTERN_TYPE_CHOICES = [
         ('digital', 'Digital Marketing'),
         ('field', 'Field Marketing'),

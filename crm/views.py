@@ -8,6 +8,7 @@ from django.contrib.auth.models import User
 from django.utils import timezone
 
 from .models import InternProfile, Lead, LeadNote, DailyActivity, Demo
+from employees.models import Employee
 
 from datetime import timedelta
 
@@ -17,7 +18,12 @@ def is_admin(user):
 
 
 def is_intern(user):
-    return hasattr(user, 'intern_profile')
+    """Check if user is an intern via Employee profile"""
+    try:
+        return user.employee_profile.employment_type == 'intern'
+    except Employee.DoesNotExist:
+        # Fallback to legacy InternProfile for backwards compat
+        return hasattr(user, 'intern_profile')
 
 
 def can_access_crm(user):
@@ -76,7 +82,7 @@ def lead_list(request):
     page_number = request.GET.get('page')
     leads = paginator.get_page(page_number)
 
-    interns = User.objects.filter(intern_profile__isnull=False, is_active=True)
+    interns = User.objects.filter(employee_profile__employment_type='intern', is_active=True)
 
     context = {
         'leads': leads,
@@ -261,7 +267,7 @@ def lead_check_duplicate(request):
 
 
 def _lead_form_context(request):
-    interns = User.objects.filter(intern_profile__isnull=False, is_active=True)
+    interns = User.objects.filter(employee_profile__employment_type='intern', is_active=True)
     return {
         'status_choices': Lead.STATUS_CHOICES,
         'source_choices': Lead.SOURCE_CHOICES,
@@ -298,7 +304,7 @@ def activity_list(request):
     page_number = request.GET.get('page')
     activities = paginator.get_page(page_number)
 
-    interns = User.objects.filter(intern_profile__isnull=False, is_active=True)
+    interns = User.objects.filter(employee_profile__employment_type='intern', is_active=True)
 
     context = {
         'activities': activities,
@@ -327,7 +333,7 @@ def activity_create(request):
 
     intern_type = 'digital'
     if is_intern(request.user):
-        intern_type = request.user.intern_profile.intern_type
+        intern_type = getattr(request.user.employee_profile, 'intern_type', 'digital') or 'digital'
 
     if request.method == 'POST':
         activity_date = request.POST.get('date', str(today))
@@ -479,7 +485,7 @@ def activity_weekly_summary(request):
 
 
 def _activity_form_context(request, intern_type='digital'):
-    interns = User.objects.filter(intern_profile__isnull=False, is_active=True)
+    interns = User.objects.filter(employee_profile__employment_type='intern', is_active=True)
     return {
         'intern_type_choices': DailyActivity.INTERN_TYPE_CHOICES,
         'default_intern_type': intern_type,
@@ -520,7 +526,7 @@ def demo_list(request):
     page_number = request.GET.get('page')
     demos = paginator.get_page(page_number)
 
-    interns = User.objects.filter(intern_profile__isnull=False, is_active=True)
+    interns = User.objects.filter(employee_profile__employment_type='intern', is_active=True)
 
     context = {
         'demos': demos,
@@ -657,7 +663,7 @@ def _demo_form_context(request):
     else:
         leads = Lead.objects.all()
 
-    interns = User.objects.filter(intern_profile__isnull=False, is_active=True)
+    interns = User.objects.filter(employee_profile__employment_type='intern', is_active=True)
 
     return {
         'leads': leads,
@@ -674,15 +680,17 @@ def intern_list(request):
         messages.error(request, 'Access denied.')
         return redirect('crm:lead_list')
 
-    profiles = InternProfile.objects.select_related('user', 'supervisor').all()
+    employees = Employee.objects.filter(
+        employment_type='intern'
+    ).select_related('user', 'supervisor')
 
     intern_data = []
-    for profile in profiles:
-        lead_count = Lead.objects.filter(assigned_to=profile.user).count()
-        activity_count = DailyActivity.objects.filter(intern=profile.user).count()
-        demo_count = Demo.objects.filter(conducted_by=profile.user).count()
+    for emp in employees:
+        lead_count = Lead.objects.filter(assigned_to=emp.user).count()
+        activity_count = DailyActivity.objects.filter(intern=emp.user).count()
+        demo_count = Demo.objects.filter(conducted_by=emp.user).count()
         intern_data.append({
-            'profile': profile,
+            'profile': emp,
             'lead_count': lead_count,
             'activity_count': activity_count,
             'demo_count': demo_count,
@@ -722,7 +730,34 @@ def intern_create(request):
             email=email,
         )
 
-        profile = InternProfile.objects.create(
+        # Generate employee_id
+        last_emp = Employee.objects.order_by('-employee_id').first()
+        if last_emp and last_emp.employee_id.startswith('EMP'):
+            try:
+                num = int(last_emp.employee_id[3:]) + 1
+            except ValueError:
+                num = 1
+        else:
+            num = 1
+        employee_id = f'EMP{num:03d}'
+
+        profile = Employee.objects.create(
+            user=user,
+            employee_id=employee_id,
+            employment_type='intern',
+            role='intern',
+            department='marketing',
+            designation='Intern',
+            phone=phone,
+            intern_type=request.POST.get('intern_type', 'digital'),
+            supervisor_id=request.POST.get('supervisor') or None,
+            commission_percentage=request.POST.get('default_commission_percentage', 5.00) or 5.00,
+            status=request.POST.get('status', 'active'),
+            joining_date=request.POST.get('joining_date') or None,
+        )
+
+        # Also create legacy InternProfile for backwards compat
+        InternProfile.objects.create(
             user=user,
             intern_type=request.POST.get('intern_type', 'digital'),
             supervisor_id=request.POST.get('supervisor') or None,
@@ -745,7 +780,7 @@ def intern_profile_detail(request, pk):
         messages.error(request, 'Access denied.')
         return redirect('crm:lead_list')
 
-    profile = get_object_or_404(InternProfile.objects.select_related('user', 'supervisor'), pk=pk)
+    profile = get_object_or_404(Employee.objects.select_related('user', 'supervisor'), pk=pk)
 
     leads = Lead.objects.filter(assigned_to=profile.user).order_by('-created_at')[:10]
     recent_activities = DailyActivity.objects.filter(intern=profile.user).order_by('-date')[:7]
@@ -772,7 +807,7 @@ def intern_profile_edit(request, pk):
         messages.error(request, 'Access denied.')
         return redirect('crm:lead_list')
 
-    profile = get_object_or_404(InternProfile.objects.select_related('user'), pk=pk)
+    profile = get_object_or_404(Employee.objects.select_related('user'), pk=pk)
 
     if request.method == 'POST':
         # Update user personal details
@@ -782,13 +817,13 @@ def intern_profile_edit(request, pk):
         user.email = request.POST.get('email', user.email).strip()
         user.save()
 
-        # Update intern profile
+        # Update employee profile (intern fields)
         profile.intern_type = request.POST.get('intern_type', profile.intern_type)
         profile.status = request.POST.get('status', profile.status)
         profile.supervisor_id = request.POST.get('supervisor') or None
-        profile.default_commission_percentage = request.POST.get(
-            'default_commission_percentage', profile.default_commission_percentage
-        ) or profile.default_commission_percentage
+        profile.commission_percentage = request.POST.get(
+            'default_commission_percentage', profile.commission_percentage
+        ) or profile.commission_percentage
         profile.joining_date = request.POST.get('joining_date') or None
         profile.save()
 
@@ -804,7 +839,11 @@ def intern_profile_edit(request, pk):
 def _intern_form_context(request):
     supervisors = User.objects.filter(is_superuser=True, is_active=True) | User.objects.filter(is_staff=True, is_active=True)
     return {
-        'intern_type_choices': InternProfile.INTERN_TYPE_CHOICES,
-        'status_choices': InternProfile.STATUS_CHOICES,
+        'intern_type_choices': Employee.INTERN_TYPE_CHOICES,
+        'status_choices': [
+            ('active', 'Active'),
+            ('inactive', 'Inactive'),
+            ('completed', 'Completed'),
+        ],
         'supervisors': supervisors.distinct(),
     }

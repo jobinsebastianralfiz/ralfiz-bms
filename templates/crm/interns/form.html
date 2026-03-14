@@ -88,7 +88,7 @@
             </div>
             <div class="col-6" style="padding: 0.5rem;">
               <label class="form-label">Default Commission (%)</label>
-              <input type="number" name="default_commission_percentage" class="form-control" min="0" max="100" step="0.01" value="{{ profile.default_commission_percentage|default:'5.00' }}">
+              <input type="number" name="default_commission_percentage" class="form-control" min="0" max="100" step="0.01" value="{{ profile.commission_percentage|default:'5.00' }}">
             </div>
           </div>
           <div class="row">
