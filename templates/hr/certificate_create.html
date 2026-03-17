@@ -111,13 +111,13 @@ Fundamentals of Full-Stack Web Application Development"></textarea>
 
       <div class="mb-3">
         <label class="form-label">Closing Text</label>
-        <textarea name="closing_text" class="form-control" rows="3">actively participated in all training sessions, hands-on tasks, and project assignments, demonstrating dedication, teamwork, and a strong interest in learning modern web technologies.</textarea>
-        <small class="text-muted">This appears after "He/She" in the closing paragraph.</small>
+        <textarea name="closing_text" id="cert-closing" class="form-control" rows="3">actively participated in all training sessions, hands-on tasks, and project assignments, demonstrating dedication, teamwork, and a strong interest in learning modern web technologies.</textarea>
+        <small class="text-muted">This appears after "He/She" in the closing paragraph. Auto-fills when you change certificate type.</small>
       </div>
 
       <div class="mb-3">
         <label class="form-label">Wish Text</label>
-        <textarea name="wish_text" class="form-control" rows="2">We wish {pronoun} success in {possessive} future academic and professional endeavors.</textarea>
+        <textarea name="wish_text" id="cert-wish" class="form-control" rows="2">We wish {pronoun} success in {possessive} future academic and professional endeavors.</textarea>
         <small class="text-muted">Use {pronoun} for him/her and {possessive} for his/her.</small>
       </div>
 
@@ -137,10 +137,26 @@ const titleMap = {
   '{{ key }}': '{{ value }}',
   {% endfor %}
 };
+const closingMap = {
+  {% for key, value in type_closing_map.items %}
+  '{{ key }}': `{{ value|escapejs }}`,
+  {% endfor %}
+};
+const wishMap = {
+  {% for key, value in type_wish_map.items %}
+  '{{ key }}': `{{ value|escapejs }}`,
+  {% endfor %}
+};
 function updateTitle() {
   const type = document.getElementById('cert-type').value;
   if (titleMap[type]) {
     document.getElementById('cert-title').value = titleMap[type];
+  }
+  if (closingMap[type]) {
+    document.getElementById('cert-closing').value = closingMap[type];
+  }
+  if (wishMap[type]) {
+    document.getElementById('cert-wish').value = wishMap[type];
   }
 }
 </script>

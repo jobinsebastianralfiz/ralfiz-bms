@@ -2917,6 +2917,21 @@ class CertificatePDFView(APIView):
         return response
 
 
+class CertificateDefaultsView(APIView):
+    """Get default title, closing_text, and wish_text for a certificate type"""
+    permission_classes = [IsAuthenticated, IsAdminOrOwner]
+
+    @extend_schema(tags=['Certificates'])
+    def get(self, request):
+        cert_type = request.query_params.get('type', 'inter')
+        return Response({
+            'certificate_type': cert_type,
+            'title': Certificate.TYPE_TITLE_MAP.get(cert_type, 'CERTIFICATE'),
+            'closing_text': Certificate.TYPE_CLOSING_MAP.get(cert_type, ''),
+            'wish_text': Certificate.TYPE_WISH_MAP.get(cert_type, ''),
+        })
+
+
 class CertificateVerifyView(APIView):
     """Public endpoint to verify a certificate via QR code"""
     permission_classes = []

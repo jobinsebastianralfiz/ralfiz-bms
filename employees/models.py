@@ -505,6 +505,28 @@ class Certificate(models.Model):
         'particip': 'CERTIFICATE OF PARTICIPATION',
     }
 
+    # Default closing text per type
+    TYPE_CLOSING_MAP = {
+        'inter': 'actively participated in all training sessions, hands-on tasks, and project assignments, '
+                 'demonstrating dedication, teamwork, and a strong interest in learning modern web technologies.',
+        'exp': 'was a dedicated and reliable team member who consistently delivered quality work. '
+               'We appreciate {possessive} contributions and wish {pronoun} all the best in future endeavors.',
+        'course': 'successfully completed all modules, assignments, and assessments with commendable dedication '
+                  'and a keen interest in learning.',
+        'merit': 'demonstrated exceptional skill, dedication, and outstanding performance throughout the program, '
+                 'setting a high standard among peers.',
+        'particip': 'actively engaged in all sessions and activities, demonstrating enthusiasm and a willingness to learn.',
+    }
+
+    # Default wish text per type
+    TYPE_WISH_MAP = {
+        'inter': 'We wish {pronoun} success in {possessive} future academic and professional endeavors.',
+        'exp': 'We wish {pronoun} continued success in {possessive} professional career.',
+        'course': 'We wish {pronoun} success in {possessive} future academic and professional endeavors.',
+        'merit': 'We congratulate {pronoun} and wish {pronoun} continued success in all future endeavors.',
+        'particip': 'We wish {pronoun} success in {possessive} future academic and professional endeavors.',
+    }
+
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     certificate_number = models.CharField(max_length=50, unique=True, blank=True)
     verification_id = models.UUIDField(default=uuid.uuid4, unique=True, editable=False)

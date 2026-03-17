@@ -17,6 +17,13 @@ from django.contrib.contenttypes.models import ContentType
 from licensing.models import License, LicenseKey, LicenseActivation
 
 
+# ============== Public Pages ==============
+
+def interiodesk_guide(request):
+    """Public getting started guide for InterioDesk desktop app."""
+    return render(request, 'interiodesk/guide.html')
+
+
 # ============== Authentication Views ==============
 
 def login_view(request):
@@ -4840,6 +4847,8 @@ def certificate_create(request):
         'mode_choices': Certificate.MODE_CHOICES,
         'type_choices': Certificate.CERTIFICATE_TYPE_CHOICES,
         'type_title_map': Certificate.TYPE_TITLE_MAP,
+        'type_closing_map': Certificate.TYPE_CLOSING_MAP,
+        'type_wish_map': Certificate.TYPE_WISH_MAP,
     }
     return render(request, 'hr/certificate_create.html', context)
 
