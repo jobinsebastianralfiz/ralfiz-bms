@@ -4,19 +4,31 @@
 {% block content %}
 <div class="page-header">
   <div>
-    <h1 class="page-title">Edit Certificate</h1>
+    <h1 class="page-title">Certificate Details</h1>
     <p class="page-subtitle mb-0">{{ cert.certificate_number }} - {{ cert.student_name }}</p>
   </div>
   <div class="page-actions">
     <a href="{% url 'certificate_list' %}" class="btn btn-ghost"><i class="fas fa-arrow-left me-1"></i> Back</a>
     <a href="{% url 'certificate_pdf' cert.pk %}" class="btn btn-ghost" target="_blank"><i class="fas fa-file-pdf me-1 text-danger"></i> View PDF</a>
     <a href="{% url 'certificate_pdf' cert.pk %}?download=1" class="btn btn-ghost"><i class="fas fa-download me-1"></i> Download</a>
+    {% if cert.status == 'draft' %}
     <form method="post" action="{% url 'certificate_delete' cert.pk %}" class="d-inline" onsubmit="return confirm('Are you sure you want to delete this certificate?')">
       {% csrf_token %}
       <button type="submit" class="btn btn-danger"><i class="fas fa-trash me-1"></i> Delete</button>
     </form>
+    {% endif %}
   </div>
 </div>
+
+{% if cert.status == 'published' %}
+<div class="alert" style="background: var(--info-bg); color: var(--info); border-radius: 8px; padding: 12px 16px; margin-bottom: 16px;">
+  <i class="fas fa-lock me-2"></i> This certificate is <strong>published</strong> and cannot be edited. You can revert to draft or cancel it.
+</div>
+{% elif cert.status == 'cancelled' %}
+<div class="alert" style="background: var(--danger-bg); color: var(--danger); border-radius: 8px; padding: 12px 16px; margin-bottom: 16px;">
+  <i class="fas fa-ban me-2"></i> This certificate has been <strong>cancelled</strong> and cannot be edited.
+</div>
+{% endif %}
 
 <div class="row">
   <div class="col-8">
@@ -27,6 +39,7 @@
       <div class="card-body">
         <form method="post">
           {% csrf_token %}
+          <fieldset {% if cert.status != 'draft' %}disabled{% endif %}>
 
           <div class="row mb-3">
             <div class="col-4">
@@ -125,17 +138,65 @@
             <small class="text-muted">Use {pronoun} for him/her and {possessive} for his/her.</small>
           </div>
 
+          {% if cert.status == 'draft' %}
           <div class="d-flex gap-2">
             <button type="submit" class="btn btn-primary"><i class="fas fa-save me-2"></i> Save Changes</button>
             <a href="{% url 'certificate_list' %}" class="btn btn-ghost">Cancel</a>
           </div>
+          {% endif %}
+
+          </fieldset>
         </form>
       </div>
     </div>
   </div>
 
   <div class="col-4">
+    <!-- Status & Actions -->
     <div class="card">
+      <div class="card-header">
+        <h3 class="card-title"><i class="fas fa-flag me-2"></i> Status</h3>
+      </div>
+      <div class="card-body">
+        <div class="mb-3 text-center">
+          {% if cert.status == 'draft' %}
+          <span class="badge" style="background: var(--warning-bg); color: var(--warning); font-size: 14px; padding: 6px 16px;">Draft</span>
+          {% elif cert.status == 'published' %}
+          <span class="badge" style="background: var(--success-bg); color: var(--success); font-size: 14px; padding: 6px 16px;">Published</span>
+          {% elif cert.status == 'cancelled' %}
+          <span class="badge" style="background: var(--danger-bg); color: var(--danger); font-size: 14px; padding: 6px 16px;">Cancelled</span>
+          {% endif %}
+        </div>
+
+        {% if cert.status == 'draft' %}
+        <form method="post" onsubmit="return confirm('Publish this certificate? It will become non-editable.')">
+          {% csrf_token %}
+          <input type="hidden" name="action" value="publish">
+          <button type="submit" class="btn btn-success w-100 mb-2"><i class="fas fa-check-circle me-1"></i> Publish</button>
+        </form>
+        <form method="post" onsubmit="return confirm('Cancel this certificate?')">
+          {% csrf_token %}
+          <input type="hidden" name="action" value="cancel">
+          <button type="submit" class="btn btn-danger w-100"><i class="fas fa-ban me-1"></i> Cancel Certificate</button>
+        </form>
+
+        {% elif cert.status == 'published' %}
+        <form method="post" onsubmit="return confirm('Revert to draft? This will allow editing again.')">
+          {% csrf_token %}
+          <input type="hidden" name="action" value="revert_draft">
+          <button type="submit" class="btn btn-ghost w-100 mb-2"><i class="fas fa-undo me-1"></i> Revert to Draft</button>
+        </form>
+        <form method="post" onsubmit="return confirm('Cancel this certificate?')">
+          {% csrf_token %}
+          <input type="hidden" name="action" value="cancel">
+          <button type="submit" class="btn btn-danger w-100"><i class="fas fa-ban me-1"></i> Cancel Certificate</button>
+        </form>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Info -->
+    <div class="card mt-3">
       <div class="card-header">
         <h3 class="card-title"><i class="fas fa-info-circle me-2"></i> Info</h3>
       </div>
@@ -163,6 +224,7 @@
       </div>
     </div>
 
+    <!-- Verification -->
     <div class="card mt-3">
       <div class="card-header">
         <h3 class="card-title"><i class="fas fa-qrcode me-2"></i> Verification</h3>

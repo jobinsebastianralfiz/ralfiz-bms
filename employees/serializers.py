@@ -292,7 +292,7 @@ class CertificateSerializer(serializers.ModelSerializer):
     class Meta:
         model = Certificate
         fields = [
-            'id', 'certificate_number', 'verification_id', 'certificate_type', 'title',
+            'id', 'certificate_number', 'verification_id', 'certificate_type', 'status', 'title',
             'salutation', 'student_name', 'gender', 'college_name',
             'course_name', 'start_date', 'end_date', 'duration_days', 'mode',
             'skills', 'closing_text', 'wish_text',
@@ -300,6 +300,21 @@ class CertificateSerializer(serializers.ModelSerializer):
             'created_at', 'updated_at',
         ]
         read_only_fields = ['id', 'certificate_number', 'verification_id', 'created_at', 'updated_at']
+
+    def validate(self, data):
+        instance = self.instance
+        if instance and instance.status == 'published':
+            # Published certificates can only change status to cancelled
+            allowed_fields = {'status'}
+            changed_fields = set(data.keys()) - allowed_fields
+            if changed_fields:
+                if data.get('status') == 'cancelled':
+                    # Allow cancelling - ignore other fields
+                    return {'status': 'cancelled'}
+                raise serializers.ValidationError('Published certificates cannot be edited. You can only cancel them.')
+        if instance and instance.status == 'cancelled':
+            raise serializers.ValidationError('Cancelled certificates cannot be edited.')
+        return data
 
     def get_verification_url(self, obj):
         request = self.context.get('request')
@@ -318,7 +333,7 @@ class CertificateCreateSerializer(serializers.ModelSerializer):
     class Meta:
         model = Certificate
         fields = [
-            'certificate_type', 'title', 'salutation', 'student_name', 'gender', 'college_name',
+            'certificate_type', 'status', 'title', 'salutation', 'student_name', 'gender', 'college_name',
             'course_name', 'start_date', 'end_date', 'duration_days', 'mode',
             'skills', 'closing_text', 'wish_text', 'date_of_issuance',
         ]

@@ -4861,6 +4861,38 @@ def certificate_detail(request, pk):
     cert = get_object_or_404(Certificate, pk=pk)
 
     if request.method == 'POST':
+        action = request.POST.get('action', '')
+
+        # Handle status changes
+        if action == 'publish':
+            if cert.status == 'draft':
+                cert.status = 'published'
+                cert.save()
+                messages.success(request, f'Certificate {cert.certificate_number} published.')
+            return redirect('certificate_detail', pk=pk)
+
+        if action == 'cancel':
+            if cert.status in ('draft', 'published'):
+                cert.status = 'cancelled'
+                cert.save()
+                messages.success(request, f'Certificate {cert.certificate_number} cancelled.')
+            return redirect('certificate_detail', pk=pk)
+
+        if action == 'revert_draft':
+            if cert.status == 'published':
+                cert.status = 'draft'
+                cert.save()
+                messages.success(request, 'Certificate reverted to draft.')
+            return redirect('certificate_detail', pk=pk)
+
+        # Block edits on published/cancelled
+        if cert.status == 'published':
+            messages.error(request, 'Published certificates cannot be edited. Revert to draft first.')
+            return redirect('certificate_detail', pk=pk)
+        if cert.status == 'cancelled':
+            messages.error(request, 'Cancelled certificates cannot be edited.')
+            return redirect('certificate_detail', pk=pk)
+
         skills_raw = request.POST.get('skills', '')
         skills = [s.strip() for s in skills_raw.split('\n') if s.strip()]
 

@@ -34,8 +34,8 @@
             <th>Ref No</th>
             <th>Student Name</th>
             <th>Type</th>
+            <th>Status</th>
             <th>Course</th>
-            <th>Duration</th>
             <th>Issued</th>
             <th>Actions</th>
           </tr>
@@ -49,8 +49,16 @@
               {% if c.college_name %}<div class="text-sm text-muted">{{ c.college_name|truncatewords:6 }}</div>{% endif %}
             </td>
             <td>{{ c.get_certificate_type_display }}</td>
+            <td>
+              {% if c.status == 'draft' %}
+              <span class="badge" style="background: var(--warning-bg); color: var(--warning);">Draft</span>
+              {% elif c.status == 'published' %}
+              <span class="badge" style="background: var(--success-bg); color: var(--success);">Published</span>
+              {% elif c.status == 'cancelled' %}
+              <span class="badge" style="background: var(--danger-bg); color: var(--danger);">Cancelled</span>
+              {% endif %}
+            </td>
             <td>{{ c.course_name }}</td>
-            <td>{{ c.duration_days }} days</td>
             <td>{{ c.date_of_issuance|date:"d M Y" }}</td>
             <td>
               <div class="d-flex gap-1">
@@ -60,15 +68,17 @@
                 <a href="{% url 'certificate_pdf' c.pk %}?download=1" class="btn btn-sm btn-ghost" title="Download PDF">
                   <i class="fas fa-download"></i>
                 </a>
-                <a href="{% url 'certificate_detail' c.pk %}" class="btn btn-sm btn-ghost" title="Edit">
-                  <i class="fas fa-edit"></i>
+                <a href="{% url 'certificate_detail' c.pk %}" class="btn btn-sm btn-ghost" title="{% if c.status == 'draft' %}Edit{% else %}View{% endif %}">
+                  <i class="fas fa-{% if c.status == 'draft' %}edit{% else %}eye{% endif %}"></i>
                 </a>
+                {% if c.status == 'draft' %}
                 <form method="post" action="{% url 'certificate_delete' c.pk %}" onsubmit="return confirm('Delete this certificate?')">
                   {% csrf_token %}
                   <button type="submit" class="btn btn-sm btn-ghost text-danger" title="Delete">
                     <i class="fas fa-trash"></i>
                   </button>
                 </form>
+                {% endif %}
               </div>
             </td>
           </tr>

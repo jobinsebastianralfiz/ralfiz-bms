@@ -496,6 +496,12 @@ class Certificate(models.Model):
         ('particip', 'Participation'),
     ]
 
+    STATUS_CHOICES = [
+        ('draft', 'Draft'),
+        ('published', 'Published'),
+        ('cancelled', 'Cancelled'),
+    ]
+
     # Maps certificate type to default title
     TYPE_TITLE_MAP = {
         'inter': 'INTERNSHIP CERTIFICATE',
@@ -532,6 +538,7 @@ class Certificate(models.Model):
     verification_id = models.UUIDField(default=uuid.uuid4, unique=True, editable=False)
     certificate_type = models.CharField(max_length=10, choices=CERTIFICATE_TYPE_CHOICES, default='inter',
                                         help_text='Determines ref number prefix and default title')
+    status = models.CharField(max_length=10, choices=STATUS_CHOICES, default='draft')
     title = models.CharField(max_length=200, default='INTERNSHIP CERTIFICATE',
                              help_text='e.g. INTERNSHIP CERTIFICATE, COURSE COMPLETION CERTIFICATE')
 
