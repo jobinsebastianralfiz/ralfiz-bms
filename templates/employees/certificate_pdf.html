@@ -5,7 +5,7 @@
 <style>
     @page {
         size: A4;
-        margin: 15mm 15mm 15mm 20mm;
+        margin: 20mm 25mm 18mm 30mm;
     }
 
     * {
@@ -17,213 +17,228 @@
     body {
         font-family: 'Georgia', 'Times New Roman', serif;
         color: #333;
-        font-size: 13px;
-        line-height: 1.6;
+        font-size: 14px;
+        line-height: 1.7;
     }
 
-    /* Green left border */
+    /* Green left border - full page height */
     .border-left {
         position: fixed;
-        top: -15mm;
-        left: -20mm;
+        top: -20mm;
+        left: -30mm;
         width: 10px;
-        bottom: -15mm;
+        bottom: -18mm;
         background: #4CAF50;
     }
 
-    /* Green bottom-right accent */
+    /* Green bottom-right L-shape accent */
     .border-bottom-right {
         position: fixed;
-        bottom: -15mm;
-        right: -15mm;
-        width: 180px;
+        bottom: -18mm;
+        right: -25mm;
+        width: 200px;
         height: 10px;
         background: #4CAF50;
     }
 
     .border-right-accent {
         position: fixed;
-        bottom: -15mm;
-        right: -15mm;
+        bottom: -18mm;
+        right: -25mm;
         width: 10px;
-        height: 180px;
+        height: 200px;
         background: #4CAF50;
     }
 
-    /* Watermark */
+    /* Watermark - centered on page */
     .watermark {
         position: fixed;
-        top: 35%;
-        left: 25%;
-        opacity: 0.05;
+        top: 30%;
+        left: 20%;
+        opacity: 0.04;
         z-index: -1;
     }
 
     .watermark img {
-        width: 350px;
+        width: 380px;
     }
 
-    /* Header */
+    /* Header logo */
     .header {
-        margin-bottom: 35px;
+        margin-bottom: 55px;
     }
 
     .header img {
-        height: 50px;
+        height: 52px;
     }
 
     /* Title */
     .title {
         text-align: center;
-        font-size: 26px;
+        font-size: 28px;
         font-weight: bold;
-        color: #222;
-        margin-bottom: 25px;
-        letter-spacing: 2px;
-        font-family: 'Arial', 'Helvetica', sans-serif;
+        color: #1a1a1a;
+        margin-bottom: 28px;
+        letter-spacing: 1.5px;
+        font-family: 'Arial Black', 'Arial', 'Helvetica', sans-serif;
     }
 
-    /* Body text */
+    /* Body paragraphs - centered */
     .body-text {
         text-align: center;
-        font-size: 13.5px;
-        line-height: 1.8;
-        margin-bottom: 8px;
-        padding: 0 10px;
+        font-size: 14px;
+        line-height: 1.75;
+        margin-bottom: 6px;
     }
 
     .body-text strong {
         font-weight: bold;
     }
 
-    /* Skills list */
+    /* Skills bullet list */
     .skills-list {
-        margin: 12px 0 12px 60px;
+        margin: 14px 0 14px 40px;
         text-align: left;
-        font-size: 13.5px;
+        font-size: 14px;
+        list-style-type: disc;
     }
 
     .skills-list li {
-        margin-bottom: 2px;
-        line-height: 1.5;
+        margin-bottom: 3px;
+        line-height: 1.6;
     }
 
-    /* Closing */
+    /* Closing paragraph - justified with indent */
     .closing {
-        text-align: center;
-        font-size: 13.5px;
-        line-height: 1.8;
-        margin-top: 15px;
-        padding: 0 20px;
+        text-align: justify;
+        font-size: 14px;
+        line-height: 1.75;
+        margin-top: 22px;
+        text-indent: 30px;
     }
 
+    /* Wish line - centered */
     .wish {
         text-align: center;
-        font-size: 13.5px;
-        margin-top: 8px;
-        padding: 0 20px;
+        font-size: 14px;
+        margin-top: 6px;
     }
 
-    /* Footer pinned to page bottom */
+    /* ---- Footer area pinned to page bottom ---- */
     .footer-area {
         position: fixed;
-        bottom: -5mm;
+        bottom: -8mm;
         left: 0;
         right: 0;
     }
 
-    .footer-table {
+    /* Signature row: signature left, seal center */
+    .sig-row {
         width: 100%;
         border-collapse: collapse;
+        margin-bottom: 0;
     }
 
-    .footer-table td {
+    .sig-row td {
         padding: 0;
         vertical-align: bottom;
     }
 
-    .signature-block img {
-        height: 55px;
+    .sig-left {
+        width: 50%;
     }
 
-    .signature-block .line {
-        width: 170px;
-        border-top: 1px solid #333;
-        margin-bottom: 3px;
+    .sig-left img {
+        height: 60px;
+        display: block;
+        margin-bottom: -2px;
     }
 
-    .signature-block .name {
+    .sig-left .line {
+        width: 175px;
+        border-top: 1.5px solid #333;
+        margin-bottom: 4px;
+    }
+
+    .sig-left .name {
         font-weight: bold;
-        font-size: 13px;
+        font-size: 14px;
         font-family: 'Times New Roman', serif;
+        letter-spacing: 0.5px;
     }
 
-    .signature-block .designation {
+    .sig-left .designation {
         font-weight: bold;
         font-size: 10px;
-        letter-spacing: 1px;
+        letter-spacing: 1.5px;
+        text-transform: uppercase;
     }
 
-    .signature-block .company {
+    .sig-left .company {
         font-size: 10px;
         letter-spacing: 0.5px;
     }
 
-    .seal-block {
-        text-align: right;
+    .sig-center {
+        width: 50%;
+        text-align: center;
     }
 
-    .seal-block img {
-        height: 75px;
+    .sig-center img {
+        height: 80px;
     }
 
     /* Bottom details row */
-    .details-table {
+    .details-row {
         width: 100%;
         border-collapse: collapse;
-        margin-top: 12px;
+        margin-top: 14px;
     }
 
-    .details-table td {
+    .details-row td {
         padding: 0;
         vertical-align: bottom;
     }
 
-    .qr-block img {
+    .qr-cell {
+        width: 80px;
+    }
+
+    .qr-cell img {
         width: 65px;
         height: 65px;
     }
 
-    .qr-block .qr-label {
+    .qr-cell .qr-label {
         font-size: 7px;
-        color: #666;
+        color: #777;
     }
 
-    .footer-right {
+    .details-right {
         text-align: right;
     }
 
-    .footer-right .logos img {
-        height: 18px;
+    .details-right .logos img {
+        height: 20px;
     }
 
-    .footer-right .issuance {
+    .details-right .issuance {
         font-size: 10px;
         font-style: italic;
-        margin-top: 5px;
+        margin-top: 6px;
         color: #444;
     }
 
-    .footer-right .address {
-        font-size: 9px;
+    .details-right .address {
+        font-size: 9.5px;
         color: #555;
         margin-top: 3px;
-        line-height: 1.4;
+        line-height: 1.45;
     }
 </style>
 </head>
 <body>
-    <!-- Borders -->
+    <!-- Green borders -->
     <div class="border-left"></div>
     <div class="border-bottom-right"></div>
     <div class="border-right-accent"></div>
@@ -233,15 +248,15 @@
         <img src="{{ seal }}" alt="">
     </div>
 
-    <!-- Header -->
+    <!-- Header logo -->
     <div class="header">
         <img src="{{ header_logo }}" alt="Ralfiz Technologies">
     </div>
 
-    <!-- Title -->
+    <!-- Certificate title -->
     <h1 class="title">{{ cert.title }}</h1>
 
-    <!-- Body -->
+    <!-- Certificate body -->
     <p class="body-text">
         This is to certify that <strong>{{ cert.salutation }} {{ cert.student_name }}</strong>{% if cert.college_name %}, a student of <strong>{{ cert.college_name }}</strong>{% endif %}, has successfully completed the {{ cert.course_name }}
         at <strong>Ralfiz Technologies, Perinthalmanna</strong>.
@@ -252,14 +267,14 @@
         practical exposure to:
     </p>
 
-    <!-- Skills -->
+    <!-- Skills list -->
     <ul class="skills-list">
         {% for skill in cert.skills %}
         <li>{{ skill }}</li>
         {% endfor %}
     </ul>
 
-    <!-- Closing -->
+    <!-- Closing paragraph -->
     <p class="closing">
         {{ cert.pronoun_cap }} {{ cert.closing_text }}
     </p>
@@ -267,29 +282,32 @@
         {{ wish_text }}
     </p>
 
-    <!-- Footer pinned to bottom of page -->
+    <!-- Footer: signature, seal, QR, details — pinned to bottom -->
     <div class="footer-area">
-        <table class="footer-table">
+        <!-- Signature + Seal -->
+        <table class="sig-row">
             <tr>
-                <td class="signature-block">
-                    <img src="{{ signature }}" alt="Signature"><br>
+                <td class="sig-left">
+                    <img src="{{ signature }}" alt="Signature">
                     <div class="line"></div>
                     <div class="name">JOBIN SEBASTIAN</div>
-                    <div class="designation">MANAGING DIRECTOR</div>
+                    <div class="designation">Managing Director</div>
                     <div class="company">RALFIZ TECHNOLOGIES</div>
                 </td>
-                <td class="seal-block">
+                <td class="sig-center">
                     <img src="{{ seal }}" alt="Company Seal">
                 </td>
             </tr>
         </table>
-        <table class="details-table">
+
+        <!-- QR code + Partner logos + Issuance details -->
+        <table class="details-row">
             <tr>
-                <td class="qr-block">
+                <td class="qr-cell">
                     <img src="data:image/png;base64,{{ qr_base64 }}" alt="QR Code">
                     <div class="qr-label">Scan to verify</div>
                 </td>
-                <td class="footer-right">
+                <td class="details-right">
                     <div class="logos">
                         <img src="{{ footer_logo }}" alt="Partner Logos">
                     </div>
