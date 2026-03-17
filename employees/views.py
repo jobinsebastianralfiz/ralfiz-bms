@@ -808,6 +808,17 @@ class IsOwnerOrPartner(permissions.BasePermission):
         return employee is not None and employee.role in ('owner', 'partner')
 
 
+class IsAdminOrOwner(permissions.BasePermission):
+    """Allow admin (is_staff) or owner/partner role employees"""
+    def has_permission(self, request, view):
+        if not request.user or not request.user.is_authenticated:
+            return False
+        if request.user.is_staff:
+            return True
+        employee = get_employee(request.user)
+        return employee is not None and employee.role in ('owner', 'partner')
+
+
 @extend_schema(tags=['Owner'])
 class OwnerDashboardView(APIView):
     """Owner/Partner dashboard with business-level data"""
@@ -2768,7 +2779,7 @@ def data_retention_policy(request):
 
 class CertificateListCreateView(generics.ListCreateAPIView):
     """List all certificates or create a new one"""
-    permission_classes = [IsAdminUser]
+    permission_classes = [IsAuthenticated, IsAdminOrOwner]
 
     def get_serializer_class(self):
         if self.request.method == 'POST':
@@ -2808,7 +2819,7 @@ class CertificateDetailView(generics.RetrieveUpdateDestroyAPIView):
     """Get, update or delete a certificate"""
     queryset = Certificate.objects.all()
     serializer_class = CertificateSerializer
-    permission_classes = [IsAdminUser]
+    permission_classes = [IsAuthenticated, IsAdminOrOwner]
 
     @extend_schema(tags=['Certificates'])
     def get(self, request, *args, **kwargs):
@@ -2829,7 +2840,7 @@ class CertificateDetailView(generics.RetrieveUpdateDestroyAPIView):
 
 class CertificatePDFView(APIView):
     """Generate and download certificate PDF"""
-    permission_classes = [IsAdminUser]
+    permission_classes = [IsAuthenticated, IsAdminOrOwner]
 
     @extend_schema(tags=['Certificates'])
     def get(self, request, pk):
