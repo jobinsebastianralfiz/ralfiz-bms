@@ -550,9 +550,9 @@ class Certificate(models.Model):
 
     # Course info
     course_name = models.CharField(max_length=200, help_text='e.g. Web Development Internship')
-    start_date = models.DateField()
-    end_date = models.DateField()
-    duration_days = models.PositiveIntegerField(help_text='Total duration in days')
+    start_date = models.DateField(null=True, blank=True)
+    end_date = models.DateField(null=True, blank=True)
+    duration_days = models.PositiveIntegerField(null=True, blank=True, help_text='Total duration in days')
     mode = models.CharField(max_length=10, choices=MODE_CHOICES, default='offline')
 
     # Skills / content

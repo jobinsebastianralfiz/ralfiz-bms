@@ -4824,9 +4824,9 @@ def certificate_create(request):
             gender=request.POST.get('gender', 'male'),
             college_name=request.POST.get('college_name', ''),
             course_name=request.POST.get('course_name'),
-            start_date=request.POST.get('start_date'),
-            end_date=request.POST.get('end_date'),
-            duration_days=int(request.POST.get('duration_days', 0)),
+            start_date=request.POST.get('start_date') or None,
+            end_date=request.POST.get('end_date') or None,
+            duration_days=int(request.POST.get('duration_days')) if request.POST.get('duration_days') else None,
             mode=request.POST.get('mode', 'offline'),
             skills=skills,
             closing_text=request.POST.get('closing_text',
@@ -4903,9 +4903,9 @@ def certificate_detail(request, pk):
         cert.gender = request.POST.get('gender', cert.gender)
         cert.college_name = request.POST.get('college_name', '')
         cert.course_name = request.POST.get('course_name', cert.course_name)
-        cert.start_date = request.POST.get('start_date', cert.start_date)
-        cert.end_date = request.POST.get('end_date', cert.end_date)
-        cert.duration_days = int(request.POST.get('duration_days', cert.duration_days))
+        cert.start_date = request.POST.get('start_date') or None
+        cert.end_date = request.POST.get('end_date') or None
+        cert.duration_days = int(request.POST.get('duration_days')) if request.POST.get('duration_days') else None
         cert.mode = request.POST.get('mode', cert.mode)
         cert.skills = skills
         cert.closing_text = request.POST.get('closing_text', cert.closing_text)
@@ -4987,8 +4987,8 @@ def certificate_pdf(request, pk):
         'signature': signature,
         'seal': seal,
         'footer_logo': footer_logo,
-        'start_date_fmt': format_date(cert.start_date),
-        'end_date_fmt': format_date(cert.end_date),
+        'start_date_fmt': format_date(cert.start_date) if cert.start_date else '',
+        'end_date_fmt': format_date(cert.end_date) if cert.end_date else '',
         'date_of_issuance_fmt': cert.date_of_issuance.strftime('%d/%m/%Y'),
         'wish_text': wish_text,
     }

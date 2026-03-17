@@ -2898,8 +2898,8 @@ class CertificatePDFView(APIView):
             'signature': signature,
             'seal': seal,
             'footer_logo': footer_logo,
-            'start_date_fmt': format_date(certificate.start_date),
-            'end_date_fmt': format_date(certificate.end_date),
+            'start_date_fmt': format_date(certificate.start_date) if certificate.start_date else '',
+            'end_date_fmt': format_date(certificate.end_date) if certificate.end_date else '',
             'date_of_issuance_fmt': certificate.date_of_issuance.strftime('%d/%m/%Y'),
             'wish_text': wish_text,
         }
