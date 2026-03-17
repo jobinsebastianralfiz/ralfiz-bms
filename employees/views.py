@@ -2912,6 +2912,10 @@ class CertificatePDFView(APIView):
         except (KeyError, IndexError):
             body_rendered = body_raw
 
+        # Convert **bold** to <strong> tags
+        import re
+        body_rendered = re.sub(r'\*\*(.+?)\*\*', r'<strong>\1</strong>', body_rendered)
+
         # Convert paragraphs (double newlines) to HTML
         paragraphs = body_rendered.split('\n\n')
         rendered_body = ''

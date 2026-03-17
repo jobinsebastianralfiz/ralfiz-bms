@@ -5069,6 +5069,10 @@ def certificate_pdf(request, pk):
     except (KeyError, IndexError):
         body_rendered = body_raw
 
+    # Convert **bold** to <strong> tags
+    import re
+    body_rendered = re.sub(r'\*\*(.+?)\*\*', r'<strong>\1</strong>', body_rendered)
+
     paragraphs = body_rendered.split('\n\n')
     rendered_body = ''
     for p in paragraphs:
