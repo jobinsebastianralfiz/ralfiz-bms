@@ -15,7 +15,8 @@ from drf_spectacular.utils import extend_schema, extend_schema_view, OpenApiPara
 
 from .models import (
     Employee, DeviceToken, Attendance, LeaveType, LeaveRequest,
-    WorkAssignment, WorkUpdate, Notification, QRCode, ScheduledClass, Payroll
+    WorkAssignment, WorkUpdate, Notification, QRCode, ScheduledClass, Payroll,
+    Certificate
 )
 from .serializers import (
     EmployeeProfileSerializer, EmployeeListSerializer,
@@ -26,6 +27,7 @@ from .serializers import (
     NotificationSerializer, ChangePasswordSerializer, ScheduledClassSerializer,
     PayrollSerializer, OwnerClientSerializer, OwnerProjectSerializer,
     OwnerAttendanceEmployeeSerializer,
+    CertificateSerializer, CertificateCreateSerializer,
 )
 from django.shortcuts import render
 
@@ -2758,5 +2760,169 @@ def privacy_policy(request):
 def data_retention_policy(request):
     """Public data retention policy page for App Store / Play Store"""
     return render(request, 'employees/data_retention_policy.html')
+
+
+# ============================================================
+# Certificate APIs
+# ============================================================
+
+class CertificateListCreateView(generics.ListCreateAPIView):
+    """List all certificates or create a new one"""
+    permission_classes = [IsAdminUser]
+
+    def get_serializer_class(self):
+        if self.request.method == 'POST':
+            return CertificateCreateSerializer
+        return CertificateSerializer
+
+    def get_queryset(self):
+        queryset = Certificate.objects.all()
+        search = self.request.query_params.get('search')
+        if search:
+            queryset = queryset.filter(
+                Q(student_name__icontains=search) |
+                Q(certificate_number__icontains=search) |
+                Q(course_name__icontains=search)
+            )
+        return queryset
+
+    def perform_create(self, serializer):
+        serializer.save(issued_by=self.request.user)
+
+    @extend_schema(tags=['Certificates'])
+    def get(self, request, *args, **kwargs):
+        return super().get(request, *args, **kwargs)
+
+    @extend_schema(tags=['Certificates'])
+    def post(self, request, *args, **kwargs):
+        serializer = CertificateCreateSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        certificate = serializer.save(issued_by=request.user)
+        return Response(
+            CertificateSerializer(certificate, context={'request': request}).data,
+            status=status.HTTP_201_CREATED
+        )
+
+
+class CertificateDetailView(generics.RetrieveUpdateDestroyAPIView):
+    """Get, update or delete a certificate"""
+    queryset = Certificate.objects.all()
+    serializer_class = CertificateSerializer
+    permission_classes = [IsAdminUser]
+
+    @extend_schema(tags=['Certificates'])
+    def get(self, request, *args, **kwargs):
+        return super().get(request, *args, **kwargs)
+
+    @extend_schema(tags=['Certificates'])
+    def put(self, request, *args, **kwargs):
+        return super().put(request, *args, **kwargs)
+
+    @extend_schema(tags=['Certificates'])
+    def patch(self, request, *args, **kwargs):
+        return super().patch(request, *args, **kwargs)
+
+    @extend_schema(tags=['Certificates'])
+    def delete(self, request, *args, **kwargs):
+        return super().delete(request, *args, **kwargs)
+
+
+class CertificatePDFView(APIView):
+    """Generate and download certificate PDF"""
+    permission_classes = [IsAdminUser]
+
+    @extend_schema(tags=['Certificates'])
+    def get(self, request, pk):
+        try:
+            certificate = Certificate.objects.get(pk=pk)
+        except Certificate.DoesNotExist:
+            return Response({'error': 'Certificate not found'}, status=status.HTTP_404_NOT_FOUND)
+
+        from django.template.loader import render_to_string
+        from django.conf import settings
+        import weasyprint
+        import qrcode
+        import qrcode.image.svg
+        import base64
+        from io import BytesIO
+
+        # Generate QR code with verification URL
+        verify_url = request.build_absolute_uri(
+            f'/api/employees/certificates/verify/{certificate.verification_id}/'
+        )
+        qr = qrcode.QRCode(version=1, box_size=10, border=1)
+        qr.add_data(verify_url)
+        qr.make(fit=True)
+        qr_img = qr.make_image(fill_color="black", back_color="white")
+        buffer = BytesIO()
+        qr_img.save(buffer, format='PNG')
+        qr_base64 = base64.b64encode(buffer.getvalue()).decode()
+
+        # Build asset paths as file URIs for weasyprint
+        static_dir = settings.BASE_DIR / 'static' / 'certificates'
+        header_logo = (static_dir / 'headerlogo.png').as_uri()
+        signature = (static_dir / 'jobin_signature.png').as_uri()
+        seal = (static_dir / 'seal.png').as_uri()
+        footer_logo = (static_dir / 'footer_right_logo.png').as_uri()
+
+        # Format dates
+        def format_date(d):
+            day = d.day
+            if 4 <= day <= 20 or 24 <= day <= 30:
+                suffix = "th"
+            else:
+                suffix = ["st", "nd", "rd"][day % 10 - 1]
+            return f"{day}{suffix} {d.strftime('%B %Y')}"
+
+        # Process wish_text placeholders
+        wish_text = certificate.wish_text.format(
+            pronoun=certificate.object_pronoun,
+            possessive=certificate.possessive,
+        )
+
+        context = {
+            'cert': certificate,
+            'qr_base64': qr_base64,
+            'header_logo': header_logo,
+            'signature': signature,
+            'seal': seal,
+            'footer_logo': footer_logo,
+            'start_date_fmt': format_date(certificate.start_date),
+            'end_date_fmt': format_date(certificate.end_date),
+            'date_of_issuance_fmt': certificate.date_of_issuance.strftime('%d/%m/%Y'),
+            'wish_text': wish_text,
+        }
+
+        html_string = render_to_string('employees/certificate_pdf.html', context)
+        from django.http import HttpResponse
+        pdf = weasyprint.HTML(string=html_string).write_pdf()
+
+        response = HttpResponse(pdf, content_type='application/pdf')
+        filename = f"Certificate_{certificate.student_name.replace(' ', '_')}_{certificate.certificate_number.replace('/', '_')}.pdf"
+        if request.query_params.get('download'):
+            response['Content-Disposition'] = f'attachment; filename="{filename}"'
+        else:
+            response['Content-Disposition'] = f'inline; filename="{filename}"'
+        return response
+
+
+class CertificateVerifyView(APIView):
+    """Public endpoint to verify a certificate via QR code"""
+    permission_classes = []
+    authentication_classes = []
+
+    @extend_schema(tags=['Certificates'])
+    def get(self, request, verification_id):
+        try:
+            certificate = Certificate.objects.get(verification_id=verification_id)
+        except Certificate.DoesNotExist:
+            return render(request, 'employees/certificate_verify.html', {
+                'valid': False,
+            })
+
+        return render(request, 'employees/certificate_verify.html', {
+            'valid': True,
+            'cert': certificate,
+        })
 
 

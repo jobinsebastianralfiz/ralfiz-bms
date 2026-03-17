@@ -467,3 +467,100 @@ class Payroll(models.Model):
         else:
             self.leave_deduction = 0
         self.net_pay = self.base_salary - self.leave_deduction + self.bonus - self.deductions
+
+
+class Certificate(models.Model):
+    """Standalone certificate for interns/students - not linked to any user model"""
+    SALUTATION_CHOICES = [
+        ('Mr.', 'Mr.'),
+        ('Ms.', 'Ms.'),
+        ('Mrs.', 'Mrs.'),
+    ]
+
+    GENDER_CHOICES = [
+        ('male', 'Male'),
+        ('female', 'Female'),
+    ]
+
+    MODE_CHOICES = [
+        ('offline', 'Offline'),
+        ('online', 'Online'),
+        ('hybrid', 'Hybrid'),
+    ]
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    certificate_number = models.CharField(max_length=50, unique=True, blank=True)
+    verification_id = models.UUIDField(default=uuid.uuid4, unique=True, editable=False)
+    title = models.CharField(max_length=200, default='INTERNSHIP CERTIFICATE',
+                             help_text='e.g. INTERNSHIP CERTIFICATE, COURSE COMPLETION CERTIFICATE')
+
+    # Student info
+    salutation = models.CharField(max_length=10, choices=SALUTATION_CHOICES, default='Mr.')
+    student_name = models.CharField(max_length=200)
+    gender = models.CharField(max_length=10, choices=GENDER_CHOICES, default='male')
+    college_name = models.CharField(max_length=300, blank=True)
+
+    # Course info
+    course_name = models.CharField(max_length=200, help_text='e.g. Web Development Internship')
+    start_date = models.DateField()
+    end_date = models.DateField()
+    duration_days = models.PositiveIntegerField(help_text='Total duration in days')
+    mode = models.CharField(max_length=10, choices=MODE_CHOICES, default='offline')
+
+    # Skills / content
+    skills = models.JSONField(default=list, help_text='List of skills learned, e.g. ["HTML5 and CSS3", "JavaScript"]')
+    closing_text = models.TextField(
+        default='actively participated in all training sessions, hands-on tasks, and project assignments, '
+                'demonstrating dedication, teamwork, and a strong interest in learning modern web technologies.',
+        help_text='Closing paragraph text (pronoun auto-applied)'
+    )
+    wish_text = models.TextField(
+        default='We wish {pronoun} success in {possessive} future academic and professional endeavors.',
+        help_text='Use {pronoun} for him/her and {possessive} for his/her'
+    )
+
+    # Issuance
+    date_of_issuance = models.DateField()
+    issued_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"{self.certificate_number} - {self.student_name}"
+
+    @property
+    def pronoun(self):
+        return 'she' if self.gender == 'female' else 'he'
+
+    @property
+    def pronoun_cap(self):
+        return 'She' if self.gender == 'female' else 'He'
+
+    @property
+    def possessive(self):
+        return 'her' if self.gender == 'female' else 'his'
+
+    @property
+    def object_pronoun(self):
+        return 'her' if self.gender == 'female' else 'him'
+
+    def save(self, *args, **kwargs):
+        if not self.certificate_number:
+            year = str(self.date_of_issuance.year)[-2:]
+            prefix = f"RT/PR/{year}/inter/"
+            last = Certificate.objects.filter(
+                certificate_number__startswith=prefix
+            ).order_by('-certificate_number').first()
+            if last:
+                try:
+                    last_num = int(last.certificate_number.split('/')[-1])
+                except ValueError:
+                    last_num = 0
+                self.certificate_number = f"{prefix}{str(last_num + 1).zfill(3)}"
+            else:
+                self.certificate_number = f"{prefix}001"
+        super().save(*args, **kwargs)

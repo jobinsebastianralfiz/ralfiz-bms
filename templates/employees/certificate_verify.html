@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Certificate Verification - Ralfiz Technologies</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #f5f5f5;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        .card {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+            max-width: 500px;
+            width: 100%;
+            overflow: hidden;
+        }
+        .card-header {
+            padding: 24px;
+            text-align: center;
+        }
+        .card-header.valid {
+            background: linear-gradient(135deg, #4CAF50, #45a049);
+            color: white;
+        }
+        .card-header.invalid {
+            background: linear-gradient(135deg, #f44336, #d32f2f);
+            color: white;
+        }
+        .card-header .icon { font-size: 48px; margin-bottom: 10px; }
+        .card-header h1 { font-size: 22px; font-weight: 600; }
+        .card-header p { font-size: 14px; opacity: 0.9; margin-top: 5px; }
+        .card-body { padding: 24px; }
+        .detail { display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid #eee; }
+        .detail:last-child { border-bottom: none; }
+        .detail .label { color: #888; font-size: 13px; }
+        .detail .value { color: #333; font-weight: 500; font-size: 14px; text-align: right; }
+        .company-footer {
+            text-align: center;
+            padding: 16px 24px;
+            background: #fafafa;
+            border-top: 1px solid #eee;
+            font-size: 12px;
+            color: #999;
+        }
+    </style>
+</head>
+<body>
+    <div class="card">
+        {% if valid %}
+        <div class="card-header valid">
+            <div class="icon">&#10003;</div>
+            <h1>Certificate Verified</h1>
+            <p>This is an authentic certificate issued by Ralfiz Technologies</p>
+        </div>
+        <div class="card-body">
+            <div class="detail">
+                <span class="label">Certificate No</span>
+                <span class="value">{{ cert.certificate_number }}</span>
+            </div>
+            <div class="detail">
+                <span class="label">Name</span>
+                <span class="value">{{ cert.salutation }} {{ cert.student_name }}</span>
+            </div>
+            {% if cert.college_name %}
+            <div class="detail">
+                <span class="label">College</span>
+                <span class="value">{{ cert.college_name }}</span>
+            </div>
+            {% endif %}
+            <div class="detail">
+                <span class="label">Program</span>
+                <span class="value">{{ cert.course_name }}</span>
+            </div>
+            <div class="detail">
+                <span class="label">Duration</span>
+                <span class="value">{{ cert.start_date }} to {{ cert.end_date }} ({{ cert.duration_days }} days)</span>
+            </div>
+            <div class="detail">
+                <span class="label">Mode</span>
+                <span class="value">{{ cert.get_mode_display }}</span>
+            </div>
+            <div class="detail">
+                <span class="label">Date of Issuance</span>
+                <span class="value">{{ cert.date_of_issuance }}</span>
+            </div>
+        </div>
+        {% else %}
+        <div class="card-header invalid">
+            <div class="icon">&#10007;</div>
+            <h1>Invalid Certificate</h1>
+            <p>This certificate could not be verified. It may be invalid or tampered with.</p>
+        </div>
+        <div class="card-body">
+            <p style="text-align: center; color: #666; padding: 20px 0;">
+                If you believe this is an error, please contact us at
+                <strong>info@ralfiz.com</strong> or call <strong>9895663498</strong>.
+            </p>
+        </div>
+        {% endif %}
+        <div class="company-footer">
+            Ralfiz Technologies &middot; Level 2, KIMS Avenue, Perinthalmanna
+        </div>
+    </div>
+</body>
+</html>

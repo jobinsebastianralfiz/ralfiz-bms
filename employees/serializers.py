@@ -2,7 +2,8 @@ from rest_framework import serializers
 from django.contrib.auth.models import User
 from .models import (
     Employee, DeviceToken, Attendance, LeaveType, LeaveRequest,
-    WorkAssignment, WorkUpdate, Notification, QRCode, ScheduledClass, Payroll
+    WorkAssignment, WorkUpdate, Notification, QRCode, ScheduledClass, Payroll,
+    Certificate
 )
 
 
@@ -282,6 +283,45 @@ class OwnerProjectSerializer(serializers.Serializer):
     paid_amount = serializers.DecimalField(max_digits=12, decimal_places=2)
     start_date = serializers.DateField()
     deadline = serializers.DateField()
+
+
+class CertificateSerializer(serializers.ModelSerializer):
+    verification_url = serializers.SerializerMethodField()
+    pdf_url = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Certificate
+        fields = [
+            'id', 'certificate_number', 'verification_id', 'title',
+            'salutation', 'student_name', 'gender', 'college_name',
+            'course_name', 'start_date', 'end_date', 'duration_days', 'mode',
+            'skills', 'closing_text', 'wish_text',
+            'date_of_issuance', 'verification_url', 'pdf_url',
+            'created_at', 'updated_at',
+        ]
+        read_only_fields = ['id', 'certificate_number', 'verification_id', 'created_at', 'updated_at']
+
+    def get_verification_url(self, obj):
+        request = self.context.get('request')
+        if request:
+            return request.build_absolute_uri(f'/api/employees/certificates/verify/{obj.verification_id}/')
+        return None
+
+    def get_pdf_url(self, obj):
+        request = self.context.get('request')
+        if request:
+            return request.build_absolute_uri(f'/api/employees/certificates/{obj.id}/pdf/')
+        return None
+
+
+class CertificateCreateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Certificate
+        fields = [
+            'title', 'salutation', 'student_name', 'gender', 'college_name',
+            'course_name', 'start_date', 'end_date', 'duration_days', 'mode',
+            'skills', 'closing_text', 'wish_text', 'date_of_issuance',
+        ]
 
 
 class OwnerAttendanceEmployeeSerializer(serializers.Serializer):

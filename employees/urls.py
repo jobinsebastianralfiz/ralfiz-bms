@@ -103,4 +103,10 @@ urlpatterns = [
     path('admin/payroll/generate/', views.AdminPayrollGenerateView.as_view(), name='admin_payroll_generate'),
     path('admin/payroll/', views.AdminPayrollListView.as_view(), name='admin_payroll_list'),
     path('admin/payroll/<uuid:pk>/', views.AdminPayrollDetailView.as_view(), name='admin_payroll_detail'),
+
+    # ---- Certificates ----
+    path('certificates/', views.CertificateListCreateView.as_view(), name='certificate_list_create'),
+    path('certificates/<uuid:pk>/', views.CertificateDetailView.as_view(), name='certificate_detail'),
+    path('certificates/<uuid:pk>/pdf/', views.CertificatePDFView.as_view(), name='certificate_pdf'),
+    path('certificates/verify/<uuid:verification_id>/', views.CertificateVerifyView.as_view(), name='certificate_verify'),
 ]

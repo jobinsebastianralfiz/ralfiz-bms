@@ -194,6 +194,7 @@ SPECTACULAR_SETTINGS = {
         {'name': 'Work', 'description': 'Work assignments and status updates'},
         {'name': 'Notifications', 'description': 'Push notifications'},
         {'name': 'Admin', 'description': 'Admin endpoints for managing employees'},
+        {'name': 'Certificates', 'description': 'Certificate generation and verification'},
     ],
 }
 

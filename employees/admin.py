@@ -2,7 +2,8 @@ from django.contrib import admin
 from django.utils.html import format_html
 from .models import (
     Employee, DeviceToken, Attendance, LeaveType, LeaveRequest,
-    WorkAssignment, WorkUpdate, Notification, QRCode, ScheduledClass, Payroll
+    WorkAssignment, WorkUpdate, Notification, QRCode, ScheduledClass, Payroll,
+    Certificate
 )
 from .utils import generate_face_encoding
 
@@ -150,3 +151,50 @@ class PayrollAdmin(admin.ModelAdmin):
     list_filter = ['status', 'year', 'month']
     search_fields = ['employee__employee_id', 'employee__user__first_name']
     readonly_fields = ['id', 'created_at', 'updated_at']
+
+
+@admin.register(Certificate)
+class CertificateAdmin(admin.ModelAdmin):
+    list_display = ['certificate_number', 'student_name', 'title', 'course_name',
+                    'date_of_issuance', 'download_pdf_link', 'verify_link']
+    list_filter = ['title', 'mode', 'date_of_issuance']
+    search_fields = ['student_name', 'certificate_number', 'course_name', 'college_name']
+    readonly_fields = ['id', 'certificate_number', 'verification_id', 'created_at', 'updated_at',
+                       'download_pdf_link', 'verify_link']
+    fieldsets = (
+        ('Certificate Info', {
+            'fields': ('id', 'certificate_number', 'verification_id', 'title',
+                       'download_pdf_link', 'verify_link'),
+        }),
+        ('Student Info', {
+            'fields': ('salutation', 'student_name', 'gender', 'college_name'),
+        }),
+        ('Course Info', {
+            'fields': ('course_name', 'start_date', 'end_date', 'duration_days', 'mode'),
+        }),
+        ('Content', {
+            'fields': ('skills', 'closing_text', 'wish_text'),
+        }),
+        ('Issuance', {
+            'fields': ('date_of_issuance', 'issued_by', 'created_at', 'updated_at'),
+        }),
+    )
+
+    def download_pdf_link(self, obj):
+        if obj.pk:
+            url = f'/api/employees/certificates/{obj.pk}/pdf/?download=1'
+            return format_html('<a href="{}" target="_blank">Download PDF</a>', url)
+        return '-'
+    download_pdf_link.short_description = 'PDF'
+
+    def verify_link(self, obj):
+        if obj.pk:
+            url = f'/api/employees/certificates/verify/{obj.verification_id}/'
+            return format_html('<a href="{}" target="_blank">Verify</a>', url)
+        return '-'
+    verify_link.short_description = 'Verify'
+
+    def save_model(self, request, obj, form, change):
+        if not obj.issued_by:
+            obj.issued_by = request.user
+        super().save_model(request, obj, form, change)
