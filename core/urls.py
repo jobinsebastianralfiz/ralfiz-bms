@@ -166,6 +166,12 @@ urlpatterns = [
     # Payroll
     path('hr/payroll/', views.emp_payroll_list, name='emp_payroll_list'),
 
+    # Certificate Templates
+    path('hr/certificate-templates/', views.certificate_template_list, name='certificate_template_list'),
+    path('hr/certificate-templates/create/', views.certificate_template_create, name='certificate_template_create'),
+    path('hr/certificate-templates/<uuid:pk>/', views.certificate_template_detail, name='certificate_template_detail'),
+    path('hr/certificate-templates/<uuid:pk>/delete/', views.certificate_template_delete, name='certificate_template_delete'),
+
     # Certificates
     path('hr/certificates/', views.certificate_list, name='certificate_list'),
     path('hr/certificates/create/', views.certificate_create, name='certificate_create'),

@@ -469,6 +469,40 @@ class Payroll(models.Model):
         self.net_pay = self.base_salary - self.leave_deduction + self.bonus - self.deductions
 
 
+class CertificateTemplate(models.Model):
+    """Editable templates for certificate content"""
+    CERTIFICATE_TYPE_CHOICES = [
+        ('inter', 'Internship'),
+        ('exp', 'Experience'),
+        ('course', 'Course Completion'),
+        ('merit', 'Merit'),
+        ('particip', 'Participation'),
+    ]
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    name = models.CharField(max_length=200, help_text='e.g. Internship - Student, Internship - Professional')
+    certificate_type = models.CharField(max_length=10, choices=CERTIFICATE_TYPE_CHOICES, default='inter')
+    title = models.CharField(max_length=200, help_text='Certificate title, e.g. INTERNSHIP CERTIFICATE')
+    body_text = models.TextField(
+        help_text='Certificate body with placeholders: {salutation}, {student_name}, {college_name}, '
+                  '{course_name}, {start_date}, {end_date}, {duration_days}, {mode}, {skills}, '
+                  '{pronoun}, {pronoun_cap}, {possessive}, {object_pronoun}'
+    )
+    wish_text = models.TextField(
+        default='We wish {pronoun} success in {possessive} future academic and professional endeavors.',
+        help_text='Use {pronoun} for him/her and {possessive} for his/her'
+    )
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['certificate_type', 'name']
+
+    def __str__(self):
+        return f"{self.name} ({self.get_certificate_type_display()})"
+
+
 class Certificate(models.Model):
     """Standalone certificate for interns/students - not linked to any user model"""
     SALUTATION_CHOICES = [
@@ -488,13 +522,7 @@ class Certificate(models.Model):
         ('hybrid', 'Hybrid'),
     ]
 
-    CERTIFICATE_TYPE_CHOICES = [
-        ('inter', 'Internship'),
-        ('exp', 'Experience'),
-        ('course', 'Course Completion'),
-        ('merit', 'Merit'),
-        ('particip', 'Participation'),
-    ]
+    CERTIFICATE_TYPE_CHOICES = CertificateTemplate.CERTIFICATE_TYPE_CHOICES
 
     STATUS_CHOICES = [
         ('draft', 'Draft'),
@@ -502,75 +530,15 @@ class Certificate(models.Model):
         ('cancelled', 'Cancelled'),
     ]
 
-    # Maps certificate type to default title
-    TYPE_TITLE_MAP = {
-        'inter': 'INTERNSHIP CERTIFICATE',
-        'exp': 'EXPERIENCE CERTIFICATE',
-        'course': 'COURSE COMPLETION CERTIFICATE',
-        'merit': 'CERTIFICATE OF MERIT',
-        'particip': 'CERTIFICATE OF PARTICIPATION',
-    }
-
-    # Default body text per type (full certificate content with placeholders)
-    TYPE_BODY_MAP = {
-        'inter': """This is to certify that {salutation} {student_name}, a student of {college_name}, has successfully completed the {course_name} at Ralfiz Technologies, Perinthalmanna.
-
-The internship was conducted in {mode} mode from {start_date} to {end_date}, with a total duration of {duration_days} days. During this period, {pronoun} was trained in and gained practical exposure to:
-
-{skills}
-
-{pronoun_cap} actively participated in all training sessions, hands-on tasks, and project assignments, demonstrating dedication, teamwork, and a strong interest in learning modern web technologies.""",
-
-        'exp': """This is to certify that {salutation} {student_name} has worked at Ralfiz Technologies, Perinthalmanna as {course_name} from {start_date} to {end_date}.
-
-During {possessive} tenure, {pronoun} demonstrated expertise and proficiency in the following areas:
-
-{skills}
-
-{pronoun_cap} was a dedicated and reliable team member who consistently delivered quality work.""",
-
-        'course': """This is to certify that {salutation} {student_name} has successfully completed the {course_name} conducted at Ralfiz Technologies, Perinthalmanna.
-
-The course was conducted from {start_date} to {end_date}. The program covered the following topics:
-
-{skills}
-
-{pronoun_cap} successfully completed all modules, assignments, and assessments with commendable dedication and a keen interest in learning.""",
-
-        'merit': """This is to certify that {salutation} {student_name} has been awarded this certificate in recognition of outstanding performance in {course_name} at Ralfiz Technologies, Perinthalmanna.
-
-{pronoun_cap} excelled in the following areas:
-
-{skills}
-
-{pronoun_cap} demonstrated exceptional skill, dedication, and outstanding performance throughout the program, setting a high standard among peers.""",
-
-        'particip': """This is to certify that {salutation} {student_name} has participated in the {course_name} conducted at Ralfiz Technologies, Perinthalmanna from {start_date} to {end_date}.
-
-The program covered:
-
-{skills}
-
-{pronoun_cap} actively engaged in all sessions and activities, demonstrating enthusiasm and a willingness to learn.""",
-    }
-
-    # Default wish text per type
-    TYPE_WISH_MAP = {
-        'inter': 'We wish {pronoun} success in {possessive} future academic and professional endeavors.',
-        'exp': 'We wish {pronoun} continued success in {possessive} professional career.',
-        'course': 'We wish {pronoun} success in {possessive} future academic and professional endeavors.',
-        'merit': 'We congratulate {pronoun} and wish {pronoun} continued success in all future endeavors.',
-        'particip': 'We wish {pronoun} success in {possessive} future academic and professional endeavors.',
-    }
-
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     certificate_number = models.CharField(max_length=50, unique=True, blank=True)
     verification_id = models.UUIDField(default=uuid.uuid4, unique=True, editable=False)
+    template = models.ForeignKey(CertificateTemplate, on_delete=models.SET_NULL, null=True, blank=True,
+                                 help_text='Template used - body_text is copied from template on create')
     certificate_type = models.CharField(max_length=10, choices=CERTIFICATE_TYPE_CHOICES, default='inter',
-                                        help_text='Determines ref number prefix and default title')
+                                        help_text='Determines ref number prefix')
     status = models.CharField(max_length=10, choices=STATUS_CHOICES, default='draft')
-    title = models.CharField(max_length=200, default='INTERNSHIP CERTIFICATE',
-                             help_text='e.g. INTERNSHIP CERTIFICATE, COURSE COMPLETION CERTIFICATE')
+    title = models.CharField(max_length=200, default='INTERNSHIP CERTIFICATE')
 
     # Student info
     salutation = models.CharField(max_length=10, choices=SALUTATION_CHOICES, default='Mr.')

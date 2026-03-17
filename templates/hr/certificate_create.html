@@ -5,7 +5,7 @@
 <div class="page-header">
   <div>
     <h1 class="page-title">New Certificate</h1>
-    <p class="page-subtitle mb-0">Generate a new certificate for an intern/student</p>
+    <p class="page-subtitle mb-0">Generate a new certificate</p>
   </div>
 </div>
 
@@ -17,22 +17,38 @@
     <form method="post">
       {% csrf_token %}
 
+      <!-- Template Selection -->
       <div class="row mb-3">
-        <div class="col-4">
-          <label class="form-label">Certificate Type *</label>
-          <select name="certificate_type" id="cert-type" class="form-control" onchange="updateTitle()">
+        <div class="col-6">
+          <label class="form-label">Template *</label>
+          <select name="template" id="cert-template" class="form-control" onchange="applyTemplate()">
+            <option value="">-- Select a template --</option>
+            {% for t in templates %}
+            <option value="{{ t.pk }}"
+                    data-type="{{ t.certificate_type }}"
+                    data-title="{{ t.title }}"
+                    data-body="{{ t.body_text }}"
+                    data-wish="{{ t.wish_text }}">
+              {{ t.name }} ({{ t.get_certificate_type_display }})
+            </option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-3">
+          <label class="form-label">Type</label>
+          <select name="certificate_type" id="cert-type" class="form-control">
             {% for key, value in type_choices %}
             <option value="{{ key }}">{{ value }}</option>
             {% endfor %}
           </select>
         </div>
-        <div class="col-8">
-          <label class="form-label">Certificate Title *</label>
-          <input type="text" name="title" id="cert-title" class="form-control" value="INTERNSHIP CERTIFICATE"
-                 placeholder="e.g. INTERNSHIP CERTIFICATE, COURSE COMPLETION CERTIFICATE" required>
+        <div class="col-3">
+          <label class="form-label">Title *</label>
+          <input type="text" name="title" id="cert-title" class="form-control" value="INTERNSHIP CERTIFICATE" required>
         </div>
       </div>
 
+      <!-- Person Info -->
       <div class="row mb-3">
         <div class="col-2">
           <label class="form-label">Salutation *</label>
@@ -43,7 +59,7 @@
           </select>
         </div>
         <div class="col-6">
-          <label class="form-label">Student Name *</label>
+          <label class="form-label">Name *</label>
           <input type="text" name="student_name" class="form-control" required placeholder="Full name">
         </div>
         <div class="col-4">
@@ -57,18 +73,30 @@
       </div>
 
       <div class="row mb-3">
-        <div class="col-12">
+        <div class="col-6">
           <label class="form-label">College / Institution</label>
-          <input type="text" name="college_name" class="form-control" placeholder="e.g. St. Thomas College (Autonomous), Thrissur">
+          <input type="text" name="college_name" class="form-control" placeholder="Leave empty if not applicable">
+        </div>
+        <div class="col-6">
+          <label class="form-label">Course / Program / Designation</label>
+          <input type="text" name="course_name" class="form-control" placeholder="e.g. Web Development Internship">
         </div>
       </div>
 
       <div class="row mb-3">
-        <div class="col-6">
-          <label class="form-label">Course / Program Name *</label>
-          <input type="text" name="course_name" class="form-control" required placeholder="e.g. Web Development Internship">
+        <div class="col-3">
+          <label class="form-label">Start Date</label>
+          <input type="date" name="start_date" class="form-control">
         </div>
         <div class="col-3">
+          <label class="form-label">End Date</label>
+          <input type="date" name="end_date" class="form-control">
+        </div>
+        <div class="col-2">
+          <label class="form-label">Duration</label>
+          <input type="number" name="duration_days" class="form-control" min="1" placeholder="days">
+        </div>
+        <div class="col-2">
           <label class="form-label">Mode</label>
           <select name="mode" class="form-control">
             {% for key, value in mode_choices %}
@@ -76,51 +104,30 @@
             {% endfor %}
           </select>
         </div>
-        <div class="col-3">
-          <label class="form-label">Duration (days)</label>
-          <input type="number" name="duration_days" class="form-control" min="1" placeholder="40">
-        </div>
-      </div>
-
-      <div class="row mb-3">
-        <div class="col-4">
-          <label class="form-label">Start Date</label>
-          <input type="date" name="start_date" class="form-control">
-        </div>
-        <div class="col-4">
-          <label class="form-label">End Date</label>
-          <input type="date" name="end_date" class="form-control">
-        </div>
-        <div class="col-4">
-          <label class="form-label">Date of Issuance *</label>
+        <div class="col-2">
+          <label class="form-label">Issued *</label>
           <input type="date" name="date_of_issuance" class="form-control" required>
         </div>
       </div>
 
+      <!-- Content -->
       <div class="mb-3">
         <label class="form-label">Certificate Body Content *</label>
-        <textarea name="body_text" id="cert-body" class="form-control" rows="12" required>{{ type_body_map.inter }}</textarea>
-        <small class="text-muted">Full certificate content. Auto-fills when you change certificate type. Available placeholders:
-          <code>{salutation}</code>, <code>{student_name}</code>, <code>{college_name}</code>, <code>{course_name}</code>,
+        <textarea name="body_text" id="cert-body" class="form-control" rows="12" required placeholder="Select a template above to auto-fill, or write your own content..."></textarea>
+        <small class="text-muted">Placeholders: <code>{salutation}</code>, <code>{student_name}</code>, <code>{college_name}</code>, <code>{course_name}</code>,
           <code>{start_date}</code>, <code>{end_date}</code>, <code>{duration_days}</code>, <code>{mode}</code>,
-          <code>{skills}</code> (renders as bullet list), <code>{pronoun}</code> (he/she), <code>{pronoun_cap}</code> (He/She),
-          <code>{possessive}</code> (his/her). Separate paragraphs with a blank line.</small>
+          <code>{skills}</code>, <code>{pronoun}</code> (he/she), <code>{pronoun_cap}</code> (He/She),
+          <code>{possessive}</code> (his/her). Blank line = new paragraph.</small>
       </div>
 
       <div class="mb-3">
         <label class="form-label">Skills</label>
-        <textarea name="skills" class="form-control" rows="6" placeholder="Enter one skill per line, e.g.:
-HTML5 and CSS3
-JavaScript
-Python Programming
-Django Web Framework"></textarea>
-        <small class="text-muted">One skill per line. Rendered where <code>{skills}</code> appears in body text.</small>
+        <textarea name="skills" class="form-control" rows="5" placeholder="One skill per line (renders where {skills} appears)"></textarea>
       </div>
 
       <div class="mb-3">
         <label class="form-label">Wish Text</label>
         <textarea name="wish_text" id="cert-wish" class="form-control" rows="2">We wish {pronoun} success in {possessive} future academic and professional endeavors.</textarea>
-        <small class="text-muted">Last line of certificate. Use <code>{pronoun}</code> for him/her and <code>{possessive}</code> for his/her.</small>
       </div>
 
       <div class="d-flex gap-2">
@@ -134,32 +141,15 @@ Django Web Framework"></textarea>
 
 {% block extra_js %}
 <script>
-const titleMap = {
-  {% for key, value in type_title_map.items %}
-  '{{ key }}': '{{ value }}',
-  {% endfor %}
-};
-const bodyMap = {
-  {% for key, value in type_body_map.items %}
-  '{{ key }}': `{{ value|escapejs }}`,
-  {% endfor %}
-};
-const wishMap = {
-  {% for key, value in type_wish_map.items %}
-  '{{ key }}': `{{ value|escapejs }}`,
-  {% endfor %}
-};
-function updateTitle() {
-  const type = document.getElementById('cert-type').value;
-  if (titleMap[type]) {
-    document.getElementById('cert-title').value = titleMap[type];
-  }
-  if (bodyMap[type]) {
-    document.getElementById('cert-body').value = bodyMap[type];
-  }
-  if (wishMap[type]) {
-    document.getElementById('cert-wish').value = wishMap[type];
-  }
+function applyTemplate() {
+  const sel = document.getElementById('cert-template');
+  const opt = sel.options[sel.selectedIndex];
+  if (!opt.value) return;
+
+  document.getElementById('cert-type').value = opt.dataset.type;
+  document.getElementById('cert-title').value = opt.dataset.title;
+  document.getElementById('cert-body').value = opt.dataset.body;
+  document.getElementById('cert-wish').value = opt.dataset.wish;
 }
 </script>
 {% endblock %}

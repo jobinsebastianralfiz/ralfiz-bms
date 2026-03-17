@@ -106,7 +106,7 @@ urlpatterns = [
 
     # ---- Certificates ----
     path('certificates/', views.CertificateListCreateView.as_view(), name='certificate_list_create'),
-    path('certificates/defaults/', views.CertificateDefaultsView.as_view(), name='certificate_defaults'),
+    path('certificates/templates/', views.CertificateTemplateListView.as_view(), name='certificate_templates'),
     path('certificates/<uuid:pk>/', views.CertificateDetailView.as_view(), name='certificate_detail'),
     path('certificates/<uuid:pk>/pdf/', views.CertificatePDFView.as_view(), name='certificate_pdf'),
     path('certificates/verify/<uuid:verification_id>/', views.CertificateVerifyView.as_view(), name='certificate_verify'),

@@ -16,7 +16,7 @@ from drf_spectacular.utils import extend_schema, extend_schema_view, OpenApiPara
 from .models import (
     Employee, DeviceToken, Attendance, LeaveType, LeaveRequest,
     WorkAssignment, WorkUpdate, Notification, QRCode, ScheduledClass, Payroll,
-    Certificate
+    CertificateTemplate, Certificate
 )
 from .serializers import (
     EmployeeProfileSerializer, EmployeeListSerializer,
@@ -27,7 +27,7 @@ from .serializers import (
     NotificationSerializer, ChangePasswordSerializer, ScheduledClassSerializer,
     PayrollSerializer, OwnerClientSerializer, OwnerProjectSerializer,
     OwnerAttendanceEmployeeSerializer,
-    CertificateSerializer, CertificateCreateSerializer,
+    CertificateTemplateSerializer, CertificateSerializer, CertificateCreateSerializer,
 )
 from django.shortcuts import render
 
@@ -2955,19 +2955,21 @@ class CertificatePDFView(APIView):
         return response
 
 
-class CertificateDefaultsView(APIView):
-    """Get default title, body_text, and wish_text for a certificate type"""
+class CertificateTemplateListView(generics.ListAPIView):
+    """List all active certificate templates"""
+    serializer_class = CertificateTemplateSerializer
     permission_classes = [IsAuthenticated, IsAdminOrOwner]
 
+    def get_queryset(self):
+        queryset = CertificateTemplate.objects.filter(is_active=True)
+        cert_type = self.request.query_params.get('type')
+        if cert_type:
+            queryset = queryset.filter(certificate_type=cert_type)
+        return queryset
+
     @extend_schema(tags=['Certificates'])
-    def get(self, request):
-        cert_type = request.query_params.get('type', 'inter')
-        return Response({
-            'certificate_type': cert_type,
-            'title': Certificate.TYPE_TITLE_MAP.get(cert_type, 'CERTIFICATE'),
-            'body_text': Certificate.TYPE_BODY_MAP.get(cert_type, ''),
-            'wish_text': Certificate.TYPE_WISH_MAP.get(cert_type, ''),
-        })
+    def get(self, request, *args, **kwargs):
+        return super().get(request, *args, **kwargs)
 
 
 class CertificateVerifyView(APIView):

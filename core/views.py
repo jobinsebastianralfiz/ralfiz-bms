@@ -4785,6 +4785,68 @@ def emp_payroll_list(request):
 # ============================================================
 
 @login_required
+def certificate_template_list(request):
+    """List all certificate templates"""
+    from employees.models import CertificateTemplate
+    templates = CertificateTemplate.objects.all()
+    return render(request, 'hr/certificate_template_list.html', {'templates': templates})
+
+
+@login_required
+def certificate_template_create(request):
+    """Create a new certificate template"""
+    from employees.models import CertificateTemplate
+    if request.method == 'POST':
+        CertificateTemplate.objects.create(
+            name=request.POST.get('name'),
+            certificate_type=request.POST.get('certificate_type', 'inter'),
+            title=request.POST.get('title'),
+            body_text=request.POST.get('body_text', ''),
+            wish_text=request.POST.get('wish_text', ''),
+            is_active=request.POST.get('is_active') == 'on',
+        )
+        messages.success(request, 'Template created.')
+        return redirect('certificate_template_list')
+    context = {
+        'type_choices': CertificateTemplate.CERTIFICATE_TYPE_CHOICES,
+    }
+    return render(request, 'hr/certificate_template_form.html', context)
+
+
+@login_required
+def certificate_template_detail(request, pk):
+    """Edit a certificate template"""
+    from employees.models import CertificateTemplate
+    template = get_object_or_404(CertificateTemplate, pk=pk)
+    if request.method == 'POST':
+        template.name = request.POST.get('name', template.name)
+        template.certificate_type = request.POST.get('certificate_type', template.certificate_type)
+        template.title = request.POST.get('title', template.title)
+        template.body_text = request.POST.get('body_text', template.body_text)
+        template.wish_text = request.POST.get('wish_text', template.wish_text)
+        template.is_active = request.POST.get('is_active') == 'on'
+        template.save()
+        messages.success(request, 'Template updated.')
+        return redirect('certificate_template_detail', pk=pk)
+    context = {
+        'template': template,
+        'type_choices': CertificateTemplate.CERTIFICATE_TYPE_CHOICES,
+    }
+    return render(request, 'hr/certificate_template_form.html', context)
+
+
+@login_required
+def certificate_template_delete(request, pk):
+    """Delete a certificate template"""
+    from employees.models import CertificateTemplate
+    if request.method == 'POST':
+        template = get_object_or_404(CertificateTemplate, pk=pk)
+        template.delete()
+        messages.success(request, 'Template deleted.')
+    return redirect('certificate_template_list')
+
+
+@login_required
 def certificate_list(request):
     """List all certificates"""
     from employees.models import Certificate
@@ -4809,21 +4871,29 @@ def certificate_list(request):
 @login_required
 def certificate_create(request):
     """Create a new certificate"""
-    from employees.models import Certificate
-    import json
+    from employees.models import Certificate, CertificateTemplate
 
     if request.method == 'POST':
         skills_raw = request.POST.get('skills', '')
         skills = [s.strip() for s in skills_raw.split('\n') if s.strip()]
 
+        template_id = request.POST.get('template') or None
+        template = None
+        if template_id:
+            try:
+                template = CertificateTemplate.objects.get(pk=template_id)
+            except CertificateTemplate.DoesNotExist:
+                pass
+
         cert = Certificate(
+            template=template,
             certificate_type=request.POST.get('certificate_type', 'inter'),
             title=request.POST.get('title', 'INTERNSHIP CERTIFICATE'),
             salutation=request.POST.get('salutation', 'Mr.'),
             student_name=request.POST.get('student_name'),
             gender=request.POST.get('gender', 'male'),
             college_name=request.POST.get('college_name', ''),
-            course_name=request.POST.get('course_name'),
+            course_name=request.POST.get('course_name', ''),
             start_date=request.POST.get('start_date') or None,
             end_date=request.POST.get('end_date') or None,
             duration_days=int(request.POST.get('duration_days')) if request.POST.get('duration_days') else None,
@@ -4839,14 +4909,13 @@ def certificate_create(request):
         messages.success(request, f'Certificate {cert.certificate_number} created for {cert.student_name}.')
         return redirect('certificate_detail', pk=cert.pk)
 
+    templates = CertificateTemplate.objects.filter(is_active=True)
     context = {
         'salutation_choices': Certificate.SALUTATION_CHOICES,
         'gender_choices': Certificate.GENDER_CHOICES,
         'mode_choices': Certificate.MODE_CHOICES,
         'type_choices': Certificate.CERTIFICATE_TYPE_CHOICES,
-        'type_title_map': Certificate.TYPE_TITLE_MAP,
-        'type_body_map': Certificate.TYPE_BODY_MAP,
-        'type_wish_map': Certificate.TYPE_WISH_MAP,
+        'templates': templates,
     }
     return render(request, 'hr/certificate_create.html', context)
 

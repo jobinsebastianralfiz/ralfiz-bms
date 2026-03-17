@@ -3,7 +3,7 @@ from django.utils.html import format_html
 from .models import (
     Employee, DeviceToken, Attendance, LeaveType, LeaveRequest,
     WorkAssignment, WorkUpdate, Notification, QRCode, ScheduledClass, Payroll,
-    Certificate
+    CertificateTemplate, Certificate
 )
 from .utils import generate_face_encoding
 
@@ -153,6 +153,29 @@ class PayrollAdmin(admin.ModelAdmin):
     readonly_fields = ['id', 'created_at', 'updated_at']
 
 
+@admin.register(CertificateTemplate)
+class CertificateTemplateAdmin(admin.ModelAdmin):
+    list_display = ['name', 'certificate_type', 'title', 'is_active', 'updated_at']
+    list_filter = ['certificate_type', 'is_active']
+    search_fields = ['name', 'title']
+    readonly_fields = ['id', 'created_at', 'updated_at']
+    fieldsets = (
+        (None, {
+            'fields': ('id', 'name', 'certificate_type', 'title', 'is_active'),
+        }),
+        ('Content', {
+            'fields': ('body_text', 'wish_text'),
+            'description': 'Placeholders: {salutation}, {student_name}, {college_name}, {course_name}, '
+                           '{start_date}, {end_date}, {duration_days}, {mode}, {skills}, '
+                           '{pronoun}, {pronoun_cap}, {possessive}, {object_pronoun}',
+        }),
+        ('Metadata', {
+            'fields': ('created_at', 'updated_at'),
+            'classes': ('collapse',),
+        }),
+    )
+
+
 @admin.register(Certificate)
 class CertificateAdmin(admin.ModelAdmin):
     list_display = ['certificate_number', 'student_name', 'certificate_type', 'status', 'course_name',
@@ -163,8 +186,8 @@ class CertificateAdmin(admin.ModelAdmin):
                        'download_pdf_link', 'verify_link']
     fieldsets = (
         ('Certificate Info', {
-            'fields': ('id', 'certificate_number', 'verification_id', 'certificate_type', 'status', 'title',
-                       'download_pdf_link', 'verify_link'),
+            'fields': ('id', 'certificate_number', 'verification_id', 'template',
+                       'certificate_type', 'status', 'title', 'download_pdf_link', 'verify_link'),
         }),
         ('Student Info', {
             'fields': ('salutation', 'student_name', 'gender', 'college_name'),

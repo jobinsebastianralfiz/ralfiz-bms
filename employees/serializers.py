@@ -3,7 +3,7 @@ from django.contrib.auth.models import User
 from .models import (
     Employee, DeviceToken, Attendance, LeaveType, LeaveRequest,
     WorkAssignment, WorkUpdate, Notification, QRCode, ScheduledClass, Payroll,
-    Certificate
+    CertificateTemplate, Certificate
 )
 
 
@@ -285,14 +285,22 @@ class OwnerProjectSerializer(serializers.Serializer):
     deadline = serializers.DateField()
 
 
+class CertificateTemplateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = CertificateTemplate
+        fields = ['id', 'name', 'certificate_type', 'title', 'body_text', 'wish_text', 'is_active']
+
+
 class CertificateSerializer(serializers.ModelSerializer):
     verification_url = serializers.SerializerMethodField()
     pdf_url = serializers.SerializerMethodField()
+    template_name = serializers.CharField(source='template.name', read_only=True, default=None)
 
     class Meta:
         model = Certificate
         fields = [
-            'id', 'certificate_number', 'verification_id', 'certificate_type', 'status', 'title',
+            'id', 'certificate_number', 'verification_id', 'template', 'template_name',
+            'certificate_type', 'status', 'title',
             'salutation', 'student_name', 'gender', 'college_name',
             'course_name', 'start_date', 'end_date', 'duration_days', 'mode',
             'body_text', 'skills', 'wish_text',
@@ -333,10 +341,25 @@ class CertificateCreateSerializer(serializers.ModelSerializer):
     class Meta:
         model = Certificate
         fields = [
-            'certificate_type', 'status', 'title', 'salutation', 'student_name', 'gender', 'college_name',
+            'template', 'certificate_type', 'status', 'title',
+            'salutation', 'student_name', 'gender', 'college_name',
             'course_name', 'start_date', 'end_date', 'duration_days', 'mode',
             'body_text', 'skills', 'wish_text', 'date_of_issuance',
         ]
+
+    def validate(self, data):
+        # If template is provided, copy body_text/wish_text/title/type from template
+        template = data.get('template')
+        if template:
+            if not data.get('body_text'):
+                data['body_text'] = template.body_text
+            if not data.get('wish_text'):
+                data['wish_text'] = template.wish_text
+            if not data.get('title'):
+                data['title'] = template.title
+            if not data.get('certificate_type'):
+                data['certificate_type'] = template.certificate_type
+        return data
 
 
 class OwnerAttendanceEmployeeSerializer(serializers.Serializer):

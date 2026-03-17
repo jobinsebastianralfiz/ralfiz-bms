@@ -1,0 +1,73 @@
+{% extends 'base.html' %}
+{% block title %}Certificate Templates - Ralfiz BMS{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title">Certificate Templates</h1>
+    <p class="page-subtitle mb-0">Manage reusable certificate content templates</p>
+  </div>
+  <div class="page-actions">
+    <a href="{% url 'certificate_template_create' %}" class="btn btn-primary">
+      <i class="fas fa-plus"></i> New Template
+    </a>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-body p-0">
+    {% if templates %}
+    <div class="table-responsive">
+      <table class="table table-hover mb-0">
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Title</th>
+            <th>Status</th>
+            <th>Updated</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for t in templates %}
+          <tr>
+            <td class="fw-medium">{{ t.name }}</td>
+            <td>{{ t.get_certificate_type_display }}</td>
+            <td>{{ t.title }}</td>
+            <td>
+              {% if t.is_active %}
+              <span class="badge" style="background: var(--success-bg); color: var(--success);">Active</span>
+              {% else %}
+              <span class="badge" style="background: var(--danger-bg); color: var(--danger);">Inactive</span>
+              {% endif %}
+            </td>
+            <td>{{ t.updated_at|date:"d M Y" }}</td>
+            <td>
+              <div class="d-flex gap-1">
+                <a href="{% url 'certificate_template_detail' t.pk %}" class="btn btn-sm btn-ghost" title="Edit">
+                  <i class="fas fa-edit"></i>
+                </a>
+                <form method="post" action="{% url 'certificate_template_delete' t.pk %}" onsubmit="return confirm('Delete this template?')">
+                  {% csrf_token %}
+                  <button type="submit" class="btn btn-sm btn-ghost text-danger" title="Delete">
+                    <i class="fas fa-trash"></i>
+                  </button>
+                </form>
+              </div>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <div class="text-center text-muted py-5">
+      <i class="fas fa-file-alt mb-3" style="font-size: 2rem; display: block;"></i>
+      <p class="mb-2">No templates yet.</p>
+      <a href="{% url 'certificate_template_create' %}" class="btn btn-primary btn-sm">Create your first template</a>
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}
