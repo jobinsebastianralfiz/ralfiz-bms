@@ -1,0 +1,87 @@
+{% extends 'base.html' %}
+{% block title %}Certificates - Ralfiz BMS{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title">Certificates</h1>
+    <p class="page-subtitle mb-0">Generate and manage intern certificates</p>
+  </div>
+  <div class="page-actions">
+    <a href="{% url 'certificate_create' %}" class="btn btn-primary">
+      <i class="fas fa-plus"></i> New Certificate
+    </a>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header">
+    <h3 class="card-title"><i class="fas fa-award"></i> All Certificates</h3>
+    <div class="card-actions">
+      <form method="get" class="d-flex gap-2">
+        <input type="text" name="search" class="form-control" style="width: 250px;"
+               placeholder="Search name, cert no, course..." value="{{ search }}"
+               onchange="this.form.submit()">
+      </form>
+    </div>
+  </div>
+  <div class="card-body p-0">
+    {% if certificates %}
+    <div class="table-responsive">
+      <table class="table table-hover mb-0">
+        <thead>
+          <tr>
+            <th>Ref No</th>
+            <th>Student Name</th>
+            <th>Title</th>
+            <th>Course</th>
+            <th>Duration</th>
+            <th>Issued</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for c in certificates %}
+          <tr>
+            <td><span class="fw-medium">{{ c.certificate_number }}</span></td>
+            <td>
+              <div class="fw-medium">{{ c.salutation }} {{ c.student_name }}</div>
+              {% if c.college_name %}<div class="text-sm text-muted">{{ c.college_name|truncatewords:6 }}</div>{% endif %}
+            </td>
+            <td>{{ c.title }}</td>
+            <td>{{ c.course_name }}</td>
+            <td>{{ c.duration_days }} days</td>
+            <td>{{ c.date_of_issuance|date:"d M Y" }}</td>
+            <td>
+              <div class="d-flex gap-1">
+                <a href="{% url 'certificate_pdf' c.pk %}" class="btn btn-sm btn-ghost" title="View PDF" target="_blank">
+                  <i class="fas fa-file-pdf text-danger"></i>
+                </a>
+                <a href="{% url 'certificate_pdf' c.pk %}?download=1" class="btn btn-sm btn-ghost" title="Download PDF">
+                  <i class="fas fa-download"></i>
+                </a>
+                <a href="{% url 'certificate_detail' c.pk %}" class="btn btn-sm btn-ghost" title="Edit">
+                  <i class="fas fa-edit"></i>
+                </a>
+                <form method="post" action="{% url 'certificate_delete' c.pk %}" onsubmit="return confirm('Delete this certificate?')">
+                  {% csrf_token %}
+                  <button type="submit" class="btn btn-sm btn-ghost text-danger" title="Delete">
+                    <i class="fas fa-trash"></i>
+                  </button>
+                </form>
+              </div>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <div class="text-center text-muted py-5">
+      <i class="fas fa-award mb-3" style="font-size: 2rem; display: block;"></i>
+      <p class="mb-0">No certificates created yet.</p>
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

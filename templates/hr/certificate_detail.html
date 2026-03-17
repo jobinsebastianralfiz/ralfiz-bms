@@ -1,0 +1,171 @@
+{% extends 'base.html' %}
+{% block title %}{{ cert.certificate_number }} - Ralfiz BMS{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title">Edit Certificate</h1>
+    <p class="page-subtitle mb-0">{{ cert.certificate_number }} - {{ cert.student_name }}</p>
+  </div>
+  <div class="page-actions">
+    <a href="{% url 'certificate_list' %}" class="btn btn-ghost"><i class="fas fa-arrow-left me-1"></i> Back</a>
+    <a href="{% url 'certificate_pdf' cert.pk %}" class="btn btn-ghost" target="_blank"><i class="fas fa-file-pdf me-1 text-danger"></i> View PDF</a>
+    <a href="{% url 'certificate_pdf' cert.pk %}?download=1" class="btn btn-ghost"><i class="fas fa-download me-1"></i> Download</a>
+    <form method="post" action="{% url 'certificate_delete' cert.pk %}" class="d-inline" onsubmit="return confirm('Are you sure you want to delete this certificate?')">
+      {% csrf_token %}
+      <button type="submit" class="btn btn-danger"><i class="fas fa-trash me-1"></i> Delete</button>
+    </form>
+  </div>
+</div>
+
+<div class="row">
+  <div class="col-8">
+    <div class="card">
+      <div class="card-header">
+        <h3 class="card-title"><i class="fas fa-edit me-2"></i> Certificate Details</h3>
+      </div>
+      <div class="card-body">
+        <form method="post">
+          {% csrf_token %}
+
+          <div class="row mb-3">
+            <div class="col-12">
+              <label class="form-label">Certificate Title *</label>
+              <input type="text" name="title" class="form-control" value="{{ cert.title }}" required>
+            </div>
+          </div>
+
+          <div class="row mb-3">
+            <div class="col-2">
+              <label class="form-label">Salutation</label>
+              <select name="salutation" class="form-control">
+                {% for key, value in salutation_choices %}
+                <option value="{{ key }}" {% if cert.salutation == key %}selected{% endif %}>{{ value }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="col-6">
+              <label class="form-label">Student Name *</label>
+              <input type="text" name="student_name" class="form-control" required value="{{ cert.student_name }}">
+            </div>
+            <div class="col-4">
+              <label class="form-label">Gender</label>
+              <select name="gender" class="form-control">
+                {% for key, value in gender_choices %}
+                <option value="{{ key }}" {% if cert.gender == key %}selected{% endif %}>{{ value }}</option>
+                {% endfor %}
+              </select>
+            </div>
+          </div>
+
+          <div class="row mb-3">
+            <div class="col-12">
+              <label class="form-label">College / Institution</label>
+              <input type="text" name="college_name" class="form-control" value="{{ cert.college_name }}">
+            </div>
+          </div>
+
+          <div class="row mb-3">
+            <div class="col-6">
+              <label class="form-label">Course / Program Name *</label>
+              <input type="text" name="course_name" class="form-control" required value="{{ cert.course_name }}">
+            </div>
+            <div class="col-3">
+              <label class="form-label">Mode</label>
+              <select name="mode" class="form-control">
+                {% for key, value in mode_choices %}
+                <option value="{{ key }}" {% if cert.mode == key %}selected{% endif %}>{{ value }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="col-3">
+              <label class="form-label">Duration (days) *</label>
+              <input type="number" name="duration_days" class="form-control" required value="{{ cert.duration_days }}" min="1">
+            </div>
+          </div>
+
+          <div class="row mb-3">
+            <div class="col-4">
+              <label class="form-label">Start Date *</label>
+              <input type="date" name="start_date" class="form-control" required value="{{ cert.start_date|date:'Y-m-d' }}">
+            </div>
+            <div class="col-4">
+              <label class="form-label">End Date *</label>
+              <input type="date" name="end_date" class="form-control" required value="{{ cert.end_date|date:'Y-m-d' }}">
+            </div>
+            <div class="col-4">
+              <label class="form-label">Date of Issuance *</label>
+              <input type="date" name="date_of_issuance" class="form-control" required value="{{ cert.date_of_issuance|date:'Y-m-d' }}">
+            </div>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label">Skills Learned</label>
+            <textarea name="skills" class="form-control" rows="6">{{ skills_text }}</textarea>
+            <small class="text-muted">One skill per line.</small>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label">Closing Text</label>
+            <textarea name="closing_text" class="form-control" rows="3">{{ cert.closing_text }}</textarea>
+            <small class="text-muted">Appears after "He/She" in the closing paragraph.</small>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label">Wish Text</label>
+            <textarea name="wish_text" class="form-control" rows="2">{{ cert.wish_text }}</textarea>
+            <small class="text-muted">Use {pronoun} for him/her and {possessive} for his/her.</small>
+          </div>
+
+          <div class="d-flex gap-2">
+            <button type="submit" class="btn btn-primary"><i class="fas fa-save me-2"></i> Save Changes</button>
+            <a href="{% url 'certificate_list' %}" class="btn btn-ghost">Cancel</a>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-4">
+    <div class="card">
+      <div class="card-header">
+        <h3 class="card-title"><i class="fas fa-info-circle me-2"></i> Info</h3>
+      </div>
+      <div class="card-body">
+        <div class="mb-2">
+          <span class="text-muted">Certificate No:</span><br>
+          <strong>{{ cert.certificate_number }}</strong>
+        </div>
+        <div class="mb-2">
+          <span class="text-muted">Verification ID:</span><br>
+          <code style="font-size: 11px;">{{ cert.verification_id }}</code>
+        </div>
+        <div class="mb-2">
+          <span class="text-muted">Issued By:</span><br>
+          <strong>{{ cert.issued_by.get_full_name|default:cert.issued_by.username|default:"-" }}</strong>
+        </div>
+        <div class="mb-2">
+          <span class="text-muted">Created:</span><br>
+          <strong>{{ cert.created_at|date:"d M Y, H:i" }}</strong>
+        </div>
+        <div class="mb-2">
+          <span class="text-muted">Last Updated:</span><br>
+          <strong>{{ cert.updated_at|date:"d M Y, H:i" }}</strong>
+        </div>
+      </div>
+    </div>
+
+    <div class="card mt-3">
+      <div class="card-header">
+        <h3 class="card-title"><i class="fas fa-qrcode me-2"></i> Verification</h3>
+      </div>
+      <div class="card-body text-center">
+        <p class="text-muted text-sm mb-2">Scan QR on the PDF or share this link to verify:</p>
+        <a href="/api/employees/certificates/verify/{{ cert.verification_id }}/" target="_blank" class="btn btn-sm btn-ghost">
+          <i class="fas fa-external-link-alt me-1"></i> Open Verification Page
+        </a>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

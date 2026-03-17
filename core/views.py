@@ -4771,3 +4771,190 @@ def emp_payroll_list(request):
         'total_net': total_net,
     }
     return render(request, 'hr/payroll_list.html', context)
+
+
+# ============================================================
+# Certificates
+# ============================================================
+
+@login_required
+def certificate_list(request):
+    """List all certificates"""
+    from employees.models import Certificate
+
+    search = request.GET.get('search', '')
+    certificates = Certificate.objects.all().order_by('-created_at')
+    if search:
+        certificates = certificates.filter(
+            models.Q(student_name__icontains=search) |
+            models.Q(certificate_number__icontains=search) |
+            models.Q(course_name__icontains=search) |
+            models.Q(college_name__icontains=search)
+        )
+
+    context = {
+        'certificates': certificates,
+        'search': search,
+    }
+    return render(request, 'hr/certificate_list.html', context)
+
+
+@login_required
+def certificate_create(request):
+    """Create a new certificate"""
+    from employees.models import Certificate
+    import json
+
+    if request.method == 'POST':
+        skills_raw = request.POST.get('skills', '')
+        skills = [s.strip() for s in skills_raw.split('\n') if s.strip()]
+
+        cert = Certificate(
+            title=request.POST.get('title', 'INTERNSHIP CERTIFICATE'),
+            salutation=request.POST.get('salutation', 'Mr.'),
+            student_name=request.POST.get('student_name'),
+            gender=request.POST.get('gender', 'male'),
+            college_name=request.POST.get('college_name', ''),
+            course_name=request.POST.get('course_name'),
+            start_date=request.POST.get('start_date'),
+            end_date=request.POST.get('end_date'),
+            duration_days=int(request.POST.get('duration_days', 0)),
+            mode=request.POST.get('mode', 'offline'),
+            skills=skills,
+            closing_text=request.POST.get('closing_text',
+                'actively participated in all training sessions, hands-on tasks, and project assignments, '
+                'demonstrating dedication, teamwork, and a strong interest in learning modern web technologies.'),
+            wish_text=request.POST.get('wish_text',
+                'We wish {pronoun} success in {possessive} future academic and professional endeavors.'),
+            date_of_issuance=request.POST.get('date_of_issuance'),
+            issued_by=request.user,
+        )
+        cert.save()
+        messages.success(request, f'Certificate {cert.certificate_number} created for {cert.student_name}.')
+        return redirect('certificate_detail', pk=cert.pk)
+
+    context = {
+        'salutation_choices': Certificate.SALUTATION_CHOICES,
+        'gender_choices': Certificate.GENDER_CHOICES,
+        'mode_choices': Certificate.MODE_CHOICES,
+    }
+    return render(request, 'hr/certificate_create.html', context)
+
+
+@login_required
+def certificate_detail(request, pk):
+    """View and edit a certificate"""
+    from employees.models import Certificate
+
+    cert = get_object_or_404(Certificate, pk=pk)
+
+    if request.method == 'POST':
+        skills_raw = request.POST.get('skills', '')
+        skills = [s.strip() for s in skills_raw.split('\n') if s.strip()]
+
+        cert.title = request.POST.get('title', cert.title)
+        cert.salutation = request.POST.get('salutation', cert.salutation)
+        cert.student_name = request.POST.get('student_name', cert.student_name)
+        cert.gender = request.POST.get('gender', cert.gender)
+        cert.college_name = request.POST.get('college_name', '')
+        cert.course_name = request.POST.get('course_name', cert.course_name)
+        cert.start_date = request.POST.get('start_date', cert.start_date)
+        cert.end_date = request.POST.get('end_date', cert.end_date)
+        cert.duration_days = int(request.POST.get('duration_days', cert.duration_days))
+        cert.mode = request.POST.get('mode', cert.mode)
+        cert.skills = skills
+        cert.closing_text = request.POST.get('closing_text', cert.closing_text)
+        cert.wish_text = request.POST.get('wish_text', cert.wish_text)
+        cert.date_of_issuance = request.POST.get('date_of_issuance', cert.date_of_issuance)
+        cert.save()
+        messages.success(request, 'Certificate updated.')
+        return redirect('certificate_detail', pk=pk)
+
+    context = {
+        'cert': cert,
+        'skills_text': '\n'.join(cert.skills) if cert.skills else '',
+        'salutation_choices': Certificate.SALUTATION_CHOICES,
+        'gender_choices': Certificate.GENDER_CHOICES,
+        'mode_choices': Certificate.MODE_CHOICES,
+    }
+    return render(request, 'hr/certificate_detail.html', context)
+
+
+@login_required
+def certificate_delete(request, pk):
+    """Delete a certificate"""
+    from employees.models import Certificate
+    if request.method == 'POST':
+        cert = get_object_or_404(Certificate, pk=pk)
+        cert.delete()
+        messages.success(request, 'Certificate deleted.')
+    return redirect('certificate_list')
+
+
+@login_required
+def certificate_pdf(request, pk):
+    """Generate certificate PDF from the custom backend"""
+    from employees.models import Certificate
+    from django.template.loader import render_to_string
+    import weasyprint
+    import qrcode
+    import base64
+    from io import BytesIO
+
+    cert = get_object_or_404(Certificate, pk=pk)
+
+    # Generate QR code
+    verify_url = request.build_absolute_uri(f'/api/employees/certificates/verify/{cert.verification_id}/')
+    qr = qrcode.QRCode(version=1, box_size=10, border=1)
+    qr.add_data(verify_url)
+    qr.make(fit=True)
+    qr_img = qr.make_image(fill_color="black", back_color="white")
+    buffer = BytesIO()
+    qr_img.save(buffer, format='PNG')
+    qr_base64 = base64.b64encode(buffer.getvalue()).decode()
+
+    # Asset paths
+    from django.conf import settings as django_settings
+    static_dir = django_settings.BASE_DIR / 'static' / 'certificates'
+    header_logo = (static_dir / 'headerlogo.png').as_uri()
+    signature = (static_dir / 'jobin_signature.png').as_uri()
+    seal = (static_dir / 'seal.png').as_uri()
+    footer_logo = (static_dir / 'footer_right_logo.png').as_uri()
+
+    def format_date(d):
+        day = d.day
+        if 4 <= day <= 20 or 24 <= day <= 30:
+            suffix = "th"
+        else:
+            suffix = ["st", "nd", "rd"][day % 10 - 1]
+        return f"{day}{suffix} {d.strftime('%B %Y')}"
+
+    wish_text = cert.wish_text.format(
+        pronoun=cert.object_pronoun,
+        possessive=cert.possessive,
+    )
+
+    context = {
+        'cert': cert,
+        'qr_base64': qr_base64,
+        'header_logo': header_logo,
+        'signature': signature,
+        'seal': seal,
+        'footer_logo': footer_logo,
+        'start_date_fmt': format_date(cert.start_date),
+        'end_date_fmt': format_date(cert.end_date),
+        'date_of_issuance_fmt': cert.date_of_issuance.strftime('%d/%m/%Y'),
+        'wish_text': wish_text,
+    }
+
+    html_string = render_to_string('employees/certificate_pdf.html', context)
+    pdf = weasyprint.HTML(string=html_string).write_pdf()
+
+    from django.http import HttpResponse as HR
+    response = HR(pdf, content_type='application/pdf')
+    filename = f"Certificate_{cert.student_name.replace(' ', '_')}_{cert.certificate_number.replace('/', '_')}.pdf"
+    if request.GET.get('download'):
+        response['Content-Disposition'] = f'attachment; filename="{filename}"'
+    else:
+        response['Content-Disposition'] = f'inline; filename="{filename}"'
+    return response

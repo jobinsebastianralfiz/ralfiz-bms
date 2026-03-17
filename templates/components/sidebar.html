@@ -145,6 +145,10 @@
         <i class="fas fa-money-bill-wave"></i>
         <span>Payroll</span>
       </a>
+      <a href="{% url 'certificate_list' %}" class="nav-item {% if 'certificate' in request.resolver_match.url_name %}active{% endif %}">
+        <i class="fas fa-award"></i>
+        <span>Certificates</span>
+      </a>
       <a href="{% url 'emp_office_qr' %}" class="nav-item {% if request.resolver_match.url_name == 'emp_office_qr' %}active{% endif %}">
         <i class="fas fa-qrcode"></i>
         <span>Office QR Code</span>

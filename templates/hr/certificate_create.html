@@ -1,0 +1,123 @@
+{% extends 'base.html' %}
+{% block title %}New Certificate - Ralfiz BMS{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title">New Certificate</h1>
+    <p class="page-subtitle mb-0">Generate a new certificate for an intern/student</p>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header">
+    <h3 class="card-title"><i class="fas fa-plus me-2"></i> Certificate Details</h3>
+  </div>
+  <div class="card-body">
+    <form method="post">
+      {% csrf_token %}
+
+      <div class="row mb-3">
+        <div class="col-12">
+          <label class="form-label">Certificate Title *</label>
+          <input type="text" name="title" class="form-control" value="INTERNSHIP CERTIFICATE"
+                 placeholder="e.g. INTERNSHIP CERTIFICATE, COURSE COMPLETION CERTIFICATE" required>
+        </div>
+      </div>
+
+      <div class="row mb-3">
+        <div class="col-2">
+          <label class="form-label">Salutation *</label>
+          <select name="salutation" class="form-control">
+            {% for key, value in salutation_choices %}
+            <option value="{{ key }}">{{ value }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-6">
+          <label class="form-label">Student Name *</label>
+          <input type="text" name="student_name" class="form-control" required placeholder="Full name">
+        </div>
+        <div class="col-4">
+          <label class="form-label">Gender *</label>
+          <select name="gender" class="form-control">
+            {% for key, value in gender_choices %}
+            <option value="{{ key }}">{{ value }}</option>
+            {% endfor %}
+          </select>
+        </div>
+      </div>
+
+      <div class="row mb-3">
+        <div class="col-12">
+          <label class="form-label">College / Institution</label>
+          <input type="text" name="college_name" class="form-control" placeholder="e.g. St. Thomas College (Autonomous), Thrissur">
+        </div>
+      </div>
+
+      <div class="row mb-3">
+        <div class="col-6">
+          <label class="form-label">Course / Program Name *</label>
+          <input type="text" name="course_name" class="form-control" required placeholder="e.g. Web Development Internship">
+        </div>
+        <div class="col-3">
+          <label class="form-label">Mode</label>
+          <select name="mode" class="form-control">
+            {% for key, value in mode_choices %}
+            <option value="{{ key }}">{{ value }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-3">
+          <label class="form-label">Duration (days) *</label>
+          <input type="number" name="duration_days" class="form-control" required min="1" placeholder="40">
+        </div>
+      </div>
+
+      <div class="row mb-3">
+        <div class="col-4">
+          <label class="form-label">Start Date *</label>
+          <input type="date" name="start_date" class="form-control" required>
+        </div>
+        <div class="col-4">
+          <label class="form-label">End Date *</label>
+          <input type="date" name="end_date" class="form-control" required>
+        </div>
+        <div class="col-4">
+          <label class="form-label">Date of Issuance *</label>
+          <input type="date" name="date_of_issuance" class="form-control" required>
+        </div>
+      </div>
+
+      <div class="mb-3">
+        <label class="form-label">Skills Learned</label>
+        <textarea name="skills" class="form-control" rows="6" placeholder="Enter one skill per line, e.g.:
+HTML5 and CSS3
+JavaScript
+Python Programming
+Django Web Framework
+Git & GitHub version control workflow
+Fundamentals of Full-Stack Web Application Development"></textarea>
+        <small class="text-muted">One skill per line. These will appear as bullet points on the certificate.</small>
+      </div>
+
+      <div class="mb-3">
+        <label class="form-label">Closing Text</label>
+        <textarea name="closing_text" class="form-control" rows="3">actively participated in all training sessions, hands-on tasks, and project assignments, demonstrating dedication, teamwork, and a strong interest in learning modern web technologies.</textarea>
+        <small class="text-muted">This appears after "He/She" in the closing paragraph.</small>
+      </div>
+
+      <div class="mb-3">
+        <label class="form-label">Wish Text</label>
+        <textarea name="wish_text" class="form-control" rows="2">We wish {pronoun} success in {possessive} future academic and professional endeavors.</textarea>
+        <small class="text-muted">Use {pronoun} for him/her and {possessive} for his/her.</small>
+      </div>
+
+      <div class="d-flex gap-2">
+        <button type="submit" class="btn btn-primary"><i class="fas fa-award me-2"></i> Create Certificate</button>
+        <a href="{% url 'certificate_list' %}" class="btn btn-ghost">Cancel</a>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

@@ -162,4 +162,11 @@ urlpatterns = [
 
     # Payroll
     path('hr/payroll/', views.emp_payroll_list, name='emp_payroll_list'),
+
+    # Certificates
+    path('hr/certificates/', views.certificate_list, name='certificate_list'),
+    path('hr/certificates/create/', views.certificate_create, name='certificate_create'),
+    path('hr/certificates/<uuid:pk>/', views.certificate_detail, name='certificate_detail'),
+    path('hr/certificates/<uuid:pk>/delete/', views.certificate_delete, name='certificate_delete'),
+    path('hr/certificates/<uuid:pk>/pdf/', views.certificate_pdf, name='certificate_pdf'),
 ]
