@@ -98,27 +98,29 @@
       </div>
 
       <div class="mb-3">
-        <label class="form-label">Skills Learned</label>
+        <label class="form-label">Certificate Body Content *</label>
+        <textarea name="body_text" id="cert-body" class="form-control" rows="12" required>{{ type_body_map.inter }}</textarea>
+        <small class="text-muted">Full certificate content. Auto-fills when you change certificate type. Available placeholders:
+          <code>{salutation}</code>, <code>{student_name}</code>, <code>{college_name}</code>, <code>{course_name}</code>,
+          <code>{start_date}</code>, <code>{end_date}</code>, <code>{duration_days}</code>, <code>{mode}</code>,
+          <code>{skills}</code> (renders as bullet list), <code>{pronoun}</code> (he/she), <code>{pronoun_cap}</code> (He/She),
+          <code>{possessive}</code> (his/her). Separate paragraphs with a blank line.</small>
+      </div>
+
+      <div class="mb-3">
+        <label class="form-label">Skills</label>
         <textarea name="skills" class="form-control" rows="6" placeholder="Enter one skill per line, e.g.:
 HTML5 and CSS3
 JavaScript
 Python Programming
-Django Web Framework
-Git & GitHub version control workflow
-Fundamentals of Full-Stack Web Application Development"></textarea>
-        <small class="text-muted">One skill per line. These will appear as bullet points on the certificate.</small>
-      </div>
-
-      <div class="mb-3">
-        <label class="form-label">Closing Text</label>
-        <textarea name="closing_text" id="cert-closing" class="form-control" rows="3">actively participated in all training sessions, hands-on tasks, and project assignments, demonstrating dedication, teamwork, and a strong interest in learning modern web technologies.</textarea>
-        <small class="text-muted">This appears after "He/She" in the closing paragraph. Auto-fills when you change certificate type.</small>
+Django Web Framework"></textarea>
+        <small class="text-muted">One skill per line. Rendered where <code>{skills}</code> appears in body text.</small>
       </div>
 
       <div class="mb-3">
         <label class="form-label">Wish Text</label>
         <textarea name="wish_text" id="cert-wish" class="form-control" rows="2">We wish {pronoun} success in {possessive} future academic and professional endeavors.</textarea>
-        <small class="text-muted">Use {pronoun} for him/her and {possessive} for his/her.</small>
+        <small class="text-muted">Last line of certificate. Use <code>{pronoun}</code> for him/her and <code>{possessive}</code> for his/her.</small>
       </div>
 
       <div class="d-flex gap-2">
@@ -137,8 +139,8 @@ const titleMap = {
   '{{ key }}': '{{ value }}',
   {% endfor %}
 };
-const closingMap = {
-  {% for key, value in type_closing_map.items %}
+const bodyMap = {
+  {% for key, value in type_body_map.items %}
   '{{ key }}': `{{ value|escapejs }}`,
   {% endfor %}
 };
@@ -152,8 +154,8 @@ function updateTitle() {
   if (titleMap[type]) {
     document.getElementById('cert-title').value = titleMap[type];
   }
-  if (closingMap[type]) {
-    document.getElementById('cert-closing').value = closingMap[type];
+  if (bodyMap[type]) {
+    document.getElementById('cert-body').value = bodyMap[type];
   }
   if (wishMap[type]) {
     document.getElementById('cert-wish').value = wishMap[type];

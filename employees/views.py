@@ -2885,6 +2885,45 @@ class CertificatePDFView(APIView):
                 suffix = ["st", "nd", "rd"][day % 10 - 1]
             return f"{day}{suffix} {d.strftime('%B %Y')}"
 
+        # Render body_text with placeholders
+        from django.utils.html import escape
+        skills_html = ''
+        if certificate.skills:
+            items = ''.join(f'<li>{escape(s)}</li>' for s in certificate.skills)
+            skills_html = f'<ul class="skills-list">{items}</ul>'
+
+        body_raw = certificate.body_text or ''
+        try:
+            body_rendered = body_raw.format(
+                salutation=certificate.salutation,
+                student_name=certificate.student_name,
+                college_name=certificate.college_name or '',
+                course_name=certificate.course_name or '',
+                start_date=format_date(certificate.start_date) if certificate.start_date else '',
+                end_date=format_date(certificate.end_date) if certificate.end_date else '',
+                duration_days=certificate.duration_days or '',
+                mode=certificate.get_mode_display() if certificate.mode else '',
+                skills=skills_html,
+                pronoun=certificate.pronoun,
+                pronoun_cap=certificate.pronoun_cap,
+                possessive=certificate.possessive,
+                object_pronoun=certificate.object_pronoun,
+            )
+        except (KeyError, IndexError):
+            body_rendered = body_raw
+
+        # Convert paragraphs (double newlines) to HTML
+        paragraphs = body_rendered.split('\n\n')
+        rendered_body = ''
+        for p in paragraphs:
+            p = p.strip()
+            if not p:
+                continue
+            if p.startswith('<ul'):
+                rendered_body += p
+            else:
+                rendered_body += f'<p class="body-text">{p}</p>'
+
         # Process wish_text placeholders
         wish_text = certificate.wish_text.format(
             pronoun=certificate.object_pronoun,
@@ -2898,8 +2937,7 @@ class CertificatePDFView(APIView):
             'signature': signature,
             'seal': seal,
             'footer_logo': footer_logo,
-            'start_date_fmt': format_date(certificate.start_date) if certificate.start_date else '',
-            'end_date_fmt': format_date(certificate.end_date) if certificate.end_date else '',
+            'rendered_body': rendered_body,
             'date_of_issuance_fmt': certificate.date_of_issuance.strftime('%d/%m/%Y'),
             'wish_text': wish_text,
         }
@@ -2918,7 +2956,7 @@ class CertificatePDFView(APIView):
 
 
 class CertificateDefaultsView(APIView):
-    """Get default title, closing_text, and wish_text for a certificate type"""
+    """Get default title, body_text, and wish_text for a certificate type"""
     permission_classes = [IsAuthenticated, IsAdminOrOwner]
 
     @extend_schema(tags=['Certificates'])
@@ -2927,7 +2965,7 @@ class CertificateDefaultsView(APIView):
         return Response({
             'certificate_type': cert_type,
             'title': Certificate.TYPE_TITLE_MAP.get(cert_type, 'CERTIFICATE'),
-            'closing_text': Certificate.TYPE_CLOSING_MAP.get(cert_type, ''),
+            'body_text': Certificate.TYPE_BODY_MAP.get(cert_type, ''),
             'wish_text': Certificate.TYPE_WISH_MAP.get(cert_type, ''),
         })
 

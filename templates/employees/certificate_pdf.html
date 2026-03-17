@@ -255,82 +255,8 @@
     <!-- Certificate title -->
     <h1 class="title">{{ cert.title }}</h1>
 
-    <!-- Certificate body - varies by type -->
-    {% if cert.certificate_type == 'inter' %}
-    <p class="body-text">
-        This is to certify that <strong>{{ cert.salutation }} {{ cert.student_name }}</strong>{% if cert.college_name %}, a student of <strong>{{ cert.college_name }}</strong>{% endif %}, has successfully completed the {{ cert.course_name }}
-        at <strong>Ralfiz Technologies, Perinthalmanna</strong>.
-    </p>
-    {% if start_date_fmt and end_date_fmt %}
-    <p class="body-text">
-        The internship was conducted in {{ cert.mode }} mode from <strong>{{ start_date_fmt }} to {{ end_date_fmt }}</strong>{% if cert.duration_days %},
-        with a total duration of {{ cert.duration_days }} days{% endif %}. During this period, {{ cert.pronoun }} was trained in and gained
-        practical exposure to:
-    </p>
-    {% endif %}
-
-    {% elif cert.certificate_type == 'exp' %}
-    <p class="body-text">
-        This is to certify that <strong>{{ cert.salutation }} {{ cert.student_name }}</strong>
-        has worked at <strong>Ralfiz Technologies, Perinthalmanna</strong> as <strong>{{ cert.course_name }}</strong>{% if start_date_fmt and end_date_fmt %}
-        from <strong>{{ start_date_fmt }} to {{ end_date_fmt }}</strong>{% endif %}.
-    </p>
-    {% if cert.duration_days %}
-    <p class="body-text">
-        During {{ cert.possessive }} tenure of {{ cert.duration_days }} days, {{ cert.pronoun }} demonstrated expertise and proficiency in the following areas:
-    </p>
-    {% else %}
-    <p class="body-text">
-        {{ cert.pronoun_cap }} demonstrated expertise and proficiency in the following areas:
-    </p>
-    {% endif %}
-
-    {% elif cert.certificate_type == 'course' %}
-    <p class="body-text">
-        This is to certify that <strong>{{ cert.salutation }} {{ cert.student_name }}</strong>{% if cert.college_name %}, a student of <strong>{{ cert.college_name }}</strong>{% endif %}, has successfully completed the
-        <strong>{{ cert.course_name }}</strong> conducted at <strong>Ralfiz Technologies, Perinthalmanna</strong>.
-    </p>
-    {% if start_date_fmt and end_date_fmt %}
-    <p class="body-text">
-        The course was conducted in {{ cert.mode }} mode from <strong>{{ start_date_fmt }} to {{ end_date_fmt }}</strong>{% if cert.duration_days %},
-        with a total duration of {{ cert.duration_days }} days{% endif %}. The program covered the following topics:
-    </p>
-    {% endif %}
-
-    {% elif cert.certificate_type == 'merit' %}
-    <p class="body-text">
-        This is to certify that <strong>{{ cert.salutation }} {{ cert.student_name }}</strong>{% if cert.college_name %}, a student of <strong>{{ cert.college_name }}</strong>{% endif %}, has been awarded this certificate in recognition of
-        outstanding performance in <strong>{{ cert.course_name }}</strong>
-        at <strong>Ralfiz Technologies, Perinthalmanna</strong>.
-    </p>
-    {% if start_date_fmt and end_date_fmt %}
-    <p class="body-text">
-        The program was conducted from <strong>{{ start_date_fmt }} to {{ end_date_fmt }}</strong>{% if cert.duration_days %},
-        spanning {{ cert.duration_days }} days{% endif %}. {{ cert.pronoun_cap }} excelled in the following areas:
-    </p>
-    {% endif %}
-
-    {% elif cert.certificate_type == 'particip' %}
-    <p class="body-text">
-        This is to certify that <strong>{{ cert.salutation }} {{ cert.student_name }}</strong>{% if cert.college_name %}, a student of <strong>{{ cert.college_name }}</strong>{% endif %}, has participated in the
-        <strong>{{ cert.course_name }}</strong> conducted at <strong>Ralfiz Technologies, Perinthalmanna</strong>.
-    </p>
-    {% if start_date_fmt and end_date_fmt %}
-    <p class="body-text">
-        The program was conducted in {{ cert.mode }} mode from <strong>{{ start_date_fmt }} to {{ end_date_fmt }}</strong>{% if cert.duration_days %},
-        with a total duration of {{ cert.duration_days }} days{% endif %}. The program covered:
-    </p>
-    {% endif %}
-    {% endif %}
-
-    <!-- Skills list -->
-    {% if cert.skills %}
-    <ul class="skills-list">
-        {% for skill in cert.skills %}
-        <li>{{ skill }}</li>
-        {% endfor %}
-    </ul>
-    {% endif %}
+    <!-- Certificate body content -->
+    {{ rendered_body|safe }}
 
     <!-- Closing paragraph -->
     <p class="closing">

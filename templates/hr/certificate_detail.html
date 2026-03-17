@@ -121,21 +121,21 @@
           </div>
 
           <div class="mb-3">
-            <label class="form-label">Skills Learned</label>
-            <textarea name="skills" class="form-control" rows="6">{{ skills_text }}</textarea>
-            <small class="text-muted">One skill per line.</small>
+            <label class="form-label">Certificate Body Content</label>
+            <textarea name="body_text" class="form-control" rows="12">{{ cert.body_text }}</textarea>
+            <small class="text-muted">Placeholders: <code>{salutation}</code>, <code>{student_name}</code>, <code>{college_name}</code>, <code>{course_name}</code>, <code>{start_date}</code>, <code>{end_date}</code>, <code>{duration_days}</code>, <code>{mode}</code>, <code>{skills}</code>, <code>{pronoun}</code>, <code>{pronoun_cap}</code>, <code>{possessive}</code>. Separate paragraphs with blank line.</small>
           </div>
 
           <div class="mb-3">
-            <label class="form-label">Closing Text</label>
-            <textarea name="closing_text" class="form-control" rows="3">{{ cert.closing_text }}</textarea>
-            <small class="text-muted">Appears after "He/She" in the closing paragraph.</small>
+            <label class="form-label">Skills</label>
+            <textarea name="skills" class="form-control" rows="6">{{ skills_text }}</textarea>
+            <small class="text-muted">One skill per line. Rendered where <code>{skills}</code> appears in body text.</small>
           </div>
 
           <div class="mb-3">
             <label class="form-label">Wish Text</label>
             <textarea name="wish_text" class="form-control" rows="2">{{ cert.wish_text }}</textarea>
-            <small class="text-muted">Use {pronoun} for him/her and {possessive} for his/her.</small>
+            <small class="text-muted">Use <code>{pronoun}</code> for him/her and <code>{possessive}</code> for his/her.</small>
           </div>
 
           {% if cert.status == 'draft' %}

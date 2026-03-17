@@ -173,7 +173,7 @@ class CertificateAdmin(admin.ModelAdmin):
             'fields': ('course_name', 'start_date', 'end_date', 'duration_days', 'mode'),
         }),
         ('Content', {
-            'fields': ('skills', 'closing_text', 'wish_text'),
+            'fields': ('body_text', 'skills', 'wish_text'),
         }),
         ('Issuance', {
             'fields': ('date_of_issuance', 'issued_by', 'created_at', 'updated_at'),

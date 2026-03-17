@@ -4829,9 +4829,7 @@ def certificate_create(request):
             duration_days=int(request.POST.get('duration_days')) if request.POST.get('duration_days') else None,
             mode=request.POST.get('mode', 'offline'),
             skills=skills,
-            closing_text=request.POST.get('closing_text',
-                'actively participated in all training sessions, hands-on tasks, and project assignments, '
-                'demonstrating dedication, teamwork, and a strong interest in learning modern web technologies.'),
+            body_text=request.POST.get('body_text', ''),
             wish_text=request.POST.get('wish_text',
                 'We wish {pronoun} success in {possessive} future academic and professional endeavors.'),
             date_of_issuance=request.POST.get('date_of_issuance'),
@@ -4847,7 +4845,7 @@ def certificate_create(request):
         'mode_choices': Certificate.MODE_CHOICES,
         'type_choices': Certificate.CERTIFICATE_TYPE_CHOICES,
         'type_title_map': Certificate.TYPE_TITLE_MAP,
-        'type_closing_map': Certificate.TYPE_CLOSING_MAP,
+        'type_body_map': Certificate.TYPE_BODY_MAP,
         'type_wish_map': Certificate.TYPE_WISH_MAP,
     }
     return render(request, 'hr/certificate_create.html', context)
@@ -4908,7 +4906,7 @@ def certificate_detail(request, pk):
         cert.duration_days = int(request.POST.get('duration_days')) if request.POST.get('duration_days') else None
         cert.mode = request.POST.get('mode', cert.mode)
         cert.skills = skills
-        cert.closing_text = request.POST.get('closing_text', cert.closing_text)
+        cert.body_text = request.POST.get('body_text', cert.body_text)
         cert.wish_text = request.POST.get('wish_text', cert.wish_text)
         cert.date_of_issuance = request.POST.get('date_of_issuance', cert.date_of_issuance)
         cert.save()
@@ -4975,6 +4973,44 @@ def certificate_pdf(request, pk):
             suffix = ["st", "nd", "rd"][day % 10 - 1]
         return f"{day}{suffix} {d.strftime('%B %Y')}"
 
+    # Render body_text with placeholders
+    from django.utils.html import escape
+    skills_html = ''
+    if cert.skills:
+        items = ''.join(f'<li>{escape(s)}</li>' for s in cert.skills)
+        skills_html = f'<ul class="skills-list">{items}</ul>'
+
+    body_raw = cert.body_text or ''
+    try:
+        body_rendered = body_raw.format(
+            salutation=cert.salutation,
+            student_name=cert.student_name,
+            college_name=cert.college_name or '',
+            course_name=cert.course_name or '',
+            start_date=format_date(cert.start_date) if cert.start_date else '',
+            end_date=format_date(cert.end_date) if cert.end_date else '',
+            duration_days=cert.duration_days or '',
+            mode=cert.get_mode_display() if cert.mode else '',
+            skills=skills_html,
+            pronoun=cert.pronoun,
+            pronoun_cap=cert.pronoun_cap,
+            possessive=cert.possessive,
+            object_pronoun=cert.object_pronoun,
+        )
+    except (KeyError, IndexError):
+        body_rendered = body_raw
+
+    paragraphs = body_rendered.split('\n\n')
+    rendered_body = ''
+    for p in paragraphs:
+        p = p.strip()
+        if not p:
+            continue
+        if p.startswith('<ul'):
+            rendered_body += p
+        else:
+            rendered_body += f'<p class="body-text">{p}</p>'
+
     wish_text = cert.wish_text.format(
         pronoun=cert.object_pronoun,
         possessive=cert.possessive,
@@ -4987,8 +5023,7 @@ def certificate_pdf(request, pk):
         'signature': signature,
         'seal': seal,
         'footer_logo': footer_logo,
-        'start_date_fmt': format_date(cert.start_date) if cert.start_date else '',
-        'end_date_fmt': format_date(cert.end_date) if cert.end_date else '',
+        'rendered_body': rendered_body,
         'date_of_issuance_fmt': cert.date_of_issuance.strftime('%d/%m/%Y'),
         'wish_text': wish_text,
     }

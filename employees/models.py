@@ -511,17 +511,47 @@ class Certificate(models.Model):
         'particip': 'CERTIFICATE OF PARTICIPATION',
     }
 
-    # Default closing text per type
-    TYPE_CLOSING_MAP = {
-        'inter': 'actively participated in all training sessions, hands-on tasks, and project assignments, '
-                 'demonstrating dedication, teamwork, and a strong interest in learning modern web technologies.',
-        'exp': 'was a dedicated and reliable team member who consistently delivered quality work. '
-               'We appreciate {possessive} contributions and wish {pronoun} all the best in future endeavors.',
-        'course': 'successfully completed all modules, assignments, and assessments with commendable dedication '
-                  'and a keen interest in learning.',
-        'merit': 'demonstrated exceptional skill, dedication, and outstanding performance throughout the program, '
-                 'setting a high standard among peers.',
-        'particip': 'actively engaged in all sessions and activities, demonstrating enthusiasm and a willingness to learn.',
+    # Default body text per type (full certificate content with placeholders)
+    TYPE_BODY_MAP = {
+        'inter': """This is to certify that {salutation} {student_name}, a student of {college_name}, has successfully completed the {course_name} at Ralfiz Technologies, Perinthalmanna.
+
+The internship was conducted in {mode} mode from {start_date} to {end_date}, with a total duration of {duration_days} days. During this period, {pronoun} was trained in and gained practical exposure to:
+
+{skills}
+
+{pronoun_cap} actively participated in all training sessions, hands-on tasks, and project assignments, demonstrating dedication, teamwork, and a strong interest in learning modern web technologies.""",
+
+        'exp': """This is to certify that {salutation} {student_name} has worked at Ralfiz Technologies, Perinthalmanna as {course_name} from {start_date} to {end_date}.
+
+During {possessive} tenure, {pronoun} demonstrated expertise and proficiency in the following areas:
+
+{skills}
+
+{pronoun_cap} was a dedicated and reliable team member who consistently delivered quality work.""",
+
+        'course': """This is to certify that {salutation} {student_name} has successfully completed the {course_name} conducted at Ralfiz Technologies, Perinthalmanna.
+
+The course was conducted from {start_date} to {end_date}. The program covered the following topics:
+
+{skills}
+
+{pronoun_cap} successfully completed all modules, assignments, and assessments with commendable dedication and a keen interest in learning.""",
+
+        'merit': """This is to certify that {salutation} {student_name} has been awarded this certificate in recognition of outstanding performance in {course_name} at Ralfiz Technologies, Perinthalmanna.
+
+{pronoun_cap} excelled in the following areas:
+
+{skills}
+
+{pronoun_cap} demonstrated exceptional skill, dedication, and outstanding performance throughout the program, setting a high standard among peers.""",
+
+        'particip': """This is to certify that {salutation} {student_name} has participated in the {course_name} conducted at Ralfiz Technologies, Perinthalmanna from {start_date} to {end_date}.
+
+The program covered:
+
+{skills}
+
+{pronoun_cap} actively engaged in all sessions and activities, demonstrating enthusiasm and a willingness to learn.""",
     }
 
     # Default wish text per type
@@ -555,13 +585,14 @@ class Certificate(models.Model):
     duration_days = models.PositiveIntegerField(null=True, blank=True, help_text='Total duration in days')
     mode = models.CharField(max_length=10, choices=MODE_CHOICES, default='offline')
 
-    # Skills / content
-    skills = models.JSONField(default=list, help_text='List of skills learned, e.g. ["HTML5 and CSS3", "JavaScript"]')
-    closing_text = models.TextField(
-        default='actively participated in all training sessions, hands-on tasks, and project assignments, '
-                'demonstrating dedication, teamwork, and a strong interest in learning modern web technologies.',
-        help_text='Closing paragraph text (pronoun auto-applied)'
+    # Certificate content
+    body_text = models.TextField(
+        blank=True,
+        help_text='Full certificate body content. Use placeholders: {salutation}, {student_name}, {college_name}, '
+                  '{course_name}, {start_date}, {end_date}, {duration_days}, {mode}, {skills}, '
+                  '{pronoun} (he/she), {pronoun_cap} (He/She), {possessive} (his/her), {object_pronoun} (him/her)'
     )
+    skills = models.JSONField(default=list, blank=True, help_text='List of skills (rendered as bullet points in body_text {skills} placeholder)')
     wish_text = models.TextField(
         default='We wish {pronoun} success in {possessive} future academic and professional endeavors.',
         help_text='Use {pronoun} for him/her and {possessive} for his/her'
