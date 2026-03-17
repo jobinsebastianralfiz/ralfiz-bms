@@ -5,7 +5,7 @@
 <style>
     @page {
         size: A4;
-        margin: 0;
+        margin: 15mm 15mm 15mm 20mm;
     }
 
     * {
@@ -21,30 +21,21 @@
         line-height: 1.6;
     }
 
-    .page {
-        width: 210mm;
-        height: 297mm;
-        position: relative;
-        padding: 20px 40px 20px 40px;
-        display: flex;
-        flex-direction: column;
-    }
-
     /* Green left border */
     .border-left {
         position: fixed;
-        top: 0;
-        left: 0;
+        top: -15mm;
+        left: -20mm;
         width: 10px;
-        height: 297mm;
+        bottom: -15mm;
         background: #4CAF50;
     }
 
     /* Green bottom-right accent */
     .border-bottom-right {
         position: fixed;
-        bottom: 0;
-        right: 0;
+        bottom: -15mm;
+        right: -15mm;
         width: 180px;
         height: 10px;
         background: #4CAF50;
@@ -52,17 +43,29 @@
 
     .border-right-accent {
         position: fixed;
-        bottom: 0;
-        right: 0;
+        bottom: -15mm;
+        right: -15mm;
         width: 10px;
         height: 180px;
         background: #4CAF50;
     }
 
+    /* Watermark */
+    .watermark {
+        position: fixed;
+        top: 35%;
+        left: 25%;
+        opacity: 0.05;
+        z-index: -1;
+    }
+
+    .watermark img {
+        width: 350px;
+    }
+
     /* Header */
     .header {
-        padding-left: 5px;
-        margin-bottom: 30px;
+        margin-bottom: 35px;
     }
 
     .header img {
@@ -75,7 +78,7 @@
         font-size: 26px;
         font-weight: bold;
         color: #222;
-        margin-bottom: 22px;
+        margin-bottom: 25px;
         letter-spacing: 2px;
         font-family: 'Arial', 'Helvetica', sans-serif;
     }
@@ -84,23 +87,18 @@
     .body-text {
         text-align: center;
         font-size: 13.5px;
-        line-height: 1.75;
+        line-height: 1.8;
         margin-bottom: 8px;
-        padding: 0 15px;
+        padding: 0 10px;
     }
 
     .body-text strong {
         font-weight: bold;
     }
 
-    /* Content area grows to fill available space */
-    .content {
-        flex: 1;
-    }
-
     /* Skills list */
     .skills-list {
-        margin: 12px 0 12px 70px;
+        margin: 12px 0 12px 60px;
         text-align: left;
         font-size: 13.5px;
     }
@@ -114,46 +112,44 @@
     .closing {
         text-align: center;
         font-size: 13.5px;
-        line-height: 1.75;
+        line-height: 1.8;
         margin-top: 15px;
-        padding: 0 25px;
+        padding: 0 20px;
     }
 
     .wish {
         text-align: center;
         font-size: 13.5px;
         margin-top: 8px;
-        padding: 0 25px;
+        padding: 0 20px;
     }
 
-    /* Footer area - pushed to bottom */
+    /* Footer pinned to page bottom */
     .footer-area {
-        margin-top: auto;
+        position: fixed;
+        bottom: -5mm;
+        left: 0;
+        right: 0;
     }
 
-    /* Signature + Seal row */
-    .footer-section {
-        margin-top: 25px;
-    }
-
-    .footer-section table {
+    .footer-table {
         width: 100%;
+        border-collapse: collapse;
     }
 
-    .signature-block {
-        text-align: left;
+    .footer-table td {
+        padding: 0;
         vertical-align: bottom;
     }
 
     .signature-block img {
-        height: 60px;
-        margin-bottom: 0;
+        height: 55px;
     }
 
     .signature-block .line {
         width: 170px;
         border-top: 1px solid #333;
-        margin-bottom: 4px;
+        margin-bottom: 3px;
     }
 
     .signature-block .name {
@@ -175,171 +171,140 @@
 
     .seal-block {
         text-align: right;
-        vertical-align: bottom;
     }
 
     .seal-block img {
-        height: 80px;
+        height: 75px;
     }
 
-    /* QR and details row */
-    .details-section {
-        margin-top: 15px;
-    }
-
-    .details-section table {
+    /* Bottom details row */
+    .details-table {
         width: 100%;
+        border-collapse: collapse;
+        margin-top: 12px;
     }
 
-    .qr-block {
-        text-align: left;
+    .details-table td {
+        padding: 0;
         vertical-align: bottom;
     }
 
     .qr-block img {
-        width: 70px;
-        height: 70px;
+        width: 65px;
+        height: 65px;
     }
 
     .qr-block .qr-label {
         font-size: 7px;
         color: #666;
-        margin-top: 1px;
     }
 
     .footer-right {
         text-align: right;
-        vertical-align: bottom;
     }
 
     .footer-right .logos img {
-        height: 20px;
-        margin-left: 8px;
+        height: 18px;
     }
 
     .footer-right .issuance {
         font-size: 10px;
         font-style: italic;
-        margin-top: 6px;
+        margin-top: 5px;
         color: #444;
     }
 
     .footer-right .address {
         font-size: 9px;
         color: #555;
-        margin-top: 4px;
+        margin-top: 3px;
         line-height: 1.4;
-    }
-
-    /* Watermark */
-    .watermark {
-        position: fixed;
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%, -50%);
-        opacity: 0.06;
-        z-index: -1;
-    }
-
-    .watermark img {
-        width: 380px;
     }
 </style>
 </head>
 <body>
-    <div class="page">
-        <!-- Borders -->
-        <div class="border-left"></div>
-        <div class="border-bottom-right"></div>
-        <div class="border-right-accent"></div>
+    <!-- Borders -->
+    <div class="border-left"></div>
+    <div class="border-bottom-right"></div>
+    <div class="border-right-accent"></div>
 
-        <!-- Watermark -->
-        <div class="watermark">
-            <img src="{{ seal }}" alt="">
-        </div>
+    <!-- Watermark -->
+    <div class="watermark">
+        <img src="{{ seal }}" alt="">
+    </div>
 
-        <!-- Header -->
-        <div class="header">
-            <img src="{{ header_logo }}" alt="Ralfiz Technologies">
-        </div>
+    <!-- Header -->
+    <div class="header">
+        <img src="{{ header_logo }}" alt="Ralfiz Technologies">
+    </div>
 
-        <!-- Title -->
-        <h1 class="title">{{ cert.title }}</h1>
+    <!-- Title -->
+    <h1 class="title">{{ cert.title }}</h1>
 
-        <!-- Content -->
-        <div class="content">
-            <p class="body-text">
-                This is to certify that <strong>{{ cert.salutation }} {{ cert.student_name }}</strong>{% if cert.college_name %}, a student of <strong>{{ cert.college_name }}</strong>{% endif %}, has successfully completed the {{ cert.course_name }}
-                at <strong>Ralfiz Technologies, Perinthalmanna</strong>.
-            </p>
-            <p class="body-text">
-                The internship was conducted in {{ cert.mode }} mode from <strong>{{ start_date_fmt }} to {{ end_date_fmt }}</strong>,
-                with a total duration of {{ cert.duration_days }} days. During this period, {{ cert.pronoun }} was trained in and gained
-                practical exposure to:
-            </p>
+    <!-- Body -->
+    <p class="body-text">
+        This is to certify that <strong>{{ cert.salutation }} {{ cert.student_name }}</strong>{% if cert.college_name %}, a student of <strong>{{ cert.college_name }}</strong>{% endif %}, has successfully completed the {{ cert.course_name }}
+        at <strong>Ralfiz Technologies, Perinthalmanna</strong>.
+    </p>
+    <p class="body-text">
+        The internship was conducted in {{ cert.mode }} mode from <strong>{{ start_date_fmt }} to {{ end_date_fmt }}</strong>,
+        with a total duration of {{ cert.duration_days }} days. During this period, {{ cert.pronoun }} was trained in and gained
+        practical exposure to:
+    </p>
 
-            <!-- Skills -->
-            <ul class="skills-list">
-                {% for skill in cert.skills %}
-                <li>{{ skill }}</li>
-                {% endfor %}
-            </ul>
+    <!-- Skills -->
+    <ul class="skills-list">
+        {% for skill in cert.skills %}
+        <li>{{ skill }}</li>
+        {% endfor %}
+    </ul>
 
-            <!-- Closing -->
-            <p class="closing">
-                {{ cert.pronoun_cap }} {{ cert.closing_text }}
-            </p>
-            <p class="wish">
-                {{ wish_text }}
-            </p>
-        </div>
+    <!-- Closing -->
+    <p class="closing">
+        {{ cert.pronoun_cap }} {{ cert.closing_text }}
+    </p>
+    <p class="wish">
+        {{ wish_text }}
+    </p>
 
-        <!-- Footer area pinned to bottom -->
-        <div class="footer-area">
-            <!-- Signature + Seal -->
-            <div class="footer-section">
-                <table>
-                    <tr>
-                        <td class="signature-block">
-                            <img src="{{ signature }}" alt="Signature"><br>
-                            <div class="line"></div>
-                            <div class="name">JOBIN SEBASTIAN</div>
-                            <div class="designation">MANAGING DIRECTOR</div>
-                            <div class="company">RALFIZ TECHNOLOGIES</div>
-                        </td>
-                        <td class="seal-block">
-                            <img src="{{ seal }}" alt="Company Seal">
-                        </td>
-                    </tr>
-                </table>
-            </div>
-
-            <!-- QR + Details -->
-            <div class="details-section">
-                <table>
-                    <tr>
-                        <td class="qr-block">
-                            <img src="data:image/png;base64,{{ qr_base64 }}" alt="QR Code">
-                            <div class="qr-label">Scan to verify</div>
-                        </td>
-                        <td class="footer-right">
-                            <div class="logos">
-                                <img src="{{ footer_logo }}" alt="Partner Logos">
-                            </div>
-                            <div class="issuance">
-                                <em>Date of issuance: {{ date_of_issuance_fmt }}</em> &nbsp;&nbsp;
-                                <em>Ref No: {{ cert.certificate_number }}</em>
-                            </div>
-                            <div class="address">
-                                Level 2, KIMS Avenue<br>
-                                Perinthalmanna, Pattambi Road<br>
-                                9895663498, info@ralfiz.com
-                            </div>
-                        </td>
-                    </tr>
-                </table>
-            </div>
-        </div>
+    <!-- Footer pinned to bottom of page -->
+    <div class="footer-area">
+        <table class="footer-table">
+            <tr>
+                <td class="signature-block">
+                    <img src="{{ signature }}" alt="Signature"><br>
+                    <div class="line"></div>
+                    <div class="name">JOBIN SEBASTIAN</div>
+                    <div class="designation">MANAGING DIRECTOR</div>
+                    <div class="company">RALFIZ TECHNOLOGIES</div>
+                </td>
+                <td class="seal-block">
+                    <img src="{{ seal }}" alt="Company Seal">
+                </td>
+            </tr>
+        </table>
+        <table class="details-table">
+            <tr>
+                <td class="qr-block">
+                    <img src="data:image/png;base64,{{ qr_base64 }}" alt="QR Code">
+                    <div class="qr-label">Scan to verify</div>
+                </td>
+                <td class="footer-right">
+                    <div class="logos">
+                        <img src="{{ footer_logo }}" alt="Partner Logos">
+                    </div>
+                    <div class="issuance">
+                        <em>Date of issuance: {{ date_of_issuance_fmt }}</em> &nbsp;&nbsp;
+                        <em>Ref No: {{ cert.certificate_number }}</em>
+                    </div>
+                    <div class="address">
+                        Level 2, KIMS Avenue<br>
+                        Perinthalmanna, Pattambi Road<br>
+                        9895663498, info@ralfiz.com
+                    </div>
+                </td>
+            </tr>
+        </table>
     </div>
 </body>
 </html>
