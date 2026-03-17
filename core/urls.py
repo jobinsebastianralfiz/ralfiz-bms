@@ -2,6 +2,9 @@ from django.urls import path
 from . import views
 
 urlpatterns = [
+    # Public Pages
+    path('interiodesk/guide/', views.interiodesk_guide, name='interiodesk_guide'),
+
     # Authentication
     path('login/', views.login_view, name='login'),
     path('logout/', views.logout_view, name='logout'),
