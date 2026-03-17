@@ -4810,6 +4810,7 @@ def certificate_create(request):
         skills = [s.strip() for s in skills_raw.split('\n') if s.strip()]
 
         cert = Certificate(
+            certificate_type=request.POST.get('certificate_type', 'inter'),
             title=request.POST.get('title', 'INTERNSHIP CERTIFICATE'),
             salutation=request.POST.get('salutation', 'Mr.'),
             student_name=request.POST.get('student_name'),
@@ -4837,6 +4838,8 @@ def certificate_create(request):
         'salutation_choices': Certificate.SALUTATION_CHOICES,
         'gender_choices': Certificate.GENDER_CHOICES,
         'mode_choices': Certificate.MODE_CHOICES,
+        'type_choices': Certificate.CERTIFICATE_TYPE_CHOICES,
+        'type_title_map': Certificate.TYPE_TITLE_MAP,
     }
     return render(request, 'hr/certificate_create.html', context)
 
@@ -4852,6 +4855,7 @@ def certificate_detail(request, pk):
         skills_raw = request.POST.get('skills', '')
         skills = [s.strip() for s in skills_raw.split('\n') if s.strip()]
 
+        cert.certificate_type = request.POST.get('certificate_type', cert.certificate_type)
         cert.title = request.POST.get('title', cert.title)
         cert.salutation = request.POST.get('salutation', cert.salutation)
         cert.student_name = request.POST.get('student_name', cert.student_name)
@@ -4876,6 +4880,7 @@ def certificate_detail(request, pk):
         'salutation_choices': Certificate.SALUTATION_CHOICES,
         'gender_choices': Certificate.GENDER_CHOICES,
         'mode_choices': Certificate.MODE_CHOICES,
+        'type_choices': Certificate.CERTIFICATE_TYPE_CHOICES,
     }
     return render(request, 'hr/certificate_detail.html', context)
 

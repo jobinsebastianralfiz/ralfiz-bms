@@ -488,9 +488,28 @@ class Certificate(models.Model):
         ('hybrid', 'Hybrid'),
     ]
 
+    CERTIFICATE_TYPE_CHOICES = [
+        ('inter', 'Internship'),
+        ('exp', 'Experience'),
+        ('course', 'Course Completion'),
+        ('merit', 'Merit'),
+        ('particip', 'Participation'),
+    ]
+
+    # Maps certificate type to default title
+    TYPE_TITLE_MAP = {
+        'inter': 'INTERNSHIP CERTIFICATE',
+        'exp': 'EXPERIENCE CERTIFICATE',
+        'course': 'COURSE COMPLETION CERTIFICATE',
+        'merit': 'CERTIFICATE OF MERIT',
+        'particip': 'CERTIFICATE OF PARTICIPATION',
+    }
+
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     certificate_number = models.CharField(max_length=50, unique=True, blank=True)
     verification_id = models.UUIDField(default=uuid.uuid4, unique=True, editable=False)
+    certificate_type = models.CharField(max_length=10, choices=CERTIFICATE_TYPE_CHOICES, default='inter',
+                                        help_text='Determines ref number prefix and default title')
     title = models.CharField(max_length=200, default='INTERNSHIP CERTIFICATE',
                              help_text='e.g. INTERNSHIP CERTIFICATE, COURSE COMPLETION CERTIFICATE')
 
@@ -551,7 +570,8 @@ class Certificate(models.Model):
     def save(self, *args, **kwargs):
         if not self.certificate_number:
             year = str(self.date_of_issuance.year)[-2:]
-            prefix = f"RT/PR/{year}/inter/"
+            type_code = self.certificate_type  # inter, exp, course, merit, particip
+            prefix = f"RT/PR/{year}/{type_code}/"
             last = Certificate.objects.filter(
                 certificate_number__startswith=prefix
             ).order_by('-certificate_number').first()

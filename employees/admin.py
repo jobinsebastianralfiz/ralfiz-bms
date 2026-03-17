@@ -155,15 +155,15 @@ class PayrollAdmin(admin.ModelAdmin):
 
 @admin.register(Certificate)
 class CertificateAdmin(admin.ModelAdmin):
-    list_display = ['certificate_number', 'student_name', 'title', 'course_name',
+    list_display = ['certificate_number', 'student_name', 'certificate_type', 'title', 'course_name',
                     'date_of_issuance', 'download_pdf_link', 'verify_link']
-    list_filter = ['title', 'mode', 'date_of_issuance']
+    list_filter = ['certificate_type', 'mode', 'date_of_issuance']
     search_fields = ['student_name', 'certificate_number', 'course_name', 'college_name']
     readonly_fields = ['id', 'certificate_number', 'verification_id', 'created_at', 'updated_at',
                        'download_pdf_link', 'verify_link']
     fieldsets = (
         ('Certificate Info', {
-            'fields': ('id', 'certificate_number', 'verification_id', 'title',
+            'fields': ('id', 'certificate_number', 'verification_id', 'certificate_type', 'title',
                        'download_pdf_link', 'verify_link'),
         }),
         ('Student Info', {

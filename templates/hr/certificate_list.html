@@ -33,7 +33,7 @@
           <tr>
             <th>Ref No</th>
             <th>Student Name</th>
-            <th>Title</th>
+            <th>Type</th>
             <th>Course</th>
             <th>Duration</th>
             <th>Issued</th>
@@ -48,7 +48,7 @@
               <div class="fw-medium">{{ c.salutation }} {{ c.student_name }}</div>
               {% if c.college_name %}<div class="text-sm text-muted">{{ c.college_name|truncatewords:6 }}</div>{% endif %}
             </td>
-            <td>{{ c.title }}</td>
+            <td>{{ c.get_certificate_type_display }}</td>
             <td>{{ c.course_name }}</td>
             <td>{{ c.duration_days }} days</td>
             <td>{{ c.date_of_issuance|date:"d M Y" }}</td>

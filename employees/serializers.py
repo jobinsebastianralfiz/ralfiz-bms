@@ -292,7 +292,7 @@ class CertificateSerializer(serializers.ModelSerializer):
     class Meta:
         model = Certificate
         fields = [
-            'id', 'certificate_number', 'verification_id', 'title',
+            'id', 'certificate_number', 'verification_id', 'certificate_type', 'title',
             'salutation', 'student_name', 'gender', 'college_name',
             'course_name', 'start_date', 'end_date', 'duration_days', 'mode',
             'skills', 'closing_text', 'wish_text',
@@ -318,7 +318,7 @@ class CertificateCreateSerializer(serializers.ModelSerializer):
     class Meta:
         model = Certificate
         fields = [
-            'title', 'salutation', 'student_name', 'gender', 'college_name',
+            'certificate_type', 'title', 'salutation', 'student_name', 'gender', 'college_name',
             'course_name', 'start_date', 'end_date', 'duration_days', 'mode',
             'skills', 'closing_text', 'wish_text', 'date_of_issuance',
         ]
