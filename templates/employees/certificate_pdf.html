@@ -23,59 +23,59 @@
 
     .page {
         width: 210mm;
-        min-height: 297mm;
+        height: 297mm;
         position: relative;
-        padding: 30px 50px 40px 50px;
+        padding: 20px 40px 20px 40px;
+        display: flex;
+        flex-direction: column;
     }
 
     /* Green left border */
     .border-left {
-        position: absolute;
+        position: fixed;
         top: 0;
         left: 0;
-        width: 12px;
-        height: 100%;
+        width: 10px;
+        height: 297mm;
         background: #4CAF50;
     }
 
     /* Green bottom-right accent */
     .border-bottom-right {
-        position: absolute;
+        position: fixed;
         bottom: 0;
         right: 0;
-        width: 200px;
-        height: 12px;
+        width: 180px;
+        height: 10px;
         background: #4CAF50;
     }
 
     .border-right-accent {
-        position: absolute;
+        position: fixed;
         bottom: 0;
         right: 0;
-        width: 12px;
-        height: 200px;
+        width: 10px;
+        height: 180px;
         background: #4CAF50;
     }
 
     /* Header */
     .header {
-        display: flex;
-        align-items: center;
-        margin-bottom: 50px;
-        padding-left: 10px;
+        padding-left: 5px;
+        margin-bottom: 30px;
     }
 
     .header img {
-        height: 55px;
+        height: 50px;
     }
 
     /* Title */
     .title {
         text-align: center;
-        font-size: 28px;
+        font-size: 26px;
         font-weight: bold;
         color: #222;
-        margin-bottom: 30px;
+        margin-bottom: 22px;
         letter-spacing: 2px;
         font-family: 'Arial', 'Helvetica', sans-serif;
     }
@@ -83,149 +83,157 @@
     /* Body text */
     .body-text {
         text-align: center;
-        font-size: 14px;
-        line-height: 1.8;
-        margin-bottom: 10px;
-        padding: 0 20px;
+        font-size: 13.5px;
+        line-height: 1.75;
+        margin-bottom: 8px;
+        padding: 0 15px;
     }
 
     .body-text strong {
         font-weight: bold;
     }
 
+    /* Content area grows to fill available space */
+    .content {
+        flex: 1;
+    }
+
     /* Skills list */
     .skills-list {
-        margin: 15px 0 15px 80px;
+        margin: 12px 0 12px 70px;
         text-align: left;
-        font-size: 14px;
+        font-size: 13.5px;
     }
 
     .skills-list li {
-        margin-bottom: 4px;
-        line-height: 1.6;
+        margin-bottom: 2px;
+        line-height: 1.5;
     }
 
     /* Closing */
     .closing {
         text-align: center;
-        font-size: 14px;
-        line-height: 1.8;
-        margin-top: 20px;
-        padding: 0 30px;
+        font-size: 13.5px;
+        line-height: 1.75;
+        margin-top: 15px;
+        padding: 0 25px;
     }
 
     .wish {
         text-align: center;
-        font-size: 14px;
-        margin-top: 10px;
-        padding: 0 30px;
+        font-size: 13.5px;
+        margin-top: 8px;
+        padding: 0 25px;
     }
 
-    /* Footer section */
+    /* Footer area - pushed to bottom */
+    .footer-area {
+        margin-top: auto;
+    }
+
+    /* Signature + Seal row */
     .footer-section {
-        margin-top: 40px;
-        display: flex;
-        justify-content: space-between;
-        align-items: flex-end;
-        padding: 0 10px;
+        margin-top: 25px;
+    }
+
+    .footer-section table {
+        width: 100%;
     }
 
     .signature-block {
         text-align: left;
+        vertical-align: bottom;
     }
 
     .signature-block img {
-        height: 70px;
+        height: 60px;
         margin-bottom: 0;
     }
 
     .signature-block .line {
-        width: 180px;
+        width: 170px;
         border-top: 1px solid #333;
-        margin-bottom: 5px;
+        margin-bottom: 4px;
     }
 
     .signature-block .name {
         font-weight: bold;
-        font-size: 14px;
+        font-size: 13px;
         font-family: 'Times New Roman', serif;
     }
 
     .signature-block .designation {
         font-weight: bold;
-        font-size: 11px;
+        font-size: 10px;
         letter-spacing: 1px;
     }
 
     .signature-block .company {
-        font-size: 11px;
+        font-size: 10px;
         letter-spacing: 0.5px;
     }
 
     .seal-block {
-        text-align: center;
+        text-align: right;
+        vertical-align: bottom;
     }
 
     .seal-block img {
-        height: 90px;
+        height: 80px;
     }
 
-    /* QR and details section */
+    /* QR and details row */
     .details-section {
-        display: flex;
-        justify-content: space-between;
-        align-items: flex-end;
-        margin-top: 20px;
-        padding: 0 10px;
+        margin-top: 15px;
+    }
+
+    .details-section table {
+        width: 100%;
     }
 
     .qr-block {
         text-align: left;
+        vertical-align: bottom;
     }
 
     .qr-block img {
-        width: 80px;
-        height: 80px;
+        width: 70px;
+        height: 70px;
     }
 
     .qr-block .qr-label {
-        font-size: 8px;
+        font-size: 7px;
         color: #666;
-        margin-top: 2px;
+        margin-top: 1px;
     }
 
     .footer-right {
         text-align: right;
+        vertical-align: bottom;
     }
 
     .footer-right .logos img {
-        height: 22px;
-        margin-left: 10px;
+        height: 20px;
+        margin-left: 8px;
     }
 
     .footer-right .issuance {
-        font-size: 11px;
+        font-size: 10px;
         font-style: italic;
-        margin-top: 8px;
-        color: #444;
-    }
-
-    .footer-right .ref-no {
-        font-size: 11px;
-        font-style: italic;
+        margin-top: 6px;
         color: #444;
     }
 
     .footer-right .address {
-        font-size: 10px;
+        font-size: 9px;
         color: #555;
-        margin-top: 5px;
-        line-height: 1.5;
+        margin-top: 4px;
+        line-height: 1.4;
     }
 
     /* Watermark */
     .watermark {
-        position: absolute;
+        position: fixed;
         top: 50%;
         left: 50%;
         transform: translate(-50%, -50%);
@@ -234,7 +242,7 @@
     }
 
     .watermark img {
-        width: 400px;
+        width: 380px;
     }
 </style>
 </head>
@@ -258,65 +266,78 @@
         <!-- Title -->
         <h1 class="title">{{ cert.title }}</h1>
 
-        <!-- Body -->
-        <p class="body-text">
-            This is to certify that <strong>{{ cert.salutation }} {{ cert.student_name }}</strong>{% if cert.college_name %}, a student of <strong>{{ cert.college_name }}</strong>{% endif %}, has successfully completed the {{ cert.course_name }}
-            at <strong>Ralfiz Technologies, Perinthalmanna</strong>.
-        </p>
-        <p class="body-text">
-            The internship was conducted in {{ cert.mode }} mode from <strong>{{ start_date_fmt }} to {{ end_date_fmt }}</strong>,
-            with a total duration of {{ cert.duration_days }} days. During this period, {{ cert.pronoun }} was trained in and gained
-            practical exposure to:
-        </p>
+        <!-- Content -->
+        <div class="content">
+            <p class="body-text">
+                This is to certify that <strong>{{ cert.salutation }} {{ cert.student_name }}</strong>{% if cert.college_name %}, a student of <strong>{{ cert.college_name }}</strong>{% endif %}, has successfully completed the {{ cert.course_name }}
+                at <strong>Ralfiz Technologies, Perinthalmanna</strong>.
+            </p>
+            <p class="body-text">
+                The internship was conducted in {{ cert.mode }} mode from <strong>{{ start_date_fmt }} to {{ end_date_fmt }}</strong>,
+                with a total duration of {{ cert.duration_days }} days. During this period, {{ cert.pronoun }} was trained in and gained
+                practical exposure to:
+            </p>
 
-        <!-- Skills -->
-        <ul class="skills-list">
-            {% for skill in cert.skills %}
-            <li>{{ skill }}</li>
-            {% endfor %}
-        </ul>
+            <!-- Skills -->
+            <ul class="skills-list">
+                {% for skill in cert.skills %}
+                <li>{{ skill }}</li>
+                {% endfor %}
+            </ul>
 
-        <!-- Closing -->
-        <p class="closing">
-            {{ cert.pronoun_cap }} {{ cert.closing_text }}
-        </p>
-        <p class="wish">
-            {{ wish_text }}
-        </p>
-
-        <!-- Signature + Seal -->
-        <div class="footer-section">
-            <div class="signature-block">
-                <img src="{{ signature }}" alt="Signature"><br>
-                <div class="line"></div>
-                <div class="name">JOBIN SEBASTIAN</div>
-                <div class="designation">MANAGING DIRECTOR</div>
-                <div class="company">RALFIZ TECHNOLOGIES</div>
-            </div>
-            <div class="seal-block">
-                <img src="{{ seal }}" alt="Company Seal">
-            </div>
+            <!-- Closing -->
+            <p class="closing">
+                {{ cert.pronoun_cap }} {{ cert.closing_text }}
+            </p>
+            <p class="wish">
+                {{ wish_text }}
+            </p>
         </div>
 
-        <!-- QR + Details -->
-        <div class="details-section">
-            <div class="qr-block">
-                <img src="data:image/png;base64,{{ qr_base64 }}" alt="QR Code">
-                <div class="qr-label">Scan to verify</div>
+        <!-- Footer area pinned to bottom -->
+        <div class="footer-area">
+            <!-- Signature + Seal -->
+            <div class="footer-section">
+                <table>
+                    <tr>
+                        <td class="signature-block">
+                            <img src="{{ signature }}" alt="Signature"><br>
+                            <div class="line"></div>
+                            <div class="name">JOBIN SEBASTIAN</div>
+                            <div class="designation">MANAGING DIRECTOR</div>
+                            <div class="company">RALFIZ TECHNOLOGIES</div>
+                        </td>
+                        <td class="seal-block">
+                            <img src="{{ seal }}" alt="Company Seal">
+                        </td>
+                    </tr>
+                </table>
             </div>
-            <div class="footer-right">
-                <div class="logos">
-                    <img src="{{ footer_logo }}" alt="Partner Logos">
-                </div>
-                <div class="issuance">
-                    <em>Date of issuance: {{ date_of_issuance_fmt }}</em> &nbsp;&nbsp;
-                    <em>Ref No: {{ cert.certificate_number }}</em>
-                </div>
-                <div class="address">
-                    Level 2, KIMS Avenue<br>
-                    Perinthalmanna, Pattambi Road<br>
-                    9895663498, info@ralfiz.com
-                </div>
+
+            <!-- QR + Details -->
+            <div class="details-section">
+                <table>
+                    <tr>
+                        <td class="qr-block">
+                            <img src="data:image/png;base64,{{ qr_base64 }}" alt="QR Code">
+                            <div class="qr-label">Scan to verify</div>
+                        </td>
+                        <td class="footer-right">
+                            <div class="logos">
+                                <img src="{{ footer_logo }}" alt="Partner Logos">
+                            </div>
+                            <div class="issuance">
+                                <em>Date of issuance: {{ date_of_issuance_fmt }}</em> &nbsp;&nbsp;
+                                <em>Ref No: {{ cert.certificate_number }}</em>
+                            </div>
+                            <div class="address">
+                                Level 2, KIMS Avenue<br>
+                                Perinthalmanna, Pattambi Road<br>
+                                9895663498, info@ralfiz.com
+                            </div>
+                        </td>
+                    </tr>
+                </table>
             </div>
         </div>
     </div>
