@@ -596,6 +596,9 @@ class Certificate(models.Model):
         return 'her' if self.gender == 'female' else 'him'
 
     def save(self, *args, **kwargs):
+        if isinstance(self.date_of_issuance, str):
+            from datetime import datetime
+            self.date_of_issuance = datetime.strptime(self.date_of_issuance, '%Y-%m-%d').date()
         if not self.certificate_number:
             year = str(self.date_of_issuance.year)[-2:]
             type_code = self.certificate_type  # inter, exp, course, merit, particip
