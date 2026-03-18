@@ -5033,6 +5033,8 @@ def certificate_pdf(request, pk):
     signature = (static_dir / 'jobin_signature.png').as_uri()
     seal = (static_dir / 'seal.png').as_uri()
     footer_logo = (static_dir / 'footer_right_logo.png').as_uri()
+    award_badge = (static_dir / 'award_badge.png').as_uri()
+    bottom_graphics = (static_dir / 'bottom_graphics.png').as_uri()
 
     def format_date(d):
         day = d.day
@@ -5096,6 +5098,8 @@ def certificate_pdf(request, pk):
         'signature': signature,
         'seal': seal,
         'footer_logo': footer_logo,
+        'award_badge': award_badge,
+        'bottom_graphics': bottom_graphics,
         'rendered_body': rendered_body,
         'date_of_issuance_fmt': cert.date_of_issuance.strftime('%d/%m/%Y'),
         'wish_text': wish_text,
