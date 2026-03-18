@@ -21,73 +21,106 @@
         line-height: 1.7;
     }
 
-    /* ========== DECORATIVE BORDER FRAME ========== */
-    .outer-border {
+    /* ========== ELEGANT GREEN LEFT BAR ========== */
+    .bar-left {
         position: fixed;
-        top: 12mm;
-        left: 12mm;
-        right: 12mm;
-        bottom: 12mm;
-        border: 3px solid #1a6b3c;
+        top: 0;
+        left: 0;
+        width: 10mm;
+        bottom: 0;
+        background: linear-gradient(to bottom, #145a32, #1a6b3c, #145a32);
     }
 
-    .inner-border {
+    /* Thin gold accent line on right edge of green bar */
+    .bar-left-gold {
         position: fixed;
-        top: 15mm;
-        left: 15mm;
-        right: 15mm;
-        bottom: 15mm;
-        border: 1px solid #1a6b3c;
+        top: 0;
+        left: 10mm;
+        width: 1.5px;
+        bottom: 0;
+        background: #b8860b;
     }
 
-    /* Corner ornaments */
+    /* ========== BOTTOM-RIGHT L-SHAPE ========== */
+    .bar-bottom {
+        position: fixed;
+        bottom: 0;
+        right: 0;
+        width: 220px;
+        height: 10mm;
+        background: linear-gradient(to left, #145a32, #1a6b3c);
+    }
+
+    .bar-right {
+        position: fixed;
+        bottom: 0;
+        right: 0;
+        width: 10mm;
+        height: 220px;
+        background: linear-gradient(to top, #145a32, #1a6b3c);
+    }
+
+    /* Gold accent lines on L-shape */
+    .bar-bottom-gold {
+        position: fixed;
+        bottom: 10mm;
+        right: 0;
+        width: 220px;
+        height: 1.5px;
+        background: #b8860b;
+    }
+
+    .bar-right-gold {
+        position: fixed;
+        bottom: 0;
+        right: 10mm;
+        width: 1.5px;
+        height: 220px;
+        background: #b8860b;
+    }
+
+    /* ========== GOLD CORNER ORNAMENTS ========== */
     .corner {
         position: fixed;
-        width: 30px;
-        height: 30px;
+        width: 35px;
+        height: 35px;
         z-index: 2;
     }
 
     .corner-tl {
-        top: 11mm;
-        left: 11mm;
-        border-top: 5px solid #b8860b;
-        border-left: 5px solid #b8860b;
+        top: 14mm;
+        left: 16mm;
+        border-top: 4px solid #b8860b;
+        border-left: 4px solid #b8860b;
     }
 
     .corner-tr {
-        top: 11mm;
-        right: 11mm;
-        border-top: 5px solid #b8860b;
-        border-right: 5px solid #b8860b;
+        top: 14mm;
+        right: 10mm;
+        border-top: 4px solid #b8860b;
+        border-right: 4px solid #b8860b;
     }
 
     .corner-bl {
-        bottom: 11mm;
-        left: 11mm;
-        border-bottom: 5px solid #b8860b;
-        border-left: 5px solid #b8860b;
+        bottom: 14mm;
+        left: 16mm;
+        border-bottom: 4px solid #b8860b;
+        border-left: 4px solid #b8860b;
     }
 
     .corner-br {
-        bottom: 11mm;
-        right: 11mm;
-        border-bottom: 5px solid #b8860b;
-        border-right: 5px solid #b8860b;
+        bottom: 14mm;
+        right: 10mm;
+        border-bottom: 4px solid #b8860b;
+        border-right: 4px solid #b8860b;
     }
 
-    /* ========== CONTENT AREA ========== */
-    .content {
-        padding: 22mm 28mm 20mm 28mm;
-        position: relative;
-    }
-
-    /* Watermark - centered */
+    /* ========== WATERMARK ========== */
     .watermark {
         position: fixed;
         top: 32%;
         left: 50%;
-        transform: translateX(-50%);
+        transform: translateX(-45%);
         opacity: 0.04;
         z-index: -1;
     }
@@ -96,25 +129,44 @@
         width: 340px;
     }
 
+    /* ========== CONTENT ========== */
+    .content {
+        padding: 20mm 20mm 20mm 18mm;
+        margin-left: 10mm;
+        position: relative;
+    }
+
     /* ========== HEADER ========== */
     .header {
         text-align: left;
-        margin-bottom: 42px;
+        margin-bottom: 45px;
     }
 
     .header img {
-        height: 50px;
+        height: 48px;
+    }
+
+    /* ========== TITLE ========== */
+    .title {
+        text-align: center;
+        font-size: 28px;
+        font-weight: bold;
+        color: #145a32;
+        margin-bottom: 6px;
+        letter-spacing: 4px;
+        text-transform: uppercase;
+        font-family: 'Georgia', 'Times New Roman', serif;
     }
 
     /* ========== DECORATIVE DIVIDER ========== */
     .divider {
         text-align: center;
-        margin: 8px 0 22px 0;
+        margin: 10px 0 26px 0;
     }
 
     .divider-line {
         display: inline-block;
-        width: 80px;
+        width: 70px;
         height: 1px;
         background: #b8860b;
         vertical-align: middle;
@@ -122,31 +174,19 @@
 
     .divider-diamond {
         display: inline-block;
-        width: 8px;
-        height: 8px;
+        width: 7px;
+        height: 7px;
         background: #b8860b;
         transform: rotate(45deg);
-        margin: 0 10px;
+        margin: 0 12px;
         vertical-align: middle;
-    }
-
-    /* ========== TITLE ========== */
-    .title {
-        text-align: center;
-        font-size: 30px;
-        font-weight: bold;
-        color: #1a3c2a;
-        margin-bottom: 6px;
-        letter-spacing: 3px;
-        text-transform: uppercase;
-        font-family: 'Georgia', 'Times New Roman', serif;
     }
 
     /* ========== BODY TEXT ========== */
     .body-text {
         text-align: center;
         font-size: 13.5px;
-        line-height: 1.8;
+        line-height: 1.85;
         margin-bottom: 6px;
         color: #333;
     }
@@ -168,20 +208,19 @@
     .skills-list li {
         margin-bottom: 4px;
         line-height: 1.6;
-        padding-left: 18px;
+        padding-left: 20px;
         position: relative;
     }
 
     .skills-list li::before {
         content: "\2022";
         color: #1a6b3c;
-        font-size: 16px;
+        font-size: 18px;
         position: absolute;
         left: 0;
-        top: -1px;
+        top: -2px;
     }
 
-    /* Wrapper to center the skills list */
     .skills-wrapper {
         text-align: center;
     }
@@ -190,14 +229,14 @@
     .closing {
         text-align: center;
         font-size: 13.5px;
-        line-height: 1.8;
+        line-height: 1.85;
         margin-top: 18px;
     }
 
     .wish {
         text-align: center;
         font-size: 13.5px;
-        margin-top: 6px;
+        margin-top: 8px;
         font-style: italic;
         color: #444;
     }
@@ -207,7 +246,7 @@
         position: fixed;
         bottom: 22mm;
         left: 28mm;
-        right: 28mm;
+        right: 20mm;
     }
 
     /* Signature row */
@@ -234,7 +273,7 @@
 
     .sig-left .line {
         width: 170px;
-        border-top: 1.5px solid #1a3c2a;
+        border-top: 1.5px solid #145a32;
         margin-bottom: 5px;
     }
 
@@ -252,7 +291,7 @@
         font-size: 9.5px;
         letter-spacing: 1.5px;
         text-transform: uppercase;
-        color: #1a6b3c;
+        color: #145a32;
         margin-top: 1px;
     }
 
@@ -319,56 +358,16 @@
         margin-top: 3px;
         line-height: 1.45;
     }
-
-    /* ========== GREEN ACCENT BARS (keeping brand identity) ========== */
-    .accent-left {
-        position: fixed;
-        top: 12mm;
-        left: 0;
-        width: 8mm;
-        bottom: 12mm;
-        background: linear-gradient(to bottom, #1a6b3c, #2e8b57);
-    }
-
-    .accent-bottom-right {
-        position: fixed;
-        bottom: 0;
-        right: 12mm;
-        width: 180px;
-        height: 8mm;
-        background: linear-gradient(to left, #1a6b3c, #2e8b57);
-    }
-
-    .accent-right-vert {
-        position: fixed;
-        bottom: 12mm;
-        right: 0;
-        width: 8mm;
-        height: 180px;
-        background: linear-gradient(to top, #1a6b3c, #2e8b57);
-    }
-
-    /* Gold thin line inside green bar */
-    .gold-stripe-left {
-        position: fixed;
-        top: 12mm;
-        left: 7mm;
-        width: 1px;
-        bottom: 12mm;
-        background: #b8860b;
-    }
 </style>
 </head>
 <body>
-    <!-- Green accent bars with gradient -->
-    <div class="accent-left"></div>
-    <div class="accent-bottom-right"></div>
-    <div class="accent-right-vert"></div>
-    <div class="gold-stripe-left"></div>
-
-    <!-- Decorative double border frame -->
-    <div class="outer-border"></div>
-    <div class="inner-border"></div>
+    <!-- Green bars -->
+    <div class="bar-left"></div>
+    <div class="bar-left-gold"></div>
+    <div class="bar-bottom"></div>
+    <div class="bar-right"></div>
+    <div class="bar-bottom-gold"></div>
+    <div class="bar-right-gold"></div>
 
     <!-- Gold corner ornaments -->
     <div class="corner corner-tl"></div>
