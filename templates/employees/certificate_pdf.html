@@ -21,30 +21,23 @@
         line-height: 1.7;
     }
 
-    /* ========== AWARD BADGE - TOP RIGHT ========== */
-    .award-badge {
-        position: fixed;
-        top: 18mm;
-        right: 18mm;
-        z-index: 2;
-    }
-
-    .award-badge img {
-        height: 80px;
-    }
-
     /* ========== BOTTOM GRAPHICS ========== */
     .bottom-graphics {
         position: fixed;
         bottom: 0;
         left: 0;
-        right: 0;
+        width: 210mm;
+        height: 22mm;
+        overflow: hidden;
         z-index: 1;
     }
 
     .bottom-graphics img {
-        width: 100%;
+        width: 210mm;
+        height: 22mm;
         display: block;
+        object-fit: cover;
+        object-position: left bottom;
     }
 
     /* ========== WATERMARK ========== */
@@ -63,16 +56,35 @@
 
     /* ========== CONTENT ========== */
     .content {
-        padding: 32mm 30mm 25mm 30mm;
+        padding: 28mm 30mm 25mm 30mm;
     }
 
-    /* ========== HEADER ========== */
-    .header {
-        margin-bottom: 60px;
+    /* ========== HEADER ROW: logo left, badge right ========== */
+    .header-row {
+        width: 100%;
+        border-collapse: collapse;
+        margin-bottom: 55px;
     }
 
-    .header img {
+    .header-row td {
+        padding: 0;
+        vertical-align: top;
+    }
+
+    .header-logo-cell {
+        text-align: left;
+    }
+
+    .header-logo-cell img {
         height: 52px;
+    }
+
+    .header-badge-cell {
+        text-align: right;
+    }
+
+    .header-badge-cell img {
+        height: 70px;
     }
 
     /* ========== TITLE ========== */
@@ -129,7 +141,7 @@
     /* ========== FOOTER AREA ========== */
     .footer-area {
         position: fixed;
-        bottom: 30mm;
+        bottom: 28mm;
         left: 30mm;
         right: 30mm;
     }
@@ -240,11 +252,6 @@
 </style>
 </head>
 <body>
-    <!-- Award badge - top right -->
-    <div class="award-badge">
-        <img src="{{ award_badge }}" alt="Award">
-    </div>
-
     <!-- Bottom graphics -->
     <div class="bottom-graphics">
         <img src="{{ bottom_graphics }}" alt="">
@@ -257,10 +264,17 @@
 
     <!-- Main content -->
     <div class="content">
-        <!-- Header logo -->
-        <div class="header">
-            <img src="{{ header_logo }}" alt="Ralfiz Technologies">
-        </div>
+        <!-- Header: logo left, badge right -->
+        <table class="header-row">
+            <tr>
+                <td class="header-logo-cell">
+                    <img src="{{ header_logo }}" alt="Ralfiz Technologies">
+                </td>
+                <td class="header-badge-cell">
+                    <img src="{{ award_badge }}" alt="Award">
+                </td>
+            </tr>
+        </table>
 
         <!-- Certificate title -->
         <h1 class="title">{{ cert.title }}</h1>
