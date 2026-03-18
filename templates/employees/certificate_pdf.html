@@ -24,14 +24,16 @@
     /* ========== BOTTOM GRAPHICS ========== */
     .bottom-graphics {
         position: fixed;
-        bottom: 0;
+        bottom: -1px;
         left: 0;
-        width: 210mm;
+        right: 0;
         z-index: 1;
+        overflow: hidden;
     }
 
     .bottom-graphics img {
-        width: 210mm;
+        width: 100%;
+        height: auto;
         display: block;
     }
 
