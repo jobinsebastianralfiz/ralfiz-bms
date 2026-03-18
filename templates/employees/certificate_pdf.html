@@ -15,238 +15,127 @@
     }
 
     body {
-        font-family: 'Georgia', 'Times New Roman', serif;
-        color: #2c2c2c;
-        font-size: 13.5px;
+        font-family: 'Helvetica Neue', 'Arial', 'Helvetica', sans-serif;
+        color: #222;
+        font-size: 14px;
         line-height: 1.7;
     }
 
-    /* ========== ELEGANT GREEN LEFT BAR ========== */
+    /* ========== GREEN LEFT BAR ========== */
     .bar-left {
         position: fixed;
         top: 0;
         left: 0;
-        width: 10mm;
+        width: 12px;
         bottom: 0;
-        background: linear-gradient(to bottom, #145a32, #1a6b3c, #145a32);
+        background: #4CAF50;
     }
 
-    /* Thin gold accent line on right edge of green bar */
-    .bar-left-gold {
-        position: fixed;
-        top: 0;
-        left: 10mm;
-        width: 1.5px;
-        bottom: 0;
-        background: #b8860b;
-    }
-
-    /* ========== BOTTOM-RIGHT L-SHAPE ========== */
+    /* ========== GREEN BOTTOM-RIGHT L-SHAPE ========== */
     .bar-bottom {
         position: fixed;
         bottom: 0;
         right: 0;
-        width: 220px;
-        height: 10mm;
-        background: linear-gradient(to left, #145a32, #1a6b3c);
+        width: 240px;
+        height: 12px;
+        background: #4CAF50;
     }
 
     .bar-right {
         position: fixed;
         bottom: 0;
         right: 0;
-        width: 10mm;
-        height: 220px;
-        background: linear-gradient(to top, #145a32, #1a6b3c);
-    }
-
-    /* Gold accent lines on L-shape */
-    .bar-bottom-gold {
-        position: fixed;
-        bottom: 10mm;
-        right: 0;
-        width: 220px;
-        height: 1.5px;
-        background: #b8860b;
-    }
-
-    .bar-right-gold {
-        position: fixed;
-        bottom: 0;
-        right: 10mm;
-        width: 1.5px;
-        height: 220px;
-        background: #b8860b;
-    }
-
-    /* ========== GOLD CORNER ORNAMENTS ========== */
-    .corner {
-        position: fixed;
-        width: 35px;
-        height: 35px;
-        z-index: 2;
-    }
-
-    .corner-tl {
-        top: 14mm;
-        left: 16mm;
-        border-top: 4px solid #b8860b;
-        border-left: 4px solid #b8860b;
-    }
-
-    .corner-tr {
-        top: 14mm;
-        right: 10mm;
-        border-top: 4px solid #b8860b;
-        border-right: 4px solid #b8860b;
-    }
-
-    .corner-bl {
-        bottom: 14mm;
-        left: 16mm;
-        border-bottom: 4px solid #b8860b;
-        border-left: 4px solid #b8860b;
-    }
-
-    .corner-br {
-        bottom: 14mm;
-        right: 10mm;
-        border-bottom: 4px solid #b8860b;
-        border-right: 4px solid #b8860b;
+        width: 12px;
+        height: 240px;
+        background: #4CAF50;
     }
 
     /* ========== WATERMARK ========== */
     .watermark {
         position: fixed;
-        top: 32%;
+        top: 28%;
         left: 50%;
-        transform: translateX(-45%);
-        opacity: 0.04;
+        transform: translateX(-50%);
+        opacity: 0.045;
         z-index: -1;
     }
 
     .watermark img {
-        width: 340px;
+        width: 400px;
     }
 
     /* ========== CONTENT ========== */
     .content {
-        padding: 20mm 20mm 20mm 18mm;
-        margin-left: 10mm;
-        position: relative;
+        padding: 32mm 30mm 25mm 30mm;
+        margin-left: 12px;
     }
 
     /* ========== HEADER ========== */
     .header {
-        text-align: left;
-        margin-bottom: 45px;
+        margin-bottom: 60px;
     }
 
     .header img {
-        height: 48px;
+        height: 52px;
     }
 
     /* ========== TITLE ========== */
     .title {
         text-align: center;
         font-size: 28px;
-        font-weight: bold;
-        color: #145a32;
-        margin-bottom: 6px;
-        letter-spacing: 4px;
-        text-transform: uppercase;
-        font-family: 'Georgia', 'Times New Roman', serif;
-    }
-
-    /* ========== DECORATIVE DIVIDER ========== */
-    .divider {
-        text-align: center;
-        margin: 10px 0 26px 0;
-    }
-
-    .divider-line {
-        display: inline-block;
-        width: 70px;
-        height: 1px;
-        background: #b8860b;
-        vertical-align: middle;
-    }
-
-    .divider-diamond {
-        display: inline-block;
-        width: 7px;
-        height: 7px;
-        background: #b8860b;
-        transform: rotate(45deg);
-        margin: 0 12px;
-        vertical-align: middle;
+        font-weight: 900;
+        color: #1a1a1a;
+        margin-bottom: 30px;
+        letter-spacing: 1px;
+        font-family: 'Arial Black', 'Helvetica', sans-serif;
     }
 
     /* ========== BODY TEXT ========== */
     .body-text {
         text-align: center;
-        font-size: 13.5px;
-        line-height: 1.85;
-        margin-bottom: 6px;
-        color: #333;
+        font-size: 14px;
+        line-height: 1.75;
+        margin-bottom: 4px;
     }
 
     .body-text strong {
         font-weight: bold;
-        color: #1a1a1a;
     }
 
     /* ========== SKILLS LIST ========== */
     .skills-list {
-        margin: 14px auto 14px auto;
+        margin: 16px 0 16px 60px;
         text-align: left;
-        font-size: 13.5px;
-        list-style-type: none;
-        display: inline-block;
+        font-size: 14px;
+        list-style-type: disc;
+        padding-left: 0;
     }
 
     .skills-list li {
-        margin-bottom: 4px;
+        margin-bottom: 3px;
         line-height: 1.6;
-        padding-left: 20px;
-        position: relative;
-    }
-
-    .skills-list li::before {
-        content: "\2022";
-        color: #1a6b3c;
-        font-size: 18px;
-        position: absolute;
-        left: 0;
-        top: -2px;
-    }
-
-    .skills-wrapper {
-        text-align: center;
     }
 
     /* ========== CLOSING / WISH ========== */
     .closing {
         text-align: center;
-        font-size: 13.5px;
-        line-height: 1.85;
-        margin-top: 18px;
+        font-size: 14px;
+        line-height: 1.75;
+        margin-top: 24px;
     }
 
     .wish {
         text-align: center;
-        font-size: 13.5px;
-        margin-top: 8px;
-        font-style: italic;
-        color: #444;
+        font-size: 14px;
+        margin-top: 6px;
     }
 
     /* ========== FOOTER AREA ========== */
     .footer-area {
         position: fixed;
-        bottom: 22mm;
-        left: 28mm;
-        right: 20mm;
+        bottom: 25mm;
+        left: 42px;
+        right: 30mm;
     }
 
     /* Signature row */
@@ -266,39 +155,34 @@
     }
 
     .sig-left img {
-        height: 55px;
+        height: 58px;
         display: block;
         margin-bottom: -2px;
     }
 
     .sig-left .line {
-        width: 170px;
-        border-top: 1.5px solid #145a32;
+        width: 175px;
+        border-top: 1.5px solid #333;
         margin-bottom: 5px;
     }
 
     .sig-left .name {
         font-weight: bold;
-        font-size: 13px;
-        font-family: 'Georgia', serif;
-        letter-spacing: 1px;
-        color: #1a1a1a;
-        text-transform: uppercase;
+        font-size: 14px;
+        font-family: 'Times New Roman', serif;
+        letter-spacing: 0.5px;
     }
 
     .sig-left .designation {
         font-weight: bold;
-        font-size: 9.5px;
+        font-size: 10px;
         letter-spacing: 1.5px;
         text-transform: uppercase;
-        color: #145a32;
-        margin-top: 1px;
     }
 
     .sig-left .company {
-        font-size: 9.5px;
+        font-size: 10px;
         letter-spacing: 0.5px;
-        color: #555;
     }
 
     .sig-center {
@@ -307,14 +191,14 @@
     }
 
     .sig-center img {
-        height: 80px;
+        height: 85px;
     }
 
     /* Bottom details row */
     .details-row {
         width: 100%;
         border-collapse: collapse;
-        margin-top: 14px;
+        margin-top: 12px;
     }
 
     .details-row td {
@@ -333,8 +217,7 @@
 
     .qr-cell .qr-label {
         font-size: 7px;
-        color: #888;
-        letter-spacing: 0.3px;
+        color: #777;
     }
 
     .details-right {
@@ -342,38 +225,29 @@
     }
 
     .details-right .logos img {
-        height: 36px;
+        height: 30px;
     }
 
     .details-right .issuance {
-        font-size: 9.5px;
+        font-size: 10px;
         font-style: italic;
-        margin-top: 6px;
-        color: #555;
+        margin-top: 8px;
+        color: #444;
     }
 
     .details-right .address {
-        font-size: 9px;
-        color: #666;
-        margin-top: 3px;
-        line-height: 1.45;
+        font-size: 9.5px;
+        color: #555;
+        margin-top: 4px;
+        line-height: 1.5;
     }
 </style>
 </head>
 <body>
     <!-- Green bars -->
     <div class="bar-left"></div>
-    <div class="bar-left-gold"></div>
     <div class="bar-bottom"></div>
     <div class="bar-right"></div>
-    <div class="bar-bottom-gold"></div>
-    <div class="bar-right-gold"></div>
-
-    <!-- Gold corner ornaments -->
-    <div class="corner corner-tl"></div>
-    <div class="corner corner-tr"></div>
-    <div class="corner corner-bl"></div>
-    <div class="corner corner-br"></div>
 
     <!-- Watermark -->
     <div class="watermark">
@@ -390,13 +264,6 @@
         <!-- Certificate title -->
         <h1 class="title">{{ cert.title }}</h1>
 
-        <!-- Decorative divider -->
-        <div class="divider">
-            <span class="divider-line"></span>
-            <span class="divider-diamond"></span>
-            <span class="divider-line"></span>
-        </div>
-
         <!-- Certificate body content -->
         {{ rendered_body|safe }}
 
@@ -406,7 +273,7 @@
         </p>
     </div>
 
-    <!-- Footer: signature, seal, QR, details — pinned to bottom -->
+    <!-- Footer -->
     <div class="footer-area">
         <!-- Signature + Seal -->
         <table class="sig-row">
@@ -414,9 +281,9 @@
                 <td class="sig-left">
                     <img src="{{ signature }}" alt="Signature">
                     <div class="line"></div>
-                    <div class="name">Jobin Sebastian</div>
+                    <div class="name">JOBIN SEBASTIAN</div>
                     <div class="designation">Managing Director</div>
-                    <div class="company">Ralfiz Technologies</div>
+                    <div class="company">RALFIZ TECHNOLOGIES</div>
                 </td>
                 <td class="sig-center">
                     <img src="{{ seal }}" alt="Company Seal">
