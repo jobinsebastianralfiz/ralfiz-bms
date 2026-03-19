@@ -2285,35 +2285,44 @@ class AdminWorkAssignView(APIView):
 
     def post(self, request):
         data = request.data
-        try:
-            employee = Employee.objects.get(pk=data.get('employee_id'))
-        except Employee.DoesNotExist:
-            return Response({'error': 'Employee not found'}, status=status.HTTP_404_NOT_FOUND)
+
+        # Support multiple employees via employee_ids list or single employee_id
+        employee_ids = data.get('employee_ids', [])
+        if not employee_ids and data.get('employee_id'):
+            employee_ids = [data.get('employee_id')]
+
+        if not employee_ids:
+            return Response({'error': 'employee_ids or employee_id is required'}, status=status.HTTP_400_BAD_REQUEST)
+
+        employees = Employee.objects.filter(pk__in=employee_ids)
+        if not employees.exists():
+            return Response({'error': 'No valid employees found'}, status=status.HTTP_404_NOT_FOUND)
 
         assignment = WorkAssignment.objects.create(
             title=data.get('title', ''),
             description=data.get('description', ''),
-            assigned_to=employee,
             assigned_by=request.user,
             project_id=data.get('project_id'),
             priority=data.get('priority', 'medium'),
             due_date=data.get('due_date'),
             attachment=request.FILES.get('attachment'),
         )
+        assignment.assigned_to.set(employees)
 
-        # Notify employee
-        Notification.objects.create(
-            employee=employee,
-            title='New Work Assignment',
-            body=f'You have been assigned: {assignment.title}',
-            notification_type='work',
-            data={'assignment_id': str(assignment.id)},
-        )
-        send_push_notification(
-            employee,
-            'New Work Assignment',
-            f'You have been assigned: {assignment.title}',
-        )
+        # Notify all assigned employees
+        for employee in employees:
+            Notification.objects.create(
+                employee=employee,
+                title='New Work Assignment',
+                body=f'You have been assigned: {assignment.title}',
+                notification_type='work',
+                data={'assignment_id': str(assignment.id)},
+            )
+            send_push_notification(
+                employee,
+                'New Work Assignment',
+                f'You have been assigned: {assignment.title}',
+            )
 
         return Response(WorkAssignmentSerializer(assignment).data, status=status.HTTP_201_CREATED)
 
@@ -2343,12 +2352,15 @@ class AdminWorkAssignDetailView(APIView):
             if field in data:
                 setattr(assignment, field, data[field])
 
-        # Handle employee reassignment
-        if 'employee_id' in data:
-            try:
-                assignment.assigned_to = Employee.objects.get(pk=data['employee_id'])
-            except Employee.DoesNotExist:
-                return Response({'error': 'Employee not found'}, status=status.HTTP_404_NOT_FOUND)
+        # Handle employee reassignment (supports employee_ids list or single employee_id)
+        employee_ids = data.get('employee_ids', [])
+        if not employee_ids and 'employee_id' in data:
+            employee_ids = [data['employee_id']]
+        if employee_ids:
+            employees = Employee.objects.filter(pk__in=employee_ids)
+            if not employees.exists():
+                return Response({'error': 'No valid employees found'}, status=status.HTTP_404_NOT_FOUND)
+            assignment.assigned_to.set(employees)
 
         # Handle project change
         if 'project_id' in data:

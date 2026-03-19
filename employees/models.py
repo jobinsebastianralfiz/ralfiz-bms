@@ -254,7 +254,7 @@ class WorkAssignment(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     title = models.CharField(max_length=255)
     description = models.TextField(blank=True)
-    assigned_to = models.ForeignKey(Employee, on_delete=models.CASCADE, related_name='work_assignments')
+    assigned_to = models.ManyToManyField(Employee, related_name='work_assignments')
     assigned_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, related_name='assigned_work')
     project = models.ForeignKey('core.Project', on_delete=models.SET_NULL, null=True, blank=True,
                                 related_name='employee_assignments')
@@ -272,7 +272,8 @@ class WorkAssignment(models.Model):
         ordering = ['-created_at']
 
     def __str__(self):
-        return f"{self.title} -> {self.assigned_to.employee_id}"
+        employees = ', '.join(e.employee_id for e in self.assigned_to.all()[:3])
+        return f"{self.title} -> {employees}"
 
     @property
     def is_overdue(self):

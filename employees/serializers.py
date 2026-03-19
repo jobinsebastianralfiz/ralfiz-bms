@@ -136,6 +136,7 @@ class WorkAssignmentSerializer(serializers.ModelSerializer):
     is_overdue = serializers.ReadOnlyField()
     assigned_by_name = serializers.CharField(source='assigned_by.get_full_name', read_only=True, default='')
     project_name = serializers.CharField(source='project.name', read_only=True, default='')
+    assigned_to_names = serializers.SerializerMethodField()
     updates = serializers.SerializerMethodField()
 
     class Meta:
@@ -143,12 +144,15 @@ class WorkAssignmentSerializer(serializers.ModelSerializer):
         fields = [
             'id', 'title', 'description', 'priority', 'status',
             'due_date', 'completed_at', 'assigned_by_name', 'project_name',
-            'is_overdue', 'attachment', 'notes', 'updates', 'created_at', 'updated_at',
+            'assigned_to_names', 'is_overdue', 'attachment', 'notes', 'updates', 'created_at', 'updated_at',
         ]
         read_only_fields = [
             'id', 'title', 'description', 'priority', 'due_date',
             'assigned_by_name', 'project_name', 'attachment', 'created_at', 'updated_at',
         ]
+
+    def get_assigned_to_names(self, obj):
+        return [{'id': str(e.pk), 'name': e.full_name, 'employee_id': e.employee_id} for e in obj.assigned_to.all()]
 
     def get_updates(self, obj):
         updates = obj.updates.all()[:10]
