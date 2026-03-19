@@ -144,7 +144,7 @@ class WorkAssignmentSerializer(serializers.ModelSerializer):
         fields = [
             'id', 'title', 'description', 'priority', 'status',
             'due_date', 'completed_at', 'assigned_by_name', 'project_name',
-            'assigned_to_names', 'is_overdue', 'attachment', 'notes', 'updates', 'created_at', 'updated_at',
+            'assigned_to_names', 'is_overdue', 'attachment', 'notes', 'confidentiality_disclaimer', 'updates', 'created_at', 'updated_at',
         ]
         read_only_fields = [
             'id', 'title', 'description', 'priority', 'due_date',

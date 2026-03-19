@@ -265,6 +265,10 @@ class WorkAssignment(models.Model):
     attachment = models.FileField(upload_to='employees/work_assignments/', blank=True, null=True,
                                   help_text='PDF or document attached to this task')
     notes = models.TextField(blank=True, help_text='Employee can add progress notes')
+    confidentiality_disclaimer = models.TextField(
+        blank=True,
+        help_text='Confidentiality notice or disclaimer shown to assigned employees'
+    )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

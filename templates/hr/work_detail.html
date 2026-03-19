@@ -67,6 +67,11 @@
             </div>
           </div>
           <div class="mb-3">
+            <label class="form-label">Confidentiality Disclaimer</label>
+            <textarea name="confidentiality_disclaimer" class="form-control" rows="2" placeholder="e.g. This assignment is confidential.">{{ assignment.confidentiality_disclaimer }}</textarea>
+            <small class="text-muted">Optional notice displayed to assigned employees</small>
+          </div>
+          <div class="mb-3">
             <label class="form-label">Attachment</label>
             {% if assignment.attachment %}
             <div class="mb-2 d-flex align-items-center gap-2">

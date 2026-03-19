@@ -4378,6 +4378,7 @@ def emp_work_create(request):
             priority=request.POST.get('priority', 'medium'),
             due_date=request.POST.get('due_date') or None,
             attachment=request.FILES.get('attachment'),
+            confidentiality_disclaimer=request.POST.get('confidentiality_disclaimer', ''),
         )
         assignment.assigned_to.set(employees)
         for employee in employees:
@@ -4416,6 +4417,7 @@ def emp_work_detail(request, pk):
         assignment.description = request.POST.get('description', assignment.description)
         assignment.priority = request.POST.get('priority', assignment.priority)
         assignment.status = request.POST.get('status', assignment.status)
+        assignment.confidentiality_disclaimer = request.POST.get('confidentiality_disclaimer', assignment.confidentiality_disclaimer)
         assignment.due_date = request.POST.get('due_date') or None
 
         employee_ids = request.POST.getlist('employees')
