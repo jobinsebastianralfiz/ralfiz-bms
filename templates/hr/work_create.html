@@ -37,12 +37,12 @@
       <div class="row mb-3">
         <div class="col-6">
           <label class="form-label">Assign To *</label>
-          <select name="employee" class="form-control" required>
-            <option value="">Select Employee</option>
+          <select name="employees" class="form-control" required multiple size="6" style="min-height: 120px;">
             {% for emp in employees %}
             <option value="{{ emp.pk }}">{{ emp.full_name }} ({{ emp.employee_id }})</option>
             {% endfor %}
           </select>
+          <small class="text-muted">Hold Ctrl/Cmd to select multiple employees</small>
         </div>
         <div class="col-6">
           <label class="form-label">Due Date</label>

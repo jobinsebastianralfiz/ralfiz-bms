@@ -4144,7 +4144,11 @@ def emp_employee_delete(request, pk):
     WorkUpdate.objects.filter(employee=employee).delete()
     Attendance.objects.filter(employee=employee).delete()
     LeaveRequest.objects.filter(employee=employee).delete()
-    WorkAssignment.objects.filter(assigned_to=employee).delete()
+    # Remove employee from assignments; delete assignments with no remaining assignees
+    for wa in WorkAssignment.objects.filter(assigned_to=employee):
+        wa.assigned_to.remove(employee)
+        if not wa.assigned_to.exists():
+            wa.delete()
     employee.delete()
 
     messages.success(request, f'Employee "{name}" and all related records deleted. User account and team member profile are preserved.')
@@ -4341,7 +4345,7 @@ def emp_attendance_list(request):
 def emp_work_list(request):
     """List work assignments"""
     from employees.models import WorkAssignment, Employee
-    assignments = WorkAssignment.objects.select_related('assigned_to__user', 'assigned_by').order_by('-created_at')
+    assignments = WorkAssignment.objects.prefetch_related('assigned_to').select_related('assigned_by').order_by('-created_at')
     status_filter = request.GET.get('status', '')
     if status_filter:
         assignments = assignments.filter(status=status_filter)
@@ -4362,28 +4366,33 @@ def emp_work_create(request):
     from employees.models import WorkAssignment, Employee, Notification
     from employees.utils import send_push_notification
     if request.method == 'POST':
-        employee = get_object_or_404(Employee, pk=request.POST.get('employee'))
+        employee_ids = request.POST.getlist('employees')
+        employees = Employee.objects.filter(pk__in=employee_ids)
+        if not employees.exists():
+            messages.error(request, 'Please select at least one employee.')
+            return redirect('emp_work_create')
         assignment = WorkAssignment.objects.create(
             title=request.POST.get('title'),
             description=request.POST.get('description', ''),
-            assigned_to=employee,
             assigned_by=request.user,
             priority=request.POST.get('priority', 'medium'),
             due_date=request.POST.get('due_date') or None,
             attachment=request.FILES.get('attachment'),
         )
-        Notification.objects.create(
-            employee=employee,
-            title='New Work Assignment',
-            body=f'You have been assigned: {assignment.title}',
-            notification_type='work',
-        )
-        send_push_notification(
-            employee,
-            'New Work Assignment',
-            f'You have been assigned: {assignment.title}',
-        )
-        messages.success(request, 'Work assignment created and employee notified.')
+        assignment.assigned_to.set(employees)
+        for employee in employees:
+            Notification.objects.create(
+                employee=employee,
+                title='New Work Assignment',
+                body=f'You have been assigned: {assignment.title}',
+                notification_type='work',
+            )
+            send_push_notification(
+                employee,
+                'New Work Assignment',
+                f'You have been assigned: {assignment.title}',
+            )
+        messages.success(request, 'Work assignment created and employees notified.')
         return redirect('emp_work_list')
     from employees.models import Employee
     employees = Employee.objects.filter(status='active').order_by('employee_id')
@@ -4409,9 +4418,10 @@ def emp_work_detail(request, pk):
         assignment.status = request.POST.get('status', assignment.status)
         assignment.due_date = request.POST.get('due_date') or None
 
-        employee_id = request.POST.get('employee')
-        if employee_id:
-            assignment.assigned_to = get_object_or_404(Employee, pk=employee_id)
+        employee_ids = request.POST.getlist('employees')
+        if employee_ids:
+            employees = Employee.objects.filter(pk__in=employee_ids)
+            assignment.assigned_to.set(employees)
 
         if request.FILES.get('attachment'):
             assignment.attachment = request.FILES['attachment']
@@ -4424,30 +4434,33 @@ def emp_work_detail(request, pk):
 
         assignment.save()
 
-        # Notify the assigned employee about the update
+        # Notify all assigned employees about the update
         from employees.models import Notification
         from employees.utils import send_push_notification
-        Notification.objects.create(
-            employee=assignment.assigned_to,
-            title='Work Assignment Updated',
-            body=f'Your assignment "{assignment.title}" has been updated.',
-            notification_type='work',
-            data={'assignment_id': str(assignment.id)},
-        )
-        send_push_notification(
-            assignment.assigned_to,
-            'Work Assignment Updated',
-            f'Your assignment "{assignment.title}" has been updated.',
-        )
+        for emp in assignment.assigned_to.all():
+            Notification.objects.create(
+                employee=emp,
+                title='Work Assignment Updated',
+                body=f'Your assignment "{assignment.title}" has been updated.',
+                notification_type='work',
+                data={'assignment_id': str(assignment.id)},
+            )
+            send_push_notification(
+                emp,
+                'Work Assignment Updated',
+                f'Your assignment "{assignment.title}" has been updated.',
+            )
 
         messages.success(request, 'Work assignment updated and employee notified.')
         return redirect('emp_work_detail', pk=pk)
 
     employees = Employee.objects.filter(status='active').order_by('employee_id')
+    assigned_employees = list(assignment.assigned_to.all())
     updates = WorkUpdate.objects.filter(assignment=assignment).select_related('employee__user').order_by('-created_at')
     context = {
         'assignment': assignment,
         'employees': employees,
+        'assigned_employees': assigned_employees,
         'updates': updates,
         'status_choices': WorkAssignment.STATUS_CHOICES,
         'priority_choices': WorkAssignment.PRIORITY_CHOICES,

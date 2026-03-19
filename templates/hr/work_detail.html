@@ -46,11 +46,12 @@
           <div class="row mb-3">
             <div class="col-4">
               <label class="form-label">Assign To *</label>
-              <select name="employee" class="form-control" required>
+              <select name="employees" class="form-control" required multiple size="5" style="min-height: 100px;">
                 {% for emp in employees %}
-                <option value="{{ emp.pk }}" {% if assignment.assigned_to_id == emp.pk %}selected{% endif %}>{{ emp.full_name }} ({{ emp.employee_id }})</option>
+                <option value="{{ emp.pk }}" {% if emp in assigned_employees %}selected{% endif %}>{{ emp.full_name }} ({{ emp.employee_id }})</option>
                 {% endfor %}
               </select>
+              <small class="text-muted">Ctrl/Cmd + click to select multiple</small>
             </div>
             <div class="col-4">
               <label class="form-label">Status</label>
