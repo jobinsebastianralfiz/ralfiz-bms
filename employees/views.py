@@ -2306,6 +2306,7 @@ class AdminWorkAssignView(APIView):
             priority=data.get('priority', 'medium'),
             due_date=data.get('due_date'),
             attachment=request.FILES.get('attachment'),
+            confidentiality_disclaimer=data.get('confidentiality_disclaimer', ''),
         )
         assignment.assigned_to.set(employees)
 
@@ -2347,7 +2348,7 @@ class AdminWorkAssignDetailView(APIView):
             return Response({'error': 'Assignment not found'}, status=status.HTTP_404_NOT_FOUND)
 
         data = request.data
-        allowed_fields = ['title', 'description', 'priority', 'status', 'due_date', 'notes']
+        allowed_fields = ['title', 'description', 'priority', 'status', 'due_date', 'notes', 'confidentiality_disclaimer']
         for field in allowed_fields:
             if field in data:
                 setattr(assignment, field, data[field])
