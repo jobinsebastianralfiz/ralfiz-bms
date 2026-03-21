@@ -99,44 +99,43 @@ def validate_license(request):
                 'error': 'License has expired'
             }, status=400)
         
-        # Check/create activation
-        activation, created = LicenseActivation.objects.get_or_create(
-            license=license_obj,
-            machine_id=machine_id,
-            defaults={
-                'machine_name': machine_name,
-                'ip_address': get_client_ip(request),
-                'is_active': True
-            }
-        )
-        
-        if created:
-            # New activation
-            active_count = license_obj.activations.filter(is_active=True).count()
-            if active_count > license_obj.max_activations:
-                # Too many activations, deactivate this one
-                activation.is_active = False
-                activation.save()
-                return JsonResponse({
-                    'valid': False,
-                    'error': f'Maximum activations ({license_obj.max_activations}) exceeded'
-                }, status=400)
-            
-            license_obj.current_activations = active_count
-            license_obj.save()
-        else:
-            # Existing activation, update last check
-            activation.last_check = timezone.now()
-            activation.ip_address = get_client_ip(request)
-            if machine_name:
-                activation.machine_name = machine_name
-            activation.save()
-            
+        # Check if this machine already has an activation
+        try:
+            activation = LicenseActivation.objects.get(
+                license=license_obj,
+                machine_id=machine_id
+            )
+            # Existing activation — update last check
             if not activation.is_active:
                 return JsonResponse({
                     'valid': False,
                     'error': 'This activation has been deactivated'
                 }, status=400)
+            activation.last_check = timezone.now()
+            activation.ip_address = get_client_ip(request)
+            if machine_name:
+                activation.machine_name = machine_name
+            activation.save()
+        except LicenseActivation.DoesNotExist:
+            # New machine — check activation limit BEFORE creating
+            active_count = license_obj.activations.filter(is_active=True).count()
+            if active_count >= license_obj.max_activations:
+                return JsonResponse({
+                    'valid': False,
+                    'error': f'Maximum activations ({license_obj.max_activations}) reached. '
+                             f'This license is already activated on {active_count} device(s). '
+                             f'Deactivate an existing device first.'
+                }, status=400)
+
+            activation = LicenseActivation.objects.create(
+                license=license_obj,
+                machine_id=machine_id,
+                machine_name=machine_name,
+                ip_address=get_client_ip(request),
+                is_active=True
+            )
+            license_obj.current_activations = active_count + 1
+            license_obj.save()
         
         # Return success with license details
         return JsonResponse({
