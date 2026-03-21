@@ -202,16 +202,20 @@ class GymLicense(models.Model):
 
     def validate_domain(self, domain):
         """Check if the requesting domain matches the licensed domain."""
-        # Strip protocol and trailing slashes
-        clean = domain.lower().strip().rstrip('/')
-        for prefix in ['https://', 'http://']:
-            if clean.startswith(prefix):
-                clean = clean[len(prefix):]
-        licensed = self.api_domain.lower().strip().rstrip('/')
-        for prefix in ['https://', 'http://']:
-            if licensed.startswith(prefix):
-                licensed = licensed[len(prefix):]
-        return clean == licensed
+        def normalize(d):
+            d = d.lower().strip().rstrip('/')
+            for prefix in ['https://', 'http://']:
+                if d.startswith(prefix):
+                    d = d[len(prefix):]
+            # Strip trailing port for comparison
+            d_no_port = d.split(':')[0] if ':' in d else d
+            return d, d_no_port
+
+        clean, clean_no_port = normalize(domain)
+        licensed, licensed_no_port = normalize(self.api_domain)
+
+        # Exact match or hostname-only match
+        return clean == licensed or clean_no_port == licensed_no_port
 
     def get_enabled_modules(self):
         """Return list of enabled module keys. Empty list = all enabled."""
