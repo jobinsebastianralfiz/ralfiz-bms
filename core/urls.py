@@ -1,5 +1,6 @@
 from django.urls import path
 from . import views
+from gympro_licensing import web_views as gympro_web_views
 
 urlpatterns = [
     # Public Pages
@@ -140,6 +141,12 @@ urlpatterns = [
     path('licenses/<uuid:pk>/delete-activation/<uuid:activation_id>/', views.license_delete_activation, name='license_delete_activation'),
     path('licenses/keys/', views.license_keys, name='license_keys'),
     path('licenses/keys/generate/', views.license_generate_keys, name='license_generate_keys'),
+
+    # GymPro License Management (Web Views)
+    path('gympro/licenses/', gympro_web_views.gym_license_list, name='gym_license_list'),
+    path('gympro/licenses/create/', gympro_web_views.gym_license_create, name='gym_license_create'),
+    path('gympro/licenses/<uuid:pk>/', gympro_web_views.gym_license_detail, name='gym_license_detail'),
+    path('gympro/licenses/<uuid:pk>/update/', gympro_web_views.gym_license_update, name='gym_license_update'),
 
     # HR & Admin
     path('hr/employees/', views.emp_employee_list, name='emp_employee_list'),

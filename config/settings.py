@@ -43,6 +43,7 @@ INSTALLED_APPS = [
     'retailease',
     'crm',
     'employees',
+    'gympro_licensing',
 ]
 
 MIDDLEWARE = [

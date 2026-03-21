@@ -1,0 +1,170 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="content-header">
+    <div>
+        <nav class="breadcrumb">
+            <a href="{% url 'dashboard' %}">Dashboard</a>
+            <span>/</span>
+            <span>GymPro Licenses</span>
+        </nav>
+        <h1><i class="fas fa-dumbbell"></i> GymPro Licenses</h1>
+    </div>
+    <div>
+        <a href="{% url 'gym_license_create' %}" class="btn btn-primary">
+            <i class="fas fa-plus"></i> Issue New License
+        </a>
+    </div>
+</div>
+
+<!-- Stats Cards -->
+<div class="stats-grid" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin-bottom: 1.5rem;">
+    <div class="stat-card" style="background: white; border-radius: 12px; padding: 1.25rem; border: 1px solid #e5e7eb;">
+        <div style="display: flex; align-items: center; gap: 0.75rem;">
+            <div style="width: 48px; height: 48px; border-radius: 12px; background: #EBF1FF; display: flex; align-items: center; justify-content: center;">
+                <i class="fas fa-key" style="color: #465FFF; font-size: 1.25rem;"></i>
+            </div>
+            <div>
+                <p style="font-size: 0.875rem; color: #667085;">Total Licenses</p>
+                <p style="font-size: 1.5rem; font-weight: 700; color: #1D2939;">{{ total }}</p>
+            </div>
+        </div>
+    </div>
+    <div class="stat-card" style="background: white; border-radius: 12px; padding: 1.25rem; border: 1px solid #e5e7eb;">
+        <div style="display: flex; align-items: center; gap: 0.75rem;">
+            <div style="width: 48px; height: 48px; border-radius: 12px; background: #ECFDF3; display: flex; align-items: center; justify-content: center;">
+                <i class="fas fa-check-circle" style="color: #12B76A; font-size: 1.25rem;"></i>
+            </div>
+            <div>
+                <p style="font-size: 0.875rem; color: #667085;">Active</p>
+                <p style="font-size: 1.5rem; font-weight: 700; color: #12B76A;">{{ active }}</p>
+            </div>
+        </div>
+    </div>
+    <div class="stat-card" style="background: white; border-radius: 12px; padding: 1.25rem; border: 1px solid #e5e7eb;">
+        <div style="display: flex; align-items: center; gap: 0.75rem;">
+            <div style="width: 48px; height: 48px; border-radius: 12px; background: #FEF3F2; display: flex; align-items: center; justify-content: center;">
+                <i class="fas fa-times-circle" style="color: #F04438; font-size: 1.25rem;"></i>
+            </div>
+            <div>
+                <p style="font-size: 0.875rem; color: #667085;">Expired</p>
+                <p style="font-size: 1.5rem; font-weight: 700; color: #F04438;">{{ expired }}</p>
+            </div>
+        </div>
+    </div>
+    <div class="stat-card" style="background: white; border-radius: 12px; padding: 1.25rem; border: 1px solid #e5e7eb;">
+        <div style="display: flex; align-items: center; gap: 0.75rem;">
+            <div style="width: 48px; height: 48px; border-radius: 12px; background: #FFFAEB; display: flex; align-items: center; justify-content: center;">
+                <i class="fas fa-exclamation-triangle" style="color: #F79009; font-size: 1.25rem;"></i>
+            </div>
+            <div>
+                <p style="font-size: 0.875rem; color: #667085;">Expiring Soon</p>
+                <p style="font-size: 1.5rem; font-weight: 700; color: #F79009;">{{ expiring_soon }}</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Filters -->
+<div class="card" style="background: white; border-radius: 12px; border: 1px solid #e5e7eb; margin-bottom: 1.5rem;">
+    <div style="padding: 1rem 1.5rem; border-bottom: 1px solid #e5e7eb;">
+        <form method="GET" style="display: flex; gap: 0.75rem; align-items: center; flex-wrap: wrap;">
+            <input type="text" name="search" value="{{ search }}" placeholder="Search by name, key, email, domain..."
+                style="height: 40px; padding: 0 1rem; border: 1px solid #D0D5DD; border-radius: 8px; font-size: 0.875rem; flex: 1; min-width: 250px;">
+            <select name="status" style="height: 40px; padding: 0 1rem; border: 1px solid #D0D5DD; border-radius: 8px; font-size: 0.875rem;">
+                <option value="">All Status</option>
+                <option value="active" {% if status_filter == 'active' %}selected{% endif %}>Active</option>
+                <option value="expired" {% if status_filter == 'expired' %}selected{% endif %}>Expired</option>
+                <option value="suspended" {% if status_filter == 'suspended' %}selected{% endif %}>Suspended</option>
+                <option value="revoked" {% if status_filter == 'revoked' %}selected{% endif %}>Revoked</option>
+            </select>
+            <button type="submit" class="btn btn-primary" style="height: 40px;">Filter</button>
+            {% if search or status_filter %}
+            <a href="{% url 'gym_license_list' %}" style="font-size: 0.875rem; color: #667085;">Clear</a>
+            {% endif %}
+        </form>
+    </div>
+
+    <!-- Table -->
+    <div style="overflow-x: auto;">
+        <table style="width: 100%; border-collapse: collapse;">
+            <thead>
+                <tr style="border-bottom: 1px solid #E4E7EC;">
+                    <th style="text-align: left; padding: 0.75rem 1.5rem; font-size: 0.75rem; font-weight: 500; color: #667085; text-transform: uppercase; letter-spacing: 0.05em;">Gym</th>
+                    <th style="text-align: left; padding: 0.75rem 1rem; font-size: 0.75rem; font-weight: 500; color: #667085; text-transform: uppercase; letter-spacing: 0.05em;">License Key</th>
+                    <th style="text-align: left; padding: 0.75rem 1rem; font-size: 0.75rem; font-weight: 500; color: #667085; text-transform: uppercase; letter-spacing: 0.05em;">Domain</th>
+                    <th style="text-align: left; padding: 0.75rem 1rem; font-size: 0.75rem; font-weight: 500; color: #667085; text-transform: uppercase; letter-spacing: 0.05em;">Type</th>
+                    <th style="text-align: left; padding: 0.75rem 1rem; font-size: 0.75rem; font-weight: 500; color: #667085; text-transform: uppercase; letter-spacing: 0.05em;">Expires</th>
+                    <th style="text-align: left; padding: 0.75rem 1rem; font-size: 0.75rem; font-weight: 500; color: #667085; text-transform: uppercase; letter-spacing: 0.05em;">Status</th>
+                    <th style="text-align: right; padding: 0.75rem 1.5rem; font-size: 0.75rem; font-weight: 500; color: #667085; text-transform: uppercase; letter-spacing: 0.05em;">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for license in licenses %}
+                <tr style="border-bottom: 1px solid #F2F4F7; transition: background 0.15s;" onmouseover="this.style.background='#F9FAFB'" onmouseout="this.style.background='white'">
+                    <td style="padding: 1rem 1.5rem;">
+                        <div style="display: flex; align-items: center; gap: 0.75rem;">
+                            <div style="width: 40px; height: 40px; border-radius: 50%; background: #465FFF; display: flex; align-items: center; justify-content: center; color: white; font-weight: 700; font-size: 0.875rem; flex-shrink: 0;">
+                                {{ license.gym_name|truncatechars:1 }}
+                            </div>
+                            <div>
+                                <p style="font-size: 0.875rem; font-weight: 600; color: #1D2939;">{{ license.gym_name }}</p>
+                                <p style="font-size: 0.75rem; color: #98A2B3;">{{ license.gym_email }}</p>
+                            </div>
+                        </div>
+                    </td>
+                    <td style="padding: 1rem;">
+                        <code style="font-size: 0.75rem; background: #F2F4F7; padding: 0.25rem 0.5rem; border-radius: 6px;">{{ license.license_key }}</code>
+                    </td>
+                    <td style="padding: 1rem;">
+                        <span style="font-size: 0.875rem; color: #344054;">{{ license.api_domain|default:"—" }}</span>
+                    </td>
+                    <td style="padding: 1rem;">
+                        <span style="font-size: 0.75rem; padding: 0.25rem 0.5rem; border-radius: 9999px; background: #F2F4F7; color: #475467; text-transform: capitalize;">
+                            {{ license.get_license_type_display }}
+                        </span>
+                    </td>
+                    <td style="padding: 1rem;">
+                        <span style="font-size: 0.875rem; color: #344054;">{{ license.valid_until|date:"M d, Y" }}</span>
+                        <br>
+                        <span style="font-size: 0.75rem; color: {% if license.days_remaining < 0 %}#F04438{% elif license.days_remaining < 30 %}#F79009{% else %}#12B76A{% endif %};">
+                            {{ license.days_remaining }}d remaining
+                        </span>
+                    </td>
+                    <td style="padding: 1rem;">
+                        {% if license.status == 'active' %}
+                        <span style="display: inline-flex; align-items: center; gap: 0.375rem; padding: 0.25rem 0.625rem; border-radius: 9999px; font-size: 0.75rem; font-weight: 500; background: #ECFDF3; color: #027A48;">
+                            <span style="width: 6px; height: 6px; border-radius: 50%; background: #12B76A;"></span> Active
+                        </span>
+                        {% elif license.status == 'expired' %}
+                        <span style="display: inline-flex; align-items: center; gap: 0.375rem; padding: 0.25rem 0.625rem; border-radius: 9999px; font-size: 0.75rem; font-weight: 500; background: #FEF3F2; color: #B42318;">
+                            <span style="width: 6px; height: 6px; border-radius: 50%; background: #F04438;"></span> Expired
+                        </span>
+                        {% elif license.status == 'suspended' %}
+                        <span style="display: inline-flex; align-items: center; gap: 0.375rem; padding: 0.25rem 0.625rem; border-radius: 9999px; font-size: 0.75rem; font-weight: 500; background: #FFFAEB; color: #B54708;">
+                            <span style="width: 6px; height: 6px; border-radius: 50%; background: #F79009;"></span> Suspended
+                        </span>
+                        {% elif license.status == 'revoked' %}
+                        <span style="display: inline-flex; align-items: center; gap: 0.375rem; padding: 0.25rem 0.625rem; border-radius: 9999px; font-size: 0.75rem; font-weight: 500; background: #F2F4F7; color: #344054;">
+                            <span style="width: 6px; height: 6px; border-radius: 50%; background: #667085;"></span> Revoked
+                        </span>
+                        {% endif %}
+                    </td>
+                    <td style="padding: 1rem 1.5rem; text-align: right;">
+                        <a href="{% url 'gym_license_detail' pk=license.pk %}" class="btn btn-sm" style="font-size: 0.75rem; padding: 0.375rem 0.75rem; border: 1px solid #D0D5DD; border-radius: 8px; color: #344054; text-decoration: none;">
+                            View
+                        </a>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="7" style="padding: 3rem; text-align: center; color: #98A2B3; font-size: 0.875rem;">
+                        No GymPro licenses found. <a href="{% url 'gym_license_create' %}">Issue your first license</a>.
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

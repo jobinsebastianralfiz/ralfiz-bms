@@ -1,0 +1,136 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="content-header">
+    <div>
+        <nav class="breadcrumb">
+            <a href="{% url 'dashboard' %}">Dashboard</a>
+            <span>/</span>
+            <a href="{% url 'gym_license_list' %}">GymPro Licenses</a>
+            <span>/</span>
+            <span>Issue New License</span>
+        </nav>
+        <h1><i class="fas fa-plus-circle"></i> Issue New GymPro License</h1>
+    </div>
+</div>
+
+<form method="POST" style="max-width: 800px;">
+    {% csrf_token %}
+
+    <!-- Gym Identity -->
+    <div class="card" style="background: white; border-radius: 12px; border: 1px solid #e5e7eb; margin-bottom: 1.5rem;">
+        <div style="padding: 1.25rem 1.5rem; border-bottom: 1px solid #e5e7eb; background: #F9FAFB; border-radius: 12px 12px 0 0;">
+            <h3 style="font-size: 1rem; font-weight: 600; color: #1D2939;"><i class="fas fa-building" style="color: #465FFF; margin-right: 0.5rem;"></i> Gym Identity</h3>
+        </div>
+        <div style="padding: 1.5rem; display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+            <div>
+                <label style="display: block; font-size: 0.875rem; font-weight: 500; color: #344054; margin-bottom: 0.375rem;">Link to Client</label>
+                <select name="client" style="width: 100%; height: 44px; padding: 0 1rem; border: 1px solid #D0D5DD; border-radius: 8px; font-size: 0.875rem;">
+                    <option value="">— No client link —</option>
+                    {% for client in clients %}
+                    <option value="{{ client.id }}">{{ client.name }}{% if client.company_name %} ({{ client.company_name }}){% endif %}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div>
+                <label style="display: block; font-size: 0.875rem; font-weight: 500; color: #344054; margin-bottom: 0.375rem;">Gym Name *</label>
+                <input type="text" name="gym_name" required style="width: 100%; height: 44px; padding: 0 1rem; border: 1px solid #D0D5DD; border-radius: 8px; font-size: 0.875rem;">
+            </div>
+            <div>
+                <label style="display: block; font-size: 0.875rem; font-weight: 500; color: #344054; margin-bottom: 0.375rem;">Owner Name</label>
+                <input type="text" name="gym_owner_name" style="width: 100%; height: 44px; padding: 0 1rem; border: 1px solid #D0D5DD; border-radius: 8px; font-size: 0.875rem;">
+            </div>
+            <div>
+                <label style="display: block; font-size: 0.875rem; font-weight: 500; color: #344054; margin-bottom: 0.375rem;">Email *</label>
+                <input type="email" name="gym_email" required style="width: 100%; height: 44px; padding: 0 1rem; border: 1px solid #D0D5DD; border-radius: 8px; font-size: 0.875rem;">
+            </div>
+            <div>
+                <label style="display: block; font-size: 0.875rem; font-weight: 500; color: #344054; margin-bottom: 0.375rem;">Phone</label>
+                <input type="text" name="gym_phone" style="width: 100%; height: 44px; padding: 0 1rem; border: 1px solid #D0D5DD; border-radius: 8px; font-size: 0.875rem;">
+            </div>
+            <div style="grid-column: span 2;">
+                <label style="display: block; font-size: 0.875rem; font-weight: 500; color: #344054; margin-bottom: 0.375rem;">Address</label>
+                <textarea name="gym_address" rows="2" style="width: 100%; padding: 0.75rem 1rem; border: 1px solid #D0D5DD; border-radius: 8px; font-size: 0.875rem; resize: vertical;"></textarea>
+            </div>
+        </div>
+    </div>
+
+    <!-- Domain & Deployment -->
+    <div class="card" style="background: white; border-radius: 12px; border: 1px solid #e5e7eb; margin-bottom: 1.5rem;">
+        <div style="padding: 1.25rem 1.5rem; border-bottom: 1px solid #e5e7eb; background: #F9FAFB; border-radius: 12px 12px 0 0;">
+            <h3 style="font-size: 1rem; font-weight: 600; color: #1D2939;"><i class="fas fa-globe" style="color: #465FFF; margin-right: 0.5rem;"></i> Domain & Deployment</h3>
+        </div>
+        <div style="padding: 1.5rem; display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+            <div>
+                <label style="display: block; font-size: 0.875rem; font-weight: 500; color: #344054; margin-bottom: 0.375rem;">API Domain *</label>
+                <input type="text" name="api_domain" required placeholder="api.fitzone.com" style="width: 100%; height: 44px; padding: 0 1rem; border: 1px solid #D0D5DD; border-radius: 8px; font-size: 0.875rem;">
+                <p style="font-size: 0.75rem; color: #98A2B3; margin-top: 0.25rem;">License will be bound to this domain</p>
+            </div>
+            <div>
+                <label style="display: block; font-size: 0.875rem; font-weight: 500; color: #344054; margin-bottom: 0.375rem;">Landing Domain</label>
+                <input type="text" name="landing_domain" placeholder="fitzone.com" style="width: 100%; height: 44px; padding: 0 1rem; border: 1px solid #D0D5DD; border-radius: 8px; font-size: 0.875rem;">
+            </div>
+            <div>
+                <label style="display: block; font-size: 0.875rem; font-weight: 500; color: #344054; margin-bottom: 0.375rem;">Server IP</label>
+                <input type="text" name="server_ip" placeholder="167.99.x.x" style="width: 100%; height: 44px; padding: 0 1rem; border: 1px solid #D0D5DD; border-radius: 8px; font-size: 0.875rem;">
+            </div>
+            <div>
+                <label style="display: block; font-size: 0.875rem; font-weight: 500; color: #344054; margin-bottom: 0.375rem;">Deployment Notes</label>
+                <input type="text" name="deployment_notes" style="width: 100%; height: 44px; padding: 0 1rem; border: 1px solid #D0D5DD; border-radius: 8px; font-size: 0.875rem;">
+            </div>
+        </div>
+    </div>
+
+    <!-- License Configuration -->
+    <div class="card" style="background: white; border-radius: 12px; border: 1px solid #e5e7eb; margin-bottom: 1.5rem;">
+        <div style="padding: 1.25rem 1.5rem; border-bottom: 1px solid #e5e7eb; background: #F9FAFB; border-radius: 12px 12px 0 0;">
+            <h3 style="font-size: 1rem; font-weight: 600; color: #1D2939;"><i class="fas fa-cog" style="color: #465FFF; margin-right: 0.5rem;"></i> License Configuration</h3>
+        </div>
+        <div style="padding: 1.5rem; display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem;">
+            <div>
+                <label style="display: block; font-size: 0.875rem; font-weight: 500; color: #344054; margin-bottom: 0.375rem;">License Type</label>
+                <select name="license_type" style="width: 100%; height: 44px; padding: 0 1rem; border: 1px solid #D0D5DD; border-radius: 8px; font-size: 0.875rem;">
+                    {% for value, label in license_types %}
+                    <option value="{{ value }}" {% if value == 'yearly' %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div>
+                <label style="display: block; font-size: 0.875rem; font-weight: 500; color: #344054; margin-bottom: 0.375rem;">Billing Cycle</label>
+                <select name="billing_cycle" style="width: 100%; height: 44px; padding: 0 1rem; border: 1px solid #D0D5DD; border-radius: 8px; font-size: 0.875rem;">
+                    {% for value, label in billing_cycles %}
+                    <option value="{{ value }}" {% if value == 'yearly' %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div>
+                <label style="display: block; font-size: 0.875rem; font-weight: 500; color: #344054; margin-bottom: 0.375rem;">Grace Period (days)</label>
+                <input type="number" name="grace_period_days" value="7" min="0" max="30" style="width: 100%; height: 44px; padding: 0 1rem; border: 1px solid #D0D5DD; border-radius: 8px; font-size: 0.875rem;">
+            </div>
+            <div>
+                <label style="display: block; font-size: 0.875rem; font-weight: 500; color: #344054; margin-bottom: 0.375rem;">Max Members (0=unlimited)</label>
+                <input type="number" name="max_members" value="0" min="0" style="width: 100%; height: 44px; padding: 0 1rem; border: 1px solid #D0D5DD; border-radius: 8px; font-size: 0.875rem;">
+            </div>
+            <div>
+                <label style="display: block; font-size: 0.875rem; font-weight: 500; color: #344054; margin-bottom: 0.375rem;">Max Trainers (0=unlimited)</label>
+                <input type="number" name="max_trainers" value="0" min="0" style="width: 100%; height: 44px; padding: 0 1rem; border: 1px solid #D0D5DD; border-radius: 8px; font-size: 0.875rem;">
+            </div>
+        </div>
+    </div>
+
+    <!-- Notes -->
+    <div class="card" style="background: white; border-radius: 12px; border: 1px solid #e5e7eb; margin-bottom: 1.5rem;">
+        <div style="padding: 1.5rem;">
+            <label style="display: block; font-size: 0.875rem; font-weight: 500; color: #344054; margin-bottom: 0.375rem;">Internal Notes</label>
+            <textarea name="notes" rows="3" placeholder="Any internal notes about this gym..." style="width: 100%; padding: 0.75rem 1rem; border: 1px solid #D0D5DD; border-radius: 8px; font-size: 0.875rem; resize: vertical;"></textarea>
+        </div>
+    </div>
+
+    <div style="display: flex; gap: 0.75rem; justify-content: flex-end;">
+        <a href="{% url 'gym_license_list' %}" class="btn" style="padding: 0.625rem 1.25rem; border: 1px solid #D0D5DD; border-radius: 8px; font-size: 0.875rem; color: #344054; text-decoration: none;">Cancel</a>
+        <button type="submit" class="btn btn-primary" style="padding: 0.625rem 1.5rem; border-radius: 8px; font-size: 0.875rem;">
+            <i class="fas fa-key"></i> Issue License
+        </button>
+    </div>
+</form>
+{% endblock %}
