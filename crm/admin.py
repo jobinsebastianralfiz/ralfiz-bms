@@ -1,4 +1,5 @@
 from django.contrib import admin
+from django.contrib.auth.models import User
 from .models import InternProfile, Lead, LeadNote, DailyActivity, Demo
 
 
@@ -17,16 +18,18 @@ class DemoInline(admin.TabularInline):
 
 @admin.register(InternProfile)
 class InternProfileAdmin(admin.ModelAdmin):
+    """DEPRECATED — use Employee model with employment_type='intern' instead."""
     list_display = [
         'user', 'intern_type', 'supervisor', 'default_commission_percentage',
-        'status', 'joining_date', 'created_at'
+        'status', 'joining_date', 'has_employee_profile', 'created_at'
     ]
     list_filter = ['intern_type', 'status', 'joining_date']
     search_fields = ['user__username', 'user__first_name', 'user__last_name']
     readonly_fields = ['created_at', 'updated_at']
     fieldsets = (
-        ('Intern Information', {
-            'fields': ('user', 'intern_type', 'supervisor', 'status', 'joining_date')
+        ('⚠️ DEPRECATED — Intern data is now managed via Employee model', {
+            'fields': ('user', 'intern_type', 'supervisor', 'status', 'joining_date'),
+            'description': 'This model is deprecated. Use Employee with employment_type="intern" instead.',
         }),
         ('Commission', {
             'fields': ('default_commission_percentage',)
@@ -37,16 +40,23 @@ class InternProfileAdmin(admin.ModelAdmin):
         }),
     )
 
+    def has_employee_profile(self, obj):
+        return hasattr(obj.user, 'employee_profile')
+    has_employee_profile.boolean = True
+    has_employee_profile.short_description = 'Has Employee Record'
+
 
 @admin.register(Lead)
 class LeadAdmin(admin.ModelAdmin):
     list_display = [
         'contact_person', 'company_name', 'phone', 'email',
-        'status', 'source', 'assigned_to', 'closing_probability', 'created_at'
+        'status', 'source', 'assigned_to_name', 'closing_probability',
+        'next_follow_up_date', 'demo_count', 'created_at'
     ]
     list_filter = ['status', 'source', 'assigned_to', 'created_at']
     search_fields = ['contact_person', 'company_name', 'phone', 'email']
     readonly_fields = ['created_at', 'updated_at']
+    list_editable = ['status']
     inlines = [LeadNoteInline, DemoInline]
     fieldsets = (
         ('Contact Information', {
@@ -63,6 +73,24 @@ class LeadAdmin(admin.ModelAdmin):
             'classes': ('collapse',)
         }),
     )
+
+    def assigned_to_name(self, obj):
+        if obj.assigned_to:
+            return obj.assigned_to.get_full_name() or obj.assigned_to.username
+        return '-'
+    assigned_to_name.short_description = 'Assigned To'
+
+    def demo_count(self, obj):
+        return obj.demos.count()
+    demo_count.short_description = 'Demos'
+
+    def formfield_for_foreignkey(self, db_field, request, **kwargs):
+        if db_field.name == 'assigned_to':
+            # Show employees (interns + staff) — not all users
+            kwargs['queryset'] = User.objects.filter(
+                employee_profile__status='active'
+            ).select_related('employee_profile')
+        return super().formfield_for_foreignkey(db_field, request, **kwargs)
 
     def save_model(self, request, obj, form, change):
         if not change:
@@ -81,11 +109,15 @@ class LeadNoteAdmin(admin.ModelAdmin):
 @admin.register(DailyActivity)
 class DailyActivityAdmin(admin.ModelAdmin):
     list_display = [
-        'intern', 'date', 'intern_type', 'approval_status', 'approved_by', 'created_at'
+        'intern_name', 'date', 'intern_type', 'activity_summary',
+        'approval_status', 'approved_by', 'created_at'
     ]
     list_filter = ['intern_type', 'approval_status', 'date', 'intern']
     search_fields = ['intern__username', 'intern__first_name', 'intern__last_name']
     readonly_fields = ['created_at', 'updated_at']
+    list_editable = ['approval_status']
+    date_hierarchy = 'date'
+    actions = ['approve_selected', 'reject_selected']
     fieldsets = (
         ('Basic Info', {
             'fields': ('intern', 'date', 'intern_type')
@@ -107,16 +139,43 @@ class DailyActivityAdmin(admin.ModelAdmin):
         }),
     )
 
+    def formfield_for_foreignkey(self, db_field, request, **kwargs):
+        if db_field.name == 'intern':
+            kwargs['queryset'] = User.objects.filter(
+                employee_profile__employment_type='intern',
+                employee_profile__status='active',
+            ).select_related('employee_profile')
+        return super().formfield_for_foreignkey(db_field, request, **kwargs)
+
+    def intern_name(self, obj):
+        return obj.intern.get_full_name() or obj.intern.username
+    intern_name.short_description = 'Intern'
+
+    def activity_summary(self, obj):
+        if obj.intern_type == 'digital':
+            return f"Posts:{obj.social_media_posts} Reels:{obj.reels_created} DMs:{obj.dms_sent} Leads:{obj.digital_leads_generated}"
+        return f"Calls:{obj.calls_made} Visits:{obj.visits_done} Demos:{obj.demos_conducted} Leads:{obj.field_leads_generated}"
+    activity_summary.short_description = 'Summary'
+
+    @admin.action(description='Approve selected activities')
+    def approve_selected(self, request, queryset):
+        queryset.update(approval_status='approved', approved_by=request.user)
+
+    @admin.action(description='Reject selected activities')
+    def reject_selected(self, request, queryset):
+        queryset.update(approval_status='rejected', approved_by=request.user)
+
 
 @admin.register(Demo)
 class DemoAdmin(admin.ModelAdmin):
     list_display = [
-        'lead', 'scheduled_date', 'status', 'conducted_by',
+        'lead', 'scheduled_date', 'status', 'conducted_by_name',
         'closing_probability', 'location', 'created_at'
     ]
     list_filter = ['status', 'conducted_by', 'scheduled_date']
     search_fields = ['lead__contact_person', 'lead__company_name', 'outcome_notes']
     readonly_fields = ['created_at', 'updated_at']
+    list_editable = ['status']
     fieldsets = (
         ('Demo Information', {
             'fields': ('lead', 'scheduled_date', 'status', 'conducted_by', 'location')
@@ -129,6 +188,19 @@ class DemoAdmin(admin.ModelAdmin):
             'classes': ('collapse',)
         }),
     )
+
+    def conducted_by_name(self, obj):
+        if obj.conducted_by:
+            return obj.conducted_by.get_full_name() or obj.conducted_by.username
+        return '-'
+    conducted_by_name.short_description = 'Conducted By'
+
+    def formfield_for_foreignkey(self, db_field, request, **kwargs):
+        if db_field.name == 'conducted_by':
+            kwargs['queryset'] = User.objects.filter(
+                employee_profile__status='active'
+            ).select_related('employee_profile')
+        return super().formfield_for_foreignkey(db_field, request, **kwargs)
 
     def save_model(self, request, obj, form, change):
         if not change:

@@ -5,6 +5,7 @@ from .models import (
     WorkAssignment, WorkUpdate, Notification, QRCode, ScheduledClass, Payroll,
     CertificateTemplate, Certificate
 )
+from crm.models import Lead, LeadNote, DailyActivity, Demo
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -371,3 +372,112 @@ class OwnerAttendanceEmployeeSerializer(serializers.Serializer):
     name = serializers.CharField()
     department = serializers.CharField()
     records = AttendanceSerializer(many=True)
+
+
+# ---- CRM Serializers ----
+
+class LeadNoteSerializer(serializers.ModelSerializer):
+    created_by_name = serializers.CharField(source='created_by.get_full_name', read_only=True, default='')
+
+    class Meta:
+        model = LeadNote
+        fields = ['id', 'note', 'created_by_name', 'created_at']
+        read_only_fields = ['id', 'created_by_name', 'created_at']
+
+
+class LeadSerializer(serializers.ModelSerializer):
+    assigned_to_name = serializers.CharField(source='assigned_to.get_full_name', read_only=True, default='')
+    created_by_name = serializers.CharField(source='created_by.get_full_name', read_only=True, default='')
+    notes_list = LeadNoteSerializer(source='lead_notes', many=True, read_only=True)
+    demo_count = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Lead
+        fields = [
+            'id', 'contact_person', 'company_name', 'phone', 'email',
+            'status', 'source', 'assigned_to', 'assigned_to_name',
+            'next_follow_up_date', 'closing_probability', 'notes',
+            'created_by_name', 'notes_list', 'demo_count',
+            'created_at', 'updated_at',
+        ]
+        read_only_fields = ['id', 'created_by_name', 'created_at', 'updated_at']
+
+    def get_demo_count(self, obj):
+        return obj.demos.count()
+
+
+class LeadCreateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Lead
+        fields = [
+            'contact_person', 'company_name', 'phone', 'email',
+            'status', 'source', 'next_follow_up_date', 'closing_probability', 'notes',
+        ]
+
+
+class DailyActivitySerializer(serializers.ModelSerializer):
+    intern_name = serializers.CharField(source='intern.get_full_name', read_only=True, default='')
+    is_editable = serializers.ReadOnlyField()
+
+    class Meta:
+        model = DailyActivity
+        fields = [
+            'id', 'intern_name', 'date', 'intern_type',
+            'social_media_posts', 'reels_created', 'dms_sent', 'digital_leads_generated',
+            'calls_made', 'visits_done', 'demos_conducted', 'field_leads_generated',
+            'remarks', 'approval_status', 'is_editable',
+            'created_at', 'updated_at',
+        ]
+        read_only_fields = ['id', 'intern_name', 'approval_status', 'created_at', 'updated_at']
+
+
+class DailyActivityCreateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = DailyActivity
+        fields = [
+            'date', 'social_media_posts', 'reels_created', 'dms_sent',
+            'digital_leads_generated', 'calls_made', 'visits_done',
+            'demos_conducted', 'field_leads_generated', 'remarks',
+        ]
+
+
+class DemoSerializer(serializers.ModelSerializer):
+    lead_name = serializers.CharField(source='lead.contact_person', read_only=True, default='')
+    lead_company = serializers.CharField(source='lead.company_name', read_only=True, default='')
+    conducted_by_name = serializers.CharField(source='conducted_by.get_full_name', read_only=True, default='')
+
+    class Meta:
+        model = Demo
+        fields = [
+            'id', 'lead', 'lead_name', 'lead_company',
+            'scheduled_date', 'status', 'conducted_by', 'conducted_by_name',
+            'closing_probability', 'outcome_notes', 'location',
+            'created_at', 'updated_at',
+        ]
+        read_only_fields = ['id', 'conducted_by', 'created_at', 'updated_at']
+
+
+class DemoCreateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Demo
+        fields = ['lead', 'scheduled_date', 'closing_probability', 'location', 'outcome_notes']
+
+    def validate_lead(self, value):
+        user = self.context['request'].user
+        employee = getattr(user, 'employee_profile', None)
+        # Interns can only schedule demos for their assigned leads
+        if employee and employee.role == 'intern':
+            if value.assigned_to != user:
+                raise serializers.ValidationError('You can only schedule demos for leads assigned to you.')
+        return value
+
+
+class CRMDashboardSerializer(serializers.Serializer):
+    total_leads = serializers.IntegerField()
+    new_leads = serializers.IntegerField()
+    converted_leads = serializers.IntegerField()
+    upcoming_demos = serializers.IntegerField()
+    pending_activities = serializers.IntegerField()
+    recent_leads = LeadSerializer(many=True)
+    upcoming_demos_list = DemoSerializer(many=True)
+    active_assignments = WorkAssignmentSerializer(many=True)

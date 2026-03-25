@@ -18,6 +18,7 @@ from .models import (
     WorkAssignment, WorkUpdate, Notification, QRCode, ScheduledClass, Payroll,
     CertificateTemplate, Certificate
 )
+from crm.models import Lead, LeadNote, DailyActivity, Demo
 from .serializers import (
     EmployeeProfileSerializer, EmployeeListSerializer,
     DeviceTokenSerializer, AttendanceSerializer,
@@ -28,6 +29,9 @@ from .serializers import (
     PayrollSerializer, OwnerClientSerializer, OwnerProjectSerializer,
     OwnerAttendanceEmployeeSerializer,
     CertificateTemplateSerializer, CertificateSerializer, CertificateCreateSerializer,
+    LeadSerializer, LeadCreateSerializer, LeadNoteSerializer,
+    DailyActivitySerializer, DailyActivityCreateSerializer,
+    DemoSerializer, DemoCreateSerializer, CRMDashboardSerializer,
 )
 from django.shortcuts import render
 
@@ -3011,5 +3015,507 @@ class CertificateVerifyView(APIView):
             'valid': True,
             'cert': certificate,
         })
+
+
+# ============================================================
+# CRM APIs (for intern mobile app + admin)
+# ============================================================
+
+def get_intern_employee(user):
+    """Get employee profile, return (employee, is_intern) tuple"""
+    employee = get_employee(user)
+    if not employee:
+        return None, False
+    is_intern = employee.role == 'intern' or employee.employment_type == 'intern'
+    return employee, is_intern
+
+
+@extend_schema(tags=['CRM'])
+class CRMDashboardView(APIView):
+    """CRM dashboard — shows leads, demos, activities, and work assignments combined"""
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        employee, is_intern = get_intern_employee(request.user)
+        if not employee:
+            return Response({'error': 'Employee profile not found'}, status=status.HTTP_404_NOT_FOUND)
+
+        today = date.today()
+
+        if is_intern:
+            leads = Lead.objects.filter(assigned_to=request.user)
+            activities = DailyActivity.objects.filter(intern=request.user)
+            demos = Demo.objects.filter(conducted_by=request.user)
+            assignments = WorkAssignment.objects.filter(
+                assigned_to=employee, status__in=['assigned', 'in_progress']
+            )
+        else:
+            leads = Lead.objects.all()
+            activities = DailyActivity.objects.all()
+            demos = Demo.objects.all()
+            assignments = WorkAssignment.objects.filter(
+                assigned_to=employee, status__in=['assigned', 'in_progress']
+            )
+
+        data = {
+            'total_leads': leads.count(),
+            'new_leads': leads.filter(status='new').count(),
+            'converted_leads': leads.filter(status='converted').count(),
+            'upcoming_demos': demos.filter(scheduled_date__gte=timezone.now(), status='scheduled').count(),
+            'pending_activities': activities.filter(approval_status='pending').count(),
+            'recent_leads': LeadSerializer(
+                leads[:10], many=True, context={'request': request}
+            ).data,
+            'upcoming_demos_list': DemoSerializer(
+                demos.filter(scheduled_date__gte=timezone.now(), status='scheduled')[:5],
+                many=True, context={'request': request}
+            ).data,
+            'active_assignments': WorkAssignmentSerializer(
+                assignments[:5], many=True, context={'request': request}
+            ).data,
+        }
+        return Response(data)
+
+
+# ---- Lead APIs ----
+
+@extend_schema(tags=['CRM - Leads'])
+class CRMLeadListCreateView(APIView):
+    """List leads (filtered for interns) or create a new lead"""
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        employee, is_intern = get_intern_employee(request.user)
+        if not employee:
+            return Response({'error': 'Employee profile not found'}, status=status.HTTP_404_NOT_FOUND)
+
+        if is_intern:
+            leads = Lead.objects.filter(assigned_to=request.user)
+        else:
+            leads = Lead.objects.all()
+
+        # Filters
+        lead_status = request.query_params.get('status')
+        source = request.query_params.get('source')
+        if lead_status:
+            leads = leads.filter(status=lead_status)
+        if source:
+            leads = leads.filter(source=source)
+
+        serializer = LeadSerializer(leads, many=True, context={'request': request})
+        return Response(serializer.data)
+
+    def post(self, request):
+        employee, is_intern = get_intern_employee(request.user)
+        if not employee:
+            return Response({'error': 'Employee profile not found'}, status=status.HTTP_404_NOT_FOUND)
+
+        serializer = LeadCreateSerializer(data=request.data)
+        if serializer.is_valid():
+            lead = serializer.save(
+                created_by=request.user,
+                assigned_to=request.user if is_intern else request.data.get('assigned_to', request.user),
+            )
+            return Response(LeadSerializer(lead, context={'request': request}).data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+@extend_schema(tags=['CRM - Leads'])
+class CRMLeadDetailView(APIView):
+    """View, update a lead"""
+    permission_classes = [IsAuthenticated]
+
+    def get_lead(self, pk, user):
+        employee, is_intern = get_intern_employee(user)
+        try:
+            lead = Lead.objects.get(pk=pk)
+        except Lead.DoesNotExist:
+            return None, 'Lead not found'
+        if is_intern and lead.assigned_to != user:
+            return None, 'You can only view leads assigned to you'
+        return lead, None
+
+    def get(self, request, pk):
+        lead, error = self.get_lead(pk, request.user)
+        if error:
+            return Response({'error': error}, status=status.HTTP_404_NOT_FOUND)
+        return Response(LeadSerializer(lead, context={'request': request}).data)
+
+    def patch(self, request, pk):
+        lead, error = self.get_lead(pk, request.user)
+        if error:
+            return Response({'error': error}, status=status.HTTP_404_NOT_FOUND)
+
+        serializer = LeadCreateSerializer(lead, data=request.data, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(LeadSerializer(lead, context={'request': request}).data)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+@extend_schema(tags=['CRM - Leads'])
+class CRMLeadStatusUpdateView(APIView):
+    """Update lead status"""
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, pk):
+        employee, is_intern = get_intern_employee(request.user)
+        if not employee:
+            return Response({'error': 'Employee profile not found'}, status=status.HTTP_404_NOT_FOUND)
+
+        try:
+            lead = Lead.objects.get(pk=pk)
+        except Lead.DoesNotExist:
+            return Response({'error': 'Lead not found'}, status=status.HTTP_404_NOT_FOUND)
+
+        if is_intern and lead.assigned_to != request.user:
+            return Response({'error': 'You can only update leads assigned to you'}, status=status.HTTP_403_FORBIDDEN)
+
+        new_status = request.data.get('status')
+        valid_statuses = [c[0] for c in Lead.STATUS_CHOICES]
+        if new_status not in valid_statuses:
+            return Response({'error': f'Invalid status. Choose from: {valid_statuses}'}, status=status.HTTP_400_BAD_REQUEST)
+
+        lead.status = new_status
+        if request.data.get('next_follow_up_date'):
+            lead.next_follow_up_date = request.data['next_follow_up_date']
+        if request.data.get('closing_probability') is not None:
+            lead.closing_probability = request.data['closing_probability']
+        lead.save()
+
+        return Response(LeadSerializer(lead, context={'request': request}).data)
+
+
+@extend_schema(tags=['CRM - Leads'])
+class CRMLeadNoteCreateView(APIView):
+    """Add a note to a lead"""
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, pk):
+        employee, is_intern = get_intern_employee(request.user)
+        if not employee:
+            return Response({'error': 'Employee profile not found'}, status=status.HTTP_404_NOT_FOUND)
+
+        try:
+            lead = Lead.objects.get(pk=pk)
+        except Lead.DoesNotExist:
+            return Response({'error': 'Lead not found'}, status=status.HTTP_404_NOT_FOUND)
+
+        if is_intern and lead.assigned_to != request.user:
+            return Response({'error': 'You can only add notes to leads assigned to you'}, status=status.HTTP_403_FORBIDDEN)
+
+        note_text = request.data.get('note', '').strip()
+        if not note_text:
+            return Response({'error': 'Note text is required'}, status=status.HTTP_400_BAD_REQUEST)
+
+        note = LeadNote.objects.create(lead=lead, note=note_text, created_by=request.user)
+        return Response(LeadNoteSerializer(note).data, status=status.HTTP_201_CREATED)
+
+
+@extend_schema(tags=['CRM - Leads'])
+class CRMLeadCheckDuplicateView(APIView):
+    """Check for duplicate leads by phone or email"""
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        phone = request.data.get('phone')
+        email = request.data.get('email')
+        duplicates = Lead.check_duplicate(phone=phone, email=email)
+        return Response({
+            'has_duplicates': len(duplicates) > 0,
+            'duplicates': LeadSerializer(duplicates, many=True, context={'request': request}).data,
+        })
+
+
+# ---- Daily Activity APIs ----
+
+@extend_schema(tags=['CRM - Activities'])
+class CRMActivityListCreateView(APIView):
+    """List or create daily activities"""
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        employee, is_intern = get_intern_employee(request.user)
+        if not employee:
+            return Response({'error': 'Employee profile not found'}, status=status.HTTP_404_NOT_FOUND)
+
+        if is_intern:
+            activities = DailyActivity.objects.filter(intern=request.user)
+        else:
+            activities = DailyActivity.objects.all()
+            # Admin can filter by intern
+            intern_id = request.query_params.get('intern_id')
+            if intern_id:
+                activities = activities.filter(intern_id=intern_id)
+
+        # Date filters
+        date_from = request.query_params.get('date_from')
+        date_to = request.query_params.get('date_to')
+        if date_from:
+            activities = activities.filter(date__gte=date_from)
+        if date_to:
+            activities = activities.filter(date__lte=date_to)
+
+        approval = request.query_params.get('approval_status')
+        if approval:
+            activities = activities.filter(approval_status=approval)
+
+        serializer = DailyActivitySerializer(activities, many=True)
+        return Response(serializer.data)
+
+    def post(self, request):
+        employee, is_intern = get_intern_employee(request.user)
+        if not employee:
+            return Response({'error': 'Employee profile not found'}, status=status.HTTP_404_NOT_FOUND)
+
+        serializer = DailyActivityCreateSerializer(data=request.data)
+        if serializer.is_valid():
+            activity_date = serializer.validated_data.get('date', date.today())
+
+            # Check if already submitted for this date
+            if DailyActivity.objects.filter(intern=request.user, date=activity_date).exists():
+                return Response(
+                    {'error': 'Activity already submitted for this date. Use edit instead.'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
+            # Auto-detect intern_type from employee profile
+            intern_type = employee.intern_type or 'digital'
+            activity = serializer.save(intern=request.user, intern_type=intern_type)
+            return Response(DailyActivitySerializer(activity).data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+@extend_schema(tags=['CRM - Activities'])
+class CRMActivityDetailView(APIView):
+    """View or edit a daily activity (editable within 24hrs)"""
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, pk):
+        employee, is_intern = get_intern_employee(request.user)
+        if not employee:
+            return Response({'error': 'Employee profile not found'}, status=status.HTTP_404_NOT_FOUND)
+
+        try:
+            activity = DailyActivity.objects.get(pk=pk)
+        except DailyActivity.DoesNotExist:
+            return Response({'error': 'Activity not found'}, status=status.HTTP_404_NOT_FOUND)
+
+        if is_intern and activity.intern != request.user:
+            return Response({'error': 'Not found'}, status=status.HTTP_404_NOT_FOUND)
+
+        return Response(DailyActivitySerializer(activity).data)
+
+    def patch(self, request, pk):
+        employee, is_intern = get_intern_employee(request.user)
+        if not employee:
+            return Response({'error': 'Employee profile not found'}, status=status.HTTP_404_NOT_FOUND)
+
+        try:
+            activity = DailyActivity.objects.get(pk=pk)
+        except DailyActivity.DoesNotExist:
+            return Response({'error': 'Activity not found'}, status=status.HTTP_404_NOT_FOUND)
+
+        if is_intern and activity.intern != request.user:
+            return Response({'error': 'Not found'}, status=status.HTTP_404_NOT_FOUND)
+
+        if is_intern and not activity.is_editable:
+            return Response({'error': 'Activity can only be edited within 24 hours'}, status=status.HTTP_403_FORBIDDEN)
+
+        serializer = DailyActivityCreateSerializer(activity, data=request.data, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(DailyActivitySerializer(activity).data)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+@extend_schema(tags=['CRM - Activities'])
+class CRMActivityApproveView(APIView):
+    """Approve or reject a daily activity (admin only)"""
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, pk):
+        employee, is_intern = get_intern_employee(request.user)
+        if not employee:
+            return Response({'error': 'Employee profile not found'}, status=status.HTTP_404_NOT_FOUND)
+
+        if is_intern:
+            return Response({'error': 'Only admins can approve activities'}, status=status.HTTP_403_FORBIDDEN)
+
+        try:
+            activity = DailyActivity.objects.get(pk=pk)
+        except DailyActivity.DoesNotExist:
+            return Response({'error': 'Activity not found'}, status=status.HTTP_404_NOT_FOUND)
+
+        action = request.data.get('action')  # 'approve' or 'reject'
+        if action not in ('approve', 'reject'):
+            return Response({'error': 'Action must be "approve" or "reject"'}, status=status.HTTP_400_BAD_REQUEST)
+
+        activity.approval_status = 'approved' if action == 'approve' else 'rejected'
+        activity.approved_by = request.user
+        activity.save()
+
+        return Response(DailyActivitySerializer(activity).data)
+
+
+@extend_schema(tags=['CRM - Activities'])
+class CRMActivityWeeklySummaryView(APIView):
+    """Weekly summary of activities for an intern"""
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        employee, is_intern = get_intern_employee(request.user)
+        if not employee:
+            return Response({'error': 'Employee profile not found'}, status=status.HTTP_404_NOT_FOUND)
+
+        from datetime import timedelta
+        today = date.today()
+        week_start = today - timedelta(days=today.weekday())
+
+        if is_intern:
+            activities = DailyActivity.objects.filter(intern=request.user, date__gte=week_start, date__lte=today)
+        else:
+            intern_id = request.query_params.get('intern_id')
+            if intern_id:
+                activities = DailyActivity.objects.filter(intern_id=intern_id, date__gte=week_start, date__lte=today)
+            else:
+                activities = DailyActivity.objects.filter(date__gte=week_start, date__lte=today)
+
+        summary = activities.aggregate(
+            total_posts=Sum('social_media_posts'),
+            total_reels=Sum('reels_created'),
+            total_dms=Sum('dms_sent'),
+            total_digital_leads=Sum('digital_leads_generated'),
+            total_calls=Sum('calls_made'),
+            total_visits=Sum('visits_done'),
+            total_demos=Sum('demos_conducted'),
+            total_field_leads=Sum('field_leads_generated'),
+        )
+
+        # Replace None with 0
+        summary = {k: v or 0 for k, v in summary.items()}
+        summary['week_start'] = week_start.isoformat()
+        summary['week_end'] = today.isoformat()
+        summary['days_logged'] = activities.count()
+
+        return Response(summary)
+
+
+# ---- Demo APIs ----
+
+@extend_schema(tags=['CRM - Demos'])
+class CRMDemoListCreateView(APIView):
+    """List demos or schedule a new demo"""
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        employee, is_intern = get_intern_employee(request.user)
+        if not employee:
+            return Response({'error': 'Employee profile not found'}, status=status.HTTP_404_NOT_FOUND)
+
+        if is_intern:
+            demos = Demo.objects.filter(conducted_by=request.user)
+        else:
+            demos = Demo.objects.all()
+
+        demo_status = request.query_params.get('status')
+        if demo_status:
+            demos = demos.filter(status=demo_status)
+
+        serializer = DemoSerializer(demos, many=True, context={'request': request})
+        return Response(serializer.data)
+
+    def post(self, request):
+        employee, is_intern = get_intern_employee(request.user)
+        if not employee:
+            return Response({'error': 'Employee profile not found'}, status=status.HTTP_404_NOT_FOUND)
+
+        serializer = DemoCreateSerializer(data=request.data, context={'request': request})
+        if serializer.is_valid():
+            demo = serializer.save(conducted_by=request.user, created_by=request.user)
+
+            # Auto-update lead status to demo_scheduled
+            lead = demo.lead
+            if lead.status in ('new', 'contacted', 'interested'):
+                lead.status = 'demo_scheduled'
+                lead.save()
+
+            return Response(DemoSerializer(demo, context={'request': request}).data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+@extend_schema(tags=['CRM - Demos'])
+class CRMDemoDetailView(APIView):
+    """View or update a demo"""
+    permission_classes = [IsAuthenticated]
+
+    def get_demo(self, pk, user):
+        employee, is_intern = get_intern_employee(user)
+        try:
+            demo = Demo.objects.get(pk=pk)
+        except Demo.DoesNotExist:
+            return None, 'Demo not found'
+        if is_intern and demo.conducted_by != user:
+            return None, 'Not found'
+        return demo, None
+
+    def get(self, request, pk):
+        demo, error = self.get_demo(pk, request.user)
+        if error:
+            return Response({'error': error}, status=status.HTTP_404_NOT_FOUND)
+        return Response(DemoSerializer(demo, context={'request': request}).data)
+
+    def patch(self, request, pk):
+        demo, error = self.get_demo(pk, request.user)
+        if error:
+            return Response({'error': error}, status=status.HTTP_404_NOT_FOUND)
+
+        serializer = DemoCreateSerializer(demo, data=request.data, partial=True, context={'request': request})
+        if serializer.is_valid():
+            serializer.save()
+            return Response(DemoSerializer(demo, context={'request': request}).data)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+@extend_schema(tags=['CRM - Demos'])
+class CRMDemoStatusUpdateView(APIView):
+    """Update demo status"""
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, pk):
+        employee, is_intern = get_intern_employee(request.user)
+        if not employee:
+            return Response({'error': 'Employee profile not found'}, status=status.HTTP_404_NOT_FOUND)
+
+        try:
+            demo = Demo.objects.get(pk=pk)
+        except Demo.DoesNotExist:
+            return Response({'error': 'Demo not found'}, status=status.HTTP_404_NOT_FOUND)
+
+        if is_intern and demo.conducted_by != request.user:
+            return Response({'error': 'Not authorized'}, status=status.HTTP_403_FORBIDDEN)
+
+        new_status = request.data.get('status')
+        valid_statuses = [c[0] for c in Demo.STATUS_CHOICES]
+        if new_status not in valid_statuses:
+            return Response({'error': f'Invalid status. Choose from: {valid_statuses}'}, status=status.HTTP_400_BAD_REQUEST)
+
+        demo.status = new_status
+        if request.data.get('outcome_notes'):
+            demo.outcome_notes = request.data['outcome_notes']
+        if request.data.get('closing_probability') is not None:
+            demo.closing_probability = request.data['closing_probability']
+        demo.save()
+
+        # Auto-update lead status based on demo outcome
+        lead = demo.lead
+        if new_status == 'converted':
+            lead.status = 'converted'
+            lead.save()
+        elif new_status == 'completed' and lead.status == 'demo_scheduled':
+            lead.status = 'follow_up'
+            lead.save()
+
+        return Response(DemoSerializer(demo, context={'request': request}).data)
 
 

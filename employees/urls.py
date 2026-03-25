@@ -110,4 +110,25 @@ urlpatterns = [
     path('certificates/<uuid:pk>/', views.CertificateDetailView.as_view(), name='certificate_detail'),
     path('certificates/<uuid:pk>/pdf/', views.CertificatePDFView.as_view(), name='certificate_pdf'),
     path('certificates/verify/<uuid:verification_id>/', views.CertificateVerifyView.as_view(), name='certificate_verify'),
+
+    # ---- CRM APIs (Leads, Activities, Demos) ----
+    path('crm/dashboard/', views.CRMDashboardView.as_view(), name='crm_dashboard'),
+
+    # Leads
+    path('crm/leads/', views.CRMLeadListCreateView.as_view(), name='crm_leads'),
+    path('crm/leads/check-duplicate/', views.CRMLeadCheckDuplicateView.as_view(), name='crm_lead_check_duplicate'),
+    path('crm/leads/<int:pk>/', views.CRMLeadDetailView.as_view(), name='crm_lead_detail'),
+    path('crm/leads/<int:pk>/status/', views.CRMLeadStatusUpdateView.as_view(), name='crm_lead_status'),
+    path('crm/leads/<int:pk>/notes/', views.CRMLeadNoteCreateView.as_view(), name='crm_lead_notes'),
+
+    # Daily Activities
+    path('crm/activities/', views.CRMActivityListCreateView.as_view(), name='crm_activities'),
+    path('crm/activities/weekly-summary/', views.CRMActivityWeeklySummaryView.as_view(), name='crm_activity_weekly'),
+    path('crm/activities/<int:pk>/', views.CRMActivityDetailView.as_view(), name='crm_activity_detail'),
+    path('crm/activities/<int:pk>/approve/', views.CRMActivityApproveView.as_view(), name='crm_activity_approve'),
+
+    # Demos
+    path('crm/demos/', views.CRMDemoListCreateView.as_view(), name='crm_demos'),
+    path('crm/demos/<int:pk>/', views.CRMDemoDetailView.as_view(), name='crm_demo_detail'),
+    path('crm/demos/<int:pk>/status/', views.CRMDemoStatusUpdateView.as_view(), name='crm_demo_status'),
 ]
