@@ -3519,3 +3519,80 @@ class CRMDemoStatusUpdateView(APIView):
         return Response(DemoSerializer(demo, context={'request': request}).data)
 
 
+# ---- Admin CRM APIs ----
+
+@extend_schema(tags=['CRM - Admin'])
+class CRMAdminReassignLeadsView(APIView):
+    """Bulk reassign leads from one intern to another (e.g., when intern leaves)"""
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        employee, is_intern = get_intern_employee(request.user)
+        if not employee or is_intern:
+            return Response({'error': 'Admin access required'}, status=status.HTTP_403_FORBIDDEN)
+
+        from_user_id = request.data.get('from_user_id')
+        to_user_id = request.data.get('to_user_id')
+        lead_ids = request.data.get('lead_ids')  # Optional — if empty, reassign all
+
+        if not from_user_id or not to_user_id:
+            return Response({'error': 'from_user_id and to_user_id are required'}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            from_user = User.objects.get(pk=from_user_id)
+            to_user = User.objects.get(pk=to_user_id)
+        except User.DoesNotExist:
+            return Response({'error': 'User not found'}, status=status.HTTP_404_NOT_FOUND)
+
+        leads = Lead.objects.filter(assigned_to=from_user)
+        if lead_ids:
+            leads = leads.filter(pk__in=lead_ids)
+
+        count = leads.count()
+        leads.update(assigned_to=to_user)
+
+        return Response({
+            'reassigned': count,
+            'from': from_user.get_full_name() or from_user.username,
+            'to': to_user.get_full_name() or to_user.username,
+        })
+
+
+@extend_schema(tags=['CRM - Admin'])
+class CRMAdminInternStatsView(APIView):
+    """Get CRM stats for all interns (for admin overview)"""
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        employee, is_intern = get_intern_employee(request.user)
+        if not employee or is_intern:
+            return Response({'error': 'Admin access required'}, status=status.HTTP_403_FORBIDDEN)
+
+        interns = Employee.objects.filter(
+            employment_type='intern', status='active'
+        ).select_related('user')
+
+        result = []
+        for intern in interns:
+            user = intern.user
+            leads = Lead.objects.filter(assigned_to=user)
+            result.append({
+                'employee_id': str(intern.id),
+                'emp_code': intern.employee_id,
+                'name': intern.full_name,
+                'intern_type': intern.intern_type,
+                'total_leads': leads.count(),
+                'new_leads': leads.filter(status='new').count(),
+                'converted_leads': leads.filter(status='converted').count(),
+                'pending_activities': DailyActivity.objects.filter(
+                    intern=user, approval_status='pending'
+                ).count(),
+                'upcoming_demos': Demo.objects.filter(
+                    conducted_by=user, status='scheduled',
+                    scheduled_date__gte=timezone.now()
+                ).count(),
+            })
+
+        return Response(result)
+
+
