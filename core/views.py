@@ -1769,6 +1769,16 @@ def settings_view(request):
         except (ValueError, TypeError):
             company.invoice_starting_number = 201
 
+        # InterioDesk App Settings
+        company.interiodesk_min_version = request.POST.get('interiodesk_min_version', '1.0.0')
+        company.interiodesk_latest_version = request.POST.get('interiodesk_latest_version', '1.0.0')
+        company.interiodesk_update_url_macos = request.POST.get('interiodesk_update_url_macos', '')
+        company.interiodesk_update_url_windows = request.POST.get('interiodesk_update_url_windows', '')
+        company.interiodesk_force_update = 'interiodesk_force_update' in request.POST
+        company.interiodesk_maintenance_mode = 'interiodesk_maintenance_mode' in request.POST
+        company.interiodesk_maintenance_message = request.POST.get('interiodesk_maintenance_message', '')
+        company.interiodesk_release_notes = request.POST.get('interiodesk_release_notes', '')
+
         if request.FILES.get('logo'):
             company.logo = request.FILES.get('logo')
 

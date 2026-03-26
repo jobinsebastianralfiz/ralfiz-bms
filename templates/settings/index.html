@@ -121,6 +121,10 @@
             <i class="fas fa-mobile-alt"></i>
             <span>RetailEase App</span>
           </a>
+          <a class="settings-nav-item" onclick="switchSettingsTab('interiodesk')">
+            <i class="fas fa-couch"></i>
+            <span>InterioDesk App</span>
+          </a>
         </nav>
       </div>
     </div>
@@ -640,6 +644,95 @@
                   <input type="tel" class="form-control" name="retailease_support_whatsapp" value="{{ company.retailease_support_whatsapp|default:'' }}">
                 </div>
               </div>
+            </div>
+          </div>
+          <div class="card-footer d-flex justify-content-end">
+            <button type="submit" class="btn btn-primary">
+              <i class="fas fa-save me-2"></i>Save Changes
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- InterioDesk App Settings -->
+      <div class="settings-panel d-none" id="interiodesk-panel">
+        <!-- App Version -->
+        <div class="card mb-4">
+          <div class="card-header">
+            <h3 class="card-title">
+              <i class="fas fa-code-branch me-2 text-primary"></i>
+              InterioDesk Version Control
+            </h3>
+          </div>
+          <div class="card-body">
+            <div class="row">
+              <div class="col-6 col-sm-12" style="padding: 0.5rem;">
+                <div class="form-group">
+                  <label class="form-label">Minimum Version</label>
+                  <input type="text" class="form-control" name="interiodesk_min_version" value="{{ company.interiodesk_min_version|default:'1.0.0' }}" placeholder="1.0.0">
+                  <div class="form-text">Users below this version will be prompted to update</div>
+                </div>
+              </div>
+              <div class="col-6 col-sm-12" style="padding: 0.5rem;">
+                <div class="form-group">
+                  <label class="form-label">Latest Version</label>
+                  <input type="text" class="form-control" name="interiodesk_latest_version" value="{{ company.interiodesk_latest_version|default:'1.0.0' }}" placeholder="1.0.0">
+                </div>
+              </div>
+              <div class="col-6 col-sm-12" style="padding: 0.5rem;">
+                <div class="form-group">
+                  <label class="form-label">Update URL (macOS)</label>
+                  <input type="url" class="form-control" name="interiodesk_update_url_macos" value="{{ company.interiodesk_update_url_macos|default:'' }}" placeholder="https://ralfizdigital.in/interiodesk/releases/InterioDesk-1.1.0.dmg">
+                </div>
+              </div>
+              <div class="col-6 col-sm-12" style="padding: 0.5rem;">
+                <div class="form-group">
+                  <label class="form-label">Update URL (Windows)</label>
+                  <input type="url" class="form-control" name="interiodesk_update_url_windows" value="{{ company.interiodesk_update_url_windows|default:'' }}" placeholder="https://ralfizdigital.in/interiodesk/releases/InterioDesk-1.1.0.exe">
+                </div>
+              </div>
+              <div class="col-12" style="padding: 0.5rem;">
+                <div class="form-group">
+                  <label class="form-label">Release Notes</label>
+                  <textarea class="form-control" name="interiodesk_release_notes" rows="3" placeholder="What's new in this version...">{{ company.interiodesk_release_notes|default:'' }}</textarea>
+                </div>
+              </div>
+            </div>
+            <div class="settings-item d-flex justify-content-between align-items-center py-3 mt-2">
+              <div>
+                <div class="fw-medium">Force Update</div>
+                <div class="text-sm text-muted">Block app until users update to minimum version</div>
+              </div>
+              <label class="toggle-switch">
+                <input type="checkbox" name="interiodesk_force_update" {% if company.interiodesk_force_update %}checked{% endif %}>
+                <span class="toggle-slider"></span>
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <!-- Maintenance Mode -->
+        <div class="card">
+          <div class="card-header">
+            <h3 class="card-title">
+              <i class="fas fa-tools me-2 text-primary"></i>
+              Maintenance Mode
+            </h3>
+          </div>
+          <div class="card-body">
+            <div class="settings-item d-flex justify-content-between align-items-center py-3 border-bottom">
+              <div>
+                <div class="fw-medium">Enable Maintenance Mode</div>
+                <div class="text-sm text-muted">Show maintenance message to all InterioDesk users</div>
+              </div>
+              <label class="toggle-switch">
+                <input type="checkbox" name="interiodesk_maintenance_mode" {% if company.interiodesk_maintenance_mode %}checked{% endif %}>
+                <span class="toggle-slider"></span>
+              </label>
+            </div>
+            <div class="form-group mt-3 mb-0">
+              <label class="form-label">Maintenance Message</label>
+              <textarea class="form-control" name="interiodesk_maintenance_message" rows="3" placeholder="We're currently performing maintenance. Please try again later.">{{ company.interiodesk_maintenance_message|default:'' }}</textarea>
             </div>
           </div>
           <div class="card-footer d-flex justify-content-end">
