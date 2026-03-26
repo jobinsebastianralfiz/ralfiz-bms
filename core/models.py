@@ -574,6 +574,18 @@ class CompanySettings(models.Model):
     retailease_support_phone = models.CharField(max_length=20, blank=True, verbose_name='Support Phone')
     retailease_support_whatsapp = models.CharField(max_length=20, blank=True, verbose_name='Support WhatsApp')
 
+    # ============================================
+    # InterioDesk App Configuration
+    # ============================================
+    interiodesk_min_version = models.CharField(max_length=20, default='1.0.0', verbose_name='InterioDesk Min Version')
+    interiodesk_latest_version = models.CharField(max_length=20, default='1.0.0', verbose_name='InterioDesk Latest Version')
+    interiodesk_update_url_macos = models.URLField(blank=True, verbose_name='InterioDesk Update URL (macOS)')
+    interiodesk_update_url_windows = models.URLField(blank=True, verbose_name='InterioDesk Update URL (Windows)')
+    interiodesk_force_update = models.BooleanField(default=False, verbose_name='InterioDesk Force Update')
+    interiodesk_maintenance_mode = models.BooleanField(default=False, verbose_name='InterioDesk Maintenance Mode')
+    interiodesk_maintenance_message = models.TextField(blank=True, verbose_name='InterioDesk Maintenance Message')
+    interiodesk_release_notes = models.TextField(blank=True, verbose_name='InterioDesk Release Notes')
+
     class Meta:
         verbose_name = 'Company Settings'
         verbose_name_plural = 'Company Settings'

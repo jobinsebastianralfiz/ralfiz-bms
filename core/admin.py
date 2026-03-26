@@ -237,6 +237,16 @@ class CompanySettingsAdmin(admin.ModelAdmin):
         ('Default Settings', {
             'fields': ['invoice_prefix', 'quote_prefix', 'default_tax_rate', 'invoice_terms', 'quote_terms']
         }),
+        ('InterioDesk App', {
+            'classes': ['collapse'],
+            'fields': [
+                'interiodesk_min_version', 'interiodesk_latest_version',
+                'interiodesk_update_url_macos', 'interiodesk_update_url_windows',
+                'interiodesk_force_update',
+                'interiodesk_maintenance_mode', 'interiodesk_maintenance_message',
+                'interiodesk_release_notes',
+            ]
+        }),
     ]
 
     def has_add_permission(self, request):

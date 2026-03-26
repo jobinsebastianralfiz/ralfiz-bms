@@ -44,6 +44,7 @@ INSTALLED_APPS = [
     'crm',
     'employees',
     'gympro_licensing',
+    'interiodesk',
 ]
 
 MIDDLEWARE = [

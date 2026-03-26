@@ -11,6 +11,7 @@ urlpatterns = [
     path('api/license/', include('licensing.urls')),
     path('api/gympro/', include('gympro_licensing.urls')),
     path('api/retailease/', include('retailease.urls')),
+    path('api/interiodesk/', include('interiodesk.urls')),
     path('crm/', include('crm.urls')),
     path('api/employees/', include('employees.urls')),
 
