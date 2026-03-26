@@ -681,14 +681,38 @@
               </div>
               <div class="col-6 col-sm-12" style="padding: 0.5rem;">
                 <div class="form-group">
-                  <label class="form-label">Update URL (macOS)</label>
-                  <input type="url" class="form-control" name="interiodesk_update_url_macos" value="{{ company.interiodesk_update_url_macos|default:'' }}" placeholder="https://ralfizdigital.in/interiodesk/releases/InterioDesk-1.1.0.dmg">
+                  <label class="form-label">macOS Installer (.dmg)</label>
+                  <input type="file" class="form-control" name="interiodesk_file_macos" accept=".dmg">
+                  {% if company.interiodesk_file_macos %}
+                  <div class="form-text text-success"><i class="fas fa-check-circle me-1"></i> Uploaded: <a href="{{ company.interiodesk_file_macos.url }}" target="_blank">{{ company.interiodesk_file_macos.name|cut:"interiodesk/releases/" }}</a></div>
+                  {% else %}
+                  <div class="form-text">No file uploaded</div>
+                  {% endif %}
                 </div>
               </div>
               <div class="col-6 col-sm-12" style="padding: 0.5rem;">
                 <div class="form-group">
-                  <label class="form-label">Update URL (Windows)</label>
-                  <input type="url" class="form-control" name="interiodesk_update_url_windows" value="{{ company.interiodesk_update_url_windows|default:'' }}" placeholder="https://ralfizdigital.in/interiodesk/releases/InterioDesk-1.1.0.exe">
+                  <label class="form-label">Windows Installer (.exe)</label>
+                  <input type="file" class="form-control" name="interiodesk_file_windows" accept=".exe">
+                  {% if company.interiodesk_file_windows %}
+                  <div class="form-text text-success"><i class="fas fa-check-circle me-1"></i> Uploaded: <a href="{{ company.interiodesk_file_windows.url }}" target="_blank">{{ company.interiodesk_file_windows.name|cut:"interiodesk/releases/" }}</a></div>
+                  {% else %}
+                  <div class="form-text">No file uploaded</div>
+                  {% endif %}
+                </div>
+              </div>
+              <div class="col-6 col-sm-12" style="padding: 0.5rem;">
+                <div class="form-group">
+                  <label class="form-label">Or External URL (macOS)</label>
+                  <input type="url" class="form-control" name="interiodesk_update_url_macos" value="{{ company.interiodesk_update_url_macos|default:'' }}" placeholder="https://example.com/InterioDesk.dmg">
+                  <div class="form-text">Used only if no file is uploaded above</div>
+                </div>
+              </div>
+              <div class="col-6 col-sm-12" style="padding: 0.5rem;">
+                <div class="form-group">
+                  <label class="form-label">Or External URL (Windows)</label>
+                  <input type="url" class="form-control" name="interiodesk_update_url_windows" value="{{ company.interiodesk_update_url_windows|default:'' }}" placeholder="https://example.com/InterioDesk.exe">
+                  <div class="form-text">Used only if no file is uploaded above</div>
                 </div>
               </div>
               <div class="col-12" style="padding: 0.5rem;">

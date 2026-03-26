@@ -240,6 +240,7 @@ class CompanySettingsAdmin(admin.ModelAdmin):
         ('InterioDesk App', {
             'fields': [
                 'interiodesk_min_version', 'interiodesk_latest_version',
+                'interiodesk_file_macos', 'interiodesk_file_windows',
                 'interiodesk_update_url_macos', 'interiodesk_update_url_windows',
                 'interiodesk_force_update',
                 'interiodesk_maintenance_mode', 'interiodesk_maintenance_message',

@@ -1774,6 +1774,14 @@ def settings_view(request):
         company.interiodesk_latest_version = request.POST.get('interiodesk_latest_version', '1.0.0')
         company.interiodesk_update_url_macos = request.POST.get('interiodesk_update_url_macos', '')
         company.interiodesk_update_url_windows = request.POST.get('interiodesk_update_url_windows', '')
+        if request.FILES.get('interiodesk_file_macos'):
+            if company.interiodesk_file_macos:
+                company.interiodesk_file_macos.delete(save=False)
+            company.interiodesk_file_macos = request.FILES['interiodesk_file_macos']
+        if request.FILES.get('interiodesk_file_windows'):
+            if company.interiodesk_file_windows:
+                company.interiodesk_file_windows.delete(save=False)
+            company.interiodesk_file_windows = request.FILES['interiodesk_file_windows']
         company.interiodesk_force_update = 'interiodesk_force_update' in request.POST
         company.interiodesk_maintenance_mode = 'interiodesk_maintenance_mode' in request.POST
         company.interiodesk_maintenance_message = request.POST.get('interiodesk_maintenance_message', '')

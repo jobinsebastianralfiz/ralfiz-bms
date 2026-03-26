@@ -30,11 +30,17 @@ def get_app_config(request):
     latest_version = settings.interiodesk_latest_version or '1.0.0'
     min_version = settings.interiodesk_min_version or '1.0.0'
 
-    # Pick platform-specific download URL
+    # Pick platform-specific download URL (uploaded file takes priority over manual URL)
     if platform == 'windows':
-        update_url = settings.interiodesk_update_url_windows or ''
+        if settings.interiodesk_file_windows:
+            update_url = request.build_absolute_uri(settings.interiodesk_file_windows.url)
+        else:
+            update_url = settings.interiodesk_update_url_windows or ''
     else:
-        update_url = settings.interiodesk_update_url_macos or ''
+        if settings.interiodesk_file_macos:
+            update_url = request.build_absolute_uri(settings.interiodesk_file_macos.url)
+        else:
+            update_url = settings.interiodesk_update_url_macos or ''
 
     response_data = {
         'maintenance_mode': False,

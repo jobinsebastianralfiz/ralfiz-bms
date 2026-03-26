@@ -581,6 +581,8 @@ class CompanySettings(models.Model):
     interiodesk_latest_version = models.CharField(max_length=20, default='1.0.0', verbose_name='InterioDesk Latest Version')
     interiodesk_update_url_macos = models.URLField(blank=True, verbose_name='InterioDesk Update URL (macOS)')
     interiodesk_update_url_windows = models.URLField(blank=True, verbose_name='InterioDesk Update URL (Windows)')
+    interiodesk_file_macos = models.FileField(upload_to='interiodesk/releases/', blank=True, verbose_name='InterioDesk macOS Installer (.dmg)')
+    interiodesk_file_windows = models.FileField(upload_to='interiodesk/releases/', blank=True, verbose_name='InterioDesk Windows Installer (.exe)')
     interiodesk_force_update = models.BooleanField(default=False, verbose_name='InterioDesk Force Update')
     interiodesk_maintenance_mode = models.BooleanField(default=False, verbose_name='InterioDesk Maintenance Mode')
     interiodesk_maintenance_message = models.TextField(blank=True, verbose_name='InterioDesk Maintenance Message')
