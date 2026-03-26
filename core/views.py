@@ -4925,12 +4925,17 @@ def certificate_create(request):
         return redirect('certificate_detail', pk=cert.pk)
 
     templates = CertificateTemplate.objects.filter(is_active=True)
+    templates_json = {
+        str(t.pk): {'body': t.body_text, 'wish': t.wish_text}
+        for t in templates
+    }
     context = {
         'salutation_choices': Certificate.SALUTATION_CHOICES,
         'gender_choices': Certificate.GENDER_CHOICES,
         'mode_choices': Certificate.MODE_CHOICES,
         'type_choices': Certificate.CERTIFICATE_TYPE_CHOICES,
         'templates': templates,
+        'templates_json': templates_json,
     }
     return render(request, 'hr/certificate_create.html', context)
 

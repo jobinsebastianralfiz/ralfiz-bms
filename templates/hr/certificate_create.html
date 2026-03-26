@@ -26,9 +26,7 @@
             {% for t in templates %}
             <option value="{{ t.pk }}"
                     data-type="{{ t.certificate_type }}"
-                    data-title="{{ t.title }}"
-                    data-body="{{ t.body_text }}"
-                    data-wish="{{ t.wish_text }}">
+                    data-title="{{ t.title }}">
               {{ t.name }} ({{ t.get_certificate_type_display }})
             </option>
             {% endfor %}
@@ -140,7 +138,9 @@
 {% endblock %}
 
 {% block extra_js %}
+{{ templates_json|json_script:"template-data" }}
 <script>
+const templateData = JSON.parse(document.getElementById('template-data').textContent);
 function applyTemplate() {
   const sel = document.getElementById('cert-template');
   const opt = sel.options[sel.selectedIndex];
@@ -148,8 +148,11 @@ function applyTemplate() {
 
   document.getElementById('cert-type').value = opt.dataset.type;
   document.getElementById('cert-title').value = opt.dataset.title;
-  document.getElementById('cert-body').value = opt.dataset.body;
-  document.getElementById('cert-wish').value = opt.dataset.wish;
+  const data = templateData[opt.value];
+  if (data) {
+    document.getElementById('cert-body').value = data.body;
+    document.getElementById('cert-wish').value = data.wish;
+  }
 }
 </script>
 {% endblock %}
