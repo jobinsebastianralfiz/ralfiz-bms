@@ -52,6 +52,7 @@ class GymLicense(models.Model):
         ('store', 'Store / POS'),
         ('salary', 'Salary Payroll'),
         ('expenses', 'Expense Tracking'),
+        ('leave', 'Leave Management'),
         ('notifications', 'Push + WhatsApp'),
         ('reports', 'Reports & Analytics'),
     ]

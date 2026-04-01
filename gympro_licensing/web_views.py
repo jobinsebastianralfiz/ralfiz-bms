@@ -138,6 +138,22 @@ def gym_license_update(request, pk):
                 license_obj.renew(extend_days=days)
                 messages.success(request, f'License extended by {days} days.')
 
+        elif action == 'update_modules':
+            selected = request.POST.getlist('modules')
+            all_module_keys = [m[0] for m in GymLicense.MODULE_CHOICES]
+            # If all are selected or none selected, store empty list (= all enabled)
+            if set(selected) == set(all_module_keys) or not selected:
+                license_obj.enabled_modules = []
+            else:
+                license_obj.enabled_modules = selected
+            license_obj.save(update_fields=['enabled_modules'])
+            GymLicenseLog.objects.create(
+                license=license_obj, event='update',
+                status=license_obj.status,
+                details={'modules_updated': selected, 'changed_by': request.user.username},
+            )
+            messages.success(request, f'Module access updated ({len(selected)} modules enabled).')
+
         elif action == 'change_status':
             new_status = request.POST.get('new_status')
             if new_status in dict(GymLicense.STATUS_CHOICES):
