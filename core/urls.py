@@ -21,6 +21,9 @@ urlpatterns = [
     path('clients/<uuid:pk>/edit/', views.client_update, name='client_update'),
     path('clients/<uuid:pk>/delete/', views.client_delete, name='client_delete'),
     path('clients/<uuid:pk>/retailease/', views.client_update_retailease, name='client_update_retailease'),
+    path('clients/<uuid:pk>/portal/create/', views.client_portal_create_account, name='client_portal_create_account'),
+    path('clients/<uuid:pk>/portal/reset-password/', views.client_portal_reset_password, name='client_portal_reset_password'),
+    path('clients/<uuid:pk>/portal/toggle/', views.client_portal_toggle, name='client_portal_toggle'),
 
     # Projects
     path('projects/', views.project_list, name='project_list'),

@@ -388,6 +388,88 @@ def client_delete(request, pk):
     return render(request, 'clients/delete.html', {'client': client})
 
 
+# ============== Client Portal Account Management ==============
+
+@login_required
+def client_portal_create_account(request, pk):
+    """Create a portal login account for a client"""
+    from django.contrib.auth.models import User
+    from django.utils.crypto import get_random_string
+
+    client = get_object_or_404(Client, pk=pk)
+
+    if client.user:
+        messages.warning(request, f'Client already has a portal account (username: {client.user.username}).')
+        return redirect('client_detail', pk=pk)
+
+    if request.method == 'POST':
+        username = request.POST.get('username', '').strip() or client.email or f'client_{client.id.hex[:8]}'
+        password = request.POST.get('password', '').strip() or get_random_string(12)
+
+        if User.objects.filter(username=username).exists():
+            messages.error(request, f'Username "{username}" already exists. Choose a different one.')
+            return redirect('client_detail', pk=pk)
+
+        user = User.objects.create_user(
+            username=username,
+            email=client.email,
+            password=password,
+            first_name=client.name.split()[0] if client.name else '',
+            last_name=' '.join(client.name.split()[1:]) if client.name and len(client.name.split()) > 1 else '',
+        )
+        client.user = user
+        client.save(update_fields=['user'])
+
+        messages.success(
+            request,
+            f'Portal account created! Username: {username} | Password: {password} — '
+            f'Share these credentials with the client. They can login at /portal/login/'
+        )
+
+    return redirect('client_detail', pk=pk)
+
+
+@login_required
+def client_portal_reset_password(request, pk):
+    """Reset a client's portal password"""
+    from django.utils.crypto import get_random_string
+
+    client = get_object_or_404(Client, pk=pk)
+
+    if not client.user:
+        messages.error(request, 'Client has no portal account.')
+        return redirect('client_detail', pk=pk)
+
+    if request.method == 'POST':
+        new_password = get_random_string(12)
+        client.user.set_password(new_password)
+        client.user.save()
+        messages.success(
+            request,
+            f'Password reset! New password: {new_password} — Share this with the client.'
+        )
+
+    return redirect('client_detail', pk=pk)
+
+
+@login_required
+def client_portal_toggle(request, pk):
+    """Activate/deactivate a client's portal access"""
+    client = get_object_or_404(Client, pk=pk)
+
+    if not client.user:
+        messages.error(request, 'Client has no portal account.')
+        return redirect('client_detail', pk=pk)
+
+    if request.method == 'POST':
+        client.user.is_active = not client.user.is_active
+        client.user.save(update_fields=['is_active'])
+        state = 'activated' if client.user.is_active else 'deactivated'
+        messages.success(request, f'Portal access {state} for {client.name}.')
+
+    return redirect('client_detail', pk=pk)
+
+
 # ============== Projects ==============
 
 @login_required
