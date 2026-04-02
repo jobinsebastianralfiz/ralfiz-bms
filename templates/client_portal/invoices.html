@@ -1,0 +1,98 @@
+{% extends 'client_portal/base.html' %}
+
+{% block title %}Invoices{% endblock %}
+
+{% block content %}
+<div class="portal-page-header" style="display: flex; align-items: center; justify-content: space-between;">
+  <div>
+    <h1>Invoices</h1>
+    <p>View and track all your invoices</p>
+  </div>
+  <select id="statusFilter" onchange="filterInvoices()" class="form-control" style="width: auto; padding: 0.5rem 2rem 0.5rem 0.75rem; font-size: 0.875rem;">
+    <option value="">All Statuses</option>
+    <option value="sent" {% if status_filter == 'sent' %}selected{% endif %}>Sent</option>
+    <option value="viewed" {% if status_filter == 'viewed' %}selected{% endif %}>Viewed</option>
+    <option value="partial" {% if status_filter == 'partial' %}selected{% endif %}>Partially Paid</option>
+    <option value="paid" {% if status_filter == 'paid' %}selected{% endif %}>Paid</option>
+    <option value="overdue" {% if status_filter == 'overdue' %}selected{% endif %}>Overdue</option>
+  </select>
+</div>
+
+<!-- Summary Cards -->
+<div class="portal-stats" style="grid-template-columns: repeat(3, 1fr);">
+  <div class="portal-stat-card">
+    <div class="portal-stat-icon green"><i class="fas fa-check-circle"></i></div>
+    <div class="portal-stat-value">&#8377;{{ total_paid|floatformat:0 }}</div>
+    <div class="portal-stat-label">Total Paid</div>
+  </div>
+  <div class="portal-stat-card">
+    <div class="portal-stat-icon amber"><i class="fas fa-clock"></i></div>
+    <div class="portal-stat-value">&#8377;{{ balance_due|floatformat:0 }}</div>
+    <div class="portal-stat-label">Balance Due</div>
+  </div>
+  <div class="portal-stat-card">
+    <div class="portal-stat-icon blue"><i class="fas fa-file-invoice"></i></div>
+    <div class="portal-stat-value">{{ invoices|length }}</div>
+    <div class="portal-stat-label">Total Invoices</div>
+  </div>
+</div>
+
+<div class="portal-card">
+  <div class="portal-card-body" style="padding: 0;">
+    <div class="portal-table-wrapper">
+      <table class="portal-table">
+        <thead>
+          <tr>
+            <th>Invoice</th>
+            <th>Title</th>
+            <th>Project</th>
+            <th>Date</th>
+            <th>Due Date</th>
+            <th>Amount</th>
+            <th>Paid</th>
+            <th>Balance</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for invoice in invoices %}
+          <tr onclick="window.location='{% url 'client_portal:portal_invoice_detail' invoice.id %}'" style="cursor: pointer;">
+            <td><a href="{% url 'client_portal:portal_invoice_detail' invoice.id %}">{{ invoice.invoice_number }}</a></td>
+            <td>{{ invoice.title|truncatewords:5 }}</td>
+            <td style="color: var(--text-muted);">{{ invoice.project.name|default:"-" }}</td>
+            <td>{{ invoice.issue_date|date:"M d, Y" }}</td>
+            <td style="{% if invoice.is_overdue %}color: var(--danger); font-weight: 600;{% endif %}">{{ invoice.due_date|date:"M d, Y"|default:"-" }}</td>
+            <td class="amount">&#8377;{{ invoice.total_amount|floatformat:0 }}</td>
+            <td class="amount" style="color: var(--success);">&#8377;{{ invoice.amount_paid|floatformat:0 }}</td>
+            <td class="amount" style="color: {% if invoice.balance_due > 0 %}var(--danger){% else %}var(--success){% endif %};">&#8377;{{ invoice.balance_due|floatformat:0 }}</td>
+            <td><span class="portal-badge {{ invoice.status }}">{{ invoice.get_status_display }}</span></td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="9">
+              <div class="portal-empty">
+                <i class="fas fa-file-invoice-dollar"></i>
+                <h3>No invoices</h3>
+                <p>Your invoices will appear here</p>
+              </div>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function filterInvoices() {
+  const status = document.getElementById('statusFilter').value;
+  const url = new URL(window.location.href);
+  if (status) url.searchParams.set('status', status);
+  else url.searchParams.delete('status');
+  window.location.href = url.toString();
+}
+</script>
+{% endblock %}

@@ -16,6 +16,7 @@ class Client(models.Model):
     ]
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    user = models.OneToOneField(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='client_profile', help_text='Login account for client portal access')
     name = models.CharField(max_length=255)
     company_name = models.CharField(max_length=255, blank=True)
     email = models.EmailField()

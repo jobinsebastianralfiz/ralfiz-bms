@@ -45,6 +45,7 @@ INSTALLED_APPS = [
     'employees',
     'gympro_licensing',
     'interiodesk',
+    'client_portal',
 ]
 
 MIDDLEWARE = [
@@ -197,6 +198,7 @@ SPECTACULAR_SETTINGS = {
         {'name': 'Notifications', 'description': 'Push notifications'},
         {'name': 'Admin', 'description': 'Admin endpoints for managing employees'},
         {'name': 'Certificates', 'description': 'Certificate generation and verification'},
+        {'name': 'Client Portal', 'description': 'Client-facing APIs for project tracking, invoices, quotes, and communication'},
     ],
 }
 

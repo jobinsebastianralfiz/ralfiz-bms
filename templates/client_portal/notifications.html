@@ -1,0 +1,54 @@
+{% extends 'client_portal/base.html' %}
+
+{% block title %}Notifications{% endblock %}
+
+{% block content %}
+<div class="portal-page-header" style="display: flex; align-items: center; justify-content: space-between;">
+  <div>
+    <h1>Notifications</h1>
+    <p>Stay updated on your projects</p>
+  </div>
+  {% if notifications %}
+  <form method="post" action="{% url 'client_portal:portal_mark_all_read' %}">
+    {% csrf_token %}
+    <button type="submit" class="portal-btn portal-btn-outline portal-btn-sm">
+      <i class="fas fa-check-double"></i> Mark All Read
+    </button>
+  </form>
+  {% endif %}
+</div>
+
+<div class="portal-card">
+  <div class="portal-card-body" style="padding: 0;">
+    {% for notification in notifications %}
+    <div class="notification-item {% if not notification.is_read %}unread{% endif %}">
+      <div class="notification-icon {{ notification.notification_type }}">
+        <i class="fas fa-{% if notification.notification_type == 'project_update' %}sync{% elif notification.notification_type == 'task_completed' %}check-circle{% elif notification.notification_type == 'invoice_created' %}file-invoice-dollar{% elif notification.notification_type == 'quote_sent' %}file-alt{% elif notification.notification_type == 'comment_reply' %}reply{% elif notification.notification_type == 'milestone' %}flag{% else %}bell{% endif %}"></i>
+      </div>
+      <div class="notification-content">
+        <div class="notification-title">{{ notification.title }}</div>
+        <div class="notification-message">{{ notification.message|truncatewords:30 }}</div>
+        <div class="notification-time">
+          {{ notification.created_at|timesince }} ago
+          {% if notification.project %} &middot; {{ notification.project.name }}{% endif %}
+        </div>
+      </div>
+      {% if not notification.is_read %}
+      <form method="post" action="{% url 'client_portal:portal_mark_read' notification.id %}">
+        {% csrf_token %}
+        <button type="submit" class="portal-btn portal-btn-outline portal-btn-sm" style="padding: 0.25rem 0.5rem;" title="Mark as read">
+          <i class="fas fa-check"></i>
+        </button>
+      </form>
+      {% endif %}
+    </div>
+    {% empty %}
+    <div class="portal-empty">
+      <i class="fas fa-bell-slash"></i>
+      <h3>No notifications</h3>
+      <p>You're all caught up! Notifications will appear here when there are updates.</p>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,134 @@
+{% extends 'client_portal/base.html' %}
+
+{% block title %}Dashboard{% endblock %}
+
+{% block content %}
+<!-- Welcome Header -->
+<div style="background: linear-gradient(135deg, var(--primary) 0%, #0f766e 100%); border-radius: var(--border-radius-lg); padding: 1.75rem 2rem; margin-bottom: 1.5rem; color: white; position: relative; overflow: hidden;">
+  <div style="position: absolute; top: -40%; right: -5%; width: 250px; height: 250px; background: rgba(255,255,255,0.1); border-radius: 50%;"></div>
+  <h1 style="font-size: 1.5rem; font-weight: 700; margin: 0 0 0.375rem;">Welcome back, {{ client.name }}</h1>
+  <p style="margin: 0; opacity: 0.9; font-size: 0.9375rem;">{% if client.company_name %}{{ client.company_name }} &mdash; {% endif %}Here's an overview of your projects</p>
+</div>
+
+<!-- Stats -->
+<div class="portal-stats">
+  <div class="portal-stat-card">
+    <div class="portal-stat-icon blue"><i class="fas fa-project-diagram"></i></div>
+    <div class="portal-stat-value">{{ stats.total_projects }}</div>
+    <div class="portal-stat-label">Total Projects</div>
+  </div>
+  <div class="portal-stat-card">
+    <div class="portal-stat-icon green"><i class="fas fa-spinner"></i></div>
+    <div class="portal-stat-value">{{ stats.active_projects }}</div>
+    <div class="portal-stat-label">Active Projects</div>
+  </div>
+  <div class="portal-stat-card">
+    <div class="portal-stat-icon amber"><i class="fas fa-file-invoice-dollar"></i></div>
+    <div class="portal-stat-value">{{ stats.pending_invoices }}</div>
+    <div class="portal-stat-label">Pending Invoices</div>
+  </div>
+  <div class="portal-stat-card">
+    <div class="portal-stat-icon red"><i class="fas fa-rupee-sign"></i></div>
+    <div class="portal-stat-value">{{ stats.balance_due }}</div>
+    <div class="portal-stat-label">Balance Due</div>
+  </div>
+</div>
+
+<div class="portal-grid-2">
+  <!-- Active Projects -->
+  <div class="portal-card">
+    <div class="portal-card-header">
+      <h2><i class="fas fa-project-diagram" style="color: var(--primary); margin-right: 0.5rem;"></i> Active Projects</h2>
+      <a href="{% url 'client_portal:portal_projects' %}" class="portal-link">View All <i class="fas fa-arrow-right" style="font-size: 0.75rem;"></i></a>
+    </div>
+    <div class="portal-card-body" style="padding: 0;">
+      {% for project in active_projects %}
+      <a href="{% url 'client_portal:portal_project_detail' project.id %}" style="display: block; padding: 1rem 1.25rem; border-bottom: 1px solid var(--border-color); text-decoration: none; color: inherit; transition: var(--transition);" onmouseover="this.style.background='var(--bg-hover)'" onmouseout="this.style.background='transparent'">
+        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.5rem;">
+          <div>
+            <div style="font-weight: 600; font-size: 0.9375rem; color: var(--text-primary);">{{ project.name }}</div>
+            <div style="font-size: 0.8125rem; color: var(--text-muted);">{{ project.get_project_type_display }}</div>
+          </div>
+          <span class="portal-badge {{ project.status }}">{{ project.get_status_display }}</span>
+        </div>
+        <div class="progress-bar-wrapper">
+          <div class="progress-bar-fill" style="width: {{ project.progress }}%;"></div>
+        </div>
+        <div class="progress-text">
+          <span>{{ project.task_completed }}/{{ project.task_total }} tasks</span>
+          <span>{{ project.progress }}%</span>
+        </div>
+      </a>
+      {% empty %}
+      <div class="portal-empty">
+        <i class="fas fa-project-diagram"></i>
+        <h3>No active projects</h3>
+        <p>Your projects will appear here once they start</p>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+
+  <!-- Pending Invoices -->
+  <div class="portal-card">
+    <div class="portal-card-header">
+      <h2><i class="fas fa-file-invoice-dollar" style="color: var(--warning); margin-right: 0.5rem;"></i> Pending Invoices</h2>
+      <a href="{% url 'client_portal:portal_invoices' %}" class="portal-link">View All <i class="fas fa-arrow-right" style="font-size: 0.75rem;"></i></a>
+    </div>
+    <div class="portal-card-body" style="padding: 0;">
+      {% for invoice in pending_invoices %}
+      <a href="{% url 'client_portal:portal_invoice_detail' invoice.id %}" style="display: block; padding: 1rem 1.25rem; border-bottom: 1px solid var(--border-color); text-decoration: none; color: inherit; transition: var(--transition);" onmouseover="this.style.background='var(--bg-hover)'" onmouseout="this.style.background='transparent'">
+        <div style="display: flex; align-items: center; justify-content: space-between;">
+          <div>
+            <div style="font-weight: 600; font-size: 0.9375rem; color: var(--text-primary);">{{ invoice.invoice_number }}</div>
+            <div style="font-size: 0.8125rem; color: var(--text-muted);">{{ invoice.title|truncatewords:6 }}</div>
+          </div>
+          <div style="text-align: right;">
+            <div style="font-weight: 700; color: var(--text-primary); font-variant-numeric: tabular-nums;">&#8377;{{ invoice.balance_due|floatformat:0 }}</div>
+            <span class="portal-badge {{ invoice.status }}">{{ invoice.get_status_display }}</span>
+          </div>
+        </div>
+        {% if invoice.due_date %}
+        <div style="font-size: 0.75rem; color: {% if invoice.is_overdue %}var(--danger){% else %}var(--text-muted){% endif %}; margin-top: 0.375rem;">
+          <i class="fas fa-calendar"></i> Due: {{ invoice.due_date|date:"M d, Y" }}{% if invoice.is_overdue %} (Overdue){% endif %}
+        </div>
+        {% endif %}
+      </a>
+      {% empty %}
+      <div class="portal-empty">
+        <i class="fas fa-check-circle"></i>
+        <h3>All caught up!</h3>
+        <p>No pending invoices</p>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+
+<!-- Recent Updates -->
+{% if recent_updates %}
+<div class="portal-card">
+  <div class="portal-card-header">
+    <h2><i class="fas fa-stream" style="color: var(--info); margin-right: 0.5rem;"></i> Recent Updates</h2>
+  </div>
+  <div class="portal-card-body">
+    <div class="timeline">
+      {% for update in recent_updates %}
+      <div class="timeline-item">
+        <div class="timeline-dot {{ update.update_type }}"></div>
+        <div class="timeline-content">
+          <div class="timeline-title">{{ update.title }}</div>
+          <div class="timeline-body">{{ update.description|truncatewords:30 }}</div>
+          <div class="timeline-meta">
+            <span><i class="fas fa-tag"></i> {{ update.get_update_type_display }}</span>
+            <span><i class="fas fa-clock"></i> {{ update.created_at|timesince }} ago</span>
+            <span><i class="fas fa-project-diagram"></i> {{ update.project.name }}</span>
+          </div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+{% endif %}
+{% endblock %}

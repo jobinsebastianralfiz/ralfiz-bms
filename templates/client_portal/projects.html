@@ -1,0 +1,74 @@
+{% extends 'client_portal/base.html' %}
+
+{% block title %}Projects{% endblock %}
+
+{% block content %}
+<div class="portal-page-header" style="display: flex; align-items: center; justify-content: space-between;">
+  <div>
+    <h1>My Projects</h1>
+    <p>Track all your projects and their progress</p>
+  </div>
+  <div style="display: flex; gap: 0.5rem; align-items: center;">
+    <select id="statusFilter" onchange="filterProjects()" class="form-control" style="width: auto; padding: 0.5rem 2rem 0.5rem 0.75rem; font-size: 0.875rem;">
+      <option value="">All Statuses</option>
+      <option value="in_progress" {% if status_filter == 'in_progress' %}selected{% endif %}>In Progress</option>
+      <option value="review" {% if status_filter == 'review' %}selected{% endif %}>Review</option>
+      <option value="completed" {% if status_filter == 'completed' %}selected{% endif %}>Completed</option>
+      <option value="confirmed" {% if status_filter == 'confirmed' %}selected{% endif %}>Confirmed</option>
+      <option value="on_hold" {% if status_filter == 'on_hold' %}selected{% endif %}>On Hold</option>
+    </select>
+  </div>
+</div>
+
+<div class="project-grid">
+  {% for project in projects %}
+  <a href="{% url 'client_portal:portal_project_detail' project.id %}" class="project-card">
+    <div class="project-card-header">
+      <div>
+        <div class="project-card-title">{{ project.name }}</div>
+        <div class="project-card-type">{{ project.get_project_type_display }}</div>
+      </div>
+      <span class="portal-badge {{ project.status }}">{{ project.get_status_display }}</span>
+    </div>
+
+    {% if project.description %}
+    <p style="font-size: 0.8125rem; color: var(--text-secondary); margin: 0 0 0.75rem; line-height: 1.5;">{{ project.description|truncatewords:20 }}</p>
+    {% endif %}
+
+    <div class="project-progress">
+      <div class="progress-bar-wrapper">
+        <div class="progress-bar-fill" style="width: {{ project.progress }}%;"></div>
+      </div>
+      <div class="progress-text">
+        <span>{{ project.task_completed }}/{{ project.task_total }} tasks</span>
+        <span>{{ project.progress }}%</span>
+      </div>
+    </div>
+
+    <div class="project-card-meta">
+      {% if project.start_date %}<span><i class="fas fa-play"></i> {{ project.start_date|date:"M d" }}</span>{% endif %}
+      {% if project.deadline %}<span><i class="fas fa-flag{% if project.is_overdue %}" style="color: var(--danger);{% endif %}"></i> {{ project.deadline|date:"M d, Y" }}</span>{% endif %}
+      {% if project.tech_stack %}<span><i class="fas fa-code"></i> {{ project.tech_stack|truncatewords:3 }}</span>{% endif %}
+    </div>
+  </a>
+  {% empty %}
+  <div class="portal-empty" style="grid-column: 1 / -1;">
+    <i class="fas fa-project-diagram"></i>
+    <h3>No projects found</h3>
+    <p>Projects assigned to you will appear here</p>
+  </div>
+  {% endfor %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function filterProjects() {
+  const status = document.getElementById('statusFilter').value;
+  const url = new URL(window.location.href);
+  if (status) url.searchParams.set('status', status);
+  else url.searchParams.delete('status');
+  window.location.href = url.toString();
+}
+</script>
+{% endblock %}

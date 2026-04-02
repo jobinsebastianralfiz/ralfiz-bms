@@ -14,6 +14,8 @@ urlpatterns = [
     path('api/interiodesk/', include('interiodesk.urls')),
     path('crm/', include('crm.urls')),
     path('api/employees/', include('employees.urls')),
+    path('api/client/', include('client_portal.api_urls')),
+    path('portal/', include('client_portal.urls')),
 
     # API Documentation
     path('api/schema/', SpectacularAPIView.as_view(), name='schema'),

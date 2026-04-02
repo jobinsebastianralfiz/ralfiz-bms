@@ -1,0 +1,416 @@
+{% extends 'client_portal/base.html' %}
+
+{% block title %}{{ project.name }}{% endblock %}
+
+{% block content %}
+<!-- Breadcrumb -->
+<div style="margin-bottom: 1rem;">
+  <a href="{% url 'client_portal:portal_projects' %}" class="portal-link"><i class="fas fa-arrow-left"></i> Back to Projects</a>
+</div>
+
+<!-- Project Header -->
+<div style="display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 1.5rem;">
+  <div>
+    <h1 style="font-size: 1.5rem; font-weight: 700; color: var(--text-primary); margin: 0 0 0.25rem;">{{ project.name }}</h1>
+    <div style="display: flex; gap: 0.75rem; align-items: center;">
+      <span class="portal-badge {{ project.status }}">{{ project.get_status_display }}</span>
+      <span style="font-size: 0.875rem; color: var(--text-muted);">{{ project.get_project_type_display }}</span>
+      {% if project.is_overdue %}<span class="portal-badge overdue"><i class="fas fa-exclamation-triangle"></i> Overdue</span>{% endif %}
+    </div>
+  </div>
+  {% if project.live_url %}
+  <a href="{{ project.live_url }}" target="_blank" class="portal-btn portal-btn-outline portal-btn-sm">
+    <i class="fas fa-external-link-alt"></i> Live URL
+  </a>
+  {% endif %}
+</div>
+
+<!-- Tabs -->
+<div class="portal-tabs">
+  <a href="#overview" class="portal-tab active" onclick="switchTab(event, 'overview')">Overview</a>
+  <a href="#tasks" class="portal-tab" onclick="switchTab(event, 'tasks')">Tasks <span class="portal-badge todo" style="margin-left: 0.25rem;">{{ task_stats.total }}</span></a>
+  <a href="#timeline" class="portal-tab" onclick="switchTab(event, 'timeline')">Timeline</a>
+  <a href="#comments" class="portal-tab" onclick="switchTab(event, 'comments')">Discussion</a>
+  <a href="#documents" class="portal-tab" onclick="switchTab(event, 'documents')">Documents</a>
+</div>
+
+<!-- Overview Tab -->
+<div id="tab-overview" class="tab-content">
+  <div class="portal-grid-3">
+    <div>
+      <!-- Progress -->
+      <div class="portal-card">
+        <div class="portal-card-header"><h2>Progress</h2></div>
+        <div class="portal-card-body">
+          <div style="text-align: center; margin-bottom: 1rem;">
+            <div style="font-size: 2.5rem; font-weight: 700; color: var(--primary);">{{ progress }}%</div>
+            <div style="font-size: 0.875rem; color: var(--text-muted);">Complete</div>
+          </div>
+          <div class="progress-bar-wrapper" style="height: 10px;">
+            <div class="progress-bar-fill" style="width: {{ progress }}%;"></div>
+          </div>
+          <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.5rem; margin-top: 1rem; text-align: center;">
+            <div>
+              <div style="font-size: 1.25rem; font-weight: 700; color: var(--text-primary);">{{ task_stats.todo }}</div>
+              <div style="font-size: 0.6875rem; color: var(--text-muted); text-transform: uppercase;">To Do</div>
+            </div>
+            <div>
+              <div style="font-size: 1.25rem; font-weight: 700; color: #3b82f6;">{{ task_stats.in_progress }}</div>
+              <div style="font-size: 0.6875rem; color: var(--text-muted); text-transform: uppercase;">In Progress</div>
+            </div>
+            <div>
+              <div style="font-size: 1.25rem; font-weight: 700; color: var(--warning);">{{ task_stats.review }}</div>
+              <div style="font-size: 0.6875rem; color: var(--text-muted); text-transform: uppercase;">Review</div>
+            </div>
+            <div>
+              <div style="font-size: 1.25rem; font-weight: 700; color: var(--success);">{{ task_stats.completed }}</div>
+              <div style="font-size: 0.6875rem; color: var(--text-muted); text-transform: uppercase;">Done</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Description -->
+      {% if project.description %}
+      <div class="portal-card">
+        <div class="portal-card-header"><h2>Description</h2></div>
+        <div class="portal-card-body">
+          <p style="font-size: 0.9375rem; color: var(--text-secondary); line-height: 1.7; margin: 0;">{{ project.description|linebreaksbr }}</p>
+        </div>
+      </div>
+      {% endif %}
+
+      <!-- Financial Summary -->
+      <div class="portal-card">
+        <div class="portal-card-header"><h2>Financial Summary</h2></div>
+        <div class="portal-card-body">
+          <div class="financial-summary">
+            <div class="financial-item">
+              <div class="amount neutral">&#8377;{{ financial.total_invoiced|floatformat:0 }}</div>
+              <div class="label">Total Invoiced</div>
+            </div>
+            <div class="financial-item">
+              <div class="amount positive">&#8377;{{ financial.total_paid|floatformat:0 }}</div>
+              <div class="label">Total Paid</div>
+            </div>
+            <div class="financial-item">
+              <div class="amount {% if financial.balance_due > 0 %}negative{% else %}positive{% endif %}">&#8377;{{ financial.balance_due|floatformat:0 }}</div>
+              <div class="label">Balance Due</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div>
+      <!-- Project Details -->
+      <div class="portal-card">
+        <div class="portal-card-header"><h2>Details</h2></div>
+        <div class="portal-card-body">
+          <div style="display: flex; flex-direction: column; gap: 0.875rem;">
+            {% if project.start_date %}
+            <div class="detail-item">
+              <label>Start Date</label>
+              <span>{{ project.start_date|date:"M d, Y" }}</span>
+            </div>
+            {% endif %}
+            {% if project.deadline %}
+            <div class="detail-item">
+              <label>Deadline</label>
+              <span style="{% if project.is_overdue %}color: var(--danger);{% endif %}">{{ project.deadline|date:"M d, Y" }}{% if project.is_overdue %} (Overdue){% endif %}</span>
+            </div>
+            {% endif %}
+            {% if project.completed_date %}
+            <div class="detail-item">
+              <label>Completed</label>
+              <span>{{ project.completed_date|date:"M d, Y" }}</span>
+            </div>
+            {% endif %}
+            {% if project.tech_stack %}
+            <div class="detail-item">
+              <label>Tech Stack</label>
+              <span>{{ project.tech_stack }}</span>
+            </div>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+
+      <!-- Team -->
+      {% if team_members %}
+      <div class="portal-card">
+        <div class="portal-card-header"><h2>Team</h2></div>
+        <div class="portal-card-body" style="padding: 0;">
+          {% for member in team_members %}
+          <div style="display: flex; align-items: center; gap: 0.75rem; padding: 0.75rem 1.25rem; border-bottom: 1px solid var(--border-color);">
+            <div style="width: 32px; height: 32px; border-radius: 50%; background: linear-gradient(135deg, var(--primary), var(--primary-hover)); display: flex; align-items: center; justify-content: center; color: white; font-size: 0.75rem; font-weight: 600;">{{ member.name|make_list|first|upper }}</div>
+            <div>
+              <div style="font-size: 0.875rem; font-weight: 500; color: var(--text-primary);">{{ member.name }}</div>
+              <div style="font-size: 0.75rem; color: var(--text-muted);">{{ member.get_role_display }}</div>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+<!-- Tasks Tab (Kanban Board) -->
+<div id="tab-tasks" class="tab-content" style="display: none;">
+  <div class="kanban-board">
+    <div class="kanban-column" data-status="todo">
+      <div class="kanban-column-header">
+        <span class="kanban-column-title">To Do</span>
+        <span class="kanban-column-count">{{ task_stats.todo }}</span>
+      </div>
+      <div class="kanban-column-body">
+        {% for task in tasks_todo %}
+        <div class="kanban-task">
+          <div class="kanban-task-title">{{ task.title }}</div>
+          <div class="kanban-task-meta">
+            <span class="portal-badge {{ task.priority }}" style="font-size: 0.6875rem;">{{ task.get_priority_display }}</span>
+            {% if task.due_date %}
+            <span style="{% if task.is_overdue %}color: var(--danger);{% endif %}"><i class="fas fa-calendar"></i> {{ task.due_date|date:"M d" }}</span>
+            {% endif %}
+          </div>
+          {% if task.assigned_to %}
+          <div class="kanban-task-assignee" style="margin-top: 0.375rem;">
+            <i class="fas fa-user" style="font-size: 0.625rem;"></i> {{ task.assigned_to.name }}
+          </div>
+          {% endif %}
+        </div>
+        {% empty %}
+        <div style="text-align: center; padding: 1rem; color: var(--text-muted); font-size: 0.8125rem;">No tasks</div>
+        {% endfor %}
+      </div>
+    </div>
+
+    <div class="kanban-column" data-status="in_progress">
+      <div class="kanban-column-header">
+        <span class="kanban-column-title">In Progress</span>
+        <span class="kanban-column-count">{{ task_stats.in_progress }}</span>
+      </div>
+      <div class="kanban-column-body">
+        {% for task in tasks_in_progress %}
+        <div class="kanban-task">
+          <div class="kanban-task-title">{{ task.title }}</div>
+          <div class="kanban-task-meta">
+            <span class="portal-badge {{ task.priority }}" style="font-size: 0.6875rem;">{{ task.get_priority_display }}</span>
+            {% if task.due_date %}
+            <span style="{% if task.is_overdue %}color: var(--danger);{% endif %}"><i class="fas fa-calendar"></i> {{ task.due_date|date:"M d" }}</span>
+            {% endif %}
+          </div>
+          {% if task.assigned_to %}
+          <div class="kanban-task-assignee" style="margin-top: 0.375rem;">
+            <i class="fas fa-user" style="font-size: 0.625rem;"></i> {{ task.assigned_to.name }}
+          </div>
+          {% endif %}
+        </div>
+        {% empty %}
+        <div style="text-align: center; padding: 1rem; color: var(--text-muted); font-size: 0.8125rem;">No tasks</div>
+        {% endfor %}
+      </div>
+    </div>
+
+    <div class="kanban-column" data-status="review">
+      <div class="kanban-column-header">
+        <span class="kanban-column-title">In Review</span>
+        <span class="kanban-column-count">{{ task_stats.review }}</span>
+      </div>
+      <div class="kanban-column-body">
+        {% for task in tasks_review %}
+        <div class="kanban-task">
+          <div class="kanban-task-title">{{ task.title }}</div>
+          <div class="kanban-task-meta">
+            <span class="portal-badge {{ task.priority }}" style="font-size: 0.6875rem;">{{ task.get_priority_display }}</span>
+            {% if task.due_date %}
+            <span style="{% if task.is_overdue %}color: var(--danger);{% endif %}"><i class="fas fa-calendar"></i> {{ task.due_date|date:"M d" }}</span>
+            {% endif %}
+          </div>
+          {% if task.assigned_to %}
+          <div class="kanban-task-assignee" style="margin-top: 0.375rem;">
+            <i class="fas fa-user" style="font-size: 0.625rem;"></i> {{ task.assigned_to.name }}
+          </div>
+          {% endif %}
+        </div>
+        {% empty %}
+        <div style="text-align: center; padding: 1rem; color: var(--text-muted); font-size: 0.8125rem;">No tasks</div>
+        {% endfor %}
+      </div>
+    </div>
+
+    <div class="kanban-column" data-status="completed">
+      <div class="kanban-column-header">
+        <span class="kanban-column-title">Completed</span>
+        <span class="kanban-column-count">{{ task_stats.completed }}</span>
+      </div>
+      <div class="kanban-column-body">
+        {% for task in tasks_completed %}
+        <div class="kanban-task">
+          <div class="kanban-task-title">{{ task.title }}</div>
+          <div class="kanban-task-meta">
+            <span class="portal-badge completed" style="font-size: 0.6875rem;">Done</span>
+            {% if task.completed_date %}
+            <span><i class="fas fa-check"></i> {{ task.completed_date|date:"M d" }}</span>
+            {% endif %}
+          </div>
+        </div>
+        {% empty %}
+        <div style="text-align: center; padding: 1rem; color: var(--text-muted); font-size: 0.8125rem;">No tasks</div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Timeline Tab -->
+<div id="tab-timeline" class="tab-content" style="display: none;">
+  {% if updates %}
+  <div class="timeline">
+    {% for update in updates %}
+    <div class="timeline-item">
+      <div class="timeline-dot {{ update.update_type }}"></div>
+      <div class="timeline-content">
+        <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.25rem;">
+          <span class="portal-badge {{ update.update_type }}" style="font-size: 0.6875rem;">{{ update.get_update_type_display }}</span>
+          {% if update.progress_percentage is not None %}
+          <span style="font-size: 0.75rem; color: var(--primary); font-weight: 600;">{{ update.progress_percentage }}%</span>
+          {% endif %}
+        </div>
+        <div class="timeline-title">{{ update.title }}</div>
+        <div class="timeline-body">{{ update.description|linebreaksbr }}</div>
+        <div class="timeline-meta">
+          <span><i class="fas fa-user"></i> {{ update.author.get_full_name|default:update.author.username }}</span>
+          <span><i class="fas fa-clock"></i> {{ update.created_at|timesince }} ago</span>
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="portal-empty">
+    <i class="fas fa-stream"></i>
+    <h3>No updates yet</h3>
+    <p>Project updates will appear here as the team posts them</p>
+  </div>
+  {% endif %}
+</div>
+
+<!-- Comments Tab -->
+<div id="tab-comments" class="tab-content" style="display: none;">
+  <div class="portal-card">
+    <div class="portal-card-header"><h2>Discussion</h2></div>
+    <div class="portal-card-body">
+      <div class="comment-list">
+        {% for comment in comments %}
+        <div class="comment-item">
+          <div class="comment-avatar {% if comment.author.is_staff or comment.author.is_superuser %}team{% else %}client{% endif %}">
+            {{ comment.author.get_full_name|default:comment.author.username|make_list|first|upper }}
+          </div>
+          <div class="comment-body">
+            <div class="comment-header">
+              <span class="comment-author">{{ comment.author.get_full_name|default:comment.author.username }}</span>
+              <span class="comment-role {% if comment.author.is_staff or comment.author.is_superuser %}team{% else %}client{% endif %}">{% if comment.author.is_staff or comment.author.is_superuser %}Team{% else %}Client{% endif %}</span>
+              <span class="comment-time">{{ comment.created_at|timesince }} ago</span>
+            </div>
+            <div class="comment-text">{{ comment.message|linebreaksbr }}</div>
+
+            {% if comment.replies.count > 0 %}
+            <div class="comment-replies">
+              {% for reply in comment.visible_replies %}
+              <div class="comment-item" style="margin-top: 0.75rem;">
+                <div class="comment-avatar {% if reply.author.is_staff or reply.author.is_superuser %}team{% else %}client{% endif %}" style="width: 28px; height: 28px; font-size: 0.625rem;">
+                  {{ reply.author.get_full_name|default:reply.author.username|make_list|first|upper }}
+                </div>
+                <div class="comment-body">
+                  <div class="comment-header">
+                    <span class="comment-author" style="font-size: 0.8125rem;">{{ reply.author.get_full_name|default:reply.author.username }}</span>
+                    <span class="comment-time">{{ reply.created_at|timesince }} ago</span>
+                  </div>
+                  <div class="comment-text">{{ reply.message|linebreaksbr }}</div>
+                </div>
+              </div>
+              {% endfor %}
+            </div>
+            {% endif %}
+          </div>
+        </div>
+        {% empty %}
+        <div class="portal-empty">
+          <i class="fas fa-comments"></i>
+          <h3>No comments yet</h3>
+          <p>Start a discussion about this project</p>
+        </div>
+        {% endfor %}
+      </div>
+
+      <!-- Comment Form -->
+      <form method="post" action="{% url 'client_portal:portal_add_comment' project.id %}" class="comment-form">
+        {% csrf_token %}
+        <div class="comment-avatar client" style="margin-top: 0.25rem;">{{ client.name|make_list|first|upper }}</div>
+        <div style="flex: 1;">
+          <textarea name="message" placeholder="Write a comment..." required></textarea>
+          <div style="margin-top: 0.5rem; text-align: right;">
+            <button type="submit" class="portal-btn portal-btn-primary portal-btn-sm">
+              <i class="fas fa-paper-plane"></i> Send
+            </button>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Documents Tab -->
+<div id="tab-documents" class="tab-content" style="display: none;">
+  <div class="portal-card">
+    <div class="portal-card-header"><h2>Project Documents</h2></div>
+    <div class="portal-card-body" style="padding: 0;">
+      {% for doc in documents %}
+      <div style="display: flex; align-items: center; gap: 0.875rem; padding: 0.875rem 1.25rem; border-bottom: 1px solid var(--border-color);">
+        <div style="width: 40px; height: 40px; border-radius: var(--border-radius); background: var(--bg-body); display: flex; align-items: center; justify-content: center; color: var(--primary);">
+          <i class="fas fa-file{% if doc.file_extension == 'pdf' %}-pdf{% elif doc.file_extension in 'jpg,jpeg,png,gif' %}-image{% elif doc.file_extension in 'doc,docx' %}-word{% elif doc.file_extension in 'xls,xlsx' %}-excel{% endif %}"></i>
+        </div>
+        <div style="flex: 1;">
+          <div style="font-weight: 500; font-size: 0.9375rem; color: var(--text-primary);">{{ doc.name }}</div>
+          {% if doc.description %}<div style="font-size: 0.8125rem; color: var(--text-muted);">{{ doc.description }}</div>{% endif %}
+        </div>
+        <a href="{{ doc.file.url }}" target="_blank" class="portal-btn portal-btn-outline portal-btn-sm">
+          <i class="fas fa-download"></i> Download
+        </a>
+      </div>
+      {% empty %}
+      <div class="portal-empty">
+        <i class="fas fa-folder-open"></i>
+        <h3>No documents</h3>
+        <p>Shared project documents will appear here</p>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function switchTab(event, tabName) {
+  event.preventDefault();
+  document.querySelectorAll('.tab-content').forEach(el => el.style.display = 'none');
+  document.querySelectorAll('.portal-tab').forEach(el => el.classList.remove('active'));
+  document.getElementById('tab-' + tabName).style.display = 'block';
+  event.target.classList.add('active');
+  history.replaceState(null, '', '#' + tabName);
+}
+
+// Restore tab from hash
+const hash = window.location.hash.slice(1);
+if (hash && document.getElementById('tab-' + hash)) {
+  document.querySelectorAll('.tab-content').forEach(el => el.style.display = 'none');
+  document.querySelectorAll('.portal-tab').forEach(el => el.classList.remove('active'));
+  document.getElementById('tab-' + hash).style.display = 'block';
+  document.querySelector('.portal-tab[href="#' + hash + '"]').classList.add('active');
+}
+</script>
+{% endblock %}
