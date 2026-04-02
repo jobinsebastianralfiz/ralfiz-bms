@@ -32,6 +32,9 @@ urlpatterns = [
     path('projects/<uuid:pk>/', views.project_detail, name='project_detail'),
     path('projects/<uuid:pk>/edit/', views.project_update, name='project_update'),
     path('projects/<uuid:pk>/delete/', views.project_delete, name='project_delete'),
+    path('projects/<uuid:pk>/post-update/', views.project_post_update, name='project_post_update'),
+    path('projects/<uuid:pk>/delete-update/<uuid:update_pk>/', views.project_delete_update, name='project_delete_update'),
+    path('projects/<uuid:pk>/reply-comment/', views.project_reply_comment, name='project_reply_comment'),
 
     # Credentials
     path('credentials/', views.credential_list, name='credential_list'),

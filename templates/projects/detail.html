@@ -335,6 +335,9 @@
           <button class="tab-item" data-tab="paymentsTab" onclick="switchTab('paymentsTab')">
             <i class="fas fa-credit-card me-2"></i>Payments
           </button>
+          <button class="tab-item" data-tab="portalTab" onclick="switchTab('portalTab')">
+            <i class="fas fa-globe me-2"></i>Client Portal
+          </button>
         </div>
       </div>
 
@@ -506,6 +509,130 @@
             </tbody>
           </table>
         </div>
+      </div>
+
+      <!-- Client Portal Tab -->
+      <div class="tab-content d-none" id="portalTab">
+        <!-- Post Update Form -->
+        <div class="p-3 border-bottom" style="background: var(--bg-hover);">
+          <h4 style="font-size: 0.9375rem; font-weight: 600; margin-bottom: 0.75rem;">
+            <i class="fas fa-bullhorn me-2" style="color: var(--primary);"></i>Post Update to Client
+          </h4>
+          <form method="post" action="{% url 'project_post_update' project.pk %}">
+            {% csrf_token %}
+            <div class="row" style="gap: 0.75rem 0;">
+              <div class="col-6 col-sm-12" style="padding: 0 0.5rem;">
+                <input type="text" name="title" class="form-control" placeholder="Update title" required style="font-size: 0.875rem;">
+              </div>
+              <div class="col-3 col-sm-6" style="padding: 0 0.5rem;">
+                <select name="update_type" class="form-control" style="font-size: 0.875rem;">
+                  <option value="progress">Progress Update</option>
+                  <option value="milestone">Milestone</option>
+                  <option value="release">Release</option>
+                  <option value="blocker">Blocker</option>
+                  <option value="info">Information</option>
+                </select>
+              </div>
+              <div class="col-3 col-sm-6" style="padding: 0 0.5rem;">
+                <input type="number" name="progress_percentage" class="form-control" placeholder="Progress %" min="0" max="100" style="font-size: 0.875rem;">
+              </div>
+              <div class="col-12" style="padding: 0 0.5rem;">
+                <textarea name="description" class="form-control" rows="2" placeholder="Describe the update..." required style="font-size: 0.875rem;"></textarea>
+              </div>
+              <div class="col-12" style="padding: 0 0.5rem; display: flex; align-items: center; gap: 1rem;">
+                <button type="submit" class="btn btn-sm btn-primary">
+                  <i class="fas fa-paper-plane me-1"></i>Post Update
+                </button>
+                <label style="font-size: 0.8125rem; color: var(--text-secondary); display: flex; align-items: center; gap: 0.375rem; margin: 0;">
+                  <input type="checkbox" name="is_visible_to_client" checked> Visible to client
+                </label>
+              </div>
+            </div>
+          </form>
+        </div>
+
+        <!-- Updates Timeline -->
+        <div class="p-3">
+          <h4 style="font-size: 0.9375rem; font-weight: 600; margin-bottom: 0.75rem;">Project Updates</h4>
+          {% for update in project_updates %}
+          <div style="display: flex; gap: 0.75rem; padding: 0.75rem 0; border-bottom: 1px solid var(--border-color);">
+            <div style="width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+              {% if update.update_type == 'milestone' %}background: #dcfce7; color: #15803d;
+              {% elif update.update_type == 'release' %}background: #dbeafe; color: #1d4ed8;
+              {% elif update.update_type == 'blocker' %}background: #fee2e2; color: #991b1b;
+              {% else %}background: #f1f5f9; color: #475569;{% endif %}
+              font-size: 0.75rem;">
+              <i class="fas fa-{% if update.update_type == 'milestone' %}flag{% elif update.update_type == 'release' %}rocket{% elif update.update_type == 'blocker' %}exclamation-triangle{% elif update.update_type == 'info' %}info-circle{% else %}sync{% endif %}"></i>
+            </div>
+            <div style="flex: 1;">
+              <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.25rem;">
+                <span style="font-weight: 600; font-size: 0.875rem;">{{ update.title }}</span>
+                <span class="status-badge" style="font-size: 0.6875rem; padding: 0.125rem 0.5rem; border-radius: 999px; background: var(--bg-body); color: var(--text-muted);">{{ update.get_update_type_display }}</span>
+                {% if update.progress_percentage is not None %}
+                <span style="font-size: 0.75rem; color: var(--primary); font-weight: 600;">{{ update.progress_percentage }}%</span>
+                {% endif %}
+                {% if not update.is_visible_to_client %}
+                <span style="font-size: 0.6875rem; padding: 0.125rem 0.5rem; border-radius: 999px; background: #fef3c7; color: #92400e;">Internal</span>
+                {% endif %}
+              </div>
+              <p style="font-size: 0.8125rem; color: var(--text-secondary); margin: 0 0 0.25rem; line-height: 1.5;">{{ update.description|truncatewords:40 }}</p>
+              <span style="font-size: 0.75rem; color: var(--text-muted);">
+                {{ update.author.get_full_name|default:update.author.username }} &middot; {{ update.created_at|timesince }} ago
+              </span>
+            </div>
+            <form method="post" action="{% url 'project_delete_update' project.pk update.pk %}" style="flex-shrink: 0;">
+              {% csrf_token %}
+              <button type="submit" class="btn btn-sm btn-ghost" style="color: var(--text-muted); padding: 0.25rem 0.5rem;" onclick="return confirm('Delete this update?')" title="Delete">
+                <i class="fas fa-trash-alt"></i>
+              </button>
+            </form>
+          </div>
+          {% empty %}
+          <div class="text-center py-4 text-muted">
+            <i class="fas fa-stream" style="font-size: 1.5rem; opacity: 0.3; display: block; margin-bottom: 0.5rem;"></i>
+            No updates posted yet. Post your first update above.
+          </div>
+          {% endfor %}
+        </div>
+
+        <!-- Client Comments -->
+        {% if client_comments %}
+        <div class="p-3 border-top">
+          <h4 style="font-size: 0.9375rem; font-weight: 600; margin-bottom: 0.75rem;">
+            <i class="fas fa-comments me-2" style="color: var(--info);"></i>Client Comments
+          </h4>
+          {% for comment in client_comments %}
+          <div style="display: flex; gap: 0.75rem; padding: 0.75rem 0; border-bottom: 1px solid var(--border-color);">
+            <div style="width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 0.6875rem; font-weight: 600; color: white;
+              {% if comment.author.is_staff or comment.author.is_superuser %}background: linear-gradient(135deg, #0d9488, #0f766e);
+              {% else %}background: linear-gradient(135deg, #8b5cf6, #7c3aed);{% endif %}">
+              {{ comment.author.get_full_name|default:comment.author.username|make_list|first|upper }}
+            </div>
+            <div style="flex: 1;">
+              <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.125rem;">
+                <span style="font-weight: 600; font-size: 0.8125rem;">{{ comment.author.get_full_name|default:comment.author.username }}</span>
+                <span style="font-size: 0.6875rem; padding: 0.125rem 0.5rem; border-radius: 999px;
+                  {% if comment.author.is_staff or comment.author.is_superuser %}background: #f0fdfa; color: #0d9488;
+                  {% else %}background: #f5f3ff; color: #7c3aed;{% endif %}">
+                  {% if comment.author.is_staff or comment.author.is_superuser %}Team{% else %}Client{% endif %}
+                </span>
+                <span style="font-size: 0.75rem; color: var(--text-muted);">{{ comment.created_at|timesince }} ago</span>
+              </div>
+              <p style="font-size: 0.8125rem; color: var(--text-secondary); margin: 0; line-height: 1.5;">{{ comment.message }}</p>
+            </div>
+          </div>
+          {% endfor %}
+
+          <!-- Quick Reply -->
+          <form method="post" action="{% url 'project_reply_comment' project.pk %}" style="margin-top: 0.75rem; display: flex; gap: 0.5rem;">
+            {% csrf_token %}
+            <input type="text" name="message" class="form-control" placeholder="Reply to client..." required style="font-size: 0.875rem;">
+            <button type="submit" class="btn btn-sm btn-primary" style="white-space: nowrap;">
+              <i class="fas fa-reply me-1"></i>Reply
+            </button>
+          </form>
+        </div>
+        {% endif %}
       </div>
     </div>
   </div>

@@ -473,6 +473,83 @@ def client_portal_toggle(request, pk):
 # ============== Projects ==============
 
 @login_required
+def project_post_update(request, pk):
+    """Post a project update visible to clients"""
+    from client_portal.models import ProjectUpdate, ClientNotification
+
+    project = get_object_or_404(Project, pk=pk)
+    if request.method == 'POST':
+        title = request.POST.get('title', '').strip()
+        description = request.POST.get('description', '').strip()
+        update_type = request.POST.get('update_type', 'progress')
+        progress_raw = request.POST.get('progress_percentage', '').strip()
+        progress = int(progress_raw) if progress_raw else None
+        is_visible = 'is_visible_to_client' in request.POST
+
+        if title and description:
+            update = ProjectUpdate.objects.create(
+                project=project,
+                author=request.user,
+                title=title,
+                description=description,
+                update_type=update_type,
+                progress_percentage=progress,
+                is_visible_to_client=is_visible,
+            )
+
+            # Auto-notify client
+            if is_visible and project.client.user:
+                ClientNotification.objects.create(
+                    client=project.client,
+                    title=f'Project Update: {title}',
+                    message=description[:200],
+                    notification_type='project_update',
+                    project=project,
+                )
+
+            messages.success(request, 'Update posted successfully.')
+        else:
+            messages.error(request, 'Title and description are required.')
+
+    return redirect('project_detail', pk=pk)
+
+
+@login_required
+def project_delete_update(request, pk, update_pk):
+    """Delete a project update"""
+    from client_portal.models import ProjectUpdate
+
+    project = get_object_or_404(Project, pk=pk)
+    update = get_object_or_404(ProjectUpdate, pk=update_pk, project=project)
+
+    if request.method == 'POST':
+        update.delete()
+        messages.success(request, 'Update deleted.')
+
+    return redirect('project_detail', pk=pk)
+
+
+@login_required
+def project_reply_comment(request, pk):
+    """Reply to client comments from admin"""
+    from client_portal.models import ProjectComment
+
+    project = get_object_or_404(Project, pk=pk)
+    if request.method == 'POST':
+        message = request.POST.get('message', '').strip()
+        if message:
+            ProjectComment.objects.create(
+                project=project,
+                author=request.user,
+                message=message,
+                is_internal=False,
+            )
+            messages.success(request, 'Reply posted.')
+
+    return redirect('project_detail', pk=pk)
+
+
+@login_required
 def project_list(request):
     projects = Project.objects.select_related('client').all()
 
@@ -532,6 +609,13 @@ def project_detail(request, pk):
     # Pending amount = Total Project Cost - Amount Received
     pending_amount = total_project_cost - amount_received
 
+    # Client portal data
+    from client_portal.models import ProjectUpdate, ProjectComment
+    project_updates = ProjectUpdate.objects.filter(project=project).select_related('author')
+    client_comments = ProjectComment.objects.filter(
+        project=project, is_internal=False, parent__isnull=True
+    ).select_related('author').order_by('-created_at')
+
     context = {
         'project': project,
         'credentials': credentials,
@@ -542,6 +626,8 @@ def project_detail(request, pk):
         'total_invoiced': total_invoiced,
         'amount_received': amount_received,
         'pending_amount': pending_amount,
+        'project_updates': project_updates,
+        'client_comments': client_comments,
     }
     return render(request, 'projects/detail.html', context)
 
