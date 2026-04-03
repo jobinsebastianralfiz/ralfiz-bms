@@ -6,6 +6,7 @@ from .models import (
     CertificateTemplate, Certificate
 )
 from crm.models import Lead, LeadNote, DailyActivity, Demo, FollowUp, LeadActivity
+from core.models import Client, Project
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -425,6 +426,8 @@ class LeadSerializer(serializers.ModelSerializer):
     upcoming_follow_ups = serializers.SerializerMethodField()
     overdue_follow_ups = serializers.SerializerMethodField()
     last_activity = serializers.SerializerMethodField()
+    client_id = serializers.UUIDField(source='client.id', read_only=True, default=None)
+    client_name = serializers.CharField(source='client.name', read_only=True, default='')
 
     class Meta:
         model = Lead
@@ -434,9 +437,10 @@ class LeadSerializer(serializers.ModelSerializer):
             'next_follow_up_date', 'closing_probability', 'notes',
             'created_by_name', 'notes_list', 'demo_count',
             'upcoming_follow_ups', 'overdue_follow_ups', 'last_activity',
+            'client_id', 'client_name',
             'created_at', 'updated_at',
         ]
-        read_only_fields = ['id', 'created_by_name', 'created_at', 'updated_at']
+        read_only_fields = ['id', 'created_by_name', 'client_id', 'client_name', 'created_at', 'updated_at']
 
     def get_demo_count(self, obj):
         return obj.demos.count()

@@ -19,6 +19,7 @@ from .models import (
     CertificateTemplate, Certificate
 )
 from crm.models import Lead, LeadNote, DailyActivity, Demo, FollowUp, LeadActivity
+from core.models import Client, Project
 from .serializers import (
     EmployeeProfileSerializer, EmployeeListSerializer,
     DeviceTokenSerializer, AttendanceSerializer,
@@ -3193,7 +3194,35 @@ class CRMLeadStatusUpdateView(APIView):
             metadata={'old_status': old_status, 'new_status': new_status},
         )
 
-        return Response(LeadSerializer(lead, context={'request': request}).data)
+        # Auto-create Client when lead is converted
+        client_data = None
+        if new_status == 'converted' and not lead.client:
+            client = Client.objects.create(
+                name=lead.contact_person,
+                company_name=lead.company_name,
+                email=lead.email or f'lead-{lead.pk}@placeholder.local',
+                phone=lead.phone,
+                notes=f'Auto-created from CRM lead #{lead.pk}. Source: {lead.get_source_display()}.',
+            )
+            lead.client = client
+            lead.save(update_fields=['client'])
+            log_lead_activity(
+                lead, 'status_change',
+                f'Client "{client.name}" auto-created from converted lead',
+                user=request.user,
+                metadata={'client_id': str(client.id), 'client_name': client.name},
+            )
+            client_data = {
+                'id': str(client.id),
+                'name': client.name,
+                'company_name': client.company_name,
+            }
+
+        response_data = LeadSerializer(lead, context={'request': request}).data
+        if client_data:
+            response_data['converted_client'] = client_data
+
+        return Response(response_data)
 
 
 @extend_schema(tags=['CRM - Leads'])
@@ -3531,6 +3560,18 @@ class CRMDemoStatusUpdateView(APIView):
             lead.status = 'converted'
             lead.save()
             log_lead_activity(lead, 'demo_converted', f'Demo converted! {demo.outcome_notes or ""}', user=request.user, metadata={'demo_id': demo.id})
+            # Auto-create Client
+            if not lead.client:
+                client = Client.objects.create(
+                    name=lead.contact_person,
+                    company_name=lead.company_name,
+                    email=lead.email or f'lead-{lead.pk}@placeholder.local',
+                    phone=lead.phone,
+                    notes=f'Auto-created from CRM lead #{lead.pk} via demo conversion.',
+                )
+                lead.client = client
+                lead.save(update_fields=['client'])
+                log_lead_activity(lead, 'status_change', f'Client "{client.name}" auto-created', user=request.user, metadata={'client_id': str(client.id)})
         elif new_status == 'completed' and lead.status == 'demo_scheduled':
             lead.status = 'follow_up'
             lead.save()
@@ -3871,5 +3912,52 @@ class CRMLeadTimelineView(APIView):
         timeline.sort(key=lambda x: x['created_at'], reverse=True)
 
         return Response(timeline)
+
+
+# ============== Create Project from Lead ==============
+
+class CRMLeadCreateProjectView(APIView):
+    """Create a project for a converted lead's client"""
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, lead_id):
+        lead = Lead.objects.filter(id=lead_id).select_related('client').first()
+        if not lead:
+            return Response({'error': 'Lead not found'}, status=status.HTTP_404_NOT_FOUND)
+
+        if not lead.client:
+            return Response({'error': 'Lead has no associated client. Convert the lead first.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        name = request.data.get('name', '').strip()
+        if not name:
+            return Response({'error': 'Project name is required'}, status=status.HTTP_400_BAD_REQUEST)
+
+        project = Project.objects.create(
+            client=lead.client,
+            name=name,
+            project_type=request.data.get('project_type', 'web_app'),
+            description=request.data.get('description', ''),
+            status='confirmed',
+            estimated_budget=request.data.get('estimated_budget') or None,
+            start_date=request.data.get('start_date') or None,
+            deadline=request.data.get('deadline') or None,
+            notes=request.data.get('notes', ''),
+        )
+
+        log_lead_activity(
+            lead, 'status_change',
+            f'Project "{project.name}" created for client "{lead.client.name}"',
+            user=request.user,
+            metadata={'project_id': str(project.id), 'project_name': project.name},
+        )
+
+        return Response({
+            'id': str(project.id),
+            'name': project.name,
+            'project_type': project.project_type,
+            'status': project.status,
+            'client_id': str(lead.client.id),
+            'client_name': lead.client.name,
+        }, status=status.HTTP_201_CREATED)
 
 

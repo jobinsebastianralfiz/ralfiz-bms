@@ -1,6 +1,7 @@
 from django.db import models
 from django.contrib.auth.models import User
 from django.utils import timezone
+from core.models import Client
 import re
 
 
@@ -90,6 +91,14 @@ class Lead(models.Model):
         help_text='Probability of closing (0-100%)'
     )
     notes = models.TextField(blank=True)
+    client = models.ForeignKey(
+        Client,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='crm_leads',
+        help_text='Client created when lead is converted',
+    )
     created_by = models.ForeignKey(
         User,
         on_delete=models.SET_NULL,

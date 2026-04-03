@@ -78,6 +78,54 @@ def lead_list(request):
     if assigned_filter:
         leads = leads.filter(assigned_to_id=assigned_filter)
 
+    # Date filters
+    date_from = request.GET.get('date_from', '')
+    date_to = request.GET.get('date_to', '')
+    if date_from:
+        leads = leads.filter(created_at__date__gte=date_from)
+    if date_to:
+        leads = leads.filter(created_at__date__lte=date_to)
+
+    # Sorting
+    sort_by = request.GET.get('sort', '-created_at')
+    valid_sorts = {
+        'created_at': 'created_at',
+        '-created_at': '-created_at',
+        'status': 'status',
+        '-status': '-status',
+        'contact_person': 'contact_person',
+        '-contact_person': '-contact_person',
+        'closing_probability': 'closing_probability',
+        '-closing_probability': '-closing_probability',
+        'next_follow_up_date': 'next_follow_up_date',
+        '-next_follow_up_date': '-next_follow_up_date',
+    }
+    if sort_by in valid_sorts:
+        leads = leads.order_by(valid_sorts[sort_by])
+
+    # Build date-wise submission summary (for admin)
+    datewise_summary = []
+    if not is_intern(request.user):
+        from django.db.models.functions import TruncDate
+        from django.db.models import Count
+        from collections import defaultdict
+
+        summary_qs = leads  # use the same filtered queryset
+        date_intern_groups = defaultdict(lambda: defaultdict(lambda: defaultdict(int)))
+        for lead in summary_qs.select_related('created_by').all():
+            d = lead.created_at.date()
+            creator = lead.created_by.get_full_name() if lead.created_by else 'Unknown'
+            date_intern_groups[d][creator][lead.status] += 1
+
+        for d in sorted(date_intern_groups.keys(), reverse=True)[:30]:
+            for intern_name, statuses in date_intern_groups[d].items():
+                datewise_summary.append({
+                    'date': d,
+                    'submitted_by': intern_name,
+                    'count': sum(statuses.values()),
+                    'status_breakdown': dict(statuses),
+                })
+
     paginator = Paginator(leads, 20)
     page_number = request.GET.get('page')
     leads = paginator.get_page(page_number)
@@ -90,9 +138,13 @@ def lead_list(request):
         'status_filter': status_filter,
         'source_filter': source_filter,
         'assigned_filter': assigned_filter,
+        'date_from': date_from,
+        'date_to': date_to,
+        'sort_by': sort_by,
         'status_choices': Lead.STATUS_CHOICES,
         'source_choices': Lead.SOURCE_CHOICES,
         'interns': interns,
+        'datewise_summary': datewise_summary,
     }
     return render(request, 'crm/leads/list.html', context)
 

@@ -26,14 +26,14 @@
 <div class="card mb-4">
   <div class="card-body">
     <form method="get" class="row align-items-end">
-      <div class="col-3" style="padding: 0.5rem;">
+      <div class="col-md-3 col-sm-6" style="padding: 0.5rem;">
         <label class="form-label">Search</label>
         <div class="navbar-search" style="width: 100%;">
           <i class="fas fa-search"></i>
           <input type="text" class="form-control" name="search" placeholder="Name, company, phone..." value="{{ search }}" style="padding-left: 2.5rem; width: 100%;">
         </div>
       </div>
-      <div class="col-2" style="padding: 0.5rem;">
+      <div class="col-md-2 col-sm-6" style="padding: 0.5rem;">
         <label class="form-label">Status</label>
         <select class="form-control" name="status">
           <option value="">All Status</option>
@@ -42,7 +42,7 @@
           {% endfor %}
         </select>
       </div>
-      <div class="col-2" style="padding: 0.5rem;">
+      <div class="col-md-2 col-sm-6" style="padding: 0.5rem;">
         <label class="form-label">Source</label>
         <select class="form-control" name="source">
           <option value="">All Sources</option>
@@ -52,7 +52,7 @@
         </select>
       </div>
       {% if request.user.is_superuser or request.user.is_staff %}
-      <div class="col-2" style="padding: 0.5rem;">
+      <div class="col-md-2 col-sm-6" style="padding: 0.5rem;">
         <label class="form-label">Assigned To</label>
         <select class="form-control" name="assigned_to">
           <option value="">All Interns</option>
@@ -62,17 +62,82 @@
         </select>
       </div>
       {% endif %}
-      <div class="col-2" style="padding: 0.5rem;">
+      <div class="col-md-2 col-sm-6" style="padding: 0.5rem;">
+        <label class="form-label">Sort By</label>
+        <select class="form-control" name="sort">
+          <option value="-created_at" {% if sort_by == '-created_at' %}selected{% endif %}>Newest First</option>
+          <option value="created_at" {% if sort_by == 'created_at' %}selected{% endif %}>Oldest First</option>
+          <option value="status" {% if sort_by == 'status' %}selected{% endif %}>Status (A-Z)</option>
+          <option value="-status" {% if sort_by == '-status' %}selected{% endif %}>Status (Z-A)</option>
+          <option value="contact_person" {% if sort_by == 'contact_person' %}selected{% endif %}>Name (A-Z)</option>
+          <option value="-closing_probability" {% if sort_by == '-closing_probability' %}selected{% endif %}>Probability (High-Low)</option>
+          <option value="next_follow_up_date" {% if sort_by == 'next_follow_up_date' %}selected{% endif %}>Follow-up Date</option>
+        </select>
+      </div>
+
+      <!-- Date range row -->
+      <div class="col-md-2 col-sm-6" style="padding: 0.5rem;">
+        <label class="form-label">Created From</label>
+        <input type="date" class="form-control" name="date_from" value="{{ date_from }}">
+      </div>
+      <div class="col-md-2 col-sm-6" style="padding: 0.5rem;">
+        <label class="form-label">Created To</label>
+        <input type="date" class="form-control" name="date_to" value="{{ date_to }}">
+      </div>
+
+      <div class="col-md-1 col-sm-3" style="padding: 0.5rem;">
         <button type="submit" class="btn btn-outline-secondary w-100">
           <i class="fas fa-filter"></i> Filter
         </button>
       </div>
-      <div class="col-1" style="padding: 0.5rem;">
+      <div class="col-md-1 col-sm-3" style="padding: 0.5rem;">
         <a href="{% url 'crm:lead_list' %}" class="btn btn-ghost w-100">Reset</a>
       </div>
     </form>
   </div>
 </div>
+
+<!-- Date-wise Submission Summary -->
+{% if datewise_summary %}
+<div class="card mb-4">
+  <div class="card-body">
+    <h3 style="font-size: 1rem; font-weight: 700; margin-bottom: 1rem;">
+      <i class="fas fa-calendar-alt" style="margin-right: 0.5rem; color: var(--primary);"></i>
+      Date-wise Lead Submissions
+    </h3>
+    <div class="table-wrapper">
+      <table class="table" style="margin-bottom: 0;">
+        <thead>
+          <tr>
+            <th>Date</th>
+            <th>Submitted By</th>
+            <th style="text-align: center;">Count</th>
+            <th>Statuses</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for entry in datewise_summary %}
+          <tr>
+            <td><span class="fw-medium">{{ entry.date|date:"d M Y" }}</span></td>
+            <td>{{ entry.submitted_by }}</td>
+            <td style="text-align: center;">
+              <span class="badge badge-primary" style="font-size: 0.85em;">{{ entry.count }}</span>
+            </td>
+            <td>
+              {% for status, cnt in entry.status_breakdown.items %}
+              <span class="badge badge-{% if status == 'new' %}info{% elif status == 'contacted' %}primary{% elif status == 'interested' %}warning{% elif status == 'converted' %}success{% elif status == 'lost' %}danger{% else %}secondary{% endif %}" style="margin-right: 4px;">
+                {{ status|title }}: {{ cnt }}
+              </span>
+              {% endfor %}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endif %}
 
 <!-- Leads Table -->
 <div class="card">
@@ -80,14 +145,31 @@
     <table class="table">
       <thead>
         <tr>
-          <th>Contact Person</th>
+          <th>
+            <a href="?{{ request.GET.urlencode }}&sort={% if sort_by == 'contact_person' %}-contact_person{% else %}contact_person{% endif %}" style="color: inherit; text-decoration: none;">
+              Contact Person {% if sort_by == 'contact_person' %}<i class="fas fa-sort-up"></i>{% elif sort_by == '-contact_person' %}<i class="fas fa-sort-down"></i>{% endif %}
+            </a>
+          </th>
           <th>Phone</th>
-          <th>Status</th>
+          <th>
+            <a href="?{{ request.GET.urlencode }}&sort={% if sort_by == 'status' %}-status{% else %}status{% endif %}" style="color: inherit; text-decoration: none;">
+              Status {% if sort_by == 'status' %}<i class="fas fa-sort-up"></i>{% elif sort_by == '-status' %}<i class="fas fa-sort-down"></i>{% endif %}
+            </a>
+          </th>
           <th>Source</th>
+          <th>Submitted By</th>
+          <th>
+            <a href="?{{ request.GET.urlencode }}&sort={% if sort_by == '-created_at' %}created_at{% else %}-created_at{% endif %}" style="color: inherit; text-decoration: none;">
+              Submitted On {% if sort_by == '-created_at' %}<i class="fas fa-sort-down"></i>{% elif sort_by == 'created_at' %}<i class="fas fa-sort-up"></i>{% endif %}
+            </a>
+          </th>
           <th>Assigned To</th>
-          <th>Follow-up</th>
-          <th>Prob.</th>
-          <th style="width: 120px;">Actions</th>
+          <th>
+            <a href="?{{ request.GET.urlencode }}&sort={% if sort_by == '-closing_probability' %}closing_probability{% else %}-closing_probability{% endif %}" style="color: inherit; text-decoration: none;">
+              Prob. {% if sort_by == '-closing_probability' %}<i class="fas fa-sort-down"></i>{% elif sort_by == 'closing_probability' %}<i class="fas fa-sort-up"></i>{% endif %}
+            </a>
+          </th>
+          <th style="width: 100px;">Actions</th>
         </tr>
       </thead>
       <tbody>
@@ -106,8 +188,18 @@
             </span>
           </td>
           <td><span class="text-sm">{{ lead.get_source_display }}</span></td>
+          <td>
+            {% if lead.created_by %}
+            <span class="text-sm fw-medium">{{ lead.created_by.get_full_name|default:lead.created_by.username }}</span>
+            {% else %}
+            <span class="text-sm text-muted">-</span>
+            {% endif %}
+          </td>
+          <td>
+            <span class="text-sm">{{ lead.created_at|date:"d M Y" }}</span>
+            <br><span class="text-sm text-muted">{{ lead.created_at|date:"h:i A" }}</span>
+          </td>
           <td><span class="text-sm">{{ lead.assigned_to.get_full_name|default:lead.assigned_to.username|default:"-" }}</span></td>
-          <td><span class="text-sm">{{ lead.next_follow_up_date|date:"d M Y"|default:"-" }}</span></td>
           <td><span class="text-sm">{{ lead.closing_probability }}%</span></td>
           <td>
             <div class="table-actions">
@@ -122,7 +214,7 @@
         </tr>
         {% empty %}
         <tr>
-          <td colspan="8" class="text-center py-4 text-muted">
+          <td colspan="9" class="text-center py-4 text-muted">
             <i class="fas fa-user-tag mb-2" style="font-size: 2rem;"></i>
             <p class="mb-0">No leads found</p>
           </td>
@@ -131,5 +223,18 @@
       </tbody>
     </table>
   </div>
+
+  <!-- Pagination -->
+  {% if leads.has_other_pages %}
+  <div class="card-body" style="border-top: 1px solid var(--border-color); display: flex; justify-content: center; gap: 0.5rem;">
+    {% if leads.has_previous %}
+    <a href="?page={{ leads.previous_page_number }}&search={{ search }}&status={{ status_filter }}&source={{ source_filter }}&assigned_to={{ assigned_filter }}&sort={{ sort_by }}&date_from={{ date_from }}&date_to={{ date_to }}" class="btn btn-sm btn-ghost">&laquo; Prev</a>
+    {% endif %}
+    <span class="btn btn-sm btn-ghost" style="pointer-events: none;">Page {{ leads.number }} of {{ leads.paginator.num_pages }}</span>
+    {% if leads.has_next %}
+    <a href="?page={{ leads.next_page_number }}&search={{ search }}&status={{ status_filter }}&source={{ source_filter }}&assigned_to={{ assigned_filter }}&sort={{ sort_by }}&date_from={{ date_from }}&date_to={{ date_to }}" class="btn btn-sm btn-ghost">Next &raquo;</a>
+    {% endif %}
+  </div>
+  {% endif %}
 </div>
 {% endblock %}
