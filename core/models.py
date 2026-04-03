@@ -272,6 +272,10 @@ class Quote(models.Model):
                 new_number = 1
             self.quote_number = f'QT{year}{new_number:04d}'
         super().save(*args, **kwargs)
+        # When quote is accepted and linked to a project, set project budget
+        if self.status == 'accepted' and self.project:
+            self.project.estimated_budget = self.total_amount
+            self.project.save(update_fields=['estimated_budget'])
 
     def calculate_totals(self):
         self.subtotal = sum(item.amount for item in self.items.all())
