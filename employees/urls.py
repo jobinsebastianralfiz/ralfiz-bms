@@ -132,6 +132,15 @@ urlpatterns = [
     path('crm/demos/<int:pk>/', views.CRMDemoDetailView.as_view(), name='crm_demo_detail'),
     path('crm/demos/<int:pk>/status/', views.CRMDemoStatusUpdateView.as_view(), name='crm_demo_status'),
 
+    # CRM Follow-ups & Timeline
+    path('crm/leads/<int:lead_id>/follow-ups/', views.CRMLeadFollowUpListCreateView.as_view(), name='crm_lead_follow_ups'),
+    path('crm/leads/<int:lead_id>/timeline/', views.CRMLeadTimelineView.as_view(), name='crm_lead_timeline'),
+    path('crm/follow-ups/<int:follow_up_id>/', views.CRMFollowUpDetailView.as_view(), name='crm_follow_up_detail'),
+    path('crm/follow-ups/upcoming/', views.CRMUpcomingFollowUpsView.as_view(), name='crm_upcoming_follow_ups'),
+
+    # CRM Reports
+    path('crm/reports/intern-leads/', views.CRMInternLeadReportView.as_view(), name='crm_intern_lead_report'),
+
     # CRM Admin
     path('crm/admin/reassign-leads/', views.CRMAdminReassignLeadsView.as_view(), name='crm_admin_reassign'),
     path('crm/admin/intern-stats/', views.CRMAdminInternStatsView.as_view(), name='crm_admin_intern_stats'),

@@ -160,6 +160,84 @@ class LeadNote(models.Model):
         return f"Note on {self.lead} by {self.created_by}"
 
 
+class FollowUp(models.Model):
+    TYPE_CHOICES = [
+        ('call', 'Phone Call'),
+        ('email', 'Email'),
+        ('meeting', 'Meeting'),
+        ('whatsapp', 'WhatsApp'),
+        ('visit', 'Field Visit'),
+        ('other', 'Other'),
+    ]
+
+    STATUS_CHOICES = [
+        ('scheduled', 'Scheduled'),
+        ('completed', 'Completed'),
+        ('missed', 'Missed'),
+        ('rescheduled', 'Rescheduled'),
+    ]
+
+    lead = models.ForeignKey(Lead, on_delete=models.CASCADE, related_name='follow_ups')
+    follow_up_type = models.CharField(max_length=20, choices=TYPE_CHOICES, default='call')
+    scheduled_date = models.DateTimeField()
+    status = models.CharField(max_length=15, choices=STATUS_CHOICES, default='scheduled')
+    notes = models.TextField(blank=True)
+    outcome = models.TextField(blank=True)
+    created_by = models.ForeignKey(
+        User, on_delete=models.SET_NULL, null=True, related_name='crm_follow_ups_created'
+    )
+    completed_at = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['scheduled_date']
+        verbose_name = 'Follow-up'
+        verbose_name_plural = 'Follow-ups'
+
+    def __str__(self):
+        return f"{self.get_follow_up_type_display()} - {self.lead.contact_person} ({self.scheduled_date.strftime('%Y-%m-%d %H:%M')})"
+
+    @property
+    def is_overdue(self):
+        return self.status == 'scheduled' and self.scheduled_date < timezone.now()
+
+
+class LeadActivity(models.Model):
+    ACTIVITY_TYPES = [
+        ('created', 'Lead Created'),
+        ('status_change', 'Status Changed'),
+        ('note_added', 'Note Added'),
+        ('follow_up_scheduled', 'Follow-up Scheduled'),
+        ('follow_up_completed', 'Follow-up Completed'),
+        ('follow_up_missed', 'Follow-up Missed'),
+        ('demo_scheduled', 'Demo Scheduled'),
+        ('demo_completed', 'Demo Completed'),
+        ('demo_converted', 'Demo Converted'),
+        ('call', 'Call Made'),
+        ('email', 'Email Sent'),
+        ('meeting', 'Meeting'),
+        ('edited', 'Lead Edited'),
+    ]
+
+    lead = models.ForeignKey(Lead, on_delete=models.CASCADE, related_name='activities')
+    activity_type = models.CharField(max_length=25, choices=ACTIVITY_TYPES)
+    description = models.TextField()
+    metadata = models.JSONField(default=dict, blank=True)
+    created_by = models.ForeignKey(
+        User, on_delete=models.SET_NULL, null=True, related_name='crm_activities_created'
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-created_at']
+        verbose_name = 'Lead Activity'
+        verbose_name_plural = 'Lead Activities'
+
+    def __str__(self):
+        return f"{self.get_activity_type_display()} - {self.lead.contact_person}"
+
+
 class DailyActivity(models.Model):
     INTERN_TYPE_CHOICES = [
         ('digital', 'Digital Marketing'),

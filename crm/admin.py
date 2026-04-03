@@ -1,6 +1,6 @@
 from django.contrib import admin
 from django.contrib.auth.models import User
-from .models import InternProfile, Lead, LeadNote, DailyActivity, Demo
+from .models import InternProfile, Lead, LeadNote, DailyActivity, Demo, FollowUp, LeadActivity
 
 
 class LeadNoteInline(admin.TabularInline):
@@ -8,6 +8,12 @@ class LeadNoteInline(admin.TabularInline):
     extra = 0
     fields = ['note', 'created_by', 'created_at']
     readonly_fields = ['created_at']
+
+
+class FollowUpInline(admin.TabularInline):
+    model = FollowUp
+    extra = 0
+    fields = ['follow_up_type', 'scheduled_date', 'status', 'notes', 'created_by']
 
 
 class DemoInline(admin.TabularInline):
@@ -57,7 +63,7 @@ class LeadAdmin(admin.ModelAdmin):
     search_fields = ['contact_person', 'company_name', 'phone', 'email']
     readonly_fields = ['created_at', 'updated_at']
     list_editable = ['status']
-    inlines = [LeadNoteInline, DemoInline]
+    inlines = [LeadNoteInline, FollowUpInline, DemoInline]
     fieldsets = (
         ('Contact Information', {
             'fields': ('contact_person', 'company_name', 'phone', 'email')
@@ -206,3 +212,19 @@ class DemoAdmin(admin.ModelAdmin):
         if not change:
             obj.created_by = request.user
         super().save_model(request, obj, form, change)
+
+
+@admin.register(FollowUp)
+class FollowUpAdmin(admin.ModelAdmin):
+    list_display = ['lead', 'follow_up_type', 'scheduled_date', 'status', 'created_by', 'created_at']
+    list_filter = ['follow_up_type', 'status', 'scheduled_date']
+    search_fields = ['lead__contact_person', 'lead__company_name', 'notes', 'outcome']
+    readonly_fields = ['created_at', 'updated_at']
+
+
+@admin.register(LeadActivity)
+class LeadActivityAdmin(admin.ModelAdmin):
+    list_display = ['lead', 'activity_type', 'description', 'created_by', 'created_at']
+    list_filter = ['activity_type', 'created_at']
+    search_fields = ['lead__contact_person', 'description']
+    readonly_fields = ['created_at']

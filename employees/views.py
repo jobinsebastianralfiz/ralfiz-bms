@@ -18,7 +18,7 @@ from .models import (
     WorkAssignment, WorkUpdate, Notification, QRCode, ScheduledClass, Payroll,
     CertificateTemplate, Certificate
 )
-from crm.models import Lead, LeadNote, DailyActivity, Demo
+from crm.models import Lead, LeadNote, DailyActivity, Demo, FollowUp, LeadActivity
 from .serializers import (
     EmployeeProfileSerializer, EmployeeListSerializer,
     DeviceTokenSerializer, AttendanceSerializer,
@@ -32,6 +32,7 @@ from .serializers import (
     LeadSerializer, LeadCreateSerializer, LeadNoteSerializer,
     DailyActivitySerializer, DailyActivityCreateSerializer,
     DemoSerializer, DemoCreateSerializer, CRMDashboardSerializer,
+    FollowUpSerializer, FollowUpCreateSerializer, LeadActivitySerializer,
 )
 from django.shortcuts import render
 
@@ -3116,6 +3117,7 @@ class CRMLeadListCreateView(APIView):
                 created_by=request.user,
                 assigned_to=request.user if is_intern else request.data.get('assigned_to', request.user),
             )
+            log_lead_activity(lead, 'created', f'Lead created for {lead.contact_person}', user=request.user)
             return Response(LeadSerializer(lead, context={'request': request}).data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
@@ -3176,12 +3178,20 @@ class CRMLeadStatusUpdateView(APIView):
         if new_status not in valid_statuses:
             return Response({'error': f'Invalid status. Choose from: {valid_statuses}'}, status=status.HTTP_400_BAD_REQUEST)
 
+        old_status = lead.status
         lead.status = new_status
         if request.data.get('next_follow_up_date'):
             lead.next_follow_up_date = request.data['next_follow_up_date']
         if request.data.get('closing_probability') is not None:
             lead.closing_probability = request.data['closing_probability']
         lead.save()
+
+        log_lead_activity(
+            lead, 'status_change',
+            f'Status changed from {old_status} to {new_status}',
+            user=request.user,
+            metadata={'old_status': old_status, 'new_status': new_status},
+        )
 
         return Response(LeadSerializer(lead, context={'request': request}).data)
 
@@ -3209,6 +3219,7 @@ class CRMLeadNoteCreateView(APIView):
             return Response({'error': 'Note text is required'}, status=status.HTTP_400_BAD_REQUEST)
 
         note = LeadNote.objects.create(lead=lead, note=note_text, created_by=request.user)
+        log_lead_activity(lead, 'note_added', note_text[:100], user=request.user)
         return Response(LeadNoteSerializer(note).data, status=status.HTTP_201_CREATED)
 
 
@@ -3440,6 +3451,13 @@ class CRMDemoListCreateView(APIView):
                 lead.status = 'demo_scheduled'
                 lead.save()
 
+            log_lead_activity(
+                lead, 'demo_scheduled',
+                f'Demo scheduled for {demo.scheduled_date.strftime("%b %d, %Y %I:%M %p")} at {demo.location or "TBD"}',
+                user=request.user,
+                metadata={'demo_id': demo.id},
+            )
+
             return Response(DemoSerializer(demo, context={'request': request}).data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
@@ -3512,9 +3530,11 @@ class CRMDemoStatusUpdateView(APIView):
         if new_status == 'converted':
             lead.status = 'converted'
             lead.save()
+            log_lead_activity(lead, 'demo_converted', f'Demo converted! {demo.outcome_notes or ""}', user=request.user, metadata={'demo_id': demo.id})
         elif new_status == 'completed' and lead.status == 'demo_scheduled':
             lead.status = 'follow_up'
             lead.save()
+            log_lead_activity(lead, 'demo_completed', f'Demo completed. {demo.outcome_notes or ""}', user=request.user, metadata={'demo_id': demo.id})
 
         return Response(DemoSerializer(demo, context={'request': request}).data)
 
@@ -3594,5 +3614,262 @@ class CRMAdminInternStatsView(APIView):
             })
 
         return Response(result)
+
+
+class CRMInternLeadReportView(APIView):
+    """Get leads submitted by each intern, filterable by date range"""
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        employee, is_intern = get_intern_employee(request.user)
+        if not employee:
+            return Response({'error': 'Employee profile not found'}, status=status.HTTP_404_NOT_FOUND)
+
+        date_from = request.query_params.get('date_from')
+        date_to = request.query_params.get('date_to')
+        intern_id = request.query_params.get('intern_id')
+
+        leads = Lead.objects.select_related('assigned_to', 'created_by').all()
+
+        if is_intern:
+            leads = leads.filter(created_by=request.user)
+        elif intern_id:
+            leads = leads.filter(created_by_id=intern_id)
+
+        if date_from:
+            leads = leads.filter(created_at__date__gte=date_from)
+        if date_to:
+            leads = leads.filter(created_at__date__lte=date_to)
+
+        # Group by intern
+        from django.db.models import Count, Q
+        from collections import defaultdict
+        intern_data = defaultdict(lambda: {'leads': [], 'total': 0, 'new': 0, 'converted': 0, 'lost': 0})
+
+        for lead in leads.order_by('-created_at'):
+            creator_name = lead.created_by.get_full_name() if lead.created_by else 'Unknown'
+            creator_id = lead.created_by_id or 0
+            key = str(creator_id)
+            entry = intern_data[key]
+            entry['intern_id'] = creator_id
+            entry['intern_name'] = creator_name
+            entry['total'] += 1
+            if lead.status == 'new':
+                entry['new'] += 1
+            elif lead.status == 'converted':
+                entry['converted'] += 1
+            elif lead.status == 'lost':
+                entry['lost'] += 1
+            entry['leads'].append({
+                'id': lead.id,
+                'contact_person': lead.contact_person,
+                'company_name': lead.company_name,
+                'phone': lead.phone,
+                'status': lead.status,
+                'source': lead.source,
+                'created_at': lead.created_at.isoformat(),
+            })
+
+        result = list(intern_data.values())
+        result.sort(key=lambda x: x['total'], reverse=True)
+        return Response(result)
+
+
+# ============== Helper: Create Lead Activity ==============
+
+def log_lead_activity(lead, activity_type, description, user=None, metadata=None):
+    """Create a LeadActivity entry for the unified timeline."""
+    LeadActivity.objects.create(
+        lead=lead,
+        activity_type=activity_type,
+        description=description,
+        metadata=metadata or {},
+        created_by=user,
+    )
+
+
+# ============== Follow-up Endpoints ==============
+
+class CRMLeadFollowUpListCreateView(APIView):
+    """List and create follow-ups for a lead"""
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, lead_id):
+        lead = Lead.objects.filter(id=lead_id).first()
+        if not lead:
+            return Response({'error': 'Lead not found'}, status=status.HTTP_404_NOT_FOUND)
+        follow_ups = lead.follow_ups.all()
+        return Response(FollowUpSerializer(follow_ups, many=True).data)
+
+    def post(self, request, lead_id):
+        lead = Lead.objects.filter(id=lead_id).first()
+        if not lead:
+            return Response({'error': 'Lead not found'}, status=status.HTTP_404_NOT_FOUND)
+
+        serializer = FollowUpCreateSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        follow_up = serializer.save(lead=lead, created_by=request.user)
+
+        # Update lead's next_follow_up_date
+        lead.next_follow_up_date = follow_up.scheduled_date.date()
+        lead.save(update_fields=['next_follow_up_date'])
+
+        # Log activity
+        log_lead_activity(
+            lead, 'follow_up_scheduled',
+            f'{follow_up.get_follow_up_type_display()} scheduled for {follow_up.scheduled_date.strftime("%b %d, %Y %I:%M %p")}',
+            user=request.user,
+            metadata={'follow_up_id': follow_up.id, 'type': follow_up.follow_up_type},
+        )
+
+        return Response(FollowUpSerializer(follow_up).data, status=status.HTTP_201_CREATED)
+
+
+class CRMFollowUpDetailView(APIView):
+    """Update a follow-up (complete, reschedule, etc.)"""
+    permission_classes = [IsAuthenticated]
+
+    def patch(self, request, follow_up_id):
+        follow_up = FollowUp.objects.filter(id=follow_up_id).first()
+        if not follow_up:
+            return Response({'error': 'Follow-up not found'}, status=status.HTTP_404_NOT_FOUND)
+
+        old_status = follow_up.status
+        new_status = request.data.get('status', follow_up.status)
+
+        serializer = FollowUpSerializer(follow_up, data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+
+        # If completing the follow-up
+        if new_status == 'completed' and old_status != 'completed':
+            follow_up.completed_at = timezone.now()
+            follow_up.save(update_fields=['completed_at'])
+            log_lead_activity(
+                follow_up.lead, 'follow_up_completed',
+                f'{follow_up.get_follow_up_type_display()} completed. {follow_up.outcome or ""}',
+                user=request.user,
+                metadata={'follow_up_id': follow_up.id, 'outcome': follow_up.outcome},
+            )
+        elif new_status == 'missed' and old_status != 'missed':
+            log_lead_activity(
+                follow_up.lead, 'follow_up_missed',
+                f'{follow_up.get_follow_up_type_display()} was missed.',
+                user=request.user,
+                metadata={'follow_up_id': follow_up.id},
+            )
+
+        return Response(FollowUpSerializer(follow_up).data)
+
+
+class CRMUpcomingFollowUpsView(APIView):
+    """Get all upcoming follow-ups for the authenticated user"""
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        employee, is_intern = get_intern_employee(request.user)
+        if not employee:
+            return Response({'error': 'Employee profile not found'}, status=status.HTTP_404_NOT_FOUND)
+
+        follow_ups = FollowUp.objects.filter(status='scheduled').select_related('lead', 'created_by')
+
+        if is_intern:
+            follow_ups = follow_ups.filter(lead__assigned_to=request.user)
+
+        # Include overdue ones too
+        today_follow_ups = follow_ups.filter(
+            scheduled_date__date=timezone.now().date()
+        )
+        overdue = follow_ups.filter(
+            scheduled_date__lt=timezone.now()
+        )
+        upcoming = follow_ups.filter(
+            scheduled_date__gt=timezone.now()
+        )[:10]
+
+        return Response({
+            'today': FollowUpSerializer(today_follow_ups, many=True).data,
+            'overdue': FollowUpSerializer(overdue, many=True).data,
+            'upcoming': FollowUpSerializer(upcoming, many=True).data,
+        })
+
+
+# ============== Lead Timeline ==============
+
+class CRMLeadTimelineView(APIView):
+    """Unified timeline for a lead (activities + notes + follow-ups + demos merged)"""
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, lead_id):
+        lead = Lead.objects.filter(id=lead_id).first()
+        if not lead:
+            return Response({'error': 'Lead not found'}, status=status.HTTP_404_NOT_FOUND)
+
+        timeline = []
+
+        # Activities
+        for activity in lead.activities.select_related('created_by').all():
+            timeline.append({
+                'type': 'activity',
+                'activity_type': activity.activity_type,
+                'type_display': activity.get_activity_type_display(),
+                'description': activity.description,
+                'metadata': activity.metadata,
+                'created_by': activity.created_by.get_full_name() if activity.created_by else '',
+                'created_at': activity.created_at.isoformat(),
+            })
+
+        # Notes
+        for note in lead.lead_notes.select_related('created_by').all():
+            timeline.append({
+                'type': 'note',
+                'activity_type': 'note_added',
+                'type_display': 'Note',
+                'description': note.note,
+                'metadata': {},
+                'created_by': note.created_by.get_full_name() if note.created_by else '',
+                'created_at': note.created_at.isoformat(),
+            })
+
+        # Follow-ups
+        for fu in lead.follow_ups.select_related('created_by').all():
+            timeline.append({
+                'type': 'follow_up',
+                'activity_type': f'follow_up_{fu.status}',
+                'type_display': f'{fu.get_follow_up_type_display()} ({fu.get_status_display()})',
+                'description': fu.notes or fu.outcome or f'{fu.get_follow_up_type_display()} {fu.get_status_display().lower()}',
+                'metadata': {
+                    'follow_up_id': fu.id,
+                    'follow_up_type': fu.follow_up_type,
+                    'status': fu.status,
+                    'scheduled_date': fu.scheduled_date.isoformat(),
+                    'is_overdue': fu.is_overdue,
+                },
+                'created_by': fu.created_by.get_full_name() if fu.created_by else '',
+                'created_at': fu.created_at.isoformat(),
+            })
+
+        # Demos
+        for demo in lead.demos.select_related('conducted_by', 'created_by').all():
+            timeline.append({
+                'type': 'demo',
+                'activity_type': f'demo_{demo.status}',
+                'type_display': f'Demo ({demo.get_status_display()})',
+                'description': demo.outcome_notes or f'Demo {demo.get_status_display().lower()} at {demo.location or "TBD"}',
+                'metadata': {
+                    'demo_id': demo.id,
+                    'status': demo.status,
+                    'scheduled_date': demo.scheduled_date.isoformat(),
+                    'location': demo.location,
+                    'probability': demo.closing_probability,
+                },
+                'created_by': demo.conducted_by.get_full_name() if demo.conducted_by else (demo.created_by.get_full_name() if demo.created_by else ''),
+                'created_at': demo.created_at.isoformat(),
+            })
+
+        # Sort by date descending
+        timeline.sort(key=lambda x: x['created_at'], reverse=True)
+
+        return Response(timeline)
 
 

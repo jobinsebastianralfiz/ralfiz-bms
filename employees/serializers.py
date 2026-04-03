@@ -5,7 +5,7 @@ from .models import (
     WorkAssignment, WorkUpdate, Notification, QRCode, ScheduledClass, Payroll,
     CertificateTemplate, Certificate
 )
-from crm.models import Lead, LeadNote, DailyActivity, Demo
+from crm.models import Lead, LeadNote, DailyActivity, Demo, FollowUp, LeadActivity
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -385,11 +385,46 @@ class LeadNoteSerializer(serializers.ModelSerializer):
         read_only_fields = ['id', 'created_by_name', 'created_at']
 
 
+class FollowUpSerializer(serializers.ModelSerializer):
+    created_by_name = serializers.CharField(source='created_by.get_full_name', read_only=True, default='')
+    type_display = serializers.CharField(source='get_follow_up_type_display', read_only=True)
+    status_display = serializers.CharField(source='get_status_display', read_only=True)
+    is_overdue = serializers.BooleanField(read_only=True)
+
+    class Meta:
+        model = FollowUp
+        fields = [
+            'id', 'lead', 'follow_up_type', 'type_display', 'scheduled_date',
+            'status', 'status_display', 'notes', 'outcome', 'is_overdue',
+            'created_by_name', 'completed_at', 'created_at', 'updated_at',
+        ]
+        read_only_fields = ['id', 'lead', 'created_by_name', 'created_at', 'updated_at']
+
+
+class FollowUpCreateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = FollowUp
+        fields = ['follow_up_type', 'scheduled_date', 'notes']
+
+
+class LeadActivitySerializer(serializers.ModelSerializer):
+    created_by_name = serializers.CharField(source='created_by.get_full_name', read_only=True, default='')
+    type_display = serializers.CharField(source='get_activity_type_display', read_only=True)
+
+    class Meta:
+        model = LeadActivity
+        fields = ['id', 'activity_type', 'type_display', 'description', 'metadata', 'created_by_name', 'created_at']
+        read_only_fields = ['id', 'created_at']
+
+
 class LeadSerializer(serializers.ModelSerializer):
     assigned_to_name = serializers.CharField(source='assigned_to.get_full_name', read_only=True, default='')
     created_by_name = serializers.CharField(source='created_by.get_full_name', read_only=True, default='')
     notes_list = LeadNoteSerializer(source='lead_notes', many=True, read_only=True)
     demo_count = serializers.SerializerMethodField()
+    upcoming_follow_ups = serializers.SerializerMethodField()
+    overdue_follow_ups = serializers.SerializerMethodField()
+    last_activity = serializers.SerializerMethodField()
 
     class Meta:
         model = Lead
@@ -398,12 +433,28 @@ class LeadSerializer(serializers.ModelSerializer):
             'status', 'source', 'assigned_to', 'assigned_to_name',
             'next_follow_up_date', 'closing_probability', 'notes',
             'created_by_name', 'notes_list', 'demo_count',
+            'upcoming_follow_ups', 'overdue_follow_ups', 'last_activity',
             'created_at', 'updated_at',
         ]
         read_only_fields = ['id', 'created_by_name', 'created_at', 'updated_at']
 
     def get_demo_count(self, obj):
         return obj.demos.count()
+
+    def get_upcoming_follow_ups(self, obj):
+        from django.utils import timezone
+        fups = obj.follow_ups.filter(status='scheduled', scheduled_date__gte=timezone.now()).order_by('scheduled_date')[:3]
+        return FollowUpSerializer(fups, many=True).data
+
+    def get_overdue_follow_ups(self, obj):
+        from django.utils import timezone
+        return obj.follow_ups.filter(status='scheduled', scheduled_date__lt=timezone.now()).count()
+
+    def get_last_activity(self, obj):
+        activity = obj.activities.first()
+        if activity:
+            return {'type': activity.activity_type, 'description': activity.description, 'created_at': activity.created_at}
+        return None
 
 
 class LeadCreateSerializer(serializers.ModelSerializer):
