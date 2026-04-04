@@ -91,25 +91,28 @@ class DashboardView(APIView):
 
         # Include today's team attendance for owners/partners
         if employee.role in ('owner', 'partner'):
-            all_employees = Employee.objects.filter(status='active').order_by('full_name')
-            team_attendance = []
-            for emp in all_employees:
-                emp_att = Attendance.objects.filter(employee=emp, date=today).first()
-                try:
-                    photo_url = request.build_absolute_uri(emp.profile_photo.url) if emp.profile_photo and emp.profile_photo.name else None
-                except Exception:
-                    photo_url = None
-                team_attendance.append({
-                    'employee_id': emp.employee_id,
-                    'name': emp.full_name,
-                    'department': emp.department,
-                    'profile_photo': photo_url,
-                    'checked_in': emp_att is not None,
-                    'check_in': emp_att.check_in.strftime('%I:%M %p') if emp_att and emp_att.check_in else None,
-                    'check_out': emp_att.check_out.strftime('%I:%M %p') if emp_att and emp_att.check_out else None,
-                    'working_hours': str(emp_att.working_hours) if emp_att and emp_att.working_hours else None,
-                })
-            data['team_attendance'] = team_attendance
+            try:
+                all_employees = Employee.objects.filter(status='active').order_by('full_name')
+                team_attendance = []
+                for emp in all_employees:
+                    emp_att = Attendance.objects.filter(employee=emp, date=today).first()
+                    try:
+                        photo_url = request.build_absolute_uri(emp.profile_photo.url) if emp.profile_photo and emp.profile_photo.name else None
+                    except Exception:
+                        photo_url = None
+                    team_attendance.append({
+                        'employee_id': emp.employee_id,
+                        'name': emp.full_name,
+                        'department': emp.department,
+                        'profile_photo': photo_url,
+                        'checked_in': emp_att is not None,
+                        'check_in': emp_att.check_in.strftime('%I:%M %p') if emp_att and emp_att.check_in else None,
+                        'check_out': emp_att.check_out.strftime('%I:%M %p') if emp_att and emp_att.check_out else None,
+                        'working_hours': str(emp_att.working_hours) if emp_att and emp_att.working_hours else None,
+                    })
+                data['team_attendance'] = team_attendance
+            except Exception:
+                data['team_attendance'] = []
 
         # Include class-related data only for interns
         if employee.role == 'intern':
