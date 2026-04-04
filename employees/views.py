@@ -95,11 +95,15 @@ class DashboardView(APIView):
             team_attendance = []
             for emp in all_employees:
                 emp_att = Attendance.objects.filter(employee=emp, date=today).first()
+                try:
+                    photo_url = request.build_absolute_uri(emp.profile_photo.url) if emp.profile_photo and emp.profile_photo.name else None
+                except Exception:
+                    photo_url = None
                 team_attendance.append({
                     'employee_id': emp.employee_id,
                     'name': emp.full_name,
                     'department': emp.department,
-                    'profile_photo': request.build_absolute_uri(emp.profile_photo.url) if emp.profile_photo else None,
+                    'profile_photo': photo_url,
                     'checked_in': emp_att is not None,
                     'check_in': emp_att.check_in.strftime('%I:%M %p') if emp_att and emp_att.check_in else None,
                     'check_out': emp_att.check_out.strftime('%I:%M %p') if emp_att and emp_att.check_out else None,
