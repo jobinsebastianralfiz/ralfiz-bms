@@ -90,6 +90,7 @@ class DashboardView(APIView):
         }
 
         # Include today's team attendance for owners/partners
+        data['_debug_role'] = employee.role
         if employee.role in ('owner', 'partner'):
             try:
                 all_employees = Employee.objects.filter(status='active').order_by('full_name')
@@ -111,8 +112,11 @@ class DashboardView(APIView):
                         'working_hours': str(emp_att.working_hours) if emp_att and emp_att.working_hours else None,
                     })
                 data['team_attendance'] = team_attendance
-            except Exception:
+            except Exception as e:
+                import traceback
+                traceback.print_exc()
                 data['team_attendance'] = []
+                data['team_attendance_error'] = str(e)
 
         # Include class-related data only for interns
         if employee.role == 'intern':
