@@ -5,735 +5,575 @@
 
 {% block extra_css %}
 <style>
-  /* Modern Dashboard Styles */
-  .dashboard-header {
-    background: linear-gradient(135deg, var(--primary) 0%, #0f766e 100%);
-    border-radius: var(--border-radius-lg);
-    padding: 2rem;
-    margin-bottom: 1.5rem;
+  .dash-grid {
+    display: grid;
+    gap: 1.25rem;
+  }
+  .dash-grid-4 { grid-template-columns: repeat(4, 1fr); }
+  .dash-grid-3 { grid-template-columns: repeat(3, 1fr); }
+  .dash-grid-2-1 { grid-template-columns: 2fr 1fr; }
+
+  /* Welcome Banner */
+  .welcome-banner {
+    background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f172a 100%);
+    border-radius: 20px;
+    padding: 2rem 2.5rem;
     color: white;
     position: relative;
     overflow: hidden;
+    margin-bottom: 1.5rem;
   }
-  .dashboard-header::before {
+  .welcome-banner::before {
     content: '';
     position: absolute;
-    top: -50%;
-    right: -10%;
-    width: 300px;
-    height: 300px;
-    background: rgba(255,255,255,0.1);
+    top: -40%;
+    right: -5%;
+    width: 280px;
+    height: 280px;
+    background: radial-gradient(circle, rgba(13,148,136,0.3) 0%, transparent 70%);
     border-radius: 50%;
   }
-  .dashboard-header::after {
+  .welcome-banner::after {
     content: '';
     position: absolute;
-    bottom: -30%;
-    right: 20%;
+    bottom: -60%;
+    left: 30%;
     width: 200px;
     height: 200px;
-    background: rgba(255,255,255,0.05);
+    background: radial-gradient(circle, rgba(59,130,246,0.15) 0%, transparent 70%);
     border-radius: 50%;
   }
-  .dashboard-header h1 {
-    font-size: 1.75rem;
+  .welcome-banner h1 {
+    font-size: 1.5rem;
     font-weight: 700;
-    margin-bottom: 0.5rem;
+    margin-bottom: 0.25rem;
   }
-  .dashboard-header p {
-    opacity: 0.9;
+  .welcome-banner p {
+    opacity: 0.7;
     margin: 0;
+    font-size: 0.9rem;
   }
-  .dashboard-header .header-actions {
-    position: relative;
-    z-index: 1;
-  }
+  .welcome-banner .header-actions { position: relative; z-index: 1; }
 
-  /* Modern Stat Cards */
-  .modern-stat {
+  /* KPI Cards */
+  .kpi-card {
     background: var(--bg-card);
-    border-radius: var(--border-radius-lg);
+    border-radius: 16px;
     padding: 1.5rem;
     border: 1px solid var(--border-color);
-    transition: all 0.3s ease;
-    height: 100%;
+    transition: all 0.2s ease;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
   }
-  .modern-stat:hover {
+  .kpi-card:hover {
     transform: translateY(-2px);
-    box-shadow: var(--shadow-lg);
+    box-shadow: 0 8px 25px rgba(0,0,0,0.06);
   }
-  .modern-stat-icon {
-    width: 48px;
-    height: 48px;
+  .kpi-top { display: flex; justify-content: space-between; align-items: flex-start; }
+  .kpi-icon {
+    width: 44px;
+    height: 44px;
     border-radius: 12px;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 1.25rem;
-    margin-bottom: 1rem;
+    font-size: 1.1rem;
   }
-  .modern-stat-icon.gradient-primary {
-    background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
-    color: white;
-  }
-  .modern-stat-icon.gradient-success {
-    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-    color: white;
-  }
-  .modern-stat-icon.gradient-warning {
-    background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
-    color: white;
-  }
-  .modern-stat-icon.gradient-info {
-    background: linear-gradient(135deg, #06b6d4 0%, #0891b2 100%);
-    color: white;
-  }
-  .modern-stat-value {
+  .kpi-value {
     font-size: 1.75rem;
-    font-weight: 700;
+    font-weight: 800;
     color: var(--text-primary);
-    line-height: 1.2;
+    line-height: 1;
+    letter-spacing: -0.5px;
   }
-  .modern-stat-label {
-    font-size: 0.875rem;
+  .kpi-label {
+    font-size: 0.8rem;
     color: var(--text-muted);
-    margin-top: 0.25rem;
+    font-weight: 500;
+    margin-top: 0.15rem;
   }
-  .modern-stat-change {
+  .kpi-tag {
     display: inline-flex;
     align-items: center;
-    font-size: 0.75rem;
-    padding: 0.25rem 0.5rem;
-    border-radius: 9999px;
-    margin-top: 0.75rem;
-  }
-  .modern-stat-change.up {
-    background: var(--success-bg);
-    color: var(--success);
-  }
-  .modern-stat-change.down {
-    background: var(--danger-bg);
-    color: var(--danger);
+    gap: 4px;
+    font-size: 0.7rem;
+    font-weight: 600;
+    padding: 3px 8px;
+    border-radius: 20px;
   }
 
-  /* Quick Action Buttons */
-  .quick-action-btn {
+  /* Panel Card */
+  .panel {
+    background: var(--bg-card);
+    border-radius: 16px;
+    border: 1px solid var(--border-color);
+    overflow: hidden;
+  }
+  .panel-head {
+    padding: 1.25rem 1.5rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid var(--border-color);
+  }
+  .panel-title {
+    font-weight: 700;
+    font-size: 0.95rem;
+    color: var(--text-primary);
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .panel-body { padding: 1.25rem 1.5rem; }
+  .panel-body.flush { padding: 0; }
+
+  /* Quick Actions */
+  .qa-grid {
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    gap: 0.75rem;
+    margin-bottom: 1.5rem;
+  }
+  .qa-btn {
     display: flex;
     flex-direction: column;
     align-items: center;
-    justify-content: center;
-    padding: 1.25rem;
+    gap: 0.5rem;
+    padding: 1rem 0.5rem;
     background: var(--bg-card);
     border: 1px solid var(--border-color);
-    border-radius: var(--border-radius-lg);
+    border-radius: 14px;
     text-decoration: none;
     transition: all 0.2s ease;
-    height: 100%;
   }
-  .quick-action-btn:hover {
+  .qa-btn:hover {
     border-color: var(--primary);
     background: var(--primary-bg);
     transform: translateY(-2px);
   }
-  .quick-action-btn .icon-wrapper {
-    width: 48px;
-    height: 48px;
-    border-radius: 12px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    margin-bottom: 0.75rem;
-    font-size: 1.25rem;
-  }
-  .quick-action-btn .action-label {
-    font-weight: 500;
-    color: var(--text-primary);
-    font-size: 0.875rem;
-  }
-
-  /* Activity Item */
-  .activity-item {
-    display: flex;
-    gap: 1rem;
-    padding: 1rem 0;
-    border-bottom: 1px solid var(--border-color);
-  }
-  .activity-item:last-child {
-    border-bottom: none;
-  }
-  .activity-icon {
+  .qa-icon {
     width: 40px;
     height: 40px;
     border-radius: 10px;
     display: flex;
     align-items: center;
     justify-content: center;
-    flex-shrink: 0;
-  }
-  .activity-content {
-    flex: 1;
-    min-width: 0;
-  }
-  .activity-title {
-    font-weight: 500;
-    color: var(--text-primary);
-    margin-bottom: 0.25rem;
-  }
-  .activity-meta {
-    font-size: 0.8rem;
-    color: var(--text-muted);
-  }
-
-  /* Chart Card */
-  .chart-card {
-    background: var(--bg-card);
-    border-radius: var(--border-radius-lg);
-    border: 1px solid var(--border-color);
-    overflow: hidden;
-  }
-  .chart-card-header {
-    padding: 1.25rem 1.5rem;
-    border-bottom: 1px solid var(--border-color);
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-  }
-  .chart-card-title {
-    font-weight: 600;
     font-size: 1rem;
+  }
+  .qa-label {
+    font-weight: 600;
     color: var(--text-primary);
-    margin: 0;
-  }
-  .chart-card-body {
-    padding: 1.5rem;
-  }
-
-  /* Progress Ring */
-  .progress-ring {
-    width: 120px;
-    height: 120px;
-    position: relative;
-    margin: 0 auto;
-  }
-  .progress-ring svg {
-    transform: rotate(-90deg);
-  }
-  .progress-ring-text {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
+    font-size: 0.75rem;
     text-align: center;
   }
-  .progress-ring-value {
+
+  /* Activity Row */
+  .act-row {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.875rem 1.5rem;
+    border-bottom: 1px solid var(--border-color);
+    transition: background 0.15s;
+  }
+  .act-row:last-child { border-bottom: none; }
+  .act-row:hover { background: var(--bg-secondary); }
+  .act-dot {
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.85rem;
+    flex-shrink: 0;
+  }
+  .act-info { flex: 1; min-width: 0; }
+  .act-name { font-weight: 600; font-size: 0.85rem; color: var(--text-primary); }
+  .act-sub { font-size: 0.75rem; color: var(--text-muted); }
+  .act-val { font-weight: 700; font-size: 0.85rem; color: var(--text-primary); text-align: right; white-space: nowrap; }
+
+  /* License Mini Stats */
+  .lic-stat {
+    text-align: center;
+    flex: 1;
+  }
+  .lic-stat-num {
     font-size: 1.5rem;
-    font-weight: 700;
-    color: var(--text-primary);
+    font-weight: 800;
+    line-height: 1;
   }
-  .progress-ring-label {
-    font-size: 0.75rem;
+  .lic-stat-label {
+    font-size: 0.7rem;
     color: var(--text-muted);
+    font-weight: 500;
+    margin-top: 4px;
   }
 
-  /* ===== RESPONSIVE STYLES ===== */
+  /* Overdue pill */
+  .alert-pill {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.75rem 1rem;
+    border-radius: 12px;
+    margin-bottom: 0.5rem;
+    font-size: 0.8rem;
+  }
+  .alert-pill:last-child { margin-bottom: 0; }
 
-  /* Tablet (1024px and below) */
+  /* Table minimal */
+  .tbl-mini { width: 100%; }
+  .tbl-mini th {
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--text-muted);
+    font-weight: 600;
+    padding: 0.75rem 1.5rem;
+    border-bottom: 1px solid var(--border-color);
+  }
+  .tbl-mini td {
+    padding: 0.875rem 1.5rem;
+    border-bottom: 1px solid var(--border-color);
+    font-size: 0.85rem;
+    vertical-align: middle;
+  }
+  .tbl-mini tr:last-child td { border-bottom: none; }
+  .tbl-mini tr:hover { background: var(--bg-secondary); }
+
+  /* Responsive */
   @media (max-width: 1024px) {
-    .dashboard-header {
-      padding: 1.5rem;
-    }
-    .dashboard-header h1 {
-      font-size: 1.5rem;
-    }
-    .modern-stat {
-      padding: 1.25rem;
-    }
-    .modern-stat-value {
-      font-size: 1.5rem;
-    }
-    .quick-action-btn {
-      padding: 1rem;
-      min-width: 120px !important;
-    }
-    .quick-action-btn .icon-wrapper {
-      width: 40px;
-      height: 40px;
-      font-size: 1rem;
-    }
+    .dash-grid-4 { grid-template-columns: repeat(2, 1fr); }
+    .dash-grid-2-1 { grid-template-columns: 1fr; }
+    .qa-grid { grid-template-columns: repeat(3, 1fr); }
   }
-
-  /* Mobile (768px and below) */
   @media (max-width: 768px) {
-    .dashboard-header {
-      padding: 1.25rem;
-      border-radius: var(--border-radius);
-    }
-    .dashboard-header .d-flex {
-      flex-direction: column;
-      align-items: flex-start !important;
-      gap: 1rem;
-    }
-    .dashboard-header h1 {
-      font-size: 1.25rem;
-    }
-    .dashboard-header p {
-      font-size: 0.875rem;
-    }
-    .header-actions {
-      width: 100%;
-    }
-    .header-actions .btn {
-      flex: 1;
-      padding: 0.625rem 0.75rem;
-      font-size: 0.8125rem;
-    }
-    .modern-stat {
-      padding: 1rem;
-    }
-    .modern-stat-icon {
-      width: 40px;
-      height: 40px;
-      font-size: 1rem;
-      margin-bottom: 0.75rem;
-    }
-    .modern-stat-value {
-      font-size: 1.25rem;
-    }
-    .modern-stat-label {
-      font-size: 0.8125rem;
-    }
-    .modern-stat-change {
-      font-size: 0.7rem;
-      padding: 0.2rem 0.4rem;
-    }
-    .quick-action-btn {
-      padding: 0.875rem;
-      min-width: 100px !important;
-    }
-    .quick-action-btn .icon-wrapper {
-      width: 36px;
-      height: 36px;
-      font-size: 0.9rem;
-      margin-bottom: 0.5rem;
-    }
-    .quick-action-btn .action-label {
-      font-size: 0.75rem;
-    }
-    .chart-card-header {
-      padding: 1rem;
-      flex-direction: column;
-      align-items: flex-start;
-      gap: 0.5rem;
-    }
-    .chart-card-body {
-      padding: 1rem;
-    }
-    .activity-item {
-      padding: 0.625rem 0;
-    }
-    .activity-icon {
-      width: 36px;
-      height: 36px;
-    }
-    .activity-title {
-      font-size: 0.875rem;
-    }
-    .activity-meta {
-      font-size: 0.75rem;
-    }
+    .welcome-banner { padding: 1.25rem 1.5rem; border-radius: 14px; }
+    .welcome-banner h1 { font-size: 1.25rem; }
+    .welcome-banner .d-flex { flex-direction: column; gap: 1rem; }
+    .header-actions { width: 100%; }
+    .header-actions .btn { flex: 1; }
+    .kpi-card { padding: 1.25rem; }
+    .kpi-value { font-size: 1.375rem; }
+    .qa-grid { grid-template-columns: repeat(3, 1fr); }
   }
-
-  /* Small Mobile (480px and below) */
   @media (max-width: 480px) {
-    .dashboard-header {
-      padding: 1rem;
-      margin-bottom: 1rem;
-    }
-    .dashboard-header::before,
-    .dashboard-header::after {
-      display: none;
-    }
-    .dashboard-header h1 {
-      font-size: 1.125rem;
-    }
-    .header-actions {
-      flex-direction: column;
-    }
-    .header-actions .btn {
-      width: 100%;
-    }
-    .modern-stat {
-      padding: 0.875rem;
-    }
-    .modern-stat-icon {
-      width: 36px;
-      height: 36px;
-      font-size: 0.9rem;
-      border-radius: 8px;
-    }
-    .modern-stat-value {
-      font-size: 1.125rem;
-    }
-    .quick-action-btn {
-      min-width: 85px !important;
-      padding: 0.75rem 0.5rem;
-    }
-    .quick-action-btn .icon-wrapper {
-      width: 32px;
-      height: 32px;
-      border-radius: 8px;
-    }
-    .quick-action-btn .action-label {
-      font-size: 0.7rem;
-    }
-    .chart-card-title {
-      font-size: 0.9rem;
-    }
+    .dash-grid-4 { grid-template-columns: 1fr 1fr; }
+    .welcome-banner::before, .welcome-banner::after { display: none; }
+    .qa-grid { grid-template-columns: repeat(2, 1fr); }
+    .panel-head, .panel-body { padding: 1rem; }
+    .act-row { padding: 0.75rem 1rem; }
+    .tbl-mini th, .tbl-mini td { padding: 0.75rem 1rem; }
   }
 </style>
 {% endblock %}
 
 {% block content %}
-<!-- Dashboard Header -->
-<div class="dashboard-header">
+<!-- Welcome Banner -->
+<div class="welcome-banner">
   <div class="d-flex justify-content-between align-items-center">
     <div>
-      <h1>Welcome back!</h1>
-      <p>Here's what's happening with your business today.</p>
+      <h1>Good {% now "H" as hour %}{% if hour|add:"0" < 12 %}morning{% elif hour|add:"0" < 17 %}afternoon{% else %}evening{% endif %}, {{ request.user.first_name|default:"Admin" }}</h1>
+      <p>Here's your business overview for today.</p>
     </div>
     <div class="header-actions d-flex gap-2">
-      <a href="{% url 'invoice_create' %}" class="btn" style="background: rgba(255,255,255,0.2); color: white; border: 1px solid rgba(255,255,255,0.3);">
+      <a href="{% url 'invoice_create' %}" class="btn" style="background: rgba(255,255,255,0.1); color: white; border: 1px solid rgba(255,255,255,0.15); backdrop-filter: blur(10px);">
         <i class="fas fa-plus me-2"></i>New Invoice
       </a>
-      <a href="{% url 'project_create' %}" class="btn" style="background: white; color: var(--primary);">
+      <a href="{% url 'project_create' %}" class="btn" style="background: var(--primary); color: white;">
         <i class="fas fa-folder-plus me-2"></i>New Project
       </a>
     </div>
   </div>
 </div>
 
-<!-- Stats Row -->
-<div class="row mb-4">
-  <div class="col-3 col-md-6 col-sm-12" style="padding: 0.5rem;">
-    <div class="modern-stat">
-      <div class="modern-stat-icon gradient-primary">
-        <i class="fas fa-users"></i>
-      </div>
-      <div class="modern-stat-value">{{ total_clients }}</div>
-      <div class="modern-stat-label">Total Clients</div>
+<!-- KPI Cards -->
+<div class="dash-grid dash-grid-4" style="margin-bottom: 1.5rem;">
+  <div class="kpi-card">
+    <div class="kpi-top">
+      <div class="kpi-icon" style="background: #eff6ff; color: #3b82f6;"><i class="fas fa-users"></i></div>
+    </div>
+    <div>
+      <div class="kpi-value">{{ total_clients }}</div>
+      <div class="kpi-label">Total Clients</div>
     </div>
   </div>
-  <div class="col-3 col-md-6 col-sm-12" style="padding: 0.5rem;">
-    <div class="modern-stat">
-      <div class="modern-stat-icon gradient-info">
-        <i class="fas fa-folder-open"></i>
-      </div>
-      <div class="modern-stat-value">{{ active_projects }}</div>
-      <div class="modern-stat-label">Active Projects</div>
+  <div class="kpi-card">
+    <div class="kpi-top">
+      <div class="kpi-icon" style="background: #ecfdf5; color: #10b981;"><i class="fas fa-folder-open"></i></div>
+    </div>
+    <div>
+      <div class="kpi-value">{{ active_projects }}</div>
+      <div class="kpi-label">Active Projects</div>
     </div>
   </div>
-  <div class="col-3 col-md-6 col-sm-12" style="padding: 0.5rem;">
-    <div class="modern-stat">
-      <div class="modern-stat-icon gradient-warning">
-        <i class="fas fa-clock"></i>
-      </div>
-      <div class="modern-stat-value">&#8377;{{ pending_amount|floatformat:0|default:"0" }}</div>
-      <div class="modern-stat-label">Pending Amount</div>
-      <span class="modern-stat-change down" style="background: var(--warning-bg); color: var(--warning);">
-        <i class="fas fa-file-invoice me-1"></i>{{ pending_count }} invoices
-      </span>
+  <div class="kpi-card">
+    <div class="kpi-top">
+      <div class="kpi-icon" style="background: #fef3c7; color: #f59e0b;"><i class="fas fa-clock"></i></div>
+      {% if pending_count > 0 %}
+      <span class="kpi-tag" style="background: #fef3c7; color: #b45309;">{{ pending_count }} pending</span>
+      {% endif %}
+    </div>
+    <div>
+      <div class="kpi-value">&#8377;{{ pending_amount|floatformat:0|default:"0" }}</div>
+      <div class="kpi-label">Pending Amount</div>
     </div>
   </div>
-  <div class="col-3 col-md-6 col-sm-12" style="padding: 0.5rem;">
-    <div class="modern-stat">
-      <div class="modern-stat-icon gradient-success">
-        <i class="fas fa-rupee-sign"></i>
-      </div>
-      <div class="modern-stat-value">&#8377;{{ revenue_this_month|floatformat:0|default:"0" }}</div>
-      <div class="modern-stat-label">This Month's Revenue</div>
-      <span class="modern-stat-change up">
-        <i class="fas fa-arrow-up me-1"></i>This month
-      </span>
+  <div class="kpi-card">
+    <div class="kpi-top">
+      <div class="kpi-icon" style="background: #f0fdfa; color: #0d9488;"><i class="fas fa-rupee-sign"></i></div>
+      <span class="kpi-tag" style="background: #ecfdf5; color: #059669;"><i class="fas fa-arrow-up"></i> this month</span>
+    </div>
+    <div>
+      <div class="kpi-value">&#8377;{{ revenue_this_month|floatformat:0|default:"0" }}</div>
+      <div class="kpi-label">Monthly Revenue</div>
     </div>
   </div>
 </div>
 
 <!-- Quick Actions -->
-<div class="row mb-4">
-  <div class="col-12" style="padding: 0.5rem;">
-    <div class="d-flex gap-3 overflow-auto pb-2">
-      <a href="{% url 'client_create' %}" class="quick-action-btn" style="min-width: 140px;">
-        <div class="icon-wrapper" style="background: var(--primary-bg); color: var(--primary);">
-          <i class="fas fa-user-plus"></i>
+<div class="qa-grid">
+  <a href="{% url 'client_create' %}" class="qa-btn">
+    <div class="qa-icon" style="background: #eff6ff; color: #3b82f6;"><i class="fas fa-user-plus"></i></div>
+    <span class="qa-label">Add Client</span>
+  </a>
+  <a href="{% url 'project_create' %}" class="qa-btn">
+    <div class="qa-icon" style="background: #ecfdf5; color: #10b981;"><i class="fas fa-folder-plus"></i></div>
+    <span class="qa-label">New Project</span>
+  </a>
+  <a href="{% url 'task_create' %}" class="qa-btn">
+    <div class="qa-icon" style="background: #fef3c7; color: #f59e0b;"><i class="fas fa-tasks"></i></div>
+    <span class="qa-label">Add Task</span>
+  </a>
+  <a href="{% url 'quote_create' %}" class="qa-btn">
+    <div class="qa-icon" style="background: #f3e8ff; color: #7c3aed;"><i class="fas fa-file-alt"></i></div>
+    <span class="qa-label">Create Quote</span>
+  </a>
+  <a href="{% url 'invoice_create' %}" class="qa-btn">
+    <div class="qa-icon" style="background: #fce7f3; color: #ec4899;"><i class="fas fa-file-invoice-dollar"></i></div>
+    <span class="qa-label">Create Invoice</span>
+  </a>
+  <a href="{% url 'team_create' %}" class="qa-btn">
+    <div class="qa-icon" style="background: #fee2e2; color: #ef4444;"><i class="fas fa-user-friends"></i></div>
+    <span class="qa-label">Add Team</span>
+  </a>
+</div>
+
+<!-- Main Content: Revenue + Sidebar -->
+<div class="dash-grid dash-grid-2-1" style="margin-bottom: 1.25rem;">
+  <!-- Revenue Chart -->
+  <div class="panel">
+    <div class="panel-head">
+      <h3 class="panel-title"><i class="fas fa-chart-line" style="color: var(--primary);"></i> Revenue Overview</h3>
+      <span class="text-sm text-muted">Last 6 months</span>
+    </div>
+    <div class="panel-body">
+      <canvas id="revenueChart" height="90"></canvas>
+    </div>
+  </div>
+
+  <!-- License Status -->
+  <div class="panel">
+    <div class="panel-head">
+      <h3 class="panel-title"><i class="fas fa-key" style="color: var(--primary);"></i> Licenses</h3>
+      <button type="button" class="btn btn-sm btn-outline-primary" id="syncLicensesBtn" onclick="syncLicenses()" style="font-size: 0.75rem; padding: 4px 10px;">
+        <i class="fas fa-sync-alt me-1"></i>Sync
+      </button>
+    </div>
+    <div class="panel-body">
+      <div class="d-flex gap-2 mb-3 pb-3 border-bottom">
+        <div class="lic-stat">
+          <div class="lic-stat-num text-success" id="activeLicenseCount">{{ active_licenses }}</div>
+          <div class="lic-stat-label">Active</div>
         </div>
-        <span class="action-label">Add Client</span>
-      </a>
-      <a href="{% url 'project_create' %}" class="quick-action-btn" style="min-width: 140px;">
-        <div class="icon-wrapper" style="background: var(--info-bg); color: var(--info);">
-          <i class="fas fa-folder-plus"></i>
+        <div class="lic-stat">
+          <div class="lic-stat-num text-warning" id="expiringLicenseCount">{{ expiring_licenses }}</div>
+          <div class="lic-stat-label">Expiring</div>
         </div>
-        <span class="action-label">New Project</span>
-      </a>
-      <a href="{% url 'task_create' %}" class="quick-action-btn" style="min-width: 140px;">
-        <div class="icon-wrapper" style="background: var(--warning-bg); color: var(--warning);">
-          <i class="fas fa-tasks"></i>
+        <div class="lic-stat">
+          <div class="lic-stat-num text-danger" id="expiredLicenseCount">{{ expired_licenses }}</div>
+          <div class="lic-stat-label">Expired</div>
         </div>
-        <span class="action-label">Add Task</span>
-      </a>
-      <a href="{% url 'quote_create' %}" class="quick-action-btn" style="min-width: 140px;">
-        <div class="icon-wrapper" style="background: #f3e8ff; color: #7c3aed;">
-          <i class="fas fa-file-alt"></i>
+      </div>
+
+      {% for license in licenses_expiring_soon %}
+      <div class="alert-pill" style="background: #fef3c7;">
+        <i class="fas fa-exclamation-triangle text-warning"></i>
+        <div class="flex-1">
+          <div class="fw-bold" style="font-size: 0.8rem;">{{ license.customer_name }}</div>
+          <div style="font-size: 0.7rem; color: #92400e;">{{ license.days_remaining }} days left</div>
         </div>
-        <span class="action-label">Create Quote</span>
-      </a>
-      <a href="{% url 'invoice_create' %}" class="quick-action-btn" style="min-width: 140px;">
-        <div class="icon-wrapper" style="background: var(--success-bg); color: var(--success);">
-          <i class="fas fa-file-invoice-dollar"></i>
+        <a href="{% url 'license_detail' license.pk %}" class="text-warning"><i class="fas fa-arrow-right"></i></a>
+      </div>
+      {% endfor %}
+
+      {% for license in licenses_expired %}
+      <div class="alert-pill" style="background: #fee2e2;">
+        <i class="fas fa-times-circle text-danger"></i>
+        <div class="flex-1">
+          <div class="fw-bold" style="font-size: 0.8rem;">{{ license.customer_name }}</div>
+          <div style="font-size: 0.7rem; color: #991b1b;">Expired {{ license.valid_until|date:"d M Y" }}</div>
         </div>
-        <span class="action-label">Create Invoice</span>
-      </a>
-      <a href="{% url 'team_create' %}" class="quick-action-btn" style="min-width: 140px;">
-        <div class="icon-wrapper" style="background: var(--danger-bg); color: var(--danger);">
-          <i class="fas fa-user-friends"></i>
-        </div>
-        <span class="action-label">Add Team</span>
+        <a href="{% url 'license_detail' license.pk %}" class="text-danger"><i class="fas fa-arrow-right"></i></a>
+      </div>
+      {% endfor %}
+
+      {% if not licenses_expiring_soon and not licenses_expired %}
+      <div class="text-center py-2">
+        <i class="fas fa-check-circle text-success" style="font-size: 1.25rem;"></i>
+        <p class="mb-0 text-sm text-muted mt-1">All licenses healthy</p>
+      </div>
+      {% endif %}
+
+      <a href="{% url 'license_list' %}" class="btn btn-outline-primary btn-sm w-100 mt-3" style="font-size: 0.75rem;">
+        View All Licenses
       </a>
     </div>
   </div>
 </div>
 
-<!-- Main Content -->
-<div class="row">
-  <!-- Left Column - Charts & Table -->
-  <div class="col-8 col-md-12" style="padding: 0.5rem;">
-    <!-- Revenue Chart -->
-    <div class="chart-card mb-4">
-      <div class="chart-card-header">
-        <h3 class="chart-card-title">Revenue Overview</h3>
-        <span class="text-sm text-muted">Last 6 months</span>
-      </div>
-      <div class="chart-card-body">
-        <canvas id="revenueChart" height="100"></canvas>
-      </div>
+<!-- Invoices + Project Status + Payments -->
+<div class="dash-grid dash-grid-3" style="margin-bottom: 1.25rem;">
+  <!-- Recent Invoices -->
+  <div class="panel" style="grid-column: span 2;">
+    <div class="panel-head">
+      <h3 class="panel-title"><i class="fas fa-file-invoice" style="color: #7c3aed;"></i> Recent Invoices</h3>
+      <a href="{% url 'invoice_list' %}" class="btn btn-sm btn-ghost" style="font-size: 0.8rem;">View All <i class="fas fa-arrow-right ms-1"></i></a>
     </div>
-
-    <!-- Recent Invoices -->
-    <div class="chart-card">
-      <div class="chart-card-header">
-        <h3 class="chart-card-title">Recent Invoices</h3>
-        <a href="{% url 'invoice_list' %}" class="btn btn-sm btn-ghost">View All <i class="fas fa-arrow-right ms-1"></i></a>
-      </div>
-      <div class="table-wrapper">
-        <table class="table mb-0">
-          <thead>
-            <tr>
-              <th>Invoice</th>
-              <th>Client</th>
-              <th>Amount</th>
-              <th>Status</th>
-              <th></th>
-            </tr>
-          </thead>
-          <tbody>
-            {% for invoice in recent_invoices %}
-            <tr>
-              <td>
-                <a href="{% url 'invoice_detail' invoice.pk %}" class="fw-medium">{{ invoice.invoice_number }}</a>
-                <div class="text-sm text-muted">{{ invoice.due_date|date:"d M Y"|default:"No due date" }}</div>
-              </td>
-              <td>{{ invoice.client.name }}</td>
-              <td class="fw-medium">&#8377;{{ invoice.total_amount|floatformat:0 }}</td>
-              <td><span class="status-badge {{ invoice.status }}">{{ invoice.get_status_display }}</span></td>
-              <td class="text-right">
-                <a href="{% url 'invoice_detail' invoice.pk %}" class="btn btn-sm btn-ghost btn-icon">
-                  <i class="fas fa-arrow-right"></i>
-                </a>
-              </td>
-            </tr>
-            {% empty %}
-            <tr>
-              <td colspan="5" class="text-center text-muted py-4">
-                <i class="fas fa-file-invoice mb-2" style="font-size: 2rem; display: block; opacity: 0.3;"></i>
-                No invoices yet
-              </td>
-            </tr>
-            {% endfor %}
-          </tbody>
-        </table>
-      </div>
+    <div class="panel-body flush">
+      <table class="tbl-mini">
+        <thead>
+          <tr>
+            <th>Invoice</th>
+            <th>Client</th>
+            <th>Amount</th>
+            <th>Status</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for invoice in recent_invoices %}
+          <tr>
+            <td>
+              <span class="fw-bold">{{ invoice.invoice_number }}</span>
+              <div class="text-muted" style="font-size: 0.7rem;">{{ invoice.due_date|date:"d M Y"|default:"No due date" }}</div>
+            </td>
+            <td>{{ invoice.client.name }}</td>
+            <td class="fw-bold">&#8377;{{ invoice.total_amount|floatformat:0 }}</td>
+            <td><span class="status-badge {{ invoice.status }}">{{ invoice.get_status_display }}</span></td>
+            <td>
+              <a href="{% url 'invoice_detail' invoice.pk %}" class="btn btn-sm btn-ghost btn-icon"><i class="fas fa-arrow-right"></i></a>
+            </td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="5" class="text-center text-muted py-4">
+              <i class="fas fa-file-invoice mb-2" style="font-size: 1.5rem; opacity: 0.3; display: block;"></i>
+              No invoices yet
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
     </div>
   </div>
 
-  <!-- Right Column - Sidebar -->
-  <div class="col-4 col-md-12" style="padding: 0.5rem;">
-    <!-- License Status Card -->
-    <div class="chart-card mb-4">
-      <div class="chart-card-header">
-        <h3 class="chart-card-title">
-          <i class="fas fa-key me-2 text-primary"></i>License Status
-        </h3>
-        <button type="button" class="btn btn-sm btn-outline-primary" id="syncLicensesBtn" onclick="syncLicenses()">
-          <i class="fas fa-sync-alt me-1"></i>Sync
-        </button>
-      </div>
-      <div class="chart-card-body">
-        <!-- License Stats -->
-        <div class="d-flex justify-content-between align-items-center mb-3 pb-3 border-bottom">
-          <div class="text-center flex-1">
-            <div class="fw-bold text-success" style="font-size: 1.5rem;" id="activeLicenseCount">{{ active_licenses }}</div>
-            <div class="text-sm text-muted">Active</div>
-          </div>
-          <div class="text-center flex-1">
-            <div class="fw-bold text-warning" style="font-size: 1.5rem;" id="expiringLicenseCount">{{ expiring_licenses }}</div>
-            <div class="text-sm text-muted">Expiring</div>
-          </div>
-          <div class="text-center flex-1">
-            <div class="fw-bold text-danger" style="font-size: 1.5rem;" id="expiredLicenseCount">{{ expired_licenses }}</div>
-            <div class="text-sm text-muted">Expired</div>
-          </div>
-        </div>
-
-        <!-- Expiring Soon Alerts -->
-        {% if licenses_expiring_soon %}
-        <div class="mb-3">
-          <div class="text-sm text-muted mb-2"><i class="fas fa-exclamation-triangle text-warning me-1"></i>Expiring Soon</div>
-          {% for license in licenses_expiring_soon %}
-          <div class="d-flex align-items-center gap-2 py-2 border-bottom">
-            <div class="flex-1">
-              <div class="fw-medium text-sm">{{ license.customer_name }}</div>
-              <div class="text-xs text-warning">{{ license.valid_until|date:"d M Y" }} ({{ license.days_remaining }} days)</div>
-            </div>
-            <a href="{% url 'license_detail' license.pk %}" class="btn btn-sm btn-ghost btn-icon">
-              <i class="fas fa-arrow-right"></i>
-            </a>
-          </div>
-          {% endfor %}
-        </div>
-        {% endif %}
-
-        <!-- Expired Licenses -->
-        {% if licenses_expired %}
-        <div>
-          <div class="text-sm text-muted mb-2"><i class="fas fa-times-circle text-danger me-1"></i>Expired</div>
-          {% for license in licenses_expired %}
-          <div class="d-flex align-items-center gap-2 py-2 border-bottom">
-            <div class="flex-1">
-              <div class="fw-medium text-sm">{{ license.customer_name }}</div>
-              <div class="text-xs text-danger">Expired {{ license.valid_until|date:"d M Y" }}</div>
-            </div>
-            <a href="{% url 'license_detail' license.pk %}" class="btn btn-sm btn-ghost btn-icon" title="Renew">
-              <i class="fas fa-arrow-right"></i>
-            </a>
-          </div>
-          {% endfor %}
-        </div>
-        {% endif %}
-
-        {% if not licenses_expiring_soon and not licenses_expired %}
-        <div class="text-center text-muted py-2">
-          <i class="fas fa-check-circle text-success mb-2" style="font-size: 1.5rem;"></i>
-          <p class="mb-0 text-sm">All licenses healthy</p>
-        </div>
-        {% endif %}
-
-        <a href="{% url 'license_list' %}" class="btn btn-outline-primary btn-sm w-100 mt-3">
-          <i class="fas fa-list me-1"></i>View All Licenses
-        </a>
-      </div>
+  <!-- Project Status -->
+  <div class="panel">
+    <div class="panel-head">
+      <h3 class="panel-title"><i class="fas fa-chart-pie" style="color: #06b6d4;"></i> Projects</h3>
     </div>
-
-    <!-- Project Status -->
-    <div class="chart-card mb-4">
-      <div class="chart-card-header">
-        <h3 class="chart-card-title">Project Status</h3>
-      </div>
-      <div class="chart-card-body text-center">
-        <canvas id="projectStatusChart" height="180"></canvas>
-      </div>
+    <div class="panel-body text-center">
+      <canvas id="projectStatusChart" height="200"></canvas>
     </div>
-
-    <!-- Recent Payments -->
-    <div class="chart-card mb-4">
-      <div class="chart-card-header">
-        <h3 class="chart-card-title">Recent Payments</h3>
-        <a href="{% url 'payment_list' %}" class="btn btn-sm btn-ghost">View All</a>
-      </div>
-      <div class="chart-card-body" style="padding: 0.75rem 1rem;">
-        {% for payment in recent_payments %}
-        <div class="activity-item" style="padding: 0.75rem 0;">
-          <div class="activity-icon" style="background: var(--success-bg); color: var(--success);">
-            <i class="fas fa-check"></i>
-          </div>
-          <div class="activity-content">
-            <div class="activity-title">&#8377;{{ payment.amount|floatformat:0 }}</div>
-            <div class="activity-meta">{{ payment.invoice.client.name }} &bull; {{ payment.payment_date|date:"d M" }}</div>
-          </div>
-        </div>
-        {% empty %}
-        <div class="text-center text-muted py-4">
-          <i class="fas fa-credit-card mb-2" style="font-size: 1.5rem; opacity: 0.3;"></i>
-          <p class="mb-0">No payments yet</p>
-        </div>
-        {% endfor %}
-      </div>
-    </div>
-
-    {% if expiring_credentials or overdue_invoices %}
-    <!-- Alerts -->
-    <div class="chart-card">
-      <div class="chart-card-header" style="background: var(--danger-bg);">
-        <h3 class="chart-card-title" style="color: var(--danger);">
-          <i class="fas fa-exclamation-triangle me-2"></i>Alerts
-        </h3>
-      </div>
-      <div class="chart-card-body" style="padding: 0;">
-        {% for credential in expiring_credentials %}
-        <div class="d-flex align-items-center gap-3 p-3 border-bottom">
-          <div class="activity-icon" style="background: var(--warning-bg); color: var(--warning);">
-            <i class="fas fa-key"></i>
-          </div>
-          <div class="flex-1">
-            <div class="fw-medium">{{ credential.name }}</div>
-            <div class="text-sm text-muted">Expires {{ credential.expiry_date|date:"d M Y" }}</div>
-          </div>
-          <a href="{% url 'credential_detail' credential.pk %}" class="btn btn-sm btn-ghost btn-icon">
-            <i class="fas fa-arrow-right"></i>
-          </a>
-        </div>
-        {% endfor %}
-        {% for invoice in overdue_invoices %}
-        <div class="d-flex align-items-center gap-3 p-3 border-bottom">
-          <div class="activity-icon" style="background: var(--danger-bg); color: var(--danger);">
-            <i class="fas fa-file-invoice"></i>
-          </div>
-          <div class="flex-1">
-            <div class="fw-medium">{{ invoice.invoice_number }}</div>
-            <div class="text-sm text-danger">Overdue - &#8377;{{ invoice.balance_due|floatformat:0 }}</div>
-          </div>
-          <a href="{% url 'invoice_detail' invoice.pk %}" class="btn btn-sm btn-ghost btn-icon">
-            <i class="fas fa-arrow-right"></i>
-          </a>
-        </div>
-        {% endfor %}
-      </div>
-    </div>
-    {% endif %}
   </div>
+</div>
+
+<!-- Bottom Row: Payments + Alerts -->
+<div class="dash-grid" style="grid-template-columns: 1fr 1fr;">
+  <!-- Recent Payments -->
+  <div class="panel">
+    <div class="panel-head">
+      <h3 class="panel-title"><i class="fas fa-credit-card" style="color: #10b981;"></i> Recent Payments</h3>
+      <a href="{% url 'payment_list' %}" class="btn btn-sm btn-ghost" style="font-size: 0.8rem;">View All</a>
+    </div>
+    <div class="panel-body flush">
+      {% for payment in recent_payments %}
+      <div class="act-row">
+        <div class="act-dot" style="background: #ecfdf5; color: #10b981;"><i class="fas fa-check"></i></div>
+        <div class="act-info">
+          <div class="act-name">{{ payment.invoice.client.name }}</div>
+          <div class="act-sub">{{ payment.payment_date|date:"d M Y" }} &bull; {{ payment.get_payment_method_display }}</div>
+        </div>
+        <div class="act-val" style="color: #10b981;">+&#8377;{{ payment.amount|floatformat:0 }}</div>
+      </div>
+      {% empty %}
+      <div class="text-center text-muted py-4">
+        <i class="fas fa-credit-card mb-2" style="font-size: 1.5rem; opacity: 0.3; display: block;"></i>
+        <p class="mb-0 text-sm">No payments yet</p>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+
+  <!-- Alerts -->
+  {% if expiring_credentials or overdue_invoices %}
+  <div class="panel">
+    <div class="panel-head" style="background: #fef2f2;">
+      <h3 class="panel-title" style="color: #dc2626;"><i class="fas fa-exclamation-triangle"></i> Alerts</h3>
+      <span class="kpi-tag" style="background: #fee2e2; color: #dc2626;">{{ expiring_credentials|length|add:overdue_invoices|length }}</span>
+    </div>
+    <div class="panel-body flush">
+      {% for credential in expiring_credentials %}
+      <div class="act-row">
+        <div class="act-dot" style="background: #fef3c7; color: #f59e0b;"><i class="fas fa-key"></i></div>
+        <div class="act-info">
+          <div class="act-name">{{ credential.name }}</div>
+          <div class="act-sub">Expires {{ credential.expiry_date|date:"d M Y" }}</div>
+        </div>
+        <a href="{% url 'credential_detail' credential.pk %}" class="btn btn-sm btn-ghost btn-icon"><i class="fas fa-arrow-right"></i></a>
+      </div>
+      {% endfor %}
+      {% for invoice in overdue_invoices %}
+      <div class="act-row">
+        <div class="act-dot" style="background: #fee2e2; color: #ef4444;"><i class="fas fa-file-invoice"></i></div>
+        <div class="act-info">
+          <div class="act-name">{{ invoice.invoice_number }}</div>
+          <div class="act-sub" style="color: #dc2626;">Overdue &bull; &#8377;{{ invoice.balance_due|floatformat:0 }}</div>
+        </div>
+        <a href="{% url 'invoice_detail' invoice.pk %}" class="btn btn-sm btn-ghost btn-icon"><i class="fas fa-arrow-right"></i></a>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+  {% else %}
+  <div class="panel">
+    <div class="panel-head">
+      <h3 class="panel-title"><i class="fas fa-shield-alt" style="color: #10b981;"></i> Status</h3>
+    </div>
+    <div class="panel-body text-center py-4">
+      <div style="width: 56px; height: 56px; border-radius: 50%; background: #ecfdf5; display: flex; align-items: center; justify-content: center; margin: 0 auto 0.75rem;">
+        <i class="fas fa-check" style="font-size: 1.5rem; color: #10b981;"></i>
+      </div>
+      <div class="fw-bold" style="font-size: 0.95rem;">All Clear</div>
+      <p class="text-muted text-sm mb-0">No overdue invoices or expiring credentials.</p>
+    </div>
+  </div>
+  {% endif %}
 </div>
 {% endblock %}
 
 {% block extra_js %}
 <script>
-// License Sync Function
 function syncLicenses() {
   const btn = document.getElementById('syncLicensesBtn');
   const originalHtml = btn.innerHTML;
-
-  // Show loading state
   btn.disabled = true;
   btn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Syncing...';
 
-  // Make AJAX request
   fetch('{% url "sync_licenses" %}', {
     method: 'POST',
     headers: {
@@ -742,85 +582,51 @@ function syncLicenses() {
       'Content-Type': 'application/json',
     },
   })
-  .then(response => response.json())
+  .then(r => r.json())
   .then(data => {
     if (data.success) {
-      // Update the counts
       document.getElementById('activeLicenseCount').textContent = data.stats.active;
       document.getElementById('expiringLicenseCount').textContent = data.stats.expiring_soon;
       document.getElementById('expiredLicenseCount').textContent = data.stats.expired;
-
-      // Show success
-      btn.innerHTML = '<i class="fas fa-check me-1"></i>Synced!';
-      btn.classList.remove('btn-outline-primary');
-      btn.classList.add('btn-success');
-
-      // Show notification
-      if (data.stats.updated > 0) {
-        alert(data.message);
-      }
-
-      // Reset button after delay
-      setTimeout(() => {
-        btn.innerHTML = originalHtml;
-        btn.classList.remove('btn-success');
-        btn.classList.add('btn-outline-primary');
-        btn.disabled = false;
-      }, 2000);
-    } else {
-      throw new Error(data.message || 'Sync failed');
-    }
+      btn.innerHTML = '<i class="fas fa-check me-1"></i>Done';
+      btn.classList.replace('btn-outline-primary', 'btn-success');
+      setTimeout(() => { btn.innerHTML = originalHtml; btn.classList.replace('btn-success', 'btn-outline-primary'); btn.disabled = false; }, 2000);
+    } else throw new Error(data.message);
   })
-  .catch(error => {
-    console.error('Sync error:', error);
-    btn.innerHTML = '<i class="fas fa-exclamation-triangle me-1"></i>Error';
-    btn.classList.remove('btn-outline-primary');
-    btn.classList.add('btn-danger');
-
-    setTimeout(() => {
-      btn.innerHTML = originalHtml;
-      btn.classList.remove('btn-danger');
-      btn.classList.add('btn-outline-primary');
-      btn.disabled = false;
-    }, 2000);
+  .catch(() => {
+    btn.innerHTML = '<i class="fas fa-times me-1"></i>Error';
+    btn.classList.replace('btn-outline-primary', 'btn-danger');
+    setTimeout(() => { btn.innerHTML = originalHtml; btn.classList.replace('btn-danger', 'btn-outline-primary'); btn.disabled = false; }, 2000);
   });
 }
 
 document.addEventListener('DOMContentLoaded', function() {
-  const colors = {
-    primary: '#0d9488',
-    success: '#10b981',
-    warning: '#f59e0b',
-    danger: '#ef4444',
-    info: '#06b6d4',
-    secondary: '#6b7280',
-    purple: '#8b5cf6',
-    pink: '#ec4899'
-  };
+  const C = { primary: '#0d9488', success: '#10b981', warning: '#f59e0b', danger: '#ef4444', info: '#06b6d4', secondary: '#6b7280', purple: '#8b5cf6', pink: '#ec4899' };
 
-  // Revenue Chart - Modern Area Chart
-  const revenueCtx = document.getElementById('revenueChart');
-  if (revenueCtx) {
-    const gradient = revenueCtx.getContext('2d').createLinearGradient(0, 0, 0, 200);
-    gradient.addColorStop(0, 'rgba(13, 148, 136, 0.3)');
-    gradient.addColorStop(1, 'rgba(13, 148, 136, 0)');
+  // Revenue Chart
+  const revEl = document.getElementById('revenueChart');
+  if (revEl) {
+    const g = revEl.getContext('2d').createLinearGradient(0, 0, 0, 200);
+    g.addColorStop(0, 'rgba(13,148,136,0.2)');
+    g.addColorStop(1, 'rgba(13,148,136,0)');
 
-    new Chart(revenueCtx, {
+    new Chart(revEl, {
       type: 'line',
       data: {
         labels: {{ monthly_revenue_labels|safe }},
         datasets: [{
           label: 'Revenue',
           data: {{ monthly_revenue_data|safe }},
-          borderColor: colors.primary,
-          backgroundColor: gradient,
+          borderColor: C.primary,
+          backgroundColor: g,
           fill: true,
           tension: 0.4,
-          pointBackgroundColor: colors.primary,
+          pointBackgroundColor: C.primary,
           pointBorderColor: '#fff',
           pointBorderWidth: 2,
-          pointRadius: 4,
-          pointHoverRadius: 6
+          pointRadius: 5,
+          pointHoverRadius: 7,
+          borderWidth: 2.5
         }]
       },
       options: {
@@ -829,55 +635,37 @@ document.addEventListener('DOMContentLoaded', function() {
         plugins: {
           legend: { display: false },
           tooltip: {
-            backgroundColor: '#1e293b',
-            titleColor: '#fff',
-            bodyColor: '#94a3b8',
-            padding: 12,
-            cornerRadius: 8,
-            callbacks: {
-              label: function(context) {
-                return '₹' + context.parsed.y.toLocaleString('en-IN');
-              }
-            }
+            backgroundColor: '#0f172a', padding: 12, cornerRadius: 10,
+            titleColor: '#fff', bodyColor: '#94a3b8',
+            callbacks: { label: ctx => '\u20B9' + ctx.parsed.y.toLocaleString('en-IN') }
           }
         },
         scales: {
           y: {
             beginAtZero: true,
             border: { display: false },
-            grid: { color: 'rgba(0,0,0,0.05)' },
-            ticks: {
-              callback: function(value) {
-                if (value >= 1000) return '₹' + (value / 1000).toFixed(0) + 'k';
-                return '₹' + value;
-              },
-              color: '#94a3b8'
-            }
+            grid: { color: 'rgba(0,0,0,0.04)' },
+            ticks: { callback: v => v >= 1000 ? '\u20B9' + (v/1000).toFixed(0) + 'k' : '\u20B9' + v, color: '#94a3b8', font: { size: 11 } }
           },
-          x: {
-            border: { display: false },
-            grid: { display: false },
-            ticks: { color: '#94a3b8' }
-          }
+          x: { border: { display: false }, grid: { display: false }, ticks: { color: '#94a3b8', font: { size: 11 } } }
         }
       }
     });
   }
 
-  // Project Status - Doughnut
-  const projectCtx = document.getElementById('projectStatusChart');
-  if (projectCtx) {
-    const projectLabels = {{ project_status_labels|safe }};
-    const projectData = {{ project_status_data|safe }};
-
-    if (projectLabels.length > 0) {
-      new Chart(projectCtx, {
+  // Project Status Doughnut
+  const projEl = document.getElementById('projectStatusChart');
+  if (projEl) {
+    const labels = {{ project_status_labels|safe }};
+    const data = {{ project_status_data|safe }};
+    if (labels.length > 0) {
+      new Chart(projEl, {
         type: 'doughnut',
         data: {
-          labels: projectLabels,
+          labels: labels,
           datasets: [{
-            data: projectData,
-            backgroundColor: [colors.primary, colors.info, colors.warning, colors.success, colors.danger, colors.purple, colors.pink, colors.secondary],
+            data: data,
+            backgroundColor: [C.primary, C.info, C.warning, C.success, C.danger, C.purple, C.pink, C.secondary],
             borderWidth: 0,
             hoverOffset: 4
           }]
@@ -886,21 +674,13 @@ document.addEventListener('DOMContentLoaded', function() {
           responsive: true,
           maintainAspectRatio: false,
           plugins: {
-            legend: {
-              position: 'bottom',
-              labels: {
-                padding: 15,
-                usePointStyle: true,
-                pointStyle: 'circle',
-                color: '#64748b'
-              }
-            }
+            legend: { position: 'bottom', labels: { padding: 12, usePointStyle: true, pointStyle: 'circle', color: '#64748b', font: { size: 11 } } }
           },
-          cutout: '70%'
+          cutout: '72%'
         }
       });
     } else {
-      projectCtx.parentElement.innerHTML = '<div class="text-center text-muted py-4"><i class="fas fa-chart-pie mb-2" style="font-size: 2rem; opacity: 0.3;"></i><p class="mb-0">No project data</p></div>';
+      projEl.parentElement.innerHTML = '<div class="text-center text-muted py-4"><i class="fas fa-chart-pie mb-2" style="font-size: 1.5rem; opacity: 0.3;"></i><p class="mb-0 text-sm">No project data</p></div>';
     }
   }
 });
