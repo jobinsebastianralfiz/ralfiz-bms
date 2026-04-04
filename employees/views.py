@@ -3158,6 +3158,13 @@ class CRMLeadDetailView(APIView):
             return Response(LeadSerializer(lead, context={'request': request}).data)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
+    def delete(self, request, pk):
+        lead, error = self.get_lead(pk, request.user)
+        if error:
+            return Response({'error': error}, status=status.HTTP_404_NOT_FOUND)
+        lead.delete()
+        return Response({'message': 'Lead deleted successfully.'}, status=status.HTTP_204_NO_CONTENT)
+
 
 @extend_schema(tags=['CRM - Leads'])
 class CRMLeadStatusUpdateView(APIView):
