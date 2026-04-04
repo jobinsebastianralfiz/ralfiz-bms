@@ -14,6 +14,7 @@ urlpatterns = [
     path('leads/<int:pk>/', views.lead_detail, name='lead_detail'),
     path('leads/<int:pk>/edit/', views.lead_edit, name='lead_edit'),
     path('leads/<int:pk>/change-status/', views.lead_change_status, name='lead_change_status'),
+    path('leads/<int:pk>/create-project/', views.lead_create_project, name='lead_create_project'),
     path('leads/<int:lead_pk>/note/create/', views.lead_note_create, name='lead_note_create'),
 
     # Activities

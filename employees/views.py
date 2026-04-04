@@ -3149,6 +3149,9 @@ class CRMLeadDetailView(APIView):
         if error:
             return Response({'error': error}, status=status.HTTP_404_NOT_FOUND)
 
+        if lead.status == 'converted':
+            return Response({'error': 'Converted leads cannot be edited.'}, status=status.HTTP_400_BAD_REQUEST)
+
         serializer = LeadCreateSerializer(lead, data=request.data, partial=True)
         if serializer.is_valid():
             serializer.save()
@@ -3173,6 +3176,9 @@ class CRMLeadStatusUpdateView(APIView):
 
         if is_intern and lead.assigned_to != request.user:
             return Response({'error': 'You can only update leads assigned to you'}, status=status.HTTP_403_FORBIDDEN)
+
+        if lead.status == 'converted':
+            return Response({'error': 'Converted leads cannot be modified.'}, status=status.HTTP_400_BAD_REQUEST)
 
         new_status = request.data.get('status')
         valid_statuses = [c[0] for c in Lead.STATUS_CHOICES]

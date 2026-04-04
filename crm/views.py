@@ -7,7 +7,8 @@ from django.db.models import Q, Sum, Count
 from django.contrib.auth.models import User
 from django.utils import timezone
 
-from .models import InternProfile, Lead, LeadNote, DailyActivity, Demo
+from .models import InternProfile, Lead, LeadNote, DailyActivity, Demo, LeadActivity
+from core.models import Client, Project
 from employees.models import Employee
 
 from datetime import timedelta
@@ -202,7 +203,7 @@ def lead_detail(request, pk):
         messages.error(request, 'Access denied.')
         return redirect('dashboard')
 
-    lead = get_object_or_404(Lead.objects.select_related('assigned_to', 'created_by'), pk=pk)
+    lead = get_object_or_404(Lead.objects.select_related('assigned_to', 'created_by', 'client'), pk=pk)
 
     if is_intern(request.user) and lead.assigned_to != request.user:
         messages.error(request, 'You can only view your own leads.')
@@ -227,6 +228,10 @@ def lead_edit(request, pk):
         return redirect('dashboard')
 
     lead = get_object_or_404(Lead, pk=pk)
+
+    if lead.status == 'converted':
+        messages.error(request, 'Converted leads cannot be edited.')
+        return redirect('crm:lead_detail', pk=pk)
 
     if is_intern(request.user) and lead.assigned_to != request.user:
         messages.error(request, 'You can only edit your own leads.')
@@ -264,16 +269,82 @@ def lead_change_status(request, pk):
         return redirect('dashboard')
 
     lead = get_object_or_404(Lead, pk=pk)
+
+    if lead.status == 'converted':
+        messages.error(request, 'Converted leads cannot be modified.')
+        return redirect('crm:lead_detail', pk=pk)
+
     new_status = request.POST.get('status')
 
     if new_status and new_status in dict(Lead.STATUS_CHOICES):
         lead.status = new_status
         lead.save()
-        messages.success(request, f'Lead status changed to {lead.get_status_display()}.')
+
+        # Auto-create Client when lead is converted
+        if new_status == 'converted' and not lead.client:
+            client = Client.objects.create(
+                name=lead.contact_person,
+                company_name=lead.company_name,
+                email=lead.email or f'lead-{lead.pk}@placeholder.local',
+                phone=lead.phone,
+                notes=f'Auto-created from CRM lead #{lead.pk}. Source: {lead.get_source_display()}.',
+            )
+            lead.client = client
+            lead.save(update_fields=['client'])
+            LeadActivity.objects.create(
+                lead=lead,
+                activity_type='status_change',
+                description=f'Client "{client.name}" auto-created from converted lead',
+                created_by=request.user,
+                metadata={'client_id': str(client.id), 'client_name': client.name},
+            )
+            messages.success(request, f'Lead converted! Client "{client.name}" has been created.')
+        else:
+            messages.success(request, f'Lead status changed to {lead.get_status_display()}.')
     else:
         messages.error(request, 'Invalid status.')
 
     return redirect('crm:lead_detail', pk=pk)
+
+
+@login_required
+def lead_create_project(request, pk):
+    if request.method != 'POST':
+        return redirect('crm:lead_detail', pk=pk)
+
+    if not is_admin(request.user):
+        messages.error(request, 'Only admins can create projects.')
+        return redirect('crm:lead_detail', pk=pk)
+
+    lead = get_object_or_404(Lead, pk=pk)
+
+    if not lead.client:
+        messages.error(request, 'Lead must be converted with a client before creating a project.')
+        return redirect('crm:lead_detail', pk=pk)
+
+    project_name = request.POST.get('project_name', '').strip()
+    project_type = request.POST.get('project_type', 'web_app')
+    description = request.POST.get('description', '').strip()
+
+    if not project_name:
+        project_name = f'{lead.company_name or lead.contact_person} Project'
+
+    project = Project.objects.create(
+        client=lead.client,
+        name=project_name,
+        project_type=project_type,
+        description=description or f'Created from CRM lead #{lead.pk}',
+        status='lead',
+    )
+    LeadActivity.objects.create(
+        lead=lead,
+        activity_type='status_change',
+        description=f'Project "{project.name}" created for client "{lead.client.name}"',
+        created_by=request.user,
+        metadata={'project_id': str(project.id), 'project_name': project.name},
+    )
+    messages.success(request, f'Project "{project.name}" created successfully!')
+    return redirect('core:project_detail', pk=project.id)
 
 
 @login_required
@@ -698,6 +769,26 @@ def demo_update_status(request, pk):
         if new_status == 'converted':
             demo.lead.status = 'converted'
             demo.lead.save()
+            # Auto-create Client when demo converts
+            if not demo.lead.client:
+                client = Client.objects.create(
+                    name=demo.lead.contact_person,
+                    company_name=demo.lead.company_name,
+                    email=demo.lead.email or f'lead-{demo.lead.pk}@placeholder.local',
+                    phone=demo.lead.phone,
+                    notes=f'Auto-created from CRM lead #{demo.lead.pk} via demo conversion.',
+                )
+                demo.lead.client = client
+                demo.lead.save(update_fields=['client'])
+                LeadActivity.objects.create(
+                    lead=demo.lead,
+                    activity_type='status_change',
+                    description=f'Client "{client.name}" auto-created from demo conversion',
+                    created_by=request.user,
+                    metadata={'client_id': str(client.id), 'client_name': client.name},
+                )
+                messages.success(request, f'Demo converted! Client "{client.name}" has been created.')
+                return redirect('crm:demo_detail', pk=pk)
         elif new_status == 'completed' and demo.lead.status == 'demo_scheduled':
             demo.lead.status = 'follow_up'
             demo.lead.save()
