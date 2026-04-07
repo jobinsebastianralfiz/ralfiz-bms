@@ -669,6 +669,7 @@ class TeamMember(models.Model):
 
     EMPLOYMENT_TYPE_CHOICES = [
         ('permanent', 'Permanent'),
+        ('contract', 'Contract'),
         ('freelancer', 'Freelancer'),
     ]
 
