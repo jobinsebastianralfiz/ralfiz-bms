@@ -662,6 +662,8 @@ class TeamMember(models.Model):
         ('project_manager', 'Project Manager'),
         ('qa', 'QA Engineer'),
         ('devops', 'DevOps'),
+        ('digital_marketing', 'Digital Marketing'),
+        ('growth_outreach', 'Growth and Outreach Executive'),
         ('other', 'Other'),
     ]
 
