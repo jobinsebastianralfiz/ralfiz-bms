@@ -10,6 +10,7 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('api/license/', include('licensing.urls')),
     path('api/gympro/', include('gympro_licensing.urls')),
+    path('api/eduflow/', include('eduflow_licensing.urls')),
     path('api/retailease/', include('retailease.urls')),
     path('api/interiodesk/', include('interiodesk.urls')),
     path('crm/', include('crm.urls')),
