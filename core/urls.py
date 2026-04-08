@@ -1,6 +1,7 @@
 from django.urls import path
 from . import views
 from gympro_licensing import web_views as gympro_web_views
+from eduflow_licensing import web_views as eduflow_web_views
 
 urlpatterns = [
     # Public Pages
@@ -153,6 +154,12 @@ urlpatterns = [
     path('gympro/licenses/create/', gympro_web_views.gym_license_create, name='gym_license_create'),
     path('gympro/licenses/<uuid:pk>/', gympro_web_views.gym_license_detail, name='gym_license_detail'),
     path('gympro/licenses/<uuid:pk>/update/', gympro_web_views.gym_license_update, name='gym_license_update'),
+
+    # EduFlow License Management (Web Views)
+    path('eduflow/licenses/', eduflow_web_views.eduflow_license_list, name='eduflow_license_list'),
+    path('eduflow/licenses/create/', eduflow_web_views.eduflow_license_create, name='eduflow_license_create'),
+    path('eduflow/licenses/<uuid:pk>/', eduflow_web_views.eduflow_license_detail, name='eduflow_license_detail'),
+    path('eduflow/licenses/<uuid:pk>/update/', eduflow_web_views.eduflow_license_update, name='eduflow_license_update'),
 
     # HR & Admin
     path('hr/employees/', views.emp_employee_list, name='emp_employee_list'),
