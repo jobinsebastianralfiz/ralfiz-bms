@@ -24,6 +24,12 @@ class Employee(models.Model):
         ('field', 'Field Marketing'),
     ]
 
+    WORK_MODE_CHOICES = [
+        ('onsite', 'Onsite'),
+        ('hybrid', 'Hybrid'),
+        ('remote', 'Remote'),
+    ]
+
     STATUS_CHOICES = [
         ('active', 'Active'),
         ('inactive', 'Inactive'),
@@ -71,6 +77,8 @@ class Employee(models.Model):
     office_longitude = models.DecimalField(max_digits=10, decimal_places=7, null=True, blank=True)
     allowed_radius_meters = models.IntegerField(default=100,
                                                  help_text='Allowed distance from office for attendance')
+    work_mode = models.CharField(max_length=10, choices=WORK_MODE_CHOICES, default='onsite',
+                                 help_text='Onsite, Hybrid, or fully Remote. Hybrid/remote can check in without QR/geo-fence.')
 
     profile_photo = models.ImageField(upload_to='employees/photos/', blank=True, null=True)
     notes = models.TextField(blank=True)
@@ -137,6 +145,7 @@ class Attendance(models.Model):
         ('face_qr', 'Face + QR'),
         ('face_location', 'Face + Location'),
         ('face_local', 'Face (On-Device) + QR'),
+        ('remote', 'Remote (Face only)'),
         ('manual', 'Manual (Admin)'),
     ]
 
@@ -163,6 +172,18 @@ class Attendance(models.Model):
     # QR verification
     qr_verified = models.BooleanField(default=False)
 
+    # Daily hours policy snapshot + shortfall tracking
+    required_hours = models.DecimalField(max_digits=4, decimal_places=2, default=6.00,
+                                         help_text='Required working hours for this day (snapshot from OfficeConfig)')
+    worked_hours = models.DecimalField(max_digits=5, decimal_places=2, null=True, blank=True,
+                                       help_text='Actual hours worked, set at check-out')
+    pending_hours = models.DecimalField(max_digits=5, decimal_places=2, default=0,
+                                        help_text='Shortfall = required_hours - worked_hours (0 if worked >= required)')
+    is_force_checkout = models.BooleanField(default=False,
+                                            help_text='True if employee force-checked-out before completing required hours')
+    is_remote = models.BooleanField(default=False,
+                                    help_text='True if checked in remotely (hybrid/remote employees)')
+
     notes = models.TextField(blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -181,6 +202,47 @@ class Attendance(models.Model):
             delta = self.check_out - self.check_in
             return round(delta.total_seconds() / 3600, 2)
         return 0
+
+    def minimum_checkout_time(self, floor_time=None):
+        """Earliest timestamp when check-out is allowed.
+
+        Returns max(check_in + required_hours, today_floor). floor_time is a
+        datetime.time (e.g. 16:00). If not provided, falls back to OfficeConfig.
+        """
+        if not self.check_in:
+            return None
+        from datetime import datetime, time as dtime, timedelta
+        from django.utils import timezone as tz
+        required_delta = self.check_in + timedelta(hours=float(self.required_hours))
+        if floor_time is None:
+            cfg = OfficeConfig.objects.first()
+            floor_time = cfg.min_checkout_time_floor if cfg else dtime(16, 0)
+        local_check_in = tz.localtime(self.check_in) if tz.is_aware(self.check_in) else self.check_in
+        floor_naive = datetime.combine(local_check_in.date(), floor_time)
+        if tz.is_aware(self.check_in):
+            floor_dt = tz.make_aware(floor_naive, tz.get_current_timezone())
+        else:
+            floor_dt = floor_naive
+        return max(required_delta, floor_dt)
+
+    def is_checkout_allowed(self, now=None, floor_time=None):
+        if not self.check_in:
+            return False
+        from django.utils import timezone as tz
+        now = now or tz.now()
+        min_time = self.minimum_checkout_time(floor_time=floor_time)
+        return min_time is not None and now >= min_time
+
+    def seconds_until_eligible(self, now=None, floor_time=None):
+        if not self.check_in:
+            return None
+        from django.utils import timezone as tz
+        now = now or tz.now()
+        min_time = self.minimum_checkout_time(floor_time=floor_time)
+        if min_time is None:
+            return None
+        remaining = (min_time - now).total_seconds()
+        return max(int(remaining), 0)
 
 
 class LeaveType(models.Model):
@@ -334,10 +396,20 @@ class Notification(models.Model):
 
 class OfficeConfig(models.Model):
     """Office configuration for attendance - singleton"""
+    from datetime import time as _dtime
     qr_code = models.CharField(max_length=255, unique=True, help_text='Static QR code value for office sticker')
     office_name = models.CharField(max_length=100, default='Main Office')
     latitude = models.DecimalField(max_digits=10, decimal_places=7, null=True, blank=True)
     longitude = models.DecimalField(max_digits=10, decimal_places=7, null=True, blank=True)
+
+    # Attendance policy
+    daily_required_hours = models.DecimalField(max_digits=4, decimal_places=2, default=6.00,
+                                               help_text='Required working hours per day (default 6)')
+    check_in_deadline = models.TimeField(default=_dtime(10, 15),
+                                         help_text='Check-in cutoff time. After this only admin can add check-in.')
+    min_checkout_time_floor = models.TimeField(default=_dtime(16, 0),
+                                               help_text='Earliest time employees may check out (e.g. 4:00 PM)')
+
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -436,6 +508,8 @@ class Payroll(models.Model):
     working_days = models.IntegerField(default=0, help_text='Total working days in the month')
     days_present = models.IntegerField(default=0)
     days_absent = models.IntegerField(default=0, help_text='Unpaid leave / absent days')
+    total_pending_hours = models.DecimalField(max_digits=7, decimal_places=2, default=0,
+                                              help_text='Sum of shortfall hours across the month (from Attendance.pending_hours)')
 
     # Leave deductions
     paid_leave_days = models.IntegerField(default=0)
@@ -465,7 +539,18 @@ class Payroll(models.Model):
         return f"{self.employee.employee_id} - {self.month}/{self.year} - {self.net_pay}"
 
     def calculate(self):
-        """Calculate net pay based on salary, attendance, and leave"""
+        """Calculate net pay based on salary, attendance, and leave.
+
+        Also rolls up Attendance.pending_hours for the month into total_pending_hours.
+        """
+        from django.db.models import Sum
+        pending_sum = Attendance.objects.filter(
+            employee=self.employee,
+            date__year=self.year,
+            date__month=self.month,
+        ).aggregate(total=Sum('pending_hours'))['total'] or 0
+        self.total_pending_hours = pending_sum
+
         if self.working_days > 0:
             per_day = self.base_salary / self.working_days
             self.leave_deduction = per_day * self.unpaid_leave_days

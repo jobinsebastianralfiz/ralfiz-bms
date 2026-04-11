@@ -28,7 +28,7 @@ class EmployeeProfileSerializer(serializers.ModelSerializer):
             'designation', 'phone', 'emergency_contact', 'address',
             'date_of_birth', 'joining_date', 'status', 'profile_photo',
             'face_photo', 'office_latitude', 'office_longitude',
-            'allowed_radius_meters', 'full_name', 'created_at',
+            'allowed_radius_meters', 'work_mode', 'full_name', 'created_at',
         ]
 
     def get_profile_photo(self, obj):
@@ -73,6 +73,9 @@ class DeviceTokenSerializer(serializers.ModelSerializer):
 
 class AttendanceSerializer(serializers.ModelSerializer):
     working_hours = serializers.ReadOnlyField()
+    minimum_checkout_time = serializers.SerializerMethodField()
+    is_checkout_allowed = serializers.SerializerMethodField()
+    seconds_until_eligible = serializers.SerializerMethodField()
 
     class Meta:
         model = Attendance
@@ -81,8 +84,25 @@ class AttendanceSerializer(serializers.ModelSerializer):
             'verification_method', 'check_in_latitude', 'check_in_longitude',
             'check_out_latitude', 'check_out_longitude', 'face_verified',
             'face_confidence', 'qr_verified', 'working_hours', 'notes',
+            'required_hours', 'worked_hours', 'pending_hours',
+            'is_force_checkout', 'is_remote',
+            'minimum_checkout_time', 'is_checkout_allowed', 'seconds_until_eligible',
         ]
         read_only_fields = ['id', 'date', 'status', 'verification_method']
+
+    def get_minimum_checkout_time(self, obj):
+        dt = obj.minimum_checkout_time() if obj.check_in else None
+        return dt.isoformat() if dt else None
+
+    def get_is_checkout_allowed(self, obj):
+        if not obj.check_in or obj.check_out:
+            return False
+        return obj.is_checkout_allowed()
+
+    def get_seconds_until_eligible(self, obj):
+        if not obj.check_in or obj.check_out:
+            return 0
+        return obj.seconds_until_eligible()
 
 
 class CheckInSerializer(serializers.Serializer):
@@ -92,14 +112,19 @@ class CheckInSerializer(serializers.Serializer):
     face_photo = serializers.ImageField(required=False, help_text='Selfie for verification')
     qr_code = serializers.CharField(required=False, help_text='Scanned QR code value')
     verification_method = serializers.ChoiceField(
-        choices=['face', 'qr', 'location', 'face_qr', 'face_location', 'face_local'],
+        choices=['face', 'qr', 'location', 'face_qr', 'face_location', 'face_local', 'remote'],
         default='face'
     )
+    is_remote = serializers.BooleanField(required=False, default=False,
+                                         help_text='Hybrid/remote employees can set true to skip QR + geo-fence')
 
 
 class CheckOutSerializer(serializers.Serializer):
     latitude = serializers.DecimalField(max_digits=10, decimal_places=7, required=False)
     longitude = serializers.DecimalField(max_digits=10, decimal_places=7, required=False)
+    qr_code = serializers.CharField(required=False, help_text='Scanned office QR. Required unless is_remote attendance.')
+    force = serializers.BooleanField(required=False, default=False,
+                                     help_text='Force check-out before 6h / 4PM. Shortfall recorded as pending_hours.')
 
 
 class LeaveTypeSerializer(serializers.ModelSerializer):

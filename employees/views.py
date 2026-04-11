@@ -224,6 +224,18 @@ class ChangePasswordView(APIView):
 
 # ---- Attendance APIs ----
 
+def verify_office_qr(qr_value, today=None):
+    """Return True if qr_value matches OfficeConfig sticker or a live daily QRCode."""
+    from .models import OfficeConfig
+    if not qr_value:
+        return False
+    if OfficeConfig.objects.filter(qr_code=qr_value).exists():
+        return True
+    today = today or date.today()
+    qr = QRCode.objects.filter(code=qr_value, is_active=True, date=today).first()
+    return bool(qr and not qr.is_expired)
+
+
 @extend_schema(tags=['Attendance'], request=CheckInSerializer)
 class CheckInView(APIView):
     """Mark attendance check-in with face/QR/location verification."""
@@ -250,8 +262,65 @@ class CheckInView(APIView):
 
         data = serializer.validated_data
         method = data.get('verification_method', 'face')
+        is_remote_req = bool(data.get('is_remote')) or method == 'remote'
 
-        # Verify location - required for all methods to prevent remote check-in
+        # Enforce check-in deadline (default 10:15). Admin must enter late records.
+        from .models import OfficeConfig
+        from datetime import time as dtime
+        cfg = OfficeConfig.objects.first()
+        deadline_time = cfg.check_in_deadline if cfg else dtime(10, 15)
+        required_hours = float(cfg.daily_required_hours) if cfg else 6.0
+        now = timezone.localtime(timezone.now())
+        if now.time() > deadline_time:
+            return Response({
+                'error': f'Check-in window closed at {deadline_time.strftime("%H:%M")}. Please contact admin to record your attendance.',
+                'check_in_deadline': deadline_time.strftime('%H:%M'),
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+        # Remote check-in path (hybrid / remote employees only)
+        if is_remote_req:
+            if employee.work_mode not in ('hybrid', 'remote'):
+                return Response({'error': 'Remote check-in is only allowed for hybrid/remote employees.'},
+                                status=status.HTTP_403_FORBIDDEN)
+            face_photo = data.get('face_photo')
+            if not face_photo:
+                return Response({'error': 'Face photo (selfie) is required for remote check-in.'},
+                                status=status.HTTP_400_BAD_REQUEST)
+            if not employee.face_photo:
+                return Response({'error': 'No reference face photo registered. Please register your face first.'},
+                                status=status.HTTP_400_BAD_REQUEST)
+            is_match, face_confidence, error_msg = compare_faces(
+                employee.face_photo.path, face_photo
+            )
+            if error_msg:
+                return Response({'error': error_msg}, status=status.HTTP_400_BAD_REQUEST)
+            if not is_match:
+                return Response({
+                    'error': 'Face verification failed. The selfie does not match your registered face.',
+                    'confidence': face_confidence,
+                }, status=status.HTTP_403_FORBIDDEN)
+
+            attendance = Attendance.objects.create(
+                employee=employee,
+                date=today,
+                check_in=timezone.now(),
+                status='work_from_home',
+                verification_method='remote',
+                check_in_latitude=data.get('latitude'),
+                check_in_longitude=data.get('longitude'),
+                face_verified=True,
+                face_confidence=face_confidence,
+                face_photo=face_photo,
+                qr_verified=False,
+                required_hours=required_hours,
+                is_remote=True,
+            )
+            return Response({
+                'message': 'Checked in remotely',
+                'attendance': AttendanceSerializer(attendance).data,
+            }, status=status.HTTP_201_CREATED)
+
+        # Onsite check-in: location required
         location_verified = False
         if not data.get('latitude') or not data.get('longitude'):
             return Response({'error': 'Location is required for check-in.'},
@@ -274,15 +343,7 @@ class CheckInView(APIView):
         # Verify QR code - supports static office QR sticker or daily QR
         qr_verified = False
         if data.get('qr_code') and method in ['qr', 'face_qr', 'face_local']:
-            # Check static office QR sticker
-            from .models import OfficeConfig
-            if OfficeConfig.objects.filter(qr_code=data['qr_code']).exists():
-                qr_verified = True
-            else:
-                # Check daily QR codes
-                qr = QRCode.objects.filter(code=data['qr_code'], is_active=True, date=today).first()
-                if qr and not qr.is_expired:
-                    qr_verified = True
+            qr_verified = verify_office_qr(data['qr_code'], today=today)
             if not qr_verified:
                 return Response({'error': 'Invalid QR code. Please scan the office QR sticker.'}, status=status.HTTP_400_BAD_REQUEST)
 
@@ -340,6 +401,8 @@ class CheckInView(APIView):
             face_confidence=face_confidence,
             face_photo=data.get('face_photo'),
             qr_verified=qr_verified,
+            required_hours=required_hours,
+            is_remote=False,
         )
 
         return Response({
@@ -350,7 +413,9 @@ class CheckInView(APIView):
 
 @extend_schema(tags=['Attendance'], request=CheckOutSerializer)
 class CheckOutView(APIView):
-    """Mark attendance check-out"""
+    """Mark attendance check-out. Requires QR scan (onsite) and enforces
+    6-hour / 4 PM minimum, unless `force=true` is passed (shortfall tracked).
+    """
     permission_classes = [IsAuthenticated]
 
     def post(self, request):
@@ -370,9 +435,46 @@ class CheckOutView(APIView):
             return Response({'error': 'Already checked out today'}, status=status.HTTP_400_BAD_REQUEST)
 
         data = serializer.validated_data
-        attendance.check_out = timezone.now()
+        force = bool(data.get('force'))
+
+        # Onsite attendance must rescan office QR. Remote rows skip QR.
+        if not attendance.is_remote:
+            qr_code = data.get('qr_code')
+            if not qr_code:
+                return Response({'error': 'Please scan the office QR to check out.'},
+                                status=status.HTTP_400_BAD_REQUEST)
+            if not verify_office_qr(qr_code, today=today):
+                return Response({'error': 'Invalid QR code. Please scan the office QR sticker.'},
+                                status=status.HTTP_400_BAD_REQUEST)
+
+        now = timezone.now()
+        min_checkout = attendance.minimum_checkout_time()
+        if min_checkout and now < min_checkout and not force:
+            remaining = int((min_checkout - now).total_seconds())
+            return Response({
+                'error': 'Minimum working hours not completed.',
+                'minimum_checkout_time': min_checkout.isoformat(),
+                'seconds_remaining': max(remaining, 0),
+                'required_hours': float(attendance.required_hours),
+                'can_force': True,
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+        # Commit check-out + compute shortfall
+        from decimal import Decimal
+        worked_seconds = (now - attendance.check_in).total_seconds()
+        worked_hours = Decimal(str(round(worked_seconds / 3600, 2)))
+        pending = attendance.required_hours - worked_hours
+        if pending < 0:
+            pending = Decimal('0')
+
+        attendance.check_out = now
         attendance.check_out_latitude = data.get('latitude')
         attendance.check_out_longitude = data.get('longitude')
+        attendance.worked_hours = worked_hours
+        attendance.pending_hours = pending
+        attendance.is_force_checkout = force and pending > 0
+        if pending > 0 and attendance.status == 'present':
+            attendance.status = 'half_day'
         attendance.save()
 
         return Response({
@@ -410,7 +512,7 @@ class AttendanceHistoryView(generics.ListAPIView):
 
 @extend_schema(tags=['Attendance'])
 class TodayAttendanceView(APIView):
-    """Get today's attendance status"""
+    """Get today's attendance status with check-in/out window info."""
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
@@ -418,11 +520,26 @@ class TodayAttendanceView(APIView):
         if not employee:
             return Response({'error': 'Employee profile not found'}, status=status.HTTP_404_NOT_FOUND)
 
+        from .models import OfficeConfig
+        from datetime import time as dtime
+        cfg = OfficeConfig.objects.first()
+        deadline_time = cfg.check_in_deadline if cfg else dtime(10, 15)
+        min_checkout_floor = cfg.min_checkout_time_floor if cfg else dtime(16, 0)
+        required_hours = float(cfg.daily_required_hours) if cfg else 6.0
+
+        now_local = timezone.localtime(timezone.now())
+        can_check_in_now = now_local.time() <= deadline_time
+
         attendance = Attendance.objects.filter(employee=employee, date=date.today()).first()
         return Response({
             'checked_in': attendance is not None,
             'checked_out': attendance.check_out is not None if attendance else False,
             'attendance': AttendanceSerializer(attendance).data if attendance else None,
+            'work_mode': employee.work_mode,
+            'can_check_in': can_check_in_now and attendance is None,
+            'check_in_deadline': deadline_time.strftime('%H:%M'),
+            'min_checkout_time_floor': min_checkout_floor.strftime('%H:%M'),
+            'required_hours': required_hours,
         })
 
 

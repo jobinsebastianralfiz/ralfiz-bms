@@ -3,7 +3,7 @@ from django.utils.html import format_html
 from .models import (
     Employee, DeviceToken, Attendance, LeaveType, LeaveRequest,
     WorkAssignment, WorkUpdate, Notification, QRCode, ScheduledClass, Payroll,
-    CertificateTemplate, Certificate
+    CertificateTemplate, Certificate, OfficeConfig,
 )
 from .utils import generate_face_encoding
 
@@ -77,8 +77,11 @@ class EmployeeAdmin(admin.ModelAdmin):
 @admin.register(Attendance)
 class AttendanceAdmin(admin.ModelAdmin):
     list_display = ['employee', 'date', 'check_in', 'check_out', 'status',
-                    'verification_method', 'face_verified', 'qr_verified']
-    list_filter = ['status', 'verification_method', 'date', 'face_verified']
+                    'verification_method', 'worked_hours', 'required_hours',
+                    'pending_hours', 'is_force_checkout', 'is_remote',
+                    'face_verified', 'qr_verified']
+    list_filter = ['status', 'verification_method', 'date', 'face_verified',
+                   'is_force_checkout', 'is_remote']
     search_fields = ['employee__employee_id', 'employee__user__first_name']
     date_hierarchy = 'date'
 
@@ -152,10 +155,24 @@ class ScheduledClassAdmin(admin.ModelAdmin):
 @admin.register(Payroll)
 class PayrollAdmin(admin.ModelAdmin):
     list_display = ['employee', 'month', 'year', 'base_salary', 'leave_deduction',
-                    'bonus', 'deductions', 'net_pay', 'status']
+                    'total_pending_hours', 'bonus', 'deductions', 'net_pay', 'status']
     list_filter = ['status', 'year', 'month']
     search_fields = ['employee__employee_id', 'employee__user__first_name']
-    readonly_fields = ['id', 'created_at', 'updated_at']
+    readonly_fields = ['id', 'total_pending_hours', 'created_at', 'updated_at']
+
+
+@admin.register(OfficeConfig)
+class OfficeConfigAdmin(admin.ModelAdmin):
+    list_display = ['office_name', 'check_in_deadline', 'min_checkout_time_floor',
+                    'daily_required_hours', 'qr_code']
+    fieldsets = (
+        ('Office', {
+            'fields': ('office_name', 'qr_code', 'latitude', 'longitude'),
+        }),
+        ('Attendance Policy', {
+            'fields': ('daily_required_hours', 'check_in_deadline', 'min_checkout_time_floor'),
+        }),
+    )
 
 
 @admin.register(CertificateTemplate)
