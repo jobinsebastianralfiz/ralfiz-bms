@@ -66,6 +66,8 @@ urlpatterns = [
     path('owner/expenses/', views.OwnerExpenseListView.as_view(), name='owner_expenses'),
     path('owner/financial-report/', views.OwnerFinancialReportView.as_view(), name='owner_financial_report'),
     path('owner/attendance/', views.OwnerAttendanceView.as_view(), name='owner_attendance'),
+    path('owner/attendance/force-checkout/', views.OwnerForceCheckoutView.as_view(), name='owner_force_checkout'),
+    path('owner/attendance/manual-checkin/', views.OwnerManualCheckInView.as_view(), name='owner_manual_checkin'),
     path('owner/employees/', views.OwnerEmployeeListView.as_view(), name='owner_employees'),
     path('owner/employees/<uuid:pk>/', views.OwnerEmployeeDetailView.as_view(), name='owner_employee_detail'),
 

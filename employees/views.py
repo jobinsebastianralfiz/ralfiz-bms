@@ -264,14 +264,15 @@ class CheckInView(APIView):
         method = data.get('verification_method', 'face')
         is_remote_req = bool(data.get('is_remote')) or method == 'remote'
 
-        # Enforce check-in deadline (default 10:15). Admin must enter late records.
+        # Enforce check-in deadline (default 10:15). Owner/partner can bypass.
         from .models import OfficeConfig
         from datetime import time as dtime
         cfg = OfficeConfig.objects.first()
         deadline_time = cfg.check_in_deadline if cfg else dtime(10, 15)
         required_hours = float(cfg.daily_required_hours) if cfg else 6.0
         now = timezone.localtime(timezone.now())
-        if now.time() > deadline_time:
+        is_owner_or_partner = employee.role in ('owner', 'partner')
+        if now.time() > deadline_time and not is_owner_or_partner:
             return Response({
                 'error': f'Check-in window closed at {deadline_time.strftime("%H:%M")}. Please contact admin to record your attendance.',
                 'check_in_deadline': deadline_time.strftime('%H:%M'),
@@ -528,7 +529,8 @@ class TodayAttendanceView(APIView):
         required_hours = float(cfg.daily_required_hours) if cfg else 6.0
 
         now_local = timezone.localtime(timezone.now())
-        can_check_in_now = now_local.time() <= deadline_time
+        is_owner_or_partner = employee.role in ('owner', 'partner')
+        can_check_in_now = now_local.time() <= deadline_time or is_owner_or_partner
 
         attendance = Attendance.objects.filter(employee=employee, date=date.today()).first()
         return Response({
@@ -1259,6 +1261,125 @@ class OwnerAttendanceView(APIView):
             })
 
         return Response(data)
+
+
+@extend_schema(tags=['Owner'])
+class OwnerForceCheckoutView(APIView):
+    """Owner/Partner: Force check-out employees who forgot to check out."""
+    permission_classes = [IsAuthenticated, IsOwnerOrPartner]
+
+    def post(self, request):
+        from decimal import Decimal
+
+        employee_id = request.data.get('employee_id')
+        target_date = request.data.get('date')  # optional, defaults to today
+
+        if not employee_id:
+            return Response({'error': 'employee_id is required'}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            employee = Employee.objects.get(pk=employee_id)
+        except Employee.DoesNotExist:
+            return Response({'error': 'Employee not found'}, status=status.HTTP_404_NOT_FOUND)
+
+        checkout_date = date.today()
+        if target_date:
+            from datetime import datetime
+            checkout_date = datetime.strptime(target_date, '%Y-%m-%d').date()
+
+        attendance = Attendance.objects.filter(employee=employee, date=checkout_date, check_out__isnull=True).first()
+        if not attendance:
+            return Response({'error': f'No open check-in found for {employee.full_name} on {checkout_date}'},
+                            status=status.HTTP_404_NOT_FOUND)
+
+        # Use the configured min checkout time or end of day
+        from .models import OfficeConfig
+        from datetime import time as dtime
+        cfg = OfficeConfig.objects.first()
+        min_checkout_floor = cfg.min_checkout_time_floor if cfg else dtime(16, 0)
+
+        # Set check-out to min_checkout_floor on that date, or now if today
+        if checkout_date == date.today():
+            checkout_time = timezone.now()
+        else:
+            checkout_time = timezone.make_aware(
+                timezone.datetime.combine(checkout_date, min_checkout_floor)
+            )
+
+        worked_seconds = (checkout_time - attendance.check_in).total_seconds()
+        worked_hours = Decimal(str(round(worked_seconds / 3600, 2)))
+        pending = attendance.required_hours - worked_hours
+        if pending < 0:
+            pending = Decimal('0')
+
+        attendance.check_out = checkout_time
+        attendance.worked_hours = worked_hours
+        attendance.pending_hours = pending
+        attendance.is_force_checkout = True
+        if pending > 0 and attendance.status == 'present':
+            attendance.status = 'half_day'
+        attendance.save()
+
+        return Response({
+            'message': f'Force checked out {employee.full_name} for {checkout_date}',
+            'attendance': AttendanceSerializer(attendance).data,
+        })
+
+
+@extend_schema(tags=['Owner'])
+class OwnerManualCheckInView(APIView):
+    """Owner/Partner: Manually add check-in for employees who missed the window."""
+    permission_classes = [IsAuthenticated, IsOwnerOrPartner]
+
+    def post(self, request):
+        employee_id = request.data.get('employee_id')
+        target_date = request.data.get('date')  # optional, defaults to today
+        check_in_time = request.data.get('check_in_time')  # optional HH:MM, defaults to now
+
+        if not employee_id:
+            return Response({'error': 'employee_id is required'}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            employee = Employee.objects.get(pk=employee_id)
+        except Employee.DoesNotExist:
+            return Response({'error': 'Employee not found'}, status=status.HTTP_404_NOT_FOUND)
+
+        checkin_date = date.today()
+        if target_date:
+            from datetime import datetime
+            checkin_date = datetime.strptime(target_date, '%Y-%m-%d').date()
+
+        if Attendance.objects.filter(employee=employee, date=checkin_date).exists():
+            return Response({'error': f'{employee.full_name} already has an attendance record for {checkin_date}'},
+                            status=status.HTTP_400_BAD_REQUEST)
+
+        from .models import OfficeConfig
+        cfg = OfficeConfig.objects.first()
+        required_hours = float(cfg.daily_required_hours) if cfg else 6.0
+
+        if check_in_time:
+            from datetime import datetime as dt
+            parsed_time = dt.strptime(check_in_time, '%H:%M').time()
+            checkin_dt = timezone.make_aware(timezone.datetime.combine(checkin_date, parsed_time))
+        elif checkin_date == date.today():
+            checkin_dt = timezone.now()
+        else:
+            from datetime import time as dtime
+            checkin_dt = timezone.make_aware(timezone.datetime.combine(checkin_date, dtime(9, 0)))
+
+        attendance = Attendance.objects.create(
+            employee=employee,
+            date=checkin_date,
+            check_in=checkin_dt,
+            status='present',
+            verification_method='manual',
+            required_hours=required_hours,
+        )
+
+        return Response({
+            'message': f'Manually checked in {employee.full_name} for {checkin_date}',
+            'attendance': AttendanceSerializer(attendance).data,
+        }, status=status.HTTP_201_CREATED)
 
 
 @extend_schema(tags=['Owner'])
