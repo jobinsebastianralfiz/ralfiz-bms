@@ -4,7 +4,7 @@ from django.utils import timezone
 from .models import (
     Client, Project, Credential, Quote, QuoteItem,
     Invoice, InvoiceItem, Payment, CompanySettings,
-    Expense, TeamMember, Task, TimeEntry, ActivityLog, Document
+    Expense, TeamMember, Task, TaskAttachment, TimeEntry, ActivityLog, Document
 )
 from licensing.models import License
 
@@ -168,8 +168,9 @@ class ProjectAdmin(admin.ModelAdmin):
 
 @admin.register(Credential)
 class CredentialAdmin(admin.ModelAdmin):
-    list_display = ['name', 'project', 'credential_type', 'provider', 'expiry_date', 'is_active']
-    list_filter = ['credential_type', 'is_active', 'expiry_date']
+    list_display = ['name', 'project', 'credential_type', 'provider', 'expiry_date', 'is_active', 'client_visible']
+    list_filter = ['credential_type', 'is_active', 'client_visible', 'expiry_date']
+    list_editable = ['client_visible']
     search_fields = ['name', 'provider', 'project__name']
     ordering = ['expiry_date']
     autocomplete_fields = ['project']
@@ -274,6 +275,12 @@ class TeamMemberAdmin(admin.ModelAdmin):
     ordering = ['name']
 
 
+class TaskAttachmentInline(admin.TabularInline):
+    model = TaskAttachment
+    extra = 1
+    readonly_fields = ['uploaded_by', 'created_at']
+
+
 @admin.register(Task)
 class TaskAdmin(admin.ModelAdmin):
     list_display = ['title', 'project', 'assigned_to', 'status', 'priority', 'due_date']
@@ -281,6 +288,7 @@ class TaskAdmin(admin.ModelAdmin):
     search_fields = ['title', 'description', 'project__name']
     ordering = ['-created_at']
     autocomplete_fields = ['project', 'assigned_to']
+    inlines = [TaskAttachmentInline]
 
 
 @admin.register(TimeEntry)

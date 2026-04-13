@@ -68,6 +68,34 @@
       </div>
     </div>
 
+    <!-- Attachments -->
+    {% if task.attachments.count > 0 %}
+    <div class="card mb-4">
+      <div class="card-header">
+        <h3 class="card-title"><i class="fas fa-paperclip"></i> Attachments</h3>
+        <span class="badge">{{ task.attachments.count }}</span>
+      </div>
+      <div class="card-body">
+        <div class="row">
+          {% for att in task.attachments.all %}
+          <div class="col-3 mb-3" style="text-align: center;">
+            {% if att.is_image %}
+            <a href="{{ att.file.url }}" target="_blank">
+              <img src="{{ att.file.url }}" style="width: 100%; max-height: 200px; object-fit: cover; border-radius: 6px; border: 1px solid #e5e7eb;">
+            </a>
+            <div style="font-size: 0.8125rem; color: #6c757d; margin-top: 0.25rem;">{{ att.name|default:att.file.name|truncatechars:20 }}</div>
+            {% else %}
+            <a href="{{ att.file.url }}" target="_blank" class="btn btn-outline-secondary w-100">
+              <i class="fas fa-download"></i> {{ att.name|default:att.file.name|truncatechars:20 }}
+            </a>
+            {% endif %}
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+    {% endif %}
+
     <!-- Time Entries -->
     <div class="card">
       <div class="card-header">

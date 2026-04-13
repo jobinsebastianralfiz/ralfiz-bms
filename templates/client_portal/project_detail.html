@@ -32,6 +32,7 @@
   <a href="#timeline" class="portal-tab" onclick="switchTab(event, 'timeline')">Timeline</a>
   <a href="#comments" class="portal-tab" onclick="switchTab(event, 'comments')">Discussion</a>
   <a href="#documents" class="portal-tab" onclick="switchTab(event, 'documents')">Documents</a>
+  {% if credentials %}<a href="#credentials" class="portal-tab" onclick="switchTab(event, 'credentials')">Credentials</a>{% endif %}
 </div>
 
 <!-- Overview Tab -->
@@ -180,6 +181,12 @@
             <i class="fas fa-user" style="font-size: 0.625rem;"></i> {{ task.assigned_to.name }}
           </div>
           {% endif %}
+          {% if task.attachments.count > 0 %}
+          <div style="margin-top: 0.375rem; display: flex; gap: 0.25rem; flex-wrap: wrap; align-items: center;">
+            {% for att in task.attachments.all %}{% if att.is_image %}<img src="{{ att.file.url }}" style="width: 36px; height: 36px; object-fit: cover; border-radius: 4px; border: 1px solid var(--border-color);">{% endif %}{% endfor %}
+            <span style="font-size: 0.6875rem; color: var(--text-muted);"><i class="fas fa-paperclip"></i> {{ task.attachments.count }}</span>
+          </div>
+          {% endif %}
         </div>
         {% empty %}
         <div style="text-align: center; padding: 1rem; color: var(--text-muted); font-size: 0.8125rem;">No tasks</div>
@@ -205,6 +212,12 @@
           {% if task.assigned_to %}
           <div class="kanban-task-assignee" style="margin-top: 0.375rem;">
             <i class="fas fa-user" style="font-size: 0.625rem;"></i> {{ task.assigned_to.name }}
+          </div>
+          {% endif %}
+          {% if task.attachments.count > 0 %}
+          <div style="margin-top: 0.375rem; display: flex; gap: 0.25rem; flex-wrap: wrap; align-items: center;">
+            {% for att in task.attachments.all %}{% if att.is_image %}<img src="{{ att.file.url }}" style="width: 36px; height: 36px; object-fit: cover; border-radius: 4px; border: 1px solid var(--border-color);">{% endif %}{% endfor %}
+            <span style="font-size: 0.6875rem; color: var(--text-muted);"><i class="fas fa-paperclip"></i> {{ task.attachments.count }}</span>
           </div>
           {% endif %}
         </div>
@@ -234,6 +247,12 @@
             <i class="fas fa-user" style="font-size: 0.625rem;"></i> {{ task.assigned_to.name }}
           </div>
           {% endif %}
+          {% if task.attachments.count > 0 %}
+          <div style="margin-top: 0.375rem; display: flex; gap: 0.25rem; flex-wrap: wrap; align-items: center;">
+            {% for att in task.attachments.all %}{% if att.is_image %}<img src="{{ att.file.url }}" style="width: 36px; height: 36px; object-fit: cover; border-radius: 4px; border: 1px solid var(--border-color);">{% endif %}{% endfor %}
+            <span style="font-size: 0.6875rem; color: var(--text-muted);"><i class="fas fa-paperclip"></i> {{ task.attachments.count }}</span>
+          </div>
+          {% endif %}
         </div>
         {% empty %}
         <div style="text-align: center; padding: 1rem; color: var(--text-muted); font-size: 0.8125rem;">No tasks</div>
@@ -256,6 +275,12 @@
             <span><i class="fas fa-check"></i> {{ task.completed_date|date:"M d" }}</span>
             {% endif %}
           </div>
+          {% if task.attachments.count > 0 %}
+          <div style="margin-top: 0.375rem; display: flex; gap: 0.25rem; flex-wrap: wrap; align-items: center;">
+            {% for att in task.attachments.all %}{% if att.is_image %}<img src="{{ att.file.url }}" style="width: 36px; height: 36px; object-fit: cover; border-radius: 4px; border: 1px solid var(--border-color);">{% endif %}{% endfor %}
+            <span style="font-size: 0.6875rem; color: var(--text-muted);"><i class="fas fa-paperclip"></i> {{ task.attachments.count }}</span>
+          </div>
+          {% endif %}
         </div>
         {% empty %}
         <div style="text-align: center; padding: 1rem; color: var(--text-muted); font-size: 0.8125rem;">No tasks</div>
@@ -391,10 +416,91 @@
     </div>
   </div>
 </div>
+<!-- Credentials Tab -->
+{% if credentials %}
+<div id="tab-credentials" class="tab-content" style="display: none;">
+  <div class="portal-card">
+    <div class="portal-card-header"><h2>Project Credentials</h2></div>
+    <div class="portal-card-body" style="padding: 0;">
+      {% for cred in credentials %}
+      <div style="padding: 1rem 1.25rem; border-bottom: 1px solid var(--border-color);">
+        <div style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.75rem;">
+          <div style="width: 36px; height: 36px; border-radius: var(--border-radius); background: var(--bg-body); display: flex; align-items: center; justify-content: center; color: var(--primary);">
+            <i class="fas fa-{% if cred.credential_type == 'server' %}server{% elif cred.credential_type == 'domain' %}globe{% elif cred.credential_type == 'hosting' %}cloud{% elif cred.credential_type == 'database' %}database{% elif cred.credential_type == 'email' %}envelope{% elif cred.credential_type == 'api' %}code{% elif cred.credential_type == 'ssl' %}lock{% elif cred.credential_type == 'git' %}code-branch{% elif cred.credential_type == 'payment' %}credit-card{% else %}key{% endif %}"></i>
+          </div>
+          <div style="flex: 1;">
+            <div style="font-weight: 600; font-size: 0.9375rem; color: var(--text-primary);">{{ cred.name }}</div>
+            <div style="font-size: 0.8125rem; color: var(--text-muted);">{{ cred.get_credential_type_display }}{% if cred.provider %} &middot; {{ cred.provider }}{% endif %}</div>
+          </div>
+        </div>
+        <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 0.75rem; font-size: 0.875rem;">
+          {% if cred.url %}
+          <div>
+            <div style="font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; margin-bottom: 0.125rem;">URL</div>
+            <a href="{{ cred.url }}" target="_blank" class="portal-link" style="word-break: break-all;">{{ cred.url }}</a>
+          </div>
+          {% endif %}
+          {% if cred.username %}
+          <div>
+            <div style="font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; margin-bottom: 0.125rem;">Username</div>
+            <div style="display: flex; align-items: center; gap: 0.5rem;">
+              <code style="background: var(--bg-body); padding: 0.125rem 0.5rem; border-radius: 4px; font-size: 0.8125rem;">{{ cred.username }}</code>
+              <button onclick="navigator.clipboard.writeText('{{ cred.username }}')" class="portal-btn portal-btn-outline portal-btn-sm" style="padding: 0.125rem 0.375rem; font-size: 0.6875rem;" title="Copy">
+                <i class="fas fa-copy"></i>
+              </button>
+            </div>
+          </div>
+          {% endif %}
+          {% if cred.password %}
+          <div>
+            <div style="font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; margin-bottom: 0.125rem;">Password</div>
+            <div style="display: flex; align-items: center; gap: 0.5rem;">
+              <code id="pwd-{{ cred.pk }}" style="background: var(--bg-body); padding: 0.125rem 0.5rem; border-radius: 4px; font-size: 0.8125rem;">********</code>
+              <button onclick="togglePassword('{{ cred.pk }}')" class="portal-btn portal-btn-outline portal-btn-sm" style="padding: 0.125rem 0.375rem; font-size: 0.6875rem;" title="Show/Hide">
+                <i class="fas fa-eye" id="pwd-icon-{{ cred.pk }}"></i>
+              </button>
+              <button onclick="copyPassword('{{ cred.pk }}')" class="portal-btn portal-btn-outline portal-btn-sm" style="padding: 0.125rem 0.375rem; font-size: 0.6875rem;" title="Copy">
+                <i class="fas fa-copy"></i>
+              </button>
+            </div>
+            <span style="display:none;" id="pwd-val-{{ cred.pk }}">{{ cred.password }}</span>
+          </div>
+          {% endif %}
+        </div>
+        {% if cred.notes %}
+        <div style="margin-top: 0.75rem; font-size: 0.8125rem; color: var(--text-secondary); background: var(--bg-body); padding: 0.5rem 0.75rem; border-radius: var(--border-radius);">
+          {{ cred.notes|linebreaksbr }}
+        </div>
+        {% endif %}
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+{% endif %}
 {% endblock %}
 
 {% block extra_js %}
 <script>
+function togglePassword(id) {
+  var el = document.getElementById('pwd-' + id);
+  var val = document.getElementById('pwd-val-' + id);
+  var icon = document.getElementById('pwd-icon-' + id);
+  if (el.textContent === '********') {
+    el.textContent = val.textContent;
+    icon.classList.remove('fa-eye');
+    icon.classList.add('fa-eye-slash');
+  } else {
+    el.textContent = '********';
+    icon.classList.remove('fa-eye-slash');
+    icon.classList.add('fa-eye');
+  }
+}
+function copyPassword(id) {
+  var val = document.getElementById('pwd-val-' + id).textContent;
+  navigator.clipboard.writeText(val);
+}
+
 function switchTab(event, tabName) {
   event.preventDefault();
   document.querySelectorAll('.tab-content').forEach(el => el.style.display = 'none');

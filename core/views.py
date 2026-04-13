@@ -11,7 +11,7 @@ from datetime import timedelta
 
 from .models import (
     Client, Project, Credential, Quote, QuoteItem, Invoice, InvoiceItem, Payment, CompanySettings,
-    Expense, TeamMember, Task, TimeEntry, ActivityLog, Document
+    Expense, TeamMember, Task, TaskAttachment, TimeEntry, ActivityLog, Document
 )
 from django.contrib.contenttypes.models import ContentType
 from licensing.models import License, LicenseKey, LicenseActivation
@@ -801,6 +801,7 @@ def credential_create(request):
             url=request.POST.get('url', ''),
             expiry_date=request.POST.get('expiry_date') or None,
             notes=request.POST.get('notes', ''),
+            client_visible=request.POST.get('client_visible') == 'on',
         )
         messages.success(request, f'Credential "{credential.name}" created successfully.')
         return redirect('credential_detail', pk=credential.pk)
@@ -828,6 +829,7 @@ def credential_update(request, pk):
         credential.expiry_date = request.POST.get('expiry_date') or None
         credential.notes = request.POST.get('notes', '')
         credential.is_active = request.POST.get('is_active') == 'on'
+        credential.client_visible = request.POST.get('client_visible') == 'on'
         credential.save()
 
         messages.success(request, f'Credential "{credential.name}" updated successfully.')
@@ -3304,6 +3306,9 @@ def task_create(request):
 
         task.save()
 
+        for f in request.FILES.getlist('attachments'):
+            TaskAttachment.objects.create(task=task, file=f, name=f.name, uploaded_by=request.user)
+
         log_activity(request, 'created', task)
 
         messages.success(request, 'Task created successfully.')
@@ -3349,6 +3354,15 @@ def task_update(request, pk):
             task.completed_date = None
 
         task.save()
+
+        # Delete removed attachments
+        delete_ids = request.POST.getlist('delete_attachment')
+        if delete_ids:
+            TaskAttachment.objects.filter(pk__in=delete_ids, task=task).delete()
+
+        # Add new attachments
+        for f in request.FILES.getlist('attachments'):
+            TaskAttachment.objects.create(task=task, file=f, name=f.name, uploaded_by=request.user)
 
         log_activity(request, 'updated', task)
 

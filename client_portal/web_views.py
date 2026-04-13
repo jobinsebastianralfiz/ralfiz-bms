@@ -8,7 +8,7 @@ from django.db.models import Sum
 from django.contrib.contenttypes.models import ContentType
 from django.http import Http404
 
-from core.models import Client, Project, Task, Invoice, Quote, Document
+from core.models import Client, Project, Task, Invoice, Quote, Document, Credential
 from .models import ProjectComment, ProjectUpdate, ClientNotification
 
 
@@ -166,7 +166,7 @@ def portal_project_detail(request, project_id):
     client = request.client
     project = get_object_or_404(Project, id=project_id, client=client)
 
-    tasks = project.tasks.all()
+    tasks = project.tasks.prefetch_related('attachments').all()
     task_stats = {
         'total': tasks.count(),
         'todo': tasks.filter(status='todo').count(),
@@ -206,6 +206,10 @@ def portal_project_detail(request, project_id):
 
     team_members = project.team_members.filter(is_active=True)
 
+    credentials = Credential.objects.filter(
+        project=project, client_visible=True, is_active=True
+    ).order_by('credential_type', 'name')
+
     ctx = _base_context(request, 'projects')
     ctx.update({
         'project': project,
@@ -223,6 +227,7 @@ def portal_project_detail(request, project_id):
         'comments': comments,
         'updates': updates,
         'documents': documents,
+        'credentials': credentials,
         'team_members': team_members,
     })
     return render(request, 'client_portal/project_detail.html', ctx)

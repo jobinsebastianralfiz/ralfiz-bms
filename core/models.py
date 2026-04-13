@@ -188,6 +188,7 @@ class Credential(models.Model):
     renewal_cost = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
     notes = models.TextField(blank=True)
     is_active = models.BooleanField(default=True)
+    client_visible = models.BooleanField(default=False, help_text='Share this credential with the client in their portal')
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -743,6 +744,30 @@ class Task(models.Model):
         if self.due_date and self.status not in ['completed']:
             return timezone.now().date() > self.due_date
         return False
+
+
+class TaskAttachment(models.Model):
+    """File/image attachments for tasks"""
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    task = models.ForeignKey(Task, on_delete=models.CASCADE, related_name='attachments')
+    file = models.FileField(upload_to='task_attachments/')
+    name = models.CharField(max_length=255, blank=True)
+    uploaded_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='task_attachments')
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return self.name or self.file.name
+
+    @property
+    def file_extension(self):
+        return self.file.name.split('.')[-1].lower() if self.file else ''
+
+    @property
+    def is_image(self):
+        return self.file_extension in ('jpg', 'jpeg', 'png', 'gif', 'webp', 'svg')
 
 
 class TimeEntry(models.Model):

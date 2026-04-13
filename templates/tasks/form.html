@@ -11,7 +11,7 @@
   </div>
 </div>
 
-<form method="post">
+<form method="post" enctype="multipart/form-data">
   {% csrf_token %}
   <div class="row">
     <div class="col-8">
@@ -81,6 +81,33 @@
               <textarea class="form-control" name="notes" rows="2">{{ task.notes|default:'' }}</textarea>
             </div>
           </div>
+          <div class="row">
+            <div class="col-12" style="padding: 0.5rem;">
+              <label class="form-label">Attachments</label>
+              <input type="file" class="form-control" name="attachments" multiple accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.zip">
+              <small class="text-muted">You can select multiple files. Images will be displayed inline.</small>
+            </div>
+          </div>
+          {% if task and task.attachments.count > 0 %}
+          <div class="row">
+            <div class="col-12" style="padding: 0.5rem;">
+              <label class="form-label">Current Attachments</label>
+              {% for att in task.attachments.all %}
+              <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem; padding: 0.5rem; background: var(--bg-body, #f8f9fa); border-radius: 6px;">
+                {% if att.is_image %}
+                <img src="{{ att.file.url }}" style="width: 48px; height: 48px; object-fit: cover; border-radius: 4px;">
+                {% else %}
+                <i class="fas fa-file" style="font-size: 1.5rem; color: #6c757d;"></i>
+                {% endif %}
+                <span style="flex: 1;">{{ att.name|default:att.file.name }}</span>
+                <label style="margin: 0; cursor: pointer; color: #dc3545; font-size: 0.875rem;">
+                  <input type="checkbox" name="delete_attachment" value="{{ att.pk }}" style="margin-right: 0.25rem;"> Remove
+                </label>
+              </div>
+              {% endfor %}
+            </div>
+          </div>
+          {% endif %}
         </div>
       </div>
     </div>
