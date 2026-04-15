@@ -106,6 +106,10 @@ urlpatterns = [
     path('tasks/<uuid:pk>/edit/', views.task_update, name='task_update'),
     path('tasks/<uuid:pk>/delete/', views.task_delete, name='task_delete'),
     path('tasks/<uuid:pk>/status/', views.task_status_update, name='task_status_update'),
+    path('tasks/<uuid:pk>/comments/add/', views.task_comment_add, name='task_comment_add'),
+    path('tasks/<uuid:pk>/comments/<uuid:comment_id>/delete/', views.task_comment_delete, name='task_comment_delete'),
+    path('tasks/<uuid:pk>/issues/create/', views.task_issue_create, name='task_issue_create'),
+    path('tasks/<uuid:pk>/issues/<uuid:issue_id>/update/', views.task_issue_update, name='task_issue_update'),
 
     # Time Tracking
     path('time/', views.timeentry_list, name='timeentry_list'),

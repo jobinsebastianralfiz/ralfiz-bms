@@ -1,5 +1,6 @@
 import uuid
 from django.shortcuts import render, redirect, get_object_or_404
+from django.urls import reverse
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth import login, logout, authenticate
 from django.contrib.auth.models import User
@@ -11,7 +12,8 @@ from datetime import timedelta
 
 from .models import (
     Client, Project, Credential, Quote, QuoteItem, Invoice, InvoiceItem, Payment, CompanySettings,
-    Expense, TeamMember, Task, TaskAttachment, TimeEntry, ActivityLog, Document
+    Expense, TeamMember, Task, TaskAttachment, TimeEntry, ActivityLog, Document,
+    TaskComment, TaskIssue, TaskActivity
 )
 from django.contrib.contenttypes.models import ContentType
 from licensing.models import License, LicenseKey, LicenseActivation
@@ -3271,13 +3273,140 @@ def task_detail(request, pk):
     """Task detail view"""
     task = get_object_or_404(Task.objects.select_related('project', 'assigned_to'), pk=pk)
     time_entries = task.time_entries.all()
+    comments = task.comments.filter(parent__isnull=True, is_deleted=False).select_related('author').prefetch_related('replies__author')
+    issues = task.issues.select_related('reporter', 'assignee').all()
+    activities = task.activities.select_related('actor')[:50]
+    team_members = TeamMember.objects.filter(is_active=True) if hasattr(TeamMember, 'is_active') else TeamMember.objects.all()
 
     context = {
         'task': task,
         'time_entries': time_entries,
         'total_hours': time_entries.aggregate(total=Sum('hours'))['total'] or 0,
+        'comments': comments,
+        'issues': issues,
+        'open_issue_count': issues.filter(status__in=['open', 'in_progress']).count(),
+        'activities': activities,
+        'team_members': team_members,
     }
     return render(request, 'tasks/detail.html', context)
+
+
+# ============== Task Comments, Issues, Activity ==============
+
+def _log_task_activity(task, actor, verb, from_value='', to_value='', message='', is_visible_to_client=False, related_comment=None, related_issue=None):
+    return TaskActivity.objects.create(
+        task=task, actor=actor, verb=verb,
+        from_value=str(from_value)[:255], to_value=str(to_value)[:255],
+        message=message[:500], is_visible_to_client=is_visible_to_client,
+        related_comment=related_comment, related_issue=related_issue,
+    )
+
+
+@login_required
+def task_comment_add(request, pk):
+    task = get_object_or_404(Task, pk=pk)
+    if request.method != 'POST':
+        return redirect('task_detail', pk=pk)
+
+    body = (request.POST.get('body') or '').strip()
+    if not body:
+        messages.error(request, 'Comment cannot be empty.')
+        return redirect('task_detail', pk=pk)
+
+    parent_id = request.POST.get('parent') or None
+    parent = TaskComment.objects.filter(pk=parent_id, task=task).first() if parent_id else None
+    is_visible = request.POST.get('is_visible_to_client') == 'on'
+    attachment = request.FILES.get('attachment')
+
+    comment = TaskComment.objects.create(
+        task=task, author=request.user, body=body, parent=parent,
+        attachment=attachment, is_visible_to_client=is_visible,
+    )
+    _log_task_activity(
+        task, request.user, 'commented',
+        message=body[:140], is_visible_to_client=is_visible, related_comment=comment,
+    )
+    messages.success(request, 'Comment posted.')
+    return redirect(request.POST.get('next') or f"{reverse('task_detail', args=[pk])}#comments")
+
+
+@login_required
+def task_comment_delete(request, pk, comment_id):
+    task = get_object_or_404(Task, pk=pk)
+    comment = get_object_or_404(TaskComment, pk=comment_id, task=task)
+    if comment.author_id != request.user.id and not request.user.is_superuser:
+        messages.error(request, 'You cannot delete this comment.')
+        return redirect('task_detail', pk=pk)
+    comment.is_deleted = True
+    comment.body = '[deleted]'
+    comment.save(update_fields=['is_deleted', 'body', 'updated_at'])
+    messages.success(request, 'Comment deleted.')
+    return redirect(f"{reverse('task_detail', args=[pk])}#comments")
+
+
+@login_required
+def task_issue_create(request, pk):
+    task = get_object_or_404(Task, pk=pk)
+    if request.method != 'POST':
+        return redirect('task_detail', pk=pk)
+
+    title = (request.POST.get('title') or '').strip()
+    if not title:
+        messages.error(request, 'Issue title is required.')
+        return redirect(f"{reverse('task_detail', args=[pk])}#issues")
+
+    assignee_id = request.POST.get('assignee') or None
+    assignee = TeamMember.objects.filter(pk=assignee_id).first() if assignee_id else None
+
+    issue = TaskIssue.objects.create(
+        task=task,
+        reporter=request.user,
+        assignee=assignee,
+        title=title,
+        description=request.POST.get('description', ''),
+        severity=request.POST.get('severity', 'medium'),
+        is_visible_to_client=request.POST.get('is_visible_to_client') == 'on',
+    )
+    _log_task_activity(
+        task, request.user, 'issue_opened',
+        to_value=issue.severity, message=issue.title[:140],
+        is_visible_to_client=issue.is_visible_to_client, related_issue=issue,
+    )
+    messages.success(request, 'Issue reported.')
+    return redirect(f"{reverse('task_detail', args=[pk])}#issues")
+
+
+@login_required
+def task_issue_update(request, pk, issue_id):
+    task = get_object_or_404(Task, pk=pk)
+    issue = get_object_or_404(TaskIssue, pk=issue_id, task=task)
+    if request.method != 'POST':
+        return redirect(f"{reverse('task_detail', args=[pk])}#issues")
+
+    new_status = request.POST.get('status')
+    resolution = request.POST.get('resolution', '').strip()
+    changed = False
+    if new_status and new_status in dict(TaskIssue.STATUS_CHOICES) and new_status != issue.status:
+        old_status = issue.status
+        issue.status = new_status
+        if new_status in ('resolved', 'closed') and not issue.resolved_at:
+            issue.resolved_at = timezone.now()
+        if new_status in ('open', 'in_progress'):
+            issue.resolved_at = None
+        if resolution:
+            issue.resolution = resolution
+        issue.save()
+        verb = 'issue_resolved' if new_status in ('resolved', 'closed') else 'issue_status_changed'
+        _log_task_activity(
+            task, request.user, verb,
+            from_value=old_status, to_value=new_status, message=issue.title[:140],
+            is_visible_to_client=issue.is_visible_to_client, related_issue=issue,
+        )
+        changed = True
+
+    if changed:
+        messages.success(request, 'Issue updated.')
+    return redirect(f"{reverse('task_detail', args=[pk])}#issues")
 
 
 @login_required
@@ -3403,6 +3532,7 @@ def task_status_update(request, pk):
         new_status = request.POST.get('status')
 
         if new_status in dict(Task.STATUS_CHOICES):
+            old_status = task.status
             task.status = new_status
             if new_status == 'completed':
                 task.completed_date = timezone.now().date()
@@ -3410,6 +3540,11 @@ def task_status_update(request, pk):
                 task.completed_date = None
             task.save()
 
+            if old_status != new_status:
+                _log_task_activity(
+                    task, request.user, 'status_changed',
+                    from_value=old_status, to_value=new_status, is_visible_to_client=True,
+                )
             log_activity(request, 'updated', task)
 
             # Check if it's an AJAX request

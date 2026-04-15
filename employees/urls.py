@@ -2,6 +2,7 @@ from django.urls import path
 from rest_framework_simplejwt.views import TokenRefreshView
 
 from . import views
+from . import task_api
 from .auth_views import EmployeeTokenObtainView
 
 app_name = 'employees'
@@ -40,6 +41,16 @@ urlpatterns = [
     path('work/<uuid:pk>/', views.WorkAssignmentDetailView.as_view(), name='work_detail'),
     path('work/<uuid:pk>/status/', views.WorkStatusUpdateView.as_view(), name='work_status'),
     path('work/<uuid:pk>/update/', views.WorkUpdateCreateView.as_view(), name='work_update'),
+
+    # Project Tasks (Jira-style board)
+    path('tasks/', task_api.MyTasksView.as_view(), name='tasks_list'),
+    path('tasks/<uuid:pk>/', task_api.TaskDetailView.as_view(), name='task_detail'),
+    path('tasks/<uuid:pk>/status/', task_api.TaskStatusUpdateView.as_view(), name='task_status'),
+    path('tasks/<uuid:pk>/comments/', task_api.TaskCommentListCreateView.as_view(), name='task_comments'),
+    path('tasks/<uuid:pk>/comments/<uuid:comment_id>/', task_api.TaskCommentDeleteView.as_view(), name='task_comment_delete'),
+    path('tasks/<uuid:pk>/issues/', task_api.TaskIssueListCreateView.as_view(), name='task_issues'),
+    path('tasks/<uuid:pk>/issues/<uuid:issue_id>/', task_api.TaskIssueUpdateView.as_view(), name='task_issue_update'),
+    path('tasks/<uuid:pk>/activity/', task_api.TaskActivityListView.as_view(), name='task_activity'),
 
     # Scheduled Classes (for interns)
     path('classes/', views.ScheduledClassListView.as_view(), name='class_list'),

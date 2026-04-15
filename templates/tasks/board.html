@@ -441,6 +441,14 @@
                 <i class="fas fa-calendar-alt"></i> {{ task.due_date|date:"M d" }}
               </span>
               {% endif %}
+              {% with cc=task.comments.count ic=task.issues.count %}
+              {% if cc or ic %}
+              <span class="slack-tag slack-tag-due" title="Comments / Issues">
+                {% if cc %}<i class="far fa-comment"></i> {{ cc }}{% endif %}
+                {% if ic %}<i class="fas fa-exclamation-triangle" style="color:#f59e0b; margin-left:.35rem;"></i> {{ ic }}{% endif %}
+              </span>
+              {% endif %}
+              {% endwith %}
             </div>
             <div class="slack-card-footer">
               {% if task.assigned_to %}
@@ -488,6 +496,14 @@
                 <i class="fas fa-calendar-alt"></i> {{ task.due_date|date:"M d" }}
               </span>
               {% endif %}
+              {% with cc=task.comments.count ic=task.issues.count %}
+              {% if cc or ic %}
+              <span class="slack-tag slack-tag-due" title="Comments / Issues">
+                {% if cc %}<i class="far fa-comment"></i> {{ cc }}{% endif %}
+                {% if ic %}<i class="fas fa-exclamation-triangle" style="color:#f59e0b; margin-left:.35rem;"></i> {{ ic }}{% endif %}
+              </span>
+              {% endif %}
+              {% endwith %}
             </div>
             <div class="slack-card-footer">
               {% if task.assigned_to %}
@@ -535,6 +551,14 @@
                 <i class="fas fa-calendar-alt"></i> {{ task.due_date|date:"M d" }}
               </span>
               {% endif %}
+              {% with cc=task.comments.count ic=task.issues.count %}
+              {% if cc or ic %}
+              <span class="slack-tag slack-tag-due" title="Comments / Issues">
+                {% if cc %}<i class="far fa-comment"></i> {{ cc }}{% endif %}
+                {% if ic %}<i class="fas fa-exclamation-triangle" style="color:#f59e0b; margin-left:.35rem;"></i> {{ ic }}{% endif %}
+              </span>
+              {% endif %}
+              {% endwith %}
             </div>
             <div class="slack-card-footer">
               {% if task.assigned_to %}
@@ -582,6 +606,14 @@
                 <i class="fas fa-check-circle"></i> {{ task.completed_date|date:"M d" }}
               </span>
               {% endif %}
+              {% with cc=task.comments.count ic=task.issues.count %}
+              {% if cc or ic %}
+              <span class="slack-tag slack-tag-due" title="Comments / Issues">
+                {% if cc %}<i class="far fa-comment"></i> {{ cc }}{% endif %}
+                {% if ic %}<i class="fas fa-exclamation-triangle" style="color:#f59e0b; margin-left:.35rem;"></i> {{ ic }}{% endif %}
+              </span>
+              {% endif %}
+              {% endwith %}
             </div>
             <div class="slack-card-footer">
               {% if task.assigned_to %}

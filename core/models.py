@@ -745,6 +745,18 @@ class Task(models.Model):
             return timezone.now().date() > self.due_date
         return False
 
+    @property
+    def client_visible_comment_count(self):
+        return self.comments.filter(is_visible_to_client=True, is_deleted=False).count()
+
+    @property
+    def open_issue_count(self):
+        return self.issues.filter(status__in=['open', 'in_progress']).count()
+
+    @property
+    def client_visible_issue_count(self):
+        return self.issues.filter(is_visible_to_client=True).count()
+
 
 class TaskAttachment(models.Model):
     """File/image attachments for tasks"""
@@ -768,6 +780,100 @@ class TaskAttachment(models.Model):
     @property
     def is_image(self):
         return self.file_extension in ('jpg', 'jpeg', 'png', 'gif', 'webp', 'svg')
+
+
+class TaskComment(models.Model):
+    """Threaded comments on tasks (Jira-style)."""
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    task = models.ForeignKey(Task, on_delete=models.CASCADE, related_name='comments')
+    author = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='task_comments')
+    body = models.TextField()
+    parent = models.ForeignKey('self', on_delete=models.CASCADE, null=True, blank=True, related_name='replies')
+    attachment = models.FileField(upload_to='task_comment_attachments/', blank=True, null=True)
+    is_visible_to_client = models.BooleanField(default=False, help_text='If true, this comment appears in the client portal.')
+    is_deleted = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['created_at']
+
+    def __str__(self):
+        return f'Comment by {self.author} on {self.task_id}'
+
+
+class TaskIssue(models.Model):
+    """Issues/bugs/blockers reported against a task."""
+    SEVERITY_CHOICES = [
+        ('low', 'Low'),
+        ('medium', 'Medium'),
+        ('high', 'High'),
+        ('critical', 'Critical'),
+    ]
+    STATUS_CHOICES = [
+        ('open', 'Open'),
+        ('in_progress', 'In Progress'),
+        ('resolved', 'Resolved'),
+        ('closed', 'Closed'),
+    ]
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    task = models.ForeignKey(Task, on_delete=models.CASCADE, related_name='issues')
+    reporter = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='reported_task_issues')
+    assignee = models.ForeignKey(TeamMember, on_delete=models.SET_NULL, null=True, blank=True, related_name='assigned_task_issues')
+    title = models.CharField(max_length=255)
+    description = models.TextField(blank=True)
+    severity = models.CharField(max_length=10, choices=SEVERITY_CHOICES, default='medium')
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='open')
+    is_visible_to_client = models.BooleanField(default=False)
+    resolution = models.TextField(blank=True)
+    resolved_at = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f'[{self.severity}] {self.title}'
+
+    @property
+    def is_open(self):
+        return self.status in ('open', 'in_progress')
+
+
+class TaskActivity(models.Model):
+    """Immutable activity log for a task (status changes, comments, issues)."""
+    VERB_CHOICES = [
+        ('created', 'Task Created'),
+        ('status_changed', 'Status Changed'),
+        ('priority_changed', 'Priority Changed'),
+        ('assigned', 'Assigned'),
+        ('commented', 'Commented'),
+        ('issue_opened', 'Issue Opened'),
+        ('issue_status_changed', 'Issue Status Changed'),
+        ('issue_resolved', 'Issue Resolved'),
+        ('attachment_added', 'Attachment Added'),
+    ]
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    task = models.ForeignKey(Task, on_delete=models.CASCADE, related_name='activities')
+    actor = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='task_activities')
+    verb = models.CharField(max_length=32, choices=VERB_CHOICES)
+    from_value = models.CharField(max_length=255, blank=True)
+    to_value = models.CharField(max_length=255, blank=True)
+    message = models.CharField(max_length=500, blank=True)
+    is_visible_to_client = models.BooleanField(default=False)
+    related_comment = models.ForeignKey(TaskComment, on_delete=models.SET_NULL, null=True, blank=True)
+    related_issue = models.ForeignKey(TaskIssue, on_delete=models.SET_NULL, null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-created_at']
+        verbose_name_plural = 'Task activities'
+
+    def __str__(self):
+        return f'{self.verb} on {self.task_id}'
 
 
 class TimeEntry(models.Model):

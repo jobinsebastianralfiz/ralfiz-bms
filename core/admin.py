@@ -4,8 +4,33 @@ from django.utils import timezone
 from .models import (
     Client, Project, Credential, Quote, QuoteItem,
     Invoice, InvoiceItem, Payment, CompanySettings,
-    Expense, TeamMember, Task, TaskAttachment, TimeEntry, ActivityLog, Document
+    Expense, TeamMember, Task, TaskAttachment, TimeEntry, ActivityLog, Document,
+    TaskComment, TaskIssue, TaskActivity
 )
+
+
+@admin.register(TaskComment)
+class TaskCommentAdmin(admin.ModelAdmin):
+    list_display = ['task', 'author', 'is_visible_to_client', 'created_at']
+    list_filter = ['is_visible_to_client', 'created_at']
+    search_fields = ['body', 'task__title']
+    raw_id_fields = ['task', 'author', 'parent']
+
+
+@admin.register(TaskIssue)
+class TaskIssueAdmin(admin.ModelAdmin):
+    list_display = ['title', 'task', 'severity', 'status', 'reporter', 'created_at']
+    list_filter = ['severity', 'status', 'is_visible_to_client', 'created_at']
+    search_fields = ['title', 'description', 'task__title']
+    raw_id_fields = ['task', 'reporter', 'assignee']
+
+
+@admin.register(TaskActivity)
+class TaskActivityAdmin(admin.ModelAdmin):
+    list_display = ['task', 'actor', 'verb', 'created_at']
+    list_filter = ['verb', 'created_at']
+    search_fields = ['task__title', 'message']
+    raw_id_fields = ['task', 'actor', 'related_comment', 'related_issue']
 from licensing.models import License
 
 

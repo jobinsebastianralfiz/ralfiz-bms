@@ -3,91 +3,129 @@
 
 {% block title %}{{ task.title }} - Ralfiz BMS{% endblock %}
 
+{% block extra_css %}
+<style>
+  .jira-shell { display: grid; grid-template-columns: minmax(0,1fr) 320px; gap: 1.5rem; align-items: start; }
+  @media (max-width: 992px) { .jira-shell { grid-template-columns: 1fr; } }
+
+  .jira-card { background: #fff; border: 1px solid #e5e7eb; border-radius: 12px; box-shadow: 0 1px 2px rgba(15,23,42,.04); }
+  .jira-card + .jira-card { margin-top: 1rem; }
+  .jira-card-body { padding: 1.25rem 1.5rem; }
+  .jira-card-hd { padding: 1rem 1.5rem; border-bottom: 1px solid #f1f5f9; display:flex; align-items:center; justify-content: space-between; }
+  .jira-card-hd h3 { margin:0; font-size: .95rem; font-weight: 600; color:#0f172a; letter-spacing:.01em; }
+
+  .jira-title { font-size: 1.4rem; font-weight: 700; color:#0f172a; margin: 0 0 .25rem; line-height:1.3; }
+  .jira-crumb { color:#64748b; font-size:.875rem; }
+  .jira-crumb a { color:#0ea5a4; text-decoration:none; }
+
+  .jira-tabs { display:flex; gap:.25rem; border-bottom: 1px solid #e5e7eb; padding: 0 .5rem; }
+  .jira-tab { appearance:none; border:0; background:transparent; padding: .75rem 1rem; font-size: .875rem; font-weight:600; color:#64748b; cursor:pointer; border-bottom: 2px solid transparent; display:inline-flex; align-items:center; gap:.5rem; }
+  .jira-tab .count { background:#eef2ff; color:#4338ca; font-size:.7rem; padding:.1rem .4rem; border-radius:999px; }
+  .jira-tab.active { color:#0f172a; border-bottom-color:#0ea5a4; }
+  .jira-tab:hover { color:#0f172a; }
+  .jira-tab-panel { display:none; padding: 1.25rem 1.5rem; }
+  .jira-tab-panel.active { display:block; }
+
+  .side-field { display:flex; justify-content:space-between; align-items:flex-start; gap:.75rem; padding:.65rem 0; border-bottom: 1px dashed #f1f5f9; }
+  .side-field:last-child { border-bottom:0; }
+  .side-field .k { font-size:.75rem; text-transform:uppercase; letter-spacing:.06em; color:#94a3b8; font-weight:600; }
+  .side-field .v { font-size:.875rem; color:#0f172a; text-align:right; max-width:60%; }
+
+  .chip { display:inline-flex; align-items:center; gap:.35rem; font-size:.72rem; font-weight:600; padding:.2rem .55rem; border-radius:999px; letter-spacing:.02em; }
+  .chip-sev-low { background:#ecfdf5; color:#047857; }
+  .chip-sev-medium { background:#fef3c7; color:#b45309; }
+  .chip-sev-high { background:#ffedd5; color:#c2410c; }
+  .chip-sev-critical { background:#fee2e2; color:#b91c1c; }
+  .chip-stat-open { background:#e0f2fe; color:#0369a1; }
+  .chip-stat-in_progress { background:#ede9fe; color:#6d28d9; }
+  .chip-stat-resolved { background:#dcfce7; color:#15803d; }
+  .chip-stat-closed { background:#e2e8f0; color:#334155; }
+  .chip-client { background:#e0f7f5; color:#0f766e; }
+
+  .comment { display:flex; gap:.85rem; padding: .85rem 0; border-bottom:1px solid #f1f5f9; }
+  .comment:last-child { border-bottom:0; }
+  .avatar { width:36px; height:36px; border-radius:999px; background: linear-gradient(135deg,#0ea5a4,#6366f1); color:#fff; display:inline-flex; align-items:center; justify-content:center; font-weight:700; font-size: .85rem; flex-shrink:0; }
+  .comment-head { display:flex; align-items:center; gap:.5rem; font-size:.85rem; }
+  .comment-author { font-weight:600; color:#0f172a; }
+  .comment-meta { color:#94a3b8; font-size:.75rem; }
+  .comment-body { margin:.25rem 0 .35rem; color:#1f2937; white-space:pre-wrap; font-size:.9rem; line-height:1.55; }
+  .comment-actions a, .comment-actions button { font-size:.75rem; color:#64748b; background:transparent; border:0; padding:0; margin-right:.75rem; cursor:pointer; }
+  .comment-actions a:hover, .comment-actions button:hover { color:#0f172a; }
+  .reply-block { margin-left: 3rem; padding-left: 1rem; border-left: 2px solid #f1f5f9; }
+
+  .composer { border:1px solid #e5e7eb; border-radius:10px; padding:.75rem; background:#fafafa; }
+  .composer textarea { width:100%; border:0; background:transparent; resize:vertical; min-height:60px; outline:none; font-size:.9rem; }
+  .composer-foot { display:flex; justify-content:space-between; align-items:center; margin-top:.5rem; gap:.75rem; flex-wrap:wrap; }
+  .composer-foot label { font-size:.8rem; color:#475569; display:inline-flex; align-items:center; gap:.4rem; margin:0; }
+
+  .issue-card { border:1px solid #e5e7eb; border-radius:10px; padding:.9rem 1rem; margin-bottom:.75rem; }
+  .issue-card.open { border-left: 4px solid #f59e0b; }
+  .issue-card.in_progress { border-left: 4px solid #8b5cf6; }
+  .issue-card.resolved { border-left: 4px solid #10b981; opacity:.85; }
+  .issue-card.closed { border-left: 4px solid #94a3b8; opacity:.7; }
+  .issue-title { font-weight:600; color:#0f172a; font-size:.95rem; }
+  .issue-meta { color:#64748b; font-size:.78rem; }
+
+  .activity-row { display:flex; gap:.75rem; padding:.55rem 0; font-size:.85rem; color:#334155; }
+  .activity-dot { width:8px; height:8px; border-radius:999px; background:#0ea5a4; margin-top:.5rem; flex-shrink:0; }
+
+  .modal-backdrop-custom { display:none; position:fixed; inset:0; background:rgba(15,23,42,.45); z-index:1050; align-items:center; justify-content:center; }
+  .modal-backdrop-custom.active { display:flex; }
+  .modal-card { background:#fff; border-radius:14px; width: min(560px, 92vw); box-shadow: 0 20px 50px rgba(15,23,42,.25); overflow:hidden; }
+  .modal-card .hd { padding: 1rem 1.25rem; border-bottom: 1px solid #f1f5f9; display:flex; justify-content:space-between; align-items:center; }
+  .modal-card .bd { padding: 1.25rem; }
+  .modal-card .ft { padding: .75rem 1.25rem; background:#f8fafc; display:flex; justify-content:flex-end; gap:.5rem; }
+
+  .quick-status select { width:100%; border:1px solid #e5e7eb; border-radius:8px; padding:.5rem .75rem; font-weight:600; font-size:.85rem; background-image: linear-gradient(90deg,#fff,#f8fafc); }
+</style>
+{% endblock %}
+
 {% block content %}
 <div class="page-header">
   <div>
-    <h1 class="page-title">{{ task.title }}</h1>
-    <p class="page-subtitle mb-0">
-      <a href="{% url 'project_detail' task.project.pk %}">{{ task.project.name }}</a>
-    </p>
+    <div class="jira-crumb">
+      <a href="{% url 'project_detail' task.project.pk %}"><i class="fas fa-folder-open"></i> {{ task.project.name }}</a>
+      &nbsp;/&nbsp;
+      <span>TASK-{{ task.pk|stringformat:"s"|slice:":8"|upper }}</span>
+    </div>
+    <h1 class="jira-title">{{ task.title }}</h1>
   </div>
   <div class="page-actions">
-    <a href="{% url 'task_update' task.pk %}" class="btn btn-outline-secondary">
-      <i class="fas fa-edit"></i> Edit
-    </a>
-    <a href="{% url 'task_delete' task.pk %}" class="btn btn-outline-danger">
-      <i class="fas fa-trash"></i> Delete
-    </a>
+    <a href="{% url 'task_board' %}" class="btn btn-outline-secondary"><i class="fas fa-columns"></i> Board</a>
+    <a href="{% url 'task_update' task.pk %}" class="btn btn-outline-secondary"><i class="fas fa-edit"></i> Edit</a>
+    <a href="{% url 'task_delete' task.pk %}" class="btn btn-outline-danger"><i class="fas fa-trash"></i></a>
   </div>
 </div>
 
-<div class="row">
-  <div class="col-8">
-    <div class="card mb-4">
-      <div class="card-header">
-        <h3 class="card-title"><i class="fas fa-info-circle"></i> Task Details</h3>
-      </div>
-      <div class="card-body">
-        <div class="row mb-3">
-          <div class="col-3"><strong>Status</strong></div>
-          <div class="col-9"><span class="status-badge {{ task.status }}">{{ task.get_status_display }}</span></div>
-        </div>
-        <div class="row mb-3">
-          <div class="col-3"><strong>Priority</strong></div>
-          <div class="col-9"><span class="priority-badge {{ task.priority }}">{{ task.get_priority_display }}</span></div>
-        </div>
-        <div class="row mb-3">
-          <div class="col-3"><strong>Assigned To</strong></div>
-          <div class="col-9">{{ task.assigned_to.name|default:"Unassigned" }}</div>
-        </div>
-        <div class="row mb-3">
-          <div class="col-3"><strong>Due Date</strong></div>
-          <div class="col-9 {% if task.is_overdue %}text-danger fw-medium{% endif %}">
-            {{ task.due_date|date:"d M Y"|default:"-" }}
-            {% if task.is_overdue %}<span class="badge badge-danger ms-2">Overdue</span>{% endif %}
-          </div>
-        </div>
-        {% if task.completed_date %}
-        <div class="row mb-3">
-          <div class="col-3"><strong>Completed</strong></div>
-          <div class="col-9 text-success">{{ task.completed_date|date:"d M Y" }}</div>
-        </div>
-        {% endif %}
+<div class="jira-shell">
+  <!-- MAIN -->
+  <div>
+    <div class="jira-card">
+      <div class="jira-card-hd"><h3><i class="fas fa-align-left"></i> Description</h3></div>
+      <div class="jira-card-body">
         {% if task.description %}
-        <div class="row mb-3">
-          <div class="col-3"><strong>Description</strong></div>
-          <div class="col-9">{{ task.description|linebreaks }}</div>
-        </div>
+          <div style="color:#334155; white-space:pre-wrap; line-height:1.6;">{{ task.description|linebreaksbr }}</div>
+        {% else %}
+          <div class="text-muted" style="font-style:italic;">No description provided.</div>
         {% endif %}
         {% if task.notes %}
-        <div class="row mb-3">
-          <div class="col-3"><strong>Notes</strong></div>
-          <div class="col-9">{{ task.notes|linebreaks }}</div>
-        </div>
+        <hr>
+        <div><strong style="font-size:.8rem; color:#64748b; text-transform:uppercase; letter-spacing:.05em;">Notes</strong><div style="margin-top:.4rem; color:#334155;">{{ task.notes|linebreaksbr }}</div></div>
         {% endif %}
       </div>
     </div>
 
-    <!-- Attachments -->
     {% if task.attachments.count > 0 %}
-    <div class="card mb-4">
-      <div class="card-header">
-        <h3 class="card-title"><i class="fas fa-paperclip"></i> Attachments</h3>
-        <span class="badge">{{ task.attachments.count }}</span>
-      </div>
-      <div class="card-body">
+    <div class="jira-card">
+      <div class="jira-card-hd"><h3><i class="fas fa-paperclip"></i> Attachments</h3><span class="chip chip-stat-open">{{ task.attachments.count }}</span></div>
+      <div class="jira-card-body">
         <div class="row">
           {% for att in task.attachments.all %}
-          <div class="col-3 mb-3" style="text-align: center;">
+          <div class="col-3 mb-3" style="text-align:center;">
             {% if att.is_image %}
-            <a href="{{ att.file.url }}" target="_blank">
-              <img src="{{ att.file.url }}" style="width: 100%; max-height: 200px; object-fit: cover; border-radius: 6px; border: 1px solid #e5e7eb;">
-            </a>
-            <div style="font-size: 0.8125rem; color: #6c757d; margin-top: 0.25rem;">{{ att.name|default:att.file.name|truncatechars:20 }}</div>
+              <a href="{{ att.file.url }}" target="_blank"><img src="{{ att.file.url }}" style="width:100%; max-height:160px; object-fit:cover; border-radius:8px; border:1px solid #e5e7eb;"></a>
             {% else %}
-            <a href="{{ att.file.url }}" target="_blank" class="btn btn-outline-secondary w-100">
-              <i class="fas fa-download"></i> {{ att.name|default:att.file.name|truncatechars:20 }}
-            </a>
+              <a href="{{ att.file.url }}" target="_blank" class="btn btn-outline-secondary w-100"><i class="fas fa-file"></i> {{ att.name|default:att.file.name|truncatechars:18 }}</a>
             {% endif %}
           </div>
           {% endfor %}
@@ -96,34 +134,156 @@
     </div>
     {% endif %}
 
-    <!-- Time Entries -->
-    <div class="card">
-      <div class="card-header">
-        <h3 class="card-title"><i class="fas fa-clock"></i> Time Entries</h3>
-        <span class="badge">{{ total_hours }} hours</span>
+    <!-- Tabs -->
+    <div class="jira-card">
+      <div class="jira-tabs">
+        <button type="button" class="jira-tab active" data-tab="comments"><i class="far fa-comment"></i> Comments <span class="count">{{ task.comments.count }}</span></button>
+        <button type="button" class="jira-tab" data-tab="issues"><i class="fas fa-exclamation-triangle"></i> Issues <span class="count">{{ open_issue_count }}</span></button>
+        <button type="button" class="jira-tab" data-tab="activity"><i class="fas fa-history"></i> Activity</button>
+        <button type="button" class="jira-tab" data-tab="time"><i class="fas fa-clock"></i> Time</button>
       </div>
-      <div class="table-wrapper">
+
+      <!-- Comments tab -->
+      <div class="jira-tab-panel active" id="tab-comments">
+        <form method="post" action="{% url 'task_comment_add' task.pk %}" enctype="multipart/form-data" class="composer" id="top-composer">
+          {% csrf_token %}
+          <textarea name="body" placeholder="Add a comment, share progress, or flag a blocker..." required></textarea>
+          <div class="composer-foot">
+            <div style="display:flex; gap:.75rem; align-items:center;">
+              <label><input type="checkbox" name="is_visible_to_client"> Visible to client</label>
+              <label><i class="fas fa-paperclip"></i> <input type="file" name="attachment" style="font-size:.75rem;"></label>
+            </div>
+            <button type="submit" class="btn btn-primary btn-sm"><i class="fas fa-paper-plane"></i> Post</button>
+          </div>
+        </form>
+
+        <div id="comments" style="margin-top:.5rem;">
+          {% for c in comments %}
+          <div class="comment">
+            <div class="avatar">{{ c.author.get_full_name|default:c.author.username|slice:":1"|upper }}</div>
+            <div style="flex:1; min-width:0;">
+              <div class="comment-head">
+                <span class="comment-author">{{ c.author.get_full_name|default:c.author.username }}</span>
+                <span class="comment-meta">· {{ c.created_at|date:"d M Y, H:i" }}</span>
+                {% if c.is_visible_to_client %}<span class="chip chip-client"><i class="fas fa-eye"></i> Client</span>{% endif %}
+              </div>
+              <div class="comment-body">{{ c.body }}</div>
+              {% if c.attachment %}<a href="{{ c.attachment.url }}" target="_blank" style="font-size:.8rem;"><i class="fas fa-paperclip"></i> {{ c.attachment.name|slice:"28:" }}</a>{% endif %}
+              <div class="comment-actions">
+                <button type="button" onclick="toggleReply('{{ c.pk }}')"><i class="fas fa-reply"></i> Reply</button>
+                {% if c.author_id == request.user.id or request.user.is_superuser %}
+                <form method="post" action="{% url 'task_comment_delete' task.pk c.pk %}" style="display:inline;">{% csrf_token %}<button type="submit" onclick="return confirm('Delete this comment?')"><i class="fas fa-trash"></i> Delete</button></form>
+                {% endif %}
+              </div>
+
+              <form method="post" action="{% url 'task_comment_add' task.pk %}" class="composer" id="reply-{{ c.pk }}" style="display:none; margin-top:.5rem;">
+                {% csrf_token %}
+                <input type="hidden" name="parent" value="{{ c.pk }}">
+                <textarea name="body" placeholder="Write a reply..." required></textarea>
+                <div class="composer-foot">
+                  <label><input type="checkbox" name="is_visible_to_client"> Visible to client</label>
+                  <button type="submit" class="btn btn-primary btn-sm">Reply</button>
+                </div>
+              </form>
+
+              {% for r in c.replies.all %}
+                {% if not r.is_deleted %}
+                <div class="reply-block" style="margin-top:.75rem;">
+                  <div class="comment-head">
+                    <div class="avatar" style="width:28px; height:28px; font-size:.75rem;">{{ r.author.get_full_name|default:r.author.username|slice:":1"|upper }}</div>
+                    <span class="comment-author">{{ r.author.get_full_name|default:r.author.username }}</span>
+                    <span class="comment-meta">· {{ r.created_at|date:"d M Y, H:i" }}</span>
+                    {% if r.is_visible_to_client %}<span class="chip chip-client">Client</span>{% endif %}
+                  </div>
+                  <div class="comment-body" style="margin-left:2.1rem;">{{ r.body }}</div>
+                </div>
+                {% endif %}
+              {% endfor %}
+            </div>
+          </div>
+          {% empty %}
+          <div class="text-muted text-center py-4" style="font-style:italic;">Be the first to comment.</div>
+          {% endfor %}
+        </div>
+      </div>
+
+      <!-- Issues tab -->
+      <div class="jira-tab-panel" id="tab-issues">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem;">
+          <div style="color:#64748b; font-size:.85rem;">Track bugs, blockers, and questions against this task.</div>
+          <button type="button" class="btn btn-primary btn-sm" onclick="openIssueModal()"><i class="fas fa-plus"></i> Report Issue</button>
+        </div>
+        {% for i in issues %}
+        <div class="issue-card {{ i.status }}">
+          <div style="display:flex; justify-content:space-between; gap:1rem; align-items:flex-start;">
+            <div style="flex:1; min-width:0;">
+              <div style="display:flex; align-items:center; gap:.5rem; flex-wrap:wrap;">
+                <span class="chip chip-sev-{{ i.severity }}">{{ i.get_severity_display }}</span>
+                <span class="chip chip-stat-{{ i.status }}">{{ i.get_status_display }}</span>
+                {% if i.is_visible_to_client %}<span class="chip chip-client"><i class="fas fa-eye"></i> Client</span>{% endif %}
+              </div>
+              <div class="issue-title" style="margin-top:.4rem;">{{ i.title }}</div>
+              {% if i.description %}<div style="color:#475569; font-size:.85rem; margin-top:.35rem; white-space:pre-wrap;">{{ i.description|linebreaksbr }}</div>{% endif %}
+              <div class="issue-meta" style="margin-top:.5rem;">
+                Reported by {{ i.reporter.get_full_name|default:i.reporter.username }} · {{ i.created_at|date:"d M Y" }}
+                {% if i.assignee %}· Assigned to {{ i.assignee.name }}{% endif %}
+                {% if i.resolution %}<div style="margin-top:.35rem;"><strong>Resolution:</strong> {{ i.resolution }}</div>{% endif %}
+              </div>
+            </div>
+            <form method="post" action="{% url 'task_issue_update' task.pk i.pk %}" style="flex-shrink:0;">
+              {% csrf_token %}
+              <select name="status" onchange="this.form.submit()" style="border:1px solid #e5e7eb; border-radius:6px; padding:.3rem .5rem; font-size:.8rem;">
+                {% for s,l in i.STATUS_CHOICES %}<option value="{{ s }}" {% if i.status == s %}selected{% endif %}>{{ l }}</option>{% endfor %}
+              </select>
+            </form>
+          </div>
+        </div>
+        {% empty %}
+        <div class="text-muted text-center py-4" style="font-style:italic;">No issues reported.</div>
+        {% endfor %}
+      </div>
+
+      <!-- Activity tab -->
+      <div class="jira-tab-panel" id="tab-activity">
+        {% for a in activities %}
+        <div class="activity-row">
+          <span class="activity-dot"></span>
+          <div>
+            <strong>{{ a.actor.get_full_name|default:a.actor.username }}</strong>
+            {% if a.verb == 'status_changed' %}
+              changed status <span class="chip chip-stat-closed">{{ a.from_value }}</span> → <span class="chip chip-stat-in_progress">{{ a.to_value }}</span>
+            {% elif a.verb == 'commented' %}
+              commented: <em>{{ a.message|truncatechars:100 }}</em>
+            {% elif a.verb == 'issue_opened' %}
+              opened issue <span class="chip chip-sev-{{ a.to_value }}">{{ a.to_value }}</span> — {{ a.message|truncatechars:80 }}
+            {% elif a.verb == 'issue_resolved' %}
+              resolved issue — {{ a.message|truncatechars:80 }}
+            {% elif a.verb == 'issue_status_changed' %}
+              updated issue {{ a.from_value }} → {{ a.to_value }}
+            {% else %}
+              {{ a.get_verb_display }} {{ a.message }}
+            {% endif %}
+            <div class="comment-meta">{{ a.created_at|date:"d M Y, H:i" }}</div>
+          </div>
+        </div>
+        {% empty %}
+        <div class="text-muted text-center py-4" style="font-style:italic;">No activity yet.</div>
+        {% endfor %}
+      </div>
+
+      <!-- Time tab -->
+      <div class="jira-tab-panel" id="tab-time">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem;">
+          <strong>Total: {{ total_hours }}h</strong>
+          <a href="{% url 'timeentry_create' %}?task={{ task.pk }}" class="btn btn-primary btn-sm"><i class="fas fa-plus"></i> Log Time</a>
+        </div>
         <table class="table">
-          <thead>
-            <tr>
-              <th>Date</th>
-              <th>Description</th>
-              <th>Hours</th>
-              <th>User</th>
-            </tr>
-          </thead>
+          <thead><tr><th>Date</th><th>Description</th><th>Hours</th><th>User</th></tr></thead>
           <tbody>
             {% for entry in time_entries %}
-            <tr>
-              <td>{{ entry.date|date:"d M Y" }}</td>
-              <td>{{ entry.description|truncatewords:10 }}</td>
-              <td>{{ entry.hours }}h</td>
-              <td>{{ entry.user.get_full_name|default:entry.user.username }}</td>
-            </tr>
+            <tr><td>{{ entry.date|date:"d M Y" }}</td><td>{{ entry.description|truncatewords:10 }}</td><td>{{ entry.hours }}h</td><td>{{ entry.user.get_full_name|default:entry.user.username }}</td></tr>
             {% empty %}
-            <tr>
-              <td colspan="4" class="text-center py-3 text-muted">No time entries</td>
-            </tr>
+            <tr><td colspan="4" class="text-center text-muted py-3">No time entries</td></tr>
             {% endfor %}
           </tbody>
         </table>
@@ -131,28 +291,70 @@
     </div>
   </div>
 
-  <div class="col-4">
-    <div class="card">
-      <div class="card-header">
-        <h3 class="card-title"><i class="fas fa-bolt"></i> Quick Actions</h3>
-      </div>
-      <div class="card-body">
-        <form method="post" action="{% url 'task_status_update' task.pk %}" id="status-form">
+  <!-- SIDEBAR -->
+  <div>
+    <div class="jira-card">
+      <div class="jira-card-hd"><h3><i class="fas fa-sliders-h"></i> Details</h3></div>
+      <div class="jira-card-body">
+        <form method="post" action="{% url 'task_status_update' task.pk %}" id="status-form" class="quick-status">
           {% csrf_token %}
-          <label class="form-label">Update Status</label>
-          <select class="form-control mb-3" name="status" onchange="document.getElementById('status-form').submit()">
-            <option value="todo" {% if task.status == 'todo' %}selected{% endif %}>To Do</option>
-            <option value="in_progress" {% if task.status == 'in_progress' %}selected{% endif %}>In Progress</option>
-            <option value="review" {% if task.status == 'review' %}selected{% endif %}>In Review</option>
-            <option value="completed" {% if task.status == 'completed' %}selected{% endif %}>Completed</option>
+          <label style="font-size:.72rem; text-transform:uppercase; letter-spacing:.06em; color:#94a3b8; font-weight:600;">Status</label>
+          <select name="status" onchange="document.getElementById('status-form').submit()">
+            <option value="todo" {% if task.status == 'todo' %}selected{% endif %}>📋 To Do</option>
+            <option value="in_progress" {% if task.status == 'in_progress' %}selected{% endif %}>🔄 In Progress</option>
+            <option value="review" {% if task.status == 'review' %}selected{% endif %}>👀 In Review</option>
+            <option value="completed" {% if task.status == 'completed' %}selected{% endif %}>✅ Completed</option>
           </select>
         </form>
-        <hr>
-        <a href="{% url 'timeentry_create' %}?task={{ task.pk }}" class="btn btn-outline-primary w-100">
-          <i class="fas fa-clock"></i> Log Time
-        </a>
+        <div style="margin-top:1rem;">
+          <div class="side-field"><span class="k">Priority</span><span class="v"><span class="priority-badge {{ task.priority }}">{{ task.get_priority_display }}</span></span></div>
+          <div class="side-field"><span class="k">Assignee</span><span class="v">{{ task.assigned_to.name|default:"—" }}</span></div>
+          <div class="side-field"><span class="k">Due Date</span><span class="v {% if task.is_overdue %}text-danger{% endif %}">{{ task.due_date|date:"d M Y"|default:"—" }}{% if task.is_overdue %} ⚠️{% endif %}</span></div>
+          {% if task.completed_date %}<div class="side-field"><span class="k">Completed</span><span class="v text-success">{{ task.completed_date|date:"d M Y" }}</span></div>{% endif %}
+          <div class="side-field"><span class="k">Project</span><span class="v"><a href="{% url 'project_detail' task.project.pk %}">{{ task.project.name|truncatechars:24 }}</a></span></div>
+          <div class="side-field"><span class="k">Created</span><span class="v">{{ task.created_at|date:"d M Y" }}</span></div>
+        </div>
       </div>
     </div>
   </div>
 </div>
+
+<!-- Issue Modal -->
+<div class="modal-backdrop-custom" id="issue-modal" onclick="if(event.target===this)closeIssueModal()">
+  <div class="modal-card">
+    <div class="hd"><h3 style="margin:0; font-size:1rem; font-weight:600;">Report an Issue</h3><button type="button" class="btn btn-sm btn-outline-secondary" onclick="closeIssueModal()">×</button></div>
+    <form method="post" action="{% url 'task_issue_create' task.pk %}">
+      {% csrf_token %}
+      <div class="bd">
+        <div class="mb-3"><label class="form-label">Title</label><input name="title" class="form-control" required placeholder="Short summary"></div>
+        <div class="mb-3"><label class="form-label">Description</label><textarea name="description" class="form-control" rows="4" placeholder="Steps to reproduce, expected vs actual, or context..."></textarea></div>
+        <div class="row">
+          <div class="col-6 mb-3"><label class="form-label">Severity</label>
+            <select name="severity" class="form-control"><option value="low">Low</option><option value="medium" selected>Medium</option><option value="high">High</option><option value="critical">Critical</option></select>
+          </div>
+          <div class="col-6 mb-3"><label class="form-label">Assignee</label>
+            <select name="assignee" class="form-control"><option value="">— Unassigned —</option>{% for tm in team_members %}<option value="{{ tm.pk }}" {% if task.assigned_to_id == tm.pk %}selected{% endif %}>{{ tm.name }}</option>{% endfor %}</select>
+          </div>
+        </div>
+        <label style="font-size:.85rem;"><input type="checkbox" name="is_visible_to_client"> Visible to client</label>
+      </div>
+      <div class="ft"><button type="button" class="btn btn-outline-secondary" onclick="closeIssueModal()">Cancel</button><button type="submit" class="btn btn-primary">Create Issue</button></div>
+    </form>
+  </div>
+</div>
+
+<script>
+  document.querySelectorAll('.jira-tab').forEach(btn => btn.addEventListener('click', () => {
+    document.querySelectorAll('.jira-tab').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.jira-tab-panel').forEach(p => p.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('tab-' + btn.dataset.tab).classList.add('active');
+  }));
+  function toggleReply(id){ const el = document.getElementById('reply-' + id); el.style.display = el.style.display === 'none' ? 'block' : 'none'; }
+  function openIssueModal(){ document.getElementById('issue-modal').classList.add('active'); }
+  function closeIssueModal(){ document.getElementById('issue-modal').classList.remove('active'); }
+  // Open tab from hash
+  if (location.hash === '#issues') document.querySelector('[data-tab=issues]').click();
+  if (location.hash === '#activity') document.querySelector('[data-tab=activity]').click();
+</script>
 {% endblock %}

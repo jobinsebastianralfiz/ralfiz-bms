@@ -201,6 +201,75 @@ def portal_project_detail(request, project_id):
         project=project, is_visible_to_client=True
     )
 
+    # Build unified Timeline: project updates + client-visible task comments + task activities
+    from core.models import TaskComment, TaskActivity
+    project_task_ids = list(tasks.values_list('id', flat=True))
+    task_comments_tl = TaskComment.objects.filter(
+        task_id__in=project_task_ids, is_visible_to_client=True, is_deleted=False
+    ).select_related('author', 'task')
+    task_activities_tl = TaskActivity.objects.filter(
+        task_id__in=project_task_ids, is_visible_to_client=True,
+        verb__in=['status_changed', 'issue_opened', 'issue_resolved', 'issue_status_changed']
+    ).select_related('actor', 'task', 'related_issue')
+
+    timeline_events = []
+    for u in updates:
+        timeline_events.append({
+            'kind': 'update',
+            'icon': {'milestone': 'flag-checkered', 'progress': 'chart-line', 'release': 'rocket', 'blocker': 'exclamation-triangle', 'info': 'info-circle'}.get(u.update_type, 'info-circle'),
+            'color': {'milestone': '#0ea5a4', 'progress': '#6366f1', 'release': '#059669', 'blocker': '#dc2626', 'info': '#64748b'}.get(u.update_type, '#64748b'),
+            'title': u.title,
+            'body': u.description,
+            'author': u.author,
+            'type_label': u.get_update_type_display() if hasattr(u, 'get_update_type_display') else u.update_type,
+            'progress_percentage': u.progress_percentage,
+            'timestamp': u.created_at,
+            'task': None,
+        })
+    for c in task_comments_tl:
+        timeline_events.append({
+            'kind': 'comment',
+            'icon': 'comment',
+            'color': '#6366f1',
+            'title': f'Comment on {c.task.title}',
+            'body': c.body,
+            'author': c.author,
+            'type_label': 'Update',
+            'progress_percentage': None,
+            'timestamp': c.created_at,
+            'task': c.task,
+        })
+    for a in task_activities_tl:
+        if a.verb == 'status_changed':
+            title = f'{a.task.title}: {a.from_value} → {a.to_value}'
+            icon, color = 'arrow-right', '#0ea5a4'
+            label = 'Status'
+        elif a.verb == 'issue_opened':
+            title = f'Issue opened: {a.message or ""}'
+            icon, color = 'exclamation-triangle', '#f59e0b'
+            label = 'Issue'
+        elif a.verb == 'issue_resolved':
+            title = f'Issue resolved: {a.message or ""}'
+            icon, color = 'check-circle', '#10b981'
+            label = 'Resolved'
+        else:
+            title = f'Issue updated: {a.from_value} → {a.to_value}'
+            icon, color = 'sync-alt', '#8b5cf6'
+            label = 'Issue'
+        timeline_events.append({
+            'kind': 'activity',
+            'icon': icon,
+            'color': color,
+            'title': title,
+            'body': '',
+            'author': a.actor,
+            'type_label': label,
+            'progress_percentage': None,
+            'timestamp': a.created_at,
+            'task': a.task,
+        })
+    timeline_events.sort(key=lambda e: e['timestamp'], reverse=True)
+
     ct = ContentType.objects.get_for_model(Project)
     documents = Document.objects.filter(content_type=ct, object_id=str(project.id))
 
@@ -226,6 +295,7 @@ def portal_project_detail(request, project_id):
         },
         'comments': comments,
         'updates': updates,
+        'timeline_events': timeline_events,
         'documents': documents,
         'credentials': credentials,
         'team_members': team_members,
