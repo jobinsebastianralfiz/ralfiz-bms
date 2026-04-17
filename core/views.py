@@ -1035,6 +1035,10 @@ def amc_list(request):
     if status_filter:
         contracts = contracts.filter(status=status_filter)
 
+    type_filter = request.GET.get('type', '')
+    if type_filter:
+        contracts = contracts.filter(contract_type=type_filter)
+
     search = request.GET.get('search', '')
     if search:
         contracts = contracts.filter(
@@ -1051,12 +1055,14 @@ def amc_list(request):
     return render(request, 'amc/list.html', {
         'contracts': contracts,
         'status_filter': status_filter,
+        'type_filter': type_filter,
         'search': search,
         'overdue_count': overdue_count,
         'due_soon_count': due_soon_count,
         'active_count': active_count,
         'total_annual': total_annual,
         'status_choices': AMCContract.STATUS_CHOICES,
+        'type_choices': AMCContract.CONTRACT_TYPE_CHOICES,
     })
 
 
@@ -1076,6 +1082,7 @@ def amc_create(request):
         from dateutil.relativedelta import relativedelta
         project_id = request.POST.get('project')
         project = get_object_or_404(Project, pk=project_id)
+        contract_type = request.POST.get('contract_type', 'amc')
         annual_amount = request.POST.get('annual_amount')
         billing_cycle = request.POST.get('billing_cycle', 'yearly')
         start_date = request.POST.get('start_date')
@@ -1097,6 +1104,7 @@ def amc_create(request):
 
         amc = AMCContract.objects.create(
             project=project,
+            contract_type=contract_type,
             annual_amount=annual_amount,
             billing_cycle=billing_cycle,
             start_date=start,
@@ -1105,7 +1113,7 @@ def amc_create(request):
             auto_renew=auto_renew,
             notes=notes,
         )
-        messages.success(request, f'AMC contract created for "{project.name}".')
+        messages.success(request, f'{amc.get_contract_type_display()} contract created for "{project.name}".')
         return redirect('amc_detail', pk=amc.pk)
 
     projects = Project.objects.select_related('client').all()
@@ -1113,8 +1121,9 @@ def amc_create(request):
     return render(request, 'amc/form.html', {
         'projects': projects,
         'preselected_project': preselected_project,
-        'form_title': 'Create AMC Contract',
+        'form_title': 'Create Recurring Contract',
         'billing_choices': AMCContract.BILLING_CYCLE_CHOICES,
+        'type_choices': AMCContract.CONTRACT_TYPE_CHOICES,
     })
 
 
@@ -1122,6 +1131,7 @@ def amc_create(request):
 def amc_update(request, pk):
     amc = get_object_or_404(AMCContract.objects.select_related('project'), pk=pk)
     if request.method == 'POST':
+        amc.contract_type = request.POST.get('contract_type', 'amc')
         amc.annual_amount = request.POST.get('annual_amount')
         amc.billing_cycle = request.POST.get('billing_cycle', 'yearly')
         amc.start_date = request.POST.get('start_date')
@@ -1131,7 +1141,7 @@ def amc_update(request, pk):
         amc.auto_renew = request.POST.get('auto_renew') == 'on'
         amc.notes = request.POST.get('notes', '')
         amc.save()
-        messages.success(request, 'AMC contract updated.')
+        messages.success(request, 'Contract updated.')
         return redirect('amc_detail', pk=amc.pk)
 
     projects = Project.objects.select_related('client').all()
@@ -1139,9 +1149,10 @@ def amc_update(request, pk):
         'amc': amc,
         'projects': projects,
         'preselected_project': str(amc.project_id),
-        'form_title': 'Edit AMC Contract',
+        'form_title': 'Edit Contract',
         'billing_choices': AMCContract.BILLING_CYCLE_CHOICES,
         'status_choices': AMCContract.STATUS_CHOICES,
+        'type_choices': AMCContract.CONTRACT_TYPE_CHOICES,
     })
 
 

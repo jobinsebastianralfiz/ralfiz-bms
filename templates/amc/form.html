@@ -50,8 +50,19 @@
             </div>
             <div class="col-6 col-sm-12" style="padding: 0.5rem;">
               <div class="form-group">
+                <label class="form-label" for="contract_type">Contract Type <span class="required">*</span></label>
+                <select class="form-control" id="contract_type" name="contract_type" required>
+                  {% for key, value in type_choices %}
+                  <option value="{{ key }}" {% if amc.contract_type == key %}selected{% elif not amc and key == 'amc' %}selected{% endif %}>{{ value }}</option>
+                  {% endfor %}
+                </select>
+              </div>
+            </div>
+            <div class="col-6 col-sm-12" style="padding: 0.5rem;">
+              <div class="form-group">
                 <label class="form-label" for="annual_amount">Annual Amount (&#8377;) <span class="required">*</span></label>
                 <input type="number" class="form-control" id="annual_amount" name="annual_amount" value="{{ amc.annual_amount|default:'' }}" required>
+                <small class="text-muted">Total annual value; payments will be spread per billing cycle.</small>
               </div>
             </div>
             <div class="col-6 col-sm-12" style="padding: 0.5rem;">

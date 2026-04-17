@@ -232,7 +232,7 @@ class Credential(models.Model):
 
 
 class AMCContract(models.Model):
-    """Annual Maintenance Contract linked to a completed project"""
+    """Recurring service contract (AMC, content updates, hosting, etc.) linked to a project"""
     BILLING_CYCLE_CHOICES = [
         ('monthly', 'Monthly'),
         ('quarterly', 'Quarterly'),
@@ -244,9 +244,18 @@ class AMCContract(models.Model):
         ('expired', 'Expired'),
         ('cancelled', 'Cancelled'),
     ]
+    CONTRACT_TYPE_CHOICES = [
+        ('amc', 'AMC'),
+        ('content_update', 'Content Update'),
+        ('hosting', 'Hosting'),
+        ('seo', 'SEO / Marketing'),
+        ('support', 'Support Plan'),
+        ('other', 'Other'),
+    ]
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     project = models.ForeignKey(Project, on_delete=models.CASCADE, related_name='amc_contracts')
+    contract_type = models.CharField(max_length=20, choices=CONTRACT_TYPE_CHOICES, default='amc')
     annual_amount = models.DecimalField(max_digits=12, decimal_places=2)
     billing_cycle = models.CharField(max_length=20, choices=BILLING_CYCLE_CHOICES, default='yearly')
     start_date = models.DateField()
@@ -262,7 +271,7 @@ class AMCContract(models.Model):
         ordering = ['next_due_date', '-created_at']
 
     def __str__(self):
-        return f"AMC - {self.project.name} ({self.get_status_display()})"
+        return f"{self.get_contract_type_display()} - {self.project.name} ({self.get_status_display()})"
 
     @property
     def is_overdue(self):

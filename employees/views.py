@@ -4292,6 +4292,8 @@ class OwnerDuesDashboardView(APIView):
             'client_name': a.project.client.name, 'amount': str(a.annual_amount),
             'due_date': str(a.next_due_date), 'days_overdue': abs(a.days_until_due),
             'billing_cycle': a.billing_cycle,
+            'contract_type': a.contract_type,
+            'contract_type_display': a.get_contract_type_display(),
         } for a in overdue_amc]
 
         upcoming_amc_data = [{
@@ -4299,6 +4301,8 @@ class OwnerDuesDashboardView(APIView):
             'client_name': a.project.client.name, 'amount': str(a.annual_amount),
             'due_date': str(a.next_due_date), 'days_until_due': a.days_until_due,
             'billing_cycle': a.billing_cycle,
+            'contract_type': a.contract_type,
+            'contract_type_display': a.get_contract_type_display(),
         } for a in upcoming_amc]
 
         total_amc_overdue = overdue_amc.aggregate(total=Sum('annual_amount'))['total'] or Decimal('0')
@@ -4506,10 +4510,16 @@ class OwnerAMCListView(APIView):
         if status_filter:
             contracts = contracts.filter(status=status_filter)
 
+        type_filter = request.query_params.get('type')
+        if type_filter:
+            contracts = contracts.filter(contract_type=type_filter)
+
         data = [{
             'id': str(a.id), 'project_name': a.project.name,
             'project_id': str(a.project.id),
             'client_name': a.project.client.name,
+            'contract_type': a.contract_type,
+            'contract_type_display': a.get_contract_type_display(),
             'annual_amount': str(a.annual_amount),
             'billing_cycle': a.billing_cycle,
             'billing_cycle_display': a.get_billing_cycle_display(),
@@ -4549,6 +4559,8 @@ class OwnerAMCDetailView(APIView):
             'id': str(amc.id), 'project_name': amc.project.name,
             'project_id': str(amc.project.id),
             'client_name': amc.project.client.name,
+            'contract_type': amc.contract_type,
+            'contract_type_display': amc.get_contract_type_display(),
             'annual_amount': str(amc.annual_amount),
             'billing_cycle': amc.billing_cycle,
             'billing_cycle_display': amc.get_billing_cycle_display(),
@@ -4580,6 +4592,7 @@ class OwnerAMCCreateView(APIView):
         except Project.DoesNotExist:
             return Response({'error': 'Project not found'}, status=status.HTTP_404_NOT_FOUND)
 
+        contract_type = request.data.get('contract_type', 'amc')
         annual_amount = request.data.get('annual_amount')
         billing_cycle = request.data.get('billing_cycle', 'yearly')
         start_date = request.data.get('start_date')
@@ -4603,16 +4616,18 @@ class OwnerAMCCreateView(APIView):
         next_due = start + cycle_map.get(billing_cycle, relativedelta(years=1))
 
         amc = AMCContract.objects.create(
-            project=project, annual_amount=annual_amount,
+            project=project, contract_type=contract_type, annual_amount=annual_amount,
             billing_cycle=billing_cycle, start_date=start, end_date=end,
             next_due_date=next_due, auto_renew=auto_renew, notes=notes,
         )
 
         return Response({
             'id': str(amc.id), 'project_name': project.name,
+            'contract_type': amc.contract_type,
+            'contract_type_display': amc.get_contract_type_display(),
             'annual_amount': str(amc.annual_amount),
             'next_due_date': str(amc.next_due_date),
-            'message': 'AMC contract created successfully',
+            'message': f'{amc.get_contract_type_display()} contract created successfully',
         }, status=status.HTTP_201_CREATED)
 
 

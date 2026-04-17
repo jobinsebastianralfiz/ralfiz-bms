@@ -1,24 +1,24 @@
 {% extends 'base.html' %}
 {% load static %}
 
-{% block title %}AMC Contracts - Ralfiz BMS{% endblock %}
+{% block title %}Recurring Contracts - Ralfiz BMS{% endblock %}
 
 {% block breadcrumb %}
 <a href="{% url 'dashboard' %}" class="breadcrumb-item">Dashboard</a>
 <span class="breadcrumb-separator">/</span>
-<span class="breadcrumb-item active">AMC Contracts</span>
+<span class="breadcrumb-item active">Recurring Contracts</span>
 {% endblock %}
 
 {% block content %}
 <div class="page-header">
   <div>
-    <h1 class="page-title">AMC Contracts</h1>
-    <p class="page-subtitle mb-0">Manage annual maintenance contracts</p>
+    <h1 class="page-title">Recurring Contracts</h1>
+    <p class="page-subtitle mb-0">AMC, content updates, hosting and other recurring services</p>
   </div>
   <div class="page-actions">
     <a href="{% url 'amc_create' %}" class="btn btn-primary">
       <i class="fas fa-plus"></i>
-      Create AMC
+      Create Contract
     </a>
   </div>
 </div>
@@ -75,11 +75,20 @@
 <div class="card mb-4">
   <div class="card-body">
     <form method="get" class="row align-items-end">
-      <div class="col-4 col-md-6 col-sm-12" style="padding: 0.5rem;">
+      <div class="col-md-3 col-sm-12" style="padding: 0.5rem;">
         <label class="form-label">Search</label>
         <input type="text" class="form-control" name="search" placeholder="Search project or client..." value="{{ search }}">
       </div>
-      <div class="col-3 col-md-6 col-sm-12" style="padding: 0.5rem;">
+      <div class="col-md-3 col-sm-12" style="padding: 0.5rem;">
+        <label class="form-label">Type</label>
+        <select class="form-control" name="type">
+          <option value="">All Types</option>
+          {% for key, value in type_choices %}
+          <option value="{{ key }}" {% if type_filter == key %}selected{% endif %}>{{ value }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-md-3 col-sm-12" style="padding: 0.5rem;">
         <label class="form-label">Status</label>
         <select class="form-control" name="status">
           <option value="">All Status</option>
@@ -88,7 +97,7 @@
           {% endfor %}
         </select>
       </div>
-      <div class="col-2 col-md-6 col-sm-12" style="padding: 0.5rem;">
+      <div class="col-md-3 col-sm-12" style="padding: 0.5rem;">
         <button type="submit" class="btn btn-primary w-100">
           <i class="fas fa-search me-1"></i>Filter
         </button>
@@ -105,6 +114,7 @@
         <tr>
           <th>Project</th>
           <th>Client</th>
+          <th>Type</th>
           <th>Amount</th>
           <th>Billing</th>
           <th>Next Due</th>
@@ -121,6 +131,7 @@
           <td>
             <a href="{% url 'client_detail' amc.project.client.pk %}" class="text-muted">{{ amc.project.client.name }}</a>
           </td>
+          <td><span class="badge" style="background: #e0e7ff; color: #4338ca;">{{ amc.get_contract_type_display }}</span></td>
           <td class="fw-medium">&#8377;{{ amc.annual_amount|floatformat:0 }}</td>
           <td><span class="badge badge-info">{{ amc.get_billing_cycle_display }}</span></td>
           <td>
@@ -150,7 +161,7 @@
         </tr>
         {% empty %}
         <tr>
-          <td colspan="7" class="text-center py-4 text-muted">No AMC contracts found</td>
+          <td colspan="8" class="text-center py-4 text-muted">No contracts found</td>
         </tr>
         {% endfor %}
       </tbody>
