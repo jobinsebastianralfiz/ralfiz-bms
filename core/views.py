@@ -13,7 +13,8 @@ from datetime import timedelta
 from .models import (
     Client, Project, Credential, Quote, QuoteItem, Invoice, InvoiceItem, Payment, CompanySettings,
     Expense, TeamMember, Task, TaskAttachment, TimeEntry, ActivityLog, Document,
-    TaskComment, TaskIssue, TaskActivity
+    TaskComment, TaskIssue, TaskActivity,
+    AMCContract, AMCPayment, CredentialRenewal
 )
 from django.contrib.contenttypes.models import ContentType
 from licensing.models import License, LicenseKey, LicenseActivation
@@ -180,6 +181,58 @@ def dashboard(request):
     # Total revenue (all time)
     total_revenue = Payment.objects.aggregate(total=Sum('amount'))['total'] or 0
 
+    # ============== Dues & Renewals ==============
+    # AMC dues
+    overdue_amc = AMCContract.objects.filter(
+        status='active', next_due_date__lt=today
+    ).select_related('project', 'project__client')
+    upcoming_amc = AMCContract.objects.filter(
+        status='active', next_due_date__range=[today, today + timedelta(days=30)]
+    ).select_related('project', 'project__client')
+    total_amc_overdue = overdue_amc.aggregate(total=Sum('annual_amount'))['total'] or 0
+    total_amc_upcoming = upcoming_amc.aggregate(total=Sum('annual_amount'))['total'] or 0
+
+    # Credential renewals due
+    expired_credentials = Credential.objects.filter(
+        expiry_date__lt=today, is_active=True
+    ).select_related('project', 'project__client')
+    expiring_credentials_30 = Credential.objects.filter(
+        expiry_date__range=[today, today + timedelta(days=30)], is_active=True
+    ).select_related('project', 'project__client')
+    total_credential_renewal_cost = (
+        (expired_credentials.aggregate(total=Sum('renewal_cost'))['total'] or 0) +
+        (expiring_credentials_30.aggregate(total=Sum('renewal_cost'))['total'] or 0)
+    )
+
+    # Combined upcoming dues (sorted by date for timeline)
+    upcoming_dues = []
+    for amc in overdue_amc[:10]:
+        upcoming_dues.append({
+            'date': amc.next_due_date, 'type': 'AMC', 'name': amc.project.name,
+            'client': amc.project.client.name, 'amount': amc.annual_amount, 'overdue': True,
+            'url': f'/amc/{amc.pk}/',
+        })
+    for amc in upcoming_amc[:10]:
+        upcoming_dues.append({
+            'date': amc.next_due_date, 'type': 'AMC', 'name': amc.project.name,
+            'client': amc.project.client.name, 'amount': amc.annual_amount, 'overdue': False,
+            'url': f'/amc/{amc.pk}/',
+        })
+    for cred in expired_credentials[:10]:
+        upcoming_dues.append({
+            'date': cred.expiry_date, 'type': 'Credential', 'name': cred.name,
+            'client': cred.project.client.name, 'amount': cred.renewal_cost or 0, 'overdue': True,
+            'url': f'/credentials/{cred.pk}/',
+        })
+    for cred in expiring_credentials_30[:10]:
+        upcoming_dues.append({
+            'date': cred.expiry_date, 'type': 'Credential', 'name': cred.name,
+            'client': cred.project.client.name, 'amount': cred.renewal_cost or 0, 'overdue': False,
+            'url': f'/credentials/{cred.pk}/',
+        })
+    upcoming_dues.sort(key=lambda x: x['date'])
+    total_dues = float(total_amc_overdue + total_amc_upcoming + total_credential_renewal_cost)
+
     context = {
         'total_clients': total_clients,
         'active_projects': active_projects,
@@ -207,6 +260,19 @@ def dashboard(request):
         'invoice_status_data': json.dumps(list(invoice_status_data.values())),
         'payment_method_labels': json.dumps(list(payment_method_data.keys())),
         'payment_method_data': json.dumps(list(payment_method_data.values())),
+        # Dues & Renewals
+        'overdue_amc': overdue_amc[:5],
+        'upcoming_amc': upcoming_amc[:5],
+        'overdue_amc_count': overdue_amc.count(),
+        'upcoming_amc_count': upcoming_amc.count(),
+        'total_amc_overdue': total_amc_overdue,
+        'total_amc_upcoming': total_amc_upcoming,
+        'expired_credentials_list': expired_credentials[:5],
+        'expired_credentials_count': expired_credentials.count(),
+        'expiring_credentials_30': expiring_credentials_30[:5],
+        'total_credential_renewal_cost': total_credential_renewal_cost,
+        'upcoming_dues': upcoming_dues[:10],
+        'total_dues': total_dues,
     }
     return render(request, 'dashboard/index.html', context)
 
@@ -618,6 +684,10 @@ def project_detail(request, pk):
         project=project, is_internal=False, parent__isnull=True
     ).select_related('author').order_by('-created_at')
 
+    # AMC contracts
+    amc_contracts = project.amc_contracts.all()
+    amc_payments = AMCPayment.objects.filter(amc__project=project).order_by('-payment_date')
+
     context = {
         'project': project,
         'credentials': credentials,
@@ -630,6 +700,8 @@ def project_detail(request, pk):
         'pending_amount': pending_amount,
         'project_updates': project_updates,
         'client_comments': client_comments,
+        'amc_contracts': amc_contracts,
+        'amc_payments': amc_payments,
     }
     return render(request, 'projects/detail.html', context)
 
@@ -689,7 +761,41 @@ def project_update(request, pk):
         project.github_repo = request.POST.get('github_repo', '')
         project.live_url = request.POST.get('live_url', '')
         project.notes = request.POST.get('notes', '')
+        # Completion & AMC fields
+        project.warranty_period = request.POST.get('warranty_period') or None
+        project.completion_notes = request.POST.get('completion_notes', '')
+        project.deliverables = request.POST.get('deliverables', '')
+        project.amc_amount = request.POST.get('amc_amount') or None
+        project.amc_billing_cycle = request.POST.get('amc_billing_cycle', '')
+
+        # Auto-set completed_date when status changes to completed
+        old_status = Project.objects.filter(pk=pk).values_list('status', flat=True).first()
+        if project.status == 'completed' and old_status != 'completed' and not project.completed_date:
+            project.completed_date = timezone.now().date()
+
         project.save()
+
+        # Auto-create AMC contract when project is completed with AMC amount
+        if project.status == 'completed' and project.amc_amount and not project.amc_contracts.exists():
+            from dateutil.relativedelta import relativedelta
+            start = project.completed_date or timezone.now().date()
+            cycle = project.amc_billing_cycle or 'yearly'
+            cycle_map = {
+                'monthly': relativedelta(months=1),
+                'quarterly': relativedelta(months=3),
+                'half_yearly': relativedelta(months=6),
+                'yearly': relativedelta(years=1),
+            }
+            AMCContract.objects.create(
+                project=project,
+                annual_amount=project.amc_amount,
+                billing_cycle=cycle,
+                start_date=start,
+                end_date=start + relativedelta(years=1),
+                next_due_date=start + cycle_map[cycle],
+                status='active',
+            )
+            messages.info(request, 'AMC contract created automatically.')
 
         # Update team members
         selected_members = request.POST.getlist('team_members')
@@ -890,6 +996,246 @@ def credential_delete(request, pk):
         return redirect('project_detail', pk=project_pk)
 
     return render(request, 'credentials/delete.html', {'credential': credential})
+
+
+# ============== Credential Renewal ==============
+
+@login_required
+def credential_renew(request, pk):
+    credential = get_object_or_404(Credential, pk=pk)
+    if request.method == 'POST':
+        new_expiry = request.POST.get('new_expiry_date')
+        cost = request.POST.get('cost') or None
+        notes = request.POST.get('notes', '')
+        if new_expiry:
+            CredentialRenewal.objects.create(
+                credential=credential,
+                old_expiry=credential.expiry_date,
+                new_expiry=new_expiry,
+                cost=cost,
+                notes=notes,
+            )
+            credential.expiry_date = new_expiry
+            credential.last_renewed_date = timezone.now().date()
+            credential.save()
+            messages.success(request, f'Credential "{credential.name}" renewed successfully.')
+        else:
+            messages.error(request, 'New expiry date is required.')
+        return redirect('project_detail', pk=credential.project.pk)
+    return redirect('project_detail', pk=credential.project.pk)
+
+
+# ============== AMC Contracts ==============
+
+@login_required
+def amc_list(request):
+    contracts = AMCContract.objects.select_related('project', 'project__client').all()
+
+    status_filter = request.GET.get('status', '')
+    if status_filter:
+        contracts = contracts.filter(status=status_filter)
+
+    search = request.GET.get('search', '')
+    if search:
+        contracts = contracts.filter(
+            Q(project__name__icontains=search) |
+            Q(project__client__name__icontains=search)
+        )
+
+    today = timezone.now().date()
+    overdue_count = AMCContract.objects.filter(status='active', next_due_date__lt=today).count()
+    due_soon_count = AMCContract.objects.filter(status='active', next_due_date__range=[today, today + timedelta(days=30)]).count()
+    active_count = AMCContract.objects.filter(status='active').count()
+    total_annual = AMCContract.objects.filter(status='active').aggregate(total=Sum('annual_amount'))['total'] or 0
+
+    return render(request, 'amc/list.html', {
+        'contracts': contracts,
+        'status_filter': status_filter,
+        'search': search,
+        'overdue_count': overdue_count,
+        'due_soon_count': due_soon_count,
+        'active_count': active_count,
+        'total_annual': total_annual,
+        'status_choices': AMCContract.STATUS_CHOICES,
+    })
+
+
+@login_required
+def amc_detail(request, pk):
+    amc = get_object_or_404(AMCContract.objects.select_related('project', 'project__client'), pk=pk)
+    payments = amc.payments.all()
+    return render(request, 'amc/detail.html', {
+        'amc': amc,
+        'payments': payments,
+    })
+
+
+@login_required
+def amc_create(request):
+    if request.method == 'POST':
+        from dateutil.relativedelta import relativedelta
+        project_id = request.POST.get('project')
+        project = get_object_or_404(Project, pk=project_id)
+        annual_amount = request.POST.get('annual_amount')
+        billing_cycle = request.POST.get('billing_cycle', 'yearly')
+        start_date = request.POST.get('start_date')
+        end_date = request.POST.get('end_date')
+        notes = request.POST.get('notes', '')
+        auto_renew = request.POST.get('auto_renew') == 'on'
+
+        from datetime import datetime
+        start = datetime.strptime(start_date, '%Y-%m-%d').date()
+        end = datetime.strptime(end_date, '%Y-%m-%d').date()
+
+        cycle_map = {
+            'monthly': relativedelta(months=1),
+            'quarterly': relativedelta(months=3),
+            'half_yearly': relativedelta(months=6),
+            'yearly': relativedelta(years=1),
+        }
+        next_due = start + cycle_map.get(billing_cycle, relativedelta(years=1))
+
+        amc = AMCContract.objects.create(
+            project=project,
+            annual_amount=annual_amount,
+            billing_cycle=billing_cycle,
+            start_date=start,
+            end_date=end,
+            next_due_date=next_due,
+            auto_renew=auto_renew,
+            notes=notes,
+        )
+        messages.success(request, f'AMC contract created for "{project.name}".')
+        return redirect('amc_detail', pk=amc.pk)
+
+    projects = Project.objects.select_related('client').all()
+    preselected_project = request.GET.get('project', '')
+    return render(request, 'amc/form.html', {
+        'projects': projects,
+        'preselected_project': preselected_project,
+        'form_title': 'Create AMC Contract',
+        'billing_choices': AMCContract.BILLING_CYCLE_CHOICES,
+    })
+
+
+@login_required
+def amc_update(request, pk):
+    amc = get_object_or_404(AMCContract.objects.select_related('project'), pk=pk)
+    if request.method == 'POST':
+        amc.annual_amount = request.POST.get('annual_amount')
+        amc.billing_cycle = request.POST.get('billing_cycle', 'yearly')
+        amc.start_date = request.POST.get('start_date')
+        amc.end_date = request.POST.get('end_date')
+        amc.next_due_date = request.POST.get('next_due_date')
+        amc.status = request.POST.get('status', 'active')
+        amc.auto_renew = request.POST.get('auto_renew') == 'on'
+        amc.notes = request.POST.get('notes', '')
+        amc.save()
+        messages.success(request, 'AMC contract updated.')
+        return redirect('amc_detail', pk=amc.pk)
+
+    projects = Project.objects.select_related('client').all()
+    return render(request, 'amc/form.html', {
+        'amc': amc,
+        'projects': projects,
+        'preselected_project': str(amc.project_id),
+        'form_title': 'Edit AMC Contract',
+        'billing_choices': AMCContract.BILLING_CYCLE_CHOICES,
+        'status_choices': AMCContract.STATUS_CHOICES,
+    })
+
+
+@login_required
+def amc_delete(request, pk):
+    amc = get_object_or_404(AMCContract.objects.select_related('project'), pk=pk)
+    if request.method == 'POST':
+        project_pk = amc.project.pk
+        amc.delete()
+        messages.success(request, 'AMC contract deleted.')
+        return redirect('project_detail', pk=project_pk)
+    return render(request, 'amc/delete.html', {'amc': amc})
+
+
+@login_required
+def amc_record_payment(request, pk):
+    amc = get_object_or_404(AMCContract, pk=pk)
+    if request.method == 'POST':
+        from dateutil.relativedelta import relativedelta
+        payment = AMCPayment.objects.create(
+            amc=amc,
+            payment_date=request.POST.get('payment_date') or timezone.now().date(),
+            amount=request.POST.get('amount'),
+            period_start=request.POST.get('period_start'),
+            period_end=request.POST.get('period_end'),
+            payment_method=request.POST.get('payment_method', 'bank_transfer'),
+            reference=request.POST.get('reference', ''),
+            notes=request.POST.get('notes', ''),
+        )
+        amc.advance_due_date()
+        messages.success(request, f'Payment of ₹{payment.amount} recorded. Next due date updated.')
+        return redirect('amc_detail', pk=amc.pk)
+    return redirect('amc_detail', pk=amc.pk)
+
+
+# ============== Project Completion Certificate ==============
+
+@login_required
+def project_completion_certificate(request, pk):
+    """Generate project completion certificate as HTML/PDF"""
+    from django.http import HttpResponse
+    from django.template.loader import render_to_string
+    from decimal import Decimal
+
+    project = get_object_or_404(
+        Project.objects.select_related('client').prefetch_related('team_members', 'credentials'),
+        pk=pk
+    )
+
+    company = CompanySettings.get_settings()
+    download = request.GET.get('download', '0') == '1'
+
+    # Financial summary
+    invoices = project.invoices.all()
+    total_invoiced = invoices.aggregate(total=Sum('total_amount'))['total'] or Decimal('0')
+    total_paid = Payment.objects.filter(invoice__project=project).aggregate(total=Sum('amount'))['total'] or Decimal('0')
+
+    # AMC details
+    amc = project.amc_contracts.first()
+
+    # Credentials (names and types only, no secrets)
+    credentials = project.credentials.filter(is_active=True)
+
+    # Deliverables as list
+    deliverables_list = [d.strip() for d in project.deliverables.split('\n') if d.strip()] if project.deliverables else []
+
+    context = {
+        'project': project,
+        'company': company,
+        'total_invoiced': total_invoiced,
+        'total_paid': total_paid,
+        'balance_due': total_invoiced - total_paid,
+        'amc': amc,
+        'credentials': credentials,
+        'deliverables_list': deliverables_list,
+        'team_members': project.team_members.filter(is_active=True),
+    }
+
+    if download:
+        try:
+            from weasyprint import HTML
+
+            html_string = render_to_string('projects/completion_certificate.html', context)
+            html = HTML(string=html_string, base_url=request.build_absolute_uri('/'))
+            pdf = html.write_pdf()
+
+            safe_name = project.name.replace(' ', '_')[:50]
+            response = HttpResponse(pdf, content_type='application/pdf')
+            response['Content-Disposition'] = f'attachment; filename="completion_certificate_{safe_name}.pdf"'
+            return response
+        except ImportError:
+            messages.warning(request, 'PDF generation requires WeasyPrint. Showing printable view instead.')
+
+    return render(request, 'projects/completion_certificate.html', context)
 
 
 # ============== Quotes ==============
@@ -1358,6 +1704,10 @@ def quote_convert(request, pk):
 
 @login_required
 def invoice_list(request):
+    from datetime import date
+    from calendar import monthrange
+    from django.db.models import Sum
+
     invoices = Invoice.objects.select_related('client', 'project').all()
 
     search = request.GET.get('search', '')
@@ -1369,14 +1719,51 @@ def invoice_list(request):
         )
 
     status = request.GET.get('status', '')
-    if status:
+    if status == 'paid_partial':
+        invoices = invoices.filter(status__in=['paid', 'partial'])
+    elif status:
         invoices = invoices.filter(status=status)
+
+    # Date range filter on issue_date (used for GST-period filtering)
+    from_date = request.GET.get('from_date', '')
+    to_date = request.GET.get('to_date', '')
+
+    # Quick preset: ?period=prev_month | this_month fills from/to if empty
+    period = request.GET.get('period', '')
+    if period in ('prev_month', 'this_month') and not from_date and not to_date:
+        today = date.today()
+        if period == 'prev_month':
+            year = today.year if today.month > 1 else today.year - 1
+            month = today.month - 1 if today.month > 1 else 12
+        else:
+            year, month = today.year, today.month
+        from_date = date(year, month, 1).isoformat()
+        to_date = date(year, month, monthrange(year, month)[1]).isoformat()
+
+    if from_date:
+        invoices = invoices.filter(issue_date__gte=from_date)
+    if to_date:
+        invoices = invoices.filter(issue_date__lte=to_date)
+
+    invoices = invoices.order_by('-issue_date', '-created_at')
+
+    totals = invoices.aggregate(
+        subtotal=Sum('subtotal'),
+        tax=Sum('tax_amount'),
+        total=Sum('total_amount'),
+        paid=Sum('amount_paid'),
+    )
 
     context = {
         'invoices': invoices,
         'search': search,
         'status': status,
         'status_choices': Invoice.STATUS_CHOICES,
+        'from_date': from_date,
+        'to_date': to_date,
+        'period': period,
+        'totals': totals,
+        'invoice_count': invoices.count(),
     }
     return render(request, 'invoices/list.html', context)
 
@@ -2533,9 +2920,45 @@ def export_projects(request):
 
 @login_required
 def export_invoices(request):
-    """Export invoices to Excel"""
+    """Export invoices to Excel, honoring invoice_list filters"""
     from openpyxl import Workbook
     from django.http import HttpResponse
+    from datetime import date
+    from calendar import monthrange
+
+    qs = Invoice.objects.select_related('client', 'project').all()
+
+    search = request.GET.get('search', '')
+    if search:
+        qs = qs.filter(
+            Q(invoice_number__icontains=search) |
+            Q(title__icontains=search) |
+            Q(client__name__icontains=search)
+        )
+
+    status_filter = request.GET.get('status', '')
+    if status_filter == 'paid_partial':
+        qs = qs.filter(status__in=['paid', 'partial'])
+    elif status_filter:
+        qs = qs.filter(status=status_filter)
+
+    from_date = request.GET.get('from_date', '')
+    to_date = request.GET.get('to_date', '')
+    period = request.GET.get('period', '')
+    if period in ('prev_month', 'this_month') and not from_date and not to_date:
+        today = date.today()
+        if period == 'prev_month':
+            year = today.year if today.month > 1 else today.year - 1
+            month = today.month - 1 if today.month > 1 else 12
+        else:
+            year, month = today.year, today.month
+        from_date = date(year, month, 1).isoformat()
+        to_date = date(year, month, monthrange(year, month)[1]).isoformat()
+
+    if from_date:
+        qs = qs.filter(issue_date__gte=from_date)
+    if to_date:
+        qs = qs.filter(issue_date__lte=to_date)
 
     wb = Workbook()
     ws = wb.active
@@ -2546,7 +2969,7 @@ def export_invoices(request):
     ws.append(headers)
 
     # Data
-    for invoice in Invoice.objects.select_related('client', 'project').all().order_by('-issue_date'):
+    for invoice in qs.order_by('-issue_date'):
         ws.append([
             invoice.invoice_number,
             invoice.client.name if invoice.client else '',

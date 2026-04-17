@@ -5,7 +5,8 @@ from .models import (
     Client, Project, Credential, Quote, QuoteItem,
     Invoice, InvoiceItem, Payment, CompanySettings,
     Expense, TeamMember, Task, TaskAttachment, TimeEntry, ActivityLog, Document,
-    TaskComment, TaskIssue, TaskActivity
+    TaskComment, TaskIssue, TaskActivity,
+    AMCContract, AMCPayment, CredentialRenewal
 )
 
 
@@ -346,6 +347,38 @@ class DocumentAdmin(admin.ModelAdmin):
     list_filter = ['content_type', 'created_at']
     search_fields = ['name', 'description']
     ordering = ['-created_at']
+
+
+class AMCPaymentInline(admin.TabularInline):
+    model = AMCPayment
+    extra = 0
+    readonly_fields = ['created_at']
+
+
+@admin.register(AMCContract)
+class AMCContractAdmin(admin.ModelAdmin):
+    list_display = ['project', 'annual_amount', 'billing_cycle', 'status', 'next_due_date', 'start_date', 'end_date']
+    list_filter = ['status', 'billing_cycle']
+    search_fields = ['project__name', 'project__client__name']
+    ordering = ['next_due_date']
+    autocomplete_fields = ['project']
+    inlines = [AMCPaymentInline]
+
+
+@admin.register(AMCPayment)
+class AMCPaymentAdmin(admin.ModelAdmin):
+    list_display = ['amc', 'amount', 'payment_date', 'payment_method', 'period_start', 'period_end']
+    list_filter = ['payment_method', 'payment_date']
+    search_fields = ['amc__project__name', 'reference']
+    ordering = ['-payment_date']
+
+
+@admin.register(CredentialRenewal)
+class CredentialRenewalAdmin(admin.ModelAdmin):
+    list_display = ['credential', 'renewed_date', 'old_expiry', 'new_expiry', 'cost']
+    list_filter = ['renewed_date']
+    search_fields = ['credential__name', 'credential__project__name']
+    ordering = ['-renewed_date']
 
 
 # Customize admin site

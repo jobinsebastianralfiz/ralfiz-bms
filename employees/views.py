@@ -19,7 +19,7 @@ from .models import (
     CertificateTemplate, Certificate
 )
 from crm.models import Lead, LeadNote, DailyActivity, Demo, FollowUp, LeadActivity
-from core.models import Client, Project
+from core.models import Client, Project, Credential, AMCContract, AMCPayment, CredentialRenewal
 from .serializers import (
     EmployeeProfileSerializer, EmployeeListSerializer,
     DeviceTokenSerializer, AttendanceSerializer,
@@ -1056,7 +1056,36 @@ class OwnerDashboardView(APIView):
             },
             'recent_payments': recent_payments_data,
             'employees': employee_counts,
+            'dues_summary': self._get_dues_summary(today),
         })
+
+    def _get_dues_summary(self, today):
+        from datetime import timedelta
+        from decimal import Decimal
+
+        overdue_amc_count = AMCContract.objects.filter(status='active', next_due_date__lt=today).count()
+        upcoming_amc_count = AMCContract.objects.filter(
+            status='active', next_due_date__range=[today, today + timedelta(days=30)]
+        ).count()
+        expired_creds_count = Credential.objects.filter(expiry_date__lt=today, is_active=True).count()
+        expiring_creds_count = Credential.objects.filter(
+            expiry_date__range=[today, today + timedelta(days=30)], is_active=True
+        ).count()
+
+        total_amc = AMCContract.objects.filter(
+            status='active', next_due_date__lte=today + timedelta(days=30)
+        ).aggregate(total=Sum('annual_amount'))['total'] or Decimal('0')
+        total_cred = Credential.objects.filter(
+            expiry_date__lte=today + timedelta(days=30), is_active=True
+        ).aggregate(total=Sum('renewal_cost'))['total'] or Decimal('0')
+
+        return {
+            'total_dues': str(total_amc + total_cred),
+            'amc_overdue_count': overdue_amc_count,
+            'amc_upcoming_count': upcoming_amc_count,
+            'credentials_expired_count': expired_creds_count,
+            'credentials_expiring_count': expiring_creds_count,
+        }
 
 
 @extend_schema(tags=['Owner'])
@@ -4235,5 +4264,497 @@ class CRMLeadCreateProjectView(APIView):
             'client_id': str(lead.client.id),
             'client_name': lead.client.name,
         }, status=status.HTTP_201_CREATED)
+
+
+# ============== Owner: Dues Dashboard ==============
+
+@extend_schema(tags=['Owner'])
+class OwnerDuesDashboardView(APIView):
+    """Combined dues dashboard: AMC + credential renewals"""
+    permission_classes = [IsAuthenticated, IsOwnerOrPartner]
+
+    def get(self, request):
+        from datetime import timedelta
+        from decimal import Decimal
+
+        today = date.today()
+
+        # AMC dues
+        overdue_amc = AMCContract.objects.filter(
+            status='active', next_due_date__lt=today
+        ).select_related('project', 'project__client')
+        upcoming_amc = AMCContract.objects.filter(
+            status='active', next_due_date__range=[today, today + timedelta(days=30)]
+        ).select_related('project', 'project__client')
+
+        overdue_amc_data = [{
+            'id': str(a.id), 'project_name': a.project.name,
+            'client_name': a.project.client.name, 'amount': str(a.annual_amount),
+            'due_date': str(a.next_due_date), 'days_overdue': abs(a.days_until_due),
+            'billing_cycle': a.billing_cycle,
+        } for a in overdue_amc]
+
+        upcoming_amc_data = [{
+            'id': str(a.id), 'project_name': a.project.name,
+            'client_name': a.project.client.name, 'amount': str(a.annual_amount),
+            'due_date': str(a.next_due_date), 'days_until_due': a.days_until_due,
+            'billing_cycle': a.billing_cycle,
+        } for a in upcoming_amc]
+
+        total_amc_overdue = overdue_amc.aggregate(total=Sum('annual_amount'))['total'] or Decimal('0')
+        total_amc_upcoming = upcoming_amc.aggregate(total=Sum('annual_amount'))['total'] or Decimal('0')
+
+        # Credential dues
+        expired_creds = Credential.objects.filter(
+            expiry_date__lt=today, is_active=True
+        ).select_related('project', 'project__client')
+        expiring_creds = Credential.objects.filter(
+            expiry_date__range=[today, today + timedelta(days=30)], is_active=True
+        ).select_related('project', 'project__client')
+
+        expired_creds_data = [{
+            'id': str(c.id), 'name': c.name, 'credential_type': c.credential_type,
+            'project_name': c.project.name, 'client_name': c.project.client.name,
+            'renewal_cost': str(c.renewal_cost or 0), 'expired_since': str(c.expiry_date),
+            'days_expired': abs(c.days_until_expiry),
+        } for c in expired_creds]
+
+        expiring_creds_data = [{
+            'id': str(c.id), 'name': c.name, 'credential_type': c.credential_type,
+            'project_name': c.project.name, 'client_name': c.project.client.name,
+            'renewal_cost': str(c.renewal_cost or 0), 'expiry_date': str(c.expiry_date),
+            'days_until_expiry': c.days_until_expiry,
+        } for c in expiring_creds]
+
+        total_cred_cost = (
+            (expired_creds.aggregate(total=Sum('renewal_cost'))['total'] or Decimal('0')) +
+            (expiring_creds.aggregate(total=Sum('renewal_cost'))['total'] or Decimal('0'))
+        )
+
+        total_dues = total_amc_overdue + total_amc_upcoming + total_cred_cost
+
+        return Response({
+            'total_dues': str(total_dues),
+            'amc_dues': {
+                'overdue': overdue_amc_data,
+                'upcoming': upcoming_amc_data,
+                'total_overdue': str(total_amc_overdue),
+                'total_upcoming': str(total_amc_upcoming),
+            },
+            'credential_dues': {
+                'expired': expired_creds_data,
+                'expiring_soon': expiring_creds_data,
+                'total_renewal_cost': str(total_cred_cost),
+            },
+        })
+
+
+# ============== Owner: Credential APIs ==============
+
+@extend_schema(tags=['Owner'])
+class OwnerCredentialListView(APIView):
+    """List all credentials with renewal status"""
+    permission_classes = [IsAuthenticated, IsOwnerOrPartner]
+
+    def get(self, request):
+        creds = Credential.objects.select_related('project', 'project__client').filter(is_active=True)
+
+        cred_type = request.query_params.get('type')
+        if cred_type:
+            creds = creds.filter(credential_type=cred_type)
+
+        search = request.query_params.get('search')
+        if search:
+            creds = creds.filter(
+                Q(name__icontains=search) | Q(project__name__icontains=search) |
+                Q(project__client__name__icontains=search)
+            )
+
+        data = [{
+            'id': str(c.id), 'name': c.name, 'credential_type': c.credential_type,
+            'credential_type_display': c.get_credential_type_display(),
+            'provider': c.provider, 'project_name': c.project.name,
+            'project_id': str(c.project.id),
+            'client_name': c.project.client.name,
+            'expiry_date': str(c.expiry_date) if c.expiry_date else None,
+            'days_until_expiry': c.days_until_expiry,
+            'is_expired': c.is_expired, 'is_expiring_soon': c.is_expiring_soon,
+            'auto_renew': c.auto_renew, 'renewal_cost': str(c.renewal_cost or 0),
+            'last_renewed_date': str(c.last_renewed_date) if c.last_renewed_date else None,
+        } for c in creds]
+
+        return Response(data)
+
+
+@extend_schema(tags=['Owner'])
+class OwnerCredentialExpiringView(APIView):
+    """Expired + expiring credentials in categories"""
+    permission_classes = [IsAuthenticated, IsOwnerOrPartner]
+
+    def get(self, request):
+        from datetime import timedelta
+        today = date.today()
+
+        expired = Credential.objects.filter(
+            expiry_date__lt=today, is_active=True
+        ).select_related('project', 'project__client')
+
+        this_week = Credential.objects.filter(
+            expiry_date__gte=today, expiry_date__lte=today + timedelta(days=7), is_active=True
+        ).select_related('project', 'project__client')
+
+        this_month = Credential.objects.filter(
+            expiry_date__gt=today + timedelta(days=7),
+            expiry_date__lte=today + timedelta(days=30), is_active=True
+        ).select_related('project', 'project__client')
+
+        def serialize(qs):
+            return [{
+                'id': str(c.id), 'name': c.name, 'credential_type': c.credential_type,
+                'credential_type_display': c.get_credential_type_display(),
+                'project_name': c.project.name, 'client_name': c.project.client.name,
+                'expiry_date': str(c.expiry_date), 'days_until_expiry': c.days_until_expiry,
+                'renewal_cost': str(c.renewal_cost or 0), 'auto_renew': c.auto_renew,
+            } for c in qs]
+
+        return Response({
+            'expired': serialize(expired),
+            'this_week': serialize(this_week),
+            'this_month': serialize(this_month),
+            'counts': {
+                'expired': expired.count(),
+                'this_week': this_week.count(),
+                'this_month': this_month.count(),
+            },
+        })
+
+
+@extend_schema(tags=['Owner'])
+class OwnerCredentialRenewView(APIView):
+    """Renew a credential: update expiry and record history"""
+    permission_classes = [IsAuthenticated, IsOwnerOrPartner]
+
+    def post(self, request, pk):
+        try:
+            credential = Credential.objects.get(pk=pk, is_active=True)
+        except Credential.DoesNotExist:
+            return Response({'error': 'Credential not found'}, status=status.HTTP_404_NOT_FOUND)
+
+        new_expiry = request.data.get('new_expiry_date')
+        if not new_expiry:
+            return Response({'error': 'new_expiry_date is required'}, status=status.HTTP_400_BAD_REQUEST)
+
+        cost = request.data.get('cost')
+        notes = request.data.get('notes', '')
+
+        CredentialRenewal.objects.create(
+            credential=credential,
+            old_expiry=credential.expiry_date,
+            new_expiry=new_expiry,
+            cost=cost,
+            notes=notes,
+        )
+        credential.expiry_date = new_expiry
+        credential.last_renewed_date = date.today()
+        credential.save()
+
+        return Response({
+            'message': f'Credential "{credential.name}" renewed successfully',
+            'id': str(credential.id), 'name': credential.name,
+            'new_expiry_date': str(credential.expiry_date),
+            'last_renewed_date': str(credential.last_renewed_date),
+        })
+
+
+@extend_schema(tags=['Owner'])
+class OwnerCredentialRenewalHistoryView(APIView):
+    """Renewal history for a credential"""
+    permission_classes = [IsAuthenticated, IsOwnerOrPartner]
+
+    def get(self, request, pk):
+        try:
+            credential = Credential.objects.get(pk=pk)
+        except Credential.DoesNotExist:
+            return Response({'error': 'Credential not found'}, status=status.HTTP_404_NOT_FOUND)
+
+        renewals = credential.renewal_history.all()
+        data = [{
+            'id': str(r.id), 'renewed_date': str(r.renewed_date),
+            'old_expiry': str(r.old_expiry) if r.old_expiry else None,
+            'new_expiry': str(r.new_expiry), 'cost': str(r.cost or 0),
+            'notes': r.notes, 'created_at': str(r.created_at),
+        } for r in renewals]
+
+        return Response({
+            'credential_name': credential.name,
+            'credential_type': credential.credential_type,
+            'renewals': data,
+        })
+
+
+# ============== Owner: AMC APIs ==============
+
+@extend_schema(tags=['Owner'])
+class OwnerAMCListView(APIView):
+    """List all AMC contracts"""
+    permission_classes = [IsAuthenticated, IsOwnerOrPartner]
+
+    def get(self, request):
+        contracts = AMCContract.objects.select_related('project', 'project__client').all()
+
+        status_filter = request.query_params.get('status')
+        if status_filter:
+            contracts = contracts.filter(status=status_filter)
+
+        data = [{
+            'id': str(a.id), 'project_name': a.project.name,
+            'project_id': str(a.project.id),
+            'client_name': a.project.client.name,
+            'annual_amount': str(a.annual_amount),
+            'billing_cycle': a.billing_cycle,
+            'billing_cycle_display': a.get_billing_cycle_display(),
+            'start_date': str(a.start_date), 'end_date': str(a.end_date),
+            'next_due_date': str(a.next_due_date),
+            'status': a.status, 'status_display': a.get_status_display(),
+            'auto_renew': a.auto_renew,
+            'is_overdue': a.is_overdue, 'is_due_soon': a.is_due_soon,
+            'days_until_due': a.days_until_due,
+            'total_paid': str(a.total_paid),
+        } for a in contracts]
+
+        return Response(data)
+
+
+@extend_schema(tags=['Owner'])
+class OwnerAMCDetailView(APIView):
+    """AMC contract detail with payment history"""
+    permission_classes = [IsAuthenticated, IsOwnerOrPartner]
+
+    def get(self, request, pk):
+        try:
+            amc = AMCContract.objects.select_related('project', 'project__client').get(pk=pk)
+        except AMCContract.DoesNotExist:
+            return Response({'error': 'AMC contract not found'}, status=status.HTTP_404_NOT_FOUND)
+
+        payments = amc.payments.all()
+        payments_data = [{
+            'id': str(p.id), 'payment_date': str(p.payment_date),
+            'amount': str(p.amount), 'period_start': str(p.period_start),
+            'period_end': str(p.period_end), 'payment_method': p.payment_method,
+            'payment_method_display': p.get_payment_method_display(),
+            'reference': p.reference, 'notes': p.notes,
+        } for p in payments]
+
+        return Response({
+            'id': str(amc.id), 'project_name': amc.project.name,
+            'project_id': str(amc.project.id),
+            'client_name': amc.project.client.name,
+            'annual_amount': str(amc.annual_amount),
+            'billing_cycle': amc.billing_cycle,
+            'billing_cycle_display': amc.get_billing_cycle_display(),
+            'start_date': str(amc.start_date), 'end_date': str(amc.end_date),
+            'next_due_date': str(amc.next_due_date),
+            'status': amc.status, 'auto_renew': amc.auto_renew,
+            'is_overdue': amc.is_overdue, 'is_due_soon': amc.is_due_soon,
+            'days_until_due': amc.days_until_due,
+            'total_paid': str(amc.total_paid),
+            'notes': amc.notes,
+            'payments': payments_data,
+        })
+
+
+@extend_schema(tags=['Owner'])
+class OwnerAMCCreateView(APIView):
+    """Create an AMC contract for a project"""
+    permission_classes = [IsAuthenticated, IsOwnerOrPartner]
+
+    def post(self, request):
+        from dateutil.relativedelta import relativedelta
+
+        project_id = request.data.get('project_id')
+        if not project_id:
+            return Response({'error': 'project_id is required'}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            project = Project.objects.get(pk=project_id)
+        except Project.DoesNotExist:
+            return Response({'error': 'Project not found'}, status=status.HTTP_404_NOT_FOUND)
+
+        annual_amount = request.data.get('annual_amount')
+        billing_cycle = request.data.get('billing_cycle', 'yearly')
+        start_date = request.data.get('start_date')
+        end_date = request.data.get('end_date')
+        notes = request.data.get('notes', '')
+        auto_renew = request.data.get('auto_renew', False)
+
+        if not all([annual_amount, start_date, end_date]):
+            return Response({'error': 'annual_amount, start_date, end_date are required'}, status=status.HTTP_400_BAD_REQUEST)
+
+        from datetime import datetime
+        start = datetime.strptime(start_date, '%Y-%m-%d').date()
+        end = datetime.strptime(end_date, '%Y-%m-%d').date()
+
+        cycle_map = {
+            'monthly': relativedelta(months=1),
+            'quarterly': relativedelta(months=3),
+            'half_yearly': relativedelta(months=6),
+            'yearly': relativedelta(years=1),
+        }
+        next_due = start + cycle_map.get(billing_cycle, relativedelta(years=1))
+
+        amc = AMCContract.objects.create(
+            project=project, annual_amount=annual_amount,
+            billing_cycle=billing_cycle, start_date=start, end_date=end,
+            next_due_date=next_due, auto_renew=auto_renew, notes=notes,
+        )
+
+        return Response({
+            'id': str(amc.id), 'project_name': project.name,
+            'annual_amount': str(amc.annual_amount),
+            'next_due_date': str(amc.next_due_date),
+            'message': 'AMC contract created successfully',
+        }, status=status.HTTP_201_CREATED)
+
+
+@extend_schema(tags=['Owner'])
+class OwnerAMCRecordPaymentView(APIView):
+    """Record an AMC payment"""
+    permission_classes = [IsAuthenticated, IsOwnerOrPartner]
+
+    def post(self, request, pk):
+        try:
+            amc = AMCContract.objects.get(pk=pk)
+        except AMCContract.DoesNotExist:
+            return Response({'error': 'AMC contract not found'}, status=status.HTTP_404_NOT_FOUND)
+
+        amount = request.data.get('amount')
+        period_start = request.data.get('period_start')
+        period_end = request.data.get('period_end')
+
+        if not all([amount, period_start, period_end]):
+            return Response({'error': 'amount, period_start, period_end are required'}, status=status.HTTP_400_BAD_REQUEST)
+
+        payment = AMCPayment.objects.create(
+            amc=amc,
+            payment_date=request.data.get('payment_date', date.today()),
+            amount=amount,
+            period_start=period_start,
+            period_end=period_end,
+            payment_method=request.data.get('payment_method', 'bank_transfer'),
+            reference=request.data.get('reference', ''),
+            notes=request.data.get('notes', ''),
+        )
+        amc.advance_due_date()
+
+        return Response({
+            'id': str(payment.id),
+            'amount': str(payment.amount),
+            'next_due_date': str(amc.next_due_date),
+            'message': 'Payment recorded and due date advanced',
+        }, status=status.HTTP_201_CREATED)
+
+
+# ============== Owner: Completion Certificate API ==============
+
+@extend_schema(tags=['Owner'])
+class OwnerProjectCompletionCertificateView(APIView):
+    """Project completion certificate as JSON or PDF"""
+    permission_classes = [IsAuthenticated, IsOwnerOrPartner]
+
+    def get(self, request, pk):
+        from core.models import Invoice, Payment, CompanySettings
+        from decimal import Decimal
+
+        try:
+            project = Project.objects.select_related('client').prefetch_related(
+                'team_members', 'credentials'
+            ).get(pk=pk)
+        except Project.DoesNotExist:
+            return Response({'error': 'Project not found'}, status=status.HTTP_404_NOT_FOUND)
+
+        # Financial summary
+        total_invoiced = Invoice.objects.filter(project=project).aggregate(
+            total=Sum('total_amount'))['total'] or Decimal('0')
+        total_paid = Payment.objects.filter(invoice__project=project).aggregate(
+            total=Sum('amount'))['total'] or Decimal('0')
+
+        amc = project.amc_contracts.first()
+        credentials = project.credentials.filter(is_active=True)
+        deliverables_list = [d.strip() for d in project.deliverables.split('\n') if d.strip()] if project.deliverables else []
+
+        # PDF format
+        if request.query_params.get('format') == 'pdf':
+            try:
+                from weasyprint import HTML
+                from django.template.loader import render_to_string
+                from django.http import HttpResponse
+
+                company = CompanySettings.get_settings()
+                context = {
+                    'project': project, 'company': company,
+                    'total_invoiced': total_invoiced, 'total_paid': total_paid,
+                    'balance_due': total_invoiced - total_paid,
+                    'amc': amc, 'credentials': credentials,
+                    'deliverables_list': deliverables_list,
+                    'team_members': project.team_members.filter(is_active=True),
+                }
+                html_string = render_to_string('projects/completion_certificate.html', context)
+                html = HTML(string=html_string)
+                pdf = html.write_pdf()
+
+                safe_name = project.name.replace(' ', '_')[:50]
+                response = HttpResponse(pdf, content_type='application/pdf')
+                response['Content-Disposition'] = f'attachment; filename="completion_certificate_{safe_name}.pdf"'
+                return response
+            except ImportError:
+                return Response({'error': 'WeasyPrint not installed'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+        # JSON format
+        team_data = [{
+            'name': m.name, 'role': m.get_role_display(),
+        } for m in project.team_members.filter(is_active=True)]
+
+        cred_data = [{
+            'name': c.name, 'type': c.get_credential_type_display(),
+            'provider': c.provider, 'expiry_date': str(c.expiry_date) if c.expiry_date else None,
+        } for c in credentials]
+
+        amc_data = None
+        if amc:
+            amc_data = {
+                'annual_amount': str(amc.annual_amount),
+                'billing_cycle': amc.get_billing_cycle_display(),
+                'start_date': str(amc.start_date), 'end_date': str(amc.end_date),
+                'next_due_date': str(amc.next_due_date),
+            }
+
+        return Response({
+            'project': {
+                'id': str(project.id), 'name': project.name,
+                'project_type': project.get_project_type_display(),
+                'tech_stack': project.tech_stack,
+                'start_date': str(project.start_date) if project.start_date else None,
+                'completed_date': str(project.completed_date) if project.completed_date else None,
+                'live_url': project.live_url,
+                'warranty_period': project.warranty_period,
+                'completion_notes': project.completion_notes,
+            },
+            'client': {
+                'name': project.client.name,
+                'company_name': project.client.company_name,
+                'email': project.client.email, 'phone': project.client.phone,
+            },
+            'financial_summary': {
+                'estimated_budget': str(project.estimated_budget or 0),
+                'final_amount': str(project.final_amount or 0),
+                'total_invoiced': str(total_invoiced),
+                'total_paid': str(total_paid),
+                'balance_due': str(total_invoiced - total_paid),
+            },
+            'deliverables': deliverables_list,
+            'credentials': cred_data,
+            'amc': amc_data,
+            'team': team_data,
+        })
 
 

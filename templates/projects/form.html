@@ -221,6 +221,52 @@
         </div>
       </div>
 
+      <!-- Completion & AMC (shown when editing) -->
+      {% if project %}
+      <div class="card mb-4" id="completion-card">
+        <div class="card-header">
+          <h3 class="card-title">
+            <i class="fas fa-flag-checkered me-2 text-primary"></i>
+            Completion & AMC
+          </h3>
+        </div>
+        <div class="card-body">
+          <div class="form-group">
+            <label class="form-label" for="deliverables">Deliverables</label>
+            <textarea class="form-control" id="deliverables" name="deliverables" rows="4" placeholder="One deliverable per line...">{{ project.deliverables|default:'' }}</textarea>
+            <small class="text-muted">One item per line</small>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="warranty_period">Warranty Period (months)</label>
+            <input type="number" class="form-control" id="warranty_period" name="warranty_period" placeholder="e.g. 3" value="{{ project.warranty_period|default:'' }}">
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="completion_notes">Completion Notes</label>
+            <textarea class="form-control" id="completion_notes" name="completion_notes" rows="3" placeholder="Notes about project completion...">{{ project.completion_notes|default:'' }}</textarea>
+          </div>
+          <hr>
+          <h4 class="text-sm fw-semibold mb-3">
+            <i class="fas fa-sync-alt me-1"></i> AMC Setup
+          </h4>
+          <div class="form-group">
+            <label class="form-label" for="amc_amount">AMC Amount (&#8377;)</label>
+            <input type="number" class="form-control" id="amc_amount" name="amc_amount" placeholder="Annual maintenance amount" value="{{ project.amc_amount|default:'' }}">
+          </div>
+          <div class="form-group mb-0">
+            <label class="form-label" for="amc_billing_cycle">AMC Billing Cycle</label>
+            <select class="form-control" id="amc_billing_cycle" name="amc_billing_cycle">
+              <option value="">Select cycle</option>
+              <option value="monthly" {% if project.amc_billing_cycle == 'monthly' %}selected{% endif %}>Monthly</option>
+              <option value="quarterly" {% if project.amc_billing_cycle == 'quarterly' %}selected{% endif %}>Quarterly</option>
+              <option value="half_yearly" {% if project.amc_billing_cycle == 'half_yearly' %}selected{% endif %}>Half Yearly</option>
+              <option value="yearly" {% if project.amc_billing_cycle == 'yearly' %}selected{% endif %}>Yearly</option>
+            </select>
+            <small class="text-muted">AMC contract is auto-created when project is marked as completed</small>
+          </div>
+        </div>
+      </div>
+      {% endif %}
+
       <!-- Quick Tips -->
       <div class="card" style="background: var(--primary-bg); border-color: var(--primary-lighter);">
         <div class="card-body">

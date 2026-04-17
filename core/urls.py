@@ -36,6 +36,7 @@ urlpatterns = [
     path('projects/<uuid:pk>/post-update/', views.project_post_update, name='project_post_update'),
     path('projects/<uuid:pk>/delete-update/<uuid:update_pk>/', views.project_delete_update, name='project_delete_update'),
     path('projects/<uuid:pk>/reply-comment/', views.project_reply_comment, name='project_reply_comment'),
+    path('projects/<uuid:pk>/completion-certificate/', views.project_completion_certificate, name='project_completion_certificate'),
 
     # Credentials
     path('credentials/', views.credential_list, name='credential_list'),
@@ -43,7 +44,16 @@ urlpatterns = [
     path('credentials/<uuid:pk>/', views.credential_detail, name='credential_detail'),
     path('credentials/<uuid:pk>/edit/', views.credential_update, name='credential_update'),
     path('credentials/<uuid:pk>/delete/', views.credential_delete, name='credential_delete'),
+    path('credentials/<uuid:pk>/renew/', views.credential_renew, name='credential_renew'),
     path('credentials/expiring/', views.credential_expiry, name='credential_expiry'),
+
+    # AMC Contracts
+    path('amc/', views.amc_list, name='amc_list'),
+    path('amc/create/', views.amc_create, name='amc_create'),
+    path('amc/<uuid:pk>/', views.amc_detail, name='amc_detail'),
+    path('amc/<uuid:pk>/edit/', views.amc_update, name='amc_update'),
+    path('amc/<uuid:pk>/delete/', views.amc_delete, name='amc_delete'),
+    path('amc/<uuid:pk>/record-payment/', views.amc_record_payment, name='amc_record_payment'),
 
     # Quotes
     path('quotes/', views.quote_list, name='quote_list'),

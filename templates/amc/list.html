@@ -1,0 +1,160 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}AMC Contracts - Ralfiz BMS{% endblock %}
+
+{% block breadcrumb %}
+<a href="{% url 'dashboard' %}" class="breadcrumb-item">Dashboard</a>
+<span class="breadcrumb-separator">/</span>
+<span class="breadcrumb-item active">AMC Contracts</span>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title">AMC Contracts</h1>
+    <p class="page-subtitle mb-0">Manage annual maintenance contracts</p>
+  </div>
+  <div class="page-actions">
+    <a href="{% url 'amc_create' %}" class="btn btn-primary">
+      <i class="fas fa-plus"></i>
+      Create AMC
+    </a>
+  </div>
+</div>
+
+<!-- Stats -->
+<div class="row mb-4">
+  <div class="col-3 col-md-6 col-sm-12" style="padding: 0.75rem;">
+    <div class="card stat-card">
+      <div class="stat-card-header">
+        <div class="stat-card-icon primary">
+          <i class="fas fa-file-contract"></i>
+        </div>
+      </div>
+      <div class="stat-card-value">{{ active_count }}</div>
+      <div class="stat-card-label">Active Contracts</div>
+    </div>
+  </div>
+  <div class="col-3 col-md-6 col-sm-12" style="padding: 0.75rem;">
+    <div class="card stat-card">
+      <div class="stat-card-header">
+        <div class="stat-card-icon success">
+          <i class="fas fa-rupee-sign"></i>
+        </div>
+      </div>
+      <div class="stat-card-value">&#8377;{{ total_annual|floatformat:0 }}</div>
+      <div class="stat-card-label">Annual Revenue</div>
+    </div>
+  </div>
+  <div class="col-3 col-md-6 col-sm-12" style="padding: 0.75rem;">
+    <div class="card stat-card">
+      <div class="stat-card-header">
+        <div class="stat-card-icon danger">
+          <i class="fas fa-exclamation-circle"></i>
+        </div>
+      </div>
+      <div class="stat-card-value">{{ overdue_count }}</div>
+      <div class="stat-card-label">Overdue</div>
+    </div>
+  </div>
+  <div class="col-3 col-md-6 col-sm-12" style="padding: 0.75rem;">
+    <div class="card stat-card">
+      <div class="stat-card-header">
+        <div class="stat-card-icon warning">
+          <i class="fas fa-clock"></i>
+        </div>
+      </div>
+      <div class="stat-card-value">{{ due_soon_count }}</div>
+      <div class="stat-card-label">Due Soon (30 days)</div>
+    </div>
+  </div>
+</div>
+
+<!-- Filters -->
+<div class="card mb-4">
+  <div class="card-body">
+    <form method="get" class="row align-items-end">
+      <div class="col-4 col-md-6 col-sm-12" style="padding: 0.5rem;">
+        <label class="form-label">Search</label>
+        <input type="text" class="form-control" name="search" placeholder="Search project or client..." value="{{ search }}">
+      </div>
+      <div class="col-3 col-md-6 col-sm-12" style="padding: 0.5rem;">
+        <label class="form-label">Status</label>
+        <select class="form-control" name="status">
+          <option value="">All Status</option>
+          {% for key, value in status_choices %}
+          <option value="{{ key }}" {% if status_filter == key %}selected{% endif %}>{{ value }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-2 col-md-6 col-sm-12" style="padding: 0.5rem;">
+        <button type="submit" class="btn btn-primary w-100">
+          <i class="fas fa-search me-1"></i>Filter
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- AMC Table -->
+<div class="card">
+  <div class="table-wrapper">
+    <table class="table">
+      <thead>
+        <tr>
+          <th>Project</th>
+          <th>Client</th>
+          <th>Amount</th>
+          <th>Billing</th>
+          <th>Next Due</th>
+          <th>Status</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for amc in contracts %}
+        <tr>
+          <td>
+            <a href="{% url 'project_detail' amc.project.pk %}" class="fw-medium">{{ amc.project.name }}</a>
+          </td>
+          <td>
+            <a href="{% url 'client_detail' amc.project.client.pk %}" class="text-muted">{{ amc.project.client.name }}</a>
+          </td>
+          <td class="fw-medium">&#8377;{{ amc.annual_amount|floatformat:0 }}</td>
+          <td><span class="badge badge-info">{{ amc.get_billing_cycle_display }}</span></td>
+          <td>
+            <span class="{% if amc.is_overdue %}text-danger fw-semibold{% elif amc.is_due_soon %}text-warning{% endif %}">
+              {{ amc.next_due_date|date:"d M Y" }}
+            </span>
+            {% if amc.is_overdue %}
+            <div class="text-sm text-danger">{{ amc.days_until_due }} days overdue</div>
+            {% elif amc.is_due_soon %}
+            <div class="text-sm text-warning">{{ amc.days_until_due }} days left</div>
+            {% endif %}
+          </td>
+          <td>
+            {% if amc.is_overdue %}
+            <span class="status-badge danger">Overdue</span>
+            {% elif amc.is_due_soon %}
+            <span class="status-badge warning">Due Soon</span>
+            {% else %}
+            <span class="status-badge {{ amc.status }}">{{ amc.get_status_display }}</span>
+            {% endif %}
+          </td>
+          <td>
+            <a href="{% url 'amc_detail' amc.pk %}" class="btn btn-sm btn-ghost btn-icon">
+              <i class="fas fa-arrow-right"></i>
+            </a>
+          </td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="7" class="text-center py-4 text-muted">No AMC contracts found</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

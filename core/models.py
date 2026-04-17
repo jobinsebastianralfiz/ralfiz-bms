@@ -137,6 +137,18 @@ class Project(models.Model):
     live_url = models.URLField(blank=True)
     notes = models.TextField(blank=True)
     team_members = models.ManyToManyField('TeamMember', blank=True, related_name='assigned_projects')
+    # Completion & AMC fields
+    warranty_period = models.IntegerField(null=True, blank=True, help_text='Warranty period in months')
+    completion_notes = models.TextField(blank=True)
+    deliverables = models.TextField(blank=True, help_text='List of deliverables (one per line)')
+    amc_amount = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True, help_text='Agreed AMC amount')
+    AMC_BILLING_CHOICES = [
+        ('monthly', 'Monthly'),
+        ('quarterly', 'Quarterly'),
+        ('half_yearly', 'Half Yearly'),
+        ('yearly', 'Yearly'),
+    ]
+    amc_billing_cycle = models.CharField(max_length=20, choices=AMC_BILLING_CHOICES, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -189,6 +201,7 @@ class Credential(models.Model):
     notes = models.TextField(blank=True)
     is_active = models.BooleanField(default=True)
     client_visible = models.BooleanField(default=False, help_text='Share this credential with the client in their portal')
+    last_renewed_date = models.DateField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -216,6 +229,120 @@ class Credential(models.Model):
             delta = self.expiry_date - timezone.now().date()
             return delta.days
         return None
+
+
+class AMCContract(models.Model):
+    """Annual Maintenance Contract linked to a completed project"""
+    BILLING_CYCLE_CHOICES = [
+        ('monthly', 'Monthly'),
+        ('quarterly', 'Quarterly'),
+        ('half_yearly', 'Half Yearly'),
+        ('yearly', 'Yearly'),
+    ]
+    STATUS_CHOICES = [
+        ('active', 'Active'),
+        ('expired', 'Expired'),
+        ('cancelled', 'Cancelled'),
+    ]
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    project = models.ForeignKey(Project, on_delete=models.CASCADE, related_name='amc_contracts')
+    annual_amount = models.DecimalField(max_digits=12, decimal_places=2)
+    billing_cycle = models.CharField(max_length=20, choices=BILLING_CYCLE_CHOICES, default='yearly')
+    start_date = models.DateField()
+    end_date = models.DateField()
+    next_due_date = models.DateField()
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='active')
+    auto_renew = models.BooleanField(default=False)
+    notes = models.TextField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['next_due_date', '-created_at']
+
+    def __str__(self):
+        return f"AMC - {self.project.name} ({self.get_status_display()})"
+
+    @property
+    def is_overdue(self):
+        return self.status == 'active' and self.next_due_date < timezone.now().date()
+
+    @property
+    def is_due_soon(self):
+        today = timezone.now().date()
+        return self.status == 'active' and today <= self.next_due_date <= today + timedelta(days=30)
+
+    @property
+    def days_until_due(self):
+        delta = self.next_due_date - timezone.now().date()
+        return delta.days
+
+    @property
+    def total_paid(self):
+        from django.db.models import Sum
+        return self.payments.aggregate(total=Sum('amount'))['total'] or 0
+
+    def advance_due_date(self):
+        """Advance next_due_date based on billing cycle after payment"""
+        from dateutil.relativedelta import relativedelta
+        cycle_map = {
+            'monthly': relativedelta(months=1),
+            'quarterly': relativedelta(months=3),
+            'half_yearly': relativedelta(months=6),
+            'yearly': relativedelta(years=1),
+        }
+        self.next_due_date = self.next_due_date + cycle_map[self.billing_cycle]
+        if self.next_due_date > self.end_date:
+            self.status = 'expired'
+        self.save()
+
+
+class AMCPayment(models.Model):
+    """Tracks each AMC payment/renewal"""
+    PAYMENT_METHOD_CHOICES = [
+        ('bank_transfer', 'Bank Transfer'),
+        ('upi', 'UPI'),
+        ('cash', 'Cash'),
+        ('card', 'Credit/Debit Card'),
+        ('cheque', 'Cheque'),
+        ('other', 'Other'),
+    ]
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    amc = models.ForeignKey(AMCContract, on_delete=models.CASCADE, related_name='payments')
+    payment_date = models.DateField(default=timezone.now)
+    amount = models.DecimalField(max_digits=12, decimal_places=2)
+    period_start = models.DateField()
+    period_end = models.DateField()
+    payment_method = models.CharField(max_length=20, choices=PAYMENT_METHOD_CHOICES, default='bank_transfer')
+    reference = models.CharField(max_length=100, blank=True)
+    notes = models.TextField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-payment_date']
+
+    def __str__(self):
+        return f"AMC Payment ₹{self.amount} - {self.amc.project.name}"
+
+
+class CredentialRenewal(models.Model):
+    """Tracks credential renewal history"""
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    credential = models.ForeignKey(Credential, on_delete=models.CASCADE, related_name='renewal_history')
+    renewed_date = models.DateField(default=timezone.now)
+    old_expiry = models.DateField(null=True, blank=True)
+    new_expiry = models.DateField()
+    cost = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    notes = models.TextField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-renewed_date']
+
+    def __str__(self):
+        return f"Renewal of {self.credential.name} on {self.renewed_date}"
 
 
 class Quote(models.Model):

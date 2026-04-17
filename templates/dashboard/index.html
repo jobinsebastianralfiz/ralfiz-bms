@@ -449,6 +449,40 @@
     </div>
   </div>
 
+  {% if upcoming_dues %}
+  <div class="card-db">
+    <div class="card-db-head" style="background: linear-gradient(135deg, #fefce8, #fef9c3);">
+      <h3 class="card-db-title" style="color: #a16207;"><i class="fas fa-file-invoice-dollar me-2"></i>Dues & Renewals</h3>
+      <span style="background: #fef3c7; color: #92400e; font-size: 0.65rem; font-weight: 700; padding: 2px 8px; border-radius: 6px;">&#8377;{{ total_dues|floatformat:0 }}</span>
+    </div>
+    <div class="card-db-body np">
+      {% for due in upcoming_dues %}
+      <div class="alert-item">
+        <div class="alert-icon" style="{% if due.overdue %}background: #fee2e2; color: #dc2626;{% elif due.type == 'AMC' %}background: #dbeafe; color: #2563eb;{% else %}background: #fef3c7; color: #d97706;{% endif %}">
+          <i class="fas fa-{% if due.type == 'AMC' %}sync-alt{% else %}key{% endif %}"></i>
+        </div>
+        <div class="alert-text">
+          <div class="alert-name">
+            {{ due.name }}
+            <span style="font-size: 0.65rem; padding: 1px 6px; border-radius: 4px; margin-left: 4px; {% if due.type == 'AMC' %}background: #dbeafe; color: #2563eb;{% else %}background: #f3e8ff; color: #7c3aed;{% endif %}">{{ due.type }}</span>
+          </div>
+          <div class="alert-sub">
+            {% if due.overdue %}<span style="color: #dc2626; font-weight: 600;">Overdue</span> &bull; {% endif %}
+            {{ due.date|date:"d M Y" }} &bull; {{ due.client }}
+            {% if due.amount %} &bull; &#8377;{{ due.amount|floatformat:0 }}{% endif %}
+          </div>
+        </div>
+        <a href="{{ due.url }}" style="color: var(--text-muted);"><i class="fas fa-chevron-right"></i></a>
+      </div>
+      {% endfor %}
+    </div>
+    <div style="padding: 0.75rem 1.25rem; border-top: 1px solid var(--border-color); display: flex; gap: 1rem;">
+      <a href="{% url 'amc_list' %}" class="text-sm text-primary fw-medium">View AMC Contracts</a>
+      <a href="{% url 'credential_expiry' %}" class="text-sm text-primary fw-medium">View Expiring Credentials</a>
+    </div>
+  </div>
+  {% endif %}
+
   {% if expiring_credentials or overdue_invoices %}
   <div class="card-db">
     <div class="card-db-head" style="background: linear-gradient(135deg, #fef2f2, #fff1f2);">

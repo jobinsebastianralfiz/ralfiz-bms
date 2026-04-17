@@ -97,6 +97,18 @@ urlpatterns = [
     path('owner/expenses/create/', views.OwnerExpenseCreateView.as_view(), name='owner_expense_create'),
     path('owner/expenses/<uuid:pk>/edit/', views.OwnerExpenseUpdateDeleteView.as_view(), name='owner_expense_edit'),
 
+    # ---- Owner: Dues, Credentials, AMC, Completion Certificate ----
+    path('owner/dues/', views.OwnerDuesDashboardView.as_view(), name='owner_dues'),
+    path('owner/credentials/', views.OwnerCredentialListView.as_view(), name='owner_credentials'),
+    path('owner/credentials/expiring/', views.OwnerCredentialExpiringView.as_view(), name='owner_credentials_expiring'),
+    path('owner/credentials/<uuid:pk>/renew/', views.OwnerCredentialRenewView.as_view(), name='owner_credential_renew'),
+    path('owner/credentials/<uuid:pk>/history/', views.OwnerCredentialRenewalHistoryView.as_view(), name='owner_credential_history'),
+    path('owner/amc/', views.OwnerAMCListView.as_view(), name='owner_amc_list'),
+    path('owner/amc/create/', views.OwnerAMCCreateView.as_view(), name='owner_amc_create'),
+    path('owner/amc/<uuid:pk>/', views.OwnerAMCDetailView.as_view(), name='owner_amc_detail'),
+    path('owner/amc/<uuid:pk>/record-payment/', views.OwnerAMCRecordPaymentView.as_view(), name='owner_amc_record_payment'),
+    path('owner/projects/<uuid:pk>/completion-certificate/', views.OwnerProjectCompletionCertificateView.as_view(), name='owner_project_completion_certificate'),
+
     # ---- Admin APIs ----
     path('admin/employees/', views.AdminEmployeeListView.as_view(), name='admin_employees'),
     path('admin/employees/<uuid:pk>/', views.AdminEmployeeDetailView.as_view(), name='admin_employee_detail'),
