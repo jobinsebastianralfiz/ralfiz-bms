@@ -16,7 +16,7 @@ from drf_spectacular.utils import extend_schema, extend_schema_view, OpenApiPara
 from .models import (
     Employee, DeviceToken, Attendance, LeaveType, LeaveRequest,
     WorkAssignment, WorkUpdate, Notification, QRCode, ScheduledClass, Payroll,
-    CertificateTemplate, Certificate
+    CertificateTemplate, Certificate, LateCheckInGrant
 )
 from crm.models import Lead, LeadNote, DailyActivity, Demo, FollowUp, LeadActivity
 from core.models import Client, Project, Credential, AMCContract, AMCPayment, CredentialRenewal
@@ -265,6 +265,7 @@ class CheckInView(APIView):
         is_remote_req = bool(data.get('is_remote')) or method == 'remote'
 
         # Enforce check-in deadline (default 10:15). Owner/partner can bypass.
+        # Employees with an unconsumed LateCheckInGrant for today can also bypass.
         from .models import OfficeConfig
         from datetime import time as dtime
         cfg = OfficeConfig.objects.first()
@@ -272,11 +273,15 @@ class CheckInView(APIView):
         required_hours = float(cfg.daily_required_hours) if cfg else 6.0
         now = timezone.localtime(timezone.now())
         is_owner_or_partner = employee.role in ('owner', 'partner')
-        if now.time() > deadline_time and not is_owner_or_partner:
+        grant = LateCheckInGrant.objects.filter(
+            employee=employee, date=today, consumed_at__isnull=True
+        ).first()
+        if now.time() > deadline_time and not is_owner_or_partner and not grant:
             return Response({
                 'error': f'Check-in window closed at {deadline_time.strftime("%H:%M")}. Please contact admin to record your attendance.',
                 'check_in_deadline': deadline_time.strftime('%H:%M'),
             }, status=status.HTTP_400_BAD_REQUEST)
+        is_late_bypass = bool(grant) and now.time() > deadline_time
 
         # Remote check-in path (hybrid / remote employees only)
         if is_remote_req:
@@ -315,7 +320,11 @@ class CheckInView(APIView):
                 qr_verified=False,
                 required_hours=required_hours,
                 is_remote=True,
+                notes=f'Late check-in granted: {grant.reason}' if is_late_bypass else '',
             )
+            if is_late_bypass:
+                grant.consumed_at = timezone.now()
+                grant.save(update_fields=['consumed_at'])
             return Response({
                 'message': 'Checked in remotely',
                 'attendance': AttendanceSerializer(attendance).data,
@@ -394,7 +403,7 @@ class CheckInView(APIView):
             employee=employee,
             date=today,
             check_in=timezone.now(),
-            status='present',
+            status='late' if is_late_bypass else 'present',
             verification_method=method,
             check_in_latitude=data.get('latitude'),
             check_in_longitude=data.get('longitude'),
@@ -404,7 +413,11 @@ class CheckInView(APIView):
             qr_verified=qr_verified,
             required_hours=required_hours,
             is_remote=False,
+            notes=f'Late check-in granted: {grant.reason}' if is_late_bypass else '',
         )
+        if is_late_bypass:
+            grant.consumed_at = timezone.now()
+            grant.save(update_fields=['consumed_at'])
 
         return Response({
             'message': 'Checked in successfully',
@@ -530,9 +543,15 @@ class TodayAttendanceView(APIView):
 
         now_local = timezone.localtime(timezone.now())
         is_owner_or_partner = employee.role in ('owner', 'partner')
-        can_check_in_now = now_local.time() <= deadline_time or is_owner_or_partner
+        today = date.today()
+        has_late_grant = LateCheckInGrant.objects.filter(
+            employee=employee, date=today, consumed_at__isnull=True
+        ).exists()
+        can_check_in_now = (now_local.time() <= deadline_time
+                            or is_owner_or_partner
+                            or has_late_grant)
 
-        attendance = Attendance.objects.filter(employee=employee, date=date.today()).first()
+        attendance = Attendance.objects.filter(employee=employee, date=today).first()
         return Response({
             'checked_in': attendance is not None,
             'checked_out': attendance.check_out is not None if attendance else False,
@@ -542,6 +561,7 @@ class TodayAttendanceView(APIView):
             'check_in_deadline': deadline_time.strftime('%H:%M'),
             'min_checkout_time_floor': min_checkout_floor.strftime('%H:%M'),
             'required_hours': required_hours,
+            'has_late_checkin_grant': has_late_grant,
         })
 
 

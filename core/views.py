@@ -5089,7 +5089,7 @@ def emp_leave_action(request, pk):
 @login_required
 def emp_attendance_list(request):
     """View attendance records"""
-    from employees.models import Attendance, Employee
+    from employees.models import Attendance, Employee, LateCheckInGrant
     from datetime import date
     month = int(request.GET.get('month', timezone.now().month))
     year = int(request.GET.get('year', timezone.now().year))
@@ -5100,14 +5100,77 @@ def emp_attendance_list(request):
     if employee_filter:
         records = records.filter(employee__pk=employee_filter)
     employees = Employee.objects.filter(status='active').order_by('employee_id')
+    pending_grants = LateCheckInGrant.objects.select_related('employee__user').filter(
+        date=date.today(), consumed_at__isnull=True
+    ).order_by('-created_at')
     context = {
         'records': records,
         'employees': employees,
         'month': month,
         'year': year,
         'employee_filter': employee_filter,
+        'today': date.today(),
+        'pending_grants': pending_grants,
     }
     return render(request, 'hr/attendance_list.html', context)
+
+
+@login_required
+def emp_late_checkin_grant(request):
+    """Grant an employee permission to check in after the daily cutoff."""
+    from employees.models import Employee, LateCheckInGrant, Notification
+    from employees.utils import send_push_notification
+    if request.method != 'POST':
+        return redirect('emp_attendance_list')
+    employee_id = request.POST.get('employee_id')
+    grant_date = request.POST.get('date') or timezone.now().date().isoformat()
+    reason = (request.POST.get('reason') or '').strip()
+    if not employee_id or not reason:
+        messages.error(request, 'Employee and reason are required.')
+        return redirect('emp_attendance_list')
+    employee = get_object_or_404(Employee, pk=employee_id)
+    grant, created = LateCheckInGrant.objects.get_or_create(
+        employee=employee, date=grant_date,
+        defaults={'reason': reason, 'granted_by': request.user},
+    )
+    if not created:
+        if grant.consumed_at:
+            messages.warning(request, f'{employee.full_name} already used a late check-in on {grant_date}.')
+            return redirect('emp_attendance_list')
+        grant.reason = reason
+        grant.granted_by = request.user
+        grant.save(update_fields=['reason', 'granted_by'])
+        messages.success(request, f'Updated late check-in for {employee.full_name} ({grant_date}).')
+    else:
+        messages.success(request, f'{employee.full_name} may now check in late on {grant_date}.')
+    Notification.objects.create(
+        employee=employee,
+        title='Late check-in allowed',
+        body=f'You may check in after the cutoff on {grant_date}. Reason: {reason}',
+        notification_type='attendance',
+    )
+    send_push_notification(
+        employee,
+        'Late check-in allowed',
+        f'You may check in after the cutoff on {grant_date}.',
+    )
+    return redirect('emp_attendance_list')
+
+
+@login_required
+def emp_late_checkin_revoke(request, pk):
+    """Revoke an unused late check-in grant."""
+    from employees.models import LateCheckInGrant
+    if request.method != 'POST':
+        return redirect('emp_attendance_list')
+    grant = get_object_or_404(LateCheckInGrant, pk=pk)
+    if grant.consumed_at:
+        messages.warning(request, 'Grant already used; cannot revoke.')
+    else:
+        name = grant.employee.full_name
+        grant.delete()
+        messages.success(request, f'Revoked late check-in for {name}.')
+    return redirect('emp_attendance_list')
 
 
 @login_required

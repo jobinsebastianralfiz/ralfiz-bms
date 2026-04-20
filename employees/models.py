@@ -245,6 +245,29 @@ class Attendance(models.Model):
         return max(int(remaining), 0)
 
 
+class LateCheckInGrant(models.Model):
+    """One-time permission for an employee to check in after the daily cutoff."""
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    employee = models.ForeignKey(Employee, on_delete=models.CASCADE, related_name='late_checkin_grants')
+    date = models.DateField(help_text='Date this grant applies to')
+    reason = models.TextField(help_text='Reason the employee is being allowed to check in late')
+    granted_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, related_name='granted_late_checkins')
+    consumed_at = models.DateTimeField(null=True, blank=True,
+                                       help_text='Set when the employee uses this grant to check in')
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-created_at']
+        unique_together = ['employee', 'date']
+
+    def __str__(self):
+        return f"{self.employee.employee_id} - {self.date} - {'consumed' if self.consumed_at else 'pending'}"
+
+    @property
+    def is_consumed(self):
+        return self.consumed_at is not None
+
+
 class LeaveType(models.Model):
     """Types of leave available"""
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)

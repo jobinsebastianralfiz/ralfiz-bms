@@ -7,7 +7,50 @@
     <h1 class="page-title">Attendance</h1>
     <p class="page-subtitle mb-0">View employee attendance records</p>
   </div>
+  <div>
+    <button type="button" class="btn btn-primary" onclick="openLateGrantModal()">
+      <i class="fas fa-clock me-1"></i> Allow Late Check-in
+    </button>
+  </div>
 </div>
+
+{% if pending_grants %}
+<div class="card mb-3">
+  <div class="card-header">
+    <h3 class="card-title"><i class="fas fa-hourglass-half"></i> Pending Late Check-in Grants (Today)</h3>
+  </div>
+  <div class="card-body p-0">
+    <div class="table-responsive">
+      <table class="table table-sm mb-0">
+        <thead>
+          <tr>
+            <th>Employee</th>
+            <th>Reason</th>
+            <th>Granted By</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for g in pending_grants %}
+          <tr>
+            <td>{{ g.employee.full_name }} <span class="text-muted">({{ g.employee.employee_id }})</span></td>
+            <td>{{ g.reason }}</td>
+            <td>{{ g.granted_by.get_full_name|default:g.granted_by.username|default:"-" }}</td>
+            <td class="text-end">
+              <form method="post" action="{% url 'emp_late_checkin_revoke' g.pk %}" style="display:inline;"
+                    onsubmit="return confirm('Revoke this late check-in grant?');">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-sm btn-outline-danger">Revoke</button>
+              </form>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endif %}
 
 <div class="card">
   <div class="card-header">
@@ -91,4 +134,54 @@
     {% endif %}
   </div>
 </div>
+
+<!-- Late Check-in Grant Modal -->
+<div id="lateGrantModal" style="display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.5); z-index:1000; align-items:center; justify-content:center;">
+  <div class="card" style="width: 460px; max-width: 90vw; margin: auto; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);">
+    <div class="card-header">
+      <h3 class="card-title"><i class="fas fa-clock me-2"></i>Allow Late Check-in</h3>
+      <button onclick="closeLateGrantModal()" class="btn btn-sm btn-ghost btn-icon" style="margin-left:auto;">
+        <i class="fas fa-times"></i>
+      </button>
+    </div>
+    <form method="post" action="{% url 'emp_late_checkin_grant' %}">
+      {% csrf_token %}
+      <div class="card-body">
+        <p class="text-sm text-muted mb-3">Grants a one-time bypass of the daily check-in cutoff. The employee can self check-in; attendance is marked <strong>Late</strong> with the reason recorded.</p>
+        <div class="form-group">
+          <label class="form-label">Employee <span class="required">*</span></label>
+          <select name="employee_id" class="form-control" required>
+            <option value="">Select employee...</option>
+            {% for emp in employees %}
+            <option value="{{ emp.pk }}">{{ emp.full_name }} ({{ emp.employee_id }})</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Date <span class="required">*</span></label>
+          <input type="date" class="form-control" name="date" value="{{ today|date:'Y-m-d' }}" required>
+        </div>
+        <div class="form-group mb-0">
+          <label class="form-label">Reason <span class="required">*</span></label>
+          <textarea class="form-control" name="reason" rows="3" placeholder="e.g. Medical appointment, traffic, approved late arrival..." required></textarea>
+        </div>
+      </div>
+      <div class="card-body border-top d-flex justify-content-end gap-2">
+        <button type="button" onclick="closeLateGrantModal()" class="btn btn-outline-secondary">Cancel</button>
+        <button type="submit" class="btn btn-primary"><i class="fas fa-check me-1"></i>Allow</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+{% block extra_js %}
+<script>
+function openLateGrantModal() {
+  document.getElementById('lateGrantModal').style.display = 'block';
+}
+function closeLateGrantModal() {
+  document.getElementById('lateGrantModal').style.display = 'none';
+}
+</script>
+{% endblock %}
 {% endblock %}

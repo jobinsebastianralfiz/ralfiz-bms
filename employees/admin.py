@@ -3,7 +3,7 @@ from django.utils.html import format_html
 from .models import (
     Employee, DeviceToken, Attendance, LeaveType, LeaveRequest,
     WorkAssignment, WorkUpdate, Notification, QRCode, ScheduledClass, Payroll,
-    CertificateTemplate, Certificate, OfficeConfig,
+    CertificateTemplate, Certificate, OfficeConfig, LateCheckInGrant,
 )
 from .utils import generate_face_encoding
 
@@ -159,6 +159,14 @@ class PayrollAdmin(admin.ModelAdmin):
     list_filter = ['status', 'year', 'month']
     search_fields = ['employee__employee_id', 'employee__user__first_name']
     readonly_fields = ['id', 'total_pending_hours', 'created_at', 'updated_at']
+
+
+@admin.register(LateCheckInGrant)
+class LateCheckInGrantAdmin(admin.ModelAdmin):
+    list_display = ['employee', 'date', 'granted_by', 'consumed_at', 'created_at']
+    list_filter = ['date', 'consumed_at']
+    search_fields = ['employee__employee_id', 'employee__user__first_name', 'reason']
+    readonly_fields = ['id', 'consumed_at', 'created_at']
 
 
 @admin.register(OfficeConfig)
