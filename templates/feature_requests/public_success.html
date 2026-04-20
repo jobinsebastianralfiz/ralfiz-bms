@@ -1,0 +1,19 @@
+{% extends 'feature_requests/public_base.html' %}
+{% block title %}Thank you - Ralfiz Technologies{% endblock %}
+{% block content %}
+<div class="card">
+  <div class="card-hero" style="text-align: center;">
+    <div style="width: 72px; height: 72px; border-radius: 50%;
+                background: linear-gradient(135deg, #10b981, #059669);
+                display: inline-flex; align-items: center; justify-content: center;
+                color: #fff; font-size: 2rem; margin-bottom: 16px;">
+      <i class="fas fa-check"></i>
+    </div>
+    <h1>Thanks, {{ link.client.name }}!</h1>
+    <p>Your requirements have been submitted. Our team will reach out shortly with the next steps.</p>
+  </div>
+  <div class="card-body" style="text-align: center;">
+    <p style="color: #64748b;">If you need to make changes, please contact your project manager and they'll send you a fresh link.</p>
+  </div>
+</div>
+{% endblock %}

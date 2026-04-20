@@ -1,0 +1,36 @@
+{% extends 'base.html' %}
+{% block title %}New Feature Request - Ralfiz BMS{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title">New Feature Request Link</h1>
+    <p class="page-subtitle mb-0">Generate a shareable link + OTP for a client</p>
+  </div>
+</div>
+
+<div class="card" style="max-width: 600px;">
+  <form method="post">
+    {% csrf_token %}
+    <div class="card-body">
+      <div class="form-group">
+        <label class="form-label">Client <span class="required">*</span></label>
+        <select name="client_id" class="form-control" required>
+          <option value="">Select a client...</option>
+          {% for c in clients %}
+          <option value="{{ c.pk }}">{{ c }} &mdash; {{ c.email }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <p class="text-sm text-muted mb-0">
+        A unique link + 6-digit OTP will be generated. Share both with the client (WhatsApp/call/etc.).
+        The OTP stays valid until they submit the form.
+      </p>
+    </div>
+    <div class="card-body border-top d-flex justify-content-end gap-2">
+      <a href="{% url 'feature_request_list' %}" class="btn btn-outline-secondary">Cancel</a>
+      <button type="submit" class="btn btn-primary"><i class="fas fa-link me-1"></i> Generate Link</button>
+    </div>
+  </form>
+</div>
+{% endblock %}

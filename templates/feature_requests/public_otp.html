@@ -1,0 +1,26 @@
+{% extends 'feature_requests/public_base.html' %}
+{% block title %}Verify OTP - Ralfiz Technologies{% endblock %}
+{% block content %}
+<div class="card">
+  <div class="card-hero">
+    <h1>Hi {{ link.client.name }} &#128075;</h1>
+    <p>To continue, please enter the 6-digit OTP shared with you by our team.</p>
+  </div>
+  <div class="card-body">
+    {% if error %}
+    <div class="alert alert-error">{{ error }}</div>
+    {% endif %}
+    <form method="post" autocomplete="off">
+      {% csrf_token %}
+      <div class="form-group">
+        <label class="form-label">One-Time Password</label>
+        <input type="text" name="otp" class="form-control otp-input" maxlength="6"
+               inputmode="numeric" pattern="[0-9]{6}" required autofocus>
+      </div>
+      <button type="submit" class="btn btn-primary btn-block">
+        <i class="fas fa-unlock"></i> Verify &amp; Continue
+      </button>
+    </form>
+  </div>
+</div>
+{% endblock %}

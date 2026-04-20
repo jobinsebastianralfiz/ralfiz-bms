@@ -85,6 +85,10 @@
         <i class="fas fa-sync-alt"></i>
         <span>Recurring Contracts</span>
       </a>
+      <a href="{% url 'feature_request_list' %}" class="nav-item {% if 'feature_request' in request.resolver_match.url_name or 'project_type' in request.resolver_match.url_name or 'project_feature' in request.resolver_match.url_name %}active{% endif %}">
+        <i class="fas fa-list-check"></i>
+        <span>Feature Requests</span>
+      </a>
     </div>
 
     <div class="nav-section">

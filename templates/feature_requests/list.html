@@ -1,0 +1,79 @@
+{% extends 'base.html' %}
+{% block title %}Feature Requests - Ralfiz BMS{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title">Feature Requests</h1>
+    <p class="page-subtitle mb-0">Share a link with clients so they can pick the features they need</p>
+  </div>
+  <div class="d-flex gap-2">
+    <a href="{% url 'project_type_list' %}" class="btn btn-outline-secondary"><i class="fas fa-cog me-1"></i> Manage Types &amp; Features</a>
+    <a href="{% url 'feature_request_create' %}" class="btn btn-primary"><i class="fas fa-plus me-1"></i> New Link</a>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header">
+    <h3 class="card-title"><i class="fas fa-link"></i> Shared Links</h3>
+    <div class="card-actions">
+      <form method="get" class="d-flex gap-2">
+        <select name="status" class="form-control" style="width: auto;" onchange="this.form.submit()">
+          <option value="" {% if not status_filter %}selected{% endif %}>All</option>
+          <option value="pending" {% if status_filter == 'pending' %}selected{% endif %}>Pending</option>
+          <option value="submitted" {% if status_filter == 'submitted' %}selected{% endif %}>Submitted</option>
+        </select>
+      </form>
+    </div>
+  </div>
+  <div class="card-body p-0">
+    {% if links %}
+    <div class="table-responsive">
+      <table class="table table-hover mb-0">
+        <thead>
+          <tr>
+            <th>Client</th>
+            <th>Created</th>
+            <th>OTP</th>
+            <th>Status</th>
+            <th>Project Type</th>
+            <th>Features</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for link in links %}
+          <tr>
+            <td>
+              <div class="fw-medium">{{ link.client }}</div>
+              <div class="text-sm text-muted">{{ link.client.email }}</div>
+            </td>
+            <td>{{ link.created_at|date:"d M Y H:i" }}</td>
+            <td><code>{{ link.otp }}</code></td>
+            <td>
+              {% if link.is_submitted %}
+              <span class="badge" style="background: var(--success-bg); color: var(--success);">Submitted</span>
+              {% else %}
+              <span class="badge" style="background: var(--warning-bg); color: var(--warning);">Pending</span>
+              {% endif %}
+            </td>
+            <td>{{ link.selected_project_type.name|default:"-" }}</td>
+            <td>{{ link.selected_features.count|default:"-" }}</td>
+            <td class="text-end">
+              <a href="{% url 'feature_request_detail' link.pk %}" class="btn btn-sm btn-outline-primary">View</a>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <div class="text-center text-muted py-5">
+      <i class="fas fa-link mb-3" style="font-size: 2rem; display: block;"></i>
+      <p class="mb-2">No feature request links yet.</p>
+      <a href="{% url 'feature_request_create' %}" class="btn btn-primary btn-sm">Create the first link</a>
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

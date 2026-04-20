@@ -1100,3 +1100,72 @@ class Document(models.Model):
             return self.file.size
         except:
             return 0
+
+
+class ProjectType(models.Model):
+    """Configurable project types for client feature-request forms (Website, E-commerce, etc.)."""
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    name = models.CharField(max_length=80, unique=True)
+    description = models.CharField(max_length=255, blank=True)
+    sort_order = models.IntegerField(default=0)
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['sort_order', 'name']
+
+    def __str__(self):
+        return self.name
+
+
+class ProjectFeature(models.Model):
+    """Feature options grouped under a ProjectType."""
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    project_type = models.ForeignKey(ProjectType, on_delete=models.CASCADE, related_name='features')
+    label = models.CharField(max_length=120)
+    description = models.CharField(max_length=255, blank=True)
+    sort_order = models.IntegerField(default=0)
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['project_type', 'sort_order', 'label']
+        unique_together = ['project_type', 'label']
+
+    def __str__(self):
+        return f"{self.project_type.name} - {self.label}"
+
+
+def _gen_otp():
+    import secrets
+    return f"{secrets.randbelow(1000000):06d}"
+
+
+class FeatureRequestLink(models.Model):
+    """Shareable link for a client to select project features. OTP-gated, single-use."""
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    client = models.ForeignKey(Client, on_delete=models.CASCADE, related_name='feature_request_links')
+    token = models.UUIDField(default=uuid.uuid4, unique=True, editable=False,
+                             help_text='Opaque token used in the shareable URL')
+    otp = models.CharField(max_length=6, default=_gen_otp,
+                           help_text='6-digit OTP shown to the admin; shared manually with the client')
+    created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True,
+                                   related_name='created_feature_request_links')
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    # Submission state
+    submitted_at = models.DateTimeField(null=True, blank=True)
+    selected_project_type = models.ForeignKey(ProjectType, on_delete=models.SET_NULL, null=True, blank=True,
+                                              related_name='+')
+    selected_features = models.ManyToManyField(ProjectFeature, blank=True, related_name='submissions')
+    client_notes = models.TextField(blank=True, help_text='Free-form notes from the client')
+
+    class Meta:
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"{self.client} - {'submitted' if self.is_submitted else 'pending'}"
+
+    @property
+    def is_submitted(self):
+        return self.submitted_at is not None

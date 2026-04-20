@@ -6,6 +6,21 @@ from eduflow_licensing import web_views as eduflow_web_views
 urlpatterns = [
     # Public Pages
     path('interiodesk/guide/', views.interiodesk_guide, name='interiodesk_guide'),
+    path('share/feature-request/<uuid:token>/', views.public_feature_request, name='public_feature_request'),
+
+    # Feature Requests (admin)
+    path('feature-requests/', views.feature_request_list, name='feature_request_list'),
+    path('feature-requests/create/', views.feature_request_create, name='feature_request_create'),
+    path('feature-requests/<uuid:pk>/', views.feature_request_detail, name='feature_request_detail'),
+    path('feature-requests/<uuid:pk>/regenerate/', views.feature_request_regenerate, name='feature_request_regenerate'),
+    path('feature-requests/<uuid:pk>/delete/', views.feature_request_delete, name='feature_request_delete'),
+
+    # Project Types & Features (admin)
+    path('feature-requests/types/', views.project_type_list, name='project_type_list'),
+    path('feature-requests/types/save/', views.project_type_save, name='project_type_save'),
+    path('feature-requests/types/<uuid:pk>/delete/', views.project_type_delete, name='project_type_delete'),
+    path('feature-requests/features/save/', views.project_feature_save, name='project_feature_save'),
+    path('feature-requests/features/<uuid:pk>/delete/', views.project_feature_delete, name='project_feature_delete'),
 
     # Authentication
     path('login/', views.login_view, name='login'),

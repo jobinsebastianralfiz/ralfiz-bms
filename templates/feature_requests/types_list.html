@@ -1,0 +1,205 @@
+{% extends 'base.html' %}
+{% block title %}Project Types &amp; Features - Ralfiz BMS{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title">Project Types &amp; Features</h1>
+    <p class="page-subtitle mb-0">Configure the options clients see in the feature-request form</p>
+  </div>
+  <div>
+    <a href="{% url 'feature_request_list' %}" class="btn btn-outline-secondary"><i class="fas fa-arrow-left me-1"></i> Back</a>
+    <button type="button" class="btn btn-primary" onclick="openTypeModal()"><i class="fas fa-plus me-1"></i> Add Type</button>
+  </div>
+</div>
+
+{% for pt in types %}
+<div class="card mb-3">
+  <div class="card-header">
+    <h3 class="card-title">
+      <i class="fas fa-cubes"></i> {{ pt.name }}
+      {% if not pt.is_active %}<span class="badge bg-secondary ms-2">Inactive</span>{% endif %}
+    </h3>
+    <div class="d-flex gap-2">
+      <button type="button" class="btn btn-sm btn-outline-secondary"
+              data-pk="{{ pt.pk }}" data-name="{{ pt.name|escapejs }}"
+              data-desc="{{ pt.description|escapejs }}" data-sort="{{ pt.sort_order }}"
+              data-active="{{ pt.is_active|yesno:'1,0' }}"
+              onclick="openTypeModalFromData(this)">
+        <i class="fas fa-edit"></i> Edit
+      </button>
+      <button type="button" class="btn btn-sm btn-outline-primary"
+              data-pk="{{ pt.pk }}" data-name="{{ pt.name|escapejs }}"
+              onclick="openFeatureModalFromData(this)">
+        <i class="fas fa-plus"></i> Add Feature
+      </button>
+      <form method="post" action="{% url 'project_type_delete' pt.pk %}" style="display:inline;"
+            onsubmit="return confirm('Delete {{ pt.name|escapejs }} and all its features?');">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-sm btn-outline-danger"><i class="fas fa-trash"></i></button>
+      </form>
+    </div>
+  </div>
+  <div class="card-body p-0">
+    {% if pt.features.all %}
+    <table class="table table-hover mb-0">
+      <thead>
+        <tr>
+          <th style="width: 60px;">#</th>
+          <th>Feature</th>
+          <th>Description</th>
+          <th style="width: 90px;">Active</th>
+          <th style="width: 160px;"></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for f in pt.features.all %}
+        <tr>
+          <td>{{ f.sort_order }}</td>
+          <td>{{ f.label }}</td>
+          <td class="text-muted">{{ f.description|default:"-" }}</td>
+          <td>{% if f.is_active %}<i class="fas fa-check text-success"></i>{% else %}<i class="fas fa-times text-muted"></i>{% endif %}</td>
+          <td class="text-end">
+            <button type="button" class="btn btn-sm btn-ghost"
+                    data-pk="{{ f.pk }}" data-type-pk="{{ pt.pk }}" data-type-name="{{ pt.name|escapejs }}"
+                    data-label="{{ f.label|escapejs }}" data-desc="{{ f.description|escapejs }}"
+                    data-sort="{{ f.sort_order }}" data-active="{{ f.is_active|yesno:'1,0' }}"
+                    onclick="openFeatureModalFromData(this)">
+              <i class="fas fa-edit"></i>
+            </button>
+            <form method="post" action="{% url 'project_feature_delete' f.pk %}" style="display:inline;"
+                  onsubmit="return confirm('Delete this feature?');">
+              {% csrf_token %}
+              <button type="submit" class="btn btn-sm btn-ghost text-danger"><i class="fas fa-trash"></i></button>
+            </form>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <div class="text-center text-muted py-4">No features yet. Click "Add Feature".</div>
+    {% endif %}
+  </div>
+</div>
+{% empty %}
+<div class="card"><div class="card-body text-center text-muted py-5">
+  No project types defined yet. Click "Add Type" to begin.
+</div></div>
+{% endfor %}
+
+<!-- Type Modal -->
+<div id="typeModal" style="display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.5); z-index:1000; align-items:center; justify-content:center;">
+  <div class="card" style="width: 460px; max-width: 90vw; margin: auto; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);">
+    <div class="card-header">
+      <h3 class="card-title" id="typeModalTitle">Add Project Type</h3>
+      <button onclick="closeTypeModal()" class="btn btn-sm btn-ghost btn-icon" style="margin-left:auto;"><i class="fas fa-times"></i></button>
+    </div>
+    <form method="post" action="{% url 'project_type_save' %}">
+      {% csrf_token %}
+      <input type="hidden" name="pk" id="typeModalPk">
+      <div class="card-body">
+        <div class="form-group">
+          <label class="form-label">Name <span class="required">*</span></label>
+          <input type="text" class="form-control" name="name" id="typeModalName" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Description</label>
+          <input type="text" class="form-control" name="description" id="typeModalDesc">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Sort Order</label>
+          <input type="number" class="form-control" name="sort_order" id="typeModalSort" value="0">
+        </div>
+        <div class="form-check">
+          <input type="checkbox" class="form-check-input" name="is_active" id="typeModalActive" checked>
+          <label class="form-check-label" for="typeModalActive">Active</label>
+        </div>
+      </div>
+      <div class="card-body border-top d-flex justify-content-end gap-2">
+        <button type="button" onclick="closeTypeModal()" class="btn btn-outline-secondary">Cancel</button>
+        <button type="submit" class="btn btn-primary">Save</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Feature Modal -->
+<div id="featureModal" style="display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.5); z-index:1000; align-items:center; justify-content:center;">
+  <div class="card" style="width: 460px; max-width: 90vw; margin: auto; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);">
+    <div class="card-header">
+      <h3 class="card-title" id="featureModalTitle">Add Feature</h3>
+      <button onclick="closeFeatureModal()" class="btn btn-sm btn-ghost btn-icon" style="margin-left:auto;"><i class="fas fa-times"></i></button>
+    </div>
+    <form method="post" action="{% url 'project_feature_save' %}">
+      {% csrf_token %}
+      <input type="hidden" name="pk" id="featureModalPk">
+      <input type="hidden" name="project_type_id" id="featureModalTypeId">
+      <div class="card-body">
+        <div class="form-group">
+          <label class="form-label">Project Type</label>
+          <input type="text" class="form-control" id="featureModalTypeName" readonly>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Label <span class="required">*</span></label>
+          <input type="text" class="form-control" name="label" id="featureModalLabel" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Description</label>
+          <input type="text" class="form-control" name="description" id="featureModalDesc">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Sort Order</label>
+          <input type="number" class="form-control" name="sort_order" id="featureModalSort" value="0">
+        </div>
+        <div class="form-check">
+          <input type="checkbox" class="form-check-input" name="is_active" id="featureModalActive" checked>
+          <label class="form-check-label" for="featureModalActive">Active</label>
+        </div>
+      </div>
+      <div class="card-body border-top d-flex justify-content-end gap-2">
+        <button type="button" onclick="closeFeatureModal()" class="btn btn-outline-secondary">Cancel</button>
+        <button type="submit" class="btn btn-primary">Save</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+{% block extra_js %}
+<script>
+function openTypeModal() {
+  document.getElementById('typeModalTitle').textContent = 'Add Project Type';
+  document.getElementById('typeModalPk').value = '';
+  document.getElementById('typeModalName').value = '';
+  document.getElementById('typeModalDesc').value = '';
+  document.getElementById('typeModalSort').value = '0';
+  document.getElementById('typeModalActive').checked = true;
+  document.getElementById('typeModal').style.display = 'block';
+}
+function openTypeModalFromData(btn) {
+  document.getElementById('typeModalTitle').textContent = 'Edit Project Type';
+  document.getElementById('typeModalPk').value = btn.dataset.pk;
+  document.getElementById('typeModalName').value = btn.dataset.name;
+  document.getElementById('typeModalDesc').value = btn.dataset.desc;
+  document.getElementById('typeModalSort').value = btn.dataset.sort;
+  document.getElementById('typeModalActive').checked = btn.dataset.active === '1';
+  document.getElementById('typeModal').style.display = 'block';
+}
+function closeTypeModal() { document.getElementById('typeModal').style.display = 'none'; }
+
+function openFeatureModalFromData(btn) {
+  const editing = !!btn.dataset.pk && btn.dataset.label !== undefined;
+  document.getElementById('featureModalTitle').textContent = editing ? 'Edit Feature' : 'Add Feature';
+  document.getElementById('featureModalPk').value = editing ? btn.dataset.pk : '';
+  document.getElementById('featureModalTypeId').value = editing ? btn.dataset.typePk : btn.dataset.pk;
+  document.getElementById('featureModalTypeName').value = editing ? btn.dataset.typeName : btn.dataset.name;
+  document.getElementById('featureModalLabel').value = btn.dataset.label || '';
+  document.getElementById('featureModalDesc').value = btn.dataset.desc || '';
+  document.getElementById('featureModalSort').value = btn.dataset.sort || '0';
+  document.getElementById('featureModalActive').checked = btn.dataset.active !== '0';
+  document.getElementById('featureModal').style.display = 'block';
+}
+function closeFeatureModal() { document.getElementById('featureModal').style.display = 'none'; }
+</script>
+{% endblock %}
+{% endblock %}

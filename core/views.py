@@ -14,7 +14,8 @@ from .models import (
     Client, Project, Credential, Quote, QuoteItem, Invoice, InvoiceItem, Payment, CompanySettings,
     Expense, TeamMember, Task, TaskAttachment, TimeEntry, ActivityLog, Document,
     TaskComment, TaskIssue, TaskActivity,
-    AMCContract, AMCPayment, CredentialRenewal
+    AMCContract, AMCPayment, CredentialRenewal,
+    ProjectType, ProjectFeature, FeatureRequestLink,
 )
 from django.contrib.contenttypes.models import ContentType
 from licensing.models import License, LicenseKey, LicenseActivation
@@ -5968,3 +5969,217 @@ def certificate_pdf(request, pk):
     else:
         response['Content-Disposition'] = f'inline; filename="{filename}"'
     return response
+
+
+# ============== Feature Request Links ==============
+
+@login_required
+def feature_request_list(request):
+    """Admin: list all feature-request links with status filter."""
+    status = request.GET.get('status', '')
+    qs = FeatureRequestLink.objects.select_related('client', 'created_by', 'selected_project_type').all()
+    if status == 'pending':
+        qs = qs.filter(submitted_at__isnull=True)
+    elif status == 'submitted':
+        qs = qs.filter(submitted_at__isnull=False)
+    return render(request, 'feature_requests/list.html', {
+        'links': qs,
+        'status_filter': status,
+    })
+
+
+@login_required
+def feature_request_create(request):
+    """Admin: create a new shareable link for a client."""
+    if request.method == 'POST':
+        client_id = request.POST.get('client_id')
+        client = get_object_or_404(Client, pk=client_id)
+        link = FeatureRequestLink.objects.create(client=client, created_by=request.user)
+        messages.success(request, f'Link created for {client}. OTP: {link.otp}')
+        return redirect('feature_request_detail', pk=link.pk)
+    clients = Client.objects.filter(is_active=True).order_by('name')
+    return render(request, 'feature_requests/create.html', {'clients': clients})
+
+
+@login_required
+def feature_request_detail(request, pk):
+    """Admin: view a link (show URL + OTP, or submission details)."""
+    link = get_object_or_404(
+        FeatureRequestLink.objects.select_related('client', 'selected_project_type', 'created_by')
+                                   .prefetch_related('selected_features__project_type'),
+        pk=pk,
+    )
+    share_url = request.build_absolute_uri(
+        reverse('public_feature_request', kwargs={'token': link.token})
+    )
+    return render(request, 'feature_requests/detail.html', {
+        'link': link,
+        'share_url': share_url,
+    })
+
+
+@login_required
+def feature_request_regenerate(request, pk):
+    """Admin: regenerate OTP (and optionally the token) for a link."""
+    import secrets
+    if request.method != 'POST':
+        return redirect('feature_request_detail', pk=pk)
+    link = get_object_or_404(FeatureRequestLink, pk=pk)
+    link.otp = f"{secrets.randbelow(1000000):06d}"
+    if request.POST.get('reset_submission'):
+        link.submitted_at = None
+        link.selected_project_type = None
+        link.client_notes = ''
+        link.selected_features.clear()
+        link.token = uuid.uuid4()
+    link.save()
+    messages.success(request, f'Regenerated. New OTP: {link.otp}')
+    return redirect('feature_request_detail', pk=link.pk)
+
+
+@login_required
+def feature_request_delete(request, pk):
+    if request.method != 'POST':
+        return redirect('feature_request_list')
+    link = get_object_or_404(FeatureRequestLink, pk=pk)
+    link.delete()
+    messages.success(request, 'Feature request link deleted.')
+    return redirect('feature_request_list')
+
+
+# ---- Project Types & Features admin ----
+
+@login_required
+def project_type_list(request):
+    types = ProjectType.objects.prefetch_related('features').all()
+    return render(request, 'feature_requests/types_list.html', {'types': types})
+
+
+@login_required
+def project_type_save(request):
+    """Create or update a ProjectType via form POST."""
+    if request.method != 'POST':
+        return redirect('project_type_list')
+    pk = request.POST.get('pk')
+    name = (request.POST.get('name') or '').strip()
+    description = (request.POST.get('description') or '').strip()
+    sort_order = int(request.POST.get('sort_order') or 0)
+    is_active = request.POST.get('is_active') == 'on'
+    if not name:
+        messages.error(request, 'Name is required.')
+        return redirect('project_type_list')
+    if pk:
+        pt = get_object_or_404(ProjectType, pk=pk)
+        pt.name = name
+        pt.description = description
+        pt.sort_order = sort_order
+        pt.is_active = is_active
+        pt.save()
+        messages.success(request, 'Project type updated.')
+    else:
+        ProjectType.objects.create(name=name, description=description,
+                                   sort_order=sort_order, is_active=is_active)
+        messages.success(request, 'Project type created.')
+    return redirect('project_type_list')
+
+
+@login_required
+def project_type_delete(request, pk):
+    if request.method != 'POST':
+        return redirect('project_type_list')
+    pt = get_object_or_404(ProjectType, pk=pk)
+    pt.delete()
+    messages.success(request, 'Project type deleted.')
+    return redirect('project_type_list')
+
+
+@login_required
+def project_feature_save(request):
+    """Create or update a ProjectFeature via form POST."""
+    if request.method != 'POST':
+        return redirect('project_type_list')
+    pk = request.POST.get('pk')
+    project_type_id = request.POST.get('project_type_id')
+    label = (request.POST.get('label') or '').strip()
+    description = (request.POST.get('description') or '').strip()
+    sort_order = int(request.POST.get('sort_order') or 0)
+    is_active = request.POST.get('is_active') == 'on'
+    if not label or not project_type_id:
+        messages.error(request, 'Label and project type are required.')
+        return redirect('project_type_list')
+    pt = get_object_or_404(ProjectType, pk=project_type_id)
+    if pk:
+        feat = get_object_or_404(ProjectFeature, pk=pk)
+        feat.project_type = pt
+        feat.label = label
+        feat.description = description
+        feat.sort_order = sort_order
+        feat.is_active = is_active
+        feat.save()
+        messages.success(request, 'Feature updated.')
+    else:
+        ProjectFeature.objects.create(project_type=pt, label=label, description=description,
+                                      sort_order=sort_order, is_active=is_active)
+        messages.success(request, 'Feature added.')
+    return redirect('project_type_list')
+
+
+@login_required
+def project_feature_delete(request, pk):
+    if request.method != 'POST':
+        return redirect('project_type_list')
+    feat = get_object_or_404(ProjectFeature, pk=pk)
+    feat.delete()
+    messages.success(request, 'Feature deleted.')
+    return redirect('project_type_list')
+
+
+# ---- Public (no login) ----
+
+def public_feature_request(request, token):
+    """Client-facing page. OTP gate, then feature selection form."""
+    link = FeatureRequestLink.objects.filter(token=token).select_related('client').first()
+    if not link:
+        return render(request, 'feature_requests/public_invalid.html', status=404)
+    if link.is_submitted:
+        return render(request, 'feature_requests/public_already_submitted.html', {'link': link})
+
+    verified = request.session.get(f'fr_verified_{link.pk}') is True
+
+    if request.method == 'POST' and not verified:
+        otp = (request.POST.get('otp') or '').strip()
+        if otp == link.otp:
+            request.session[f'fr_verified_{link.pk}'] = True
+            return redirect('public_feature_request', token=token)
+        return render(request, 'feature_requests/public_otp.html', {
+            'link': link, 'error': 'Invalid OTP. Please try again.',
+        })
+
+    if request.method == 'POST' and verified:
+        project_type_id = request.POST.get('project_type')
+        feature_ids = request.POST.getlist('features')
+        notes = (request.POST.get('notes') or '').strip()
+        if not project_type_id:
+            return render(request, 'feature_requests/public_form.html', {
+                'link': link,
+                'project_types': ProjectType.objects.filter(is_active=True).prefetch_related('features'),
+                'error': 'Please select a project type.',
+            })
+        pt = get_object_or_404(ProjectType, pk=project_type_id)
+        link.selected_project_type = pt
+        link.client_notes = notes
+        link.submitted_at = timezone.now()
+        link.save()
+        link.selected_features.set(
+            ProjectFeature.objects.filter(pk__in=feature_ids, project_type=pt)
+        )
+        request.session.pop(f'fr_verified_{link.pk}', None)
+        return render(request, 'feature_requests/public_success.html', {'link': link})
+
+    if not verified:
+        return render(request, 'feature_requests/public_otp.html', {'link': link})
+
+    return render(request, 'feature_requests/public_form.html', {
+        'link': link,
+        'project_types': ProjectType.objects.filter(is_active=True).prefetch_related('features'),
+    })

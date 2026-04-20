@@ -1,0 +1,73 @@
+{% extends 'feature_requests/public_base.html' %}
+{% block title %}Select Your Features - Ralfiz Technologies{% endblock %}
+{% block content %}
+<div class="card">
+  <div class="card-hero">
+    <h1>Tell us what you need</h1>
+    <p>Pick the type of project and the features you'd like. Our team will use this to prepare your quote.</p>
+  </div>
+  <div class="card-body">
+    {% if error %}
+    <div class="alert alert-error">{{ error }}</div>
+    {% endif %}
+    <form method="post">
+      {% csrf_token %}
+      <div class="form-group">
+        <label class="form-label">What kind of project?</label>
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 10px;">
+          {% for pt in project_types %}
+          <label class="type-card" data-type="{{ pt.pk }}">
+            <input type="radio" name="project_type" value="{{ pt.pk }}" required
+                   onchange="selectType('{{ pt.pk }}')">
+            <div>
+              <div class="type-card-name">{{ pt.name }}</div>
+              {% if pt.description %}<div class="type-card-desc">{{ pt.description }}</div>{% endif %}
+            </div>
+          </label>
+          {% endfor %}
+        </div>
+      </div>
+
+      {% for pt in project_types %}
+      <div class="type-section" id="section-{{ pt.pk }}">
+        <div class="type-heading"><i class="fas fa-check-square"></i> {{ pt.name }} features</div>
+        <div class="features-grid">
+          {% for f in pt.features.all %}
+          {% if f.is_active %}
+          <label class="feature-check">
+            <input type="checkbox" name="features" value="{{ f.pk }}" class="feat-{{ pt.pk }}">
+            <span>{{ f.label }}</span>
+          </label>
+          {% endif %}
+          {% endfor %}
+        </div>
+      </div>
+      {% endfor %}
+
+      <div class="form-group" style="margin-top: 28px;">
+        <label class="form-label">Anything else we should know? <span style="color:#94a3b8; font-weight: 400;">(optional)</span></label>
+        <textarea name="notes" class="form-control" placeholder="Design preferences, timeline, reference sites, budget range..."></textarea>
+      </div>
+
+      <button type="submit" class="btn btn-primary btn-block">
+        <i class="fas fa-paper-plane"></i> Submit Requirements
+      </button>
+    </form>
+  </div>
+</div>
+{% endblock %}
+{% block extra_js %}
+<script>
+function selectType(pk) {
+  document.querySelectorAll('.type-card').forEach(c => c.classList.remove('selected'));
+  const card = document.querySelector(`.type-card[data-type="${pk}"]`);
+  if (card) card.classList.add('selected');
+  document.querySelectorAll('.type-section').forEach(s => s.classList.remove('active'));
+  const section = document.getElementById('section-' + pk);
+  if (section) section.classList.add('active');
+  document.querySelectorAll('input[type="checkbox"][name="features"]').forEach(cb => {
+    if (!cb.classList.contains('feat-' + pk)) cb.checked = false;
+  });
+}
+</script>
+{% endblock %}
