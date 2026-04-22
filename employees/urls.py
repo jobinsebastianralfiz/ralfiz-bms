@@ -91,9 +91,12 @@ urlpatterns = [
     path('owner/credentials/<uuid:pk>/edit/', views.OwnerCredentialUpdateDeleteView.as_view(), name='owner_credential_edit'),
     path('owner/invoices/create/', views.OwnerInvoiceCreateView.as_view(), name='owner_invoice_create'),
     path('owner/invoices/<uuid:pk>/edit/', views.OwnerInvoiceUpdateDeleteView.as_view(), name='owner_invoice_edit'),
+    path('owner/invoices/<uuid:pk>/pdf/', views.OwnerInvoicePDFView.as_view(), name='owner_invoice_pdf'),
     path('owner/invoices/<uuid:pk>/payments/', views.OwnerPaymentCreateView.as_view(), name='owner_payment_create'),
+    path('owner/invoices/<uuid:pk>/payments/<uuid:payment_id>/', views.OwnerPaymentDeleteView.as_view(), name='owner_payment_delete'),
     path('owner/quotes/create/', views.OwnerQuoteCreateView.as_view(), name='owner_quote_create'),
     path('owner/quotes/<uuid:pk>/edit/', views.OwnerQuoteUpdateDeleteView.as_view(), name='owner_quote_edit'),
+    path('owner/quotes/<uuid:pk>/pdf/', views.OwnerQuotePDFView.as_view(), name='owner_quote_pdf'),
     path('owner/expenses/create/', views.OwnerExpenseCreateView.as_view(), name='owner_expense_create'),
     path('owner/expenses/<uuid:pk>/edit/', views.OwnerExpenseUpdateDeleteView.as_view(), name='owner_expense_edit'),
 

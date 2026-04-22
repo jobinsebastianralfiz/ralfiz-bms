@@ -4793,3 +4793,143 @@ class OwnerProjectCompletionCertificateView(APIView):
         })
 
 
+# ============== Owner: Invoice / Quote PDF (JWT) ==============
+
+@extend_schema(tags=['Owner'])
+class OwnerInvoicePDFView(APIView):
+    """JWT-authenticated invoice PDF for the mobile app"""
+    permission_classes = [IsAuthenticated, IsOwnerOrPartner]
+
+    def get(self, request, pk):
+        from core.models import Invoice, CompanySettings
+        from decimal import Decimal
+        from django.template.loader import render_to_string
+        from django.http import HttpResponse
+
+        try:
+            invoice = Invoice.objects.select_related('client', 'project').prefetch_related(
+                'items', 'payments'
+            ).get(pk=pk)
+        except Invoice.DoesNotExist:
+            return Response({'error': 'Invoice not found'}, status=status.HTTP_404_NOT_FOUND)
+
+        company = CompanySettings.get_settings()
+        with_gst = request.query_params.get('gst', '0') == '1'
+
+        taxable_amount = invoice.subtotal - (invoice.discount or Decimal('0'))
+        tax_rate = Decimal(str(invoice.tax_rate)) if invoice.tax_rate is not None else Decimal('0')
+
+        cgst_amount = Decimal('0')
+        sgst_amount = Decimal('0')
+        tax_amount = Decimal('0')
+        total = taxable_amount
+
+        if with_gst:
+            cgst_amount = taxable_amount * (tax_rate / 2 / 100)
+            sgst_amount = taxable_amount * (tax_rate / 2 / 100)
+            tax_amount = cgst_amount + sgst_amount
+            total = taxable_amount + tax_amount
+
+        balance_due = total - (invoice.amount_paid or Decimal('0'))
+
+        context = {
+            'invoice': invoice,
+            'company': company,
+            'with_gst': with_gst,
+            'taxable_amount': taxable_amount,
+            'tax_rate': tax_rate,
+            'cgst_rate': tax_rate / 2 if with_gst else 0,
+            'sgst_rate': tax_rate / 2 if with_gst else 0,
+            'cgst_amount': cgst_amount,
+            'sgst_amount': sgst_amount,
+            'tax_amount': tax_amount,
+            'total_with_gst': total,
+            'balance_due': balance_due,
+        }
+
+        try:
+            from weasyprint import HTML
+            html_string = render_to_string('invoices/pdf.html', context)
+            pdf = HTML(string=html_string, base_url=request.build_absolute_uri('/')).write_pdf()
+            response = HttpResponse(pdf, content_type='application/pdf')
+            response['Content-Disposition'] = f'attachment; filename="invoice_{invoice.invoice_number}.pdf"'
+            return response
+        except ImportError:
+            return Response({'error': 'WeasyPrint not installed'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+@extend_schema(tags=['Owner'])
+class OwnerQuotePDFView(APIView):
+    """JWT-authenticated quote PDF for the mobile app"""
+    permission_classes = [IsAuthenticated, IsOwnerOrPartner]
+
+    def get(self, request, pk):
+        from core.models import Quote, CompanySettings
+        from decimal import Decimal
+        from django.template.loader import render_to_string
+        from django.http import HttpResponse
+
+        try:
+            quote = Quote.objects.select_related('client', 'project').prefetch_related(
+                'items'
+            ).get(pk=pk)
+        except Quote.DoesNotExist:
+            return Response({'error': 'Quote not found'}, status=status.HTTP_404_NOT_FOUND)
+
+        company = CompanySettings.get_settings()
+        with_gst = request.query_params.get('gst', '0') == '1'
+
+        taxable_amount = quote.subtotal - (quote.discount or Decimal('0'))
+        tax_rate = Decimal(str(quote.tax_rate)) if quote.tax_rate is not None else Decimal('0')
+
+        cgst_amount = Decimal('0')
+        sgst_amount = Decimal('0')
+        tax_amount = Decimal('0')
+        total = taxable_amount
+
+        if with_gst:
+            cgst_amount = taxable_amount * (tax_rate / 2 / 100)
+            sgst_amount = taxable_amount * (tax_rate / 2 / 100)
+            tax_amount = cgst_amount + sgst_amount
+            total = taxable_amount + tax_amount
+
+        context = {
+            'quote': quote,
+            'company': company,
+            'with_gst': with_gst,
+            'taxable_amount': taxable_amount,
+            'tax_rate': tax_rate,
+            'cgst_rate': tax_rate / 2 if with_gst else 0,
+            'sgst_rate': tax_rate / 2 if with_gst else 0,
+            'cgst_amount': cgst_amount,
+            'sgst_amount': sgst_amount,
+            'tax_amount': tax_amount,
+            'total_with_gst': total,
+        }
+
+        try:
+            from weasyprint import HTML
+            html_string = render_to_string('quotes/pdf.html', context)
+            pdf = HTML(string=html_string, base_url=request.build_absolute_uri('/')).write_pdf()
+            response = HttpResponse(pdf, content_type='application/pdf')
+            response['Content-Disposition'] = f'attachment; filename="quote_{quote.quote_number}.pdf"'
+            return response
+        except ImportError:
+            return Response({'error': 'WeasyPrint not installed'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+@extend_schema(tags=['Owner'])
+class OwnerPaymentDeleteView(APIView):
+    """Delete a single payment on an invoice"""
+    permission_classes = [IsAuthenticated, IsOwnerOrPartner]
+
+    def delete(self, request, pk, payment_id):
+        from core.models import Payment
+        try:
+            payment = Payment.objects.get(pk=payment_id, invoice_id=pk)
+        except Payment.DoesNotExist:
+            return Response({'error': 'Payment not found'}, status=status.HTTP_404_NOT_FOUND)
+        payment.delete()
+        return Response({'message': 'Payment deleted'}, status=status.HTTP_204_NO_CONTENT)
+
+
