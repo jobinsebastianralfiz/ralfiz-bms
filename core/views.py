@@ -1836,6 +1836,9 @@ def invoice_create(request):
         # Allow manual invoice number override
         manual_invoice_number = request.POST.get('invoice_number', '').strip()
         if manual_invoice_number:
+            if Invoice.objects.filter(invoice_number=manual_invoice_number).exists():
+                messages.error(request, f'Invoice number "{manual_invoice_number}" is already in use. Please choose a different number or leave blank to auto-generate.')
+                return redirect('invoice_create')
             create_kwargs['invoice_number'] = manual_invoice_number
 
         invoice = Invoice.objects.create(**create_kwargs)
@@ -1917,7 +1920,10 @@ def invoice_update(request, pk):
 
         # Allow manual invoice number override
         manual_invoice_number = request.POST.get('invoice_number', '').strip()
-        if manual_invoice_number:
+        if manual_invoice_number and manual_invoice_number != invoice.invoice_number:
+            if Invoice.objects.filter(invoice_number=manual_invoice_number).exclude(pk=invoice.pk).exists():
+                messages.error(request, f'Invoice number "{manual_invoice_number}" is already in use. Please choose a different number.')
+                return redirect('invoice_update', pk=invoice.pk)
             invoice.invoice_number = manual_invoice_number
 
         invoice.save()
@@ -2366,6 +2372,49 @@ def settings_view(request):
         return redirect('settings')
 
     return render(request, 'settings/index.html', {'company': company})
+
+
+@login_required
+def start_new_fy(request):
+    """Reset invoice numbering for a new financial year by switching prefix and starting number."""
+    if request.method != 'POST':
+        return redirect('settings')
+
+    company = CompanySettings.get_settings()
+    new_prefix = request.POST.get('new_prefix', '').strip()
+    new_start_raw = request.POST.get('new_starting_number', '1').strip()
+
+    if not new_prefix:
+        messages.error(request, 'New prefix is required.')
+        return redirect('settings')
+
+    max_prefix_len = CompanySettings._meta.get_field('invoice_prefix').max_length
+    if len(new_prefix) > max_prefix_len:
+        messages.error(request, f'Prefix is too long ({len(new_prefix)} chars). Max {max_prefix_len} characters allowed.')
+        return redirect('settings')
+
+    if new_prefix == company.invoice_prefix:
+        messages.error(request, f'New prefix "{new_prefix}" is the same as the current prefix. Use a different prefix for the new financial year.')
+        return redirect('settings')
+
+    if Invoice.objects.filter(invoice_number__startswith=new_prefix).exists():
+        messages.error(request, f'Prefix "{new_prefix}" is already used by existing invoices. Pick a prefix that has never been used.')
+        return redirect('settings')
+
+    try:
+        new_start = int(new_start_raw) if new_start_raw else 1
+        if new_start < 1:
+            raise ValueError
+    except (ValueError, TypeError):
+        messages.error(request, 'Starting number must be a positive integer.')
+        return redirect('settings')
+
+    company.invoice_prefix = new_prefix
+    company.invoice_starting_number = new_start
+    company.save(update_fields=['invoice_prefix', 'invoice_starting_number'])
+
+    messages.success(request, f'New financial year started. Next invoice will be "{new_prefix}{new_start}". Previous invoices are unchanged.')
+    return redirect('settings')
 
 
 @login_required
