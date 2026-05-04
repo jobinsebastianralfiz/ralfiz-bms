@@ -67,6 +67,10 @@
       <i class="fas fa-copy"></i>
       Duplicate
     </a>
+    <button type="button" class="btn btn-outline-primary" onclick="openSplitModal()">
+      <i class="fas fa-tasks"></i>
+      Split into Milestones
+    </button>
     {% if invoice.status != 'paid' and invoice.balance_due > 0 %}
     <a href="{% url 'payment_create' %}?invoice={{ invoice.pk }}" class="btn btn-success">
       <i class="fas fa-plus"></i>
@@ -370,10 +374,127 @@
     </div>
   </div>
 </div>
+
+<div id="splitMilestonesModal" class="split-modal" style="display:none;">
+  <div class="split-backdrop" onclick="closeSplitModal()"></div>
+  <div class="split-dialog card">
+    <form method="post" action="{% url 'invoice_split_to_milestones' invoice.pk %}">
+      {% csrf_token %}
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <h3 class="card-title mb-0">
+          <i class="fas fa-tasks me-2 text-primary"></i>
+          Split Invoice into Milestones
+        </h3>
+        <button type="button" class="btn btn-sm" onclick="closeSplitModal()" aria-label="Close">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+      <div class="card-body">
+        <p class="text-muted mb-3">
+          Source: <strong>{{ invoice.invoice_number }}</strong> &middot; Subtotal: <strong>₹{{ invoice.subtotal }}</strong> &middot; Tax: {{ invoice.tax_rate }}%
+          <br>
+          Each milestone becomes a separate draft invoice with its own number, dated today, sharing the same client/project/tax rate.
+        </p>
+
+        <div id="milestoneRows">
+          <div class="milestone-row d-flex" style="gap:0.5rem; margin-bottom:0.5rem;">
+            <input type="text" class="form-control" name="milestone_label" placeholder="e.g., 30% Advance" required>
+            <input type="number" class="form-control milestone-pct" name="milestone_percent" placeholder="%" step="0.01" min="0.01" max="100" style="max-width:120px;" required oninput="updateSplitTotal()">
+            <button type="button" class="btn btn-outline-secondary" onclick="removeMilestoneRow(this)"><i class="fas fa-times"></i></button>
+          </div>
+          <div class="milestone-row d-flex" style="gap:0.5rem; margin-bottom:0.5rem;">
+            <input type="text" class="form-control" name="milestone_label" placeholder="e.g., 40% on Approval" required>
+            <input type="number" class="form-control milestone-pct" name="milestone_percent" placeholder="%" step="0.01" min="0.01" max="100" style="max-width:120px;" required oninput="updateSplitTotal()">
+            <button type="button" class="btn btn-outline-secondary" onclick="removeMilestoneRow(this)"><i class="fas fa-times"></i></button>
+          </div>
+          <div class="milestone-row d-flex" style="gap:0.5rem; margin-bottom:0.5rem;">
+            <input type="text" class="form-control" name="milestone_label" placeholder="e.g., 30% on Delivery" required>
+            <input type="number" class="form-control milestone-pct" name="milestone_percent" placeholder="%" step="0.01" min="0.01" max="100" style="max-width:120px;" required oninput="updateSplitTotal()">
+            <button type="button" class="btn btn-outline-secondary" onclick="removeMilestoneRow(this)"><i class="fas fa-times"></i></button>
+          </div>
+        </div>
+
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <button type="button" class="btn btn-sm btn-outline-primary" onclick="addMilestoneRow()">
+            <i class="fas fa-plus me-1"></i> Add Milestone
+          </button>
+          <div>Total: <strong id="splitTotalDisplay">0</strong>%</div>
+        </div>
+
+        <div class="form-group mb-3">
+          <label class="d-flex align-items-center" style="gap:0.5rem;">
+            <input type="checkbox" name="cancel_source">
+            <span>Cancel this source invoice ({{ invoice.invoice_number }}) after splitting</span>
+          </label>
+          <div class="form-text">Tick this if the source has not yet been filed in GST. Leave unchecked to keep it.</div>
+        </div>
+
+        <div class="alert alert-warning" style="background:#fff8e1;border:1px solid #ffe082;border-radius:4px;padding:0.75rem;font-size:0.9rem;">
+          <i class="fas fa-exclamation-triangle me-2"></i>
+          Percentages must sum to exactly 100%. Each new invoice is created as a draft so you can review before sending.
+        </div>
+      </div>
+      <div class="card-footer d-flex justify-content-end" style="gap:0.5rem;">
+        <button type="button" class="btn btn-outline-secondary" onclick="closeSplitModal()">Cancel</button>
+        <button type="submit" class="btn btn-primary">Create Milestone Invoices</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<style>
+  .split-modal { position: fixed; inset: 0; z-index: 1050; display: flex; align-items: center; justify-content: center; }
+  .split-backdrop { position: absolute; inset: 0; background: rgba(0,0,0,0.5); }
+  .split-dialog { position: relative; width: 100%; max-width: 640px; margin: 1rem; max-height: 90vh; overflow-y: auto; z-index: 1; }
+</style>
 {% endblock %}
 
 {% block extra_js %}
 <script>
+function openSplitModal() {
+  document.getElementById('splitMilestonesModal').style.display = 'flex';
+  updateSplitTotal();
+}
+
+function closeSplitModal() {
+  document.getElementById('splitMilestonesModal').style.display = 'none';
+}
+
+function addMilestoneRow() {
+  const container = document.getElementById('milestoneRows');
+  const row = document.createElement('div');
+  row.className = 'milestone-row d-flex';
+  row.style.cssText = 'gap:0.5rem; margin-bottom:0.5rem;';
+  row.innerHTML = `
+    <input type="text" class="form-control" name="milestone_label" placeholder="Milestone label" required>
+    <input type="number" class="form-control milestone-pct" name="milestone_percent" placeholder="%" step="0.01" min="0.01" max="100" style="max-width:120px;" required oninput="updateSplitTotal()">
+    <button type="button" class="btn btn-outline-secondary" onclick="removeMilestoneRow(this)"><i class="fas fa-times"></i></button>
+  `;
+  container.appendChild(row);
+}
+
+function removeMilestoneRow(btn) {
+  const rows = document.querySelectorAll('#milestoneRows .milestone-row');
+  if (rows.length <= 2) return;
+  btn.closest('.milestone-row').remove();
+  updateSplitTotal();
+}
+
+function updateSplitTotal() {
+  let total = 0;
+  document.querySelectorAll('#milestoneRows .milestone-pct').forEach(input => {
+    const v = parseFloat(input.value);
+    if (!isNaN(v)) total += v;
+  });
+  const display = document.getElementById('splitTotalDisplay');
+  display.textContent = total.toFixed(2).replace(/\.00$/, '').replace(/(\.\d)0$/, '$1');
+  display.style.color = Math.abs(total - 100) < 0.001 ? '#198754' : '#dc3545';
+}
+
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape') closeSplitModal();
+});
+
 function toggleInvoiceNumberEdit() {
   const display = document.getElementById('invoiceNumberDisplay');
   const editForm = document.getElementById('invoiceNumberEdit');

@@ -2151,6 +2151,78 @@ def invoice_clone(request, pk):
     return redirect('invoice_update', pk=new_invoice.pk)
 
 
+@login_required
+def invoice_split_to_milestones(request, pk):
+    """Split an existing invoice into N milestone invoices, each a draft with its own number."""
+    if request.method != 'POST':
+        return redirect('invoice_detail', pk=pk)
+
+    from decimal import Decimal, InvalidOperation
+    source = get_object_or_404(Invoice, pk=pk)
+
+    labels = request.POST.getlist('milestone_label')
+    percents = request.POST.getlist('milestone_percent')
+    cancel_source = request.POST.get('cancel_source') == 'on'
+
+    rows = [(l.strip() or f'Milestone {i+1}', p.strip()) for i, (l, p) in enumerate(zip(labels, percents)) if p.strip()]
+    if len(rows) < 2:
+        messages.error(request, 'Add at least 2 milestones to split.')
+        return redirect('invoice_detail', pk=pk)
+
+    parsed = []
+    total_pct = Decimal('0')
+    for label, raw_pct in rows:
+        try:
+            pct = Decimal(raw_pct)
+        except (InvalidOperation, ValueError):
+            messages.error(request, f'Invalid percentage "{raw_pct}".')
+            return redirect('invoice_detail', pk=pk)
+        if pct <= 0:
+            messages.error(request, 'Each milestone percentage must be greater than 0.')
+            return redirect('invoice_detail', pk=pk)
+        parsed.append((label, pct))
+        total_pct += pct
+
+    if total_pct != Decimal('100'):
+        messages.error(request, f'Milestone percentages must sum to 100% (currently {total_pct}%).')
+        return redirect('invoice_detail', pk=pk)
+
+    today = timezone.now().date()
+    base_amount = source.subtotal or (source.total_amount - (source.tax_amount or Decimal('0')))
+    created = []
+    for label, pct in parsed:
+        milestone_amount = (base_amount * pct / Decimal('100')).quantize(Decimal('0.01'))
+        new_invoice = Invoice.objects.create(
+            client=source.client,
+            project=source.project,
+            quote=source.quote,
+            title=f'{source.title} — {label}',
+            description=source.description,
+            status='draft',
+            tax_rate=source.tax_rate,
+            issue_date=today,
+            due_date=today + timedelta(days=15),
+            terms=source.terms,
+            client_notes=source.client_notes,
+        )
+        InvoiceItem.objects.create(
+            invoice=new_invoice,
+            description=label,
+            quantity=Decimal('1'),
+            unit_price=milestone_amount,
+        )
+        new_invoice.calculate_totals()
+        created.append(new_invoice.invoice_number)
+
+    if cancel_source:
+        source.status = 'cancelled'
+        source.save(update_fields=['status'])
+
+    cancel_msg = ' Source invoice was cancelled.' if cancel_source else ''
+    messages.success(request, f'Created {len(created)} milestone invoices: {", ".join(created)}.{cancel_msg}')
+    return redirect('invoice_list')
+
+
 # ============== Payments ==============
 
 @login_required
