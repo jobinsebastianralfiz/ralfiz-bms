@@ -93,12 +93,12 @@
                 <label class="form-label">Product (Key Pair) <span class="text-danger">*</span></label>
                 <select class="form-control" name="key_pair" required>
                   {% for kp in key_pairs %}
-                  <option value="{{ kp.pk }}">{{ kp.name }}</option>
+                  <option value="{{ kp.pk }}" {% if kp.name == "RetailEase Pro" %}selected{% endif %}>{{ kp.name }}</option>
                   {% empty %}
                   <option value="">No active keys — generate one first</option>
                   {% endfor %}
                 </select>
-                <div class="form-text">Select which product this license is for</div>
+                <div class="form-text">Select which product this license is for (defaults to RetailEase Pro)</div>
               </div>
             </div>
             <div class="col-6 col-sm-12" style="padding: 0.5rem;">

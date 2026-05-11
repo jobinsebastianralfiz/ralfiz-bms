@@ -1,9 +1,30 @@
+import base64
 import json
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_http_methods
 from django.utils import timezone
 from .models import License, LicenseActivation, LicenseKey
+
+
+def _extract_license_id(license_code):
+    """Decode a license code far enough to read its embedded license id (lid).
+
+    Does NOT verify the signature — that happens later against the correct key.
+    Returns the lid string, or raises ValueError on malformed input.
+    """
+    code = license_code.strip()
+    if code.startswith('REP-'):
+        parts = code.split('-', 2)
+        if len(parts) < 3:
+            raise ValueError('Malformed license code')
+        code = parts[2]
+    outer = json.loads(base64.b64decode(code.encode('utf-8')).decode('utf-8'))
+    payload = json.loads(base64.b64decode(outer['p']).decode('utf-8'))
+    lid = payload.get('lid')
+    if not lid:
+        raise ValueError('License code missing lid')
+    return lid
 
 
 def get_client_ip(request):
@@ -47,35 +68,43 @@ def validate_license(request):
                 'error': 'Machine ID is required'
             }, status=400)
         
-        # Get active key pair
-        key_pair = LicenseKey.objects.filter(is_active=True).first()
-        if not key_pair:
-            return JsonResponse({
-                'valid': False,
-                'error': 'License system not configured'
-            }, status=500)
-        
-        # Validate the license code cryptographically
-        is_valid, result = License.validate_license_code(
-            license_code, 
-            key_pair.public_key,
-            machine_id
-        )
-        
-        if not is_valid:
-            return JsonResponse({
-                'valid': False,
-                'error': result
-            }, status=400)
-        
-        # License code is valid, now check database record
-        license_id = result.get('lid')
+        # Look up the License first so we can verify with the key that signed it.
+        # Multiple products (RetailEase, InterioDesk, etc.) can share this app,
+        # each with its own LicenseKey; picking the first active key is wrong.
         try:
-            license_obj = License.objects.get(id=license_id)
+            license_id = _extract_license_id(license_code)
+        except Exception:
+            return JsonResponse({
+                'valid': False,
+                'error': 'Invalid license code format'
+            }, status=400)
+
+        try:
+            license_obj = License.objects.select_related('key_pair').get(id=license_id)
         except License.DoesNotExist:
             return JsonResponse({
                 'valid': False,
                 'error': 'License not found in database'
+            }, status=400)
+
+        key_pair = license_obj.key_pair
+        if not key_pair or not key_pair.is_active:
+            return JsonResponse({
+                'valid': False,
+                'error': 'Signing key is missing or inactive'
+            }, status=400)
+
+        # Validate the license code cryptographically against its OWN signing key
+        is_valid, result = License.validate_license_code(
+            license_code,
+            key_pair.public_key,
+            machine_id
+        )
+
+        if not is_valid:
+            return JsonResponse({
+                'valid': False,
+                'error': result
             }, status=400)
         
         # Check license status
