@@ -83,6 +83,7 @@ urlpatterns = [
     # Invoices
     path('invoices/', views.invoice_list, name='invoice_list'),
     path('invoices/create/', views.invoice_create, name='invoice_create'),
+    path('invoices/backup-pdf/', views.invoices_backup_pdf, name='invoices_backup_pdf'),
     path('invoices/<uuid:pk>/', views.invoice_detail, name='invoice_detail'),
     path('invoices/<uuid:pk>/edit/', views.invoice_update, name='invoice_update'),
     path('invoices/<uuid:pk>/pdf/', views.invoice_pdf, name='invoice_pdf'),

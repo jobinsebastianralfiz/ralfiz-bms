@@ -1,0 +1,442 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Invoice Archive - {{ company.company_name }}</title>
+  <style>
+    @page {
+      size: A4;
+      margin: 12mm 14mm;
+      @bottom-right {
+        content: "Page " counter(page) " / " counter(pages);
+        font-size: 9px;
+        color: #94a3b8;
+      }
+      @bottom-left {
+        content: "{{ company.company_name }} - Invoice Archive";
+        font-size: 9px;
+        color: #94a3b8;
+      }
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      font-size: 10px;
+      line-height: 1.4;
+      color: #1e293b;
+    }
+
+    .invoice-page {
+      page-break-after: always;
+    }
+    .invoice-page:last-child { page-break-after: auto; }
+
+    /* Cover */
+    .cover {
+      page-break-after: always;
+      padding-top: 30mm;
+    }
+    .cover h1 {
+      font-size: 32px;
+      color: #0d9488;
+      margin-bottom: 8px;
+    }
+    .cover .sub {
+      font-size: 13px;
+      color: #64748b;
+      margin-bottom: 30px;
+    }
+    .cover-stats {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 20px;
+    }
+    .cover-stats td {
+      padding: 8px 12px;
+      border-bottom: 1px solid #e2e8f0;
+      font-size: 12px;
+    }
+    .cover-stats td.label {
+      color: #64748b;
+      width: 50%;
+    }
+    .cover-stats td.value {
+      text-align: right;
+      font-weight: 600;
+      color: #0f172a;
+    }
+    .cover-note {
+      margin-top: 40px;
+      padding: 14px 16px;
+      background: #fef9c3;
+      border-left: 4px solid #ca8a04;
+      font-size: 11px;
+      color: #713f12;
+    }
+
+    /* Per-invoice header */
+    .inv-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      padding-bottom: 8px;
+      border-bottom: 2px solid #0d9488;
+      margin-bottom: 12px;
+    }
+    .inv-header .company {
+      font-size: 13px;
+      font-weight: 700;
+      color: #0f172a;
+    }
+    .inv-header .company small {
+      display: block;
+      font-size: 9px;
+      font-weight: 400;
+      color: #64748b;
+      margin-top: 2px;
+    }
+    .inv-header .meta {
+      text-align: right;
+    }
+    .inv-header .meta .title {
+      font-size: 20px;
+      font-weight: 700;
+      color: #0d9488;
+    }
+    .inv-header .meta .num {
+      font-size: 11px;
+      color: #64748b;
+    }
+
+    .meta-row {
+      display: flex;
+      gap: 16px;
+      margin-bottom: 10px;
+      font-size: 9.5px;
+    }
+    .meta-row .col {
+      flex: 1;
+    }
+    .meta-row .col .label {
+      font-size: 8.5px;
+      color: #0d9488;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      font-weight: 600;
+      margin-bottom: 2px;
+    }
+    .meta-row .col .val {
+      font-weight: 500;
+      color: #1e293b;
+    }
+    .meta-row .col .sub {
+      color: #64748b;
+      font-size: 9px;
+    }
+
+    .status-badge {
+      display: inline-block;
+      padding: 2px 8px;
+      font-size: 8px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      border-radius: 10px;
+    }
+    .status-badge.paid { background: #dcfce7; color: #15803d; }
+    .status-badge.sent,
+    .status-badge.viewed { background: #fef3c7; color: #b45309; }
+    .status-badge.overdue { background: #fee2e2; color: #dc2626; }
+    .status-badge.draft { background: #f1f5f9; color: #64748b; }
+    .status-badge.partial { background: #dbeafe; color: #1d4ed8; }
+    .status-badge.cancelled { background: #f1f5f9; color: #64748b; text-decoration: line-through; }
+
+    table.items {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 10px;
+    }
+    table.items th {
+      background: #f1f5f9;
+      padding: 5px 8px;
+      text-align: left;
+      font-size: 8.5px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: #64748b;
+      border-bottom: 1px solid #e2e8f0;
+    }
+    table.items th.r, table.items td.r { text-align: right; }
+    table.items td {
+      padding: 5px 8px;
+      border-bottom: 1px solid #e2e8f0;
+      vertical-align: top;
+      font-size: 9.5px;
+    }
+    table.items td .det {
+      color: #64748b;
+      font-size: 9px;
+      margin-top: 1px;
+    }
+
+    .bottom-grid {
+      display: flex;
+      gap: 14px;
+      margin-bottom: 8px;
+    }
+    .bottom-grid .left {
+      flex: 1;
+    }
+    .bottom-grid .right {
+      width: 220px;
+    }
+
+    .payments-box .ph {
+      font-size: 8.5px;
+      font-weight: 600;
+      color: #0d9488;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      margin-bottom: 4px;
+    }
+    .payments-box table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 9px;
+    }
+    .payments-box td {
+      padding: 3px 6px;
+      border-bottom: 1px dashed #e2e8f0;
+    }
+    .payments-box td.r { text-align: right; }
+
+    .totals .row {
+      display: flex;
+      justify-content: space-between;
+      padding: 3px 0;
+      font-size: 9.5px;
+    }
+    .totals .row.tot {
+      border-top: 2px solid #0d9488;
+      padding-top: 6px;
+      margin-top: 4px;
+      font-size: 11px;
+      font-weight: 700;
+      color: #0d9488;
+    }
+    .totals .row .lbl { color: #64748b; }
+    .totals .row .v { font-weight: 600; color: #1e293b; }
+    .totals .row .v.paid { color: #15803d; }
+    .totals .row .v.due { color: #b45309; }
+
+    .notes-block {
+      margin-top: 8px;
+      font-size: 9px;
+      color: #64748b;
+      line-height: 1.5;
+    }
+    .notes-block .nlbl {
+      font-weight: 600;
+      color: #0f172a;
+      text-transform: uppercase;
+      font-size: 8px;
+      letter-spacing: 0.04em;
+      margin-bottom: 2px;
+    }
+
+    .empty-msg {
+      text-align: center;
+      padding: 14px;
+      color: #94a3b8;
+      font-style: italic;
+      font-size: 10px;
+    }
+  </style>
+</head>
+<body>
+  <!-- Cover Page -->
+  <div class="cover">
+    <h1>Invoice Archive</h1>
+    <div class="sub">{{ company.company_name }}{% if company.gst_number %} · GSTIN {{ company.gst_number }}{% endif %}</div>
+    <div class="sub">Generated on {{ generated_on|date:"d F Y, h:i A" }}</div>
+
+    <table class="cover-stats">
+      <tr><td class="label">Total Invoices</td><td class="value">{{ stats.count }}</td></tr>
+      <tr><td class="label">Date Range</td><td class="value">{% if stats.first_date %}{{ stats.first_date|date:"d M Y" }} &mdash; {{ stats.last_date|date:"d M Y" }}{% else %}&mdash;{% endif %}</td></tr>
+      <tr><td class="label">Total Billed (excl. GST)</td><td class="value">&#8377;{{ stats.total_billed|floatformat:2 }}</td></tr>
+      <tr><td class="label">Total Tax (GST)</td><td class="value">&#8377;{{ stats.total_tax|floatformat:2 }}</td></tr>
+      <tr><td class="label">Total Billed (incl. GST)</td><td class="value">&#8377;{{ stats.total_with_tax|floatformat:2 }}</td></tr>
+      <tr><td class="label">Total Received</td><td class="value">&#8377;{{ stats.total_paid|floatformat:2 }}</td></tr>
+      <tr><td class="label">Total Outstanding</td><td class="value">&#8377;{{ stats.total_outstanding|floatformat:2 }}</td></tr>
+    </table>
+
+    <div class="cover-note">
+      <strong>Archive Notice:</strong> This document is a snapshot of all invoices on record at the time of generation.
+      It is intended as an offline reference before starting a new financial year and resetting the live invoice database.
+      Keep a copy for your records.
+    </div>
+  </div>
+
+  {% for inv in invoices %}
+  <div class="invoice-page">
+    <div class="inv-header">
+      <div>
+        <div class="company">{{ company.company_name }}
+          <small>
+            {% if company.gst_number %}GSTIN: {{ company.gst_number }}{% endif %}
+            {% if company.pan_number %} &nbsp;|&nbsp; PAN: {{ company.pan_number }}{% endif %}
+          </small>
+        </div>
+      </div>
+      <div class="meta">
+        <div class="title">INVOICE</div>
+        <div class="num">#{{ inv.invoice_number }}</div>
+        <div style="margin-top: 4px;">
+          <span class="status-badge {{ inv.status }}">{{ inv.get_status_display }}</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="meta-row">
+      <div class="col">
+        <div class="label">Billed To</div>
+        <div class="val">{{ inv.client.company_name|default:inv.client.name }}</div>
+        <div class="sub">
+          {{ inv.client.name }}{% if inv.client.email %} &middot; {{ inv.client.email }}{% endif %}
+          {% if inv.client.phone %}<br>{{ inv.client.phone }}{% endif %}
+          {% if inv.client.gst_number %}<br>GSTIN: {{ inv.client.gst_number }}{% endif %}
+        </div>
+      </div>
+      <div class="col">
+        <div class="label">Project / Subject</div>
+        <div class="val">{{ inv.title }}</div>
+        <div class="sub">{% if inv.project %}{{ inv.project.name }}{% endif %}</div>
+      </div>
+      <div class="col">
+        <div class="label">Dates</div>
+        <div class="val">Issued: {{ inv.issue_date|date:"d M Y" }}</div>
+        <div class="sub">Due: {{ inv.due_date|date:"d M Y"|default:"—" }}</div>
+      </div>
+    </div>
+
+    <table class="items">
+      <thead>
+        <tr>
+          <th style="width: 56%;">Description</th>
+          <th class="r" style="width: 10%;">Qty</th>
+          <th class="r" style="width: 17%;">Unit Price</th>
+          <th class="r" style="width: 17%;">Amount</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for item in inv.items.all %}
+        <tr>
+          <td>
+            {{ item.description }}
+            {% if item.details %}<div class="det">{{ item.details }}</div>{% endif %}
+          </td>
+          <td class="r">{{ item.quantity|floatformat:"-2" }}</td>
+          <td class="r">&#8377;{{ item.unit_price|floatformat:2 }}</td>
+          <td class="r">&#8377;{{ item.amount|floatformat:2 }}</td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="4" class="empty-msg">No line items recorded</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+
+    <div class="bottom-grid">
+      <div class="left">
+        <div class="payments-box">
+          <div class="ph">Payments Received ({{ inv.payments.all|length }})</div>
+          {% if inv.payments.all %}
+          <table>
+            <thead>
+              <tr>
+                <td style="font-size: 8px; color: #94a3b8;">DATE</td>
+                <td style="font-size: 8px; color: #94a3b8;">METHOD</td>
+                <td style="font-size: 8px; color: #94a3b8;">TXN ID</td>
+                <td class="r" style="font-size: 8px; color: #94a3b8;">AMOUNT</td>
+              </tr>
+            </thead>
+            <tbody>
+              {% for p in inv.payments.all %}
+              <tr>
+                <td>{{ p.payment_date|date:"d M Y" }}</td>
+                <td>{{ p.get_payment_method_display }}</td>
+                <td style="color: #64748b;">{{ p.transaction_id|default:"—" }}</td>
+                <td class="r">&#8377;{{ p.amount|floatformat:2 }}</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+          {% else %}
+          <div style="font-size: 9px; color: #94a3b8; font-style: italic;">No payments recorded.</div>
+          {% endif %}
+        </div>
+      </div>
+      <div class="right">
+        <div class="totals">
+          <div class="row">
+            <span class="lbl">Subtotal</span>
+            <span class="v">&#8377;{{ inv.subtotal|floatformat:2 }}</span>
+          </div>
+          {% if inv.discount %}
+          <div class="row">
+            <span class="lbl">Discount</span>
+            <span class="v">&minus;&#8377;{{ inv.discount|floatformat:2 }}</span>
+          </div>
+          {% endif %}
+          {% if inv.tax_amount %}
+          <div class="row">
+            <span class="lbl">CGST ({{ inv.half_tax_rate|floatformat:"-2" }}%)</span>
+            <span class="v">&#8377;{{ inv.cgst_amount|floatformat:2 }}</span>
+          </div>
+          <div class="row">
+            <span class="lbl">SGST ({{ inv.half_tax_rate|floatformat:"-2" }}%)</span>
+            <span class="v">&#8377;{{ inv.sgst_amount|floatformat:2 }}</span>
+          </div>
+          {% endif %}
+          <div class="row tot">
+            <span>Total</span>
+            <span>&#8377;{{ inv.total_amount|floatformat:2 }}</span>
+          </div>
+          <div class="row">
+            <span class="lbl">Amount Paid</span>
+            <span class="v paid">&#8377;{{ inv.amount_paid|floatformat:2 }}</span>
+          </div>
+          <div class="row">
+            <span class="lbl">Balance Due</span>
+            <span class="v due">&#8377;{{ inv.balance_due|floatformat:2 }}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    {% if inv.client_notes or inv.notes or inv.terms %}
+    <div class="notes-block">
+      {% if inv.client_notes %}
+        <div class="nlbl">Notes to client</div>
+        <div>{{ inv.client_notes|linebreaksbr }}</div>
+      {% endif %}
+      {% if inv.notes %}
+        <div class="nlbl" style="margin-top: 6px;">Internal notes</div>
+        <div>{{ inv.notes|linebreaksbr }}</div>
+      {% endif %}
+      {% if inv.terms %}
+        <div class="nlbl" style="margin-top: 6px;">Terms</div>
+        <div>{{ inv.terms|linebreaksbr }}</div>
+      {% endif %}
+    </div>
+    {% endif %}
+  </div>
+  {% empty %}
+  <div class="invoice-page">
+    <div class="empty-msg" style="padding: 80px 20px;">No invoices on record.</div>
+  </div>
+  {% endfor %}
+</body>
+</html>

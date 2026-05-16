@@ -2077,6 +2077,74 @@ def invoice_pdf(request, pk):
     return render(request, 'invoices/pdf.html', context)
 
 
+@login_required
+def invoices_backup_pdf(request):
+    """Render every invoice in the system into a single archival PDF.
+
+    Intended as an offline backup before a Start-New-FY reset that
+    wipes invoices/payments/expenses.
+    """
+    from django.http import HttpResponse
+    from django.template.loader import render_to_string
+    from decimal import Decimal
+
+    invoices = (
+        Invoice.objects
+        .select_related('client', 'project')
+        .prefetch_related('items', 'payments')
+        .order_by('issue_date', 'invoice_number')
+    )
+
+    agg = invoices.aggregate(
+        total_billed_pre_tax=Sum('subtotal') - Sum('discount'),
+        total_tax=Sum('tax_amount'),
+        total_with_tax=Sum('total_amount'),
+        total_paid=Sum('amount_paid'),
+    )
+
+    total_with_tax = agg['total_with_tax'] or Decimal('0')
+    total_paid = agg['total_paid'] or Decimal('0')
+
+    if invoices.exists():
+        first_date = invoices.order_by('issue_date').first().issue_date
+        last_date = invoices.order_by('-issue_date').first().issue_date
+    else:
+        first_date = last_date = None
+
+    stats = {
+        'count': invoices.count(),
+        'first_date': first_date,
+        'last_date': last_date,
+        'total_billed': agg['total_billed_pre_tax'] or Decimal('0'),
+        'total_tax': agg['total_tax'] or Decimal('0'),
+        'total_with_tax': total_with_tax,
+        'total_paid': total_paid,
+        'total_outstanding': total_with_tax - total_paid,
+    }
+
+    context = {
+        'invoices': invoices,
+        'company': CompanySettings.get_settings(),
+        'stats': stats,
+        'generated_on': timezone.now(),
+    }
+
+    download = request.GET.get('download', '0') == '1'
+    if download:
+        try:
+            from weasyprint import HTML
+            html_string = render_to_string('invoices/backup_pdf.html', context)
+            pdf = HTML(string=html_string, base_url=request.build_absolute_uri('/')).write_pdf()
+            filename = f"invoice_archive_{timezone.now().strftime('%Y%m%d_%H%M')}.pdf"
+            response = HttpResponse(pdf, content_type='application/pdf')
+            response['Content-Disposition'] = f'attachment; filename="{filename}"'
+            return response
+        except ImportError:
+            messages.warning(request, 'PDF generation requires WeasyPrint. Showing printable view instead.')
+
+    return render(request, 'invoices/backup_pdf.html', context)
+
+
 # ============== Invoice Delete ==============
 
 @login_required

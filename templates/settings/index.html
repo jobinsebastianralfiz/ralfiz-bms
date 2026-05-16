@@ -338,12 +338,17 @@
                 </div>
               </div>
               <div class="col-12" style="padding: 0.5rem;">
-                <div class="form-group">
+                <div class="form-group d-flex flex-wrap gap-2">
                   <button type="button" class="btn btn-outline-primary" onclick="openNewFyModal()">
                     <i class="fas fa-calendar-alt me-2"></i>
                     Start New Financial Year
                   </button>
-                  <div class="form-text">Switches to a new prefix and resets the counter. Existing invoices stay unchanged.</div>
+                  <a href="{% url 'invoices_backup_pdf' %}?download=1" class="btn btn-outline-secondary" target="_blank" rel="noopener">
+                    <i class="fas fa-file-pdf me-2"></i>
+                    Backup All Invoices (Single PDF)
+                  </a>
+                  <a href="{% url 'invoices_backup_pdf' %}" class="btn btn-link" target="_blank" rel="noopener">Preview archive</a>
+                  <div class="form-text w-100">Switches to a new prefix and resets the counter. Existing invoices stay unchanged. Use the Backup button to archive every invoice into one PDF before any reset.</div>
                 </div>
               </div>
               <div class="col-6 col-sm-12" style="padding: 0.5rem;">
