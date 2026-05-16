@@ -286,6 +286,33 @@
   </div>
 </div>
 
+{% if opening_balance %}
+<!-- Cash Position -->
+<div class="metrics" style="margin-top: 0.5rem;">
+  <div class="metric">
+    <div class="metric-icon" style="background: #f0fdf4; color: #16a34a;"><i class="fas fa-money-bill-wave"></i></div>
+    <div>
+      <div class="metric-num">&#8377;{{ current_cash_in_hand|floatformat:0|default:"0" }}</div>
+      <div class="metric-label">Cash in Hand</div>
+    </div>
+  </div>
+  <div class="metric">
+    <div class="metric-icon" style="background: #eff6ff; color: #2563eb;"><i class="fas fa-university"></i></div>
+    <div>
+      <div class="metric-num">&#8377;{{ current_cash_in_account|floatformat:0|default:"0" }}</div>
+      <div class="metric-label">Cash in Account</div>
+    </div>
+  </div>
+  <div class="metric" style="background: #f8fafc;">
+    <div class="metric-icon" style="background: #f1f5f9; color: #64748b;"><i class="fas fa-flag"></i></div>
+    <div>
+      <div class="metric-num" style="font-size: 1rem;">{{ opening_balance.label }}</div>
+      <div class="metric-label">Opening: &#8377;{{ opening_balance.cash_in_hand|add:opening_balance.cash_in_account|floatformat:0 }} on {{ opening_balance.as_of_date|date:"d M Y" }}</div>
+    </div>
+  </div>
+</div>
+{% endif %}
+
 <!-- Shortcuts -->
 <div class="shortcuts">
   <a href="{% url 'client_create' %}" class="sc">

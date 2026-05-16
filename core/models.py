@@ -791,6 +791,32 @@ class Expense(models.Model):
         return f"{self.vendor} - ₹{self.amount} ({self.get_category_display()})"
 
 
+class OpeningBalance(models.Model):
+    """Opening cash balances snapshot at the start of a financial year (or any cutover).
+
+    Multiple rows allowed so each FY's opening position is preserved.
+    The 'current' opening balance is the most recent row by as_of_date.
+    """
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    label = models.CharField(max_length=50, help_text='e.g. "FY 2026-27"')
+    as_of_date = models.DateField(help_text='Balances are effective from this date')
+    cash_in_hand = models.DecimalField(max_digits=14, decimal_places=2, default=0)
+    cash_in_account = models.DecimalField(max_digits=14, decimal_places=2, default=0)
+    notes = models.TextField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['-as_of_date', '-created_at']
+
+    def __str__(self):
+        return f"{self.label} ({self.as_of_date})"
+
+    @classmethod
+    def current(cls):
+        return cls.objects.order_by('-as_of_date', '-created_at').first()
+
+
 class TeamMember(models.Model):
     """Team member model for task assignment"""
     ROLE_CHOICES = [

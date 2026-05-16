@@ -100,6 +100,8 @@ urlpatterns = [
     # Settings & Reports
     path('settings/', views.settings_view, name='settings'),
     path('settings/start-new-fy/', views.start_new_fy, name='start_new_fy'),
+    path('settings/opening-balance/save/', views.opening_balance_save, name='opening_balance_save'),
+    path('settings/reset-financial-data/', views.fy_reset, name='fy_reset'),
     path('reports/', views.reports_view, name='reports'),
 
     # Global Search

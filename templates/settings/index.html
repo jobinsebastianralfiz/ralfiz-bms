@@ -113,6 +113,10 @@
             <i class="fas fa-file-invoice"></i>
             <span>Invoice Settings</span>
           </a>
+          <a class="settings-nav-item" onclick="switchSettingsTab('financials')">
+            <i class="fas fa-rupee-sign"></i>
+            <span>Financial Year</span>
+          </a>
           <a class="settings-nav-item" onclick="switchSettingsTab('notifications')">
             <i class="fas fa-bell"></i>
             <span>Notifications</span>
@@ -781,6 +785,134 @@
         </div>
       </div>
     </form>
+
+    <!-- Financial Year Panel (outside main form, has its own forms) -->
+    <div class="settings-panel d-none" id="financials-panel">
+      <div class="card mb-3">
+        <div class="card-header">
+          <h3 class="card-title">
+            <i class="fas fa-wallet me-2 text-primary"></i>
+            Opening Balance
+          </h3>
+        </div>
+        <div class="card-body">
+          <p class="text-muted mb-3" style="font-size: 0.9rem;">
+            Record the cash position at the start of a financial year (or any cutover). The most recent
+            entry is treated as the current opening balance. Older entries are kept for history.
+          </p>
+
+          {% if opening_balance %}
+          <div class="alert alert-info" style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:4px;padding:0.75rem;font-size:0.9rem;">
+            <strong>Current opening balance:</strong> {{ opening_balance.label }} (as of {{ opening_balance.as_of_date|date:"d M Y" }})<br>
+            Cash in Hand: <strong>&#8377;{{ opening_balance.cash_in_hand|floatformat:2 }}</strong> &nbsp;|&nbsp;
+            Cash in Account: <strong>&#8377;{{ opening_balance.cash_in_account|floatformat:2 }}</strong>
+          </div>
+          {% else %}
+          <div class="alert" style="background:#fef9c3;border:1px solid #fde68a;border-radius:4px;padding:0.75rem;font-size:0.9rem;color:#713f12;">
+            <i class="fas fa-info-circle me-2"></i>
+            No opening balance recorded yet. Add one to start tracking cash position.
+          </div>
+          {% endif %}
+
+          <form method="post" action="{% url 'opening_balance_save' %}" id="opening-balance-form">
+            {% csrf_token %}
+            <div class="row">
+              <div class="col-6 col-sm-12" style="padding: 0.5rem;">
+                <div class="form-group">
+                  <label class="form-label">Label *</label>
+                  <input type="text" class="form-control" name="label" maxlength="50" required placeholder="e.g. FY 2026-27">
+                </div>
+              </div>
+              <div class="col-6 col-sm-12" style="padding: 0.5rem;">
+                <div class="form-group">
+                  <label class="form-label">As of Date *</label>
+                  <input type="date" class="form-control" name="as_of_date" required>
+                </div>
+              </div>
+              <div class="col-6 col-sm-12" style="padding: 0.5rem;">
+                <div class="form-group">
+                  <label class="form-label">Cash in Hand (&#8377;)</label>
+                  <input type="number" class="form-control" name="cash_in_hand" value="0" min="0" step="0.01">
+                </div>
+              </div>
+              <div class="col-6 col-sm-12" style="padding: 0.5rem;">
+                <div class="form-group">
+                  <label class="form-label">Cash in Account (&#8377;)</label>
+                  <input type="number" class="form-control" name="cash_in_account" value="0" min="0" step="0.01">
+                </div>
+              </div>
+              <div class="col-12" style="padding: 0.5rem;">
+                <div class="form-group">
+                  <label class="form-label">Notes</label>
+                  <textarea class="form-control" name="notes" rows="2" placeholder="Optional context (e.g. bank reconciliation reference)"></textarea>
+                </div>
+              </div>
+            </div>
+          </form>
+        </div>
+        <div class="card-footer d-flex justify-content-end">
+          <button type="submit" form="opening-balance-form" class="btn btn-primary">
+            <i class="fas fa-save me-2"></i>Save Opening Balance
+          </button>
+        </div>
+      </div>
+
+      <!-- Danger Zone: FY Reset -->
+      <div class="card mb-3" style="border-left: 4px solid #dc2626;">
+        <div class="card-header" style="background: #fef2f2;">
+          <h3 class="card-title" style="color: #b91c1c;">
+            <i class="fas fa-exclamation-triangle me-2"></i>
+            Danger Zone &mdash; Reset Financial Data
+          </h3>
+        </div>
+        <div class="card-body">
+          <p class="mb-3" style="font-size: 0.9rem; color: #475569;">
+            Wipe <strong>all</strong> invoices, payments, expenses, and CRM leads to start a fresh financial year.
+            Clients, projects, quotes, AMC contracts, credentials, and team data are preserved.
+            <strong>This cannot be undone.</strong> Download the invoice backup PDF first.
+          </p>
+          <a href="{% url 'fy_reset' %}" class="btn" style="background: #dc2626; color: white;">
+            <i class="fas fa-trash-alt me-2"></i>
+            Reset Financial Data...
+          </a>
+        </div>
+      </div>
+
+      {% if opening_balance_history %}
+      <div class="card">
+        <div class="card-header">
+          <h3 class="card-title">
+            <i class="fas fa-history me-2 text-muted"></i>
+            Opening Balance History
+          </h3>
+        </div>
+        <div class="card-body p-0">
+          <table class="table mb-0" style="font-size: 0.9rem;">
+            <thead>
+              <tr>
+                <th>Label</th>
+                <th>As of</th>
+                <th class="text-end">Cash in Hand</th>
+                <th class="text-end">Cash in Account</th>
+                <th>Recorded</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for ob in opening_balance_history %}
+              <tr>
+                <td>{{ ob.label }}</td>
+                <td>{{ ob.as_of_date|date:"d M Y" }}</td>
+                <td class="text-end">&#8377;{{ ob.cash_in_hand|floatformat:2 }}</td>
+                <td class="text-end">&#8377;{{ ob.cash_in_account|floatformat:2 }}</td>
+                <td><span class="text-muted">{{ ob.created_at|date:"d M Y, H:i" }}</span></td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+      {% endif %}
+    </div>
   </div>
 </div>
 

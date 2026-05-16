@@ -1,0 +1,138 @@
+{% extends 'base.html' %}
+
+{% block title %}Reset Financial Data - Ralfiz BMS{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title" style="color: #b91c1c;">
+      <i class="fas fa-exclamation-triangle me-2"></i>
+      Reset Financial Data
+    </h1>
+    <p class="page-subtitle mb-0">
+      Wipe all invoices, payments, expenses, and CRM leads to start a fresh financial year.
+      Clients, projects, AMC contracts, credentials, and team data are kept.
+    </p>
+  </div>
+</div>
+
+<div class="row">
+  <div class="col-8 col-md-12" style="padding: 0.75rem;">
+
+    <!-- What gets deleted -->
+    <div class="card mb-3" style="border-left: 4px solid #dc2626;">
+      <div class="card-header" style="background: #fef2f2;">
+        <h3 class="card-title" style="color: #b91c1c;">
+          <i class="fas fa-trash-alt me-2"></i>
+          Records that will be deleted
+        </h3>
+      </div>
+      <div class="card-body p-0">
+        <table class="table mb-0">
+          <tbody>
+            <tr>
+              <td>Invoices</td>
+              <td class="text-end"><strong style="color: #b91c1c;">{{ counts.invoices }}</strong></td>
+            </tr>
+            <tr>
+              <td style="padding-left: 2rem; color: #64748b;">&boxur; Invoice line items</td>
+              <td class="text-end"><strong style="color: #b91c1c;">{{ counts.invoice_items }}</strong></td>
+            </tr>
+            <tr>
+              <td style="padding-left: 2rem; color: #64748b;">&boxur; Payment records</td>
+              <td class="text-end"><strong style="color: #b91c1c;">{{ counts.payments }}</strong></td>
+            </tr>
+            <tr>
+              <td>Expenses</td>
+              <td class="text-end"><strong style="color: #b91c1c;">{{ counts.expenses }}</strong></td>
+            </tr>
+            <tr>
+              <td>CRM Leads (and their notes, follow-ups, demos)</td>
+              <td class="text-end"><strong style="color: #b91c1c;">{{ counts.leads }}</strong></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- What is kept -->
+    <div class="card mb-3" style="border-left: 4px solid #16a34a;">
+      <div class="card-header" style="background: #f0fdf4;">
+        <h3 class="card-title" style="color: #166534;">
+          <i class="fas fa-shield-alt me-2"></i>
+          Records that will be kept
+        </h3>
+      </div>
+      <div class="card-body p-0">
+        <table class="table mb-0">
+          <tbody>
+            <tr><td>Clients</td><td class="text-end"><strong>{{ counts.clients }}</strong></td></tr>
+            <tr><td>Projects</td><td class="text-end"><strong>{{ counts.projects }}</strong></td></tr>
+            <tr><td>Quotes (all of them, regardless of date)</td><td class="text-end"><strong>{{ counts.quotes }}</strong></td></tr>
+            <tr><td>AMC contracts</td><td class="text-end"><strong>{{ counts.amc_contracts }}</strong></td></tr>
+            <tr><td style="padding-left: 2rem; color: #64748b;">&boxur; AMC payment history</td><td class="text-end"><strong>{{ counts.amc_payments }}</strong></td></tr>
+            <tr><td>Credentials</td><td class="text-end"><strong>{{ counts.credentials }}</strong></td></tr>
+            <tr><td>Team members</td><td class="text-end"><strong>{{ counts.team_members }}</strong></td></tr>
+            <tr><td class="text-muted" style="font-size: 0.85rem;">Licenses, admin/user accounts, HR/employee data</td><td class="text-end text-muted">unchanged</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Backup reminder -->
+    <div class="card mb-3" style="border-left: 4px solid #ca8a04;">
+      <div class="card-body" style="background: #fef9c3;">
+        <h4 style="color: #713f12; margin-top: 0;">
+          <i class="fas fa-download me-2"></i>
+          Have you downloaded the backup?
+        </h4>
+        <p class="mb-2" style="color: #713f12;">
+          Before continuing, download a single-PDF archive of every invoice. This is your only copy
+          once the reset runs &mdash; the operation cannot be undone.
+        </p>
+        <a href="{% url 'invoices_backup_pdf' %}?download=1" class="btn btn-outline-dark" target="_blank" rel="noopener">
+          <i class="fas fa-file-pdf me-2"></i>
+          Download Invoice Archive PDF
+        </a>
+        <a href="{% url 'invoices_backup_pdf' %}" class="btn btn-link" target="_blank" rel="noopener">Preview</a>
+      </div>
+    </div>
+
+    <!-- Confirmation form -->
+    <div class="card" style="border: 2px solid #dc2626;">
+      <div class="card-header" style="background: #dc2626; color: white;">
+        <h3 class="card-title mb-0" style="color: white;">
+          <i class="fas fa-exclamation-circle me-2"></i>
+          Confirm Reset
+        </h3>
+      </div>
+      <form method="post" action="{% url 'fy_reset' %}" onsubmit="return confirm('This is your last chance. Are you absolutely sure?');">
+        {% csrf_token %}
+        <div class="card-body">
+          <div class="form-group mb-3">
+            <label class="form-label">
+              <input type="checkbox" name="backup_downloaded" required>
+              I have downloaded the invoice archive PDF and saved it somewhere safe.
+            </label>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Type <code>RESET</code> in capital letters to confirm:</label>
+            <input type="text" class="form-control" name="confirm_text" required autocomplete="off"
+                   placeholder="RESET" pattern="RESET" style="max-width: 240px; font-family: monospace; letter-spacing: 0.2em;">
+          </div>
+        </div>
+        <div class="card-footer d-flex justify-content-between align-items-center" style="background: #fef2f2;">
+          <a href="{% url 'settings' %}" class="btn btn-outline-secondary">
+            <i class="fas fa-arrow-left me-2"></i>Cancel
+          </a>
+          <button type="submit" class="btn" style="background: #dc2626; color: white; font-weight: 600;">
+            <i class="fas fa-trash-alt me-2"></i>
+            Delete Financial Data Now
+          </button>
+        </div>
+      </form>
+    </div>
+
+  </div>
+</div>
+{% endblock %}

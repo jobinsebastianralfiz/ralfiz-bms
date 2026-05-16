@@ -8,7 +8,7 @@ from django.contrib import messages
 from django.db.models import Sum, Count, Q
 from django.utils import timezone
 from django.conf import settings
-from datetime import timedelta
+from datetime import timedelta, datetime
 
 from .models import (
     Client, Project, Credential, Quote, QuoteItem, Invoice, InvoiceItem, Payment, CompanySettings,
@@ -16,6 +16,7 @@ from .models import (
     TaskComment, TaskIssue, TaskActivity,
     AMCContract, AMCPayment, CredentialRenewal,
     ProjectType, ProjectFeature, FeatureRequestLink,
+    OpeningBalance,
 )
 from django.contrib.contenttypes.models import ContentType
 from licensing.models import License, LicenseKey, LicenseActivation
@@ -205,6 +206,33 @@ def dashboard(request):
         (expiring_credentials_30.aggregate(total=Sum('renewal_cost'))['total'] or 0)
     )
 
+    # ============== Cash Position (uses OpeningBalance) ==============
+    from decimal import Decimal
+    opening = OpeningBalance.current()
+    if opening:
+        ob_date = opening.as_of_date
+        # Payments since opening
+        cash_in_methods = ['cash']
+        acc_in_methods = ['bank_transfer', 'upi', 'card', 'paypal', 'cheque']
+        cash_received_since = Payment.objects.filter(
+            payment_date__gte=ob_date, payment_method__in=cash_in_methods
+        ).aggregate(t=Sum('amount'))['t'] or Decimal('0')
+        acc_received_since = Payment.objects.filter(
+            payment_date__gte=ob_date, payment_method__in=acc_in_methods
+        ).aggregate(t=Sum('amount'))['t'] or Decimal('0')
+        # Expenses since opening
+        cash_spent_since = Expense.objects.filter(
+            date__gte=ob_date, payment_method='cash'
+        ).aggregate(t=Sum('amount'))['t'] or Decimal('0')
+        acc_spent_since = Expense.objects.filter(
+            date__gte=ob_date, payment_method__in=['bank_transfer', 'upi', 'card']
+        ).aggregate(t=Sum('amount'))['t'] or Decimal('0')
+        current_cash_in_hand = opening.cash_in_hand + cash_received_since - cash_spent_since
+        current_cash_in_account = opening.cash_in_account + acc_received_since - acc_spent_since
+    else:
+        current_cash_in_hand = None
+        current_cash_in_account = None
+
     # Combined upcoming dues (sorted by date for timeline)
     upcoming_dues = []
     for amc in overdue_amc[:10]:
@@ -274,6 +302,10 @@ def dashboard(request):
         'total_credential_renewal_cost': total_credential_renewal_cost,
         'upcoming_dues': upcoming_dues[:10],
         'total_dues': total_dues,
+        # Cash position
+        'opening_balance': opening,
+        'current_cash_in_hand': current_cash_in_hand,
+        'current_cash_in_account': current_cash_in_account,
     }
     return render(request, 'dashboard/index.html', context)
 
@@ -2511,7 +2543,122 @@ def settings_view(request):
         messages.success(request, 'Settings updated successfully.')
         return redirect('settings')
 
-    return render(request, 'settings/index.html', {'company': company})
+    opening_balance = OpeningBalance.current()
+    opening_balance_history = OpeningBalance.objects.all()[:10]
+    return render(request, 'settings/index.html', {
+        'company': company,
+        'opening_balance': opening_balance,
+        'opening_balance_history': opening_balance_history,
+    })
+
+
+@login_required
+def opening_balance_save(request):
+    """Create a new opening balance snapshot (preserves history)."""
+    from decimal import Decimal, InvalidOperation
+
+    if request.method != 'POST':
+        return redirect('settings')
+
+    label = (request.POST.get('label') or '').strip()
+    as_of_raw = (request.POST.get('as_of_date') or '').strip()
+    cash_hand_raw = (request.POST.get('cash_in_hand') or '0').strip()
+    cash_acc_raw = (request.POST.get('cash_in_account') or '0').strip()
+    notes = (request.POST.get('notes') or '').strip()
+
+    if not label:
+        messages.error(request, 'Label is required (e.g. "FY 2026-27").')
+        return redirect('settings')
+    if not as_of_raw:
+        messages.error(request, 'As-of date is required.')
+        return redirect('settings')
+
+    try:
+        as_of_date = datetime.strptime(as_of_raw, '%Y-%m-%d').date()
+    except ValueError:
+        messages.error(request, 'As-of date must be a valid date.')
+        return redirect('settings')
+
+    try:
+        cash_hand = Decimal(cash_hand_raw or '0')
+        cash_acc = Decimal(cash_acc_raw or '0')
+    except InvalidOperation:
+        messages.error(request, 'Cash amounts must be valid numbers.')
+        return redirect('settings')
+
+    if cash_hand < 0 or cash_acc < 0:
+        messages.error(request, 'Cash amounts cannot be negative.')
+        return redirect('settings')
+
+    OpeningBalance.objects.create(
+        label=label,
+        as_of_date=as_of_date,
+        cash_in_hand=cash_hand,
+        cash_in_account=cash_acc,
+        notes=notes,
+    )
+    messages.success(request, f'Opening balance "{label}" saved.')
+    return redirect('settings')
+
+
+@login_required
+def fy_reset(request):
+    """Wipe all financial data so a new financial year can be started from scratch.
+
+    Deletes: Invoices (and cascading InvoiceItems + Payments), Expenses, CRM Leads.
+    Keeps: Clients, Projects, Credentials, AMC contracts, Licenses, HR/Team, Users.
+
+    GET shows counts and confirmation form. POST executes after confirmation
+    (typed "RESET" + checkbox acknowledging the backup was downloaded).
+    """
+    from django.db import transaction
+    from crm.models import Lead
+
+    counts = {
+        'invoices': Invoice.objects.count(),
+        'invoice_items': InvoiceItem.objects.count(),
+        'payments': Payment.objects.count(),
+        'expenses': Expense.objects.count(),
+        'leads': Lead.objects.count(),
+        # Kept (shown for clarity)
+        'clients': Client.objects.count(),
+        'projects': Project.objects.count(),
+        'quotes': Quote.objects.count(),
+        'amc_contracts': AMCContract.objects.count(),
+        'amc_payments': AMCPayment.objects.count(),
+        'credentials': Credential.objects.count(),
+        'team_members': TeamMember.objects.count(),
+    }
+
+    if request.method == 'POST':
+        typed = (request.POST.get('confirm_text') or '').strip()
+        backed_up = request.POST.get('backup_downloaded') == 'on'
+
+        if typed != 'RESET':
+            messages.error(request, 'You must type RESET exactly to confirm.')
+            return render(request, 'settings/fy_reset.html', {'counts': counts})
+        if not backed_up:
+            messages.error(request, 'Please confirm that you have downloaded the backup PDF before resetting.')
+            return render(request, 'settings/fy_reset.html', {'counts': counts})
+
+        with transaction.atomic():
+            # Order: Payment first (it has a save() side-effect on Invoice; deleting
+            # invoices first would cascade, but explicit deletion is safer and the
+            # counts above are computed pre-wipe so they remain accurate.
+            Payment.objects.all().delete()
+            Invoice.objects.all().delete()  # cascades to InvoiceItem (and any leftover Payment)
+            Expense.objects.all().delete()
+            Lead.objects.all().delete()  # cascades to LeadNote/FollowUp/Activity/Demo
+
+        messages.success(
+            request,
+            f"Financial data reset complete. Removed {counts['invoices']} invoices, "
+            f"{counts['payments']} payments, {counts['expenses']} expenses, "
+            f"{counts['leads']} leads. Clients, projects, AMC contracts, and credentials kept."
+        )
+        return redirect('settings')
+
+    return render(request, 'settings/fy_reset.html', {'counts': counts})
 
 
 @login_required
