@@ -79,6 +79,48 @@
       </div>
     </div>
 
+    {% if outstanding_receivables > 0 %}
+    <!-- Receivables warning -->
+    <div class="card mb-3" style="border-left: 4px solid #b91c1c;">
+      <div class="card-body" style="background: #fef2f2;">
+        <h4 style="color: #7f1d1d; margin-top: 0;">
+          <i class="fas fa-hand-holding-usd me-2"></i>
+          Unpaid invoices &mdash; receivables that will vanish
+        </h4>
+        <p class="mb-2" style="color: #7f1d1d;">
+          Clients currently owe you
+          <strong style="font-size: 1.15rem;">&#8377;{{ outstanding_receivables|floatformat:2 }}</strong>
+          across unpaid invoices. When this reset runs, those invoice records are deleted &mdash; the
+          receivable disappears from the system. Capture this amount in the next opening balance
+          (<em>Accounts Receivable carried in</em>) before resetting, or you will lose track of what is owed.
+        </p>
+        {% if receivables_captured > 0 %}
+          {% if receivables_captured >= outstanding_receivables %}
+          <p class="mb-0" style="color: #166534;">
+            <i class="fas fa-check-circle me-1"></i>
+            Current opening balance (<strong>{{ opening_balance.label }}</strong>) carries
+            <strong>&#8377;{{ receivables_captured|floatformat:2 }}</strong> in receivables &mdash;
+            covers the outstanding total.
+          </p>
+          {% else %}
+          <p class="mb-0" style="color: #7f1d1d;">
+            <i class="fas fa-exclamation-triangle me-1"></i>
+            Current opening balance (<strong>{{ opening_balance.label }}</strong>) only carries
+            <strong>&#8377;{{ receivables_captured|floatformat:2 }}</strong>.
+            That is less than the outstanding total &mdash; save a fresh opening balance first.
+          </p>
+          {% endif %}
+        {% else %}
+        <p class="mb-0" style="color: #7f1d1d;">
+          <i class="fas fa-exclamation-triangle me-1"></i>
+          No receivables recorded in the current opening balance.
+          <a href="{% url 'settings' %}#financials-panel" style="color: #1d4ed8; text-decoration: underline;">Record one</a> before continuing.
+        </p>
+        {% endif %}
+      </div>
+    </div>
+    {% endif %}
+
     <!-- Backup reminder -->
     <div class="card mb-3" style="border-left: 4px solid #ca8a04;">
       <div class="card-body" style="background: #fef9c3;">

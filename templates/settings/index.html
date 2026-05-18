@@ -805,7 +805,8 @@
           <div class="alert alert-info" style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:4px;padding:0.75rem;font-size:0.9rem;">
             <strong>Current opening balance:</strong> {{ opening_balance.label }} (as of {{ opening_balance.as_of_date|date:"d M Y" }})<br>
             Cash in Hand: <strong>&#8377;{{ opening_balance.cash_in_hand|floatformat:2 }}</strong> &nbsp;|&nbsp;
-            Cash in Account: <strong>&#8377;{{ opening_balance.cash_in_account|floatformat:2 }}</strong>
+            Cash in Account: <strong>&#8377;{{ opening_balance.cash_in_account|floatformat:2 }}</strong> &nbsp;|&nbsp;
+            Receivables carried in: <strong>&#8377;{{ opening_balance.accounts_receivable|floatformat:2 }}</strong>
           </div>
           {% else %}
           <div class="alert" style="background:#fef9c3;border:1px solid #fde68a;border-radius:4px;padding:0.75rem;font-size:0.9rem;color:#713f12;">
@@ -839,6 +840,18 @@
                 <div class="form-group">
                   <label class="form-label">Cash in Account (&#8377;)</label>
                   <input type="number" class="form-control" name="cash_in_account" value="0" min="0" step="0.01">
+                </div>
+              </div>
+              <div class="col-12" style="padding: 0.5rem;">
+                <div class="form-group">
+                  <label class="form-label">Accounts Receivable carried in (&#8377;)</label>
+                  <input type="number" class="form-control" name="accounts_receivable"
+                         value="{{ outstanding_receivables|floatformat:2 }}" min="0" step="0.01"
+                         id="opening-balance-receivable">
+                  <small class="text-muted">
+                    Outstanding from existing invoices right now: <strong>&#8377;{{ outstanding_receivables|floatformat:2 }}</strong>.
+                    This value is preserved when invoices are wiped in an FY reset, so year-end debts aren&rsquo;t lost.
+                  </small>
                 </div>
               </div>
               <div class="col-12" style="padding: 0.5rem;">
@@ -894,6 +907,7 @@
                 <th>As of</th>
                 <th class="text-end">Cash in Hand</th>
                 <th class="text-end">Cash in Account</th>
+                <th class="text-end">Receivables</th>
                 <th>Recorded</th>
               </tr>
             </thead>
@@ -904,6 +918,7 @@
                 <td>{{ ob.as_of_date|date:"d M Y" }}</td>
                 <td class="text-end">&#8377;{{ ob.cash_in_hand|floatformat:2 }}</td>
                 <td class="text-end">&#8377;{{ ob.cash_in_account|floatformat:2 }}</td>
+                <td class="text-end">&#8377;{{ ob.accounts_receivable|floatformat:2 }}</td>
                 <td><span class="text-muted">{{ ob.created_at|date:"d M Y, H:i" }}</span></td>
               </tr>
               {% endfor %}

@@ -2545,10 +2545,15 @@ def settings_view(request):
 
     opening_balance = OpeningBalance.current()
     opening_balance_history = OpeningBalance.objects.all()[:10]
+    from django.db.models import F
+    outstanding_receivables = Invoice.objects.exclude(
+        status__in=['paid', 'cancelled']
+    ).aggregate(total=Sum(F('total_amount') - F('amount_paid')))['total'] or 0
     return render(request, 'settings/index.html', {
         'company': company,
         'opening_balance': opening_balance,
         'opening_balance_history': opening_balance_history,
+        'outstanding_receivables': outstanding_receivables,
     })
 
 
@@ -2564,6 +2569,7 @@ def opening_balance_save(request):
     as_of_raw = (request.POST.get('as_of_date') or '').strip()
     cash_hand_raw = (request.POST.get('cash_in_hand') or '0').strip()
     cash_acc_raw = (request.POST.get('cash_in_account') or '0').strip()
+    receivable_raw = (request.POST.get('accounts_receivable') or '0').strip()
     notes = (request.POST.get('notes') or '').strip()
 
     if not label:
@@ -2582,12 +2588,13 @@ def opening_balance_save(request):
     try:
         cash_hand = Decimal(cash_hand_raw or '0')
         cash_acc = Decimal(cash_acc_raw or '0')
+        receivable = Decimal(receivable_raw or '0')
     except InvalidOperation:
-        messages.error(request, 'Cash amounts must be valid numbers.')
+        messages.error(request, 'Cash and receivable amounts must be valid numbers.')
         return redirect('settings')
 
-    if cash_hand < 0 or cash_acc < 0:
-        messages.error(request, 'Cash amounts cannot be negative.')
+    if cash_hand < 0 or cash_acc < 0 or receivable < 0:
+        messages.error(request, 'Cash and receivable amounts cannot be negative.')
         return redirect('settings')
 
     OpeningBalance.objects.create(
@@ -2595,6 +2602,7 @@ def opening_balance_save(request):
         as_of_date=as_of_date,
         cash_in_hand=cash_hand,
         cash_in_account=cash_acc,
+        accounts_receivable=receivable,
         notes=notes,
     )
     messages.success(request, f'Opening balance "{label}" saved.')
@@ -2612,7 +2620,14 @@ def fy_reset(request):
     (typed "RESET" + checkbox acknowledging the backup was downloaded).
     """
     from django.db import transaction
+    from django.db.models import F
     from crm.models import Lead
+
+    outstanding_receivables = Invoice.objects.exclude(
+        status__in=['paid', 'cancelled']
+    ).aggregate(total=Sum(F('total_amount') - F('amount_paid')))['total'] or 0
+    opening = OpeningBalance.current()
+    receivables_captured = opening.accounts_receivable if opening else 0
 
     counts = {
         'invoices': Invoice.objects.count(),
@@ -2629,6 +2644,12 @@ def fy_reset(request):
         'credentials': Credential.objects.count(),
         'team_members': TeamMember.objects.count(),
     }
+    context = {
+        'counts': counts,
+        'outstanding_receivables': outstanding_receivables,
+        'opening_balance': opening,
+        'receivables_captured': receivables_captured,
+    }
 
     if request.method == 'POST':
         typed = (request.POST.get('confirm_text') or '').strip()
@@ -2636,10 +2657,10 @@ def fy_reset(request):
 
         if typed != 'RESET':
             messages.error(request, 'You must type RESET exactly to confirm.')
-            return render(request, 'settings/fy_reset.html', {'counts': counts})
+            return render(request, 'settings/fy_reset.html', context)
         if not backed_up:
             messages.error(request, 'Please confirm that you have downloaded the backup PDF before resetting.')
-            return render(request, 'settings/fy_reset.html', {'counts': counts})
+            return render(request, 'settings/fy_reset.html', context)
 
         with transaction.atomic():
             # Order: Payment first (it has a save() side-effect on Invoice; deleting
@@ -2658,7 +2679,7 @@ def fy_reset(request):
         )
         return redirect('settings')
 
-    return render(request, 'settings/fy_reset.html', {'counts': counts})
+    return render(request, 'settings/fy_reset.html', context)
 
 
 @login_required

@@ -802,6 +802,10 @@ class OpeningBalance(models.Model):
     as_of_date = models.DateField(help_text='Balances are effective from this date')
     cash_in_hand = models.DecimalField(max_digits=14, decimal_places=2, default=0)
     cash_in_account = models.DecimalField(max_digits=14, decimal_places=2, default=0)
+    accounts_receivable = models.DecimalField(
+        max_digits=14, decimal_places=2, default=0,
+        help_text='Total outstanding from clients carried into this FY (preserved when invoices are wiped).'
+    )
     notes = models.TextField(blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
