@@ -1818,19 +1818,10 @@ def invoice_list(request):
     return render(request, 'invoices/list.html', context)
 
 
-@login_required
-def invoices_mark_gst_filed(request):
-    """Mark every invoice matching the currently-applied filters as GST-filed.
-
-    Reads the same query params as invoice_list, applies them, and updates the
-    matching rows. Intended to be hit after filtering down to a specific
-    GST return period (e.g. issue_date in May 2026, status != cancelled).
-    """
+def _filter_invoices_from_post(request):
+    """Re-apply invoice_list filters from POST data and return the queryset."""
     from datetime import date
     from calendar import monthrange
-
-    if request.method != 'POST':
-        return redirect('invoice_list')
 
     invoices = Invoice.objects.exclude(status='cancelled')
 
@@ -1869,7 +1860,21 @@ def invoices_mark_gst_filed(request):
     if to_date:
         invoices = invoices.filter(issue_date__lte=to_date)
 
-    # Skip invoices with no tax (they're not_applicable, can't be 'filed')
+    return invoices
+
+
+@login_required
+def invoices_mark_gst_filed(request):
+    """Mark every invoice matching the currently-applied filters as GST-filed.
+
+    Reads the same query params as invoice_list, applies them, and updates the
+    matching rows. Intended to be hit after filtering down to a specific
+    GST return period (e.g. issue_date in May 2026, status != cancelled).
+    """
+    if request.method != 'POST':
+        return redirect('invoice_list')
+
+    invoices = _filter_invoices_from_post(request)
     candidates = invoices.exclude(gst_filing_status='not_applicable').filter(tax_amount__gt=0)
     updated = candidates.update(gst_filing_status='filed', gst_filed_at=timezone.now())
 
@@ -1880,6 +1885,45 @@ def invoices_mark_gst_filed(request):
 
     qs = request.POST.urlencode()
     return redirect(f'{reverse("invoice_list")}?{qs}')
+
+
+@login_required
+def invoices_mark_gst_pending(request):
+    """Reverse of invoices_mark_gst_filed: flip filtered invoices back to pending."""
+    if request.method != 'POST':
+        return redirect('invoice_list')
+
+    invoices = _filter_invoices_from_post(request)
+    candidates = invoices.exclude(gst_filing_status='not_applicable').filter(tax_amount__gt=0)
+    updated = candidates.update(gst_filing_status='pending', gst_filed_at=None)
+
+    if updated:
+        messages.success(request, f'Marked {updated} invoice(s) as GST pending.')
+    else:
+        messages.info(request, 'No matching invoices to revert.')
+
+    qs = request.POST.urlencode()
+    return redirect(f'{reverse("invoice_list")}?{qs}')
+
+
+@login_required
+def invoice_set_gst_status(request, pk):
+    """Per-invoice GST filing status update (POST only)."""
+    invoice = get_object_or_404(Invoice, pk=pk)
+    if request.method != 'POST':
+        return redirect('invoice_detail', pk=pk)
+
+    new_status = request.POST.get('gst_filing_status', '')
+    valid = {key for key, _ in Invoice.GST_FILING_STATUS_CHOICES}
+    if new_status not in valid:
+        messages.error(request, 'Invalid GST status.')
+        return redirect('invoice_detail', pk=pk)
+
+    invoice.gst_filing_status = new_status
+    invoice.gst_filed_at = timezone.now() if new_status == 'filed' else None
+    invoice.save(update_fields=['gst_filing_status', 'gst_filed_at'])
+    messages.success(request, f'GST status set to "{invoice.get_gst_filing_status_display()}".')
+    return redirect('invoice_detail', pk=pk)
 
 
 @login_required

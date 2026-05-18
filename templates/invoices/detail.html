@@ -222,9 +222,24 @@
           </div>
         </div>
         {% endif %}
-        <div>
+        <div class="mb-3">
           <div class="text-sm text-muted mb-1">Status</div>
           <div><span class="status-badge {{ invoice.status }}">{{ invoice.get_status_display }}</span></div>
+        </div>
+        <div>
+          <div class="text-sm text-muted mb-1">GST Filing</div>
+          <form method="post" action="{% url 'invoice_set_gst_status' invoice.pk %}" class="d-flex gap-2 align-items-center">
+            {% csrf_token %}
+            <select name="gst_filing_status" class="form-control form-control-sm" style="width:auto;flex:1;">
+              <option value="pending" {% if invoice.gst_filing_status == 'pending' %}selected{% endif %}>Pending GST filing</option>
+              <option value="filed" {% if invoice.gst_filing_status == 'filed' %}selected{% endif %}>Filed in GSTR</option>
+              <option value="not_applicable" {% if invoice.gst_filing_status == 'not_applicable' %}selected{% endif %}>GST not applicable</option>
+            </select>
+            <button type="submit" class="btn btn-sm btn-primary">Save</button>
+          </form>
+          {% if invoice.gst_filing_status == 'filed' and invoice.gst_filed_at %}
+          <div class="text-sm text-muted mt-1">Filed on {{ invoice.gst_filed_at|date:"d M Y, H:i" }}</div>
+          {% endif %}
         </div>
       </div>
     </div>

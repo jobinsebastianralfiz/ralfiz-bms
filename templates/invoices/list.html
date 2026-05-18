@@ -101,6 +101,25 @@
       <span class="text-muted small">Skips invoices with no tax (auto-marked not-applicable).</span>
     </div>
     {% endif %}
+
+    {% if gst_filing == 'filed' %}
+    <div class="mt-2 d-flex flex-wrap gap-2 align-items-center" style="padding: 0 0.5rem;">
+      <span class="text-muted small me-2">Bulk:</span>
+      <form method="post" action="{% url 'invoices_mark_gst_pending' %}" onsubmit="return confirm('Revert every invoice currently shown back to GST pending? Use this if you marked the wrong period.');">
+        {% csrf_token %}
+        <input type="hidden" name="search" value="{{ search }}">
+        <input type="hidden" name="status" value="{{ status }}">
+        <input type="hidden" name="gst_filing" value="{{ gst_filing }}">
+        <input type="hidden" name="from_date" value="{{ from_date }}">
+        <input type="hidden" name="to_date" value="{{ to_date }}">
+        <input type="hidden" name="period" value="{{ period }}">
+        <button type="submit" class="btn btn-sm btn-outline-warning">
+          <i class="fas fa-undo me-1"></i>Mark filtered as Pending
+        </button>
+      </form>
+      <span class="text-muted small">Reverts a previous bulk mark-as-filed.</span>
+    </div>
+    {% endif %}
   </div>
 </div>
 
