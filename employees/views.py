@@ -1182,6 +1182,7 @@ class OwnerProjectListView(APIView):
             data.append({
                 'id': str(project.id),
                 'name': project.name,
+                'client_id': str(project.client_id) if project.client_id else '',
                 'client_name': project.client.name if project.client else '',
                 'status': project.status,
                 'project_type': project.project_type,
