@@ -273,14 +273,14 @@
   <div class="metric">
     <div class="metric-icon" style="background: #fff7ed; color: #f97316;"><i class="fas fa-hourglass-half"></i></div>
     <div>
-      <div class="metric-num">&#8377;{{ pending_amount|floatformat:0|default:"0" }}<span class="metric-badge" style="background: #fff7ed; color: #ea580c;">{{ pending_count }}</span></div>
+      <div class="metric-num">&#8377;{{ pending_amount|floatformat:2|default:"0" }}<span class="metric-badge" style="background: #fff7ed; color: #ea580c;">{{ pending_count }}</span></div>
       <div class="metric-label">Pending</div>
     </div>
   </div>
   <div class="metric">
     <div class="metric-icon" style="background: #f0fdf4; color: #16a34a;"><i class="fas fa-arrow-trend-up"></i></div>
     <div>
-      <div class="metric-num">&#8377;{{ revenue_this_month|floatformat:0|default:"0" }}</div>
+      <div class="metric-num">&#8377;{{ revenue_this_month|floatformat:2|default:"0" }}</div>
       <div class="metric-label">Revenue this month</div>
     </div>
   </div>
@@ -292,14 +292,14 @@
   <div class="metric">
     <div class="metric-icon" style="background: #f0fdf4; color: #16a34a;"><i class="fas fa-money-bill-wave"></i></div>
     <div>
-      <div class="metric-num">&#8377;{{ current_cash_in_hand|floatformat:0|default:"0" }}</div>
+      <div class="metric-num">&#8377;{{ current_cash_in_hand|floatformat:2|default:"0" }}</div>
       <div class="metric-label">Cash in Hand</div>
     </div>
   </div>
   <div class="metric">
     <div class="metric-icon" style="background: #eff6ff; color: #2563eb;"><i class="fas fa-university"></i></div>
     <div>
-      <div class="metric-num">&#8377;{{ current_cash_in_account|floatformat:0|default:"0" }}</div>
+      <div class="metric-num">&#8377;{{ current_cash_in_account|floatformat:2|default:"0" }}</div>
       <div class="metric-label">Cash in Account</div>
     </div>
   </div>
@@ -307,7 +307,7 @@
     <div class="metric-icon" style="background: #f1f5f9; color: #64748b;"><i class="fas fa-flag"></i></div>
     <div>
       <div class="metric-num" style="font-size: 1rem;">{{ opening_balance.label }}</div>
-      <div class="metric-label">Opening: &#8377;{{ opening_balance.cash_in_hand|add:opening_balance.cash_in_account|floatformat:0 }} on {{ opening_balance.as_of_date|date:"d M Y" }}</div>
+      <div class="metric-label">Opening: &#8377;{{ opening_balance.cash_in_hand|add:opening_balance.cash_in_account|floatformat:2 }} on {{ opening_balance.as_of_date|date:"d M Y" }}</div>
     </div>
   </div>
 </div>
@@ -346,7 +346,7 @@
   <div class="card-db">
     <div class="card-db-head">
       <h3 class="card-db-title"><i class="fas fa-chart-area me-2" style="color: #8b5cf6;"></i>Revenue</h3>
-      <span style="font-size: 0.75rem; color: var(--text-muted);">Last 6 months &bull; Total: &#8377;{{ total_revenue|floatformat:0|default:"0" }}</span>
+      <span style="font-size: 0.75rem; color: var(--text-muted);">Last 6 months &bull; Total: &#8377;{{ total_revenue|floatformat:2|default:"0" }}</span>
     </div>
     <div class="card-db-body">
       <canvas id="revenueChart" height="85"></canvas>
@@ -431,7 +431,7 @@
               <div class="inv-date">{{ invoice.due_date|date:"d M Y"|default:"—" }}</div>
             </td>
             <td>{{ invoice.client.name }}</td>
-            <td class="inv-amt">&#8377;{{ invoice.total_amount|floatformat:0 }}</td>
+            <td class="inv-amt">&#8377;{{ invoice.total_amount|floatformat:2 }}</td>
             <td><span class="status-badge {{ invoice.status }}">{{ invoice.get_status_display }}</span></td>
             <td><a href="{% url 'invoice_detail' invoice.pk %}" class="btn btn-sm btn-ghost btn-icon"><i class="fas fa-arrow-right"></i></a></td>
           </tr>
@@ -468,7 +468,7 @@
           <div class="pay-name">{{ payment.invoice.client.name }}</div>
           <div class="pay-sub">{{ payment.payment_date|date:"d M Y" }}</div>
         </div>
-        <div class="pay-amt">+&#8377;{{ payment.amount|floatformat:0 }}</div>
+        <div class="pay-amt">+&#8377;{{ payment.amount|floatformat:2 }}</div>
       </div>
       {% empty %}
       <div class="empty-state"><i class="fas fa-wallet d-block"></i><p>No payments yet</p></div>
@@ -480,7 +480,7 @@
   <div class="card-db">
     <div class="card-db-head" style="background: linear-gradient(135deg, #fefce8, #fef9c3);">
       <h3 class="card-db-title" style="color: #a16207;"><i class="fas fa-file-invoice-dollar me-2"></i>Dues & Renewals</h3>
-      <span style="background: #fef3c7; color: #92400e; font-size: 0.65rem; font-weight: 700; padding: 2px 8px; border-radius: 6px;">&#8377;{{ total_dues|floatformat:0 }}</span>
+      <span style="background: #fef3c7; color: #92400e; font-size: 0.65rem; font-weight: 700; padding: 2px 8px; border-radius: 6px;">&#8377;{{ total_dues|floatformat:2 }}</span>
     </div>
     <div class="card-db-body np">
       {% for due in upcoming_dues %}
@@ -496,7 +496,7 @@
           <div class="alert-sub">
             {% if due.overdue %}<span style="color: #dc2626; font-weight: 600;">Overdue</span> &bull; {% endif %}
             {{ due.date|date:"d M Y" }} &bull; {{ due.client }}
-            {% if due.amount %} &bull; &#8377;{{ due.amount|floatformat:0 }}{% endif %}
+            {% if due.amount %} &bull; &#8377;{{ due.amount|floatformat:2 }}{% endif %}
           </div>
         </div>
         <a href="{{ due.url }}" style="color: var(--text-muted);"><i class="fas fa-chevron-right"></i></a>
@@ -532,7 +532,7 @@
         <div class="alert-icon" style="background: #fee2e2; color: #dc2626;"><i class="fas fa-exclamation"></i></div>
         <div class="alert-text">
           <div class="alert-name">{{ invoice.invoice_number }}</div>
-          <div class="alert-sub" style="color: #dc2626;">Overdue &bull; &#8377;{{ invoice.balance_due|floatformat:0 }}</div>
+          <div class="alert-sub" style="color: #dc2626;">Overdue &bull; &#8377;{{ invoice.balance_due|floatformat:2 }}</div>
         </div>
         <a href="{% url 'invoice_detail' invoice.pk %}" style="color: var(--text-muted);"><i class="fas fa-chevron-right"></i></a>
       </div>

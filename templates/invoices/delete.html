@@ -49,11 +49,11 @@
             </div>
             <div class="col-3">
               <div class="text-sm text-muted">Total</div>
-              <div class="fw-medium">&#8377;{{ invoice.total_amount|floatformat:0 }}</div>
+              <div class="fw-medium">&#8377;{{ invoice.total_amount|floatformat:2 }}</div>
             </div>
             <div class="col-3">
               <div class="text-sm text-muted">Paid</div>
-              <div class="fw-medium text-success">&#8377;{{ invoice.amount_paid|floatformat:0|default:"0" }}</div>
+              <div class="fw-medium text-success">&#8377;{{ invoice.amount_paid|floatformat:2|default:"0" }}</div>
             </div>
             <div class="col-3">
               <div class="text-sm text-muted">Payments</div>
@@ -68,7 +68,7 @@
           <div class="alert-content">
             <div class="alert-title">Cannot delete this invoice</div>
             <p class="alert-text mb-0">
-              This invoice has {{ invoice.payments.count }} payment(s) recorded against it totaling &#8377;{{ invoice.amount_paid|floatformat:0 }}.
+              This invoice has {{ invoice.payments.count }} payment(s) recorded against it totaling &#8377;{{ invoice.amount_paid|floatformat:2 }}.
               Payments must be deleted first before the invoice can be removed.
             </p>
           </div>

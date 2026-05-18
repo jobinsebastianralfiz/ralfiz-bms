@@ -62,7 +62,7 @@
             <strong>Client:</strong> {{ quote.client.name }}
           </div>
           <div class="mb-2">
-            <strong>Amount:</strong> &#8377;{{ quote.total_amount|floatformat:0 }}
+            <strong>Amount:</strong> &#8377;{{ quote.total_amount|floatformat:2 }}
           </div>
           <div class="mb-2">
             <strong>Valid Until:</strong> {{ quote.valid_until|date:"d M Y"|default:"-" }}

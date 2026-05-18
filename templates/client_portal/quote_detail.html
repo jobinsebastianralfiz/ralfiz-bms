@@ -47,31 +47,31 @@
                 {% if item.details %}<div style="font-size: 0.8125rem; color: var(--text-muted); margin-top: 0.125rem;">{{ item.details }}</div>{% endif %}
               </td>
               <td style="text-align: right;">{{ item.quantity|floatformat:0 }}</td>
-              <td style="text-align: right;">&#8377;{{ item.unit_price|floatformat:0 }}</td>
-              <td style="text-align: right; font-weight: 600;">&#8377;{{ item.amount|floatformat:0 }}</td>
+              <td style="text-align: right;">&#8377;{{ item.unit_price|floatformat:2 }}</td>
+              <td style="text-align: right; font-weight: 600;">&#8377;{{ item.amount|floatformat:2 }}</td>
             </tr>
             {% endfor %}
           </tbody>
           <tfoot>
             <tr>
               <td colspan="3" style="text-align: right; font-weight: 500;">Subtotal</td>
-              <td style="text-align: right; font-weight: 600;">&#8377;{{ quote.subtotal|floatformat:0 }}</td>
+              <td style="text-align: right; font-weight: 600;">&#8377;{{ quote.subtotal|floatformat:2 }}</td>
             </tr>
             {% if quote.discount %}
             <tr>
               <td colspan="3" style="text-align: right; color: var(--success);">Discount</td>
-              <td style="text-align: right; color: var(--success);">-&#8377;{{ quote.discount|floatformat:0 }}</td>
+              <td style="text-align: right; color: var(--success);">-&#8377;{{ quote.discount|floatformat:2 }}</td>
             </tr>
             {% endif %}
             {% if quote.tax_rate %}
             <tr>
               <td colspan="3" style="text-align: right;">Tax ({{ quote.tax_rate }}%)</td>
-              <td style="text-align: right;">&#8377;{{ quote.tax_amount|floatformat:0 }}</td>
+              <td style="text-align: right;">&#8377;{{ quote.tax_amount|floatformat:2 }}</td>
             </tr>
             {% endif %}
             <tr style="font-size: 1.125rem;">
               <td colspan="3" style="text-align: right; font-weight: 700;">Total</td>
-              <td style="text-align: right; font-weight: 700;">&#8377;{{ quote.total_amount|floatformat:0 }}</td>
+              <td style="text-align: right; font-weight: 700;">&#8377;{{ quote.total_amount|floatformat:2 }}</td>
             </tr>
           </tfoot>
         </table>
@@ -104,7 +104,7 @@
       <div class="portal-card-body">
         <div style="display: flex; flex-direction: column; gap: 0.875rem;">
           <div style="text-align: center; padding: 1rem; background: var(--bg-body); border-radius: var(--border-radius);">
-            <div style="font-size: 1.5rem; font-weight: 700; color: var(--text-primary);">&#8377;{{ quote.total_amount|floatformat:0 }}</div>
+            <div style="font-size: 1.5rem; font-weight: 700; color: var(--text-primary);">&#8377;{{ quote.total_amount|floatformat:2 }}</div>
             <div style="font-size: 0.8125rem; color: var(--text-muted);">Total Amount</div>
           </div>
           <div class="detail-item">

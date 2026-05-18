@@ -146,7 +146,7 @@
           <i class="fas fa-rupee-sign"></i>
         </div>
       </div>
-      <div class="stat-card-value">&#8377;{{ total_revenue|floatformat:0|default:"0" }}</div>
+      <div class="stat-card-value">&#8377;{{ total_revenue|floatformat:2|default:"0" }}</div>
       <div class="stat-card-label">Total Revenue</div>
     </div>
   </div>
@@ -157,7 +157,7 @@
           <i class="fas fa-file-invoice"></i>
         </div>
       </div>
-      <div class="stat-card-value">&#8377;{{ pending_amount|floatformat:0|default:"0" }}</div>
+      <div class="stat-card-value">&#8377;{{ pending_amount|floatformat:2|default:"0" }}</div>
       <div class="stat-card-label">Pending Amount</div>
     </div>
   </div>
@@ -386,7 +386,7 @@
                 </td>
                 <td><span class="badge badge-info">{{ project.get_project_type_display }}</span></td>
                 <td><span class="status-badge {{ project.status }}">{{ project.get_status_display }}</span></td>
-                <td class="fw-medium">&#8377;{{ project.estimated_budget|floatformat:0|default:"-" }}</td>
+                <td class="fw-medium">&#8377;{{ project.estimated_budget|floatformat:2|default:"-" }}</td>
                 <td>{{ project.deadline|date:"d M Y"|default:"-" }}</td>
                 <td>
                   <a href="{% url 'project_detail' project.pk %}" class="btn btn-sm btn-ghost btn-icon">
@@ -423,7 +423,7 @@
               <tr>
                 <td><a href="{% url 'invoice_detail' invoice.pk %}" class="fw-medium">{{ invoice.invoice_number }}</a></td>
                 <td>{{ invoice.project.name|default:"-" }}</td>
-                <td class="fw-medium">&#8377;{{ invoice.total_amount|floatformat:0 }}</td>
+                <td class="fw-medium">&#8377;{{ invoice.total_amount|floatformat:2 }}</td>
                 <td>{{ invoice.due_date|date:"d M Y"|default:"-" }}</td>
                 <td><span class="status-badge {{ invoice.status }}">{{ invoice.get_status_display }}</span></td>
                 <td>
@@ -461,7 +461,7 @@
               <tr>
                 <td><a href="{% url 'quote_detail' quote.pk %}" class="fw-medium">{{ quote.quote_number }}</a></td>
                 <td>{{ quote.title }}</td>
-                <td class="fw-medium">&#8377;{{ quote.total_amount|floatformat:0 }}</td>
+                <td class="fw-medium">&#8377;{{ quote.total_amount|floatformat:2 }}</td>
                 <td>{{ quote.valid_until|date:"d M Y"|default:"-" }}</td>
                 <td><span class="status-badge {{ quote.status }}">{{ quote.get_status_display }}</span></td>
                 <td>
@@ -498,7 +498,7 @@
               <tr>
                 <td>{{ payment.payment_date|date:"d M Y" }}</td>
                 <td><a href="{% url 'invoice_detail' payment.invoice.pk %}">{{ payment.invoice.invoice_number }}</a></td>
-                <td class="fw-medium text-success">&#8377;{{ payment.amount|floatformat:0 }}</td>
+                <td class="fw-medium text-success">&#8377;{{ payment.amount|floatformat:2 }}</td>
                 <td><span class="badge badge-info">{{ payment.get_payment_method_display }}</span></td>
                 <td class="text-muted">{{ payment.transaction_id|default:"-" }}</td>
               </tr>

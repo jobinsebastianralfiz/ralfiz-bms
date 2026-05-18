@@ -43,7 +43,7 @@
           <i class="fas fa-rupee-sign"></i>
         </div>
       </div>
-      <div class="stat-card-value">&#8377;{{ total_annual|floatformat:0 }}</div>
+      <div class="stat-card-value">&#8377;{{ total_annual|floatformat:2 }}</div>
       <div class="stat-card-label">Annual Revenue</div>
     </div>
   </div>
@@ -132,7 +132,7 @@
             <a href="{% url 'client_detail' amc.project.client.pk %}" class="text-muted">{{ amc.project.client.name }}</a>
           </td>
           <td><span class="badge" style="background: #e0e7ff; color: #4338ca;">{{ amc.get_contract_type_display }}</span></td>
-          <td class="fw-medium">&#8377;{{ amc.annual_amount|floatformat:0 }}</td>
+          <td class="fw-medium">&#8377;{{ amc.annual_amount|floatformat:2 }}</td>
           <td><span class="badge badge-info">{{ amc.get_billing_cycle_display }}</span></td>
           <td>
             <span class="{% if amc.is_overdue %}text-danger fw-semibold{% elif amc.is_due_soon %}text-warning{% endif %}">

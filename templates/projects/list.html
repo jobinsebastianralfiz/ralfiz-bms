@@ -97,7 +97,7 @@
           </td>
           <td>{{ project.get_project_type_display }}</td>
           <td><span class="status-badge {{ project.status }}">{{ project.get_status_display }}</span></td>
-          <td class="fw-medium">{% if project.estimated_budget %}&#8377;{{ project.estimated_budget|floatformat:0 }}{% else %}-{% endif %}</td>
+          <td class="fw-medium">{% if project.estimated_budget %}&#8377;{{ project.estimated_budget|floatformat:2 }}{% else %}-{% endif %}</td>
           <td>{{ project.deadline|date:"d M Y"|default:"-" }}</td>
           <td>
             <div class="table-actions">

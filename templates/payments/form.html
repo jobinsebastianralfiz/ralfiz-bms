@@ -47,7 +47,7 @@
                           data-amount="{{ inv.total_amount }}"
                           data-balance="{{ inv.balance_due }}"
                           {% if selected_invoice == inv.pk %}selected{% endif %}>
-                    {{ inv.invoice_number }} - {{ inv.client.name }} (Balance: &#8377;{{ inv.balance_due|floatformat:0 }})
+                    {{ inv.invoice_number }} - {{ inv.client.name }} (Balance: &#8377;{{ inv.balance_due|floatformat:2 }})
                   </option>
                   {% endfor %}
                 </select>

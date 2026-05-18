@@ -30,7 +30,7 @@
             <td><a href="{% url 'client_portal:portal_quote_detail' quote.id %}">{{ quote.quote_number }}</a></td>
             <td>{{ quote.title|truncatewords:5 }}</td>
             <td style="color: var(--text-muted);">{{ quote.project.name|default:"-" }}</td>
-            <td class="amount">&#8377;{{ quote.total_amount|floatformat:0 }}</td>
+            <td class="amount">&#8377;{{ quote.total_amount|floatformat:2 }}</td>
             <td>{{ quote.issue_date|date:"M d, Y" }}</td>
             <td style="{% if quote.is_expired %}color: var(--danger);{% endif %}">{{ quote.valid_until|date:"M d, Y" }}</td>
             <td><span class="portal-badge {{ quote.status }}">{{ quote.get_status_display }}</span></td>

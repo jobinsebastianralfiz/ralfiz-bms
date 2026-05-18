@@ -84,7 +84,7 @@
             <div style="font-size: 0.8125rem; color: var(--text-muted);">{{ invoice.title|truncatewords:6 }}</div>
           </div>
           <div style="text-align: right;">
-            <div style="font-weight: 700; color: var(--text-primary); font-variant-numeric: tabular-nums;">&#8377;{{ invoice.balance_due|floatformat:0 }}</div>
+            <div style="font-weight: 700; color: var(--text-primary); font-variant-numeric: tabular-nums;">&#8377;{{ invoice.balance_due|floatformat:2 }}</div>
             <span class="portal-badge {{ invoice.status }}">{{ invoice.get_status_display }}</span>
           </div>
         </div>

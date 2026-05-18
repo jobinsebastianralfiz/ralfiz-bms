@@ -187,10 +187,10 @@
           <td>{{ invoice.issue_date|date:"d M Y"|default:"-" }}</td>
           <td><a href="{% url 'client_detail' invoice.client.pk %}">{{ invoice.client.name }}</a></td>
           <td>{{ invoice.title }}</td>
-          <td>&#8377;{{ invoice.subtotal|floatformat:0 }}</td>
-          <td>&#8377;{{ invoice.tax_amount|floatformat:0 }}</td>
-          <td class="fw-medium">&#8377;{{ invoice.total_amount|floatformat:0 }}</td>
-          <td>&#8377;{{ invoice.amount_paid|floatformat:0 }}</td>
+          <td>&#8377;{{ invoice.subtotal|floatformat:2 }}</td>
+          <td>&#8377;{{ invoice.tax_amount|floatformat:2 }}</td>
+          <td class="fw-medium">&#8377;{{ invoice.total_amount|floatformat:2 }}</td>
+          <td>&#8377;{{ invoice.amount_paid|floatformat:2 }}</td>
           <td><span class="status-badge {{ invoice.status }}">{{ invoice.get_status_display }}</span></td>
           <td>
             {% if invoice.gst_filing_status == 'filed' %}

@@ -523,19 +523,19 @@
       <div class="financial-grid">
         <div class="financial-card">
           <div class="label">Estimated Budget</div>
-          <div class="value">&#8377;{{ project.estimated_budget|floatformat:0|default:"0" }}</div>
+          <div class="value">&#8377;{{ project.estimated_budget|floatformat:2|default:"0" }}</div>
         </div>
         <div class="financial-card">
           <div class="label">Final Amount</div>
-          <div class="value primary">&#8377;{{ project.final_amount|floatformat:0|default:"0" }}</div>
+          <div class="value primary">&#8377;{{ project.final_amount|floatformat:2|default:"0" }}</div>
         </div>
         <div class="financial-card">
           <div class="label">Total Paid</div>
-          <div class="value success">&#8377;{{ total_paid|floatformat:0 }}</div>
+          <div class="value success">&#8377;{{ total_paid|floatformat:2 }}</div>
         </div>
         <div class="financial-card">
           <div class="label">Balance Due</div>
-          <div class="value warning">&#8377;{{ balance_due|floatformat:0 }}</div>
+          <div class="value warning">&#8377;{{ balance_due|floatformat:2 }}</div>
         </div>
       </div>
     </div>
@@ -576,7 +576,7 @@
       <div class="amc-grid">
         <div class="amc-item">
           <div class="label">Amount</div>
-          <div class="value">&#8377;{{ amc.annual_amount|floatformat:0 }}</div>
+          <div class="value">&#8377;{{ amc.annual_amount|floatformat:2 }}</div>
         </div>
         <div class="amc-item">
           <div class="label">Billing Cycle</div>

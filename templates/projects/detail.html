@@ -145,7 +145,7 @@
           <i class="fas fa-rupee-sign"></i>
         </div>
       </div>
-      <div class="stat-card-value">&#8377;{{ total_project_cost|floatformat:0|default:"0" }}</div>
+      <div class="stat-card-value">&#8377;{{ total_project_cost|floatformat:2|default:"0" }}</div>
       <div class="stat-card-label">Project Cost</div>
     </div>
   </div>
@@ -156,7 +156,7 @@
           <i class="fas fa-check-circle"></i>
         </div>
       </div>
-      <div class="stat-card-value">&#8377;{{ amount_received|floatformat:0|default:"0" }}</div>
+      <div class="stat-card-value">&#8377;{{ amount_received|floatformat:2|default:"0" }}</div>
       <div class="stat-card-label">Amount Received</div>
     </div>
   </div>
@@ -167,7 +167,7 @@
           <i class="fas fa-clock"></i>
         </div>
       </div>
-      <div class="stat-card-value">&#8377;{{ pending_amount|floatformat:0|default:"0" }}</div>
+      <div class="stat-card-value">&#8377;{{ pending_amount|floatformat:2|default:"0" }}</div>
       <div class="stat-card-label">Pending Amount</div>
     </div>
   </div>
@@ -436,7 +436,7 @@
               <tr>
                 <td><a href="{% url 'invoice_detail' invoice.pk %}" class="fw-medium">{{ invoice.invoice_number }}</a></td>
                 <td>{{ invoice.title|truncatewords:5 }}</td>
-                <td class="fw-medium">&#8377;{{ invoice.total_amount|floatformat:0 }}</td>
+                <td class="fw-medium">&#8377;{{ invoice.total_amount|floatformat:2 }}</td>
                 <td>{{ invoice.due_date|date:"d M Y"|default:"-" }}</td>
                 <td><span class="status-badge {{ invoice.status }}">{{ invoice.get_status_display }}</span></td>
                 <td>
@@ -474,7 +474,7 @@
               <tr>
                 <td><a href="{% url 'quote_detail' quote.pk %}" class="fw-medium">{{ quote.quote_number }}</a></td>
                 <td>{{ quote.title|truncatewords:5 }}</td>
-                <td class="fw-medium">&#8377;{{ quote.total_amount|floatformat:0 }}</td>
+                <td class="fw-medium">&#8377;{{ quote.total_amount|floatformat:2 }}</td>
                 <td>{{ quote.valid_until|date:"d M Y"|default:"-" }}</td>
                 <td><span class="status-badge {{ quote.status }}">{{ quote.get_status_display }}</span></td>
                 <td>
@@ -511,7 +511,7 @@
               <tr>
                 <td>{{ payment.payment_date|date:"d M Y" }}</td>
                 <td><a href="{% url 'invoice_detail' payment.invoice.pk %}">{{ payment.invoice.invoice_number }}</a></td>
-                <td class="fw-medium text-success">&#8377;{{ payment.amount|floatformat:0 }}</td>
+                <td class="fw-medium text-success">&#8377;{{ payment.amount|floatformat:2 }}</td>
                 <td><span class="badge badge-info">{{ payment.get_payment_method_display }}</span></td>
                 <td class="text-muted">{{ payment.transaction_id|default:"-" }}</td>
               </tr>
@@ -537,7 +537,7 @@
         <div class="p-3 {% if not forloop.last %}border-bottom{% endif %}">
           <div class="d-flex justify-content-between align-items-start mb-3">
             <div>
-              <div class="fw-semibold">&#8377;{{ amc.annual_amount|floatformat:0 }} / {{ amc.get_billing_cycle_display }}</div>
+              <div class="fw-semibold">&#8377;{{ amc.annual_amount|floatformat:2 }} / {{ amc.get_billing_cycle_display }}</div>
               <div class="text-sm text-muted">{{ amc.start_date|date:"d M Y" }} - {{ amc.end_date|date:"d M Y" }}</div>
             </div>
             <div class="d-flex gap-2 align-items-center">
@@ -560,7 +560,7 @@
             </div>
             <div>
               <span class="text-muted">Total Paid:</span>
-              <span class="fw-medium text-success">&#8377;{{ amc.total_paid|floatformat:0 }}</span>
+              <span class="fw-medium text-success">&#8377;{{ amc.total_paid|floatformat:2 }}</span>
             </div>
             <div>
               <span class="text-muted">Days:</span>
@@ -595,7 +595,7 @@
                 {% for payment in amc_payments %}
                 <tr>
                   <td>{{ payment.payment_date|date:"d M Y" }}</td>
-                  <td class="fw-medium text-success">&#8377;{{ payment.amount|floatformat:0 }}</td>
+                  <td class="fw-medium text-success">&#8377;{{ payment.amount|floatformat:2 }}</td>
                   <td class="text-sm">{{ payment.period_start|date:"d M Y" }} - {{ payment.period_end|date:"d M Y" }}</td>
                   <td><span class="badge badge-info">{{ payment.get_payment_method_display }}</span></td>
                 </tr>

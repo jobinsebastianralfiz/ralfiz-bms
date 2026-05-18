@@ -62,10 +62,10 @@
             <strong>Client:</strong> {{ invoice.client.name }}
           </div>
           <div class="mb-2">
-            <strong>Amount:</strong> &#8377;{{ invoice.total_amount|floatformat:0 }}
+            <strong>Amount:</strong> &#8377;{{ invoice.total_amount|floatformat:2 }}
           </div>
           <div class="mb-2">
-            <strong>Balance:</strong> &#8377;{{ invoice.balance_due|floatformat:0 }}
+            <strong>Balance:</strong> &#8377;{{ invoice.balance_due|floatformat:2 }}
           </div>
           <div class="mb-2">
             <strong>Due:</strong> {{ invoice.due_date|date:"d M Y"|default:"-" }}

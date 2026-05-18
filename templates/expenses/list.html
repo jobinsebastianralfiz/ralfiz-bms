@@ -21,13 +21,13 @@
 <div class="row mb-4">
   <div class="col-6" style="padding: 0.5rem;">
     <div class="card stat-card" style="text-align: center;">
-      <div class="stat-card-value" style="font-size: 1.25rem;">&#8377;{{ total_expenses|floatformat:0 }}</div>
+      <div class="stat-card-value" style="font-size: 1.25rem;">&#8377;{{ total_expenses|floatformat:2 }}</div>
       <div class="stat-card-label">Total Expenses</div>
     </div>
   </div>
   <div class="col-6" style="padding: 0.5rem;">
     <div class="card stat-card" style="text-align: center;">
-      <div class="stat-card-value text-success" style="font-size: 1.25rem;">&#8377;{{ billable_total|floatformat:0 }}</div>
+      <div class="stat-card-value text-success" style="font-size: 1.25rem;">&#8377;{{ billable_total|floatformat:2 }}</div>
       <div class="stat-card-label">Billable</div>
     </div>
   </div>
@@ -101,7 +101,7 @@
             <span class="text-muted">-</span>
             {% endif %}
           </td>
-          <td class="fw-medium">&#8377;{{ expense.amount|floatformat:0 }}</td>
+          <td class="fw-medium">&#8377;{{ expense.amount|floatformat:2 }}</td>
           <td>
             {% if expense.is_billable %}
             <span class="badge badge-success">Yes</span>

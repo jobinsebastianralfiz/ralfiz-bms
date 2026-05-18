@@ -87,15 +87,15 @@
         <div class="portal-card-body">
           <div class="financial-summary">
             <div class="financial-item">
-              <div class="amount neutral">&#8377;{{ financial.total_invoiced|floatformat:0 }}</div>
+              <div class="amount neutral">&#8377;{{ financial.total_invoiced|floatformat:2 }}</div>
               <div class="label">Total Invoiced</div>
             </div>
             <div class="financial-item">
-              <div class="amount positive">&#8377;{{ financial.total_paid|floatformat:0 }}</div>
+              <div class="amount positive">&#8377;{{ financial.total_paid|floatformat:2 }}</div>
               <div class="label">Total Paid</div>
             </div>
             <div class="financial-item">
-              <div class="amount {% if financial.balance_due > 0 %}negative{% else %}positive{% endif %}">&#8377;{{ financial.balance_due|floatformat:0 }}</div>
+              <div class="amount {% if financial.balance_due > 0 %}negative{% else %}positive{% endif %}">&#8377;{{ financial.balance_due|floatformat:2 }}</div>
               <div class="label">Balance Due</div>
             </div>
           </div>

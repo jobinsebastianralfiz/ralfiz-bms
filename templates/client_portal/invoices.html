@@ -22,12 +22,12 @@
 <div class="portal-stats" style="grid-template-columns: repeat(3, 1fr);">
   <div class="portal-stat-card">
     <div class="portal-stat-icon green"><i class="fas fa-check-circle"></i></div>
-    <div class="portal-stat-value">&#8377;{{ total_paid|floatformat:0 }}</div>
+    <div class="portal-stat-value">&#8377;{{ total_paid|floatformat:2 }}</div>
     <div class="portal-stat-label">Total Paid</div>
   </div>
   <div class="portal-stat-card">
     <div class="portal-stat-icon amber"><i class="fas fa-clock"></i></div>
-    <div class="portal-stat-value">&#8377;{{ balance_due|floatformat:0 }}</div>
+    <div class="portal-stat-value">&#8377;{{ balance_due|floatformat:2 }}</div>
     <div class="portal-stat-label">Balance Due</div>
   </div>
   <div class="portal-stat-card">
@@ -62,9 +62,9 @@
             <td style="color: var(--text-muted);">{{ invoice.project.name|default:"-" }}</td>
             <td>{{ invoice.issue_date|date:"M d, Y" }}</td>
             <td style="{% if invoice.is_overdue %}color: var(--danger); font-weight: 600;{% endif %}">{{ invoice.due_date|date:"M d, Y"|default:"-" }}</td>
-            <td class="amount">&#8377;{{ invoice.total_amount|floatformat:0 }}</td>
-            <td class="amount" style="color: var(--success);">&#8377;{{ invoice.amount_paid|floatformat:0 }}</td>
-            <td class="amount" style="color: {% if invoice.balance_due > 0 %}var(--danger){% else %}var(--success){% endif %};">&#8377;{{ invoice.balance_due|floatformat:0 }}</td>
+            <td class="amount">&#8377;{{ invoice.total_amount|floatformat:2 }}</td>
+            <td class="amount" style="color: var(--success);">&#8377;{{ invoice.amount_paid|floatformat:2 }}</td>
+            <td class="amount" style="color: {% if invoice.balance_due > 0 %}var(--danger){% else %}var(--success){% endif %};">&#8377;{{ invoice.balance_due|floatformat:2 }}</td>
             <td><span class="portal-badge {{ invoice.status }}">{{ invoice.get_status_display }}</span></td>
           </tr>
           {% empty %}

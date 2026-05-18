@@ -55,7 +55,7 @@
       <div class="card-body">
         <div class="mb-3">
           <div class="text-sm text-muted mb-1">Annual Amount</div>
-          <div class="fw-semibold" style="font-size: 1.25rem;">&#8377;{{ amc.annual_amount|floatformat:0 }}</div>
+          <div class="fw-semibold" style="font-size: 1.25rem;">&#8377;{{ amc.annual_amount|floatformat:2 }}</div>
         </div>
         <div class="mb-3">
           <div class="text-sm text-muted mb-1">Billing Cycle</div>
@@ -78,7 +78,7 @@
         </div>
         <div class="mb-3">
           <div class="text-sm text-muted mb-1">Total Paid</div>
-          <div class="fw-medium text-success">&#8377;{{ amc.total_paid|floatformat:0 }}</div>
+          <div class="fw-medium text-success">&#8377;{{ amc.total_paid|floatformat:2 }}</div>
         </div>
         <div class="mb-3">
           <div class="text-sm text-muted mb-1">Auto Renew</div>
@@ -186,7 +186,7 @@
             {% for payment in payments %}
             <tr>
               <td>{{ payment.payment_date|date:"d M Y" }}</td>
-              <td class="fw-medium text-success">&#8377;{{ payment.amount|floatformat:0 }}</td>
+              <td class="fw-medium text-success">&#8377;{{ payment.amount|floatformat:2 }}</td>
               <td class="text-sm">{{ payment.period_start|date:"d M Y" }} - {{ payment.period_end|date:"d M Y" }}</td>
               <td><span class="badge badge-info">{{ payment.get_payment_method_display }}</span></td>
               <td class="text-muted">{{ payment.reference|default:"-" }}</td>
