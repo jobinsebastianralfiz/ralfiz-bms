@@ -126,17 +126,22 @@
       <div class="card-body" style="background: #fef9c3;">
         <h4 style="color: #713f12; margin-top: 0;">
           <i class="fas fa-download me-2"></i>
-          Have you downloaded the backup?
+          Have you downloaded the backups?
         </h4>
         <p class="mb-2" style="color: #713f12;">
-          Before continuing, download a single-PDF archive of every invoice. This is your only copy
-          once the reset runs &mdash; the operation cannot be undone.
+          Before continuing, download single-PDF archives of every invoice <strong>and</strong> every expense.
+          These are your only copies once the reset runs &mdash; the operation cannot be undone.
         </p>
-        <a href="{% url 'invoices_backup_pdf' %}?download=1" class="btn btn-outline-dark" target="_blank" rel="noopener">
+        <a href="{% url 'invoices_backup_pdf' %}?download=1" class="btn btn-outline-dark me-2" target="_blank" rel="noopener">
           <i class="fas fa-file-pdf me-2"></i>
           Download Invoice Archive PDF
         </a>
-        <a href="{% url 'invoices_backup_pdf' %}" class="btn btn-link" target="_blank" rel="noopener">Preview</a>
+        <a href="{% url 'invoices_backup_pdf' %}" class="btn btn-link me-3" target="_blank" rel="noopener">Preview</a>
+        <a href="{% url 'expenses_backup_pdf' %}?download=1" class="btn btn-outline-dark me-2" target="_blank" rel="noopener">
+          <i class="fas fa-file-pdf me-2"></i>
+          Download Expense Archive PDF
+        </a>
+        <a href="{% url 'expenses_backup_pdf' %}" class="btn btn-link" target="_blank" rel="noopener">Preview</a>
       </div>
     </div>
 

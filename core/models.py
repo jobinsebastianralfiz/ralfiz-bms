@@ -400,14 +400,19 @@ class Quote(models.Model):
 
     def save(self, *args, **kwargs):
         if not self.quote_number:
-            year = timezone.now().year
-            last_quote = Quote.objects.filter(quote_number__startswith=f'QT{year}').order_by('-quote_number').first()
-            if last_quote:
-                last_number = int(last_quote.quote_number[-4:])
-                new_number = last_number + 1
-            else:
-                new_number = 1
-            self.quote_number = f'QT{year}{new_number:04d}'
+            settings = CompanySettings.get_settings()
+            prefix = settings.quote_prefix
+            matching_quotes = Quote.objects.filter(quote_number__startswith=prefix)
+            max_number = 0
+            for q in matching_quotes:
+                try:
+                    num = int(q.quote_number[len(prefix):])
+                    if num > max_number:
+                        max_number = num
+                except (ValueError, IndexError):
+                    continue
+            new_number = max_number + 1 if max_number > 0 else settings.quote_starting_number
+            self.quote_number = f'{prefix}{new_number}'
         super().save(*args, **kwargs)
         # When quote is accepted and linked to a project, set project budget
         if self.status == 'accepted' and self.project:
@@ -657,6 +662,7 @@ class CompanySettings(models.Model):
     invoice_prefix = models.CharField(max_length=10, default='INVRT', help_text='Prefix for invoice numbers (e.g., INVRT)')
     invoice_starting_number = models.IntegerField(default=201, help_text='Starting number for invoices (used when no invoices exist)')
     quote_prefix = models.CharField(max_length=10, default='QT')
+    quote_starting_number = models.IntegerField(default=1, help_text='Starting number for quotes (used when no quotes exist with the current prefix)')
     default_tax_rate = models.DecimalField(max_digits=5, decimal_places=2, default=18)
     default_quote_validity_days = models.IntegerField(default=30, help_text='Default number of days a quote is valid')
     default_payment_terms = models.CharField(max_length=50, default='50-50', blank=True, help_text='Default payment terms for quotes')
@@ -819,6 +825,42 @@ class OpeningBalance(models.Model):
     @classmethod
     def current(cls):
         return cls.objects.order_by('-as_of_date', '-created_at').first()
+
+
+class FYResetEvent(models.Model):
+    """Audit record of every Financial Year reset (data wipe).
+
+    Captures who ran the reset, when, what was wiped, and the financial
+    position at that moment so the action is traceable after the
+    underlying invoices/payments/expenses are gone.
+    """
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    ran_at = models.DateTimeField(auto_now_add=True)
+    ran_by = models.ForeignKey(
+        'auth.User', on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='fy_resets'
+    )
+    invoices_wiped = models.IntegerField(default=0)
+    payments_wiped = models.IntegerField(default=0)
+    expenses_wiped = models.IntegerField(default=0)
+    leads_wiped = models.IntegerField(default=0)
+    outstanding_receivables = models.DecimalField(
+        max_digits=14, decimal_places=2, default=0,
+        help_text='Sum of unpaid invoice balance_due at the moment of reset.'
+    )
+    opening_balance = models.ForeignKey(
+        OpeningBalance, on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='resets',
+        help_text='Opening balance active when the reset ran (carries receivables forward).'
+    )
+    invoice_prefix_after = models.CharField(max_length=10, blank=True)
+    notes = models.TextField(blank=True)
+
+    class Meta:
+        ordering = ['-ran_at']
+
+    def __str__(self):
+        return f"FY reset on {self.ran_at:%d %b %Y %H:%M} by {self.ran_by or 'unknown'}"
 
 
 class TeamMember(models.Model):

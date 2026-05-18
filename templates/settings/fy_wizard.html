@@ -1,0 +1,142 @@
+{% extends 'base.html' %}
+
+{% block title %}Financial Year Rollover - Ralfiz BMS{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title">
+      <i class="fas fa-calendar-check me-2 text-primary"></i>
+      Financial Year Rollover
+    </h1>
+    <p class="page-subtitle mb-0">
+      Six-step guided flow to close the current financial year safely and start the next one.
+      Work through the steps in order. Each step shows live status.
+    </p>
+  </div>
+</div>
+
+<div class="row">
+  <div class="col-8 col-md-12" style="padding: 0.75rem;">
+
+    {% if last_reset %}
+    <div class="alert" style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:4px;padding:0.75rem;margin-bottom:1rem;font-size:0.9rem;">
+      <i class="fas fa-history me-2"></i>
+      Last FY reset was on <strong>{{ last_reset.ran_at|date:"d M Y, H:i" }}</strong>
+      by {{ last_reset.ran_by.username|default:"unknown" }} &mdash;
+      wiped {{ last_reset.invoices_wiped }} invoices, &#8377;{{ last_reset.outstanding_receivables|floatformat:2 }} receivables.
+    </div>
+    {% endif %}
+
+    {% for step in steps %}
+    <div class="card mb-3" style="border-left: 4px solid {% if step.done %}#16a34a{% else %}#94a3b8{% endif %};">
+      <div class="card-body">
+        <div class="d-flex justify-content-between align-items-start" style="gap: 1rem;">
+          <div style="flex: 1;">
+            <h4 style="margin-top: 0; margin-bottom: 0.25rem;">
+              {% if step.done %}
+                <i class="fas fa-check-circle me-2" style="color: #16a34a;"></i>
+              {% else %}
+                <i class="fas fa-circle-notch me-2" style="color: #94a3b8;"></i>
+              {% endif %}
+              {{ step.title }}
+              {% if not step.mandatory %}
+                <span class="badge" style="background:#e2e8f0;color:#475569;font-size:0.7rem;font-weight:500;">optional</span>
+              {% endif %}
+            </h4>
+            <p class="text-muted mb-2" style="font-size: 0.9rem;">{{ step.description|safe }}</p>
+            <div class="d-flex flex-wrap" style="gap: 0.5rem;">
+              <a href="{{ step.action_url }}"
+                 class="btn btn-sm {% if step.done %}btn-outline-secondary{% else %}btn-primary{% endif %}"
+                 {% if step.key == 'invoice_backup' or step.key == 'expense_backup' %}target="_blank" rel="noopener"{% endif %}>
+                {% if step.key == 'invoice_backup' or step.key == 'expense_backup' %}
+                  <i class="fas fa-file-pdf me-1"></i>
+                {% else %}
+                  <i class="fas fa-arrow-right me-1"></i>
+                {% endif %}
+                {{ step.action_label }}
+              </a>
+              {% if step.preview_url %}
+                <a href="{{ step.preview_url }}" target="_blank" rel="noopener" class="btn btn-sm btn-link">Preview</a>
+              {% endif %}
+              {% if step.mark_done_flag and not step.done %}
+                <form method="post" style="display:inline;">
+                  {% csrf_token %}
+                  <input type="hidden" name="mark_done" value="{{ step.mark_done_flag }}">
+                  <button type="submit" class="btn btn-sm btn-outline-success">
+                    <i class="fas fa-check me-1"></i>I downloaded and saved it
+                  </button>
+                </form>
+              {% endif %}
+            </div>
+          </div>
+          <div style="text-align: right; min-width: 110px;">
+            {% if step.done %}
+              <span class="badge" style="background:#dcfce7;color:#166534;padding:0.4rem 0.7rem;font-size:0.85rem;">
+                <i class="fas fa-check me-1"></i>Done
+              </span>
+            {% else %}
+              <span class="badge" style="background:#fef3c7;color:#854d0e;padding:0.4rem 0.7rem;font-size:0.85rem;">
+                <i class="fas fa-hourglass-half me-1"></i>Pending
+              </span>
+            {% endif %}
+          </div>
+        </div>
+
+        {% if step.key == 'opening_balance' and opening %}
+          <div class="mt-2" style="font-size: 0.85rem; padding: 0.5rem 0.75rem; background: #f8fafc; border-radius: 4px;">
+            Current: <strong>{{ opening.label }}</strong> (as of {{ opening.as_of_date|date:"d M Y" }}) &mdash;
+            cash &#8377;{{ opening.cash_in_hand|add:opening.cash_in_account|floatformat:2 }},
+            receivables &#8377;{{ opening.accounts_receivable|floatformat:2 }}
+            {% if not receivables_covered %}
+              <span style="color:#b91c1c;"><i class="fas fa-exclamation-triangle ms-2"></i>does not cover outstanding &#8377;{{ outstanding_receivables|floatformat:2 }}</span>
+            {% endif %}
+          </div>
+        {% endif %}
+
+        {% if step.key == 'invoice_numbering' %}
+          <div class="mt-2" style="font-size: 0.85rem; padding: 0.5rem 0.75rem; background: #f8fafc; border-radius: 4px;">
+            {% if step.done %}
+              Prefix <code>{{ company.invoice_prefix }}</code> has no existing invoices &mdash; safe for the new FY.
+            {% else %}
+              Prefix <code>{{ company.invoice_prefix }}</code> is in use by existing invoices. Switch to a fresh one.
+            {% endif %}
+          </div>
+        {% endif %}
+
+        {% if step.key == 'quote_numbering' %}
+          <div class="mt-2" style="font-size: 0.85rem; padding: 0.5rem 0.75rem; background: #f8fafc; border-radius: 4px;">
+            {% if step.done %}
+              Prefix <code>{{ company.quote_prefix }}</code> has no existing quotes &mdash; safe for the new FY.
+            {% else %}
+              Prefix <code>{{ company.quote_prefix }}</code> is in use by existing quotes. Switch to a fresh one.
+            {% endif %}
+          </div>
+        {% endif %}
+
+        {% if step.key == 'reset' and not prior_steps_done %}
+          <div class="mt-2" style="font-size: 0.85rem; padding: 0.5rem 0.75rem; background: #fef2f2; border-radius: 4px; color: #7f1d1d;">
+            <i class="fas fa-lock me-1"></i>
+            Complete the mandatory steps above before running the reset. The reset page enforces its own typed-RESET + backup gates too.
+          </div>
+        {% endif %}
+      </div>
+    </div>
+    {% endfor %}
+
+    <div class="d-flex justify-content-between align-items-center mt-3">
+      <a href="{% url 'settings' %}" class="btn btn-outline-secondary">
+        <i class="fas fa-arrow-left me-2"></i>Back to Settings
+      </a>
+      <form method="post" style="display:inline;">
+        {% csrf_token %}
+        <input type="hidden" name="mark_done" value="reset_backups">
+        <button type="submit" class="btn btn-link text-muted" style="font-size:0.85rem;">
+          <i class="fas fa-undo me-1"></i>Reset wizard progress
+        </button>
+      </form>
+    </div>
+
+  </div>
+</div>
+{% endblock %}

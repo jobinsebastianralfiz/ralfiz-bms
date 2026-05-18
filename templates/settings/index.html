@@ -352,13 +352,34 @@
                     Backup All Invoices (Single PDF)
                   </a>
                   <a href="{% url 'invoices_backup_pdf' %}" class="btn btn-link" target="_blank" rel="noopener">Preview archive</a>
-                  <div class="form-text w-100">Switches to a new prefix and resets the counter. Existing invoices stay unchanged. Use the Backup button to archive every invoice into one PDF before any reset.</div>
+                  <a href="{% url 'expenses_backup_pdf' %}?download=1" class="btn btn-outline-secondary" target="_blank" rel="noopener">
+                    <i class="fas fa-file-pdf me-2"></i>
+                    Backup All Expenses (Single PDF)
+                  </a>
+                  <a href="{% url 'expenses_backup_pdf' %}" class="btn btn-link" target="_blank" rel="noopener">Preview expenses</a>
+                  <div class="form-text w-100">Switches to a new prefix and resets the counter. Existing invoices stay unchanged. Use the Backup buttons to archive invoices and expenses into PDFs before any reset.</div>
                 </div>
               </div>
               <div class="col-6 col-sm-12" style="padding: 0.5rem;">
                 <div class="form-group">
                   <label class="form-label">Quote Prefix</label>
                   <input type="text" class="form-control" name="quote_prefix" value="{{ company.quote_prefix|default:'QT' }}">
+                </div>
+              </div>
+              <div class="col-6 col-sm-12" style="padding: 0.5rem;">
+                <div class="form-group">
+                  <label class="form-label">Quote Starting Number</label>
+                  <input type="number" class="form-control" name="quote_starting_number" value="{{ company.quote_starting_number|default:'1' }}" min="1">
+                  <div class="form-text">Used when no quotes exist with the current prefix.</div>
+                </div>
+              </div>
+              <div class="col-12" style="padding: 0.5rem;">
+                <div class="form-group">
+                  <button type="button" class="btn btn-outline-primary" onclick="openNewFyQuoteModal()">
+                    <i class="fas fa-calendar-alt me-2"></i>
+                    Start New Financial Year (Quotes)
+                  </button>
+                  <div class="form-text">Switches to a new quote prefix and resets the counter. Existing quotes stay unchanged.</div>
                 </div>
               </div>
               <div class="col-6 col-sm-12" style="padding: 0.5rem;">
@@ -788,6 +809,26 @@
 
     <!-- Financial Year Panel (outside main form, has its own forms) -->
     <div class="settings-panel d-none" id="financials-panel">
+      <div class="card mb-3" style="border-left: 4px solid #0d9488;">
+        <div class="card-body">
+          <div class="d-flex justify-content-between align-items-center" style="gap: 1rem;">
+            <div>
+              <h4 style="margin-top:0;margin-bottom:0.25rem;">
+                <i class="fas fa-calendar-check me-2" style="color:#0d9488;"></i>
+                Start Financial Year Rollover (guided)
+              </h4>
+              <p class="text-muted mb-0" style="font-size:0.9rem;">
+                Step-by-step checklist: backup invoices &amp; expenses, record opening balance,
+                reset numbering, then wipe. Recommended over the individual buttons below.
+              </p>
+            </div>
+            <a href="{% url 'fy_wizard' %}" class="btn btn-primary" style="background:#0d9488;border-color:#0d9488;">
+              Launch Wizard <i class="fas fa-arrow-right ms-2"></i>
+            </a>
+          </div>
+        </div>
+      </div>
+
       <div class="card mb-3">
         <div class="card-header">
           <h3 class="card-title">
@@ -891,6 +932,53 @@
         </div>
       </div>
 
+      {% if fy_reset_history %}
+      <div class="card mb-3">
+        <div class="card-header">
+          <h3 class="card-title">
+            <i class="fas fa-clipboard-list me-2 text-muted"></i>
+            FY Reset Audit Trail
+          </h3>
+        </div>
+        <div class="card-body p-0">
+          <table class="table mb-0" style="font-size: 0.9rem;">
+            <thead>
+              <tr>
+                <th>When</th>
+                <th>By</th>
+                <th class="text-end">Invoices</th>
+                <th class="text-end">Payments</th>
+                <th class="text-end">Expenses</th>
+                <th class="text-end">Leads</th>
+                <th class="text-end">Receivables at reset</th>
+                <th>Carried in</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for ev in fy_reset_history %}
+              <tr>
+                <td>{{ ev.ran_at|date:"d M Y, H:i" }}</td>
+                <td>{{ ev.ran_by.username|default:"-" }}</td>
+                <td class="text-end">{{ ev.invoices_wiped }}</td>
+                <td class="text-end">{{ ev.payments_wiped }}</td>
+                <td class="text-end">{{ ev.expenses_wiped }}</td>
+                <td class="text-end">{{ ev.leads_wiped }}</td>
+                <td class="text-end">&#8377;{{ ev.outstanding_receivables|floatformat:2 }}</td>
+                <td>
+                  {% if ev.opening_balance %}
+                    {{ ev.opening_balance.label }}
+                  {% else %}
+                    <span class="text-muted">none</span>
+                  {% endif %}
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+      {% endif %}
+
       {% if opening_balance_history %}
       <div class="card">
         <div class="card-header">
@@ -973,6 +1061,48 @@
   </div>
 </div>
 
+<div id="newFyQuoteModal" class="new-fy-modal" style="display:none;">
+  <div class="new-fy-backdrop" onclick="closeNewFyQuoteModal()"></div>
+  <div class="new-fy-dialog card">
+    <form method="post" action="{% url 'start_new_fy_quotes' %}">
+      {% csrf_token %}
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <h3 class="card-title mb-0">
+          <i class="fas fa-calendar-alt me-2 text-primary"></i>
+          Start New Financial Year (Quotes)
+        </h3>
+        <button type="button" class="btn btn-sm" onclick="closeNewFyQuoteModal()" aria-label="Close">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+      <div class="card-body">
+        <p class="text-muted mb-3">
+          Current prefix: <strong>{{ company.quote_prefix }}</strong>.
+          Set a new prefix and starting number for the new financial year. Old quotes are not changed.
+        </p>
+        <div class="form-group mb-3">
+          <label class="form-label">New Quote Prefix</label>
+          <input type="text" class="form-control" name="new_prefix" maxlength="10" required placeholder="e.g., QT2627-">
+          <div class="form-text">Use a prefix that has never been used before (max 10 chars).</div>
+        </div>
+        <div class="form-group mb-3">
+          <label class="form-label">New Starting Number</label>
+          <input type="number" class="form-control" name="new_starting_number" value="1" min="1" required>
+          <div class="form-text">Usually 1 at the start of a new FY.</div>
+        </div>
+        <div class="alert alert-warning" style="background:#fff8e1;border:1px solid #ffe082;border-radius:4px;padding:0.75rem;font-size:0.9rem;">
+          <i class="fas fa-exclamation-triangle me-2"></i>
+          This affects every new quote from now on. Existing quotes keep their numbers.
+        </div>
+      </div>
+      <div class="card-footer d-flex justify-content-end" style="gap:0.5rem;">
+        <button type="button" class="btn btn-outline-secondary" onclick="closeNewFyQuoteModal()">Cancel</button>
+        <button type="submit" class="btn btn-primary">Start New FY for Quotes</button>
+      </div>
+    </form>
+  </div>
+</div>
+
 <style>
   .new-fy-modal { position: fixed; inset: 0; z-index: 1050; display: flex; align-items: center; justify-content: center; }
   .new-fy-backdrop { position: absolute; inset: 0; background: rgba(0,0,0,0.5); }
@@ -1004,8 +1134,19 @@
     document.getElementById('newFyModal').style.display = 'none';
   }
 
+  function openNewFyQuoteModal() {
+    document.getElementById('newFyQuoteModal').style.display = 'flex';
+  }
+
+  function closeNewFyQuoteModal() {
+    document.getElementById('newFyQuoteModal').style.display = 'none';
+  }
+
   document.addEventListener('keydown', function(e) {
-    if (e.key === 'Escape') closeNewFyModal();
+    if (e.key === 'Escape') {
+      closeNewFyModal();
+      closeNewFyQuoteModal();
+    }
   });
 </script>
 {% endblock %}

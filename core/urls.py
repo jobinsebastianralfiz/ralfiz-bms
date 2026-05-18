@@ -84,6 +84,7 @@ urlpatterns = [
     path('invoices/', views.invoice_list, name='invoice_list'),
     path('invoices/create/', views.invoice_create, name='invoice_create'),
     path('invoices/backup-pdf/', views.invoices_backup_pdf, name='invoices_backup_pdf'),
+    path('expenses/backup-pdf/', views.expenses_backup_pdf, name='expenses_backup_pdf'),
     path('invoices/<uuid:pk>/', views.invoice_detail, name='invoice_detail'),
     path('invoices/<uuid:pk>/edit/', views.invoice_update, name='invoice_update'),
     path('invoices/<uuid:pk>/pdf/', views.invoice_pdf, name='invoice_pdf'),
@@ -100,6 +101,8 @@ urlpatterns = [
     # Settings & Reports
     path('settings/', views.settings_view, name='settings'),
     path('settings/start-new-fy/', views.start_new_fy, name='start_new_fy'),
+    path('settings/start-new-fy-quotes/', views.start_new_fy_quotes, name='start_new_fy_quotes'),
+    path('settings/fy-wizard/', views.fy_wizard, name='fy_wizard'),
     path('settings/opening-balance/save/', views.opening_balance_save, name='opening_balance_save'),
     path('settings/reset-financial-data/', views.fy_reset, name='fy_reset'),
     path('reports/', views.reports_view, name='reports'),

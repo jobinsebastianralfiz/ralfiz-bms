@@ -16,7 +16,7 @@ from .models import (
     TaskComment, TaskIssue, TaskActivity,
     AMCContract, AMCPayment, CredentialRenewal,
     ProjectType, ProjectFeature, FeatureRequestLink,
-    OpeningBalance,
+    OpeningBalance, FYResetEvent,
 )
 from django.contrib.contenttypes.models import ContentType
 from licensing.models import License, LicenseKey, LicenseActivation
@@ -2177,6 +2177,94 @@ def invoices_backup_pdf(request):
     return render(request, 'invoices/backup_pdf.html', context)
 
 
+@login_required
+def expenses_backup_pdf(request):
+    """Render every expense in the system into a single archival PDF.
+
+    Intended as an offline backup before a Start-New-FY reset that
+    wipes expenses (along with invoices/payments).
+    """
+    from django.http import HttpResponse
+    from django.template.loader import render_to_string
+    from decimal import Decimal
+
+    expenses = (
+        Expense.objects
+        .select_related('project', 'project__client')
+        .order_by('date', 'created_at')
+    )
+
+    agg = expenses.aggregate(total=Sum('amount'))
+    total_amount = agg['total'] or Decimal('0')
+
+    by_category_qs = (
+        expenses.values('category')
+        .annotate(total=Sum('amount'), count=Count('id'))
+        .order_by('-total')
+    )
+    cat_labels = dict(Expense.CATEGORY_CHOICES)
+    by_category = [
+        {
+            'label': cat_labels.get(row['category'], row['category']),
+            'count': row['count'],
+            'total': row['total'] or Decimal('0'),
+        }
+        for row in by_category_qs
+    ]
+
+    by_method_qs = (
+        expenses.values('payment_method')
+        .annotate(total=Sum('amount'), count=Count('id'))
+        .order_by('-total')
+    )
+    method_labels = dict(Expense.PAYMENT_METHOD_CHOICES)
+    by_method = [
+        {
+            'label': method_labels.get(row['payment_method'], row['payment_method']),
+            'count': row['count'],
+            'total': row['total'] or Decimal('0'),
+        }
+        for row in by_method_qs
+    ]
+
+    if expenses.exists():
+        first_date = expenses.order_by('date').first().date
+        last_date = expenses.order_by('-date').first().date
+    else:
+        first_date = last_date = None
+
+    stats = {
+        'count': expenses.count(),
+        'first_date': first_date,
+        'last_date': last_date,
+        'total_amount': total_amount,
+    }
+
+    context = {
+        'expenses': expenses,
+        'company': CompanySettings.get_settings(),
+        'stats': stats,
+        'by_category': by_category,
+        'by_method': by_method,
+        'generated_on': timezone.now(),
+    }
+
+    download = request.GET.get('download', '0') == '1'
+    if download:
+        try:
+            from weasyprint import HTML
+            html_string = render_to_string('expenses/backup_pdf.html', context)
+            pdf = HTML(string=html_string, base_url=request.build_absolute_uri('/')).write_pdf()
+            filename = f"expense_archive_{timezone.now().strftime('%Y%m%d_%H%M')}.pdf"
+            response = HttpResponse(pdf, content_type='application/pdf')
+            response['Content-Disposition'] = f'attachment; filename="{filename}"'
+            return response
+        except ImportError:
+            messages.warning(request, 'PDF generation requires WeasyPrint. Showing printable view instead.')
+
+    return render(request, 'expenses/backup_pdf.html', context)
+
+
 # ============== Invoice Delete ==============
 
 @login_required
@@ -2518,6 +2606,13 @@ def settings_view(request):
         except (ValueError, TypeError):
             company.invoice_starting_number = 201
 
+        # Quote starting number
+        try:
+            q_starting_num = request.POST.get('quote_starting_number', '1')
+            company.quote_starting_number = int(q_starting_num) if q_starting_num else 1
+        except (ValueError, TypeError):
+            company.quote_starting_number = 1
+
         # InterioDesk App Settings
         company.interiodesk_min_version = request.POST.get('interiodesk_min_version', '1.0.0')
         company.interiodesk_latest_version = request.POST.get('interiodesk_latest_version', '1.0.0')
@@ -2549,11 +2644,13 @@ def settings_view(request):
     outstanding_receivables = Invoice.objects.exclude(
         status__in=['paid', 'cancelled']
     ).aggregate(total=Sum(F('total_amount') - F('amount_paid')))['total'] or 0
+    fy_reset_history = FYResetEvent.objects.select_related('ran_by', 'opening_balance')[:10]
     return render(request, 'settings/index.html', {
         'company': company,
         'opening_balance': opening_balance,
         'opening_balance_history': opening_balance_history,
         'outstanding_receivables': outstanding_receivables,
+        'fy_reset_history': fy_reset_history,
     })
 
 
@@ -2607,6 +2704,138 @@ def opening_balance_save(request):
     )
     messages.success(request, f'Opening balance "{label}" saved.')
     return redirect('settings')
+
+
+@login_required
+def fy_wizard(request):
+    """Guided financial-year rollover: backups -> opening balance -> numbering -> wipe.
+
+    Single-page checklist. Each step shows derived status (done / pending / action
+    needed) plus the right action button. Backup downloads are session-tracked
+    because the system can't observe the actual download.
+    """
+    from django.db.models import F
+    from crm.models import Lead
+
+    if request.method == 'POST':
+        flag = request.POST.get('mark_done')
+        if flag in ('invoice_backup', 'expense_backup'):
+            request.session[f'fy_wizard.{flag}_done'] = True
+            messages.success(request, 'Step acknowledged.')
+        elif flag == 'reset_backups':
+            request.session.pop('fy_wizard.invoice_backup_done', None)
+            request.session.pop('fy_wizard.expense_backup_done', None)
+            messages.info(request, 'Backup acknowledgements cleared.')
+        return redirect('fy_wizard')
+
+    company = CompanySettings.get_settings()
+    opening = OpeningBalance.current()
+    last_reset = FYResetEvent.objects.first()
+
+    outstanding_receivables = Invoice.objects.exclude(
+        status__in=['paid', 'cancelled']
+    ).aggregate(total=Sum(F('total_amount') - F('amount_paid')))['total'] or 0
+
+    invoice_count = Invoice.objects.count()
+    expense_count = Expense.objects.count()
+    quote_count = Quote.objects.count()
+    payment_count = Payment.objects.count()
+    lead_count = Lead.objects.count()
+
+    invoice_prefix_used = Invoice.objects.filter(invoice_number__startswith=company.invoice_prefix).exists()
+    quote_prefix_used = Quote.objects.filter(quote_number__startswith=company.quote_prefix).exists()
+
+    receivables_covered = bool(opening and opening.accounts_receivable >= outstanding_receivables)
+    opening_after_last_reset = bool(opening and (not last_reset or opening.created_at > last_reset.ran_at))
+
+    steps = [
+        {
+            'key': 'invoice_backup',
+            'title': '1. Download invoice archive',
+            'description': f'Single PDF of all {invoice_count} invoices. Save somewhere safe.',
+            'done': request.session.get('fy_wizard.invoice_backup_done', False),
+            'action_url': reverse('invoices_backup_pdf') + '?download=1',
+            'action_label': 'Download Invoice PDF',
+            'preview_url': reverse('invoices_backup_pdf'),
+            'mark_done_flag': 'invoice_backup',
+            'mandatory': invoice_count > 0,
+        },
+        {
+            'key': 'expense_backup',
+            'title': '2. Download expense archive',
+            'description': f'Single PDF of all {expense_count} expenses, grouped by category. Save somewhere safe.',
+            'done': request.session.get('fy_wizard.expense_backup_done', False),
+            'action_url': reverse('expenses_backup_pdf') + '?download=1',
+            'action_label': 'Download Expense PDF',
+            'preview_url': reverse('expenses_backup_pdf'),
+            'mark_done_flag': 'expense_backup',
+            'mandatory': expense_count > 0,
+        },
+        {
+            'key': 'opening_balance',
+            'title': '3. Record opening balance for the new FY',
+            'description': (
+                f'Capture cash + receivables (currently &#8377;{outstanding_receivables:.2f} outstanding) '
+                'so year-end position is preserved.'
+            ),
+            'done': opening_after_last_reset and receivables_covered,
+            'action_url': reverse('settings') + '#financials-panel',
+            'action_label': 'Open Opening Balance form',
+            'mandatory': True,
+        },
+        {
+            'key': 'invoice_numbering',
+            'title': '4. Start new invoice numbering',
+            'description': (
+                f'Current prefix: <strong>{company.invoice_prefix}</strong>. '
+                'Switch to a fresh prefix for the new FY (e.g. RT2627-).'
+            ),
+            'done': not invoice_prefix_used,
+            'action_url': reverse('settings') + '#invoice-panel',
+            'action_label': 'Open Invoice Settings',
+            'mandatory': True,
+        },
+        {
+            'key': 'quote_numbering',
+            'title': '5. Start new quote numbering',
+            'description': (
+                f'Current prefix: <strong>{company.quote_prefix}</strong>. '
+                'Switch to a fresh quote prefix so new quotes restart at 1.'
+            ),
+            'done': not quote_prefix_used,
+            'action_url': reverse('settings') + '#invoice-panel',
+            'action_label': 'Open Invoice Settings',
+            'mandatory': False,
+        },
+        {
+            'key': 'reset',
+            'title': '6. Wipe last FY data',
+            'description': (
+                f'Delete {invoice_count} invoices, {payment_count} payments, '
+                f'{expense_count} expenses, {lead_count} leads. Cannot be undone.'
+            ),
+            'done': False,
+            'action_url': reverse('fy_reset'),
+            'action_label': 'Go to Reset confirmation',
+            'mandatory': True,
+        },
+    ]
+
+    prior_steps_done = all(s['done'] for s in steps[:-1] if s['mandatory'])
+
+    context = {
+        'steps': steps,
+        'opening': opening,
+        'last_reset': last_reset,
+        'outstanding_receivables': outstanding_receivables,
+        'receivables_covered': receivables_covered,
+        'company': company,
+        'invoice_count': invoice_count,
+        'expense_count': expense_count,
+        'quote_count': quote_count,
+        'prior_steps_done': prior_steps_done,
+    }
+    return render(request, 'settings/fy_wizard.html', context)
 
 
 @login_required
@@ -2671,6 +2900,17 @@ def fy_reset(request):
             Expense.objects.all().delete()
             Lead.objects.all().delete()  # cascades to LeadNote/FollowUp/Activity/Demo
 
+            FYResetEvent.objects.create(
+                ran_by=request.user if request.user.is_authenticated else None,
+                invoices_wiped=counts['invoices'],
+                payments_wiped=counts['payments'],
+                expenses_wiped=counts['expenses'],
+                leads_wiped=counts['leads'],
+                outstanding_receivables=outstanding_receivables,
+                opening_balance=opening,
+                invoice_prefix_after=CompanySettings.get_settings().invoice_prefix,
+            )
+
         messages.success(
             request,
             f"Financial data reset complete. Removed {counts['invoices']} invoices, "
@@ -2722,6 +2962,49 @@ def start_new_fy(request):
     company.save(update_fields=['invoice_prefix', 'invoice_starting_number'])
 
     messages.success(request, f'New financial year started. Next invoice will be "{new_prefix}{new_start}". Previous invoices are unchanged.')
+    return redirect('settings')
+
+
+@login_required
+def start_new_fy_quotes(request):
+    """Reset quote numbering for a new financial year by switching prefix and starting number."""
+    if request.method != 'POST':
+        return redirect('settings')
+
+    company = CompanySettings.get_settings()
+    new_prefix = request.POST.get('new_prefix', '').strip()
+    new_start_raw = request.POST.get('new_starting_number', '1').strip()
+
+    if not new_prefix:
+        messages.error(request, 'New quote prefix is required.')
+        return redirect('settings')
+
+    max_prefix_len = CompanySettings._meta.get_field('quote_prefix').max_length
+    if len(new_prefix) > max_prefix_len:
+        messages.error(request, f'Quote prefix is too long ({len(new_prefix)} chars). Max {max_prefix_len} characters allowed.')
+        return redirect('settings')
+
+    if new_prefix == company.quote_prefix:
+        messages.error(request, f'New prefix "{new_prefix}" matches the current quote prefix. Pick a different one for the new financial year.')
+        return redirect('settings')
+
+    if Quote.objects.filter(quote_number__startswith=new_prefix).exists():
+        messages.error(request, f'Prefix "{new_prefix}" is already used by existing quotes. Pick a prefix that has never been used.')
+        return redirect('settings')
+
+    try:
+        new_start = int(new_start_raw) if new_start_raw else 1
+        if new_start < 1:
+            raise ValueError
+    except (ValueError, TypeError):
+        messages.error(request, 'Starting number must be a positive integer.')
+        return redirect('settings')
+
+    company.quote_prefix = new_prefix
+    company.quote_starting_number = new_start
+    company.save(update_fields=['quote_prefix', 'quote_starting_number'])
+
+    messages.success(request, f'New financial year started for quotes. Next quote will be "{new_prefix}{new_start}". Previous quotes are unchanged.')
     return redirect('settings')
 
 
