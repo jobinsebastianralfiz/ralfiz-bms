@@ -91,6 +91,7 @@ urlpatterns = [
     path('owner/credentials/<uuid:pk>/edit/', views.OwnerCredentialUpdateDeleteView.as_view(), name='owner_credential_edit'),
     path('owner/invoices/create/', views.OwnerInvoiceCreateView.as_view(), name='owner_invoice_create'),
     path('owner/invoices/<uuid:pk>/edit/', views.OwnerInvoiceUpdateDeleteView.as_view(), name='owner_invoice_edit'),
+    path('owner/invoices/<uuid:pk>/gst-status/', views.OwnerInvoiceGSTStatusView.as_view(), name='owner_invoice_gst_status'),
     path('owner/invoices/<uuid:pk>/pdf/', views.OwnerInvoicePDFView.as_view(), name='owner_invoice_pdf'),
     path('owner/invoices/<uuid:pk>/payments/', views.OwnerPaymentCreateView.as_view(), name='owner_payment_create'),
     path('owner/invoices/<uuid:pk>/payments/<uuid:payment_id>/', views.OwnerPaymentDeleteView.as_view(), name='owner_payment_delete'),

@@ -1638,6 +1638,10 @@ class OwnerInvoiceListView(APIView):
                 models.Q(client__name__icontains=search)
             )
 
+        gst_filing_filter = request.query_params.get('gst_filing_status')
+        if gst_filing_filter:
+            invoices = invoices.filter(gst_filing_status=gst_filing_filter)
+
         data = [{
             'id': str(inv.id),
             'invoice_number': inv.invoice_number,
@@ -1651,6 +1655,9 @@ class OwnerInvoiceListView(APIView):
             'issue_date': str(inv.issue_date),
             'due_date': str(inv.due_date) if inv.due_date else None,
             'is_overdue': inv.is_overdue,
+            'gst_filing_status': inv.gst_filing_status,
+            'gst_filing_status_display': inv.get_gst_filing_status_display(),
+            'gst_filed_at': inv.gst_filed_at.isoformat() if inv.gst_filed_at else None,
         } for inv in invoices]
 
         return Response(data)
@@ -1707,6 +1714,9 @@ class OwnerInvoiceDetailView(APIView):
             'issue_date': str(inv.issue_date),
             'due_date': str(inv.due_date) if inv.due_date else None,
             'is_overdue': inv.is_overdue,
+            'gst_filing_status': inv.gst_filing_status,
+            'gst_filing_status_display': inv.get_gst_filing_status_display(),
+            'gst_filed_at': inv.gst_filed_at.isoformat() if inv.gst_filed_at else None,
             'items': items,
             'payments': payments,
         })
@@ -2283,6 +2293,44 @@ class OwnerInvoiceUpdateDeleteView(APIView):
             return Response({'error': 'Cannot delete invoice with payments recorded'}, status=status.HTTP_400_BAD_REQUEST)
         inv.delete()
         return Response({'message': 'Invoice deleted'}, status=status.HTTP_204_NO_CONTENT)
+
+
+@extend_schema(tags=['Owner'])
+class OwnerInvoiceGSTStatusView(APIView):
+    """Owner/Partner: Set the GST filing status on a single invoice.
+
+    PATCH body: {"gst_filing_status": "pending" | "filed" | "not_applicable"}
+    Auto-sets gst_filed_at to now when status='filed', clears it otherwise.
+    """
+    permission_classes = [IsAuthenticated, IsOwnerOrPartner]
+
+    def patch(self, request, pk):
+        from core.models import Invoice
+        from django.utils import timezone
+        try:
+            inv = Invoice.objects.get(pk=pk)
+        except Invoice.DoesNotExist:
+            return Response({'error': 'Invoice not found'}, status=status.HTTP_404_NOT_FOUND)
+
+        new_status = request.data.get('gst_filing_status', '')
+        valid = {key for key, _ in Invoice.GST_FILING_STATUS_CHOICES}
+        if new_status not in valid:
+            return Response(
+                {'error': f'gst_filing_status must be one of {sorted(valid)}'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        inv.gst_filing_status = new_status
+        inv.gst_filed_at = timezone.now() if new_status == 'filed' else None
+        inv.save(update_fields=['gst_filing_status', 'gst_filed_at'])
+
+        return Response({
+            'id': str(inv.id),
+            'invoice_number': inv.invoice_number,
+            'gst_filing_status': inv.gst_filing_status,
+            'gst_filing_status_display': inv.get_gst_filing_status_display(),
+            'gst_filed_at': inv.gst_filed_at.isoformat() if inv.gst_filed_at else None,
+        })
 
 
 # ---- Owner: Payment (Record payment against invoice) ----
