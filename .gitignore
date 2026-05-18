@@ -40,3 +40,7 @@ htmlcov/
 # Byte-compiled files
 *.py[cod]
 *$py.class
+
+# Stray loose files at repo root (assets belong under static/ or media/)
+/*.png
+/logs.*.json
