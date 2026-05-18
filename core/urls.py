@@ -111,6 +111,8 @@ urlpatterns = [
     path('settings/start-new-fy-quotes/', views.start_new_fy_quotes, name='start_new_fy_quotes'),
     path('settings/fy-wizard/', views.fy_wizard, name='fy_wizard'),
     path('settings/opening-balance/save/', views.opening_balance_save, name='opening_balance_save'),
+    path('settings/opening-balance/<uuid:pk>/edit/', views.opening_balance_edit, name='opening_balance_edit'),
+    path('settings/opening-balance/<uuid:pk>/delete/', views.opening_balance_delete, name='opening_balance_delete'),
     path('settings/reset-financial-data/', views.fy_reset, name='fy_reset'),
     path('reports/', views.reports_view, name='reports'),
 

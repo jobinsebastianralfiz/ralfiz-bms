@@ -3025,6 +3025,71 @@ def opening_balance_save(request):
 
 
 @login_required
+def opening_balance_edit(request, pk):
+    """Edit an existing OpeningBalance row (correct cash, receivables, label, date, notes)."""
+    from decimal import Decimal, InvalidOperation
+
+    ob = get_object_or_404(OpeningBalance, pk=pk)
+
+    if request.method == 'POST':
+        label = (request.POST.get('label') or '').strip()
+        as_of_raw = (request.POST.get('as_of_date') or '').strip()
+        cash_hand_raw = (request.POST.get('cash_in_hand') or '0').strip()
+        cash_acc_raw = (request.POST.get('cash_in_account') or '0').strip()
+        receivable_raw = (request.POST.get('accounts_receivable') or '0').strip()
+        notes = (request.POST.get('notes') or '').strip()
+
+        if not label:
+            messages.error(request, 'Label is required.')
+            return render(request, 'settings/opening_balance_edit.html', {'opening_balance': ob})
+        if not as_of_raw:
+            messages.error(request, 'As-of date is required.')
+            return render(request, 'settings/opening_balance_edit.html', {'opening_balance': ob})
+
+        try:
+            as_of_date = datetime.strptime(as_of_raw, '%Y-%m-%d').date()
+        except ValueError:
+            messages.error(request, 'As-of date must be a valid date.')
+            return render(request, 'settings/opening_balance_edit.html', {'opening_balance': ob})
+
+        try:
+            cash_hand = Decimal(cash_hand_raw or '0')
+            cash_acc = Decimal(cash_acc_raw or '0')
+            receivable = Decimal(receivable_raw or '0')
+        except InvalidOperation:
+            messages.error(request, 'Cash and receivable amounts must be valid numbers.')
+            return render(request, 'settings/opening_balance_edit.html', {'opening_balance': ob})
+
+        if cash_hand < 0 or cash_acc < 0 or receivable < 0:
+            messages.error(request, 'Cash and receivable amounts cannot be negative.')
+            return render(request, 'settings/opening_balance_edit.html', {'opening_balance': ob})
+
+        ob.label = label
+        ob.as_of_date = as_of_date
+        ob.cash_in_hand = cash_hand
+        ob.cash_in_account = cash_acc
+        ob.accounts_receivable = receivable
+        ob.notes = notes
+        ob.save()
+        messages.success(request, f'Opening balance "{ob.label}" updated.')
+        return redirect('settings')
+
+    return render(request, 'settings/opening_balance_edit.html', {'opening_balance': ob})
+
+
+@login_required
+def opening_balance_delete(request, pk):
+    """Delete an OpeningBalance row. POST only, confirmation handled on Settings page."""
+    ob = get_object_or_404(OpeningBalance, pk=pk)
+    if request.method != 'POST':
+        return redirect('settings')
+    label = ob.label
+    ob.delete()
+    messages.success(request, f'Opening balance "{label}" deleted.')
+    return redirect('settings')
+
+
+@login_required
 def fy_wizard(request):
     """Guided financial-year rollover: backups -> opening balance -> numbering -> wipe.
 
