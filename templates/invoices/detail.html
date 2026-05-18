@@ -252,6 +252,12 @@
             <a href="{% url 'payment_receipt' payment.pk %}" class="btn btn-ghost btn-sm btn-icon" title="View Receipt">
               <i class="fas fa-receipt"></i>
             </a>
+            <a href="{% url 'payment_edit' payment.pk %}" class="btn btn-ghost btn-sm btn-icon" title="Edit Payment">
+              <i class="fas fa-pen"></i>
+            </a>
+            <a href="{% url 'payment_delete' payment.pk %}" class="btn btn-ghost btn-sm btn-icon" title="Delete Payment" style="color:#dc2626;">
+              <i class="fas fa-trash"></i>
+            </a>
           </div>
         </div>
         {% endfor %}

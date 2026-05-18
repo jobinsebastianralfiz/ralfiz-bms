@@ -97,7 +97,10 @@ urlpatterns = [
 
     # Payments
     path('payments/', views.payment_list, name='payment_list'),
+    path('invoices/mark-gst-filed/', views.invoices_mark_gst_filed, name='invoices_mark_gst_filed'),
     path('payments/create/', views.payment_create, name='payment_create'),
+    path('payments/<uuid:pk>/edit/', views.payment_edit, name='payment_edit'),
+    path('payments/<uuid:pk>/delete/', views.payment_delete, name='payment_delete'),
     path('payments/<uuid:pk>/receipt/', views.payment_receipt, name='payment_receipt'),
 
     # Settings & Reports

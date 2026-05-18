@@ -90,7 +90,7 @@
                 <label class="form-label" for="amount">
                   Amount Received (&#8377;) <span class="required">*</span>
                 </label>
-                <input type="number" class="form-control" id="amount" name="amount" placeholder="0.00" step="0.01" required oninput="updatePaymentCalc()">
+                <input type="number" class="form-control" id="amount" name="amount" placeholder="0.00" step="0.01" required oninput="updatePaymentCalc()" value="{% if payment %}{{ payment.amount }}{% endif %}">
                 <div class="form-text">
                   <button type="button" class="btn btn-sm btn-link p-0" onclick="fillFullAmount()">Fill full balance</button>
                 </div>
@@ -101,7 +101,7 @@
                 <label class="form-label" for="payment_date">
                   Payment Date <span class="required">*</span>
                 </label>
-                <input type="date" class="form-control" id="payment_date" name="payment_date" required>
+                <input type="date" class="form-control" id="payment_date" name="payment_date" required value="{% if payment %}{{ payment.payment_date|date:'Y-m-d' }}{% endif %}">
               </div>
             </div>
             <div class="col-6 col-sm-12" style="padding: 0.5rem;">
@@ -112,7 +112,7 @@
                 <select class="form-control" id="payment_method" name="payment_method" required>
                   <option value="">Select method</option>
                   {% for key, value in method_choices %}
-                  <option value="{{ key }}">{{ value }}</option>
+                  <option value="{{ key }}" {% if payment and payment.payment_method == key %}selected{% endif %}>{{ value }}</option>
                   {% endfor %}
                 </select>
               </div>
@@ -120,7 +120,7 @@
             <div class="col-6 col-sm-12" style="padding: 0.5rem;">
               <div class="form-group">
                 <label class="form-label" for="transaction_id">Transaction ID / Reference</label>
-                <input type="text" class="form-control" id="transaction_id" name="transaction_id" placeholder="e.g., NEFT123456789">
+                <input type="text" class="form-control" id="transaction_id" name="transaction_id" placeholder="e.g., NEFT123456789" value="{% if payment %}{{ payment.transaction_id }}{% endif %}">
               </div>
             </div>
           </div>
@@ -138,7 +138,7 @@
         <div class="card-body">
           <div class="form-group mb-0">
             <label class="form-label" for="notes">Payment Notes</label>
-            <textarea class="form-control" id="notes" name="notes" rows="3" placeholder="Add any notes about this payment..."></textarea>
+            <textarea class="form-control" id="notes" name="notes" rows="3" placeholder="Add any notes about this payment...">{% if payment %}{{ payment.notes }}{% endif %}</textarea>
           </div>
         </div>
       </div>
@@ -206,9 +206,14 @@
         <i class="fas fa-arrow-left me-2"></i>
         Cancel
       </a>
+      {% if is_edit %}
+        <a href="{% url 'payment_delete' payment.pk %}" class="btn btn-outline-danger me-auto" style="margin-left:1rem;">
+          <i class="fas fa-trash me-2"></i>Delete this payment
+        </a>
+      {% endif %}
       <button type="submit" class="btn btn-success">
         <i class="fas fa-check me-2"></i>
-        Record Payment
+        {% if is_edit %}Save Changes{% else %}Record Payment{% endif %}
       </button>
     </div>
   </div>
@@ -217,8 +222,10 @@
 
 {% block extra_js %}
 <script>
-  // Set default date to today
-  document.getElementById('payment_date').valueAsDate = new Date();
+  // Set default date to today (only if not already pre-filled, e.g. on edit)
+  if (!document.getElementById('payment_date').value) {
+    document.getElementById('payment_date').valueAsDate = new Date();
+  }
 
   let currentBalance = 0;
   let invoiceTotal = 0;

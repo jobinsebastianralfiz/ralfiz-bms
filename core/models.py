@@ -478,6 +478,11 @@ class Invoice(models.Model):
         ('overdue', 'Overdue'),
         ('cancelled', 'Cancelled'),
     ]
+    GST_FILING_STATUS_CHOICES = [
+        ('pending', 'Pending GST filing'),
+        ('filed', 'Filed in GSTR'),
+        ('not_applicable', 'GST not applicable'),
+    ]
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     invoice_number = models.CharField(max_length=20, unique=True, blank=True)
@@ -487,6 +492,11 @@ class Invoice(models.Model):
     title = models.CharField(max_length=255)
     description = models.TextField(blank=True)
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='draft')
+    gst_filing_status = models.CharField(
+        max_length=20, choices=GST_FILING_STATUS_CHOICES, default='pending',
+        help_text='Tracks whether this invoice has been included in a GSTR filing.'
+    )
+    gst_filed_at = models.DateTimeField(null=True, blank=True)
     subtotal = models.DecimalField(max_digits=12, decimal_places=2, default=0)
     discount = models.DecimalField(max_digits=12, decimal_places=2, default=0)
     tax_rate = models.DecimalField(max_digits=5, decimal_places=2, default=0)
@@ -633,7 +643,16 @@ class Payment(models.Model):
 
     def save(self, *args, **kwargs):
         super().save(*args, **kwargs)
-        # Update invoice amount_paid
+        self._recompute_invoice_totals()
+
+    def delete(self, *args, **kwargs):
+        invoice = self.invoice
+        super().delete(*args, **kwargs)
+        total_paid = invoice.payments.aggregate(total=models.Sum('amount'))['total'] or 0
+        invoice.amount_paid = total_paid
+        invoice.update_payment_status()
+
+    def _recompute_invoice_totals(self):
         total_paid = self.invoice.payments.aggregate(total=models.Sum('amount'))['total'] or 0
         self.invoice.amount_paid = total_paid
         self.invoice.update_payment_status()

@@ -1768,6 +1768,10 @@ def invoice_list(request):
     elif status:
         invoices = invoices.filter(status=status)
 
+    gst_filing = request.GET.get('gst_filing', '')
+    if gst_filing:
+        invoices = invoices.filter(gst_filing_status=gst_filing)
+
     # Date range filter on issue_date (used for GST-period filtering)
     from_date = request.GET.get('from_date', '')
     to_date = request.GET.get('to_date', '')
@@ -1803,6 +1807,8 @@ def invoice_list(request):
         'search': search,
         'status': status,
         'status_choices': Invoice.STATUS_CHOICES,
+        'gst_filing': gst_filing,
+        'gst_filing_choices': Invoice.GST_FILING_STATUS_CHOICES,
         'from_date': from_date,
         'to_date': to_date,
         'period': period,
@@ -1810,6 +1816,70 @@ def invoice_list(request):
         'invoice_count': invoices.count(),
     }
     return render(request, 'invoices/list.html', context)
+
+
+@login_required
+def invoices_mark_gst_filed(request):
+    """Mark every invoice matching the currently-applied filters as GST-filed.
+
+    Reads the same query params as invoice_list, applies them, and updates the
+    matching rows. Intended to be hit after filtering down to a specific
+    GST return period (e.g. issue_date in May 2026, status != cancelled).
+    """
+    from datetime import date
+    from calendar import monthrange
+
+    if request.method != 'POST':
+        return redirect('invoice_list')
+
+    invoices = Invoice.objects.exclude(status='cancelled')
+
+    search = request.POST.get('search', '')
+    if search:
+        invoices = invoices.filter(
+            Q(invoice_number__icontains=search) |
+            Q(title__icontains=search) |
+            Q(client__name__icontains=search)
+        )
+
+    status = request.POST.get('status', '')
+    if status == 'paid_partial':
+        invoices = invoices.filter(status__in=['paid', 'partial'])
+    elif status:
+        invoices = invoices.filter(status=status)
+
+    gst_filing = request.POST.get('gst_filing', '')
+    if gst_filing:
+        invoices = invoices.filter(gst_filing_status=gst_filing)
+
+    from_date = request.POST.get('from_date', '')
+    to_date = request.POST.get('to_date', '')
+    period = request.POST.get('period', '')
+    if period in ('prev_month', 'this_month') and not from_date and not to_date:
+        today = date.today()
+        if period == 'prev_month':
+            year = today.year if today.month > 1 else today.year - 1
+            month = today.month - 1 if today.month > 1 else 12
+        else:
+            year, month = today.year, today.month
+        from_date = date(year, month, 1).isoformat()
+        to_date = date(year, month, monthrange(year, month)[1]).isoformat()
+    if from_date:
+        invoices = invoices.filter(issue_date__gte=from_date)
+    if to_date:
+        invoices = invoices.filter(issue_date__lte=to_date)
+
+    # Skip invoices with no tax (they're not_applicable, can't be 'filed')
+    candidates = invoices.exclude(gst_filing_status='not_applicable').filter(tax_amount__gt=0)
+    updated = candidates.update(gst_filing_status='filed', gst_filed_at=timezone.now())
+
+    if updated:
+        messages.success(request, f'Marked {updated} invoice(s) as GST-filed.')
+    else:
+        messages.info(request, 'No matching invoices to mark as filed.')
+
+    qs = request.POST.urlencode()
+    return redirect(f'{reverse("invoice_list")}?{qs}')
 
 
 @login_required
@@ -2663,6 +2733,59 @@ def payment_create(request):
         'form_title': 'Record New Payment',
         'method_choices': Payment.METHOD_CHOICES,
     })
+
+
+@login_required
+def payment_edit(request, pk):
+    """Edit an existing payment. Recomputes invoice.amount_paid via Payment.save()."""
+    payment = get_object_or_404(Payment.objects.select_related('invoice', 'invoice__client'), pk=pk)
+
+    if request.method == 'POST':
+        try:
+            payment.amount = request.POST.get('amount') or payment.amount
+            payment.payment_date = request.POST.get('payment_date') or payment.payment_date
+            payment.payment_method = request.POST.get('payment_method', payment.payment_method)
+            payment.transaction_id = request.POST.get('transaction_id', '')
+            payment.notes = request.POST.get('notes', '')
+            payment.save()
+            messages.success(request, f'Payment of ₹{payment.amount} updated.')
+            return redirect('invoice_detail', pk=payment.invoice.pk)
+        except Exception as e:
+            messages.error(request, f'Could not update payment: {e}')
+
+    # For edit, restrict the invoice dropdown to the one this payment belongs to
+    # so the user can't accidentally re-link it (which would break amount_paid on
+    # both invoices). Reassigning a payment to a different invoice is out of scope.
+    invoices = Invoice.objects.filter(pk=payment.invoice.pk).select_related('client')
+
+    return render(request, 'payments/form.html', {
+        'invoices': invoices,
+        'payment': payment,
+        'form_title': f'Edit Payment for {payment.invoice.invoice_number}',
+        'method_choices': Payment.METHOD_CHOICES,
+        'is_edit': True,
+        'selected_invoice': payment.invoice.pk,
+    })
+
+
+@login_required
+def payment_delete(request, pk):
+    """Delete a payment. Recomputes invoice.amount_paid via Payment.delete()."""
+    payment = get_object_or_404(Payment.objects.select_related('invoice'), pk=pk)
+    invoice_pk = payment.invoice.pk
+    invoice_number = payment.invoice.invoice_number
+    amount = payment.amount
+
+    if request.method == 'POST':
+        payment.delete()
+        messages.success(
+            request,
+            f'Payment of ₹{amount} on invoice {invoice_number} deleted. '
+            'Invoice balance and status updated.'
+        )
+        return redirect('invoice_detail', pk=invoice_pk)
+
+    return render(request, 'payments/delete.html', {'payment': payment})
 
 
 @login_required

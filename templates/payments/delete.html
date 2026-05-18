@@ -1,0 +1,87 @@
+{% extends 'base.html' %}
+
+{% block title %}Delete Payment - Ralfiz BMS{% endblock %}
+
+{% block breadcrumb %}
+<a href="{% url 'dashboard' %}" class="breadcrumb-item">Dashboard</a>
+<span class="breadcrumb-separator">/</span>
+<a href="{% url 'payment_list' %}" class="breadcrumb-item">Payments</a>
+<span class="breadcrumb-separator">/</span>
+<span class="breadcrumb-item active">Delete</span>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title" style="color: #b91c1c;">
+      <i class="fas fa-exclamation-triangle me-2"></i>
+      Delete Payment
+    </h1>
+    <p class="page-subtitle mb-0">
+      The invoice balance and status will be recomputed automatically after deletion.
+    </p>
+  </div>
+</div>
+
+<div class="row">
+  <div class="col-6 col-md-12" style="padding: 0.75rem;">
+    <div class="card" style="border: 2px solid #dc2626;">
+      <div class="card-header" style="background: #fef2f2;">
+        <h3 class="card-title" style="color: #b91c1c;">
+          <i class="fas fa-trash me-2"></i>
+          Confirm deletion
+        </h3>
+      </div>
+      <div class="card-body">
+        <table class="table table-borderless mb-3">
+          <tr>
+            <td class="text-muted" style="width: 40%;">Invoice</td>
+            <td><strong>{{ payment.invoice.invoice_number }}</strong> &mdash; {{ payment.invoice.client.name }}</td>
+          </tr>
+          <tr>
+            <td class="text-muted">Amount</td>
+            <td><strong>&#8377;{{ payment.amount|floatformat:2 }}</strong></td>
+          </tr>
+          <tr>
+            <td class="text-muted">Date</td>
+            <td>{{ payment.payment_date|date:"d M Y" }}</td>
+          </tr>
+          <tr>
+            <td class="text-muted">Method</td>
+            <td>{{ payment.get_payment_method_display }}</td>
+          </tr>
+          {% if payment.transaction_id %}
+          <tr>
+            <td class="text-muted">Transaction ID</td>
+            <td><code>{{ payment.transaction_id }}</code></td>
+          </tr>
+          {% endif %}
+          {% if payment.notes %}
+          <tr>
+            <td class="text-muted">Notes</td>
+            <td>{{ payment.notes }}</td>
+          </tr>
+          {% endif %}
+        </table>
+
+        <div class="alert" style="background:#fef2f2;border:1px solid #fecaca;border-radius:4px;padding:0.75rem;font-size:0.9rem;color:#7f1d1d;">
+          <i class="fas fa-exclamation-triangle me-2"></i>
+          Deleting this payment will increase the invoice's outstanding balance by
+          <strong>&#8377;{{ payment.amount|floatformat:2 }}</strong>
+          and may flip its status from <em>Paid</em> back to <em>Partial</em>. This cannot be undone.
+        </div>
+
+        <form method="post" class="d-flex justify-content-between align-items-center mt-3">
+          {% csrf_token %}
+          <a href="{% url 'payment_edit' payment.pk %}" class="btn btn-outline-secondary">
+            <i class="fas fa-arrow-left me-2"></i>Cancel
+          </a>
+          <button type="submit" class="btn" style="background: #dc2626; color: white; font-weight: 600;">
+            <i class="fas fa-trash me-2"></i>Delete payment
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
