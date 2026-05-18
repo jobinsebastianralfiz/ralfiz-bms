@@ -995,8 +995,8 @@ class OwnerDashboardView(APIView):
     permission_classes = [IsAuthenticated, IsOwnerOrPartner]
 
     def get(self, request):
-        from core.models import Client, Project, Invoice, Payment, Expense
-        from django.db.models import Sum, Count, Q
+        from core.models import Client, Project, Invoice, Payment, Expense, OpeningBalance
+        from django.db.models import Sum, Count, Q, F
         from decimal import Decimal
 
         today = date.today()
@@ -1049,6 +1049,40 @@ class OwnerDashboardView(APIView):
             date__gte=current_month_start, date__lte=today
         ).aggregate(total=Sum('amount'))['total'] or Decimal('0')
 
+        # Cash position (mirrors web dashboard: opening balance + payments since - expenses since)
+        opening = OpeningBalance.current()
+        cash_position = None
+        if opening:
+            ob_date = opening.as_of_date
+            cash_received_since = Payment.objects.filter(
+                payment_date__gte=ob_date, payment_method__in=['cash']
+            ).aggregate(t=Sum('amount'))['t'] or Decimal('0')
+            acc_received_since = Payment.objects.filter(
+                payment_date__gte=ob_date,
+                payment_method__in=['bank_transfer', 'upi', 'card', 'paypal', 'cheque'],
+            ).aggregate(t=Sum('amount'))['t'] or Decimal('0')
+            cash_spent_since = Expense.objects.filter(
+                date__gte=ob_date, payment_method='cash'
+            ).aggregate(t=Sum('amount'))['t'] or Decimal('0')
+            acc_spent_since = Expense.objects.filter(
+                date__gte=ob_date, payment_method__in=['bank_transfer', 'upi', 'card']
+            ).aggregate(t=Sum('amount'))['t'] or Decimal('0')
+            current_cash_in_hand = opening.cash_in_hand + cash_received_since - cash_spent_since
+            current_cash_in_account = opening.cash_in_account + acc_received_since - acc_spent_since
+            current_outstanding = Invoice.objects.exclude(
+                status__in=['paid', 'cancelled']
+            ).aggregate(total=Sum(F('total_amount') - F('amount_paid')))['total'] or Decimal('0')
+            cash_position = {
+                'cash_in_hand': f'{current_cash_in_hand:.2f}',
+                'cash_in_account': f'{current_cash_in_account:.2f}',
+                'receivables_carried_in': f'{opening.accounts_receivable:.2f}',
+                'current_outstanding_receivables': f'{current_outstanding:.2f}',
+                'opening_label': opening.label,
+                'opening_as_of': opening.as_of_date.isoformat(),
+                'opening_cash_in_hand': f'{opening.cash_in_hand:.2f}',
+                'opening_cash_in_account': f'{opening.cash_in_account:.2f}',
+            }
+
         # Employee counts
         employees = Employee.objects.filter(status='active')
         employee_counts = {
@@ -1076,6 +1110,7 @@ class OwnerDashboardView(APIView):
                 'total': f'{total_expenses:.2f}',
                 'this_month': f'{month_expenses:.2f}',
             },
+            'cash_position': cash_position,
             'recent_payments': recent_payments_data,
             'employees': employee_counts,
             'dues_summary': self._get_dues_summary(today),
