@@ -1011,10 +1011,12 @@ class OwnerDashboardView(APIView):
             status__in=['confirmed', 'in_progress', 'review']
         ).count()
 
-        # Revenue
-        total_revenue = Invoice.objects.filter(
-            status='paid'
-        ).aggregate(total=Sum('total_amount'))['total'] or Decimal('0')
+        # Revenue: sum of every payment received (matches web dashboard).
+        # Previously this used Invoice.status='paid' which missed partial
+        # payments and any invoice whose status wasn't flipped to 'paid'.
+        total_revenue = Payment.objects.aggregate(
+            total=Sum('amount')
+        )['total'] or Decimal('0')
 
         month_revenue = Payment.objects.filter(
             payment_date__gte=current_month_start,
@@ -1114,7 +1116,7 @@ class OwnerClientListView(APIView):
     permission_classes = [IsAuthenticated, IsOwnerOrPartner]
 
     def get(self, request):
-        from core.models import Client, Invoice, Project
+        from core.models import Client, Invoice, Payment, Project
         from django.db.models import Sum, Count, Q
         from decimal import Decimal
 
@@ -1128,8 +1130,12 @@ class OwnerClientListView(APIView):
         data = []
         for client in clients:
             invoices = Invoice.objects.filter(client=client)
-            total_revenue = invoices.filter(status='paid').aggregate(
-                total=Sum('total_amount'))['total'] or Decimal('0')
+            # Revenue = sum of every payment received against this client's
+            # invoices (matches web logic; previously only counted invoices
+            # with status='paid' which missed partials).
+            total_revenue = Payment.objects.filter(
+                invoice__client=client
+            ).aggregate(total=Sum('amount'))['total'] or Decimal('0')
             total_paid = invoices.exclude(status__in=['draft', 'cancelled']).aggregate(
                 paid=Sum('amount_paid'))['paid'] or Decimal('0')
             total_invoiced = invoices.exclude(status__in=['draft', 'cancelled']).aggregate(
