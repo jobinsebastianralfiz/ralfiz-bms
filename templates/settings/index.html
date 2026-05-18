@@ -357,7 +357,18 @@
                     Backup All Expenses (Single PDF)
                   </a>
                   <a href="{% url 'expenses_backup_pdf' %}" class="btn btn-link" target="_blank" rel="noopener">Preview expenses</a>
-                  <div class="form-text w-100">Switches to a new prefix and resets the counter. Existing invoices stay unchanged. Use the Backup buttons to archive invoices and expenses into PDFs before any reset.</div>
+                  <a href="{% url 'clients_credentials_backup_pdf' %}?download=1" class="btn btn-outline-danger" target="_blank" rel="noopener" title="Confidential: contains plaintext passwords">
+                    <i class="fas fa-key me-2"></i>
+                    Backup Clients &amp; Credentials (PDF)
+                  </a>
+                  <a href="{% url 'clients_credentials_backup_xlsx' %}" class="btn btn-outline-danger" title="Confidential: contains plaintext passwords">
+                    <i class="fas fa-file-excel me-2"></i>
+                    Backup Clients &amp; Credentials (Excel)
+                  </a>
+                  <div class="form-text w-100">
+                    Switches to a new prefix and resets the counter. Existing invoices stay unchanged. Use the Backup buttons to archive invoices and expenses into PDFs before any reset.
+                    <strong>The Clients &amp; Credentials backups contain plaintext passwords &mdash; store them in a secure location only.</strong>
+                  </div>
                 </div>
               </div>
               <div class="col-6 col-sm-12" style="padding: 0.5rem;">

@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Clients &amp; Credentials Archive - {{ company.company_name }}</title>
+  <style>
+    @page {
+      size: A4;
+      margin: 12mm 14mm;
+      @bottom-right {
+        content: "Page " counter(page) " / " counter(pages);
+        font-size: 9px;
+        color: #94a3b8;
+      }
+      @bottom-left {
+        content: "{{ company.company_name }} - Clients & Credentials (CONFIDENTIAL)";
+        font-size: 9px;
+        color: #94a3b8;
+      }
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      font-size: 10px;
+      line-height: 1.4;
+      color: #1e293b;
+    }
+
+    .cover {
+      page-break-after: always;
+      padding-top: 30mm;
+    }
+    .cover h1 {
+      font-size: 32px;
+      color: #0d9488;
+      margin-bottom: 8px;
+    }
+    .cover .sub {
+      font-size: 13px;
+      color: #64748b;
+      margin-bottom: 30px;
+    }
+    .cover-stats {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 20px;
+    }
+    .cover-stats td {
+      padding: 8px 12px;
+      border-bottom: 1px solid #e2e8f0;
+      font-size: 12px;
+    }
+    .cover-stats td.label {
+      color: #64748b;
+      width: 50%;
+    }
+    .cover-stats td.value {
+      text-align: right;
+      font-weight: 600;
+      color: #0f172a;
+    }
+    .cover-note {
+      margin-top: 40px;
+      padding: 14px 16px;
+      background: #fee2e2;
+      border-left: 4px solid #b91c1c;
+      font-size: 11px;
+      color: #7f1d1d;
+    }
+
+    .client-block {
+      page-break-inside: avoid;
+      margin-bottom: 18px;
+      padding: 10px 12px;
+      border: 1px solid #cbd5e1;
+      border-radius: 4px;
+      background: #f8fafc;
+    }
+    .client-header {
+      font-size: 13px;
+      font-weight: 600;
+      color: #0d9488;
+      margin-bottom: 4px;
+    }
+    .client-meta {
+      font-size: 9.5px;
+      color: #475569;
+      margin-bottom: 8px;
+    }
+    .client-meta span {
+      display: inline-block;
+      margin-right: 12px;
+    }
+    .client-meta strong {
+      color: #1e293b;
+    }
+
+    .project-block {
+      margin-top: 8px;
+      padding-left: 8px;
+      border-left: 2px solid #0d9488;
+    }
+    .project-header {
+      font-size: 11px;
+      font-weight: 600;
+      color: #1e293b;
+      margin-bottom: 4px;
+    }
+
+    .cred-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 9px;
+      margin-top: 4px;
+    }
+    .cred-table th {
+      background: #e2e8f0;
+      padding: 4px 5px;
+      text-align: left;
+      font-weight: 600;
+      color: #334155;
+      border-bottom: 1px solid #94a3b8;
+    }
+    .cred-table td {
+      padding: 4px 5px;
+      border-bottom: 1px solid #e2e8f0;
+      vertical-align: top;
+      word-break: break-word;
+    }
+    .cred-table td.muted {
+      color: #94a3b8;
+    }
+    .cred-table .password-cell {
+      font-family: "SF Mono", Consolas, monospace;
+      font-size: 8.5px;
+      background: #fef9c3;
+    }
+
+    .no-credentials {
+      font-size: 9.5px;
+      color: #94a3b8;
+      font-style: italic;
+      padding: 4px 0;
+    }
+
+    h2.section-title {
+      font-size: 16px;
+      color: #0d9488;
+      margin-bottom: 12px;
+      padding-bottom: 6px;
+      border-bottom: 2px solid #0d9488;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- COVER PAGE -->
+  <div class="cover">
+    <h1>Clients &amp; Credentials Archive</h1>
+    <p class="sub">{{ company.company_name }} &mdash; offline backup generated {{ generated_on|date:"d M Y, H:i" }}</p>
+
+    <table class="cover-stats">
+      <tr>
+        <td class="label">Total clients</td>
+        <td class="value">{{ stats.client_count }}</td>
+      </tr>
+      <tr>
+        <td class="label">Total projects</td>
+        <td class="value">{{ stats.project_count }}</td>
+      </tr>
+      <tr>
+        <td class="label">Total credentials</td>
+        <td class="value">{{ stats.credential_count }}</td>
+      </tr>
+      <tr>
+        <td class="label">Active credentials</td>
+        <td class="value">{{ stats.active_credentials }}</td>
+      </tr>
+    </table>
+
+    <div class="cover-note">
+      <strong>CONFIDENTIAL.</strong> This document contains plaintext credentials including
+      vault passwords, SSH keys, API keys, and OAuth client secrets. Do not share, print to
+      shared printers, or store in any location that is not access-controlled. Treat this PDF
+      as you would the production database itself.
+    </div>
+  </div>
+
+  <!-- CLIENT BLOCKS -->
+  <h2 class="section-title">Clients ({{ stats.client_count }})</h2>
+
+  {% for client in clients %}
+  <div class="client-block">
+    <div class="client-header">{{ client.company_name|default:client.name }}{% if client.company_name and client.name %} &mdash; {{ client.name }}{% endif %}</div>
+    <div class="client-meta">
+      <span><strong>Email:</strong> {{ client.email }}</span>
+      {% if client.phone %}<span><strong>Phone:</strong> {{ client.phone }}</span>{% endif %}
+      {% if client.whatsapp %}<span><strong>WhatsApp:</strong> {{ client.whatsapp }}</span>{% endif %}
+      {% if client.gst_number %}<span><strong>GST:</strong> {{ client.gst_number }}</span>{% endif %}
+      <span><strong>Priority:</strong> {{ client.get_priority_display }}</span>
+      <span><strong>Status:</strong> {% if client.is_active %}Active{% else %}Inactive{% endif %}</span>
+    </div>
+    {% if client.address %}
+    <div class="client-meta"><strong>Address:</strong> {{ client.address }}</div>
+    {% endif %}
+    {% if client.google_client_secret %}
+    <div class="client-meta password-cell" style="background:#fef9c3;padding:4px 6px;border-radius:2px;">
+      <strong>Google OAuth Client Secret:</strong> {{ client.google_client_secret }}
+    </div>
+    {% endif %}
+
+    {% for project in client.projects.all %}
+    <div class="project-block">
+      <div class="project-header">{{ project.name }} <span style="font-weight:normal;color:#64748b;">({{ project.get_status_display|default:project.status }})</span></div>
+      {% if project.credentials.all %}
+      <table class="cred-table">
+        <thead>
+          <tr>
+            <th style="width: 70px;">Type</th>
+            <th style="width: 90px;">Name</th>
+            <th style="width: 80px;">Provider</th>
+            <th style="width: 80px;">Username</th>
+            <th style="width: 100px;">Password</th>
+            <th>URL / Notes</th>
+            <th style="width: 60px;">Expiry</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for cred in project.credentials.all %}
+          <tr>
+            <td>{{ cred.get_credential_type_display }}</td>
+            <td>{{ cred.name }}</td>
+            <td>{{ cred.provider|default:"-" }}</td>
+            <td>{{ cred.username|default:"-" }}</td>
+            <td class="password-cell">{{ cred.password|default:"-" }}</td>
+            <td>
+              {% if cred.url %}{{ cred.url }}<br>{% endif %}
+              {% if cred.ip_address %}IP: {{ cred.ip_address }}{% if cred.port %}:{{ cred.port }}{% endif %}<br>{% endif %}
+              {% if cred.ssh_key %}<em>SSH Key:</em> {{ cred.ssh_key|truncatechars:80 }}<br>{% endif %}
+              {% if cred.notes %}{{ cred.notes }}{% endif %}
+            </td>
+            <td>{% if cred.expiry_date %}{{ cred.expiry_date|date:"d M Y" }}{% else %}<span class="muted">-</span>{% endif %}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      {% else %}
+      <div class="no-credentials">No credentials recorded for this project.</div>
+      {% endif %}
+    </div>
+    {% empty %}
+    <div class="no-credentials" style="padding-left: 8px;">No projects for this client.</div>
+    {% endfor %}
+  </div>
+  {% empty %}
+  <p style="text-align: center; padding: 30px; color: #94a3b8;">No clients in the system.</p>
+  {% endfor %}
+
+</body>
+</html>

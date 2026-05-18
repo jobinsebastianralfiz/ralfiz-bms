@@ -2265,6 +2265,157 @@ def expenses_backup_pdf(request):
     return render(request, 'expenses/backup_pdf.html', context)
 
 
+@login_required
+def clients_credentials_backup_pdf(request):
+    """Render every client and their project credentials (including plaintext passwords)
+    into a single offline-readable PDF.
+
+    Sensitive: this PDF contains plaintext vault passwords. Login-only; admin access required.
+    """
+    from django.http import HttpResponse
+    from django.template.loader import render_to_string
+
+    clients = (
+        Client.objects
+        .prefetch_related('projects', 'projects__credentials')
+        .order_by('company_name', 'name')
+    )
+
+    total_credentials = Credential.objects.count()
+    total_active_credentials = Credential.objects.filter(is_active=True).count()
+
+    stats = {
+        'client_count': clients.count(),
+        'project_count': Project.objects.count(),
+        'credential_count': total_credentials,
+        'active_credentials': total_active_credentials,
+    }
+
+    context = {
+        'clients': clients,
+        'company': CompanySettings.get_settings(),
+        'stats': stats,
+        'generated_on': timezone.now(),
+    }
+
+    download = request.GET.get('download', '0') == '1'
+    if download:
+        try:
+            from weasyprint import HTML
+            html_string = render_to_string('clients/backup_pdf.html', context)
+            pdf = HTML(string=html_string, base_url=request.build_absolute_uri('/')).write_pdf()
+            filename = f"clients_credentials_{timezone.now().strftime('%Y%m%d_%H%M')}.pdf"
+            response = HttpResponse(pdf, content_type='application/pdf')
+            response['Content-Disposition'] = f'attachment; filename="{filename}"'
+            return response
+        except ImportError:
+            messages.warning(request, 'PDF generation requires WeasyPrint. Showing printable view instead.')
+
+    return render(request, 'clients/backup_pdf.html', context)
+
+
+@login_required
+def clients_credentials_backup_xlsx(request):
+    """Excel workbook with two sheets: Clients (every field) and Credentials
+    (every field plus joined client/project context). Includes plaintext passwords.
+    """
+    from openpyxl import Workbook
+    from openpyxl.styles import Font, PatternFill
+    from django.http import HttpResponse
+
+    wb = Workbook()
+
+    header_font = Font(bold=True, color='FFFFFF')
+    header_fill = PatternFill(start_color='0D9488', end_color='0D9488', fill_type='solid')
+
+    # Sheet 1: Clients (all model fields)
+    ws_clients = wb.active
+    ws_clients.title = 'Clients'
+    client_headers = [
+        'ID', 'Name', 'Company Name', 'Email', 'Phone', 'WhatsApp', 'Address',
+        'GST Number', 'Priority', 'Active', 'Notes', 'Created At', 'Updated At',
+        'Google Client ID (Desktop)', 'Google Client ID (iOS)', 'Google Client ID (Android)',
+        'Google Reversed Client ID', 'Google Client Secret',
+        'RetailEase Drive Backup', 'RetailEase Server Backup', 'RetailEase Local Backup',
+        'RetailEase Min Version', 'RetailEase Latest Version', 'RetailEase Update URL',
+        'RetailEase Force Update', 'RetailEase Maintenance Mode', 'RetailEase Maintenance Message',
+        'Support Email', 'Support Phone', 'Support WhatsApp',
+    ]
+    ws_clients.append(client_headers)
+    for cell in ws_clients[1]:
+        cell.font = header_font
+        cell.fill = header_fill
+
+    for c in Client.objects.all().order_by('company_name', 'name'):
+        ws_clients.append([
+            str(c.id), c.name, c.company_name, c.email, c.phone, c.whatsapp, c.address,
+            c.gst_number, c.get_priority_display(), 'Yes' if c.is_active else 'No', c.notes,
+            c.created_at.strftime('%Y-%m-%d %H:%M') if c.created_at else '',
+            c.updated_at.strftime('%Y-%m-%d %H:%M') if c.updated_at else '',
+            c.google_client_id, c.google_client_id_ios, c.google_client_id_android,
+            c.google_reversed_client_id, c.google_client_secret,
+            'Yes' if c.retailease_google_drive_enabled else 'No',
+            'Yes' if c.retailease_server_backup_enabled else 'No',
+            'Yes' if c.retailease_local_backup_enabled else 'No',
+            c.retailease_min_version, c.retailease_latest_version, c.retailease_update_url,
+            'Yes' if c.retailease_force_update else 'No',
+            'Yes' if c.retailease_maintenance_mode else 'No',
+            c.retailease_maintenance_message,
+            c.retailease_support_email, c.retailease_support_phone, c.retailease_support_whatsapp,
+        ])
+
+    # Sheet 2: Credentials (vault, includes plaintext passwords)
+    ws_cred = wb.create_sheet('Credentials')
+    cred_headers = [
+        'ID', 'Client', 'Project', 'Type', 'Name', 'Provider', 'URL', 'IP Address',
+        'Username', 'Password', 'SSH Key', 'Port',
+        'Purchase Date', 'Expiry Date', 'Last Renewed', 'Auto Renew', 'Renewal Cost',
+        'Active', 'Client Visible', 'Notes', 'Created At', 'Updated At',
+    ]
+    ws_cred.append(cred_headers)
+    for cell in ws_cred[1]:
+        cell.font = header_font
+        cell.fill = header_fill
+
+    creds = (
+        Credential.objects
+        .select_related('project', 'project__client')
+        .order_by('project__client__company_name', 'project__name', 'name')
+    )
+    for cr in creds:
+        client = cr.project.client if cr.project else None
+        ws_cred.append([
+            str(cr.id),
+            (client.company_name or client.name) if client else '',
+            cr.project.name if cr.project else '',
+            cr.get_credential_type_display(),
+            cr.name, cr.provider, cr.url, str(cr.ip_address) if cr.ip_address else '',
+            cr.username, cr.password, cr.ssh_key, cr.port if cr.port else '',
+            cr.purchase_date.strftime('%Y-%m-%d') if cr.purchase_date else '',
+            cr.expiry_date.strftime('%Y-%m-%d') if cr.expiry_date else '',
+            cr.last_renewed_date.strftime('%Y-%m-%d') if cr.last_renewed_date else '',
+            'Yes' if cr.auto_renew else 'No',
+            float(cr.renewal_cost) if cr.renewal_cost is not None else '',
+            'Yes' if cr.is_active else 'No',
+            'Yes' if cr.client_visible else 'No',
+            cr.notes,
+            cr.created_at.strftime('%Y-%m-%d %H:%M') if cr.created_at else '',
+            cr.updated_at.strftime('%Y-%m-%d %H:%M') if cr.updated_at else '',
+        ])
+
+    for ws in (ws_clients, ws_cred):
+        for col_cells in ws.columns:
+            length = max((len(str(cell.value or '')) for cell in col_cells), default=10)
+            ws.column_dimensions[col_cells[0].column_letter].width = min(max(length + 2, 12), 50)
+
+    response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+    response['Content-Disposition'] = (
+        f'attachment; filename="clients_credentials_{timezone.now().strftime("%Y%m%d_%H%M")}.xlsx"'
+    )
+    wb.save(response)
+    return response
+
+
 # ============== Invoice Delete ==============
 
 @login_required
