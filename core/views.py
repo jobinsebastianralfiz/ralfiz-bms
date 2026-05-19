@@ -86,6 +86,12 @@ def dashboard(request):
         payment_date__gte=first_day_of_month
     ).aggregate(total=Sum('amount'))['total'] or 0
 
+    # Expenses this month
+    expenses_this_month = Expense.objects.filter(
+        date__gte=first_day_of_month.date()
+    ).aggregate(total=Sum('amount'))['total'] or 0
+    net_profit_this_month = float(revenue_this_month) - float(expenses_this_month)
+
     # Expiring credentials (next 30 days)
     expiring_soon = timezone.now().date() + timedelta(days=30)
     expiring_credentials = Credential.objects.filter(
@@ -136,9 +142,10 @@ def dashboard(request):
 
     # ============== Chart Data ==============
 
-    # Monthly Revenue (Last 6 months)
+    # Monthly Revenue & Expenses (Last 6 months)
     monthly_revenue_labels = []
     monthly_revenue_data = []
+    monthly_expenses_data = []
     today = timezone.now().date()
 
     for i in range(5, -1, -1):
@@ -154,8 +161,14 @@ def dashboard(request):
             payment_date__lte=month_end
         ).aggregate(total=Sum('amount'))['total'] or 0
 
+        month_expense = Expense.objects.filter(
+            date__gte=month_start,
+            date__lte=month_end
+        ).aggregate(total=Sum('amount'))['total'] or 0
+
         monthly_revenue_labels.append(month_date.strftime('%b %Y'))
         monthly_revenue_data.append(float(month_revenue))
+        monthly_expenses_data.append(float(month_expense))
 
     # Project Status Distribution
     project_status_data = {}
@@ -269,6 +282,8 @@ def dashboard(request):
         'pending_amount': pending_amount,
         'revenue_this_month': revenue_this_month,
         'total_revenue': total_revenue,
+        'expenses_this_month': expenses_this_month,
+        'net_profit_this_month': net_profit_this_month,
         'expiring_credentials': expiring_credentials,
         'overdue_invoices': overdue_invoices,
         'recent_payments': recent_payments,
@@ -283,6 +298,7 @@ def dashboard(request):
         # Chart data as JSON
         'monthly_revenue_labels': json.dumps(monthly_revenue_labels),
         'monthly_revenue_data': json.dumps(monthly_revenue_data),
+        'monthly_expenses_data': json.dumps(monthly_expenses_data),
         'project_status_labels': json.dumps(list(project_status_data.keys())),
         'project_status_data': json.dumps(list(project_status_data.values())),
         'invoice_status_labels': json.dumps(list(invoice_status_data.keys())),
@@ -3406,6 +3422,15 @@ def reports_view(request):
         payment_date__gte=first_day
     ).aggregate(total=Sum('amount'))['total'] or 0
 
+    # Expense stats
+    total_expenses = Expense.objects.aggregate(total=Sum('amount'))['total'] or 0
+    this_month_expenses = Expense.objects.filter(
+        date__gte=first_day
+    ).aggregate(total=Sum('amount'))['total'] or 0
+
+    net_profit_total = float(total_revenue) - float(total_expenses)
+    net_profit_month = float(this_month_revenue) - float(this_month_expenses)
+
     # Outstanding
     outstanding = Invoice.objects.exclude(
         status__in=['paid', 'cancelled']
@@ -3416,10 +3441,11 @@ def reports_view(request):
     # ============== Chart Data ==============
     today = timezone.now().date()
 
-    # Monthly Revenue (Last 12 months)
+    # Monthly Revenue & Expenses (Last 12 months)
     monthly_revenue_labels = []
     monthly_revenue_data = []
     monthly_invoiced_data = []
+    monthly_expenses_data = []
 
     for i in range(11, -1, -1):
         month_date = today - relativedelta(months=i)
@@ -3441,9 +3467,16 @@ def reports_view(request):
             issue_date__lte=month_end
         ).aggregate(total=Sum('total_amount'))['total'] or 0
 
-        monthly_revenue_labels.append(month_date.strftime('%b'))
+        # Expenses incurred
+        month_expense = Expense.objects.filter(
+            date__gte=month_start,
+            date__lte=month_end
+        ).aggregate(total=Sum('amount'))['total'] or 0
+
+        monthly_revenue_labels.append(month_date.strftime('%b %Y'))
         monthly_revenue_data.append(float(month_revenue))
         monthly_invoiced_data.append(float(month_invoiced))
+        monthly_expenses_data.append(float(month_expense))
 
     # Revenue by Client (Top 5)
     client_revenue = defaultdict(float)
@@ -3465,6 +3498,16 @@ def reports_view(request):
 
     project_type_labels = list(project_type_revenue.keys())
     project_type_data = list(project_type_revenue.values())
+
+    # Expenses by Category
+    category_map = dict(Expense.CATEGORY_CHOICES)
+    expense_by_category_qs = Expense.objects.values('category').annotate(
+        total=Sum('amount')
+    ).order_by('-total')
+    expense_category_labels = [
+        category_map.get(row['category'], row['category']) for row in expense_by_category_qs
+    ]
+    expense_category_data = [float(row['total'] or 0) for row in expense_by_category_qs]
 
     # Quarterly Comparison
     quarterly_data = []
@@ -3496,6 +3539,10 @@ def reports_view(request):
     context = {
         'total_revenue': total_revenue,
         'this_month_revenue': this_month_revenue,
+        'total_expenses': total_expenses,
+        'this_month_expenses': this_month_expenses,
+        'net_profit_total': net_profit_total,
+        'net_profit_month': net_profit_month,
         'outstanding': outstanding,
         'collection_rate': collection_rate,
         'total_invoices': total_invoices,
@@ -3507,14 +3554,117 @@ def reports_view(request):
         'monthly_revenue_labels': json.dumps(monthly_revenue_labels),
         'monthly_revenue_data': json.dumps(monthly_revenue_data),
         'monthly_invoiced_data': json.dumps(monthly_invoiced_data),
+        'monthly_expenses_data': json.dumps(monthly_expenses_data),
         'client_labels': json.dumps(client_labels),
         'client_data': json.dumps(client_data),
         'project_type_labels': json.dumps(project_type_labels),
         'project_type_data': json.dumps(project_type_data),
+        'expense_category_labels': json.dumps(expense_category_labels),
+        'expense_category_data': json.dumps(expense_category_data),
         'quarterly_labels': json.dumps(quarterly_labels),
         'quarterly_data': json.dumps(quarterly_data),
     }
     return render(request, 'reports/index.html', context)
+
+
+@login_required
+def monthly_report_view(request):
+    """Monthly income & expense report for a single month."""
+    import json
+    from datetime import date
+    from dateutil.relativedelta import relativedelta
+    from collections import defaultdict
+
+    # Resolve the target month from ?month=YYYY-MM (default current month)
+    today = timezone.now().date()
+    month_param = request.GET.get('month', '')
+    try:
+        year_str, mon_str = month_param.split('-')
+        month_start = date(int(year_str), int(mon_str), 1)
+    except (ValueError, AttributeError):
+        month_start = today.replace(day=1)
+
+    month_end = (month_start + relativedelta(months=1)) - timedelta(days=1)
+    prev_month = (month_start - relativedelta(months=1)).strftime('%Y-%m')
+    next_month = (month_start + relativedelta(months=1)).strftime('%Y-%m')
+
+    # Income (payments)
+    payments = Payment.objects.filter(
+        payment_date__gte=month_start, payment_date__lte=month_end
+    ).select_related('invoice', 'invoice__client').order_by('payment_date')
+    total_income = payments.aggregate(t=Sum('amount'))['t'] or 0
+
+    # Income by client
+    client_income = defaultdict(float)
+    for p in payments:
+        client_income[p.invoice.client.name] += float(p.amount)
+    income_by_client = sorted(client_income.items(), key=lambda x: x[1], reverse=True)
+
+    # Income by payment method
+    method_map = dict(Payment.METHOD_CHOICES)
+    method_income_qs = payments.values('payment_method').annotate(
+        total=Sum('amount')
+    ).order_by('-total')
+    income_by_method = [
+        (method_map.get(row['payment_method'], row['payment_method']), float(row['total'] or 0))
+        for row in method_income_qs
+    ]
+
+    # Expenses
+    expenses = Expense.objects.filter(
+        date__gte=month_start, date__lte=month_end
+    ).select_related('project', 'project__client').order_by('date')
+    total_expenses = expenses.aggregate(t=Sum('amount'))['t'] or 0
+
+    # Expenses by category
+    category_map = dict(Expense.CATEGORY_CHOICES)
+    expense_by_category_qs = expenses.values('category').annotate(
+        total=Sum('amount')
+    ).order_by('-total')
+    expense_by_category = [
+        (category_map.get(row['category'], row['category']), float(row['total'] or 0))
+        for row in expense_by_category_qs
+    ]
+
+    net_profit = float(total_income) - float(total_expenses)
+
+    # Available months from earliest payment/expense to current month (for dropdown)
+    earliest_payment = Payment.objects.order_by('payment_date').values_list('payment_date', flat=True).first()
+    earliest_expense = Expense.objects.order_by('date').values_list('date', flat=True).first()
+    candidates = [d for d in (earliest_payment, earliest_expense) if d]
+    earliest = min(candidates) if candidates else today.replace(day=1)
+    earliest = earliest.replace(day=1)
+    available_months = []
+    cursor = today.replace(day=1)
+    while cursor >= earliest:
+        available_months.append({
+            'value': cursor.strftime('%Y-%m'),
+            'label': cursor.strftime('%b %Y'),
+        })
+        cursor -= relativedelta(months=1)
+
+    context = {
+        'month_start': month_start,
+        'month_end': month_end,
+        'month_label': month_start.strftime('%B %Y'),
+        'month_value': month_start.strftime('%Y-%m'),
+        'prev_month': prev_month,
+        'next_month': next_month,
+        'available_months': available_months,
+        'payments': payments,
+        'expenses': expenses,
+        'total_income': total_income,
+        'total_expenses': total_expenses,
+        'net_profit': net_profit,
+        'income_by_client': income_by_client,
+        'income_by_method': income_by_method,
+        'expense_by_category': expense_by_category,
+        'expense_category_labels': json.dumps([c[0] for c in expense_by_category]),
+        'expense_category_data': json.dumps([c[1] for c in expense_by_category]),
+        'income_method_labels': json.dumps([m[0] for m in income_by_method]),
+        'income_method_data': json.dumps([m[1] for m in income_by_method]),
+    }
+    return render(request, 'reports/monthly.html', context)
 
 
 # ============== Global Search ==============

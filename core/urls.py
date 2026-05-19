@@ -115,6 +115,7 @@ urlpatterns = [
     path('settings/opening-balance/<uuid:pk>/delete/', views.opening_balance_delete, name='opening_balance_delete'),
     path('settings/reset-financial-data/', views.fy_reset, name='fy_reset'),
     path('reports/', views.reports_view, name='reports'),
+    path('reports/monthly/', views.monthly_report_view, name='monthly_report'),
 
     # Global Search
     path('search/', views.global_search, name='global_search'),

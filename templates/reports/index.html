@@ -15,6 +15,11 @@
     <h1 class="page-title">Reports & Analytics</h1>
     <p class="page-subtitle mb-0">Business analytics and financial reports</p>
   </div>
+  <div>
+    <a href="{% url 'monthly_report' %}" class="btn btn-primary">
+      <i class="fas fa-calendar-alt me-1"></i> Monthly Report
+    </a>
+  </div>
 </div>
 
 <!-- Stats Cards -->
@@ -33,12 +38,25 @@
   <div class="col-3 col-md-6 col-sm-12" style="padding: 0.75rem;">
     <div class="card stat-card">
       <div class="stat-card-header">
-        <div class="stat-card-icon primary">
-          <i class="fas fa-calendar-check"></i>
+        <div class="stat-card-icon danger">
+          <i class="fas fa-receipt"></i>
         </div>
       </div>
-      <div class="stat-card-value">&#8377;{{ this_month_revenue|floatformat:2|default:"0" }}</div>
-      <div class="stat-card-label">This Month</div>
+      <div class="stat-card-value">&#8377;{{ total_expenses|floatformat:2|default:"0" }}</div>
+      <div class="stat-card-label">Total Expenses</div>
+    </div>
+  </div>
+  <div class="col-3 col-md-6 col-sm-12" style="padding: 0.75rem;">
+    <div class="card stat-card">
+      <div class="stat-card-header">
+        <div class="stat-card-icon {% if net_profit_total >= 0 %}success{% else %}danger{% endif %}">
+          <i class="fas fa-chart-line"></i>
+        </div>
+      </div>
+      <div class="stat-card-value" style="color: {% if net_profit_total >= 0 %}#10b981{% else %}#ef4444{% endif %};">
+        &#8377;{{ net_profit_total|floatformat:2|default:"0" }}
+      </div>
+      <div class="stat-card-label">Net Profit (All Time)</div>
     </div>
   </div>
   <div class="col-3 col-md-6 col-sm-12" style="padding: 0.75rem;">
@@ -52,27 +70,55 @@
       <div class="stat-card-label">Outstanding</div>
     </div>
   </div>
-  <div class="col-3 col-md-6 col-sm-12" style="padding: 0.75rem;">
+</div>
+
+<!-- This Month Summary -->
+<div class="row mb-4">
+  <div class="col-4 col-md-12" style="padding: 0.75rem;">
     <div class="card stat-card">
       <div class="stat-card-header">
-        <div class="stat-card-icon info">
-          <i class="fas fa-percentage"></i>
+        <div class="stat-card-icon primary">
+          <i class="fas fa-calendar-check"></i>
         </div>
       </div>
-      <div class="stat-card-value">{{ collection_rate|floatformat:1 }}%</div>
-      <div class="stat-card-label">Collection Rate</div>
+      <div class="stat-card-value">&#8377;{{ this_month_revenue|floatformat:2|default:"0" }}</div>
+      <div class="stat-card-label">Income This Month</div>
+    </div>
+  </div>
+  <div class="col-4 col-md-12" style="padding: 0.75rem;">
+    <div class="card stat-card">
+      <div class="stat-card-header">
+        <div class="stat-card-icon danger">
+          <i class="fas fa-receipt"></i>
+        </div>
+      </div>
+      <div class="stat-card-value">&#8377;{{ this_month_expenses|floatformat:2|default:"0" }}</div>
+      <div class="stat-card-label">Expenses This Month</div>
+    </div>
+  </div>
+  <div class="col-4 col-md-12" style="padding: 0.75rem;">
+    <div class="card stat-card">
+      <div class="stat-card-header">
+        <div class="stat-card-icon {% if net_profit_month >= 0 %}success{% else %}danger{% endif %}">
+          <i class="fas fa-chart-line"></i>
+        </div>
+      </div>
+      <div class="stat-card-value" style="color: {% if net_profit_month >= 0 %}#10b981{% else %}#ef4444{% endif %};">
+        &#8377;{{ net_profit_month|floatformat:2|default:"0" }}
+      </div>
+      <div class="stat-card-label">Net Profit This Month</div>
     </div>
   </div>
 </div>
 
-<!-- Revenue Chart (Full Width) -->
+<!-- Revenue vs Expenses Chart (Full Width) -->
 <div class="row mb-4">
   <div class="col-12" style="padding: 0.75rem;">
     <div class="card">
       <div class="card-header">
         <h3 class="card-title">
           <i class="fas fa-chart-area text-primary me-2"></i>
-          Revenue vs Invoiced (Last 12 Months)
+          Income vs Expenses vs Invoiced (Last 12 Months)
         </h3>
       </div>
       <div class="card-body">
@@ -82,18 +128,18 @@
   </div>
 </div>
 
-<!-- Charts Row -->
+<!-- Expense Category Chart -->
 <div class="row mb-4">
   <div class="col-6 col-md-12" style="padding: 0.75rem;">
     <div class="card">
       <div class="card-header">
         <h3 class="card-title">
-          <i class="fas fa-users text-info me-2"></i>
-          Top Clients by Revenue
+          <i class="fas fa-receipt text-danger me-2"></i>
+          Expenses by Category
         </h3>
       </div>
       <div class="card-body">
-        <canvas id="clientRevenueChart" height="200"></canvas>
+        <canvas id="expenseCategoryChart" height="200"></canvas>
       </div>
     </div>
   </div>
@@ -107,6 +153,23 @@
       </div>
       <div class="card-body">
         <canvas id="projectTypeChart" height="200"></canvas>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Charts Row -->
+<div class="row mb-4">
+  <div class="col-12" style="padding: 0.75rem;">
+    <div class="card">
+      <div class="card-header">
+        <h3 class="card-title">
+          <i class="fas fa-users text-info me-2"></i>
+          Top Clients by Revenue
+        </h3>
+      </div>
+      <div class="card-body">
+        <canvas id="clientRevenueChart" height="120"></canvas>
       </div>
     </div>
   </div>
@@ -255,13 +318,24 @@ document.addEventListener('DOMContentLoaded', function() {
       data: {
         labels: {{ monthly_revenue_labels|safe }},
         datasets: [{
-          label: 'Revenue Received',
+          label: 'Income Received',
           data: {{ monthly_revenue_data|safe }},
           borderColor: colors.success,
           backgroundColor: 'rgba(16, 185, 129, 0.1)',
           fill: true,
           tension: 0.4,
           pointBackgroundColor: colors.success,
+          pointBorderColor: '#fff',
+          pointBorderWidth: 2,
+          pointRadius: 4
+        }, {
+          label: 'Expenses',
+          data: {{ monthly_expenses_data|safe }},
+          borderColor: colors.danger,
+          backgroundColor: 'rgba(239, 68, 68, 0.1)',
+          fill: true,
+          tension: 0.4,
+          pointBackgroundColor: colors.danger,
           pointBorderColor: '#fff',
           pointBorderWidth: 2,
           pointRadius: 4
@@ -359,6 +433,48 @@ document.addEventListener('DOMContentLoaded', function() {
       });
     } else {
       clientCtx.parentElement.innerHTML = '<div class="text-center text-muted py-4">No client revenue data available</div>';
+    }
+  }
+
+  // Expense by Category Chart (Doughnut)
+  const expenseCatCtx = document.getElementById('expenseCategoryChart');
+  if (expenseCatCtx) {
+    const ecLabels = {{ expense_category_labels|safe }};
+    const ecData = {{ expense_category_data|safe }};
+
+    if (ecLabels.length > 0) {
+      new Chart(expenseCatCtx, {
+        type: 'doughnut',
+        data: {
+          labels: ecLabels,
+          datasets: [{
+            data: ecData,
+            backgroundColor: [colors.danger, colors.warning, colors.purple, colors.primary, colors.info, colors.success, colors.pink, colors.secondary],
+            borderWidth: 0,
+            hoverOffset: 4
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: {
+              position: 'right',
+              labels: { padding: 15, usePointStyle: true }
+            },
+            tooltip: {
+              callbacks: {
+                label: function(context) {
+                  return context.label + ': ₹' + context.parsed.toLocaleString('en-IN');
+                }
+              }
+            }
+          },
+          cutout: '55%'
+        }
+      });
+    } else {
+      expenseCatCtx.parentElement.innerHTML = '<div class="text-center text-muted py-4">No expenses recorded yet</div>';
     }
   }
 

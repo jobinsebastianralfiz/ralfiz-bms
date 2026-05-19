@@ -281,7 +281,21 @@
     <div class="metric-icon" style="background: #f0fdf4; color: #16a34a;"><i class="fas fa-arrow-trend-up"></i></div>
     <div>
       <div class="metric-num">&#8377;{{ revenue_this_month|floatformat:2|default:"0" }}</div>
-      <div class="metric-label">Revenue this month</div>
+      <div class="metric-label">Income this month</div>
+    </div>
+  </div>
+  <div class="metric">
+    <div class="metric-icon" style="background: #fef2f2; color: #ef4444;"><i class="fas fa-receipt"></i></div>
+    <div>
+      <div class="metric-num">&#8377;{{ expenses_this_month|floatformat:2|default:"0" }}</div>
+      <div class="metric-label">Expenses this month</div>
+    </div>
+  </div>
+  <div class="metric">
+    <div class="metric-icon" style="background: {% if net_profit_this_month >= 0 %}#ecfdf5; color: #10b981{% else %}#fef2f2; color: #ef4444{% endif %};"><i class="fas fa-chart-line"></i></div>
+    <div>
+      <div class="metric-num" style="color: {% if net_profit_this_month >= 0 %}#10b981{% else %}#ef4444{% endif %};">&#8377;{{ net_profit_this_month|floatformat:2|default:"0" }}</div>
+      <div class="metric-label">Net profit this month</div>
     </div>
   </div>
 </div>
@@ -589,20 +603,31 @@ document.addEventListener('DOMContentLoaded', function() {
     g.addColorStop(0, 'rgba(99,102,241,0.15)');
     g.addColorStop(1, 'rgba(99,102,241,0)');
 
+    const gExp = rev.getContext('2d').createLinearGradient(0, 0, 0, 220);
+    gExp.addColorStop(0, 'rgba(239,68,68,0.12)');
+    gExp.addColorStop(1, 'rgba(239,68,68,0)');
+
     new Chart(rev, {
       type: 'line',
       data: {
         labels: {{ monthly_revenue_labels|safe }},
         datasets: [{
+          label: 'Income',
           data: {{ monthly_revenue_data|safe }},
           borderColor: C.indigo, backgroundColor: g, fill: true,
           tension: 0.45, pointBackgroundColor: '#fff', pointBorderColor: C.indigo,
+          pointBorderWidth: 2.5, pointRadius: 5, pointHoverRadius: 7, borderWidth: 2.5
+        }, {
+          label: 'Expenses',
+          data: {{ monthly_expenses_data|safe }},
+          borderColor: C.red, backgroundColor: gExp, fill: true,
+          tension: 0.45, pointBackgroundColor: '#fff', pointBorderColor: C.red,
           pointBorderWidth: 2.5, pointRadius: 5, pointHoverRadius: 7, borderWidth: 2.5
         }]
       },
       options: {
         responsive: true, maintainAspectRatio: false,
-        plugins: { legend: { display: false }, tooltip: { backgroundColor: '#1e1b4b', padding: 12, cornerRadius: 10, callbacks: { label: c => '\u20B9' + c.parsed.y.toLocaleString('en-IN') } } },
+        plugins: { legend: { display: true, position: 'top', labels: { usePointStyle: true, padding: 12, font: { size: 11 }, color: '#64748b' } }, tooltip: { backgroundColor: '#1e1b4b', padding: 12, cornerRadius: 10, callbacks: { label: c => c.dataset.label + ': \u20B9' + c.parsed.y.toLocaleString('en-IN') } } },
         scales: {
           y: { beginAtZero: true, border: { display: false }, grid: { color: 'rgba(0,0,0,0.04)' }, ticks: { callback: v => v >= 1000 ? '\u20B9' + (v/1000).toFixed(0) + 'k' : '\u20B9' + v, color: '#94a3b8', font: { size: 11 } } },
           x: { border: { display: false }, grid: { display: false }, ticks: { color: '#94a3b8', font: { size: 11 } } }

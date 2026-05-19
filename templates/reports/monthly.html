@@ -1,0 +1,362 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Monthly Report - {{ month_label }}{% endblock %}
+
+{% block breadcrumb %}
+<a href="{% url 'dashboard' %}" class="breadcrumb-item">Dashboard</a>
+<span class="breadcrumb-separator">/</span>
+<a href="{% url 'reports' %}" class="breadcrumb-item">Reports</a>
+<span class="breadcrumb-separator">/</span>
+<span class="breadcrumb-item active">Monthly</span>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title">Monthly Report</h1>
+    <p class="page-subtitle mb-0">{{ month_label }} &middot; {{ month_start|date:"d M" }} – {{ month_end|date:"d M Y" }}</p>
+  </div>
+  <div>
+    <a href="{% url 'reports' %}" class="btn btn-outline-secondary">
+      <i class="fas fa-arrow-left me-1"></i> All Reports
+    </a>
+  </div>
+</div>
+
+<!-- Month Selector -->
+<div class="card mb-4">
+  <div class="card-body">
+    <form method="get" class="d-flex align-items-center gap-2 flex-wrap">
+      <a href="?month={{ prev_month }}" class="btn btn-outline-secondary btn-sm" title="Previous month">
+        <i class="fas fa-chevron-left"></i>
+      </a>
+      <select name="month" class="form-select form-select-sm" style="max-width: 220px;" onchange="this.form.submit()">
+        {% for m in available_months %}
+        <option value="{{ m.value }}" {% if m.value == month_value %}selected{% endif %}>{{ m.label }}</option>
+        {% endfor %}
+      </select>
+      <a href="?month={{ next_month }}" class="btn btn-outline-secondary btn-sm" title="Next month">
+        <i class="fas fa-chevron-right"></i>
+      </a>
+      <noscript><button type="submit" class="btn btn-primary btn-sm">Go</button></noscript>
+    </form>
+  </div>
+</div>
+
+<!-- Summary Cards -->
+<div class="row mb-4">
+  <div class="col-4 col-md-12" style="padding: 0.75rem;">
+    <div class="card stat-card">
+      <div class="stat-card-header">
+        <div class="stat-card-icon success">
+          <i class="fas fa-arrow-down"></i>
+        </div>
+      </div>
+      <div class="stat-card-value">&#8377;{{ total_income|floatformat:2|default:"0" }}</div>
+      <div class="stat-card-label">Income</div>
+    </div>
+  </div>
+  <div class="col-4 col-md-12" style="padding: 0.75rem;">
+    <div class="card stat-card">
+      <div class="stat-card-header">
+        <div class="stat-card-icon danger">
+          <i class="fas fa-arrow-up"></i>
+        </div>
+      </div>
+      <div class="stat-card-value">&#8377;{{ total_expenses|floatformat:2|default:"0" }}</div>
+      <div class="stat-card-label">Expenses</div>
+    </div>
+  </div>
+  <div class="col-4 col-md-12" style="padding: 0.75rem;">
+    <div class="card stat-card">
+      <div class="stat-card-header">
+        <div class="stat-card-icon {% if net_profit >= 0 %}success{% else %}danger{% endif %}">
+          <i class="fas fa-chart-line"></i>
+        </div>
+      </div>
+      <div class="stat-card-value" style="color: {% if net_profit >= 0 %}#10b981{% else %}#ef4444{% endif %};">
+        &#8377;{{ net_profit|floatformat:2|default:"0" }}
+      </div>
+      <div class="stat-card-label">Net Profit / Loss</div>
+    </div>
+  </div>
+</div>
+
+<!-- Breakdown Charts -->
+<div class="row mb-4">
+  <div class="col-6 col-md-12" style="padding: 0.75rem;">
+    <div class="card">
+      <div class="card-header">
+        <h3 class="card-title">
+          <i class="fas fa-credit-card text-success me-2"></i>
+          Income by Payment Method
+        </h3>
+      </div>
+      <div class="card-body">
+        <canvas id="incomeMethodChart" height="200"></canvas>
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-md-12" style="padding: 0.75rem;">
+    <div class="card">
+      <div class="card-header">
+        <h3 class="card-title">
+          <i class="fas fa-receipt text-danger me-2"></i>
+          Expenses by Category
+        </h3>
+      </div>
+      <div class="card-body">
+        <canvas id="expenseCategoryChart" height="200"></canvas>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Income Detail -->
+<div class="card mb-4">
+  <div class="card-header d-flex align-items-center justify-content-between">
+    <h3 class="card-title">
+      <i class="fas fa-arrow-down text-success me-2"></i>
+      Income / Payments Received ({{ payments|length }})
+    </h3>
+    <span class="text-sm text-muted">Total: &#8377;{{ total_income|floatformat:2 }}</span>
+  </div>
+  <div class="card-body p-0">
+    {% if payments %}
+    <div class="table-responsive">
+      <table class="table mb-0">
+        <thead>
+          <tr>
+            <th>Date</th>
+            <th>Client</th>
+            <th>Invoice</th>
+            <th>Method</th>
+            <th class="text-end">Amount</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for p in payments %}
+          <tr>
+            <td>{{ p.payment_date|date:"d M Y" }}</td>
+            <td>{{ p.invoice.client.name }}</td>
+            <td><a href="{% url 'invoice_detail' p.invoice.pk %}">{{ p.invoice.invoice_number }}</a></td>
+            <td>{{ p.get_payment_method_display }}</td>
+            <td class="text-end">&#8377;{{ p.amount|floatformat:2 }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+        <tfoot>
+          <tr>
+            <th colspan="4" class="text-end">Total</th>
+            <th class="text-end">&#8377;{{ total_income|floatformat:2 }}</th>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+    {% else %}
+    <div class="text-center text-muted py-4">No payments recorded in {{ month_label }}.</div>
+    {% endif %}
+  </div>
+</div>
+
+<!-- Income by Client -->
+{% if income_by_client %}
+<div class="card mb-4">
+  <div class="card-header">
+    <h3 class="card-title">
+      <i class="fas fa-users text-info me-2"></i>
+      Income by Client
+    </h3>
+  </div>
+  <div class="card-body p-0">
+    <div class="table-responsive">
+      <table class="table mb-0">
+        <thead>
+          <tr>
+            <th>Client</th>
+            <th class="text-end">Amount</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for name, amount in income_by_client %}
+          <tr>
+            <td>{{ name }}</td>
+            <td class="text-end">&#8377;{{ amount|floatformat:2 }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endif %}
+
+<!-- Expense Detail -->
+<div class="card mb-4">
+  <div class="card-header d-flex align-items-center justify-content-between">
+    <h3 class="card-title">
+      <i class="fas fa-arrow-up text-danger me-2"></i>
+      Expenses ({{ expenses|length }})
+    </h3>
+    <span class="text-sm text-muted">Total: &#8377;{{ total_expenses|floatformat:2 }}</span>
+  </div>
+  <div class="card-body p-0">
+    {% if expenses %}
+    <div class="table-responsive">
+      <table class="table mb-0">
+        <thead>
+          <tr>
+            <th>Date</th>
+            <th>Vendor</th>
+            <th>Category</th>
+            <th>Project</th>
+            <th>Method</th>
+            <th class="text-end">Amount</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for e in expenses %}
+          <tr>
+            <td>{{ e.date|date:"d M Y" }}</td>
+            <td>{{ e.vendor }}</td>
+            <td>{{ e.get_category_display }}</td>
+            <td>{% if e.project %}{{ e.project.name }}{% else %}&mdash;{% endif %}</td>
+            <td>{{ e.get_payment_method_display }}</td>
+            <td class="text-end">&#8377;{{ e.amount|floatformat:2 }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+        <tfoot>
+          <tr>
+            <th colspan="5" class="text-end">Total</th>
+            <th class="text-end">&#8377;{{ total_expenses|floatformat:2 }}</th>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+    {% else %}
+    <div class="text-center text-muted py-4">No expenses recorded in {{ month_label }}.</div>
+    {% endif %}
+  </div>
+</div>
+
+<!-- Expense by Category -->
+{% if expense_by_category %}
+<div class="card mb-4">
+  <div class="card-header">
+    <h3 class="card-title">
+      <i class="fas fa-tags text-warning me-2"></i>
+      Expenses by Category
+    </h3>
+  </div>
+  <div class="card-body p-0">
+    <div class="table-responsive">
+      <table class="table mb-0">
+        <thead>
+          <tr>
+            <th>Category</th>
+            <th class="text-end">Amount</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for name, amount in expense_by_category %}
+          <tr>
+            <td>{{ name }}</td>
+            <td class="text-end">&#8377;{{ amount|floatformat:2 }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  const colors = {
+    primary: '#3b82f6',
+    success: '#10b981',
+    warning: '#f59e0b',
+    danger: '#ef4444',
+    info: '#06b6d4',
+    secondary: '#6b7280',
+    purple: '#8b5cf6',
+    pink: '#ec4899'
+  };
+
+  // Income by method (doughnut)
+  const imCtx = document.getElementById('incomeMethodChart');
+  if (imCtx) {
+    const imLabels = {{ income_method_labels|safe }};
+    const imData = {{ income_method_data|safe }};
+    if (imLabels.length > 0) {
+      new Chart(imCtx, {
+        type: 'doughnut',
+        data: {
+          labels: imLabels,
+          datasets: [{
+            data: imData,
+            backgroundColor: [colors.success, colors.primary, colors.info, colors.warning, colors.purple, colors.pink, colors.secondary],
+            borderWidth: 0
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { position: 'right', labels: { padding: 12, usePointStyle: true } },
+            tooltip: {
+              callbacks: {
+                label: function(c) { return c.label + ': ₹' + c.parsed.toLocaleString('en-IN'); }
+              }
+            }
+          },
+          cutout: '55%'
+        }
+      });
+    } else {
+      imCtx.parentElement.innerHTML = '<div class="text-center text-muted py-4">No income for this month</div>';
+    }
+  }
+
+  // Expense by category (doughnut)
+  const ecCtx = document.getElementById('expenseCategoryChart');
+  if (ecCtx) {
+    const ecLabels = {{ expense_category_labels|safe }};
+    const ecData = {{ expense_category_data|safe }};
+    if (ecLabels.length > 0) {
+      new Chart(ecCtx, {
+        type: 'doughnut',
+        data: {
+          labels: ecLabels,
+          datasets: [{
+            data: ecData,
+            backgroundColor: [colors.danger, colors.warning, colors.purple, colors.primary, colors.info, colors.success, colors.pink, colors.secondary],
+            borderWidth: 0
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { position: 'right', labels: { padding: 12, usePointStyle: true } },
+            tooltip: {
+              callbacks: {
+                label: function(c) { return c.label + ': ₹' + c.parsed.toLocaleString('en-IN'); }
+              }
+            }
+          },
+          cutout: '55%'
+        }
+      });
+    } else {
+      ecCtx.parentElement.innerHTML = '<div class="text-center text-muted py-4">No expenses for this month</div>';
+    }
+  }
+});
+</script>
+{% endblock %}
