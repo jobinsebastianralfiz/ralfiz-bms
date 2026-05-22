@@ -215,6 +215,49 @@
           <h3 class="card-title"><i class="fas fa-calculator me-2 text-primary"></i>Summary</h3>
         </div>
         <div class="card-body">
+          <!-- Reverse GST Calculator -->
+          <div class="mb-3 p-3" style="background: var(--primary-bg); border: 1px solid var(--primary-lighter); border-radius: 0.5rem;">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+              <span class="fw-semibold text-primary"><i class="fas fa-exchange-alt me-1"></i>Reverse GST Calculator</span>
+              <button type="button" class="btn btn-ghost btn-sm" id="revCalcToggle" onclick="toggleRevCalc()" aria-expanded="true">
+                <i class="fas fa-chevron-up" id="revCalcChevron"></i>
+              </button>
+            </div>
+            <div id="revCalcBody">
+              <div class="form-text mb-2">Enter a GST-inclusive total to back-calculate the base amount.</div>
+              <div class="form-group mb-2">
+                <label class="form-label" for="rev_total">Total (incl. GST)</label>
+                <div class="input-group">
+                  <span class="input-group-text">&#8377;</span>
+                  <input type="number" class="form-control" id="rev_total" placeholder="e.g. 2000.00" step="0.01" min="0" oninput="updateRevCalc()">
+                </div>
+              </div>
+              <div class="form-group mb-2">
+                <label class="form-label" for="rev_rate">GST %</label>
+                <div class="input-group">
+                  <input type="number" class="form-control" id="rev_rate" value="18" step="0.01" min="0" max="100" oninput="updateRevCalc()">
+                  <span class="input-group-text">%</span>
+                </div>
+              </div>
+              <div class="form-group mb-2">
+                <label class="form-label" for="rev_desc">Description <span class="text-muted fw-normal">- Optional</span></label>
+                <input type="text" class="form-control" id="rev_desc" placeholder="e.g. Service (GST inclusive)">
+              </div>
+              <div class="d-flex justify-content-between small">
+                <span class="text-secondary">Base Amount</span>
+                <span class="fw-medium" id="rev_base">&#8377;0.00</span>
+              </div>
+              <div class="d-flex justify-content-between small mb-2">
+                <span class="text-secondary">GST <span id="rev_rate_label">@18%</span></span>
+                <span class="fw-medium" id="rev_gst">&#8377;0.00</span>
+              </div>
+              <button type="button" class="btn btn-primary btn-sm w-100 mt-2" onclick="applyRevCalc()">
+                <i class="fas fa-plus me-1"></i>Apply as line item
+              </button>
+              <div class="form-text mt-1">Adds a line item at the base amount and sets the invoice GST rate.</div>
+            </div>
+          </div>
+
           <div class="d-flex justify-content-between mb-3">
             <span class="text-secondary">Subtotal</span>
             <span class="fw-medium" id="subtotal">&#8377;{{ invoice.subtotal|default:0|floatformat:2 }}</span>
@@ -413,6 +456,77 @@ function calculateTotals() {
   document.getElementById('totalAmount').textContent = '₹' + total.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2});
 }
 
+// Reverse GST Calculator
+function formatINR(n) {
+  return '₹' + (Number(n) || 0).toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+}
+
+function revCalcValues() {
+  const total = parseFloat(document.getElementById('rev_total').value) || 0;
+  const rate = parseFloat(document.getElementById('rev_rate').value) || 0;
+  const base = rate > -100 ? total / (1 + rate / 100) : total;
+  const gst = total - base;
+  return { total, rate, base, gst };
+}
+
+function updateRevCalc() {
+  const { rate, base, gst } = revCalcValues();
+  document.getElementById('rev_base').textContent = formatINR(base);
+  document.getElementById('rev_gst').textContent = formatINR(gst);
+  document.getElementById('rev_rate_label').textContent = '@' + rate + '%';
+}
+
+function applyRevCalc() {
+  const { total, rate, base } = revCalcValues();
+  if (total <= 0) {
+    alert('Enter a total amount greater than 0.');
+    return;
+  }
+  const desc = document.getElementById('rev_desc').value.trim() || 'Item (GST inclusive)';
+  const baseRounded = Math.round(base * 100) / 100;
+
+  // If the last row is empty (no description, price 0), reuse it; otherwise add a new one.
+  const rows = document.querySelectorAll('.line-item-row');
+  let row = null;
+  if (rows.length) {
+    const last = rows[rows.length - 1];
+    const lastDesc = last.querySelector('input[name^="item_description_"]').value.trim();
+    const lastPrice = parseFloat(last.querySelector('.item-price').value) || 0;
+    if (!lastDesc && lastPrice === 0) {
+      row = last;
+    }
+  }
+  if (!row) {
+    addLineItem();
+    const all = document.querySelectorAll('.line-item-row');
+    row = all[all.length - 1];
+  }
+  row.querySelector('input[name^="item_description_"]').value = desc;
+  row.querySelector('.item-qty').value = 1;
+  row.querySelector('.item-price').value = baseRounded.toFixed(2);
+  row.querySelector('.item-total').value = baseRounded.toFixed(2);
+
+  // Sync invoice-level GST rate
+  document.getElementById('tax_rate').value = rate;
+
+  calculateTotals();
+
+  // Clear inputs for next entry
+  document.getElementById('rev_total').value = '';
+  document.getElementById('rev_desc').value = '';
+  updateRevCalc();
+}
+
+function toggleRevCalc() {
+  const body = document.getElementById('revCalcBody');
+  const chev = document.getElementById('revCalcChevron');
+  const btn = document.getElementById('revCalcToggle');
+  const collapsed = body.style.display === 'none';
+  body.style.display = collapsed ? '' : 'none';
+  chev.className = collapsed ? 'fas fa-chevron-up' : 'fas fa-chevron-down';
+  btn.setAttribute('aria-expanded', collapsed ? 'true' : 'false');
+}
+
 // Modal functions
 function showQuoteImportModal() {
   document.getElementById('quoteImportModal').style.display = 'flex';
@@ -444,6 +558,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
   });
   calculateTotals();
+  updateRevCalc();
 });
 </script>
 {% endblock %}
