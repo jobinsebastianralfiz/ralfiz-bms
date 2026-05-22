@@ -184,6 +184,21 @@
     </div>
 
     <div class="nav-section">
+      <div class="nav-section-title">Finance</div>
+      <a href="{% url 'bank_account_list' %}" class="nav-item {% if 'bank_account' in request.resolver_match.url_name %}active{% endif %}">
+        <i class="fas fa-university"></i>
+        <span>Accounts</span>
+      </a>
+      <a href="{% url 'transfer_list' %}" class="nav-item {% if 'transfer' in request.resolver_match.url_name %}active{% endif %}">
+        <i class="fas fa-exchange-alt"></i>
+        <span>Transfers</span>
+        {% if pending_transfer_count %}
+        <span class="nav-badge">{{ pending_transfer_count }}</span>
+        {% endif %}
+      </a>
+    </div>
+
+    <div class="nav-section">
       <div class="nav-section-title">System</div>
       <a href="{% url 'reports' %}" class="nav-item {% if 'report' in request.resolver_match.url_name %}active{% endif %}">
         <i class="fas fa-chart-bar"></i>
