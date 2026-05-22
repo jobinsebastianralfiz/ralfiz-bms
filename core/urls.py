@@ -141,6 +141,16 @@ urlpatterns = [
     path('expenses/<uuid:pk>/edit/', views.expense_update, name='expense_update'),
     path('expenses/<uuid:pk>/delete/', views.expense_delete, name='expense_delete'),
 
+    # Bank Accounts & Internal Transfers
+    path('accounts/', views.bank_account_list, name='bank_account_list'),
+    path('accounts/new/', views.bank_account_create, name='bank_account_create'),
+    path('accounts/<uuid:pk>/', views.bank_account_detail, name='bank_account_detail'),
+    path('accounts/<uuid:pk>/edit/', views.bank_account_update, name='bank_account_update'),
+    path('transfers/', views.transfer_list, name='transfer_list'),
+    path('transfers/new/', views.transfer_create, name='transfer_create'),
+    path('transfers/<uuid:pk>/edit/', views.transfer_update, name='transfer_update'),
+    path('transfers/<uuid:pk>/delete/', views.transfer_delete, name='transfer_delete'),
+
     # Tasks
     path('tasks/', views.task_list, name='task_list'),
     path('tasks/board/', views.task_board, name='task_board'),

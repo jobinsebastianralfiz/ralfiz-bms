@@ -1049,39 +1049,41 @@ class OwnerDashboardView(APIView):
             date__gte=current_month_start, date__lte=today
         ).aggregate(total=Sum('amount'))['total'] or Decimal('0')
 
-        # Cash position (mirrors web dashboard: opening balance + payments since - expenses since)
+        # Cash position — now uses per-account BankAccount helper. Legacy
+        # cash_in_hand / cash_in_account keys still populated for back-compat
+        # with existing Flutter clients.
+        from core.cash_position import cash_position as _cp, pending_transfers
         opening = OpeningBalance.current()
-        cash_position = None
-        if opening:
-            ob_date = opening.as_of_date
-            cash_received_since = Payment.objects.filter(
-                payment_date__gte=ob_date, payment_method__in=['cash']
-            ).aggregate(t=Sum('amount'))['t'] or Decimal('0')
-            acc_received_since = Payment.objects.filter(
-                payment_date__gte=ob_date,
-                payment_method__in=['bank_transfer', 'upi', 'card', 'paypal', 'cheque'],
-            ).aggregate(t=Sum('amount'))['t'] or Decimal('0')
-            cash_spent_since = Expense.objects.filter(
-                date__gte=ob_date, payment_method='cash'
-            ).aggregate(t=Sum('amount'))['t'] or Decimal('0')
-            acc_spent_since = Expense.objects.filter(
-                date__gte=ob_date, payment_method__in=['bank_transfer', 'upi', 'card']
-            ).aggregate(t=Sum('amount'))['t'] or Decimal('0')
-            current_cash_in_hand = opening.cash_in_hand + cash_received_since - cash_spent_since
-            current_cash_in_account = opening.cash_in_account + acc_received_since - acc_spent_since
-            current_outstanding = Invoice.objects.exclude(
-                status__in=['paid', 'cancelled']
-            ).aggregate(total=Sum(F('total_amount') - F('amount_paid')))['total'] or Decimal('0')
-            cash_position = {
-                'cash_in_hand': f'{current_cash_in_hand:.2f}',
-                'cash_in_account': f'{current_cash_in_account:.2f}',
-                'receivables_carried_in': f'{opening.accounts_receivable:.2f}',
-                'current_outstanding_receivables': f'{current_outstanding:.2f}',
-                'opening_label': opening.label,
-                'opening_as_of': opening.as_of_date.isoformat(),
-                'opening_cash_in_hand': f'{opening.cash_in_hand:.2f}',
-                'opening_cash_in_account': f'{opening.cash_in_account:.2f}',
-            }
+        cp = _cp()
+        cash_card = next((r for r in cp['accounts'] if r['account'].is_cash), None)
+        bank_card = next((r for r in cp['accounts'] if r['account'].is_primary_bank), None)
+        current_outstanding = Invoice.objects.exclude(
+            status__in=['paid', 'cancelled']
+        ).aggregate(total=Sum(F('total_amount') - F('amount_paid')))['total'] or Decimal('0')
+        pending_qs = pending_transfers()
+        accounts_payload = [{
+            'id': str(r['account'].id),
+            'name': r['account'].name,
+            'account_type': r['account'].account_type,
+            'is_primary_bank': r['account'].is_primary_bank,
+            'is_cash': r['account'].is_cash,
+            'bank_name': r['account'].bank_name,
+            'account_number_last4': r['account'].account_number_last4,
+            'balance': f"{r['balance']:.2f}",
+        } for r in cp['accounts']]
+        cash_position = {
+            'cash_in_hand': f"{(cash_card['balance'] if cash_card else Decimal('0')):.2f}",
+            'cash_in_account': f"{(bank_card['balance'] if bank_card else Decimal('0')):.2f}",
+            'total_assets': f"{cp['total']:.2f}",
+            'accounts': accounts_payload,
+            'pending_transfer_count': pending_qs.count(),
+            'receivables_carried_in': f"{(opening.accounts_receivable if opening else Decimal('0')):.2f}",
+            'current_outstanding_receivables': f'{current_outstanding:.2f}',
+            'opening_label': opening.label if opening else None,
+            'opening_as_of': opening.as_of_date.isoformat() if opening else None,
+            'opening_cash_in_hand': f"{(opening.cash_in_hand if opening else Decimal('0')):.2f}",
+            'opening_cash_in_account': f"{(opening.cash_in_account if opening else Decimal('0')):.2f}",
+        }
 
         # Employee counts
         employees = Employee.objects.filter(status='active')
@@ -5023,3 +5025,281 @@ class OwnerPaymentDeleteView(APIView):
         return Response({'message': 'Payment deleted'}, status=status.HTTP_204_NO_CONTENT)
 
 
+# ============== Bank Accounts & Internal Transfers ==============
+
+def _bank_account_to_dict(account, balance=None):
+    return {
+        'id': str(account.id),
+        'name': account.name,
+        'account_type': account.account_type,
+        'bank_name': account.bank_name,
+        'account_number': account.account_number,
+        'account_number_last4': account.account_number_last4,
+        'ifsc': account.ifsc,
+        'branch': account.branch,
+        'upi_id': account.upi_id,
+        'opening_balance': f'{account.opening_balance:.2f}',
+        'opening_date': account.opening_date.isoformat() if account.opening_date else None,
+        'is_active': account.is_active,
+        'is_primary_bank': account.is_primary_bank,
+        'is_cash': account.is_cash,
+        'display_order': account.display_order,
+        'notes': account.notes,
+        'balance': f'{balance:.2f}' if balance is not None else None,
+    }
+
+
+def _transfer_to_dict(t):
+    return {
+        'id': str(t.id),
+        'from_account_id': str(t.from_account_id),
+        'from_account_name': t.from_account.name,
+        'to_account_id': str(t.to_account_id),
+        'to_account_name': t.to_account.name,
+        'amount': f'{t.amount:.2f}',
+        'date': t.date.isoformat() if t.date else None,
+        'reference': t.reference,
+        'notes': t.notes,
+        'created_at': t.created_at.isoformat() if t.created_at else None,
+    }
+
+
+@extend_schema(tags=['Owner'])
+class OwnerBankAccountListView(APIView):
+    """GET: list bank accounts with current balances.
+    POST: create a new bank account."""
+    permission_classes = [IsAuthenticated, IsOwnerOrPartner]
+
+    def get(self, request):
+        from core.models import BankAccount
+        from core.cash_position import cash_position
+        include_inactive = request.query_params.get('include_inactive') in ('1', 'true', 'yes')
+        cp = cash_position(include_inactive=include_inactive)
+        accounts = [_bank_account_to_dict(r['account'], r['balance']) for r in cp['accounts']]
+        return Response({
+            'accounts': accounts,
+            'total_assets': f"{cp['total']:.2f}",
+        })
+
+    def post(self, request):
+        from core.models import BankAccount
+        from datetime import date as date_cls
+        data = request.data
+        try:
+            account = BankAccount.objects.create(
+                name=(data.get('name') or '').strip(),
+                account_type=data.get('account_type') or 'bank',
+                bank_name=data.get('bank_name') or '',
+                account_number=data.get('account_number') or '',
+                ifsc=data.get('ifsc') or '',
+                branch=data.get('branch') or '',
+                upi_id=data.get('upi_id') or '',
+                opening_balance=data.get('opening_balance') or 0,
+                opening_date=data.get('opening_date') or date_cls.today(),
+                is_active=bool(data.get('is_active', True)),
+                is_primary_bank=bool(data.get('is_primary_bank', False)),
+                is_cash=bool(data.get('is_cash', False)),
+                display_order=int(data.get('display_order') or 0),
+                notes=data.get('notes') or '',
+            )
+        except Exception as e:
+            return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        from core.cash_position import compute_account_balance
+        account.refresh_from_db()
+        return Response(
+            _bank_account_to_dict(account, compute_account_balance(account)),
+            status=status.HTTP_201_CREATED,
+        )
+
+
+@extend_schema(tags=['Owner'])
+class OwnerBankAccountDetailView(APIView):
+    """GET: account details + balance + recent ledger.
+    PATCH: edit account.
+    DELETE: only if no payments/expenses/transfers reference it."""
+    permission_classes = [IsAuthenticated, IsOwnerOrPartner]
+
+    def get(self, request, pk):
+        from core.models import BankAccount, InternalTransfer, Payment, Expense
+        from core.cash_position import compute_account_balance
+        try:
+            account = BankAccount.objects.get(pk=pk)
+        except BankAccount.DoesNotExist:
+            return Response({'error': 'Not found'}, status=status.HTTP_404_NOT_FOUND)
+
+        balance = compute_account_balance(account)
+        entries = []
+        for p in Payment.objects.filter(
+            payment_date__gte=account.opening_date,
+            payment_method__in=account.resolved_payment_methods(),
+        ).select_related('invoice', 'invoice__client').order_by('-payment_date')[:50]:
+            entries.append({
+                'date': p.payment_date.isoformat(),
+                'kind': 'payment_in',
+                'description': f"Invoice #{p.invoice.invoice_number}" if p.invoice else '',
+                'method': p.payment_method,
+                'amount': f'{p.amount:.2f}',
+                'direction': 'in',
+            })
+        for e in Expense.objects.filter(
+            date__gte=account.opening_date,
+            payment_method__in=account.resolved_expense_methods(),
+        ).order_by('-date')[:50]:
+            entries.append({
+                'date': e.date.isoformat(),
+                'kind': 'expense',
+                'description': f"{e.vendor} - {e.get_category_display()}",
+                'method': e.payment_method,
+                'amount': f'{e.amount:.2f}',
+                'direction': 'out',
+            })
+        for t in InternalTransfer.objects.filter(to_account=account).select_related('from_account')[:50]:
+            entries.append({
+                'date': t.date.isoformat(),
+                'kind': 'transfer_in',
+                'description': f"From {t.from_account.name}",
+                'method': 'internal',
+                'amount': f'{t.amount:.2f}',
+                'direction': 'in',
+                'reference': t.reference,
+            })
+        for t in InternalTransfer.objects.filter(from_account=account).select_related('to_account')[:50]:
+            entries.append({
+                'date': t.date.isoformat(),
+                'kind': 'transfer_out',
+                'description': f"To {t.to_account.name}",
+                'method': 'internal',
+                'amount': f'{t.amount:.2f}',
+                'direction': 'out',
+                'reference': t.reference,
+            })
+        entries.sort(key=lambda x: x['date'], reverse=True)
+        return Response({
+            **_bank_account_to_dict(account, balance),
+            'ledger': entries[:100],
+        })
+
+    def patch(self, request, pk):
+        from core.models import BankAccount
+        from core.cash_position import compute_account_balance
+        try:
+            account = BankAccount.objects.get(pk=pk)
+        except BankAccount.DoesNotExist:
+            return Response({'error': 'Not found'}, status=status.HTTP_404_NOT_FOUND)
+        for f in ['name', 'account_type', 'bank_name', 'account_number', 'ifsc', 'branch', 'upi_id', 'notes']:
+            if f in request.data:
+                setattr(account, f, request.data[f] or '')
+        if 'opening_balance' in request.data:
+            account.opening_balance = request.data['opening_balance'] or 0
+        if 'opening_date' in request.data and request.data['opening_date']:
+            account.opening_date = request.data['opening_date']
+        if 'is_active' in request.data:
+            account.is_active = bool(request.data['is_active'])
+        if 'is_primary_bank' in request.data:
+            account.is_primary_bank = bool(request.data['is_primary_bank'])
+        if 'is_cash' in request.data:
+            account.is_cash = bool(request.data['is_cash'])
+        if 'display_order' in request.data:
+            account.display_order = int(request.data['display_order'] or 0)
+        try:
+            account.save()
+        except Exception as e:
+            return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        account.refresh_from_db()
+        return Response(_bank_account_to_dict(account, compute_account_balance(account)))
+
+
+@extend_schema(tags=['Owner'])
+class OwnerTransferListView(APIView):
+    """GET: list internal transfers (filter by ?account=<id>, ?pending=1).
+    POST: create a new transfer."""
+    permission_classes = [IsAuthenticated, IsOwnerOrPartner]
+
+    def get(self, request):
+        from core.models import InternalTransfer
+        qs = InternalTransfer.objects.select_related('from_account', 'to_account').all()
+        account_id = request.query_params.get('account')
+        if account_id:
+            from django.db.models import Q
+            qs = qs.filter(Q(from_account_id=account_id) | Q(to_account_id=account_id))
+        if request.query_params.get('pending') in ('1', 'true', 'yes'):
+            qs = qs.filter(date__gt=date.today())
+        limit = int(request.query_params.get('limit') or 100)
+        return Response({
+            'transfers': [_transfer_to_dict(t) for t in qs[:limit]],
+            'count': qs.count(),
+        })
+
+    def post(self, request):
+        from core.models import InternalTransfer, BankAccount
+        data = request.data
+        try:
+            transfer = InternalTransfer(
+                from_account=BankAccount.objects.get(pk=data['from_account']),
+                to_account=BankAccount.objects.get(pk=data['to_account']),
+                amount=data['amount'],
+                date=data.get('date') or date.today(),
+                reference=data.get('reference') or '',
+                notes=data.get('notes') or '',
+                created_by=request.user if request.user.is_authenticated else None,
+            )
+            transfer.full_clean()
+            transfer.save()
+        except BankAccount.DoesNotExist:
+            return Response({'error': 'Account not found'}, status=status.HTTP_404_NOT_FOUND)
+        except KeyError as e:
+            return Response({'error': f'Missing field: {e}'}, status=status.HTTP_400_BAD_REQUEST)
+        except Exception as e:
+            return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        return Response(_transfer_to_dict(transfer), status=status.HTTP_201_CREATED)
+
+
+@extend_schema(tags=['Owner'])
+class OwnerTransferDetailView(APIView):
+    """GET / PATCH / DELETE a single internal transfer."""
+    permission_classes = [IsAuthenticated, IsOwnerOrPartner]
+
+    def get(self, request, pk):
+        from core.models import InternalTransfer
+        try:
+            t = InternalTransfer.objects.select_related('from_account', 'to_account').get(pk=pk)
+        except InternalTransfer.DoesNotExist:
+            return Response({'error': 'Not found'}, status=status.HTTP_404_NOT_FOUND)
+        return Response(_transfer_to_dict(t))
+
+    def patch(self, request, pk):
+        from core.models import InternalTransfer, BankAccount
+        try:
+            t = InternalTransfer.objects.get(pk=pk)
+        except InternalTransfer.DoesNotExist:
+            return Response({'error': 'Not found'}, status=status.HTTP_404_NOT_FOUND)
+        data = request.data
+        try:
+            if 'from_account' in data:
+                t.from_account = BankAccount.objects.get(pk=data['from_account'])
+            if 'to_account' in data:
+                t.to_account = BankAccount.objects.get(pk=data['to_account'])
+            if 'amount' in data:
+                t.amount = data['amount']
+            if 'date' in data and data['date']:
+                t.date = data['date']
+            if 'reference' in data:
+                t.reference = data['reference'] or ''
+            if 'notes' in data:
+                t.notes = data['notes'] or ''
+            t.full_clean()
+            t.save()
+        except BankAccount.DoesNotExist:
+            return Response({'error': 'Account not found'}, status=status.HTTP_404_NOT_FOUND)
+        except Exception as e:
+            return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        return Response(_transfer_to_dict(t))
+
+    def delete(self, request, pk):
+        from core.models import InternalTransfer
+        try:
+            t = InternalTransfer.objects.get(pk=pk)
+        except InternalTransfer.DoesNotExist:
+            return Response({'error': 'Not found'}, status=status.HTTP_404_NOT_FOUND)
+        t.delete()
+        return Response({'message': 'Transfer deleted'}, status=status.HTTP_204_NO_CONTENT)

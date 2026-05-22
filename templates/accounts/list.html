@@ -1,0 +1,76 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Bank Accounts - Ralfiz BMS{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title">Bank Accounts</h1>
+    <p class="page-subtitle mb-0">All money buckets — cash and bank accounts</p>
+  </div>
+  <div class="page-actions">
+    <a href="{% url 'transfer_create' %}" class="btn btn-outline-primary">
+      <i class="fas fa-exchange-alt"></i> Transfer Money
+    </a>
+    <a href="{% url 'bank_account_create' %}" class="btn btn-primary">
+      <i class="fas fa-plus"></i> Add Account
+    </a>
+  </div>
+</div>
+
+<!-- Total assets -->
+<div class="card mb-4">
+  <div class="card-body" style="text-align: center;">
+    <div class="text-muted" style="font-size: 0.85rem;">Total Assets (sum of all active accounts)</div>
+    <div style="font-size: 1.6rem; font-weight: 600;">&#8377;{{ total_assets|floatformat:2 }}</div>
+    {% if pending_transfer_count %}
+    <div class="text-warning mt-2" style="font-size: 0.85rem;">
+      <i class="fas fa-clock"></i> {{ pending_transfer_count }} pending future-dated transfer{{ pending_transfer_count|pluralize }}
+      &middot; <a href="{% url 'transfer_list' %}">view</a>
+    </div>
+    {% endif %}
+  </div>
+</div>
+
+<!-- Account cards -->
+<div class="row mb-4">
+  {% for row in rows %}
+  <div class="col-md-4" style="padding: 0.5rem;">
+    <div class="card stat-card {% if not row.account.is_active %}opacity-50{% endif %}">
+      <div class="d-flex justify-content-between align-items-start mb-2">
+        <div>
+          <div style="font-weight: 600;">{{ row.account.name }}</div>
+          <div class="text-muted" style="font-size: 0.8rem;">
+            {{ row.account.get_account_type_display }}
+            {% if row.account.is_primary_bank %}<span class="badge badge-primary">Primary</span>{% endif %}
+            {% if row.account.is_cash %}<span class="badge badge-secondary">Cash</span>{% endif %}
+            {% if not row.account.is_active %}<span class="badge badge-warning">Inactive</span>{% endif %}
+          </div>
+          {% if row.account.bank_name %}
+          <div class="text-muted" style="font-size: 0.75rem;">{{ row.account.bank_name }}{% if row.account.account_number_last4 %} &bull;&bull;{{ row.account.account_number_last4 }}{% endif %}</div>
+          {% endif %}
+        </div>
+        <div class="table-actions">
+          <a href="{% url 'bank_account_detail' row.account.pk %}" class="btn btn-sm btn-ghost btn-icon" title="Ledger"><i class="fas fa-list"></i></a>
+          <a href="{% url 'bank_account_update' row.account.pk %}" class="btn btn-sm btn-ghost btn-icon" title="Edit"><i class="fas fa-edit"></i></a>
+        </div>
+      </div>
+      <div class="stat-card-value" style="font-size: 1.4rem;">&#8377;{{ row.balance|floatformat:2 }}</div>
+      <div class="stat-card-label">Current Balance</div>
+    </div>
+  </div>
+  {% empty %}
+  <div class="col-12"><p class="text-muted">No accounts yet.</p></div>
+  {% endfor %}
+</div>
+
+<div class="card">
+  <div class="card-body">
+    <p class="text-muted mb-0" style="font-size: 0.85rem;">
+      <i class="fas fa-info-circle"></i>
+      Cash &amp; primary bank balances are derived from Payments &amp; Expenses you record (by payment method). All other accounts only change via <a href="{% url 'transfer_list' %}">Internal Transfers</a>. Internal transfers are not expenses — total assets stay the same.
+    </p>
+  </div>
+</div>
+{% endblock %}

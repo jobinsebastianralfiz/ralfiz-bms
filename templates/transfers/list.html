@@ -1,0 +1,78 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Internal Transfers - Ralfiz BMS{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title">Internal Transfers</h1>
+    <p class="page-subtitle mb-0">Money moved between our own accounts. Not income, not expense.</p>
+  </div>
+  <div class="page-actions">
+    <a href="{% url 'bank_account_list' %}" class="btn btn-outline-secondary">Accounts</a>
+    <a href="{% url 'transfer_create' %}" class="btn btn-primary">
+      <i class="fas fa-plus"></i> New Transfer
+    </a>
+  </div>
+</div>
+
+<div class="card mb-4">
+  <div class="card-body">
+    <form method="get" class="row align-items-end">
+      <div class="col-md-6" style="padding: 0.5rem;">
+        <label class="form-label">Filter by account</label>
+        <select class="form-control" name="account" onchange="this.form.submit()">
+          <option value="">All accounts</option>
+          {% for a in accounts %}
+          <option value="{{ a.pk }}" {% if selected_account == a.pk|stringformat:'s' %}selected{% endif %}>{{ a.name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div class="card">
+  <div class="table-wrapper">
+    <table class="table">
+      <thead>
+        <tr>
+          <th>Date</th>
+          <th>From</th>
+          <th></th>
+          <th>To</th>
+          <th class="text-right">Amount</th>
+          <th>Reference</th>
+          <th>Notes</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for t in transfers %}
+        <tr>
+          <td>
+            {{ t.date|date:"d M Y" }}
+            {% if t.date > today %}<span class="badge badge-warning" title="Future-dated"><i class="fas fa-clock"></i> Pending</span>{% endif %}
+          </td>
+          <td><a href="{% url 'bank_account_detail' t.from_account.pk %}">{{ t.from_account.name }}</a></td>
+          <td class="text-muted"><i class="fas fa-arrow-right"></i></td>
+          <td><a href="{% url 'bank_account_detail' t.to_account.pk %}">{{ t.to_account.name }}</a></td>
+          <td class="text-right fw-medium">&#8377;{{ t.amount|floatformat:2 }}</td>
+          <td><span class="text-muted">{{ t.reference|default:'-' }}</span></td>
+          <td><span class="text-muted">{{ t.notes|truncatewords:8|default:'-' }}</span></td>
+          <td>
+            <div class="table-actions">
+              <a href="{% url 'transfer_update' t.pk %}" class="btn btn-sm btn-ghost btn-icon" title="Edit"><i class="fas fa-edit"></i></a>
+              <a href="{% url 'transfer_delete' t.pk %}" class="btn btn-sm btn-ghost btn-icon text-danger" title="Delete"><i class="fas fa-trash"></i></a>
+            </div>
+          </td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="8" class="text-center py-4 text-muted">No transfers recorded yet</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

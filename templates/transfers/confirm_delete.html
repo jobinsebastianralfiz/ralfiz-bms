@@ -1,0 +1,29 @@
+{% extends 'base.html' %}
+
+{% block title %}Delete Transfer - Ralfiz BMS{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <h1 class="page-title">Delete Transfer?</h1>
+</div>
+
+<div class="card">
+  <div class="card-body">
+    <p>You are about to delete this internal transfer:</p>
+    <ul>
+      <li><strong>Date:</strong> {{ transfer.date|date:"d M Y" }}</li>
+      <li><strong>From:</strong> {{ transfer.from_account.name }}</li>
+      <li><strong>To:</strong> {{ transfer.to_account.name }}</li>
+      <li><strong>Amount:</strong> &#8377;{{ transfer.amount|floatformat:2 }}</li>
+      {% if transfer.reference %}<li><strong>Reference:</strong> {{ transfer.reference }}</li>{% endif %}
+    </ul>
+    <p class="text-warning"><i class="fas fa-exclamation-triangle"></i> Balances of both accounts will adjust accordingly.</p>
+
+    <form method="post">
+      {% csrf_token %}
+      <a href="{% url 'transfer_list' %}" class="btn btn-outline-secondary">Cancel</a>
+      <button type="submit" class="btn btn-danger">Yes, delete</button>
+    </form>
+  </div>
+</div>
+{% endblock %}

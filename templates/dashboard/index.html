@@ -300,28 +300,30 @@
   </div>
 </div>
 
-{% if opening_balance %}
-<!-- Cash Position -->
+{% if account_balances %}
+<!-- Cash Position (per account) -->
 <div class="metrics" style="margin-top: 0.5rem;">
+  {% for row in account_balances %}
   <div class="metric">
-    <div class="metric-icon" style="background: #f0fdf4; color: #16a34a;"><i class="fas fa-money-bill-wave"></i></div>
+    <div class="metric-icon" style="background: {% if row.account.is_cash %}#f0fdf4; color: #16a34a{% elif row.account.is_primary_bank %}#eff6ff; color: #2563eb{% else %}#fef3c7; color: #b45309{% endif %};">
+      <i class="fas {% if row.account.is_cash %}fa-money-bill-wave{% else %}fa-university{% endif %}"></i>
+    </div>
     <div>
-      <div class="metric-num">&#8377;{{ current_cash_in_hand|floatformat:2|default:"0" }}</div>
-      <div class="metric-label">Cash in Hand</div>
+      <div class="metric-num">&#8377;{{ row.balance|floatformat:2 }}</div>
+      <div class="metric-label">
+        <a href="{% url 'bank_account_detail' row.account.pk %}" style="color: inherit;">{{ row.account.name }}</a>
+      </div>
     </div>
   </div>
-  <div class="metric">
-    <div class="metric-icon" style="background: #eff6ff; color: #2563eb;"><i class="fas fa-university"></i></div>
-    <div>
-      <div class="metric-num">&#8377;{{ current_cash_in_account|floatformat:2|default:"0" }}</div>
-      <div class="metric-label">Cash in Account</div>
-    </div>
-  </div>
+  {% endfor %}
   <div class="metric" style="background: #f8fafc;">
-    <div class="metric-icon" style="background: #f1f5f9; color: #64748b;"><i class="fas fa-flag"></i></div>
+    <div class="metric-icon" style="background: #f1f5f9; color: #64748b;"><i class="fas fa-coins"></i></div>
     <div>
-      <div class="metric-num" style="font-size: 1rem;">{{ opening_balance.label }}</div>
-      <div class="metric-label">Opening: &#8377;{{ opening_balance.cash_in_hand|add:opening_balance.cash_in_account|floatformat:2 }} on {{ opening_balance.as_of_date|date:"d M Y" }}</div>
+      <div class="metric-num">&#8377;{{ total_assets|floatformat:2 }}</div>
+      <div class="metric-label">
+        Total Assets
+        {% if pending_transfer_count %} &middot; <a href="{% url 'transfer_list' %}" class="text-warning">{{ pending_transfer_count }} pending</a>{% endif %}
+      </div>
     </div>
   </div>
 </div>
@@ -352,6 +354,10 @@
   <a href="{% url 'team_create' %}" class="sc">
     <div class="sc-icon" style="background: #fff1f2; color: #e11d48;"><i class="fas fa-user-friends"></i></div>
     <span class="sc-text">Add Team</span>
+  </a>
+  <a href="{% url 'transfer_create' %}" class="sc">
+    <div class="sc-icon" style="background: #ecfeff; color: #0891b2;"><i class="fas fa-exchange-alt"></i></div>
+    <span class="sc-text">Transfer</span>
   </a>
 </div>
 

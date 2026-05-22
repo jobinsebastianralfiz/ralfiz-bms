@@ -101,6 +101,12 @@ urlpatterns = [
     path('owner/expenses/create/', views.OwnerExpenseCreateView.as_view(), name='owner_expense_create'),
     path('owner/expenses/<uuid:pk>/edit/', views.OwnerExpenseUpdateDeleteView.as_view(), name='owner_expense_edit'),
 
+    # ---- Owner: Bank Accounts & Internal Transfers ----
+    path('owner/accounts/', views.OwnerBankAccountListView.as_view(), name='owner_accounts'),
+    path('owner/accounts/<uuid:pk>/', views.OwnerBankAccountDetailView.as_view(), name='owner_account_detail'),
+    path('owner/transfers/', views.OwnerTransferListView.as_view(), name='owner_transfers'),
+    path('owner/transfers/<uuid:pk>/', views.OwnerTransferDetailView.as_view(), name='owner_transfer_detail'),
+
     # ---- Owner: Dues, Credentials, AMC, Completion Certificate ----
     path('owner/dues/', views.OwnerDuesDashboardView.as_view(), name='owner_dues'),
     path('owner/credentials/', views.OwnerCredentialListView.as_view(), name='owner_credentials'),

@@ -241,6 +241,51 @@
   </div>
 </div>
 
+<!-- Internal Transfers (not income, not expense) -->
+{% if transfers %}
+<div class="card mb-4">
+  <div class="card-header">
+    <h3 class="card-title">
+      <i class="fas fa-exchange-alt text-info me-2"></i>
+      Internal Transfers
+      <span class="text-sm text-muted ms-2">(not part of P&amp;L &mdash; balances move between own accounts)</span>
+    </h3>
+  </div>
+  <div class="card-body p-0">
+    <div class="table-responsive">
+      <table class="table mb-0">
+        <thead>
+          <tr>
+            <th>Date</th>
+            <th>From</th>
+            <th>To</th>
+            <th>Reference</th>
+            <th class="text-end">Amount</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for t in transfers %}
+          <tr>
+            <td>{{ t.date|date:"d M Y" }}</td>
+            <td>{{ t.from_account.name }}</td>
+            <td>{{ t.to_account.name }}</td>
+            <td class="text-muted">{{ t.reference|default:'-' }}</td>
+            <td class="text-end">&#8377;{{ t.amount|floatformat:2 }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+        <tfoot>
+          <tr>
+            <th colspan="4" class="text-end">Total moved</th>
+            <th class="text-end">&#8377;{{ total_transfers|floatformat:2 }}</th>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+  </div>
+</div>
+{% endif %}
+
 <!-- Expense by Category -->
 {% if expense_by_category %}
 <div class="card mb-4">

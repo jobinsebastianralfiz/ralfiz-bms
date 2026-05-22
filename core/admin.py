@@ -6,8 +6,26 @@ from .models import (
     Invoice, InvoiceItem, Payment, CompanySettings,
     Expense, TeamMember, Task, TaskAttachment, TimeEntry, ActivityLog, Document,
     TaskComment, TaskIssue, TaskActivity,
-    AMCContract, AMCPayment, CredentialRenewal
+    AMCContract, AMCPayment, CredentialRenewal,
+    BankAccount, InternalTransfer,
 )
+
+
+@admin.register(BankAccount)
+class BankAccountAdmin(admin.ModelAdmin):
+    list_display = ['name', 'account_type', 'bank_name', 'opening_balance', 'opening_date', 'is_primary_bank', 'is_cash', 'is_active', 'display_order']
+    list_filter = ['account_type', 'is_active', 'is_primary_bank', 'is_cash']
+    search_fields = ['name', 'bank_name', 'account_number']
+    ordering = ['display_order', 'name']
+
+
+@admin.register(InternalTransfer)
+class InternalTransferAdmin(admin.ModelAdmin):
+    list_display = ['date', 'from_account', 'to_account', 'amount', 'reference', 'created_by']
+    list_filter = ['date', 'from_account', 'to_account']
+    search_fields = ['reference', 'notes']
+    autocomplete_fields = ['from_account', 'to_account']
+    ordering = ['-date', '-created_at']
 
 
 @admin.register(TaskComment)

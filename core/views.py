@@ -17,6 +17,7 @@ from .models import (
     AMCContract, AMCPayment, CredentialRenewal,
     ProjectType, ProjectFeature, FeatureRequestLink,
     OpeningBalance, FYResetEvent,
+    BankAccount, InternalTransfer,
 )
 from django.contrib.contenttypes.models import ContentType
 from licensing.models import License, LicenseKey, LicenseActivation
@@ -219,32 +220,18 @@ def dashboard(request):
         (expiring_credentials_30.aggregate(total=Sum('renewal_cost'))['total'] or 0)
     )
 
-    # ============== Cash Position (uses OpeningBalance) ==============
-    from decimal import Decimal
+    # ============== Cash Position (per-account, see core/cash_position.py) ==============
+    from .cash_position import cash_position, pending_transfers
     opening = OpeningBalance.current()
-    if opening:
-        ob_date = opening.as_of_date
-        # Payments since opening
-        cash_in_methods = ['cash']
-        acc_in_methods = ['bank_transfer', 'upi', 'card', 'paypal', 'cheque']
-        cash_received_since = Payment.objects.filter(
-            payment_date__gte=ob_date, payment_method__in=cash_in_methods
-        ).aggregate(t=Sum('amount'))['t'] or Decimal('0')
-        acc_received_since = Payment.objects.filter(
-            payment_date__gte=ob_date, payment_method__in=acc_in_methods
-        ).aggregate(t=Sum('amount'))['t'] or Decimal('0')
-        # Expenses since opening
-        cash_spent_since = Expense.objects.filter(
-            date__gte=ob_date, payment_method='cash'
-        ).aggregate(t=Sum('amount'))['t'] or Decimal('0')
-        acc_spent_since = Expense.objects.filter(
-            date__gte=ob_date, payment_method__in=['bank_transfer', 'upi', 'card']
-        ).aggregate(t=Sum('amount'))['t'] or Decimal('0')
-        current_cash_in_hand = opening.cash_in_hand + cash_received_since - cash_spent_since
-        current_cash_in_account = opening.cash_in_account + acc_received_since - acc_spent_since
-    else:
-        current_cash_in_hand = None
-        current_cash_in_account = None
+    cp = cash_position()
+    account_balances = cp['accounts']
+    total_assets = cp['total']
+    pending_transfer_qs = pending_transfers()
+    # Back-compat aliases for any template/code still reading these names
+    cash_card = next((r for r in account_balances if r['account'].is_cash), None)
+    bank_card = next((r for r in account_balances if r['account'].is_primary_bank), None)
+    current_cash_in_hand = cash_card['balance'] if cash_card else None
+    current_cash_in_account = bank_card['balance'] if bank_card else None
 
     # Combined upcoming dues (sorted by date for timeline)
     upcoming_dues = []
@@ -322,6 +309,10 @@ def dashboard(request):
         'opening_balance': opening,
         'current_cash_in_hand': current_cash_in_hand,
         'current_cash_in_account': current_cash_in_account,
+        'account_balances': account_balances,
+        'total_assets': total_assets,
+        'pending_transfers': pending_transfer_qs,
+        'pending_transfer_count': pending_transfer_qs.count(),
     }
     return render(request, 'dashboard/index.html', context)
 
@@ -3628,6 +3619,12 @@ def monthly_report_view(request):
 
     net_profit = float(total_income) - float(total_expenses)
 
+    # Internal transfers in this month (reported separately, not part of P&L)
+    transfers = InternalTransfer.objects.filter(
+        date__gte=month_start, date__lte=month_end
+    ).select_related('from_account', 'to_account').order_by('date')
+    total_transfers = transfers.aggregate(t=Sum('amount'))['t'] or 0
+
     # Available months from earliest payment/expense to current month (for dropdown)
     earliest_payment = Payment.objects.order_by('payment_date').values_list('payment_date', flat=True).first()
     earliest_expense = Expense.objects.order_by('date').values_list('date', flat=True).first()
@@ -3663,6 +3660,8 @@ def monthly_report_view(request):
         'expense_category_data': json.dumps([c[1] for c in expense_by_category]),
         'income_method_labels': json.dumps([m[0] for m in income_by_method]),
         'income_method_data': json.dumps([m[1] for m in income_by_method]),
+        'transfers': transfers,
+        'total_transfers': total_transfers,
     }
     return render(request, 'reports/monthly.html', context)
 
@@ -7356,3 +7355,226 @@ def public_feature_request(request, token):
         'link': link,
         'project_types': ProjectType.objects.filter(is_active=True).prefetch_related('features'),
     })
+
+
+# ============== Bank Accounts & Internal Transfers ==============
+
+@login_required
+def bank_account_list(request):
+    from .cash_position import cash_position, pending_transfers
+    cp = cash_position(include_inactive=True)
+    pending = pending_transfers()
+    return render(request, 'accounts/list.html', {
+        'rows': cp['accounts'],
+        'total_assets': cp['total'],
+        'pending_transfers': pending,
+        'pending_transfer_count': pending.count(),
+    })
+
+
+@login_required
+def bank_account_create(request):
+    if request.method == 'POST':
+        acct = BankAccount(
+            name=request.POST.get('name', '').strip(),
+            account_type=request.POST.get('account_type', 'bank'),
+            bank_name=request.POST.get('bank_name', '').strip(),
+            account_number=request.POST.get('account_number', '').strip(),
+            ifsc=request.POST.get('ifsc', '').strip(),
+            branch=request.POST.get('branch', '').strip(),
+            upi_id=request.POST.get('upi_id', '').strip(),
+            opening_balance=request.POST.get('opening_balance') or 0,
+            opening_date=request.POST.get('opening_date') or timezone.now().date(),
+            is_active=request.POST.get('is_active') == 'on',
+            is_primary_bank=request.POST.get('is_primary_bank') == 'on',
+            is_cash=request.POST.get('is_cash') == 'on',
+            display_order=request.POST.get('display_order') or 0,
+            notes=request.POST.get('notes', ''),
+        )
+        acct.save()
+        log_activity(request, 'created', acct)
+        messages.success(request, f'Account "{acct.name}" created.')
+        return redirect('bank_account_list')
+    return render(request, 'accounts/form.html', {
+        'account': None,
+        'type_choices': BankAccount.ACCOUNT_TYPE_CHOICES,
+    })
+
+
+@login_required
+def bank_account_update(request, pk):
+    acct = get_object_or_404(BankAccount, pk=pk)
+    if request.method == 'POST':
+        acct.name = request.POST.get('name', '').strip()
+        acct.account_type = request.POST.get('account_type', 'bank')
+        acct.bank_name = request.POST.get('bank_name', '').strip()
+        acct.account_number = request.POST.get('account_number', '').strip()
+        acct.ifsc = request.POST.get('ifsc', '').strip()
+        acct.branch = request.POST.get('branch', '').strip()
+        acct.upi_id = request.POST.get('upi_id', '').strip()
+        acct.opening_balance = request.POST.get('opening_balance') or 0
+        acct.opening_date = request.POST.get('opening_date') or acct.opening_date
+        acct.is_active = request.POST.get('is_active') == 'on'
+        acct.is_primary_bank = request.POST.get('is_primary_bank') == 'on'
+        acct.is_cash = request.POST.get('is_cash') == 'on'
+        acct.display_order = request.POST.get('display_order') or 0
+        acct.notes = request.POST.get('notes', '')
+        acct.save()
+        log_activity(request, 'updated', acct)
+        messages.success(request, f'Account "{acct.name}" updated.')
+        return redirect('bank_account_list')
+    return render(request, 'accounts/form.html', {
+        'account': acct,
+        'type_choices': BankAccount.ACCOUNT_TYPE_CHOICES,
+    })
+
+
+@login_required
+def bank_account_detail(request, pk):
+    """Ledger view: payments + expenses + transfers for one account, chronological."""
+    from .cash_position import compute_account_balance
+    acct = get_object_or_404(BankAccount, pk=pk)
+    balance = compute_account_balance(acct)
+
+    entries = []
+    pay_methods = acct.resolved_payment_methods()
+    exp_methods = acct.resolved_expense_methods()
+    if pay_methods:
+        for p in Payment.objects.filter(
+            payment_date__gte=acct.opening_date,
+            payment_method__in=pay_methods,
+        ).select_related('invoice', 'invoice__client').order_by('-payment_date'):
+            entries.append({
+                'date': p.payment_date, 'kind': 'Payment in',
+                'description': f"Invoice #{p.invoice.invoice_number} - {p.invoice.client.name}",
+                'method': p.get_payment_method_display(),
+                'amount': p.amount, 'direction': 'in',
+                'url': reverse('invoice_detail', args=[p.invoice.pk]),
+            })
+    if exp_methods:
+        for e in Expense.objects.filter(
+            date__gte=acct.opening_date,
+            payment_method__in=exp_methods,
+        ).order_by('-date'):
+            entries.append({
+                'date': e.date, 'kind': 'Expense',
+                'description': f"{e.vendor} - {e.get_category_display()}",
+                'method': e.get_payment_method_display(),
+                'amount': e.amount, 'direction': 'out',
+                'url': reverse('expense_list'),
+            })
+    for t in InternalTransfer.objects.filter(to_account=acct).select_related('from_account'):
+        entries.append({
+            'date': t.date, 'kind': 'Transfer in',
+            'description': f"From {t.from_account.name}" + (f" (ref: {t.reference})" if t.reference else ''),
+            'method': 'Internal', 'amount': t.amount, 'direction': 'in',
+            'url': reverse('transfer_list'),
+        })
+    for t in InternalTransfer.objects.filter(from_account=acct).select_related('to_account'):
+        entries.append({
+            'date': t.date, 'kind': 'Transfer out',
+            'description': f"To {t.to_account.name}" + (f" (ref: {t.reference})" if t.reference else ''),
+            'method': 'Internal', 'amount': t.amount, 'direction': 'out',
+            'url': reverse('transfer_list'),
+        })
+    entries.sort(key=lambda x: x['date'], reverse=True)
+
+    return render(request, 'accounts/detail.html', {
+        'account': acct,
+        'balance': balance,
+        'entries': entries,
+    })
+
+
+@login_required
+def transfer_list(request):
+    transfers = InternalTransfer.objects.select_related('from_account', 'to_account', 'created_by').all()
+    today = timezone.now().date()
+    from_account_id = request.GET.get('account')
+    if from_account_id:
+        transfers = transfers.filter(
+            Q(from_account_id=from_account_id) | Q(to_account_id=from_account_id)
+        )
+    return render(request, 'transfers/list.html', {
+        'transfers': transfers,
+        'today': today,
+        'accounts': BankAccount.objects.filter(is_active=True),
+        'selected_account': from_account_id,
+    })
+
+
+def _save_transfer(transfer, request, is_new):
+    transfer.from_account_id = request.POST.get('from_account')
+    transfer.to_account_id = request.POST.get('to_account')
+    transfer.amount = request.POST.get('amount')
+    transfer.date = request.POST.get('date') or timezone.now().date()
+    transfer.reference = request.POST.get('reference', '').strip()
+    transfer.notes = request.POST.get('notes', '')
+    if is_new and request.user.is_authenticated:
+        transfer.created_by = request.user
+    transfer.full_clean()
+    transfer.save()
+
+
+_TRANSFER_FORM_KEYS = ['from_account', 'to_account', 'amount', 'date', 'reference', 'notes']
+
+
+def _empty_transfer_form():
+    return {k: '' for k in _TRANSFER_FORM_KEYS}
+
+
+def _form_data_from_post(post):
+    return {k: post.get(k, '') for k in _TRANSFER_FORM_KEYS}
+
+
+@login_required
+def transfer_create(request):
+    accounts = BankAccount.objects.filter(is_active=True)
+    if request.method == 'POST':
+        transfer = InternalTransfer()
+        try:
+            _save_transfer(transfer, request, is_new=True)
+        except Exception as e:
+            messages.error(request, f'Could not save transfer: {e}')
+            return render(request, 'transfers/form.html', {
+                'transfer': None, 'accounts': accounts,
+                'form_data': _form_data_from_post(request.POST),
+            })
+        log_activity(request, 'created', transfer)
+        messages.success(request, 'Transfer recorded.')
+        return redirect('transfer_list')
+    return render(request, 'transfers/form.html', {
+        'transfer': None, 'accounts': accounts, 'form_data': _empty_transfer_form(),
+    })
+
+
+@login_required
+def transfer_update(request, pk):
+    transfer = get_object_or_404(InternalTransfer, pk=pk)
+    accounts = BankAccount.objects.filter(is_active=True)
+    if request.method == 'POST':
+        try:
+            _save_transfer(transfer, request, is_new=False)
+        except Exception as e:
+            messages.error(request, f'Could not save transfer: {e}')
+            return render(request, 'transfers/form.html', {
+                'transfer': transfer, 'accounts': accounts,
+                'form_data': _form_data_from_post(request.POST),
+            })
+        log_activity(request, 'updated', transfer)
+        messages.success(request, 'Transfer updated.')
+        return redirect('transfer_list')
+    return render(request, 'transfers/form.html', {
+        'transfer': transfer, 'accounts': accounts, 'form_data': _empty_transfer_form(),
+    })
+
+
+@login_required
+def transfer_delete(request, pk):
+    transfer = get_object_or_404(InternalTransfer, pk=pk)
+    if request.method == 'POST':
+        log_activity(request, 'deleted', transfer)
+        transfer.delete()
+        messages.success(request, 'Transfer deleted.')
+        return redirect('transfer_list')
+    return render(request, 'transfers/confirm_delete.html', {'transfer': transfer})

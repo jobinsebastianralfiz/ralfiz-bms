@@ -846,6 +846,113 @@ class OpeningBalance(models.Model):
         return cls.objects.order_by('-as_of_date', '-created_at').first()
 
 
+class BankAccount(models.Model):
+    """A money bucket: cash on hand or a bank account.
+
+    Each Payment / Expense / InternalTransfer attributes to one of these.
+    There must be exactly one is_cash row and exactly one is_primary_bank
+    row at any time (enforced in save()); these are the defaults used to
+    place legacy Payment.payment_method / Expense.payment_method values.
+    """
+    ACCOUNT_TYPE_CHOICES = [
+        ('cash', 'Cash on Hand'),
+        ('bank', 'Bank Account'),
+    ]
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    name = models.CharField(max_length=100, help_text='e.g. "Primary Current Account", "Joint Savings"')
+    account_type = models.CharField(max_length=10, choices=ACCOUNT_TYPE_CHOICES, default='bank')
+    bank_name = models.CharField(max_length=100, blank=True)
+    account_number = models.CharField(max_length=40, blank=True)
+    ifsc = models.CharField(max_length=20, blank=True)
+    branch = models.CharField(max_length=100, blank=True)
+    upi_id = models.CharField(max_length=100, blank=True)
+    opening_balance = models.DecimalField(max_digits=14, decimal_places=2, default=0)
+    opening_date = models.DateField(default=timezone.now)
+    is_active = models.BooleanField(default=True)
+    is_primary_bank = models.BooleanField(default=False, help_text='Default bucket for non-cash Payment/Expense methods. Exactly one.')
+    is_cash = models.BooleanField(default=False, help_text='Default bucket for cash Payment/Expense. Exactly one.')
+    display_order = models.IntegerField(default=0)
+    notes = models.TextField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['display_order', 'name']
+
+    def __str__(self):
+        return self.name
+
+    def save(self, *args, **kwargs):
+        if self.is_primary_bank:
+            BankAccount.objects.exclude(pk=self.pk).filter(is_primary_bank=True).update(is_primary_bank=False)
+        if self.is_cash:
+            BankAccount.objects.exclude(pk=self.pk).filter(is_cash=True).update(is_cash=False)
+        super().save(*args, **kwargs)
+
+    @property
+    def account_number_last4(self):
+        return self.account_number[-4:] if self.account_number else ''
+
+    def resolved_payment_methods(self):
+        """Which Payment.payment_method values land in this account."""
+        if self.is_cash:
+            return ['cash']
+        if self.is_primary_bank:
+            return ['bank_transfer', 'upi', 'card', 'paypal', 'cheque']
+        return []
+
+    def resolved_expense_methods(self):
+        """Which Expense.payment_method values flow out of this account."""
+        if self.is_cash:
+            return ['cash']
+        if self.is_primary_bank:
+            return ['bank_transfer', 'upi', 'card']
+        return []
+
+
+class InternalTransfer(models.Model):
+    """Movement of money between two of our own BankAccounts.
+
+    NOT income or expense - the company's total assets are unchanged;
+    only the distribution across accounts shifts. Reported separately
+    from P&L for transparency.
+    """
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    from_account = models.ForeignKey(BankAccount, on_delete=models.PROTECT, related_name='transfers_out')
+    to_account = models.ForeignKey(BankAccount, on_delete=models.PROTECT, related_name='transfers_in')
+    amount = models.DecimalField(max_digits=14, decimal_places=2)
+    date = models.DateField(default=timezone.now, help_text='Transfer date. May be future-dated for scheduled transfers.')
+    reference = models.CharField(max_length=100, blank=True, help_text='UPI ref / cheque no / transaction id')
+    notes = models.TextField(blank=True)
+    created_by = models.ForeignKey('auth.User', on_delete=models.SET_NULL, null=True, blank=True, related_name='internal_transfers')
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['-date', '-created_at']
+        constraints = [
+            models.CheckConstraint(
+                condition=~models.Q(from_account=models.F('to_account')),
+                name='internaltransfer_from_to_distinct'
+            ),
+            models.CheckConstraint(
+                condition=models.Q(amount__gt=0),
+                name='internaltransfer_amount_positive'
+            ),
+        ]
+
+    def __str__(self):
+        return f"{self.from_account} → {self.to_account} ₹{self.amount} ({self.date})"
+
+    def clean(self):
+        from django.core.exceptions import ValidationError
+        if self.from_account_id and self.to_account_id and self.from_account_id == self.to_account_id:
+            raise ValidationError('Source and destination accounts must be different.')
+        if self.amount is not None and self.amount <= 0:
+            raise ValidationError({'amount': 'Amount must be greater than zero.'})
+
+
 class FYResetEvent(models.Model):
     """Audit record of every Financial Year reset (data wipe).
 

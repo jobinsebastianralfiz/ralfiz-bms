@@ -1,0 +1,109 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{% if account %}Edit{% else %}New{% endif %} Account - Ralfiz BMS{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title">{% if account %}Edit Account{% else %}New Bank Account{% endif %}</h1>
+    <p class="page-subtitle mb-0">{% if account %}Update details &amp; opening balance{% else %}Add cash bucket or bank account{% endif %}</p>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-body">
+    <form method="post">
+      {% csrf_token %}
+
+      <div class="row">
+        <div class="col-md-8" style="padding: 0.5rem;">
+          <label class="form-label">Account name *</label>
+          <input type="text" class="form-control" name="name" required value="{{ account.name|default:'' }}" placeholder="e.g. Joint Savings, ICICI Current">
+        </div>
+        <div class="col-md-4" style="padding: 0.5rem;">
+          <label class="form-label">Type *</label>
+          <select class="form-control" name="account_type">
+            {% for k, v in type_choices %}
+            <option value="{{ k }}" {% if account.account_type == k %}selected{% endif %}>{{ v }}</option>
+            {% endfor %}
+          </select>
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="col-md-6" style="padding: 0.5rem;">
+          <label class="form-label">Bank name</label>
+          <input type="text" class="form-control" name="bank_name" value="{{ account.bank_name|default:'' }}">
+        </div>
+        <div class="col-md-6" style="padding: 0.5rem;">
+          <label class="form-label">Account number</label>
+          <input type="text" class="form-control" name="account_number" value="{{ account.account_number|default:'' }}">
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="col-md-4" style="padding: 0.5rem;">
+          <label class="form-label">IFSC</label>
+          <input type="text" class="form-control" name="ifsc" value="{{ account.ifsc|default:'' }}">
+        </div>
+        <div class="col-md-4" style="padding: 0.5rem;">
+          <label class="form-label">Branch</label>
+          <input type="text" class="form-control" name="branch" value="{{ account.branch|default:'' }}">
+        </div>
+        <div class="col-md-4" style="padding: 0.5rem;">
+          <label class="form-label">UPI ID</label>
+          <input type="text" class="form-control" name="upi_id" value="{{ account.upi_id|default:'' }}">
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="col-md-6" style="padding: 0.5rem;">
+          <label class="form-label">Opening balance *</label>
+          <input type="number" step="0.01" class="form-control" name="opening_balance" required value="{{ account.opening_balance|default:'0' }}">
+          <small class="text-muted">Starting balance as of the opening date below.</small>
+        </div>
+        <div class="col-md-6" style="padding: 0.5rem;">
+          <label class="form-label">Opening date *</label>
+          <input type="date" class="form-control" name="opening_date" required value="{{ account.opening_date|date:'Y-m-d' }}">
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="col-md-4" style="padding: 0.5rem;">
+          <label class="form-label">Display order</label>
+          <input type="number" class="form-control" name="display_order" value="{{ account.display_order|default:'0' }}">
+        </div>
+        <div class="col-md-8" style="padding: 0.5rem;">
+          <label class="form-label">&nbsp;</label>
+          <div>
+            <label class="me-3">
+              <input type="checkbox" name="is_active" {% if account.is_active or not account %}checked{% endif %}> Active
+            </label>
+            <label class="me-3">
+              <input type="checkbox" name="is_primary_bank" {% if account.is_primary_bank %}checked{% endif %}> Primary bank
+              <small class="text-muted">(default for bank/UPI Payment &amp; Expense)</small>
+            </label>
+            <label>
+              <input type="checkbox" name="is_cash" {% if account.is_cash %}checked{% endif %}> Cash bucket
+              <small class="text-muted">(default for cash Payment &amp; Expense)</small>
+            </label>
+          </div>
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="col-12" style="padding: 0.5rem;">
+          <label class="form-label">Notes</label>
+          <textarea class="form-control" name="notes" rows="2">{{ account.notes|default:'' }}</textarea>
+        </div>
+      </div>
+
+      <div class="form-actions mt-3">
+        <a href="{% url 'bank_account_list' %}" class="btn btn-outline-secondary">Cancel</a>
+        <button type="submit" class="btn btn-primary">{% if account %}Save changes{% else %}Create account{% endif %}</button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}
