@@ -1300,6 +1300,167 @@ class Document(models.Model):
             return 0
 
 
+class Partner(models.Model):
+    """A partner / owner of the company. Tracks who put in capital and when."""
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    name = models.CharField(max_length=255)
+    title = models.CharField(max_length=120, blank=True, help_text='e.g. "Managing Partner", "Founder"')
+    email = models.EmailField(blank=True)
+    phone = models.CharField(max_length=20, blank=True)
+    join_date = models.DateField(default=timezone.now)
+    is_active = models.BooleanField(default=True)
+    photo = models.ImageField(upload_to='partners/', null=True, blank=True)
+    notes = models.TextField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['-is_active', 'name']
+
+    def __str__(self):
+        return self.name
+
+    @property
+    def total_contribution(self):
+        from django.db.models import Sum
+        return self.contributions.aggregate(t=Sum('amount'))['t'] or 0
+
+
+class CapitalContribution(models.Model):
+    """A capital injection by a partner.
+
+    Cash and bank_transfer contributions credit the linked BankAccount
+    automatically (see core.cash_position.compute_account_balance).
+    Asset / in_kind contributions are recorded for capital-stack visibility
+    only and do NOT affect cash position.
+    """
+    CONTRIBUTION_TYPE_CHOICES = [
+        ('cash', 'Cash'),
+        ('bank_transfer', 'Bank Transfer'),
+        ('asset', 'Asset (in-kind, e.g. equipment)'),
+        ('in_kind', 'Other in-kind'),
+    ]
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    partner = models.ForeignKey(Partner, on_delete=models.CASCADE, related_name='contributions')
+    date = models.DateField(default=timezone.now)
+    amount = models.DecimalField(max_digits=14, decimal_places=2)
+    contribution_type = models.CharField(max_length=20, choices=CONTRIBUTION_TYPE_CHOICES, default='bank_transfer')
+    bank_account = models.ForeignKey('BankAccount', on_delete=models.PROTECT, null=True, blank=True, related_name='capital_contributions', help_text='Required for cash / bank transfer types — credits this account.')
+    description = models.CharField(max_length=255, blank=True)
+    receipt = models.FileField(upload_to='capital_receipts/', null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-date', '-created_at']
+
+    def __str__(self):
+        return f"{self.partner.name} - ₹{self.amount} ({self.get_contribution_type_display()})"
+
+    def affects_cash(self):
+        return self.contribution_type in ('cash', 'bank_transfer')
+
+
+class CompanyAsset(models.Model):
+    """Non-cash company assets: rent advances, security deposits, equipment.
+
+    Refundable deposits (rent advance, etc.) sit here until they're returned;
+    they show up in the Total Assets calculation alongside cash positions but
+    are NOT part of OpeningBalance (which is for FY rollover only).
+    """
+    ASSET_TYPE_CHOICES = [
+        ('rent_deposit', 'Rent / Office Deposit'),
+        ('security_deposit', 'Security Deposit'),
+        ('equipment', 'Equipment'),
+        ('vehicle', 'Vehicle'),
+        ('other', 'Other'),
+    ]
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    name = models.CharField(max_length=255, help_text='e.g. "Office rent advance", "Vehicle security deposit"')
+    asset_type = models.CharField(max_length=20, choices=ASSET_TYPE_CHOICES, default='rent_deposit')
+    amount = models.DecimalField(max_digits=14, decimal_places=2)
+    acquired_date = models.DateField(default=timezone.now)
+    counterparty = models.CharField(max_length=255, blank=True, help_text='Landlord / vendor / who holds the deposit')
+    expected_return_date = models.DateField(null=True, blank=True, help_text='When the deposit is expected to be refunded (leave blank for non-refundable assets)')
+    is_refundable = models.BooleanField(default=True)
+    is_active = models.BooleanField(default=True, help_text='Uncheck when the deposit has been refunded / asset disposed')
+    notes = models.TextField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['-is_active', 'expected_return_date', '-created_at']
+
+    def __str__(self):
+        return f"{self.name} (₹{self.amount})"
+
+
+class CompanyDocument(models.Model):
+    """Company-level statutory / business documents (license, registration,
+    partnership deed, rental agreement, insurance, etc.).
+
+    Distinct from `Document` — that one attaches transactional files to
+    clients/projects/invoices. This one tracks the company's own paperwork,
+    with issue/expiry metadata so renewals can be flagged.
+    """
+    DOCUMENT_TYPE_CHOICES = [
+        ('license', 'License'),
+        ('registration', 'Registration'),
+        ('agreement', 'Agreement'),
+        ('partnership_deed', 'Partnership Deed'),
+        ('insurance', 'Insurance'),
+        ('other', 'Other'),
+    ]
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    title = models.CharField(max_length=255, help_text='e.g. "GST Registration Certificate", "Office Rental Agreement"')
+    document_type = models.CharField(max_length=20, choices=DOCUMENT_TYPE_CHOICES, default='other')
+    file = models.FileField(upload_to='company_docs/')
+    issue_date = models.DateField(null=True, blank=True)
+    expiry_date = models.DateField(null=True, blank=True)
+    issuer = models.CharField(max_length=255, blank=True, help_text='Authority/issuer (e.g. "GST Department", "ABC Insurance Co")')
+    reference_number = models.CharField(max_length=100, blank=True, help_text='Doc / certificate / policy number')
+    notes = models.TextField(blank=True)
+    uploaded_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='uploaded_company_documents')
+
+    # Optional attachment to a Partner / CompanyAsset / BankAccount (added later)
+    content_type = models.ForeignKey(ContentType, on_delete=models.SET_NULL, null=True, blank=True)
+    object_id = models.CharField(max_length=100, blank=True)
+    content_object = GenericForeignKey('content_type', 'object_id')
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['expiry_date', '-created_at']
+
+    def __str__(self):
+        return self.title
+
+    @property
+    def is_expired(self):
+        if self.expiry_date:
+            return timezone.now().date() > self.expiry_date
+        return False
+
+    @property
+    def is_expiring_soon(self):
+        if self.expiry_date:
+            return timezone.now().date() <= self.expiry_date <= timezone.now().date() + timedelta(days=30)
+        return False
+
+    @property
+    def days_until_expiry(self):
+        if self.expiry_date:
+            return (self.expiry_date - timezone.now().date()).days
+        return None
+
+    @property
+    def file_extension(self):
+        return self.file.name.split('.')[-1].lower() if self.file else ''
+
+
 class ProjectType(models.Model):
     """Configurable project types for client feature-request forms (Website, E-commerce, etc.)."""
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)

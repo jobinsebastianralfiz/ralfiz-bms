@@ -81,6 +81,9 @@ urlpatterns = [
     path('owner/attendance/manual-checkin/', views.OwnerManualCheckInView.as_view(), name='owner_manual_checkin'),
     path('owner/employees/', views.OwnerEmployeeListView.as_view(), name='owner_employees'),
     path('owner/employees/<uuid:pk>/', views.OwnerEmployeeDetailView.as_view(), name='owner_employee_detail'),
+    path('owner/partners/', views.OwnerPartnerListView.as_view(), name='owner_partners'),
+    path('owner/company-assets/', views.OwnerCompanyAssetListView.as_view(), name='owner_company_assets'),
+    path('owner/company-documents/', views.OwnerCompanyDocumentListView.as_view(), name='owner_company_documents'),
 
     # Owner/Partner CRUD
     path('owner/clients/create/', views.OwnerClientCreateView.as_view(), name='owner_client_create'),

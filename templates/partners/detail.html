@@ -1,0 +1,88 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ partner.name }} - Partners - Ralfiz BMS{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title">{{ partner.name }} {% if not partner.is_active %}<span class="badge badge-warning">Inactive</span>{% endif %}</h1>
+    <p class="page-subtitle mb-0">{{ partner.title|default:"Partner" }} &middot; joined {{ partner.join_date|date:"d M Y" }}</p>
+  </div>
+  <div class="page-actions">
+    <a href="{% url 'contribution_create' partner.pk %}" class="btn btn-primary">
+      <i class="fas fa-plus"></i> Add Contribution
+    </a>
+    <a href="{% url 'partner_update' partner.pk %}" class="btn btn-outline-secondary">
+      <i class="fas fa-edit"></i> Edit
+    </a>
+    <a href="{% url 'partner_delete' partner.pk %}" class="btn btn-outline-danger">
+      <i class="fas fa-trash"></i>
+    </a>
+  </div>
+</div>
+
+<div class="row mb-4">
+  <div class="col-md-4" style="padding: 0.5rem;">
+    <div class="card stat-card">
+      <div class="stat-card-value">&#8377;{{ total|floatformat:2 }}</div>
+      <div class="stat-card-label">Total Capital Contributed</div>
+    </div>
+  </div>
+  <div class="col-md-8" style="padding: 0.5rem;">
+    <div class="card">
+      <div class="card-body">
+        {% if partner.email %}<div><i class="fas fa-envelope"></i> {{ partner.email }}</div>{% endif %}
+        {% if partner.phone %}<div><i class="fas fa-phone"></i> {{ partner.phone }}</div>{% endif %}
+        {% if partner.notes %}<div class="mt-2 text-muted">{{ partner.notes|linebreaksbr }}</div>{% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header">
+    <h5 class="mb-0">Capital Contributions</h5>
+  </div>
+  <div class="table-responsive">
+    <table class="table">
+      <thead>
+        <tr>
+          <th>Date</th>
+          <th>Type</th>
+          <th>Bank Account</th>
+          <th class="text-right">Amount</th>
+          <th>Description</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for c in contributions %}
+        <tr>
+          <td>{{ c.date|date:"d M Y" }}</td>
+          <td>{{ c.get_contribution_type_display }}</td>
+          <td>{% if c.bank_account %}{{ c.bank_account.name }}{% else %}&mdash;{% endif %}</td>
+          <td class="text-right">&#8377;{{ c.amount|floatformat:2 }}</td>
+          <td>{{ c.description|default:"&mdash;" }}</td>
+          <td class="table-actions">
+            <a href="{% url 'contribution_update' c.pk %}" class="btn btn-sm btn-ghost btn-icon" title="Edit"><i class="fas fa-edit"></i></a>
+            <a href="{% url 'contribution_delete' c.pk %}" class="btn btn-sm btn-ghost btn-icon text-danger" title="Delete"><i class="fas fa-trash"></i></a>
+          </td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="6" class="text-center text-muted" style="padding: 2rem;">No contributions recorded yet. <a href="{% url 'contribution_create' partner.pk %}">Add the first one</a>.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<div class="card mt-3">
+  <div class="card-body">
+    <p class="text-muted mb-0" style="font-size: 0.85rem;">
+      <i class="fas fa-info-circle"></i>
+      Cash and bank transfer contributions automatically credit the chosen account's balance.
+      Asset / in-kind contributions are recorded here for capital-stack visibility only.
+    </p>
+  </div>
+</div>
+{% endblock %}

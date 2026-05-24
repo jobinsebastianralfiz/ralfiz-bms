@@ -1,0 +1,104 @@
+{% extends 'base.html' %}
+
+{% block title %}Company Documents - Ralfiz BMS{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title">Company Documents</h1>
+    <p class="page-subtitle mb-0">Licenses, registrations, agreements, insurance &amp; other statutory paperwork</p>
+  </div>
+  <div class="page-actions">
+    <a href="{% url 'company_document_create' %}" class="btn btn-primary">
+      <i class="fas fa-plus"></i> Upload Document
+    </a>
+  </div>
+</div>
+
+{% if expired_count or expiring_soon_count %}
+<div class="row mb-3">
+  {% if expired_count %}
+  <div class="col-md-6" style="padding: 0.5rem;">
+    <div class="card stat-card" style="border-left: 4px solid #dc3545;">
+      <div class="stat-card-value text-danger">{{ expired_count }}</div>
+      <div class="stat-card-label">Expired</div>
+    </div>
+  </div>
+  {% endif %}
+  {% if expiring_soon_count %}
+  <div class="col-md-6" style="padding: 0.5rem;">
+    <div class="card stat-card" style="border-left: 4px solid #ffc107;">
+      <div class="stat-card-value text-warning">{{ expiring_soon_count }}</div>
+      <div class="stat-card-label">Expiring in next 30 days</div>
+    </div>
+  </div>
+  {% endif %}
+</div>
+{% endif %}
+
+<div class="card mb-3">
+  <div class="card-body" style="padding: 0.75rem 1rem;">
+    <form method="get" style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
+      <label class="form-label mb-0" style="margin-right: 0.25rem;">Type:</label>
+      <select class="form-control" name="type" style="max-width: 240px;" onchange="this.form.submit()">
+        <option value="">All types</option>
+        {% for k, v in type_choices %}
+        <option value="{{ k }}" {% if selected_type == k %}selected{% endif %}>{{ v }}</option>
+        {% endfor %}
+      </select>
+      {% if selected_type %}
+      <a href="{% url 'company_document_list' %}" class="btn btn-sm btn-outline-secondary">Clear</a>
+      {% endif %}
+    </form>
+  </div>
+</div>
+
+<div class="card">
+  <div class="table-responsive">
+    <table class="table">
+      <thead>
+        <tr>
+          <th>Title</th>
+          <th>Type</th>
+          <th>Issuer</th>
+          <th>Reference #</th>
+          <th>Issue Date</th>
+          <th>Expiry</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for doc in documents %}
+        <tr>
+          <td>
+            <a href="{% url 'company_document_download' doc.pk %}"><strong>{{ doc.title }}</strong></a>
+            {% if doc.file_extension %}<span class="badge badge-secondary">{{ doc.file_extension|upper }}</span>{% endif %}
+          </td>
+          <td>{{ doc.get_document_type_display }}</td>
+          <td>{{ doc.issuer|default:"&mdash;" }}</td>
+          <td>{{ doc.reference_number|default:"&mdash;" }}</td>
+          <td>{{ doc.issue_date|date:"d M Y"|default:"&mdash;" }}</td>
+          <td>
+            {% if doc.expiry_date %}
+              {{ doc.expiry_date|date:"d M Y" }}
+              {% if doc.is_expired %}
+                <span class="badge badge-danger">Expired</span>
+              {% elif doc.is_expiring_soon %}
+                <span class="badge badge-warning">{{ doc.days_until_expiry }}d</span>
+              {% endif %}
+            {% else %}&mdash;{% endif %}
+          </td>
+          <td class="table-actions">
+            <a href="{% url 'company_document_download' doc.pk %}" class="btn btn-sm btn-ghost btn-icon" title="Download"><i class="fas fa-download"></i></a>
+            <a href="{% url 'company_document_update' doc.pk %}" class="btn btn-sm btn-ghost btn-icon" title="Edit"><i class="fas fa-edit"></i></a>
+            <a href="{% url 'company_document_delete' doc.pk %}" class="btn btn-sm btn-ghost btn-icon text-danger" title="Delete"><i class="fas fa-trash"></i></a>
+          </td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="7" class="text-center text-muted" style="padding: 2rem;">No documents uploaded yet. <a href="{% url 'company_document_create' %}">Upload your first document</a>.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

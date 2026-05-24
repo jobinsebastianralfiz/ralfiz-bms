@@ -196,6 +196,21 @@
         <span class="nav-badge">{{ pending_transfer_count }}</span>
         {% endif %}
       </a>
+      <a href="{% url 'partner_list' %}" class="nav-item {% if 'partner' in request.resolver_match.url_name or 'contribution' in request.resolver_match.url_name %}active{% endif %}">
+        <i class="fas fa-handshake"></i>
+        <span>Partners</span>
+      </a>
+      <a href="{% url 'asset_list' %}" class="nav-item {% if 'asset' in request.resolver_match.url_name %}active{% endif %}">
+        <i class="fas fa-coins"></i>
+        <span>Assets &amp; Deposits</span>
+      </a>
+      <a href="{% url 'company_document_list' %}" class="nav-item {% if 'company_document' in request.resolver_match.url_name %}active{% endif %}">
+        <i class="fas fa-folder"></i>
+        <span>Documents</span>
+        {% if expiring_documents_count %}
+        <span class="nav-badge">{{ expiring_documents_count }}</span>
+        {% endif %}
+      </a>
     </div>
 
     <div class="nav-section">

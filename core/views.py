@@ -18,6 +18,7 @@ from .models import (
     ProjectType, ProjectFeature, FeatureRequestLink,
     OpeningBalance, FYResetEvent,
     BankAccount, InternalTransfer,
+    CompanyDocument, Partner, CapitalContribution, CompanyAsset,
 )
 from django.contrib.contenttypes.models import ContentType
 from licensing.models import License, LicenseKey, LicenseActivation
@@ -100,6 +101,19 @@ def dashboard(request):
         expiry_date__gte=timezone.now().date(),
         is_active=True
     ).select_related('project', 'project__client')[:5]
+
+    # Expiring / expired company documents (badge in sidebar + tile on dashboard)
+    today = timezone.now().date()
+    expiring_documents_count = CompanyDocument.objects.filter(
+        Q(expiry_date__lt=today) | Q(expiry_date__gte=today, expiry_date__lte=expiring_soon)
+    ).count()
+    expiring_documents = CompanyDocument.objects.filter(
+        Q(expiry_date__lt=today) | Q(expiry_date__gte=today, expiry_date__lte=expiring_soon)
+    ).order_by('expiry_date')[:5]
+
+    # Capital invested (sum of all partner contributions)
+    total_capital_invested = CapitalContribution.objects.aggregate(t=Sum('amount'))['t'] or 0
+    partner_count = Partner.objects.filter(is_active=True).count()
 
     # License statistics
     from licensing.models import License
@@ -226,6 +240,8 @@ def dashboard(request):
     cp = cash_position()
     account_balances = cp['accounts']
     total_assets = cp['total']
+    total_other_assets = cp['other_assets']
+    total_assets_combined = cp['total_with_assets']
     pending_transfer_qs = pending_transfers()
     # Back-compat aliases for any template/code still reading these names
     cash_card = next((r for r in account_balances if r['account'].is_cash), None)
@@ -272,6 +288,10 @@ def dashboard(request):
         'expenses_this_month': expenses_this_month,
         'net_profit_this_month': net_profit_this_month,
         'expiring_credentials': expiring_credentials,
+        'expiring_documents': expiring_documents,
+        'expiring_documents_count': expiring_documents_count,
+        'total_capital_invested': total_capital_invested,
+        'partner_count': partner_count,
         'overdue_invoices': overdue_invoices,
         'recent_payments': recent_payments,
         'recent_invoices': recent_invoices,
@@ -311,6 +331,8 @@ def dashboard(request):
         'current_cash_in_account': current_cash_in_account,
         'account_balances': account_balances,
         'total_assets': total_assets,
+        'total_other_assets': total_other_assets,
+        'total_assets_combined': total_assets_combined,
         'pending_transfers': pending_transfer_qs,
         'pending_transfer_count': pending_transfer_qs.count(),
     }
@@ -7578,3 +7600,409 @@ def transfer_delete(request, pk):
         messages.success(request, 'Transfer deleted.')
         return redirect('transfer_list')
     return render(request, 'transfers/confirm_delete.html', {'transfer': transfer})
+
+
+# ============== Company Documents ==============
+
+_COMPANY_DOC_FORM_KEYS = ['title', 'document_type', 'issuer', 'reference_number', 'issue_date', 'expiry_date', 'notes']
+
+
+def _company_doc_form_data(source=None, doc=None):
+    """Return a dict with every form key populated (template never hits a missing key)."""
+    if doc is not None:
+        return {
+            'title': doc.title or '',
+            'document_type': doc.document_type or 'other',
+            'issuer': doc.issuer or '',
+            'reference_number': doc.reference_number or '',
+            'issue_date': doc.issue_date.strftime('%Y-%m-%d') if doc.issue_date else '',
+            'expiry_date': doc.expiry_date.strftime('%Y-%m-%d') if doc.expiry_date else '',
+            'notes': doc.notes or '',
+        }
+    if source is not None:
+        return {k: source.get(k, '') for k in _COMPANY_DOC_FORM_KEYS}
+    return {k: '' for k in _COMPANY_DOC_FORM_KEYS}
+
+
+def _save_company_document(doc, request, is_new):
+    doc.title = request.POST.get('title', '').strip()
+    doc.document_type = request.POST.get('document_type', 'other')
+    doc.issuer = request.POST.get('issuer', '').strip()
+    doc.reference_number = request.POST.get('reference_number', '').strip()
+    doc.issue_date = request.POST.get('issue_date') or None
+    doc.expiry_date = request.POST.get('expiry_date') or None
+    doc.notes = request.POST.get('notes', '')
+    if 'file' in request.FILES:
+        doc.file = request.FILES['file']
+    if is_new and request.user.is_authenticated:
+        doc.uploaded_by = request.user
+    doc.save()
+
+
+@login_required
+def company_document_list(request):
+    docs = CompanyDocument.objects.all()
+    doc_type = request.GET.get('type')
+    if doc_type:
+        docs = docs.filter(document_type=doc_type)
+    today = timezone.now().date()
+    soon = today + timedelta(days=30)
+    expiring_soon = CompanyDocument.objects.filter(expiry_date__gte=today, expiry_date__lte=soon).count()
+    expired = CompanyDocument.objects.filter(expiry_date__lt=today).count()
+    return render(request, 'company_documents/list.html', {
+        'documents': docs,
+        'selected_type': doc_type,
+        'type_choices': CompanyDocument.DOCUMENT_TYPE_CHOICES,
+        'expiring_soon_count': expiring_soon,
+        'expired_count': expired,
+    })
+
+
+@login_required
+def company_document_create(request):
+    if request.method == 'POST':
+        if 'file' not in request.FILES:
+            messages.error(request, 'Please attach a file.')
+            return render(request, 'company_documents/form.html', {
+                'document': None,
+                'type_choices': CompanyDocument.DOCUMENT_TYPE_CHOICES,
+                'form_data': _company_doc_form_data(source=request.POST),
+            })
+        doc = CompanyDocument()
+        _save_company_document(doc, request, is_new=True)
+        log_activity(request, 'created', doc)
+        messages.success(request, f'Document "{doc.title}" uploaded.')
+        return redirect('company_document_list')
+    return render(request, 'company_documents/form.html', {
+        'document': None,
+        'type_choices': CompanyDocument.DOCUMENT_TYPE_CHOICES,
+        'form_data': _company_doc_form_data(),
+    })
+
+
+@login_required
+def company_document_update(request, pk):
+    doc = get_object_or_404(CompanyDocument, pk=pk)
+    if request.method == 'POST':
+        _save_company_document(doc, request, is_new=False)
+        log_activity(request, 'updated', doc)
+        messages.success(request, f'Document "{doc.title}" updated.')
+        return redirect('company_document_list')
+    return render(request, 'company_documents/form.html', {
+        'document': doc,
+        'type_choices': CompanyDocument.DOCUMENT_TYPE_CHOICES,
+        'form_data': _company_doc_form_data(doc=doc),
+    })
+
+
+@login_required
+def company_document_delete(request, pk):
+    doc = get_object_or_404(CompanyDocument, pk=pk)
+    if request.method == 'POST':
+        log_activity(request, 'deleted', doc)
+        doc.delete()
+        messages.success(request, 'Document deleted.')
+        return redirect('company_document_list')
+    return render(request, 'company_documents/confirm_delete.html', {'document': doc})
+
+
+@login_required
+def company_document_download(request, pk):
+    from django.http import FileResponse, Http404
+    doc = get_object_or_404(CompanyDocument, pk=pk)
+    if not doc.file:
+        raise Http404
+    return FileResponse(doc.file.open('rb'), as_attachment=True, filename=doc.file.name.split('/')[-1])
+
+
+# ============== Partners & Capital Contributions ==============
+
+_PARTNER_FORM_KEYS = ['name', 'title', 'email', 'phone', 'join_date', 'notes']
+
+
+def _partner_form_data(source=None, partner=None):
+    if partner is not None:
+        return {
+            'name': partner.name or '',
+            'title': partner.title or '',
+            'email': partner.email or '',
+            'phone': partner.phone or '',
+            'join_date': partner.join_date.strftime('%Y-%m-%d') if partner.join_date else '',
+            'notes': partner.notes or '',
+            'is_active': partner.is_active,
+        }
+    if source is not None:
+        d = {k: source.get(k, '') for k in _PARTNER_FORM_KEYS}
+        d['is_active'] = source.get('is_active') == 'on'
+        return d
+    return {**{k: '' for k in _PARTNER_FORM_KEYS}, 'is_active': True}
+
+
+def _save_partner(partner, request, is_new):
+    partner.name = request.POST.get('name', '').strip()
+    partner.title = request.POST.get('title', '').strip()
+    partner.email = request.POST.get('email', '').strip()
+    partner.phone = request.POST.get('phone', '').strip()
+    partner.join_date = request.POST.get('join_date') or timezone.now().date()
+    partner.is_active = request.POST.get('is_active') == 'on'
+    partner.notes = request.POST.get('notes', '')
+    if 'photo' in request.FILES:
+        partner.photo = request.FILES['photo']
+    partner.save()
+
+
+@login_required
+def partner_list(request):
+    from decimal import Decimal
+    partners = list(Partner.objects.all())
+    total_capital = sum((p.total_contribution for p in partners), Decimal('0')) if partners else Decimal('0')
+    return render(request, 'partners/list.html', {
+        'partners': partners,
+        'total_capital': total_capital,
+    })
+
+
+@login_required
+def partner_create(request):
+    if request.method == 'POST':
+        partner = Partner()
+        _save_partner(partner, request, is_new=True)
+        log_activity(request, 'created', partner)
+        messages.success(request, f'Partner "{partner.name}" added.')
+        return redirect('partner_detail', pk=partner.pk)
+    return render(request, 'partners/form.html', {
+        'partner': None,
+        'form_data': _partner_form_data(),
+    })
+
+
+@login_required
+def partner_update(request, pk):
+    partner = get_object_or_404(Partner, pk=pk)
+    if request.method == 'POST':
+        _save_partner(partner, request, is_new=False)
+        log_activity(request, 'updated', partner)
+        messages.success(request, f'Partner "{partner.name}" updated.')
+        return redirect('partner_detail', pk=partner.pk)
+    return render(request, 'partners/form.html', {
+        'partner': partner,
+        'form_data': _partner_form_data(partner=partner),
+    })
+
+
+@login_required
+def partner_detail(request, pk):
+    partner = get_object_or_404(Partner, pk=pk)
+    contributions = partner.contributions.select_related('bank_account').all()
+    return render(request, 'partners/detail.html', {
+        'partner': partner,
+        'contributions': contributions,
+        'total': partner.total_contribution,
+    })
+
+
+@login_required
+def partner_delete(request, pk):
+    partner = get_object_or_404(Partner, pk=pk)
+    if request.method == 'POST':
+        log_activity(request, 'deleted', partner)
+        partner.delete()
+        messages.success(request, 'Partner deleted.')
+        return redirect('partner_list')
+    return render(request, 'partners/confirm_delete.html', {
+        'partner': partner,
+        'contribution_count': partner.contributions.count(),
+    })
+
+
+_CONTRIB_FORM_KEYS = ['date', 'amount', 'contribution_type', 'bank_account', 'description']
+
+
+def _contribution_form_data(source=None, contribution=None):
+    if contribution is not None:
+        return {
+            'date': contribution.date.strftime('%Y-%m-%d') if contribution.date else '',
+            'amount': str(contribution.amount or ''),
+            'contribution_type': contribution.contribution_type or 'bank_transfer',
+            'bank_account': str(contribution.bank_account_id or ''),
+            'description': contribution.description or '',
+        }
+    if source is not None:
+        return {k: source.get(k, '') for k in _CONTRIB_FORM_KEYS}
+    return {k: '' for k in _CONTRIB_FORM_KEYS}
+
+
+def _save_contribution(contribution, request, is_new):
+    contribution.date = request.POST.get('date') or timezone.now().date()
+    contribution.amount = request.POST.get('amount') or 0
+    contribution.contribution_type = request.POST.get('contribution_type', 'bank_transfer')
+    bank_id = request.POST.get('bank_account') or None
+    contribution.bank_account_id = bank_id if bank_id else None
+    contribution.description = request.POST.get('description', '').strip()
+    if 'receipt' in request.FILES:
+        contribution.receipt = request.FILES['receipt']
+    contribution.save()
+
+
+@login_required
+def contribution_create(request, partner_pk):
+    partner = get_object_or_404(Partner, pk=partner_pk)
+    accounts = BankAccount.objects.filter(is_active=True)
+    if request.method == 'POST':
+        contribution = CapitalContribution(partner=partner)
+        try:
+            _save_contribution(contribution, request, is_new=True)
+        except Exception as e:
+            messages.error(request, f'Could not save contribution: {e}')
+            return render(request, 'partners/contribution_form.html', {
+                'partner': partner,
+                'contribution': None,
+                'accounts': accounts,
+                'type_choices': CapitalContribution.CONTRIBUTION_TYPE_CHOICES,
+                'form_data': _contribution_form_data(source=request.POST),
+            })
+        log_activity(request, 'created', contribution)
+        messages.success(request, f'Contribution of ₹{contribution.amount} recorded.')
+        return redirect('partner_detail', pk=partner.pk)
+    return render(request, 'partners/contribution_form.html', {
+        'partner': partner,
+        'contribution': None,
+        'accounts': accounts,
+        'type_choices': CapitalContribution.CONTRIBUTION_TYPE_CHOICES,
+        'form_data': _contribution_form_data(),
+    })
+
+
+@login_required
+def contribution_update(request, pk):
+    contribution = get_object_or_404(CapitalContribution, pk=pk)
+    accounts = BankAccount.objects.filter(is_active=True)
+    if request.method == 'POST':
+        try:
+            _save_contribution(contribution, request, is_new=False)
+        except Exception as e:
+            messages.error(request, f'Could not save contribution: {e}')
+            return render(request, 'partners/contribution_form.html', {
+                'partner': contribution.partner,
+                'contribution': contribution,
+                'accounts': accounts,
+                'type_choices': CapitalContribution.CONTRIBUTION_TYPE_CHOICES,
+                'form_data': _contribution_form_data(source=request.POST),
+            })
+        log_activity(request, 'updated', contribution)
+        messages.success(request, 'Contribution updated.')
+        return redirect('partner_detail', pk=contribution.partner.pk)
+    return render(request, 'partners/contribution_form.html', {
+        'partner': contribution.partner,
+        'contribution': contribution,
+        'accounts': accounts,
+        'type_choices': CapitalContribution.CONTRIBUTION_TYPE_CHOICES,
+        'form_data': _contribution_form_data(contribution=contribution),
+    })
+
+
+@login_required
+def contribution_delete(request, pk):
+    contribution = get_object_or_404(CapitalContribution, pk=pk)
+    partner_pk = contribution.partner.pk
+    if request.method == 'POST':
+        log_activity(request, 'deleted', contribution)
+        contribution.delete()
+        messages.success(request, 'Contribution deleted.')
+        return redirect('partner_detail', pk=partner_pk)
+    return render(request, 'partners/contribution_confirm_delete.html', {'contribution': contribution})
+
+
+# ============== Company Assets (deposits / advances / equipment) ==============
+
+_ASSET_FORM_KEYS = ['name', 'asset_type', 'amount', 'acquired_date', 'counterparty', 'expected_return_date', 'notes']
+
+
+def _asset_form_data(source=None, asset=None):
+    if asset is not None:
+        return {
+            'name': asset.name or '',
+            'asset_type': asset.asset_type or 'rent_deposit',
+            'amount': str(asset.amount or ''),
+            'acquired_date': asset.acquired_date.strftime('%Y-%m-%d') if asset.acquired_date else '',
+            'counterparty': asset.counterparty or '',
+            'expected_return_date': asset.expected_return_date.strftime('%Y-%m-%d') if asset.expected_return_date else '',
+            'notes': asset.notes or '',
+            'is_refundable': asset.is_refundable,
+            'is_active': asset.is_active,
+        }
+    if source is not None:
+        d = {k: source.get(k, '') for k in _ASSET_FORM_KEYS}
+        d['is_refundable'] = source.get('is_refundable') == 'on'
+        d['is_active'] = source.get('is_active') == 'on'
+        return d
+    return {**{k: '' for k in _ASSET_FORM_KEYS}, 'is_refundable': True, 'is_active': True}
+
+
+def _save_asset(asset, request, is_new):
+    asset.name = request.POST.get('name', '').strip()
+    asset.asset_type = request.POST.get('asset_type', 'rent_deposit')
+    asset.amount = request.POST.get('amount') or 0
+    asset.acquired_date = request.POST.get('acquired_date') or timezone.now().date()
+    asset.counterparty = request.POST.get('counterparty', '').strip()
+    asset.expected_return_date = request.POST.get('expected_return_date') or None
+    asset.is_refundable = request.POST.get('is_refundable') == 'on'
+    asset.is_active = request.POST.get('is_active') == 'on'
+    asset.notes = request.POST.get('notes', '')
+    asset.save()
+
+
+@login_required
+def asset_list(request):
+    from decimal import Decimal
+    assets = CompanyAsset.objects.all()
+    active_assets = assets.filter(is_active=True)
+    total_active = active_assets.aggregate(t=Sum('amount'))['t'] or Decimal('0')
+    total_refundable = active_assets.filter(is_refundable=True).aggregate(t=Sum('amount'))['t'] or Decimal('0')
+    return render(request, 'assets/list.html', {
+        'assets': assets,
+        'total_active': total_active,
+        'total_refundable': total_refundable,
+        'type_choices': CompanyAsset.ASSET_TYPE_CHOICES,
+    })
+
+
+@login_required
+def asset_create(request):
+    if request.method == 'POST':
+        asset = CompanyAsset()
+        _save_asset(asset, request, is_new=True)
+        log_activity(request, 'created', asset)
+        messages.success(request, f'Asset "{asset.name}" recorded.')
+        return redirect('asset_list')
+    return render(request, 'assets/form.html', {
+        'asset': None,
+        'type_choices': CompanyAsset.ASSET_TYPE_CHOICES,
+        'form_data': _asset_form_data(),
+    })
+
+
+@login_required
+def asset_update(request, pk):
+    asset = get_object_or_404(CompanyAsset, pk=pk)
+    if request.method == 'POST':
+        _save_asset(asset, request, is_new=False)
+        log_activity(request, 'updated', asset)
+        messages.success(request, f'Asset "{asset.name}" updated.')
+        return redirect('asset_list')
+    return render(request, 'assets/form.html', {
+        'asset': asset,
+        'type_choices': CompanyAsset.ASSET_TYPE_CHOICES,
+        'form_data': _asset_form_data(asset=asset),
+    })
+
+
+@login_required
+def asset_delete(request, pk):
+    asset = get_object_or_404(CompanyAsset, pk=pk)
+    if request.method == 'POST':
+        log_activity(request, 'deleted', asset)
+        asset.delete()
+        messages.success(request, 'Asset deleted.')
+        return redirect('asset_list')
+    return render(request, 'assets/confirm_delete.html', {'asset': asset})

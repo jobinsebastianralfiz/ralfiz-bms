@@ -10,6 +10,7 @@ Account balance =
   - expenses paid via this account's resolved methods (Expense)
   + internal transfers IN (date <= as_of)
   - internal transfers OUT (date <= as_of)
+  + capital contributions credited to this account (date <= as_of)
 
 Future-dated transfers are intentionally excluded from current balance
 but exposed separately by pending_transfers().
@@ -18,7 +19,7 @@ from decimal import Decimal
 from django.db.models import Sum
 from django.utils import timezone
 
-from .models import BankAccount, InternalTransfer, Payment, Expense
+from .models import BankAccount, InternalTransfer, Payment, Expense, CapitalContribution, CompanyAsset
 
 
 def _zero():
@@ -62,16 +63,42 @@ def compute_account_balance(account, as_of=None):
         from_account=account, date__lte=as_of,
     ).aggregate(t=Sum('amount'))['t'] or _zero()
 
+    balance += CapitalContribution.objects.filter(
+        bank_account=account,
+        date__lte=as_of,
+        contribution_type__in=['cash', 'bank_transfer'],
+    ).aggregate(t=Sum('amount'))['t'] or _zero()
+
     return balance
 
 
+def total_company_assets(as_of=None):
+    """Sum of all active non-cash company assets (deposits, equipment, etc.) acquired by `as_of`."""
+    if as_of is None:
+        as_of = timezone.now().date()
+    return CompanyAsset.objects.filter(
+        is_active=True, acquired_date__lte=as_of,
+    ).aggregate(t=Sum('amount'))['t'] or _zero()
+
+
 def cash_position(as_of=None, include_inactive=False):
-    """Return list of {account, balance} for all (active) accounts plus total."""
+    """Return list of {account, balance} for all (active) accounts plus total.
+
+    `total` is the sum of bank/cash balances only.
+    `total_with_assets` includes non-cash company assets (rent advance,
+    deposits, equipment) — i.e. true total assets the company holds.
+    """
     qs = BankAccount.objects.all() if include_inactive else BankAccount.objects.filter(is_active=True)
     accounts = list(qs.order_by('display_order', 'name'))
     rows = [{'account': a, 'balance': compute_account_balance(a, as_of)} for a in accounts]
     total = sum((r['balance'] for r in rows), _zero())
-    return {'accounts': rows, 'total': total}
+    other_assets = total_company_assets(as_of)
+    return {
+        'accounts': rows,
+        'total': total,
+        'other_assets': other_assets,
+        'total_with_assets': total + other_assets,
+    }
 
 
 def pending_transfers(today=None):

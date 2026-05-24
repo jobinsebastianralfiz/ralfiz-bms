@@ -1,0 +1,28 @@
+{% extends 'base.html' %}
+
+{% block title %}Delete Document - Ralfiz BMS{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <h1 class="page-title">Delete Document?</h1>
+</div>
+
+<div class="card">
+  <div class="card-body">
+    <p>You are about to delete:</p>
+    <ul>
+      <li><strong>Title:</strong> {{ document.title }}</li>
+      <li><strong>Type:</strong> {{ document.get_document_type_display }}</li>
+      {% if document.reference_number %}<li><strong>Reference:</strong> {{ document.reference_number }}</li>{% endif %}
+      {% if document.expiry_date %}<li><strong>Expiry:</strong> {{ document.expiry_date|date:"d M Y" }}</li>{% endif %}
+    </ul>
+    <p class="text-warning"><i class="fas fa-exclamation-triangle"></i> The uploaded file will also be removed. This cannot be undone.</p>
+
+    <form method="post">
+      {% csrf_token %}
+      <a href="{% url 'company_document_list' %}" class="btn btn-outline-secondary">Cancel</a>
+      <button type="submit" class="btn btn-danger">Yes, delete</button>
+    </form>
+  </div>
+</div>
+{% endblock %}

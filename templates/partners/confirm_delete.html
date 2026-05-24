@@ -1,0 +1,28 @@
+{% extends 'base.html' %}
+
+{% block title %}Delete Partner - Ralfiz BMS{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <h1 class="page-title">Delete Partner?</h1>
+</div>
+
+<div class="card">
+  <div class="card-body">
+    <p>You are about to delete partner <strong>{{ partner.name }}</strong>.</p>
+    {% if contribution_count %}
+    <p class="text-warning">
+      <i class="fas fa-exclamation-triangle"></i>
+      This partner has {{ contribution_count }} capital contribution{{ contribution_count|pluralize }} on record.
+      Deleting will also remove those contributions and adjust bank account balances accordingly.
+    </p>
+    {% endif %}
+
+    <form method="post">
+      {% csrf_token %}
+      <a href="{% url 'partner_detail' partner.pk %}" class="btn btn-outline-secondary">Cancel</a>
+      <button type="submit" class="btn btn-danger">Yes, delete</button>
+    </form>
+  </div>
+</div>
+{% endblock %}

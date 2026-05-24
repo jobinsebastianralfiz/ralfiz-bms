@@ -1,0 +1,73 @@
+{% extends 'base.html' %}
+
+{% block title %}{% if partner %}Edit{% else %}New{% endif %} Partner - Ralfiz BMS{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title">{% if partner %}Edit Partner{% else %}Add Partner{% endif %}</h1>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-body">
+    <form method="post" enctype="multipart/form-data">
+      {% csrf_token %}
+
+      <div class="row">
+        <div class="col-md-6" style="padding: 0.5rem;">
+          <label class="form-label">Name *</label>
+          <input type="text" class="form-control" name="name" required value="{{ form_data.name }}">
+        </div>
+        <div class="col-md-6" style="padding: 0.5rem;">
+          <label class="form-label">Title / Role</label>
+          <input type="text" class="form-control" name="title" value="{{ form_data.title }}" placeholder='e.g. "Managing Partner"'>
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="col-md-6" style="padding: 0.5rem;">
+          <label class="form-label">Email</label>
+          <input type="email" class="form-control" name="email" value="{{ form_data.email }}">
+        </div>
+        <div class="col-md-6" style="padding: 0.5rem;">
+          <label class="form-label">Phone</label>
+          <input type="text" class="form-control" name="phone" value="{{ form_data.phone }}">
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="col-md-4" style="padding: 0.5rem;">
+          <label class="form-label">Join date</label>
+          <input type="date" class="form-control" name="join_date" value="{{ form_data.join_date }}">
+        </div>
+        <div class="col-md-4" style="padding: 0.5rem;">
+          <label class="form-label">Photo</label>
+          <input type="file" class="form-control" name="photo" accept="image/*">
+          {% if partner.photo %}<small class="text-muted">Current photo on file — choose new file to replace.</small>{% endif %}
+        </div>
+        <div class="col-md-4" style="padding: 0.5rem;">
+          <label class="form-label">&nbsp;</label>
+          <div>
+            <label class="me-3">
+              <input type="checkbox" name="is_active" {% if form_data.is_active %}checked{% endif %}> Active
+            </label>
+          </div>
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="col-12" style="padding: 0.5rem;">
+          <label class="form-label">Notes</label>
+          <textarea class="form-control" name="notes" rows="3">{{ form_data.notes }}</textarea>
+        </div>
+      </div>
+
+      <div class="form-actions mt-3">
+        <a href="{% if partner %}{% url 'partner_detail' partner.pk %}{% else %}{% url 'partner_list' %}{% endif %}" class="btn btn-outline-secondary">Cancel</a>
+        <button type="submit" class="btn btn-primary">{% if partner %}Save changes{% else %}Add partner{% endif %}</button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

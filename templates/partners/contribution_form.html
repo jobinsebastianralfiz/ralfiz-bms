@@ -1,0 +1,69 @@
+{% extends 'base.html' %}
+
+{% block title %}{% if contribution %}Edit{% else %}Add{% endif %} Contribution - Ralfiz BMS{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title">{% if contribution %}Edit Contribution{% else %}Add Capital Contribution{% endif %}</h1>
+    <p class="page-subtitle mb-0">Partner: <a href="{% url 'partner_detail' partner.pk %}">{{ partner.name }}</a></p>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-body">
+    <form method="post" enctype="multipart/form-data">
+      {% csrf_token %}
+
+      <div class="row">
+        <div class="col-md-4" style="padding: 0.5rem;">
+          <label class="form-label">Date *</label>
+          <input type="date" class="form-control" name="date" required value="{{ form_data.date }}">
+        </div>
+        <div class="col-md-4" style="padding: 0.5rem;">
+          <label class="form-label">Amount (&#8377;) *</label>
+          <input type="number" step="0.01" min="0" class="form-control" name="amount" required value="{{ form_data.amount }}">
+        </div>
+        <div class="col-md-4" style="padding: 0.5rem;">
+          <label class="form-label">Type *</label>
+          <select class="form-control" name="contribution_type" id="contribution_type">
+            {% for k, v in type_choices %}
+            <option value="{{ k }}" {% if form_data.contribution_type == k %}selected{% endif %}>{{ v }}</option>
+            {% endfor %}
+          </select>
+        </div>
+      </div>
+
+      <div class="row" id="bank_account_row">
+        <div class="col-md-6" style="padding: 0.5rem;">
+          <label class="form-label">Credit to bank account</label>
+          <select class="form-control" name="bank_account">
+            <option value="">— None —</option>
+            {% for a in accounts %}
+            <option value="{{ a.pk }}" {% if form_data.bank_account == a.pk|stringformat:"s" %}selected{% endif %}>{{ a.name }} ({{ a.get_account_type_display }})</option>
+            {% endfor %}
+          </select>
+          <small class="text-muted">Required for cash / bank transfer contributions — credits this account's balance.</small>
+        </div>
+        <div class="col-md-6" style="padding: 0.5rem;">
+          <label class="form-label">Receipt (optional)</label>
+          <input type="file" class="form-control" name="receipt">
+          {% if contribution.receipt %}<small class="text-muted">Current receipt on file — choose new file to replace.</small>{% endif %}
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="col-12" style="padding: 0.5rem;">
+          <label class="form-label">Description</label>
+          <textarea class="form-control" name="description" rows="2">{{ form_data.description }}</textarea>
+        </div>
+      </div>
+
+      <div class="form-actions mt-3">
+        <a href="{% url 'partner_detail' partner.pk %}" class="btn btn-outline-secondary">Cancel</a>
+        <button type="submit" class="btn btn-primary">{% if contribution %}Save changes{% else %}Add contribution{% endif %}</button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

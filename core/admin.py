@@ -8,6 +8,7 @@ from .models import (
     TaskComment, TaskIssue, TaskActivity,
     AMCContract, AMCPayment, CredentialRenewal,
     BankAccount, InternalTransfer,
+    CompanyDocument, Partner, CapitalContribution, CompanyAsset,
 )
 
 
@@ -26,6 +27,43 @@ class InternalTransferAdmin(admin.ModelAdmin):
     search_fields = ['reference', 'notes']
     autocomplete_fields = ['from_account', 'to_account']
     ordering = ['-date', '-created_at']
+
+
+@admin.register(CompanyDocument)
+class CompanyDocumentAdmin(admin.ModelAdmin):
+    list_display = ['title', 'document_type', 'issuer', 'reference_number', 'issue_date', 'expiry_date', 'uploaded_by']
+    list_filter = ['document_type', 'issue_date', 'expiry_date']
+    search_fields = ['title', 'issuer', 'reference_number', 'notes']
+    ordering = ['expiry_date', '-created_at']
+
+
+class CapitalContributionInline(admin.TabularInline):
+    model = CapitalContribution
+    extra = 0
+    fields = ['date', 'amount', 'contribution_type', 'bank_account', 'description']
+
+
+@admin.register(Partner)
+class PartnerAdmin(admin.ModelAdmin):
+    list_display = ['name', 'title', 'email', 'phone', 'join_date', 'is_active']
+    list_filter = ['is_active', 'join_date']
+    search_fields = ['name', 'email', 'phone']
+    inlines = [CapitalContributionInline]
+
+
+@admin.register(CapitalContribution)
+class CapitalContributionAdmin(admin.ModelAdmin):
+    list_display = ['date', 'partner', 'amount', 'contribution_type', 'bank_account', 'description']
+    list_filter = ['contribution_type', 'date']
+    search_fields = ['partner__name', 'description']
+    autocomplete_fields = ['partner', 'bank_account']
+
+
+@admin.register(CompanyAsset)
+class CompanyAssetAdmin(admin.ModelAdmin):
+    list_display = ['name', 'asset_type', 'amount', 'counterparty', 'acquired_date', 'expected_return_date', 'is_refundable', 'is_active']
+    list_filter = ['asset_type', 'is_active', 'is_refundable']
+    search_fields = ['name', 'counterparty', 'notes']
 
 
 @admin.register(TaskComment)

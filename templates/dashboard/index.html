@@ -327,12 +327,24 @@
     </div>
   </div>
   {% endfor %}
+  {% if total_other_assets %}
+  <div class="metric" style="background: #fef9c3;">
+    <div class="metric-icon" style="background: #fef3c7; color: #b45309;"><i class="fas fa-piggy-bank"></i></div>
+    <div>
+      <div class="metric-num">&#8377;{{ total_other_assets|floatformat:2 }}</div>
+      <div class="metric-label">
+        <a href="{% url 'asset_list' %}" style="color: inherit;">Deposits &amp; Advances</a>
+      </div>
+    </div>
+  </div>
+  {% endif %}
   <div class="metric" style="background: #f8fafc;">
     <div class="metric-icon" style="background: #f1f5f9; color: #64748b;"><i class="fas fa-coins"></i></div>
     <div>
-      <div class="metric-num">&#8377;{{ total_assets|floatformat:2 }}</div>
+      <div class="metric-num">&#8377;{{ total_assets_combined|floatformat:2 }}</div>
       <div class="metric-label">
         Total Assets
+        {% if total_other_assets %}<small class="text-muted">(cash &#8377;{{ total_assets|floatformat:2 }} + deposits)</small>{% endif %}
         {% if pending_transfer_count %} &middot; <a href="{% url 'transfer_list' %}" class="text-warning">{{ pending_transfer_count }} pending</a>{% endif %}
       </div>
     </div>

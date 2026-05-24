@@ -1,0 +1,28 @@
+{% extends 'base.html' %}
+
+{% block title %}Delete Asset - Ralfiz BMS{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <h1 class="page-title">Delete Asset?</h1>
+</div>
+
+<div class="card">
+  <div class="card-body">
+    <p>You are about to delete this asset:</p>
+    <ul>
+      <li><strong>Name:</strong> {{ asset.name }}</li>
+      <li><strong>Type:</strong> {{ asset.get_asset_type_display }}</li>
+      <li><strong>Amount:</strong> &#8377;{{ asset.amount|floatformat:2 }}</li>
+      {% if asset.counterparty %}<li><strong>Counterparty:</strong> {{ asset.counterparty }}</li>{% endif %}
+    </ul>
+    <p class="text-muted"><i class="fas fa-info-circle"></i> If this asset was refunded/returned, consider just unchecking "Active" instead of deleting &mdash; that preserves the history.</p>
+
+    <form method="post">
+      {% csrf_token %}
+      <a href="{% url 'asset_list' %}" class="btn btn-outline-secondary">Cancel</a>
+      <button type="submit" class="btn btn-danger">Yes, delete</button>
+    </form>
+  </div>
+</div>
+{% endblock %}

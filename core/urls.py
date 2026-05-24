@@ -151,6 +151,29 @@ urlpatterns = [
     path('transfers/<uuid:pk>/edit/', views.transfer_update, name='transfer_update'),
     path('transfers/<uuid:pk>/delete/', views.transfer_delete, name='transfer_delete'),
 
+    # Company Documents (statutory / business paperwork)
+    path('documents/company/', views.company_document_list, name='company_document_list'),
+    path('documents/company/new/', views.company_document_create, name='company_document_create'),
+    path('documents/company/<uuid:pk>/edit/', views.company_document_update, name='company_document_update'),
+    path('documents/company/<uuid:pk>/delete/', views.company_document_delete, name='company_document_delete'),
+    path('documents/company/<uuid:pk>/download/', views.company_document_download, name='company_document_download'),
+
+    # Partners & Capital Contributions
+    path('partners/', views.partner_list, name='partner_list'),
+    path('partners/new/', views.partner_create, name='partner_create'),
+    path('partners/<uuid:pk>/', views.partner_detail, name='partner_detail'),
+    path('partners/<uuid:pk>/edit/', views.partner_update, name='partner_update'),
+    path('partners/<uuid:pk>/delete/', views.partner_delete, name='partner_delete'),
+    path('partners/<uuid:partner_pk>/contributions/new/', views.contribution_create, name='contribution_create'),
+    path('contributions/<uuid:pk>/edit/', views.contribution_update, name='contribution_update'),
+    path('contributions/<uuid:pk>/delete/', views.contribution_delete, name='contribution_delete'),
+
+    # Company Assets (deposits / advances / equipment)
+    path('assets/', views.asset_list, name='asset_list'),
+    path('assets/new/', views.asset_create, name='asset_create'),
+    path('assets/<uuid:pk>/edit/', views.asset_update, name='asset_update'),
+    path('assets/<uuid:pk>/delete/', views.asset_delete, name='asset_delete'),
+
     # Tasks
     path('tasks/', views.task_list, name='task_list'),
     path('tasks/board/', views.task_board, name='task_board'),

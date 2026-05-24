@@ -1,0 +1,55 @@
+{% extends 'base.html' %}
+
+{% block title %}Partners - Ralfiz BMS{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title">Partners</h1>
+    <p class="page-subtitle mb-0">Founders, partners &amp; their capital contributions</p>
+  </div>
+  <div class="page-actions">
+    <a href="{% url 'partner_create' %}" class="btn btn-primary">
+      <i class="fas fa-plus"></i> Add Partner
+    </a>
+  </div>
+</div>
+
+<div class="card mb-4">
+  <div class="card-body" style="text-align: center;">
+    <div class="text-muted" style="font-size: 0.85rem;">Total Capital Invested</div>
+    <div style="font-size: 1.6rem; font-weight: 600;">&#8377;{{ total_capital|floatformat:2 }}</div>
+  </div>
+</div>
+
+<div class="row">
+  {% for p in partners %}
+  <div class="col-md-4" style="padding: 0.5rem;">
+    <div class="card stat-card {% if not p.is_active %}opacity-50{% endif %}">
+      <div class="d-flex justify-content-between align-items-start mb-2">
+        <div>
+          <div style="font-weight: 600;">
+            <a href="{% url 'partner_detail' p.pk %}">{{ p.name }}</a>
+            {% if not p.is_active %}<span class="badge badge-warning">Inactive</span>{% endif %}
+          </div>
+          {% if p.title %}<div class="text-muted" style="font-size: 0.8rem;">{{ p.title }}</div>{% endif %}
+          {% if p.email %}<div class="text-muted" style="font-size: 0.75rem;">{{ p.email }}</div>{% endif %}
+        </div>
+        <div class="table-actions">
+          <a href="{% url 'partner_update' p.pk %}" class="btn btn-sm btn-ghost btn-icon" title="Edit"><i class="fas fa-edit"></i></a>
+        </div>
+      </div>
+      <div class="stat-card-value" style="font-size: 1.4rem;">&#8377;{{ p.total_contribution|floatformat:2 }}</div>
+      <div class="stat-card-label">Total Contributed</div>
+      <div class="mt-2">
+        <a href="{% url 'contribution_create' p.pk %}" class="btn btn-sm btn-outline-primary">
+          <i class="fas fa-plus"></i> Add contribution
+        </a>
+      </div>
+    </div>
+  </div>
+  {% empty %}
+  <div class="col-12"><p class="text-muted">No partners added yet. <a href="{% url 'partner_create' %}">Add the first partner</a>.</p></div>
+  {% endfor %}
+</div>
+{% endblock %}

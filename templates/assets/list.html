@@ -1,0 +1,86 @@
+{% extends 'base.html' %}
+
+{% block title %}Company Assets - Ralfiz BMS{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title">Company Assets</h1>
+    <p class="page-subtitle mb-0">Rent advances, security deposits, equipment &amp; other non-cash assets</p>
+  </div>
+  <div class="page-actions">
+    <a href="{% url 'asset_create' %}" class="btn btn-primary">
+      <i class="fas fa-plus"></i> Add Asset
+    </a>
+  </div>
+</div>
+
+<div class="row mb-4">
+  <div class="col-md-6" style="padding: 0.5rem;">
+    <div class="card stat-card">
+      <div class="stat-card-value">&#8377;{{ total_active|floatformat:2 }}</div>
+      <div class="stat-card-label">Total Active Assets</div>
+    </div>
+  </div>
+  <div class="col-md-6" style="padding: 0.5rem;">
+    <div class="card stat-card">
+      <div class="stat-card-value">&#8377;{{ total_refundable|floatformat:2 }}</div>
+      <div class="stat-card-label">Refundable Deposits</div>
+    </div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="table-responsive">
+    <table class="table">
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Counterparty</th>
+          <th class="text-right">Amount</th>
+          <th>Acquired</th>
+          <th>Return Expected</th>
+          <th>Status</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for a in assets %}
+        <tr class="{% if not a.is_active %}text-muted{% endif %}">
+          <td><strong>{{ a.name }}</strong>
+            {% if a.notes %}<div class="text-muted" style="font-size: 0.75rem;">{{ a.notes|truncatechars:60 }}</div>{% endif %}
+          </td>
+          <td>{{ a.get_asset_type_display }}</td>
+          <td>{{ a.counterparty|default:"&mdash;" }}</td>
+          <td class="text-right">&#8377;{{ a.amount|floatformat:2 }}</td>
+          <td>{{ a.acquired_date|date:"d M Y" }}</td>
+          <td>{% if a.expected_return_date %}{{ a.expected_return_date|date:"d M Y" }}{% else %}&mdash;{% endif %}</td>
+          <td>
+            {% if not a.is_active %}<span class="badge badge-secondary">Returned/Disposed</span>
+            {% elif a.is_refundable %}<span class="badge badge-info">Refundable</span>
+            {% else %}<span class="badge badge-primary">Owned</span>
+            {% endif %}
+          </td>
+          <td class="table-actions">
+            <a href="{% url 'asset_update' a.pk %}" class="btn btn-sm btn-ghost btn-icon" title="Edit"><i class="fas fa-edit"></i></a>
+            <a href="{% url 'asset_delete' a.pk %}" class="btn btn-sm btn-ghost btn-icon text-danger" title="Delete"><i class="fas fa-trash"></i></a>
+          </td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="8" class="text-center text-muted" style="padding: 2rem;">No assets recorded yet. <a href="{% url 'asset_create' %}">Add the first one</a> &mdash; e.g. your office rent advance.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<div class="card mt-3">
+  <div class="card-body">
+    <p class="text-muted mb-0" style="font-size: 0.85rem;">
+      <i class="fas fa-info-circle"></i>
+      Deposits stay here until returned &mdash; uncheck "Active" when refunded. These are tracked separately from <a href="{% url 'opening_balance_save' %}">Opening Balance</a> (which is for FY rollover).
+    </p>
+  </div>
+</div>
+{% endblock %}

@@ -19,7 +19,10 @@ from .models import (
     CertificateTemplate, Certificate, LateCheckInGrant
 )
 from crm.models import Lead, LeadNote, DailyActivity, Demo, FollowUp, LeadActivity
-from core.models import Client, Project, Credential, AMCContract, AMCPayment, CredentialRenewal
+from core.models import (
+    Client, Project, Credential, AMCContract, AMCPayment, CredentialRenewal,
+    Partner, CapitalContribution, CompanyAsset, CompanyDocument,
+)
 from .serializers import (
     EmployeeProfileSerializer, EmployeeListSerializer,
     DeviceTokenSerializer, AttendanceSerializer,
@@ -1075,6 +1078,8 @@ class OwnerDashboardView(APIView):
             'cash_in_hand': f"{(cash_card['balance'] if cash_card else Decimal('0')):.2f}",
             'cash_in_account': f"{(bank_card['balance'] if bank_card else Decimal('0')):.2f}",
             'total_assets': f"{cp['total']:.2f}",
+            'other_assets': f"{cp['other_assets']:.2f}",
+            'total_with_assets': f"{cp['total_with_assets']:.2f}",
             'accounts': accounts_payload,
             'pending_transfer_count': pending_qs.count(),
             'receivables_carried_in': f"{(opening.accounts_receivable if opening else Decimal('0')):.2f}",
@@ -1083,6 +1088,13 @@ class OwnerDashboardView(APIView):
             'opening_as_of': opening.as_of_date.isoformat() if opening else None,
             'opening_cash_in_hand': f"{(opening.cash_in_hand if opening else Decimal('0')):.2f}",
             'opening_cash_in_account': f"{(opening.cash_in_account if opening else Decimal('0')):.2f}",
+        }
+
+        # Capital summary (partners + total contributed)
+        total_capital = CapitalContribution.objects.aggregate(t=Sum('amount'))['t'] or Decimal('0')
+        capital_summary = {
+            'total_invested': f'{total_capital:.2f}',
+            'partner_count': Partner.objects.filter(is_active=True).count(),
         }
 
         # Employee counts
@@ -1113,6 +1125,7 @@ class OwnerDashboardView(APIView):
                 'this_month': f'{month_expenses:.2f}',
             },
             'cash_position': cash_position,
+            'capital': capital_summary,
             'recent_payments': recent_payments_data,
             'employees': employee_counts,
             'dues_summary': self._get_dues_summary(today),
@@ -1138,12 +1151,19 @@ class OwnerDashboardView(APIView):
             expiry_date__lte=today + timedelta(days=30), is_active=True
         ).aggregate(total=Sum('renewal_cost'))['total'] or Decimal('0')
 
+        expired_docs_count = CompanyDocument.objects.filter(expiry_date__lt=today).count()
+        expiring_docs_count = CompanyDocument.objects.filter(
+            expiry_date__range=[today, today + timedelta(days=30)]
+        ).count()
+
         return {
             'total_dues': str(total_amc + total_cred),
             'amc_overdue_count': overdue_amc_count,
             'amc_upcoming_count': upcoming_amc_count,
             'credentials_expired_count': expired_creds_count,
             'credentials_expiring_count': expiring_creds_count,
+            'company_docs_expired_count': expired_docs_count,
+            'company_docs_expiring_count': expiring_docs_count,
         }
 
 
@@ -1843,6 +1863,134 @@ class OwnerExpenseListView(APIView):
             'total': str(total),
             'count': len(data),
             'expenses': data,
+        })
+
+
+@extend_schema(tags=['Owner'])
+class OwnerPartnerListView(APIView):
+    """Owner/Partner: List all partners with capital contributions."""
+    permission_classes = [IsAuthenticated, IsOwnerOrPartner]
+
+    def get(self, request):
+        from decimal import Decimal
+
+        partners = Partner.objects.all().order_by('-is_active', 'name')
+        active_only = request.query_params.get('active_only') == 'true'
+        if active_only:
+            partners = partners.filter(is_active=True)
+
+        data = []
+        for p in partners:
+            contributions = list(p.contributions.select_related('bank_account').all())
+            data.append({
+                'id': str(p.id),
+                'name': p.name,
+                'title': p.title,
+                'email': p.email,
+                'phone': p.phone,
+                'join_date': str(p.join_date) if p.join_date else None,
+                'is_active': p.is_active,
+                'photo_url': p.photo.url if p.photo else None,
+                'total_contribution': f'{p.total_contribution:.2f}',
+                'contributions': [{
+                    'id': str(c.id),
+                    'date': str(c.date),
+                    'amount': f'{c.amount:.2f}',
+                    'contribution_type': c.contribution_type,
+                    'contribution_type_display': c.get_contribution_type_display(),
+                    'bank_account_name': c.bank_account.name if c.bank_account else None,
+                    'description': c.description,
+                } for c in contributions],
+            })
+
+        total = sum((Decimal(p['total_contribution']) for p in data), Decimal('0'))
+        return Response({
+            'total_invested': f'{total:.2f}',
+            'count': len(data),
+            'partners': data,
+        })
+
+
+@extend_schema(tags=['Owner'])
+class OwnerCompanyAssetListView(APIView):
+    """Owner/Partner: List all company assets (rent advance, deposits, equipment)."""
+    permission_classes = [IsAuthenticated, IsOwnerOrPartner]
+
+    def get(self, request):
+        from decimal import Decimal
+
+        assets = CompanyAsset.objects.all()
+        active_only = request.query_params.get('active_only') == 'true'
+        if active_only:
+            assets = assets.filter(is_active=True)
+        asset_type = request.query_params.get('asset_type')
+        if asset_type:
+            assets = assets.filter(asset_type=asset_type)
+
+        active_qs = assets.filter(is_active=True)
+        total_active = active_qs.aggregate(t=Sum('amount'))['t'] or Decimal('0')
+        total_refundable = active_qs.filter(is_refundable=True).aggregate(t=Sum('amount'))['t'] or Decimal('0')
+
+        data = [{
+            'id': str(a.id),
+            'name': a.name,
+            'asset_type': a.asset_type,
+            'asset_type_display': a.get_asset_type_display(),
+            'amount': f'{a.amount:.2f}',
+            'acquired_date': str(a.acquired_date),
+            'counterparty': a.counterparty,
+            'expected_return_date': str(a.expected_return_date) if a.expected_return_date else None,
+            'is_refundable': a.is_refundable,
+            'is_active': a.is_active,
+            'notes': a.notes,
+        } for a in assets]
+
+        return Response({
+            'total_active': f'{total_active:.2f}',
+            'total_refundable': f'{total_refundable:.2f}',
+            'count': len(data),
+            'assets': data,
+        })
+
+
+@extend_schema(tags=['Owner'])
+class OwnerCompanyDocumentListView(APIView):
+    """Owner/Partner: List all company documents with expiry tracking."""
+    permission_classes = [IsAuthenticated, IsOwnerOrPartner]
+
+    def get(self, request):
+        from datetime import timedelta
+        today = date.today()
+        documents = CompanyDocument.objects.all()
+        doc_type = request.query_params.get('document_type')
+        if doc_type:
+            documents = documents.filter(document_type=doc_type)
+
+        expiring_only = request.query_params.get('expiring_only') == 'true'
+        if expiring_only:
+            documents = documents.filter(expiry_date__lte=today + timedelta(days=30))
+
+        data = [{
+            'id': str(d.id),
+            'title': d.title,
+            'document_type': d.document_type,
+            'document_type_display': d.get_document_type_display(),
+            'file_url': request.build_absolute_uri(d.file.url) if d.file else None,
+            'issuer': d.issuer,
+            'reference_number': d.reference_number,
+            'issue_date': str(d.issue_date) if d.issue_date else None,
+            'expiry_date': str(d.expiry_date) if d.expiry_date else None,
+            'is_expired': d.is_expired,
+            'is_expiring_soon': d.is_expiring_soon,
+            'days_until_expiry': d.days_until_expiry,
+            'notes': d.notes,
+        } for d in documents]
+
+        return Response({
+            'count': len(data),
+            'expired_count': sum(1 for d in data if d['is_expired']),
+            'expiring_count': sum(1 for d in data if d['is_expiring_soon']),
+            'documents': data,
         })
 
 

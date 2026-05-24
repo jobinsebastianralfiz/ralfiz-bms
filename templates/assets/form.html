@@ -1,0 +1,83 @@
+{% extends 'base.html' %}
+
+{% block title %}{% if asset %}Edit{% else %}New{% endif %} Asset - Ralfiz BMS{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title">{% if asset %}Edit Asset{% else %}New Company Asset{% endif %}</h1>
+    <p class="page-subtitle mb-0">{% if asset %}Update asset details{% else %}Record a rent advance, security deposit, or other non-cash asset{% endif %}</p>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-body">
+    <form method="post">
+      {% csrf_token %}
+
+      <div class="row">
+        <div class="col-md-8" style="padding: 0.5rem;">
+          <label class="form-label">Name *</label>
+          <input type="text" class="form-control" name="name" required value="{{ form_data.name }}" placeholder='e.g. "Office rent advance"'>
+        </div>
+        <div class="col-md-4" style="padding: 0.5rem;">
+          <label class="form-label">Type *</label>
+          <select class="form-control" name="asset_type">
+            {% for k, v in type_choices %}
+            <option value="{{ k }}" {% if form_data.asset_type == k %}selected{% endif %}>{{ v }}</option>
+            {% endfor %}
+          </select>
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="col-md-6" style="padding: 0.5rem;">
+          <label class="form-label">Amount (&#8377;) *</label>
+          <input type="number" step="0.01" min="0" class="form-control" name="amount" required value="{{ form_data.amount }}">
+        </div>
+        <div class="col-md-6" style="padding: 0.5rem;">
+          <label class="form-label">Counterparty</label>
+          <input type="text" class="form-control" name="counterparty" value="{{ form_data.counterparty }}" placeholder='e.g. landlord name'>
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="col-md-6" style="padding: 0.5rem;">
+          <label class="form-label">Acquired date *</label>
+          <input type="date" class="form-control" name="acquired_date" required value="{{ form_data.acquired_date }}">
+        </div>
+        <div class="col-md-6" style="padding: 0.5rem;">
+          <label class="form-label">Expected return date</label>
+          <input type="date" class="form-control" name="expected_return_date" value="{{ form_data.expected_return_date }}">
+          <small class="text-muted">Leave blank for non-refundable assets.</small>
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="col-12" style="padding: 0.5rem;">
+          <label class="me-3">
+            <input type="checkbox" name="is_active" {% if form_data.is_active %}checked{% endif %}> Active
+            <small class="text-muted">(uncheck when refunded / disposed)</small>
+          </label>
+          <label>
+            <input type="checkbox" name="is_refundable" {% if form_data.is_refundable %}checked{% endif %}> Refundable
+            <small class="text-muted">(deposits are refundable; equipment usually isn't)</small>
+          </label>
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="col-12" style="padding: 0.5rem;">
+          <label class="form-label">Notes</label>
+          <textarea class="form-control" name="notes" rows="3">{{ form_data.notes }}</textarea>
+        </div>
+      </div>
+
+      <div class="form-actions mt-3">
+        <a href="{% url 'asset_list' %}" class="btn btn-outline-secondary">Cancel</a>
+        <button type="submit" class="btn btn-primary">{% if asset %}Save changes{% else %}Add asset{% endif %}</button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

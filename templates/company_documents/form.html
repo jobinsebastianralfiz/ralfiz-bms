@@ -1,0 +1,80 @@
+{% extends 'base.html' %}
+
+{% block title %}{% if document %}Edit{% else %}Upload{% endif %} Document - Ralfiz BMS{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title">{% if document %}Edit Document{% else %}Upload Company Document{% endif %}</h1>
+    <p class="page-subtitle mb-0">{% if document %}Update metadata or replace the file{% else %}Statutory or business paperwork — license, registration, agreement, insurance, etc.{% endif %}</p>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-body">
+    <form method="post" enctype="multipart/form-data">
+      {% csrf_token %}
+
+      <div class="row">
+        <div class="col-md-8" style="padding: 0.5rem;">
+          <label class="form-label">Title *</label>
+          <input type="text" class="form-control" name="title" required value="{{ form_data.title }}" placeholder='e.g. "GST Registration Certificate"'>
+        </div>
+        <div class="col-md-4" style="padding: 0.5rem;">
+          <label class="form-label">Type *</label>
+          <select class="form-control" name="document_type">
+            {% for k, v in type_choices %}
+            <option value="{{ k }}" {% if form_data.document_type == k %}selected{% endif %}>{{ v }}</option>
+            {% endfor %}
+          </select>
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="col-12" style="padding: 0.5rem;">
+          <label class="form-label">File {% if not document %}*{% endif %}</label>
+          <input type="file" class="form-control" name="file" {% if not document %}required{% endif %}>
+          {% if document and document.file %}
+          <small class="text-muted">Current: <a href="{% url 'company_document_download' document.pk %}">{{ document.file.name }}</a> &mdash; choose a new file to replace.</small>
+          {% endif %}
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="col-md-6" style="padding: 0.5rem;">
+          <label class="form-label">Issuer</label>
+          <input type="text" class="form-control" name="issuer" value="{{ form_data.issuer }}" placeholder='e.g. "GST Department"'>
+        </div>
+        <div class="col-md-6" style="padding: 0.5rem;">
+          <label class="form-label">Reference / certificate number</label>
+          <input type="text" class="form-control" name="reference_number" value="{{ form_data.reference_number }}">
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="col-md-6" style="padding: 0.5rem;">
+          <label class="form-label">Issue date</label>
+          <input type="date" class="form-control" name="issue_date" value="{{ form_data.issue_date }}">
+        </div>
+        <div class="col-md-6" style="padding: 0.5rem;">
+          <label class="form-label">Expiry date</label>
+          <input type="date" class="form-control" name="expiry_date" value="{{ form_data.expiry_date }}">
+          <small class="text-muted">Leave blank if the document doesn't expire.</small>
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="col-12" style="padding: 0.5rem;">
+          <label class="form-label">Notes</label>
+          <textarea class="form-control" name="notes" rows="3">{{ form_data.notes }}</textarea>
+        </div>
+      </div>
+
+      <div class="form-actions mt-3">
+        <a href="{% url 'company_document_list' %}" class="btn btn-outline-secondary">Cancel</a>
+        <button type="submit" class="btn btn-primary">{% if document %}Save changes{% else %}Upload document{% endif %}</button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}
