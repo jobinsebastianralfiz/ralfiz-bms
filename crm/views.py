@@ -217,6 +217,8 @@ def lead_detail(request, pk):
         'notes': notes,
         'demos': demos,
         'status_choices': Lead.STATUS_CHOICES,
+        'lost_reason_choices': Lead.LOST_REASON_CHOICES,
+        'closed_lost_statuses': Lead.CLOSED_LOST_STATUSES,
     }
     return render(request, 'crm/leads/detail.html', context)
 
@@ -278,6 +280,12 @@ def lead_change_status(request, pk):
 
     if new_status and new_status in dict(Lead.STATUS_CHOICES):
         lead.status = new_status
+        if new_status in Lead.CLOSED_LOST_STATUSES:
+            lost_reason = request.POST.get('lost_reason', '')
+            if lost_reason in dict(Lead.LOST_REASON_CHOICES):
+                lead.lost_reason = lost_reason
+        else:
+            lead.lost_reason = ''
         lead.save()
 
         # Auto-create Client when lead is converted

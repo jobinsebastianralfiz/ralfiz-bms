@@ -453,19 +453,27 @@ class LeadSerializer(serializers.ModelSerializer):
     last_activity = serializers.SerializerMethodField()
     client_id = serializers.UUIDField(source='client.id', read_only=True, default=None)
     client_name = serializers.CharField(source='client.name', read_only=True, default='')
+    status_display = serializers.CharField(source='get_status_display', read_only=True)
+    source_display = serializers.CharField(source='get_source_display', read_only=True)
+    lost_reason_display = serializers.CharField(source='get_lost_reason_display', read_only=True, default='')
 
     class Meta:
         model = Lead
         fields = [
             'id', 'contact_person', 'company_name', 'phone', 'email',
-            'status', 'source', 'assigned_to', 'assigned_to_name',
+            'status', 'status_display', 'source', 'source_display',
+            'assigned_to', 'assigned_to_name',
             'next_follow_up_date', 'closing_probability', 'notes',
+            'lost_reason', 'lost_reason_display',
             'created_by_name', 'notes_list', 'demo_count',
             'upcoming_follow_ups', 'overdue_follow_ups', 'last_activity',
             'client_id', 'client_name',
             'created_at', 'updated_at',
         ]
-        read_only_fields = ['id', 'created_by_name', 'client_id', 'client_name', 'created_at', 'updated_at']
+        read_only_fields = [
+            'id', 'status_display', 'source_display', 'lost_reason_display',
+            'created_by_name', 'client_id', 'client_name', 'created_at', 'updated_at',
+        ]
 
     def get_demo_count(self, obj):
         return obj.demos.count()
@@ -491,7 +499,8 @@ class LeadCreateSerializer(serializers.ModelSerializer):
         model = Lead
         fields = [
             'contact_person', 'company_name', 'phone', 'email',
-            'status', 'source', 'next_follow_up_date', 'closing_probability', 'notes',
+            'status', 'source', 'next_follow_up_date', 'closing_probability',
+            'notes', 'lost_reason',
         ]
 
 

@@ -54,10 +54,31 @@ class Lead(models.Model):
         ('new', 'New'),
         ('contacted', 'Contacted'),
         ('interested', 'Interested'),
+        ('qualified', 'Qualified'),
         ('demo_scheduled', 'Demo Scheduled'),
+        ('demo_completed', 'Demo Completed'),
+        ('proposal_sent', 'Proposal Sent'),
+        ('negotiation', 'Negotiation'),
         ('follow_up', 'Follow-up'),
+        ('on_hold', 'On Hold'),
         ('converted', 'Converted'),
+        ('unqualified', 'Unqualified'),
         ('lost', 'Lost'),
+    ]
+
+    # Statuses that represent a closed/dropped lead and require a reason.
+    CLOSED_LOST_STATUSES = ['lost', 'unqualified']
+
+    LOST_REASON_CHOICES = [
+        ('price', 'Price / Budget too high'),
+        ('no_budget', 'No budget'),
+        ('competitor', 'Chose a competitor'),
+        ('no_response', 'No response / went cold'),
+        ('not_interested', 'Not interested'),
+        ('bad_timing', 'Bad timing'),
+        ('not_a_fit', 'Not a fit / wrong audience'),
+        ('duplicate', 'Duplicate lead'),
+        ('other', 'Other'),
     ]
 
     SOURCE_CHOICES = [
@@ -91,6 +112,12 @@ class Lead(models.Model):
         help_text='Probability of closing (0-100%)'
     )
     notes = models.TextField(blank=True)
+    lost_reason = models.CharField(
+        max_length=20,
+        choices=LOST_REASON_CHOICES,
+        blank=True,
+        help_text='Why the lead was lost/unqualified (set when status is lost or unqualified)',
+    )
     client = models.ForeignKey(
         Client,
         on_delete=models.SET_NULL,
@@ -124,6 +151,31 @@ class Lead(models.Model):
     @property
     def normalized_phone(self):
         return re.sub(r'\D', '', self.phone)
+
+    # Bootstrap-style badge class per status, used in the CRM templates.
+    STATUS_BADGE_MAP = {
+        'new': 'info',
+        'contacted': 'primary',
+        'interested': 'warning',
+        'qualified': 'warning',
+        'demo_scheduled': 'secondary',
+        'demo_completed': 'secondary',
+        'proposal_sent': 'primary',
+        'negotiation': 'warning',
+        'follow_up': 'dark',
+        'on_hold': 'dark',
+        'converted': 'success',
+        'unqualified': 'danger',
+        'lost': 'danger',
+    }
+
+    @property
+    def status_badge(self):
+        return self.STATUS_BADGE_MAP.get(self.status, 'secondary')
+
+    @property
+    def is_closed_lost(self):
+        return self.status in self.CLOSED_LOST_STATUSES
 
     @classmethod
     def check_duplicate(cls, phone=None, email=None, exclude_pk=None):

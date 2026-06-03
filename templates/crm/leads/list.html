@@ -183,7 +183,7 @@
           </td>
           <td><span class="text-sm">{{ lead.phone }}</span></td>
           <td>
-            <span class="badge badge-{% if lead.status == 'new' %}info{% elif lead.status == 'contacted' %}primary{% elif lead.status == 'interested' %}warning{% elif lead.status == 'demo_scheduled' %}secondary{% elif lead.status == 'follow_up' %}dark{% elif lead.status == 'converted' %}success{% elif lead.status == 'lost' %}danger{% endif %}">
+            <span class="badge badge-{{ lead.status_badge }}">
               {{ lead.get_status_display }}
             </span>
           </td>

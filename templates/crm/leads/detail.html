@@ -143,21 +143,44 @@
       <div class="card-body">
         <h3 class="card-title">Status</h3>
         <div class="mb-3">
-          <span class="badge badge-{% if lead.status == 'new' %}info{% elif lead.status == 'contacted' %}primary{% elif lead.status == 'interested' %}warning{% elif lead.status == 'demo_scheduled' %}secondary{% elif lead.status == 'follow_up' %}dark{% elif lead.status == 'converted' %}success{% elif lead.status == 'lost' %}danger{% endif %}" style="font-size: 0.9rem; padding: 6px 14px;">
+          <span class="badge badge-{{ lead.status_badge }}" style="font-size: 0.9rem; padding: 6px 14px;">
             {{ lead.get_status_display }}
           </span>
+          {% if lead.lost_reason %}
+          <div class="text-muted text-sm mt-2">
+            <i class="fas fa-circle-info"></i> Reason: {{ lead.get_lost_reason_display }}
+          </div>
+          {% endif %}
         </div>
         {% if lead.status != 'converted' %}
         <form method="post" action="{% url 'crm:lead_change_status' pk=lead.pk %}">
           {% csrf_token %}
           <label class="form-label">Change Status</label>
-          <select name="status" class="form-control mb-2">
+          <select name="status" id="status-select" class="form-control mb-2" onchange="toggleLostReason()">
             {% for value, label in status_choices %}
             <option value="{{ value }}" {% if lead.status == value %}selected{% endif %}>{{ label }}</option>
             {% endfor %}
           </select>
+          <div id="lost-reason-wrap" style="display: none;">
+            <label class="form-label">Reason</label>
+            <select name="lost_reason" class="form-control mb-2">
+              <option value="">— Select a reason —</option>
+              {% for value, label in lost_reason_choices %}
+              <option value="{{ value }}" {% if lead.lost_reason == value %}selected{% endif %}>{{ label }}</option>
+              {% endfor %}
+            </select>
+          </div>
           <button type="submit" class="btn btn-sm btn-outline-primary w-100">Update Status</button>
         </form>
+        <script>
+          var CLOSED_LOST_STATUSES = {{ closed_lost_statuses|safe }};
+          function toggleLostReason() {
+            var sel = document.getElementById('status-select');
+            var wrap = document.getElementById('lost-reason-wrap');
+            wrap.style.display = CLOSED_LOST_STATUSES.indexOf(sel.value) !== -1 ? 'block' : 'none';
+          }
+          toggleLostReason();
+        </script>
         {% else %}
         <p class="text-muted text-sm mb-0"><i class="fas fa-lock"></i> Converted leads cannot be edited.</p>
         {% endif %}

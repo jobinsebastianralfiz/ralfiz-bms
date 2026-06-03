@@ -3750,6 +3750,21 @@ class CRMLeadStatusUpdateView(APIView):
             lead.next_follow_up_date = request.data['next_follow_up_date']
         if request.data.get('closing_probability') is not None:
             lead.closing_probability = request.data['closing_probability']
+
+        # Capture / clear the lost reason depending on the new status.
+        if new_status in Lead.CLOSED_LOST_STATUSES:
+            lost_reason = request.data.get('lost_reason')
+            valid_reasons = [c[0] for c in Lead.LOST_REASON_CHOICES]
+            if lost_reason and lost_reason not in valid_reasons:
+                return Response(
+                    {'error': f'Invalid lost_reason. Choose from: {valid_reasons}'},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+            if lost_reason:
+                lead.lost_reason = lost_reason
+        else:
+            # Re-activated / progressing lead no longer carries a lost reason.
+            lead.lost_reason = ''
         lead.save()
 
         log_lead_activity(
@@ -4138,7 +4153,7 @@ class CRMDemoStatusUpdateView(APIView):
                 lead.save(update_fields=['client'])
                 log_lead_activity(lead, 'status_change', f'Client "{client.name}" auto-created', user=request.user, metadata={'client_id': str(client.id)})
         elif new_status == 'completed' and lead.status == 'demo_scheduled':
-            lead.status = 'follow_up'
+            lead.status = 'demo_completed'
             lead.save()
             log_lead_activity(lead, 'demo_completed', f'Demo completed. {demo.outcome_notes or ""}', user=request.user, metadata={'demo_id': demo.id})
 
