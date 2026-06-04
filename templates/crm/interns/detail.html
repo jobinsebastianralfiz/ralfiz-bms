@@ -98,7 +98,7 @@
         </div>
         <div class="mb-3">
           <span class="text-muted text-sm d-block">Supervisor</span>
-          {{ profile.supervisor.get_full_name|default:profile.supervisor.username|default:"-" }}
+          {% if profile.supervisor %}{{ profile.supervisor.get_full_name|default:profile.supervisor.username }}{% else %}-{% endif %}
         </div>
         <div class="mb-3">
           <span class="text-muted text-sm d-block">Commission Rate</span>

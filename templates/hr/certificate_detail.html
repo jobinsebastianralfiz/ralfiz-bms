@@ -211,7 +211,7 @@
         </div>
         <div class="mb-2">
           <span class="text-muted">Issued By:</span><br>
-          <strong>{{ cert.issued_by.get_full_name|default:cert.issued_by.username|default:"-" }}</strong>
+          <strong>{% if cert.issued_by %}{{ cert.issued_by.get_full_name|default:cert.issued_by.username }}{% else %}-{% endif %}</strong>
         </div>
         <div class="mb-2">
           <span class="text-muted">Created:</span><br>

@@ -44,7 +44,7 @@
           </div>
           <div class="col-6">
             <label class="text-muted text-sm d-block">Conducted By</label>
-            <span>{{ demo.conducted_by.get_full_name|default:demo.conducted_by.username|default:"-" }}</span>
+            <span>{% if demo.conducted_by %}{{ demo.conducted_by.get_full_name|default:demo.conducted_by.username }}{% else %}-{% endif %}</span>
           </div>
           <div class="col-6">
             <label class="text-muted text-sm d-block">Location</label>
@@ -56,7 +56,7 @@
           </div>
           <div class="col-6">
             <label class="text-muted text-sm d-block">Created By</label>
-            <span>{{ demo.created_by.get_full_name|default:demo.created_by.username|default:"-" }}</span>
+            <span>{% if demo.created_by %}{{ demo.created_by.get_full_name|default:demo.created_by.username }}{% else %}-{% endif %}</span>
           </div>
           {% if demo.outcome_notes %}
           <div class="col-12">

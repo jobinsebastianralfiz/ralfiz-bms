@@ -92,7 +92,7 @@
               {{ demo.get_status_display }}
             </span>
           </td>
-          <td>{{ demo.conducted_by.get_full_name|default:demo.conducted_by.username|default:"-" }}</td>
+          <td>{% if demo.conducted_by %}{{ demo.conducted_by.get_full_name|default:demo.conducted_by.username }}{% else %}-{% endif %}</td>
           <td>{{ demo.closing_probability }}%</td>
           <td class="text-sm">{{ demo.location|default:"-"|truncatewords:5 }}</td>
           <td>

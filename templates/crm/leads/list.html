@@ -199,7 +199,7 @@
             <span class="text-sm">{{ lead.created_at|date:"d M Y" }}</span>
             <br><span class="text-sm text-muted">{{ lead.created_at|date:"h:i A" }}</span>
           </td>
-          <td><span class="text-sm">{{ lead.assigned_to.get_full_name|default:lead.assigned_to.username|default:"-" }}</span></td>
+          <td><span class="text-sm">{% if lead.assigned_to %}{{ lead.assigned_to.get_full_name|default:lead.assigned_to.username }}{% else %}-{% endif %}</span></td>
           <td><span class="text-sm">{{ lead.closing_probability }}%</span></td>
           <td>
             <div class="table-actions">

@@ -103,7 +103,7 @@
       <div class="card-body">
         <div class="mb-2">
           <span class="text-muted">Assigned By:</span><br>
-          <strong>{{ assignment.assigned_by.get_full_name|default:assignment.assigned_by.username|default:"-" }}</strong>
+          <strong>{% if assignment.assigned_by %}{{ assignment.assigned_by.get_full_name|default:assignment.assigned_by.username }}{% else %}-{% endif %}</strong>
         </div>
         <div class="mb-2">
           <span class="text-muted">Created:</span><br>

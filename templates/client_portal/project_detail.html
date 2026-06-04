@@ -316,7 +316,7 @@
             <div class="tpro-title">{{ ev.title }}</div>
             {% if ev.body %}<div class="tpro-body">{{ ev.body|linebreaksbr|truncatewords:60 }}</div>{% endif %}
             <div class="tpro-meta">
-              <span><i class="far fa-user"></i> {{ ev.author.get_full_name|default:ev.author.username|default:"System" }}</span>
+              <span><i class="far fa-user"></i> {% if ev.author %}{{ ev.author.get_full_name|default:ev.author.username }}{% else %}System{% endif %}</span>
               <span>·</span>
               <span><i class="far fa-clock"></i> {{ ev.timestamp|date:"d M Y, H:i" }}</span>
             </div>

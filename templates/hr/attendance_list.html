@@ -35,7 +35,7 @@
           <tr>
             <td>{{ g.employee.full_name }} <span class="text-muted">({{ g.employee.employee_id }})</span></td>
             <td>{{ g.reason }}</td>
-            <td>{{ g.granted_by.get_full_name|default:g.granted_by.username|default:"-" }}</td>
+            <td>{% if g.granted_by %}{{ g.granted_by.get_full_name|default:g.granted_by.username }}{% else %}-{% endif %}</td>
             <td class="text-end">
               <form method="post" action="{% url 'emp_late_checkin_revoke' g.pk %}" style="display:inline;"
                     onsubmit="return confirm('Revoke this late check-in grant?');">

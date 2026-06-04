@@ -89,7 +89,7 @@
               {% endif %}
             </td>
             <td>{{ w.due_date|date:"d M Y"|default:"-" }}</td>
-            <td>{{ w.assigned_by.get_full_name|default:w.assigned_by.username|default:"-" }}</td>
+            <td>{% if w.assigned_by %}{{ w.assigned_by.get_full_name|default:w.assigned_by.username }}{% else %}-{% endif %}</td>
             <td>{{ w.created_at|date:"d M Y" }}</td>
             <td>
               <div class="d-flex gap-1">
