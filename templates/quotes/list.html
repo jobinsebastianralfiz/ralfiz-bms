@@ -123,7 +123,15 @@
             <a href="{% url 'quote_detail' quote.pk %}" class="fw-medium">{{ quote.quote_number }}</a>
             <div class="text-sm text-muted">{{ quote.issue_date|date:"d M Y" }}</div>
           </td>
-          <td><a href="{% url 'client_detail' quote.client.pk %}">{{ quote.client.name }}</a></td>
+          <td>
+            {% if quote.client_id %}
+            <a href="{% url 'client_detail' quote.client.pk %}">{{ quote.client.name }}</a>
+            {% elif quote.lead_id %}
+            <a href="{% url 'crm:lead_detail' quote.lead.pk %}">{{ quote.lead.contact_person }} <span class="badge badge-warning">Lead</span></a>
+            {% else %}
+            <span class="text-muted">—</span>
+            {% endif %}
+          </td>
           <td>{{ quote.title }}</td>
           <td class="fw-medium">&#8377;{{ quote.total_amount|floatformat:2 }}</td>
           <td class="{% if quote.is_expired %}text-danger{% elif quote.is_expiring_soon %}text-warning fw-medium{% endif %}">

@@ -44,8 +44,8 @@
           </div>
           <div class="row">
             <div class="col-4">
-              <div class="text-sm text-muted">Client</div>
-              <div class="fw-medium">{{ quote.client.name }}</div>
+              <div class="text-sm text-muted">{% if quote.is_lead_quote %}Lead{% else %}Client{% endif %}</div>
+              <div class="fw-medium">{{ quote.recipient_name }}</div>
             </div>
             <div class="col-4">
               <div class="text-sm text-muted">Amount</div>

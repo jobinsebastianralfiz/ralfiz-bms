@@ -7,7 +7,10 @@
     <h1 class="page-title">Attendance</h1>
     <p class="page-subtitle mb-0">View employee attendance records</p>
   </div>
-  <div>
+  <div class="d-flex gap-2">
+    <a href="{% url 'emp_attendance_report' %}?month={{ month }}&year={{ year }}" class="btn btn-outline-primary">
+      <i class="fas fa-chart-bar me-1"></i> Monthly Report
+    </a>
     <button type="button" class="btn btn-primary" onclick="openLateGrantModal()">
       <i class="fas fa-clock me-1"></i> Allow Late Check-in
     </button>

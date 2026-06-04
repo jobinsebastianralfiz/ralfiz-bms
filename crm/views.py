@@ -211,11 +211,13 @@ def lead_detail(request, pk):
 
     notes = lead.lead_notes.select_related('created_by').all()
     demos = lead.demos.select_related('conducted_by').all()
+    quotes = lead.quotes.order_by('-created_at')
 
     context = {
         'lead': lead,
         'notes': notes,
         'demos': demos,
+        'quotes': quotes,
         'status_choices': Lead.STATUS_CHOICES,
         'lost_reason_choices': Lead.LOST_REASON_CHOICES,
         'closed_lost_statuses': Lead.CLOSED_LOST_STATUSES,
@@ -299,6 +301,8 @@ def lead_change_status(request, pk):
             )
             lead.client = client
             lead.save(update_fields=['client'])
+            # Back-link any quotes raised for this lead to the new client.
+            linked = lead.quotes.filter(client__isnull=True).update(client=client)
             LeadActivity.objects.create(
                 lead=lead,
                 activity_type='status_change',
@@ -306,7 +310,10 @@ def lead_change_status(request, pk):
                 created_by=request.user,
                 metadata={'client_id': str(client.id), 'client_name': client.name},
             )
-            messages.success(request, f'Lead converted! Client "{client.name}" has been created.')
+            msg = f'Lead converted! Client "{client.name}" has been created.'
+            if linked:
+                msg += f' {linked} quote(s) linked to the client.'
+            messages.success(request, msg)
         else:
             messages.success(request, f'Lead status changed to {lead.get_status_display()}.')
     else:
@@ -344,6 +351,8 @@ def lead_create_project(request, pk):
         description=description or f'Created from CRM lead #{lead.pk}',
         status='lead',
     )
+    # Attach the lead's quotes (that have no project yet) to the new project.
+    linked = lead.quotes.filter(project__isnull=True).update(project=project)
     LeadActivity.objects.create(
         lead=lead,
         activity_type='status_change',
@@ -351,8 +360,11 @@ def lead_create_project(request, pk):
         created_by=request.user,
         metadata={'project_id': str(project.id), 'project_name': project.name},
     )
-    messages.success(request, f'Project "{project.name}" created successfully!')
-    return redirect('core:project_detail', pk=project.id)
+    msg = f'Project "{project.name}" created successfully!'
+    if linked:
+        msg += f' {linked} quote(s) linked to the project.'
+    messages.success(request, msg)
+    return redirect('project_detail', pk=project.id)
 
 
 @login_required
@@ -788,6 +800,7 @@ def demo_update_status(request, pk):
                 )
                 demo.lead.client = client
                 demo.lead.save(update_fields=['client'])
+                linked = demo.lead.quotes.filter(client__isnull=True).update(client=client)
                 LeadActivity.objects.create(
                     lead=demo.lead,
                     activity_type='status_change',
@@ -795,7 +808,10 @@ def demo_update_status(request, pk):
                     created_by=request.user,
                     metadata={'client_id': str(client.id), 'client_name': client.name},
                 )
-                messages.success(request, f'Demo converted! Client "{client.name}" has been created.')
+                msg = f'Demo converted! Client "{client.name}" has been created.'
+                if linked:
+                    msg += f' {linked} quote(s) linked to the client.'
+                messages.success(request, msg)
                 return redirect('crm:demo_detail', pk=pk)
         elif new_status == 'completed' and demo.lead.status == 'demo_scheduled':
             demo.lead.status = 'follow_up'

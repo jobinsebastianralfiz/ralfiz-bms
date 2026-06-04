@@ -99,6 +99,7 @@ urlpatterns = [
     path('owner/invoices/<uuid:pk>/payments/', views.OwnerPaymentCreateView.as_view(), name='owner_payment_create'),
     path('owner/invoices/<uuid:pk>/payments/<uuid:payment_id>/', views.OwnerPaymentDeleteView.as_view(), name='owner_payment_delete'),
     path('owner/quotes/create/', views.OwnerQuoteCreateView.as_view(), name='owner_quote_create'),
+    path('owner/quotes/<uuid:pk>/', views.OwnerQuoteDetailView.as_view(), name='owner_quote_detail'),
     path('owner/quotes/<uuid:pk>/edit/', views.OwnerQuoteUpdateDeleteView.as_view(), name='owner_quote_edit'),
     path('owner/quotes/<uuid:pk>/pdf/', views.OwnerQuotePDFView.as_view(), name='owner_quote_pdf'),
     path('owner/expenses/create/', views.OwnerExpenseCreateView.as_view(), name='owner_expense_create'),
@@ -176,6 +177,7 @@ urlpatterns = [
     path('crm/follow-ups/<int:follow_up_id>/', views.CRMFollowUpDetailView.as_view(), name='crm_follow_up_detail'),
     path('crm/follow-ups/upcoming/', views.CRMUpcomingFollowUpsView.as_view(), name='crm_upcoming_follow_ups'),
     path('crm/leads/<int:lead_id>/create-project/', views.CRMLeadCreateProjectView.as_view(), name='crm_lead_create_project'),
+    path('crm/leads/<int:lead_id>/quotes/', views.CRMLeadQuoteListCreateView.as_view(), name='crm_lead_quotes'),
 
     # CRM Reports
     path('crm/reports/intern-leads/', views.CRMInternLeadReportView.as_view(), name='crm_intern_lead_report'),

@@ -367,7 +367,10 @@ class Quote(models.Model):
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     quote_number = models.CharField(max_length=20, unique=True, editable=False)
-    client = models.ForeignKey(Client, on_delete=models.CASCADE, related_name='quotes')
+    client = models.ForeignKey(Client, on_delete=models.CASCADE, null=True, blank=True, related_name='quotes')
+    # A quote may target a CRM lead that has not been converted to a client yet.
+    # When the lead converts, the client/project are created and back-linked here.
+    lead = models.ForeignKey('crm.Lead', on_delete=models.SET_NULL, null=True, blank=True, related_name='quotes')
     project = models.ForeignKey(Project, on_delete=models.SET_NULL, null=True, blank=True, related_name='quotes')
     title = models.CharField(max_length=255)
     description = models.TextField(blank=True)
@@ -396,7 +399,55 @@ class Quote(models.Model):
         ordering = ['-created_at']
 
     def __str__(self):
-        return f"{self.quote_number} - {self.client}"
+        return f"{self.quote_number} - {self.recipient_name}"
+
+    def clean(self):
+        from django.core.exceptions import ValidationError
+        if not self.client_id and not self.lead_id:
+            raise ValidationError('A quote must have either a client or a lead.')
+
+    # ---- Recipient: falls back from client -> lead so lead-quotes render too ----
+    @property
+    def is_lead_quote(self):
+        return self.client_id is None and self.lead_id is not None
+
+    @property
+    def recipient_name(self):
+        if self.client_id:
+            return self.client.name
+        if self.lead_id:
+            return self.lead.contact_person
+        return 'No recipient'
+
+    @property
+    def recipient_company(self):
+        if self.client_id:
+            return self.client.company_name or self.client.name
+        if self.lead_id:
+            return self.lead.company_name or self.lead.contact_person
+        return ''
+
+    @property
+    def recipient_email(self):
+        if self.client_id:
+            return self.client.email
+        if self.lead_id:
+            return self.lead.email
+        return ''
+
+    @property
+    def recipient_phone(self):
+        if self.client_id:
+            return self.client.phone
+        if self.lead_id:
+            return self.lead.phone
+        return ''
+
+    @property
+    def recipient_gst(self):
+        if self.client_id:
+            return self.client.gst_number
+        return ''
 
     def save(self, *args, **kwargs):
         if not self.quote_number:
@@ -420,9 +471,14 @@ class Quote(models.Model):
             self.project.save(update_fields=['estimated_budget'])
 
     def calculate_totals(self):
-        self.subtotal = sum(item.amount for item in self.items.all())
-        taxable_amount = self.subtotal - self.discount
-        self.tax_amount = taxable_amount * (self.tax_rate / 100)
+        from decimal import Decimal
+        # Values assigned before save() may be int/float (e.g. from API payloads);
+        # coerce to Decimal so the arithmetic never mixes types.
+        self.subtotal = sum((item.amount for item in self.items.all()), Decimal('0'))
+        discount = Decimal(str(self.discount or 0))
+        tax_rate = Decimal(str(self.tax_rate or 0))
+        taxable_amount = self.subtotal - discount
+        self.tax_amount = taxable_amount * (tax_rate / Decimal('100'))
         self.total_amount = taxable_amount + self.tax_amount
         self.save()
 
