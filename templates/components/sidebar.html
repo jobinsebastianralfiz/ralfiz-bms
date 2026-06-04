@@ -11,7 +11,16 @@
     </a>
   </div>
 
+  <div class="sidebar-search">
+    <i class="fas fa-search sidebar-search-icon"></i>
+    <input type="text" id="sidebarSearch" class="sidebar-search-input" placeholder="Search menu..." autocomplete="off" aria-label="Search menu">
+    <button type="button" class="sidebar-search-clear" id="sidebarSearchClear" aria-label="Clear search" hidden>
+      <i class="fas fa-times"></i>
+    </button>
+  </div>
+
   <nav class="sidebar-nav">
+    <div class="sidebar-search-empty" id="sidebarSearchEmpty" hidden>No menu items found</div>
     {% if request.user.team_profile %}
     <!-- Team Member Navigation -->
     <div class="nav-section">

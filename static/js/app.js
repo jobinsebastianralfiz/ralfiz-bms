@@ -416,3 +416,59 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 });
+
+// ==================== Sidebar Menu Search ====================
+(function () {
+  const input = document.getElementById('sidebarSearch');
+  if (!input) return;
+
+  const clearBtn = document.getElementById('sidebarSearchClear');
+  const emptyMsg = document.getElementById('sidebarSearchEmpty');
+  const nav = document.querySelector('.sidebar-nav');
+  const items = Array.prototype.slice.call(nav.querySelectorAll('.nav-item'));
+  const sections = Array.prototype.slice.call(nav.querySelectorAll('.nav-section'));
+
+  function applyFilter(query) {
+    const q = query.trim().toLowerCase();
+    let anyVisible = false;
+
+    items.forEach(function (item) {
+      const label = (item.textContent || '').trim().toLowerCase();
+      const match = q === '' || label.indexOf(q) !== -1;
+      item.classList.toggle('search-hidden', !match);
+      if (match) anyVisible = true;
+    });
+
+    // Hide a section (and its title) when none of its items match.
+    sections.forEach(function (section) {
+      const visibleItem = section.querySelector('.nav-item:not(.search-hidden)');
+      section.classList.toggle('search-hidden', q !== '' && !visibleItem);
+    });
+
+    if (emptyMsg) emptyMsg.hidden = anyVisible || q === '';
+    if (clearBtn) clearBtn.hidden = q === '';
+  }
+
+  input.addEventListener('input', function () {
+    applyFilter(input.value);
+  });
+
+  input.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape') {
+      input.value = '';
+      applyFilter('');
+      input.blur();
+    } else if (e.key === 'Enter') {
+      const first = nav.querySelector('.nav-item:not(.search-hidden)');
+      if (first) first.click();
+    }
+  });
+
+  if (clearBtn) {
+    clearBtn.addEventListener('click', function () {
+      input.value = '';
+      applyFilter('');
+      input.focus();
+    });
+  }
+})();
