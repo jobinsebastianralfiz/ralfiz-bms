@@ -1377,11 +1377,22 @@ def quote_detail(request, pk):
 
 @login_required
 def quote_create(request):
+    from crm.models import Lead
     clients = Client.objects.filter(is_active=True)
     projects = Project.objects.select_related('client').all()
 
+    # Quote can be raised directly for an unconverted CRM lead.
+    lead_id = request.POST.get('lead') or request.GET.get('lead')
+    lead = None
+    if lead_id:
+        lead = Lead.objects.filter(pk=lead_id).first()
+
     if request.method == 'POST':
         from decimal import Decimal, InvalidOperation
+
+        if not request.POST.get('client') and not lead:
+            messages.error(request, 'Select a client, or create the quote from a lead.')
+            return redirect('quote_create')
 
         # Safe tax_rate conversion - default to 0 if empty or invalid
         try:
@@ -1402,7 +1413,8 @@ def quote_create(request):
         start_date = start_date_val if start_date_val else None
 
         quote = Quote.objects.create(
-            client_id=request.POST.get('client'),
+            client_id=request.POST.get('client') or None,
+            lead=lead if lead else None,
             project_id=request.POST.get('project') or None,
             title=request.POST.get('title'),
             description=request.POST.get('description', ''),
@@ -1454,6 +1466,7 @@ def quote_create(request):
     return render(request, 'quotes/form.html', {
         'clients': clients,
         'projects': projects,
+        'lead': lead,
         'form_title': 'Create New Quote',
         'status_choices': Quote.STATUS_CHOICES,
         'today': today.strftime('%Y-%m-%d'),
@@ -1675,6 +1688,7 @@ def quote_clone(request, pk):
 
     new_quote = Quote.objects.create(
         client=original_quote.client,
+        lead=original_quote.lead,
         project=original_quote.project,
         title=f"Copy of {original_quote.title}",
         description=original_quote.description,
@@ -1726,6 +1740,11 @@ def quote_convert(request, pk):
         existing_invoice = Invoice.objects.get(quote=quote)
         messages.warning(request, f'This quote has already been converted to invoice {existing_invoice.invoice_number}.')
         return redirect('invoice_detail', pk=existing_invoice.pk)
+
+    # A lead quote has no client yet; convert the lead first.
+    if not quote.client_id:
+        messages.error(request, 'This quote is for a lead. Convert the lead to a client before raising an invoice.')
+        return redirect('quote_detail', pk=quote.pk)
 
     from decimal import Decimal
 
@@ -3759,7 +3778,7 @@ def global_search(request):
             'type': 'quote',
             'icon': 'fa-file-alt',
             'title': quote.quote_number,
-            'subtitle': f'{quote.client.name} - {quote.title}',
+            'subtitle': f'{quote.recipient_name} - {quote.title}',
             'url': f'/quotes/{quote.pk}/'
         })
 
@@ -5531,7 +5550,7 @@ def send_quote_email(request, pk):
     company = CompanySettings.get_settings()
 
     if request.method == 'POST':
-        to_email = request.POST.get('to_email', quote.client.email)
+        to_email = request.POST.get('to_email', quote.recipient_email)
         subject = request.POST.get('subject', f'Quote {quote.quote_number} from {company.company_name}')
         message = request.POST.get('message', '')
 
@@ -5589,7 +5608,7 @@ def send_quote_email(request, pk):
         'quote': quote,
         'company': company,
         'default_subject': f'Quote {quote.quote_number} from {company.company_name}',
-        'default_message': f'Dear {quote.client.name},\n\nPlease find attached quote {quote.quote_number} for {quote.title}.\n\nTotal Amount: ₹{quote.total_amount}\nValid Until: {quote.valid_until.strftime("%d %b %Y") if quote.valid_until else "N/A"}\n\nPlease let us know if you have any questions.\n\nBest regards,\n{company.company_name}',
+        'default_message': f'Dear {quote.recipient_name},\n\nPlease find attached quote {quote.quote_number} for {quote.title}.\n\nTotal Amount: ₹{quote.total_amount}\nValid Until: {quote.valid_until.strftime("%d %b %Y") if quote.valid_until else "N/A"}\n\nPlease let us know if you have any questions.\n\nBest regards,\n{company.company_name}',
     }
     return render(request, 'emails/send_quote.html', context)
 
@@ -6076,6 +6095,51 @@ def emp_employee_detail(request, pk):
         messages.success(request, 'Face photo removed.')
         return redirect('emp_employee_detail', pk=pk)
 
+    if request.method == 'POST' and request.POST.get('action') == 'mark_attendance':
+        from datetime import datetime, time as dtime
+        from django.utils.dateparse import parse_date
+        att_date = parse_date(request.POST.get('att_date') or '') or timezone.localdate()
+        att_status = request.POST.get('att_status', 'present')
+        check_in_raw = request.POST.get('check_in', '').strip()
+        check_out_raw = request.POST.get('check_out', '').strip()
+        notes = request.POST.get('notes', '').strip()
+
+        def _aware_dt(date_part, time_str):
+            if not time_str:
+                return None
+            try:
+                hh, mm = [int(x) for x in time_str.split(':')[:2]]
+            except (ValueError, IndexError):
+                return None
+            naive = datetime.combine(date_part, dtime(hh, mm))
+            return timezone.make_aware(naive, timezone.get_current_timezone())
+
+        check_in_dt = _aware_dt(att_date, check_in_raw)
+        check_out_dt = _aware_dt(att_date, check_out_raw)
+
+        if check_out_dt and check_in_dt and check_out_dt < check_in_dt:
+            messages.error(request, 'Check-out time cannot be earlier than check-in time.')
+            return redirect('emp_employee_detail', pk=pk)
+
+        worked_hours = None
+        if check_in_dt and check_out_dt:
+            worked_hours = round((check_out_dt - check_in_dt).total_seconds() / 3600, 2)
+
+        defaults = {
+            'status': att_status,
+            'verification_method': 'manual',
+            'check_in': check_in_dt,
+            'check_out': check_out_dt,
+            'worked_hours': worked_hours,
+            'notes': notes,
+        }
+        att, created = Attendance.objects.update_or_create(
+            employee=employee, date=att_date, defaults=defaults,
+        )
+        verb = 'recorded' if created else 'updated'
+        messages.success(request, f'Attendance {verb} for {att_date:%d %b %Y}.')
+        return redirect('emp_employee_detail', pk=pk)
+
     recent_attendance = Attendance.objects.filter(employee=employee).order_by('-date')[:15]
     leave_requests = LeaveRequest.objects.filter(employee=employee).order_by('-created_at')[:10]
     work_assignments = WorkAssignment.objects.filter(assigned_to=employee).order_by('-created_at')[:10]
@@ -6088,6 +6152,8 @@ def emp_employee_detail(request, pk):
         'roles': Employee.ROLE_CHOICES,
         'departments': Employee.DEPARTMENT_CHOICES,
         'statuses': Employee.STATUS_CHOICES,
+        'attendance_statuses': Attendance.STATUS_CHOICES,
+        'today': timezone.localdate(),
     }
     return render(request, 'hr/employee_detail.html', context)
 
@@ -6366,6 +6432,109 @@ def emp_late_checkin_revoke(request, pk):
         grant.delete()
         messages.success(request, f'Revoked late check-in for {name}.')
     return redirect('emp_attendance_list')
+
+
+@login_required
+def emp_attendance_report(request):
+    """Monthly attendance summary per employee, with Excel export."""
+    from employees.models import Attendance, Employee
+    from calendar import monthrange
+    from datetime import date
+
+    month = int(request.GET.get('month', timezone.now().month))
+    year = int(request.GET.get('year', timezone.now().year))
+    department = request.GET.get('department', '')
+
+    employees = Employee.objects.select_related('user').filter(status='active')
+    if department:
+        employees = employees.filter(department=department)
+    employees = employees.order_by('employee_id')
+
+    records = Attendance.objects.filter(date__month=month, date__year=year)
+    if department:
+        records = records.filter(employee__department=department)
+
+    # Bucket attendance by employee id for in-memory aggregation.
+    by_employee = {}
+    for rec in records:
+        by_employee.setdefault(rec.employee_id, []).append(rec)
+
+    working_days = monthrange(year, month)[1]
+
+    rows = []
+    totals = {'present': 0, 'late': 0, 'half_day': 0, 'work_from_home': 0,
+              'absent': 0, 'hours': 0.0}
+    for emp in employees:
+        emp_records = by_employee.get(emp.id, [])
+        counts = {'present': 0, 'late': 0, 'half_day': 0, 'work_from_home': 0, 'absent': 0}
+        hours = 0.0
+        for rec in emp_records:
+            if rec.status in counts:
+                counts[rec.status] += 1
+            hours += float(rec.worked_hours or rec.working_hours or 0)
+        present_equiv = counts['present'] + counts['late'] + counts['work_from_home'] + counts['half_day'] * 0.5
+        rows.append({
+            'employee': emp,
+            'present': counts['present'],
+            'late': counts['late'],
+            'half_day': counts['half_day'],
+            'work_from_home': counts['work_from_home'],
+            'absent': counts['absent'],
+            'days_present': round(present_equiv, 1),
+            'hours': round(hours, 2),
+        })
+        for key in counts:
+            totals[key] += counts[key]
+        totals['hours'] += hours
+
+    totals['hours'] = round(totals['hours'], 2)
+
+    if request.GET.get('export') == 'xlsx':
+        from openpyxl import Workbook
+        from openpyxl.styles import Font, PatternFill
+        from django.http import HttpResponse
+
+        wb = Workbook()
+        ws = wb.active
+        ws.title = 'Attendance'
+        header_font = Font(bold=True, color='FFFFFF')
+        header_fill = PatternFill(start_color='0D9488', end_color='0D9488', fill_type='solid')
+        headers = ['Employee ID', 'Name', 'Department', 'Present', 'Late',
+                   'Half Day', 'WFH', 'Absent', 'Days Present', 'Total Hours']
+        ws.append(headers)
+        for cell in ws[1]:
+            cell.font = header_font
+            cell.fill = header_fill
+        for r in rows:
+            emp = r['employee']
+            ws.append([
+                emp.employee_id, emp.full_name, emp.get_department_display(),
+                r['present'], r['late'], r['half_day'], r['work_from_home'],
+                r['absent'], r['days_present'], r['hours'],
+            ])
+        for col_cells in ws.columns:
+            length = max((len(str(cell.value or '')) for cell in col_cells), default=10)
+            ws.column_dimensions[col_cells[0].column_letter].width = min(max(length + 2, 12), 40)
+
+        response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+        response['Content-Disposition'] = (
+            f'attachment; filename="attendance_report_{year}_{month:02d}.xlsx"'
+        )
+        wb.save(response)
+        return response
+
+    context = {
+        'rows': rows,
+        'totals': totals,
+        'month': month,
+        'year': year,
+        'working_days': working_days,
+        'department': department,
+        'departments': Employee.DEPARTMENT_CHOICES,
+        'months': [(i, date(2000, i, 1).strftime('%B')) for i in range(1, 13)],
+        'years': range(timezone.now().year - 3, timezone.now().year + 1),
+    }
+    return render(request, 'hr/attendance_report.html', context)
 
 
 @login_required

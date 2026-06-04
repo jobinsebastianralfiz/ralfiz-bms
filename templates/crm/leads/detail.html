@@ -135,6 +135,35 @@
         {% endfor %}
       </div>
     </div>
+
+    <!-- Quotes -->
+    <div class="card mt-4">
+      <div class="card-body">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <h3 class="card-title mb-0">Quotes</h3>
+          <a href="{% url 'quote_create' %}?lead={{ lead.pk }}" class="btn btn-sm btn-outline-primary">
+            <i class="fas fa-plus"></i> Create Quote
+          </a>
+        </div>
+
+        {% for quote in quotes %}
+        <div style="border-bottom: 1px solid var(--border-color); padding: 0.75rem 0;">
+          <div class="d-flex justify-content-between align-items-center">
+            <div>
+              <a href="{% url 'quote_detail' pk=quote.pk %}" class="fw-medium">{{ quote.quote_number }}</a>
+              <span class="badge badge-secondary ms-2">{{ quote.get_status_display }}</span>
+            </div>
+            <span class="fw-medium">&#8377;{{ quote.total_amount|floatformat:2 }}</span>
+          </div>
+          <span class="text-muted text-sm">
+            {{ quote.title }} | Valid until {{ quote.valid_until|date:"d M Y"|default:"-" }}
+          </span>
+        </div>
+        {% empty %}
+        <p class="text-muted">No quotes yet. You can send a quote before converting the lead.</p>
+        {% endfor %}
+      </div>
+    </div>
   </div>
 
   <!-- Sidebar -->

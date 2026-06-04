@@ -1793,7 +1793,7 @@ class OwnerQuoteListView(APIView):
     def get(self, request):
         from core.models import Quote
 
-        quotes = Quote.objects.select_related('client', 'project').all()
+        quotes = Quote.objects.select_related('client', 'project', 'lead').all()
 
         status_filter = request.query_params.get('status')
         if status_filter:
@@ -1803,12 +1803,20 @@ class OwnerQuoteListView(APIView):
         if client_id:
             quotes = quotes.filter(client_id=client_id)
 
+        lead_id = request.query_params.get('lead_id')
+        if lead_id:
+            quotes = quotes.filter(lead_id=lead_id)
+
         data = [{
             'id': str(q.id),
             'quote_number': q.quote_number,
             'title': q.title,
             'client_name': q.client.name if q.client else '',
             'project_name': q.project.name if q.project else '',
+            'lead_id': q.lead_id,
+            'lead_name': q.lead.contact_person if q.lead else '',
+            'is_lead_quote': q.is_lead_quote,
+            'recipient_name': q.recipient_name,
             'status': q.status,
             'total_amount': str(q.total_amount),
             'issue_date': str(q.issue_date),
@@ -1817,6 +1825,63 @@ class OwnerQuoteListView(APIView):
         } for q in quotes]
 
         return Response(data)
+
+
+@extend_schema(tags=['Owner'])
+class OwnerQuoteDetailView(APIView):
+    """Owner/Partner: Retrieve a single quote with its line items."""
+    permission_classes = [IsAuthenticated, IsOwnerOrPartner]
+
+    def get(self, request, pk):
+        from core.models import Quote
+        try:
+            q = Quote.objects.select_related('client', 'project', 'lead').get(pk=pk)
+        except Quote.DoesNotExist:
+            return Response({'error': 'Quote not found'}, status=status.HTTP_404_NOT_FOUND)
+
+        items = [{
+            'id': str(it.id),
+            'description': it.description,
+            'details': it.details,
+            'quantity': str(it.quantity),
+            'unit_price': str(it.unit_price),
+            'amount': str(it.amount),
+            'order': it.order,
+        } for it in q.items.all()]
+
+        return Response({
+            'id': str(q.id),
+            'quote_number': q.quote_number,
+            'title': q.title,
+            'description': q.description,
+            'client_name': q.client.name if q.client else '',
+            'client_id': str(q.client.id) if q.client else '',
+            'project_name': q.project.name if q.project else '',
+            'project_id': str(q.project.id) if q.project else '',
+            'lead_id': q.lead_id,
+            'lead_name': q.lead.contact_person if q.lead else '',
+            'is_lead_quote': q.is_lead_quote,
+            'recipient_name': q.recipient_name,
+            'recipient_company': q.recipient_company,
+            'recipient_email': q.recipient_email,
+            'recipient_phone': q.recipient_phone,
+            'status': q.status,
+            'subtotal': str(q.subtotal),
+            'discount': str(q.discount),
+            'tax_rate': str(q.tax_rate),
+            'tax_amount': str(q.tax_amount),
+            'total_amount': str(q.total_amount),
+            'issue_date': str(q.issue_date) if q.issue_date else None,
+            'valid_until': str(q.valid_until) if q.valid_until else None,
+            'is_expired': q.is_expired,
+            'duration': q.duration,
+            'start_date': str(q.start_date) if q.start_date else None,
+            'deliverables': q.deliverables,
+            'payment_terms': q.payment_terms,
+            'terms': q.terms,
+            'client_notes': q.client_notes,
+            'items': items,
+        })
 
 
 @extend_schema(tags=['Owner'])
@@ -2569,19 +2634,23 @@ class OwnerQuoteCreateView(APIView):
     def post(self, request):
         from core.models import Quote, QuoteItem
         data = request.data
-        if not data.get('client_id') or not data.get('title') or not data.get('valid_until'):
-            return Response({'error': 'client_id, title, and valid_until are required'},
+        if not data.get('title') or not data.get('valid_until'):
+            return Response({'error': 'title and valid_until are required'},
+                            status=status.HTTP_400_BAD_REQUEST)
+        if not data.get('client_id') and not data.get('lead_id'):
+            return Response({'error': 'Either client_id or lead_id is required'},
                             status=status.HTTP_400_BAD_REQUEST)
 
         quote = Quote(
-            client_id=data['client_id'],
+            client_id=data.get('client_id') or None,
+            lead_id=data.get('lead_id') or None,
             project_id=data.get('project_id') or None,
             title=data.get('title', ''),
             description=data.get('description', ''),
             status=data.get('status', 'draft'),
             discount=data.get('discount', 0),
             tax_rate=data.get('tax_rate', 0),
-            issue_date=data.get('issue_date') or None,
+            issue_date=data.get('issue_date') or timezone.now().date(),
             valid_until=data['valid_until'],
             duration=data.get('duration', ''),
             start_date=data.get('start_date') or None,
@@ -3786,6 +3855,8 @@ class CRMLeadStatusUpdateView(APIView):
             )
             lead.client = client
             lead.save(update_fields=['client'])
+            # Back-link any quotes raised for this lead to the new client.
+            lead.quotes.filter(client__isnull=True).update(client=client)
             log_lead_activity(
                 lead, 'status_change',
                 f'Client "{client.name}" auto-created from converted lead',
@@ -4524,6 +4595,9 @@ class CRMLeadCreateProjectView(APIView):
             notes=request.data.get('notes', ''),
         )
 
+        # Attach the lead's quotes (that have no project yet) to the new project.
+        lead.quotes.filter(project__isnull=True).update(project=project)
+
         log_lead_activity(
             lead, 'status_change',
             f'Project "{project.name}" created for client "{lead.client.name}"',
@@ -4538,6 +4612,87 @@ class CRMLeadCreateProjectView(APIView):
             'status': project.status,
             'client_id': str(lead.client.id),
             'client_name': lead.client.name,
+        }, status=status.HTTP_201_CREATED)
+
+
+# ============== Quotes for a Lead ==============
+
+@extend_schema(tags=['CRM - Leads'])
+class CRMLeadQuoteListCreateView(APIView):
+    """List or create quotes for a CRM lead (quote first, convert later)."""
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, lead_id):
+        lead = Lead.objects.filter(id=lead_id).first()
+        if not lead:
+            return Response({'error': 'Lead not found'}, status=status.HTTP_404_NOT_FOUND)
+        data = [{
+            'id': str(q.id),
+            'quote_number': q.quote_number,
+            'title': q.title,
+            'status': q.status,
+            'total_amount': str(q.total_amount),
+            'issue_date': str(q.issue_date) if q.issue_date else None,
+            'valid_until': str(q.valid_until) if q.valid_until else None,
+            'is_expired': q.is_expired,
+            'recipient_name': q.recipient_name,
+        } for q in lead.quotes.order_by('-created_at')]
+        return Response(data)
+
+    def post(self, request, lead_id):
+        from core.models import Quote, QuoteItem
+        lead = Lead.objects.filter(id=lead_id).first()
+        if not lead:
+            return Response({'error': 'Lead not found'}, status=status.HTTP_404_NOT_FOUND)
+
+        data = request.data
+        if not data.get('title') or not data.get('valid_until'):
+            return Response({'error': 'title and valid_until are required'},
+                            status=status.HTTP_400_BAD_REQUEST)
+
+        quote = Quote(
+            lead=lead,
+            client=lead.client,  # already linked if the lead was converted, else None
+            title=data.get('title', ''),
+            description=data.get('description', ''),
+            status=data.get('status', 'draft'),
+            discount=data.get('discount', 0),
+            tax_rate=data.get('tax_rate', 0),
+            issue_date=data.get('issue_date') or timezone.now().date(),
+            valid_until=data['valid_until'],
+            duration=data.get('duration', ''),
+            start_date=data.get('start_date') or None,
+            deliverables=data.get('deliverables', ''),
+            payment_terms=data.get('payment_terms', '50-50'),
+            terms=data.get('terms', ''),
+            client_notes=data.get('client_notes', ''),
+            notes=data.get('notes', ''),
+        )
+        quote.save()
+
+        for i, item in enumerate(data.get('items', [])):
+            QuoteItem.objects.create(
+                quote=quote,
+                description=item.get('description', ''),
+                details=item.get('details', ''),
+                quantity=item.get('quantity', 1),
+                unit_price=item.get('unit_price', 0),
+                amount=float(item.get('quantity', 1)) * float(item.get('unit_price', 0)),
+                order=i,
+            )
+        quote.calculate_totals()
+
+        log_lead_activity(
+            lead, 'note_added',
+            f'Quote "{quote.quote_number}" created for lead',
+            user=request.user,
+            metadata={'quote_id': str(quote.id), 'quote_number': quote.quote_number},
+        )
+        return Response({
+            'id': str(quote.id),
+            'quote_number': quote.quote_number,
+            'total_amount': str(quote.total_amount),
+            'message': 'Quote created',
         }, status=status.HTTP_201_CREATED)
 
 

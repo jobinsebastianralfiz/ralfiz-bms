@@ -34,6 +34,27 @@
   <div class="row">
     <!-- Left Column - Quote Details -->
     <div class="col-8 col-md-12" style="padding: 0.75rem;">
+      {% if lead %}
+      <!-- Lead recipient (quote raised before conversion) -->
+      <input type="hidden" name="lead" value="{{ lead.pk }}">
+      <div class="card mb-4">
+        <div class="card-header">
+          <h3 class="card-title"><i class="fas fa-user-tag me-2 text-warning"></i>Quote for Lead</h3>
+        </div>
+        <div class="card-body">
+          <div class="alert alert-info mb-0">
+            <div class="fw-semibold">{{ lead.contact_person }}{% if lead.company_name %} &middot; {{ lead.company_name }}{% endif %}</div>
+            <div class="text-sm text-muted">
+              {% if lead.phone %}<i class="fas fa-phone me-1"></i>{{ lead.phone }}{% endif %}
+              {% if lead.email %}<span class="ms-3"><i class="fas fa-envelope me-1"></i>{{ lead.email }}</span>{% endif %}
+            </div>
+            <div class="text-sm mt-2 mb-0">
+              <i class="fas fa-info-circle me-1"></i>No client or project is created yet. When this lead is converted, the client &amp; project are created and this quote is linked automatically.
+            </div>
+          </div>
+        </div>
+      </div>
+      {% else %}
       <!-- Client & Project -->
       <div class="card mb-4">
         <div class="card-header">
@@ -67,6 +88,7 @@
           </div>
         </div>
       </div>
+      {% endif %}
 
       <!-- Quote Details -->
       <div class="card mb-4">

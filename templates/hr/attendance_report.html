@@ -1,0 +1,97 @@
+{% extends 'base.html' %}
+{% block title %}Attendance Report - Ralfiz BMS{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title">Attendance Report</h1>
+    <p class="page-subtitle mb-0">Monthly summary per employee</p>
+  </div>
+  <div class="d-flex gap-2">
+    <a href="{% url 'emp_attendance_list' %}?month={{ month }}&year={{ year }}" class="btn btn-outline-secondary">
+      <i class="fas fa-arrow-left me-1"></i> Records
+    </a>
+    <a href="?month={{ month }}&year={{ year }}&department={{ department }}&export=xlsx" class="btn btn-primary">
+      <i class="fas fa-file-excel me-1"></i> Export Excel
+    </a>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header">
+    <h3 class="card-title"><i class="fas fa-chart-bar"></i> {{ working_days }} day month</h3>
+    <div class="card-actions">
+      <form method="get" class="d-flex gap-2">
+        <select name="month" class="form-control" style="width: auto;">
+          {% for value, label in months %}
+          <option value="{{ value }}" {% if value == month %}selected{% endif %}>{{ label }}</option>
+          {% endfor %}
+        </select>
+        <select name="year" class="form-control" style="width: auto;">
+          {% for y in years %}
+          <option value="{{ y }}" {% if y == year %}selected{% endif %}>{{ y }}</option>
+          {% endfor %}
+        </select>
+        <select name="department" class="form-control" style="width: auto;">
+          <option value="">All Departments</option>
+          {% for value, label in departments %}
+          <option value="{{ value }}" {% if value == department %}selected{% endif %}>{{ label }}</option>
+          {% endfor %}
+        </select>
+        <button type="submit" class="btn btn-primary">Apply</button>
+      </form>
+    </div>
+  </div>
+  <div class="table-wrapper">
+    <table class="table">
+      <thead>
+        <tr>
+          <th>Employee</th>
+          <th class="text-center">Present</th>
+          <th class="text-center">Late</th>
+          <th class="text-center">Half Day</th>
+          <th class="text-center">WFH</th>
+          <th class="text-center">Absent</th>
+          <th class="text-center">Days Present</th>
+          <th class="text-center">Total Hours</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in rows %}
+        <tr>
+          <td>
+            <a href="{% url 'emp_employee_detail' row.employee.pk %}">{{ row.employee.full_name }}</a>
+            <span class="text-muted text-sm">({{ row.employee.employee_id }})</span>
+          </td>
+          <td class="text-center">{{ row.present }}</td>
+          <td class="text-center">{{ row.late }}</td>
+          <td class="text-center">{{ row.half_day }}</td>
+          <td class="text-center">{{ row.work_from_home }}</td>
+          <td class="text-center">{{ row.absent }}</td>
+          <td class="text-center"><strong>{{ row.days_present }}</strong></td>
+          <td class="text-center">{{ row.hours }}h</td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="8" class="text-center text-muted py-4">No active employees found.</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+      {% if rows %}
+      <tfoot>
+        <tr style="font-weight: 600; border-top: 2px solid var(--border-color);">
+          <td>Total</td>
+          <td class="text-center">{{ totals.present }}</td>
+          <td class="text-center">{{ totals.late }}</td>
+          <td class="text-center">{{ totals.half_day }}</td>
+          <td class="text-center">{{ totals.work_from_home }}</td>
+          <td class="text-center">{{ totals.absent }}</td>
+          <td class="text-center">—</td>
+          <td class="text-center">{{ totals.hours }}h</td>
+        </tr>
+      </tfoot>
+      {% endif %}
+    </table>
+  </div>
+</div>
+{% endblock %}

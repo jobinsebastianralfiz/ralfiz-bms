@@ -486,9 +486,9 @@
     <div class="billing-section">
       <div class="billing-block">
         <div class="billing-label">Prepared For</div>
-        <div class="billing-name">{{ quote.client.company_name|default:quote.client.name }}</div>
+        <div class="billing-name">{{ quote.recipient_company|default:quote.recipient_name }}</div>
         <div class="billing-details">
-          {% if quote.client.address %}{{ quote.client.address }} | {% endif %}{{ quote.client.email }}{% if quote.client.phone %} | {{ quote.client.phone }}{% endif %}{% if with_gst and quote.client.gst_number %}<br>GSTIN: {{ quote.client.gst_number }}{% endif %}
+          {% if quote.client.address %}{{ quote.client.address }} | {% endif %}{{ quote.recipient_email }}{% if quote.recipient_phone %} | {{ quote.recipient_phone }}{% endif %}{% if with_gst and quote.recipient_gst %}<br>GSTIN: {{ quote.recipient_gst }}{% endif %}
         </div>
       </div>
     </div>
