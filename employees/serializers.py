@@ -5,7 +5,7 @@ from .models import (
     WorkAssignment, WorkUpdate, Notification, QRCode, ScheduledClass, Payroll,
     CertificateTemplate, Certificate
 )
-from crm.models import Lead, LeadNote, DailyActivity, Demo, FollowUp, LeadActivity
+from crm.models import Lead, LeadNote, LeadReferenceLink, DailyActivity, Demo, FollowUp, LeadActivity
 from core.models import Client, Project
 
 
@@ -411,6 +411,15 @@ class LeadNoteSerializer(serializers.ModelSerializer):
         read_only_fields = ['id', 'created_by_name', 'created_at']
 
 
+class LeadReferenceLinkSerializer(serializers.ModelSerializer):
+    created_by_name = serializers.CharField(source='created_by.get_full_name', read_only=True, default='')
+
+    class Meta:
+        model = LeadReferenceLink
+        fields = ['id', 'title', 'url', 'created_by_name', 'created_at']
+        read_only_fields = ['id', 'created_by_name', 'created_at']
+
+
 class FollowUpSerializer(serializers.ModelSerializer):
     created_by_name = serializers.CharField(source='created_by.get_full_name', read_only=True, default='')
     type_display = serializers.CharField(source='get_follow_up_type_display', read_only=True)
@@ -447,6 +456,7 @@ class LeadSerializer(serializers.ModelSerializer):
     assigned_to_name = serializers.CharField(source='assigned_to.get_full_name', read_only=True, default='')
     created_by_name = serializers.CharField(source='created_by.get_full_name', read_only=True, default='')
     notes_list = LeadNoteSerializer(source='lead_notes', many=True, read_only=True)
+    reference_links = LeadReferenceLinkSerializer(many=True, read_only=True)
     demo_count = serializers.SerializerMethodField()
     upcoming_follow_ups = serializers.SerializerMethodField()
     overdue_follow_ups = serializers.SerializerMethodField()
@@ -465,7 +475,7 @@ class LeadSerializer(serializers.ModelSerializer):
             'assigned_to', 'assigned_to_name',
             'next_follow_up_date', 'closing_probability', 'notes',
             'lost_reason', 'lost_reason_display',
-            'created_by_name', 'notes_list', 'demo_count',
+            'created_by_name', 'notes_list', 'reference_links', 'demo_count',
             'upcoming_follow_ups', 'overdue_follow_ups', 'last_activity',
             'client_id', 'client_name',
             'created_at', 'updated_at',

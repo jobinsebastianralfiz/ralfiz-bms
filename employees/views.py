@@ -18,7 +18,7 @@ from .models import (
     WorkAssignment, WorkUpdate, Notification, QRCode, ScheduledClass, Payroll,
     CertificateTemplate, Certificate, LateCheckInGrant
 )
-from crm.models import Lead, LeadNote, DailyActivity, Demo, FollowUp, LeadActivity
+from crm.models import Lead, LeadNote, LeadReferenceLink, DailyActivity, Demo, FollowUp, LeadActivity
 from core.models import (
     Client, Project, Credential, AMCContract, AMCPayment, CredentialRenewal,
     Partner, CapitalContribution, CompanyAsset, CompanyDocument,
@@ -34,6 +34,7 @@ from .serializers import (
     OwnerAttendanceEmployeeSerializer,
     CertificateTemplateSerializer, CertificateSerializer, CertificateCreateSerializer,
     LeadSerializer, LeadCreateSerializer, LeadNoteSerializer,
+    LeadReferenceLinkSerializer,
     DailyActivitySerializer, DailyActivityCreateSerializer,
     DemoSerializer, DemoCreateSerializer, CRMDashboardSerializer,
     FollowUpSerializer, FollowUpCreateSerializer, LeadActivitySerializer,
@@ -3901,6 +3902,67 @@ class CRMLeadNoteCreateView(APIView):
         note = LeadNote.objects.create(lead=lead, note=note_text, created_by=request.user)
         log_lead_activity(lead, 'note_added', note_text[:100], user=request.user)
         return Response(LeadNoteSerializer(note).data, status=status.HTTP_201_CREATED)
+
+
+@extend_schema(tags=['CRM - Leads'])
+class CRMLeadReferenceLinkListCreateView(APIView):
+    """List or add reference links (client-provided) for a lead"""
+    permission_classes = [IsAuthenticated]
+
+    def get_lead(self, pk, user):
+        employee, is_intern = get_intern_employee(user)
+        try:
+            lead = Lead.objects.get(pk=pk)
+        except Lead.DoesNotExist:
+            return None, 'Lead not found'
+        if is_intern and lead.assigned_to != user:
+            return None, 'You can only access leads assigned to you'
+        return lead, None
+
+    def get(self, request, pk):
+        lead, error = self.get_lead(pk, request.user)
+        if error:
+            return Response({'error': error}, status=status.HTTP_404_NOT_FOUND)
+        links = lead.reference_links.select_related('created_by').all()
+        return Response(LeadReferenceLinkSerializer(links, many=True).data)
+
+    def post(self, request, pk):
+        lead, error = self.get_lead(pk, request.user)
+        if error:
+            return Response({'error': error}, status=status.HTTP_404_NOT_FOUND)
+
+        url = request.data.get('url', '').strip()
+        title = request.data.get('title', '').strip()
+        if not url:
+            return Response({'error': 'Link URL is required'}, status=status.HTTP_400_BAD_REQUEST)
+
+        link = LeadReferenceLink.objects.create(
+            lead=lead, url=url, title=title, created_by=request.user
+        )
+        return Response(LeadReferenceLinkSerializer(link).data, status=status.HTTP_201_CREATED)
+
+
+@extend_schema(tags=['CRM - Leads'])
+class CRMLeadReferenceLinkDeleteView(APIView):
+    """Delete a reference link from a lead"""
+    permission_classes = [IsAuthenticated]
+
+    def delete(self, request, pk, link_id):
+        employee, is_intern = get_intern_employee(request.user)
+        try:
+            lead = Lead.objects.get(pk=pk)
+        except Lead.DoesNotExist:
+            return Response({'error': 'Lead not found'}, status=status.HTTP_404_NOT_FOUND)
+        if is_intern and lead.assigned_to != request.user:
+            return Response({'error': 'You can only modify leads assigned to you'}, status=status.HTTP_403_FORBIDDEN)
+
+        try:
+            link = LeadReferenceLink.objects.get(pk=link_id, lead=lead)
+        except LeadReferenceLink.DoesNotExist:
+            return Response({'error': 'Reference link not found'}, status=status.HTTP_404_NOT_FOUND)
+
+        link.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
 
 @extend_schema(tags=['CRM - Leads'])

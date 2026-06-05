@@ -159,6 +159,8 @@ urlpatterns = [
     path('crm/leads/<int:pk>/', views.CRMLeadDetailView.as_view(), name='crm_lead_detail'),
     path('crm/leads/<int:pk>/status/', views.CRMLeadStatusUpdateView.as_view(), name='crm_lead_status'),
     path('crm/leads/<int:pk>/notes/', views.CRMLeadNoteCreateView.as_view(), name='crm_lead_notes'),
+    path('crm/leads/<int:pk>/reference-links/', views.CRMLeadReferenceLinkListCreateView.as_view(), name='crm_lead_reference_links'),
+    path('crm/leads/<int:pk>/reference-links/<int:link_id>/', views.CRMLeadReferenceLinkDeleteView.as_view(), name='crm_lead_reference_link_delete'),
 
     # Daily Activities
     path('crm/activities/', views.CRMActivityListCreateView.as_view(), name='crm_activities'),
