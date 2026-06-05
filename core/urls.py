@@ -116,6 +116,8 @@ urlpatterns = [
     path('settings/reset-financial-data/', views.fy_reset, name='fy_reset'),
     path('reports/', views.reports_view, name='reports'),
     path('reports/monthly/', views.monthly_report_view, name='monthly_report'),
+    path('reports/gst-summary/', views.gst_summary_report, name='gst_summary_report'),
+    path('reports/gst-summary/export/', views.export_gst_summary, name='export_gst_summary'),
 
     # Global Search
     path('search/', views.global_search, name='global_search'),

@@ -3707,6 +3707,199 @@ def monthly_report_view(request):
     return render(request, 'reports/monthly.html', context)
 
 
+def _gst_summary_data(request):
+    """Build the GST summary for a single month from invoices.
+
+    Since invoices are raised when payment is received, the invoice issue_date
+    is the GST period date. Returns the resolved month plus per-invoice rows,
+    rate-wise totals and grand totals (outward/sales GST only).
+    """
+    from datetime import date
+    from decimal import Decimal
+    from dateutil.relativedelta import relativedelta
+
+    today = timezone.now().date()
+    month_param = request.GET.get('month', '')
+    try:
+        year_str, mon_str = month_param.split('-')
+        month_start = date(int(year_str), int(mon_str), 1)
+    except (ValueError, AttributeError):
+        month_start = today.replace(day=1)
+
+    month_end = (month_start + relativedelta(months=1)) - timedelta(days=1)
+    prev_month = (month_start - relativedelta(months=1)).strftime('%Y-%m')
+    next_month = (month_start + relativedelta(months=1)).strftime('%Y-%m')
+
+    # Real outward supplies for the period: exclude drafts and cancelled invoices.
+    invoices = Invoice.objects.filter(
+        issue_date__gte=month_start, issue_date__lte=month_end
+    ).exclude(status__in=['draft', 'cancelled']).select_related('client').order_by('issue_date', 'invoice_number')
+
+    rows = []
+    rate_groups = {}  # tax_rate -> dict of running totals
+    totals = {
+        'taxable': Decimal('0'), 'cgst': Decimal('0'), 'sgst': Decimal('0'),
+        'tax': Decimal('0'), 'total': Decimal('0'),
+    }
+    for inv in invoices:
+        taxable = (inv.subtotal or Decimal('0')) - (inv.discount or Decimal('0'))
+        cgst = inv.cgst_amount
+        sgst = inv.sgst_amount
+        tax = inv.tax_amount or Decimal('0')
+        rate = inv.tax_rate or Decimal('0')
+        rows.append({
+            'invoice_number': inv.invoice_number,
+            'issue_date': inv.issue_date,
+            'client': inv.client.name if inv.client else '',
+            'gstin': inv.client.gst_number if inv.client else '',
+            'taxable': taxable,
+            'rate': rate,
+            'cgst': cgst,
+            'sgst': sgst,
+            'tax': tax,
+            'total': inv.total_amount or Decimal('0'),
+            'filing_status': inv.get_gst_filing_status_display(),
+        })
+        totals['taxable'] += taxable
+        totals['cgst'] += cgst
+        totals['sgst'] += sgst
+        totals['tax'] += tax
+        totals['total'] += (inv.total_amount or Decimal('0'))
+
+        g = rate_groups.setdefault(rate, {
+            'rate': rate, 'count': 0, 'taxable': Decimal('0'),
+            'cgst': Decimal('0'), 'sgst': Decimal('0'), 'tax': Decimal('0'),
+        })
+        g['count'] += 1
+        g['taxable'] += taxable
+        g['cgst'] += cgst
+        g['sgst'] += sgst
+        g['tax'] += tax
+
+    rate_summary = sorted(rate_groups.values(), key=lambda r: r['rate'], reverse=True)
+
+    # Available months from the earliest non-draft/cancelled invoice up to today.
+    earliest = Invoice.objects.exclude(status__in=['draft', 'cancelled']).order_by(
+        'issue_date').values_list('issue_date', flat=True).first()
+    earliest = (earliest or today).replace(day=1)
+    available_months = []
+    cursor = today.replace(day=1)
+    while cursor >= earliest:
+        available_months.append({
+            'value': cursor.strftime('%Y-%m'),
+            'label': cursor.strftime('%b %Y'),
+        })
+        cursor -= relativedelta(months=1)
+
+    company = CompanySettings.get_settings()
+
+    return {
+        'month_start': month_start,
+        'month_end': month_end,
+        'month_label': month_start.strftime('%B %Y'),
+        'month_value': month_start.strftime('%Y-%m'),
+        'prev_month': prev_month,
+        'next_month': next_month,
+        'available_months': available_months,
+        'rows': rows,
+        'rate_summary': rate_summary,
+        'totals': totals,
+        'invoice_count': len(rows),
+        'company': company,
+    }
+
+
+@login_required
+def gst_summary_report(request):
+    """Monthly GST summary (outward supplies) for filing/submission."""
+    context = _gst_summary_data(request)
+    return render(request, 'reports/gst_summary.html', context)
+
+
+@login_required
+def export_gst_summary(request):
+    """Export the monthly GST summary to Excel for submission."""
+    from openpyxl import Workbook
+    from openpyxl.styles import Font
+    from django.http import HttpResponse
+
+    data = _gst_summary_data(request)
+
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "GST Summary"
+
+    bold = Font(bold=True)
+
+    # Heading
+    company = data['company']
+    ws.append([f"GST Summary — {data['month_label']}"])
+    ws['A1'].font = Font(bold=True, size=14)
+    ws.append([f"{company.company_name}  |  GSTIN: {company.gst_number or '—'}"])
+    ws.append([f"Period: {data['month_start'].strftime('%d %b %Y')} to {data['month_end'].strftime('%d %b %Y')}"])
+    ws.append([])
+
+    # Rate-wise summary
+    ws.append(["Rate-wise summary"])
+    ws.cell(row=ws.max_row, column=1).font = bold
+    rate_headers = ['Tax Rate %', 'Invoices', 'Taxable Value', 'CGST', 'SGST', 'Total Tax']
+    ws.append(rate_headers)
+    for c in range(1, len(rate_headers) + 1):
+        ws.cell(row=ws.max_row, column=c).font = bold
+    for g in data['rate_summary']:
+        ws.append([
+            float(g['rate']), g['count'], float(g['taxable']),
+            float(g['cgst']), float(g['sgst']), float(g['tax']),
+        ])
+    t = data['totals']
+    ws.append(['Total', data['invoice_count'], float(t['taxable']),
+               float(t['cgst']), float(t['sgst']), float(t['tax'])])
+    for c in range(1, len(rate_headers) + 1):
+        ws.cell(row=ws.max_row, column=c).font = bold
+
+    ws.append([])
+
+    # Invoice-wise detail
+    ws.append(["Invoice-wise detail"])
+    ws.cell(row=ws.max_row, column=1).font = bold
+    headers = ['Invoice No.', 'Date', 'Client', 'GSTIN', 'Taxable Value',
+               'Rate %', 'CGST', 'SGST', 'Total Tax', 'Invoice Total', 'Filing Status']
+    ws.append(headers)
+    for c in range(1, len(headers) + 1):
+        ws.cell(row=ws.max_row, column=c).font = bold
+    for r in data['rows']:
+        ws.append([
+            r['invoice_number'],
+            r['issue_date'].strftime('%Y-%m-%d') if r['issue_date'] else '',
+            r['client'],
+            r['gstin'] or '',
+            float(r['taxable']),
+            float(r['rate']),
+            float(r['cgst']),
+            float(r['sgst']),
+            float(r['tax']),
+            float(r['total']),
+            r['filing_status'],
+        ])
+    ws.append(['', '', '', 'Total', float(t['taxable']), '',
+               float(t['cgst']), float(t['sgst']), float(t['tax']), float(t['total']), ''])
+    for c in range(1, len(headers) + 1):
+        ws.cell(row=ws.max_row, column=c).font = bold
+
+    # Column widths
+    for col, width in {'A': 16, 'B': 12, 'C': 28, 'D': 20, 'E': 15,
+                       'F': 9, 'G': 13, 'H': 13, 'I': 13, 'J': 15, 'K': 18}.items():
+        ws.column_dimensions[col].width = width
+
+    response = HttpResponse(
+        content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    )
+    filename = f"gst_summary_{data['month_value']}.xlsx"
+    response['Content-Disposition'] = f'attachment; filename="{filename}"'
+    wb.save(response)
+    return response
+
+
 # ============== Global Search ==============
 
 @login_required

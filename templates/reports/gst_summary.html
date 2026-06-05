@@ -1,0 +1,188 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}GST Summary - {{ month_label }}{% endblock %}
+
+{% block breadcrumb %}
+<a href="{% url 'dashboard' %}" class="breadcrumb-item">Dashboard</a>
+<span class="breadcrumb-separator">/</span>
+<a href="{% url 'reports' %}" class="breadcrumb-item">Reports</a>
+<span class="breadcrumb-separator">/</span>
+<span class="breadcrumb-item active">GST Summary</span>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title">GST Summary</h1>
+    <p class="page-subtitle mb-0">{{ month_label }} &middot; {{ month_start|date:"d M" }} – {{ month_end|date:"d M Y" }} &middot; Outward supplies (sales)</p>
+  </div>
+  <div>
+    <a href="{% url 'export_gst_summary' %}?month={{ month_value }}" class="btn btn-success">
+      <i class="fas fa-file-excel me-1"></i> Export Excel
+    </a>
+    <a href="{% url 'reports' %}" class="btn btn-outline-secondary">
+      <i class="fas fa-arrow-left me-1"></i> All Reports
+    </a>
+  </div>
+</div>
+
+<!-- Month Selector -->
+<div class="card mb-4">
+  <div class="card-body">
+    <form method="get" class="d-flex align-items-center gap-2 flex-wrap">
+      <a href="?month={{ prev_month }}" class="btn btn-outline-secondary btn-sm" title="Previous month">
+        <i class="fas fa-chevron-left"></i>
+      </a>
+      <select name="month" class="form-select form-select-sm" style="max-width: 220px;" onchange="this.form.submit()">
+        {% for m in available_months %}
+        <option value="{{ m.value }}" {% if m.value == month_value %}selected{% endif %}>{{ m.label }}</option>
+        {% endfor %}
+      </select>
+      <a href="?month={{ next_month }}" class="btn btn-outline-secondary btn-sm" title="Next month">
+        <i class="fas fa-chevron-right"></i>
+      </a>
+      <noscript><button type="submit" class="btn btn-primary btn-sm">Go</button></noscript>
+      {% if company.gst_number %}
+      <span class="text-muted ms-auto small">GSTIN: <strong>{{ company.gst_number }}</strong></span>
+      {% endif %}
+    </form>
+  </div>
+</div>
+
+<!-- Summary Cards -->
+<div class="row mb-4">
+  <div class="col-3 col-md-12" style="padding: 0.75rem;">
+    <div class="card stat-card">
+      <div class="stat-card-value">&#8377;{{ totals.taxable|floatformat:2|default:"0" }}</div>
+      <div class="stat-card-label">Taxable Value</div>
+    </div>
+  </div>
+  <div class="col-3 col-md-12" style="padding: 0.75rem;">
+    <div class="card stat-card">
+      <div class="stat-card-value">&#8377;{{ totals.cgst|floatformat:2|default:"0" }}</div>
+      <div class="stat-card-label">CGST</div>
+    </div>
+  </div>
+  <div class="col-3 col-md-12" style="padding: 0.75rem;">
+    <div class="card stat-card">
+      <div class="stat-card-value">&#8377;{{ totals.sgst|floatformat:2|default:"0" }}</div>
+      <div class="stat-card-label">SGST</div>
+    </div>
+  </div>
+  <div class="col-3 col-md-12" style="padding: 0.75rem;">
+    <div class="card stat-card">
+      <div class="stat-card-value">&#8377;{{ totals.tax|floatformat:2|default:"0" }}</div>
+      <div class="stat-card-label">Total GST Payable</div>
+    </div>
+  </div>
+</div>
+
+<!-- Rate-wise Summary -->
+<div class="card mb-4">
+  <div class="card-header"><h3 class="card-title">Rate-wise Summary</h3></div>
+  <div class="card-body">
+    {% if rate_summary %}
+    <div class="table-responsive">
+      <table class="table">
+        <thead>
+          <tr>
+            <th>Tax Rate</th>
+            <th class="text-end">Invoices</th>
+            <th class="text-end">Taxable Value</th>
+            <th class="text-end">CGST</th>
+            <th class="text-end">SGST</th>
+            <th class="text-end">Total Tax</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for g in rate_summary %}
+          <tr>
+            <td>{{ g.rate|floatformat:"-2" }}%</td>
+            <td class="text-end">{{ g.count }}</td>
+            <td class="text-end">&#8377;{{ g.taxable|floatformat:2 }}</td>
+            <td class="text-end">&#8377;{{ g.cgst|floatformat:2 }}</td>
+            <td class="text-end">&#8377;{{ g.sgst|floatformat:2 }}</td>
+            <td class="text-end">&#8377;{{ g.tax|floatformat:2 }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+        <tfoot>
+          <tr class="fw-bold">
+            <td>Total</td>
+            <td class="text-end">{{ invoice_count }}</td>
+            <td class="text-end">&#8377;{{ totals.taxable|floatformat:2 }}</td>
+            <td class="text-end">&#8377;{{ totals.cgst|floatformat:2 }}</td>
+            <td class="text-end">&#8377;{{ totals.sgst|floatformat:2 }}</td>
+            <td class="text-end">&#8377;{{ totals.tax|floatformat:2 }}</td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+    {% else %}
+    <p class="text-muted mb-0">No invoices for this month.</p>
+    {% endif %}
+  </div>
+</div>
+
+<!-- Invoice-wise Detail -->
+<div class="card mb-4">
+  <div class="card-header"><h3 class="card-title">Invoice-wise Detail</h3></div>
+  <div class="card-body">
+    {% if rows %}
+    <div class="table-responsive">
+      <table class="table table-sm">
+        <thead>
+          <tr>
+            <th>Invoice No.</th>
+            <th>Date</th>
+            <th>Client</th>
+            <th>GSTIN</th>
+            <th class="text-end">Taxable</th>
+            <th class="text-end">Rate</th>
+            <th class="text-end">CGST</th>
+            <th class="text-end">SGST</th>
+            <th class="text-end">Total Tax</th>
+            <th class="text-end">Invoice Total</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for r in rows %}
+          <tr>
+            <td>{{ r.invoice_number }}</td>
+            <td>{{ r.issue_date|date:"d M Y" }}</td>
+            <td>{{ r.client }}</td>
+            <td>{% if r.gstin %}{{ r.gstin }}{% else %}<span class="text-muted">B2C</span>{% endif %}</td>
+            <td class="text-end">&#8377;{{ r.taxable|floatformat:2 }}</td>
+            <td class="text-end">{{ r.rate|floatformat:"-2" }}%</td>
+            <td class="text-end">&#8377;{{ r.cgst|floatformat:2 }}</td>
+            <td class="text-end">&#8377;{{ r.sgst|floatformat:2 }}</td>
+            <td class="text-end">&#8377;{{ r.tax|floatformat:2 }}</td>
+            <td class="text-end">&#8377;{{ r.total|floatformat:2 }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+        <tfoot>
+          <tr class="fw-bold">
+            <td colspan="4">Total ({{ invoice_count }} invoices)</td>
+            <td class="text-end">&#8377;{{ totals.taxable|floatformat:2 }}</td>
+            <td></td>
+            <td class="text-end">&#8377;{{ totals.cgst|floatformat:2 }}</td>
+            <td class="text-end">&#8377;{{ totals.sgst|floatformat:2 }}</td>
+            <td class="text-end">&#8377;{{ totals.tax|floatformat:2 }}</td>
+            <td class="text-end">&#8377;{{ totals.total|floatformat:2 }}</td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+    {% else %}
+    <p class="text-muted mb-0">No invoices for this month.</p>
+    {% endif %}
+  </div>
+</div>
+
+<p class="text-muted small">
+  Based on invoice issue date (you raise invoices when payment is received). Drafts and cancelled
+  invoices are excluded. CGST/SGST shown assumes intra-state supply (tax split equally).
+</p>
+{% endblock %}

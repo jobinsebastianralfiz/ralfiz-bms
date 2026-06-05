@@ -224,9 +224,13 @@
 
     <div class="nav-section">
       <div class="nav-section-title">System</div>
-      <a href="{% url 'reports' %}" class="nav-item {% if 'report' in request.resolver_match.url_name %}active{% endif %}">
+      <a href="{% url 'reports' %}" class="nav-item {% if 'report' in request.resolver_match.url_name and 'gst' not in request.resolver_match.url_name %}active{% endif %}">
         <i class="fas fa-chart-bar"></i>
         <span>Reports</span>
+      </a>
+      <a href="{% url 'gst_summary_report' %}" class="nav-item {% if 'gst_summary' in request.resolver_match.url_name %}active{% endif %}">
+        <i class="fas fa-receipt"></i>
+        <span>GST Summary</span>
       </a>
       <a href="{% url 'activity_log' %}" class="nav-item {% if 'activity' in request.resolver_match.url_name %}active{% endif %}">
         <i class="fas fa-history"></i>
