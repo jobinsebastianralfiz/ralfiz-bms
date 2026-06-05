@@ -1,12 +1,19 @@
 from django.contrib import admin
 from django.contrib.auth.models import User
-from .models import InternProfile, Lead, LeadNote, DailyActivity, Demo, FollowUp, LeadActivity
+from .models import InternProfile, Lead, LeadNote, LeadReferenceLink, DailyActivity, Demo, FollowUp, LeadActivity
 
 
 class LeadNoteInline(admin.TabularInline):
     model = LeadNote
     extra = 0
     fields = ['note', 'created_by', 'created_at']
+    readonly_fields = ['created_at']
+
+
+class LeadReferenceLinkInline(admin.TabularInline):
+    model = LeadReferenceLink
+    extra = 0
+    fields = ['title', 'url', 'created_by', 'created_at']
     readonly_fields = ['created_at']
 
 
@@ -63,7 +70,7 @@ class LeadAdmin(admin.ModelAdmin):
     search_fields = ['contact_person', 'company_name', 'phone', 'email']
     readonly_fields = ['created_at', 'updated_at']
     list_editable = ['status']
-    inlines = [LeadNoteInline, FollowUpInline, DemoInline]
+    inlines = [LeadNoteInline, LeadReferenceLinkInline, FollowUpInline, DemoInline]
     fieldsets = (
         ('Contact Information', {
             'fields': ('contact_person', 'company_name', 'phone', 'email')

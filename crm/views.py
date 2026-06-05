@@ -7,7 +7,7 @@ from django.db.models import Q, Sum, Count
 from django.contrib.auth.models import User
 from django.utils import timezone
 
-from .models import InternProfile, Lead, LeadNote, DailyActivity, Demo, LeadActivity
+from .models import InternProfile, Lead, LeadNote, LeadReferenceLink, DailyActivity, Demo, LeadActivity
 from core.models import Client, Project
 from employees.models import Employee
 
@@ -210,12 +210,14 @@ def lead_detail(request, pk):
         return redirect('crm:lead_list')
 
     notes = lead.lead_notes.select_related('created_by').all()
+    reference_links = lead.reference_links.select_related('created_by').all()
     demos = lead.demos.select_related('conducted_by').all()
     quotes = lead.quotes.order_by('-created_at')
 
     context = {
         'lead': lead,
         'notes': notes,
+        'reference_links': reference_links,
         'demos': demos,
         'quotes': quotes,
         'status_choices': Lead.STATUS_CHOICES,
@@ -384,6 +386,46 @@ def lead_note_create(request, lead_pk):
         messages.success(request, 'Note added successfully.')
     else:
         messages.error(request, 'Note cannot be empty.')
+
+    return redirect('crm:lead_detail', pk=lead_pk)
+
+
+@login_required
+def lead_reference_link_create(request, lead_pk):
+    if request.method != 'POST':
+        return redirect('crm:lead_detail', pk=lead_pk)
+
+    if not can_access_crm(request.user):
+        messages.error(request, 'Access denied.')
+        return redirect('dashboard')
+
+    lead = get_object_or_404(Lead, pk=lead_pk)
+    url = request.POST.get('url', '').strip()
+    title = request.POST.get('title', '').strip()
+
+    if url:
+        LeadReferenceLink.objects.create(
+            lead=lead, url=url, title=title, created_by=request.user
+        )
+        messages.success(request, 'Reference link added successfully.')
+    else:
+        messages.error(request, 'Link URL cannot be empty.')
+
+    return redirect('crm:lead_detail', pk=lead_pk)
+
+
+@login_required
+def lead_reference_link_delete(request, lead_pk, ref_pk):
+    if request.method != 'POST':
+        return redirect('crm:lead_detail', pk=lead_pk)
+
+    if not can_access_crm(request.user):
+        messages.error(request, 'Access denied.')
+        return redirect('dashboard')
+
+    link = get_object_or_404(LeadReferenceLink, pk=ref_pk, lead_id=lead_pk)
+    link.delete()
+    messages.success(request, 'Reference link removed.')
 
     return redirect('crm:lead_detail', pk=lead_pk)
 

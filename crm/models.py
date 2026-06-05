@@ -221,6 +221,28 @@ class LeadNote(models.Model):
         return f"Note on {self.lead} by {self.created_by}"
 
 
+class LeadReferenceLink(models.Model):
+    """Reference links the client provided for a lead (sample sites, designs, etc.)."""
+    lead = models.ForeignKey(Lead, on_delete=models.CASCADE, related_name='reference_links')
+    title = models.CharField(max_length=200, blank=True)
+    url = models.URLField(max_length=500)
+    created_by = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        null=True,
+        related_name='crm_lead_reference_links'
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-created_at']
+        verbose_name = 'Lead Reference Link'
+        verbose_name_plural = 'Lead Reference Links'
+
+    def __str__(self):
+        return f"Reference link on {self.lead}"
+
+
 class FollowUp(models.Model):
     TYPE_CHOICES = [
         ('call', 'Phone Call'),

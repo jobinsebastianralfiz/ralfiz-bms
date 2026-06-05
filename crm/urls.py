@@ -16,6 +16,8 @@ urlpatterns = [
     path('leads/<int:pk>/change-status/', views.lead_change_status, name='lead_change_status'),
     path('leads/<int:pk>/create-project/', views.lead_create_project, name='lead_create_project'),
     path('leads/<int:lead_pk>/note/create/', views.lead_note_create, name='lead_note_create'),
+    path('leads/<int:lead_pk>/reference-link/create/', views.lead_reference_link_create, name='lead_reference_link_create'),
+    path('leads/<int:lead_pk>/reference-link/<int:ref_pk>/delete/', views.lead_reference_link_delete, name='lead_reference_link_delete'),
 
     # Activities
     path('activities/', views.activity_list, name='activity_list'),

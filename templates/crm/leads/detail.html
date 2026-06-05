@@ -104,6 +104,51 @@
       </div>
     </div>
 
+    <!-- Reference Links -->
+    <div class="card mb-4">
+      <div class="card-body">
+        <h3 class="card-title">Reference Links</h3>
+        <p class="text-muted text-sm mb-3">Links the client provided — sample sites, designs, drive folders, etc.</p>
+        <form method="post" action="{% url 'crm:lead_reference_link_create' lead_pk=lead.pk %}" class="row g-2 mb-4">
+          {% csrf_token %}
+          <div class="col-12 col-md-4">
+            <input type="text" name="title" class="form-control" placeholder="Label (optional)">
+          </div>
+          <div class="col-12 col-md-6">
+            <input type="url" name="url" class="form-control" placeholder="https://..." required>
+          </div>
+          <div class="col-12 col-md-2 d-grid">
+            <button type="submit" class="btn btn-primary">
+              <i class="fas fa-plus"></i> Add
+            </button>
+          </div>
+        </form>
+
+        {% for link in reference_links %}
+        <div class="d-flex justify-content-between align-items-center" style="border-bottom: 1px solid var(--border-color); padding: 0.75rem 0;">
+          <div class="text-truncate" style="min-width: 0;">
+            <a href="{{ link.url }}" target="_blank" rel="noopener noreferrer" class="fw-medium">
+              <i class="fas fa-link text-muted me-1"></i>{{ link.title|default:link.url }}
+            </a>
+            {% if link.title %}<div class="text-muted text-sm text-truncate">{{ link.url }}</div>{% endif %}
+            <div class="text-muted text-sm">
+              {% if link.created_by %}{{ link.created_by.get_full_name|default:link.created_by.username }}{% else %}-{% endif %}
+              &middot; {{ link.created_at|date:"d M Y, h:i A" }}
+            </div>
+          </div>
+          <form method="post" action="{% url 'crm:lead_reference_link_delete' lead_pk=lead.pk ref_pk=link.pk %}" onsubmit="return confirm('Remove this reference link?');" class="ms-2">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-sm btn-outline-danger" title="Remove">
+              <i class="fas fa-trash"></i>
+            </button>
+          </form>
+        </div>
+        {% empty %}
+        <p class="text-muted">No reference links yet.</p>
+        {% endfor %}
+      </div>
+    </div>
+
     <!-- Demos -->
     <div class="card">
       <div class="card-body">
