@@ -3793,7 +3793,22 @@ def _gst_summary_data(request):
 
     company = CompanySettings.get_settings()
 
+    # Embed the logo as a base64 data URI so it renders in the PDF regardless of
+    # whether media files are served over HTTP (whitenoise/Railway volume).
+    logo_data_uri = ''
+    if company.logo:
+        try:
+            import base64
+            import mimetypes
+            with company.logo.open('rb') as fh:
+                raw = fh.read()
+            mime = mimetypes.guess_type(company.logo.name)[0] or 'image/png'
+            logo_data_uri = f"data:{mime};base64,{base64.b64encode(raw).decode('ascii')}"
+        except Exception:
+            logo_data_uri = ''
+
     return {
+        'logo_data_uri': logo_data_uri,
         'month_start': month_start,
         'month_end': month_end,
         'month_label': month_start.strftime('%B %Y'),
