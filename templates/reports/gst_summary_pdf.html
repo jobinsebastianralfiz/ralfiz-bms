@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>GST Summary - {{ month_label }}</title>
+  <style>
+    @page { size: A4; margin: 1.5cm; }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Segoe UI', Arial, sans-serif;
+      font-size: 11px;
+      color: #1e293b;
+      background: #fff;
+      line-height: 1.5;
+    }
+
+    /* Screen-only toolbar */
+    .download-bar {
+      background: #0f172a;
+      color: #fff;
+      padding: 12px 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+    .download-bar-title { font-size: 14px; font-weight: 600; }
+    .download-btn {
+      background: #0d9488; color: #fff; border: none;
+      padding: 8px 16px; border-radius: 6px; font-size: 13px;
+      font-weight: 600; cursor: pointer; text-decoration: none;
+    }
+    .download-btn.secondary { background: #475569; }
+    @media print { .no-print { display: none !important; } body { background: #fff; } }
+
+    .container { max-width: 800px; margin: 0 auto; }
+
+    /* Header */
+    .report-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 20px;
+      padding-bottom: 15px;
+      border-bottom: 2px solid #0d9488;
+    }
+    .company-logo { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+    .logo-icon {
+      width: 36px; height: 36px;
+      background: linear-gradient(135deg, #0d9488, #14b8a6);
+      border-radius: 6px; display: flex; align-items: center; justify-content: center;
+      color: #fff; font-weight: 700; font-size: 18px;
+    }
+    .company-name { font-size: 16px; font-weight: 700; color: #0f172a; }
+    .company-details { font-size: 10px; color: #64748b; line-height: 1.5; }
+    .report-title-section { text-align: right; }
+    .report-title { font-size: 22px; font-weight: 700; color: #0d9488; margin-bottom: 4px; }
+    .report-period { font-size: 11px; color: #64748b; }
+    .report-period strong { color: #1e293b; }
+
+    /* Summary cards */
+    .summary-row { display: flex; gap: 12px; margin-bottom: 20px; }
+    .summary-card {
+      flex: 1; border: 1px solid #e2e8f0; border-radius: 8px;
+      padding: 10px 12px; background: #f8fafc;
+    }
+    .summary-card .label {
+      font-size: 9px; text-transform: uppercase; letter-spacing: 0.05em;
+      color: #64748b; margin-bottom: 4px;
+    }
+    .summary-card .value { font-size: 15px; font-weight: 700; color: #0f172a; }
+    .summary-card.accent { background: #f0fdfa; border-color: #99f6e4; }
+    .summary-card.accent .value { color: #0d9488; }
+
+    .section-title {
+      font-size: 12px; font-weight: 700; color: #0f172a;
+      margin: 18px 0 8px; padding-bottom: 4px; border-bottom: 1px solid #e2e8f0;
+    }
+
+    table { width: 100%; border-collapse: collapse; margin-bottom: 8px; }
+    th {
+      background: #f1f5f9; padding: 6px 8px; text-align: left;
+      font-size: 9px; font-weight: 600; text-transform: uppercase;
+      letter-spacing: 0.04em; color: #64748b; border-bottom: 1px solid #e2e8f0;
+    }
+    td { padding: 6px 8px; border-bottom: 1px solid #e2e8f0; font-size: 10px; }
+    .text-end { text-align: right; }
+    tfoot td { font-weight: 700; color: #0f172a; border-top: 2px solid #0d9488; background: #f8fafc; }
+    .muted { color: #94a3b8; }
+
+    .footer-note { margin-top: 18px; font-size: 9px; color: #94a3b8; line-height: 1.5; }
+  </style>
+</head>
+<body>
+  <!-- Toolbar (screen only) -->
+  <div class="download-bar no-print">
+    <div class="download-bar-title">GST Summary — {{ month_label }}</div>
+    <div>
+      <a href="?month={{ month_value }}&download=1" class="download-btn">Download PDF</a>
+      <a href="#" class="download-btn secondary" onclick="window.print();return false;">Print</a>
+    </div>
+  </div>
+
+  <div class="container">
+    <!-- Header -->
+    <div class="report-header">
+      <div>
+        <div class="company-logo">
+          {% if company.logo %}
+          <img src="{{ company.logo.url }}" alt="{{ company.company_name }}" style="width: 36px; height: 36px; object-fit: contain; border-radius: 6px;">
+          {% else %}
+          <div class="logo-icon">{{ company.company_name|slice:":1"|upper|default:"R" }}</div>
+          {% endif %}
+          <div class="company-name">{{ company.company_name|default:"Ralfiz Technologies" }}</div>
+        </div>
+        <div class="company-details">
+          {{ company.address|linebreaksbr|default:"" }}
+          {% if company.gst_number %}<br>GSTIN: {{ company.gst_number }}{% endif %}
+          {% if company.hsn_code %}<br>HSN/SAC: {{ company.hsn_code }}{% endif %}
+        </div>
+      </div>
+      <div class="report-title-section">
+        <div class="report-title">GST SUMMARY</div>
+        <div class="report-period">
+          <strong>{{ month_label }}</strong><br>
+          {{ month_start|date:"d M Y" }} – {{ month_end|date:"d M Y" }}<br>
+          Outward supplies (sales)
+        </div>
+      </div>
+    </div>
+
+    <!-- Summary cards -->
+    <div class="summary-row">
+      <div class="summary-card">
+        <div class="label">Taxable Value</div>
+        <div class="value">&#8377;{{ totals.taxable|floatformat:2 }}</div>
+      </div>
+      <div class="summary-card">
+        <div class="label">CGST</div>
+        <div class="value">&#8377;{{ totals.cgst|floatformat:2 }}</div>
+      </div>
+      <div class="summary-card">
+        <div class="label">SGST</div>
+        <div class="value">&#8377;{{ totals.sgst|floatformat:2 }}</div>
+      </div>
+      <div class="summary-card accent">
+        <div class="label">Total GST Payable</div>
+        <div class="value">&#8377;{{ totals.tax|floatformat:2 }}</div>
+      </div>
+    </div>
+
+    <!-- HSN/SAC & rate-wise summary -->
+    <div class="section-title">HSN/SAC &amp; Rate-wise Summary</div>
+    {% if rate_summary %}
+    <table>
+      <thead>
+        <tr>
+          <th>HSN/SAC</th>
+          <th>Tax Rate</th>
+          <th class="text-end">Invoices</th>
+          <th class="text-end">Taxable Value</th>
+          <th class="text-end">CGST</th>
+          <th class="text-end">SGST</th>
+          <th class="text-end">Total Tax</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for g in rate_summary %}
+        <tr>
+          <td>{{ company.hsn_code|default:"—" }}</td>
+          <td>{{ g.rate|floatformat:"-2" }}%</td>
+          <td class="text-end">{{ g.count }}</td>
+          <td class="text-end">&#8377;{{ g.taxable|floatformat:2 }}</td>
+          <td class="text-end">&#8377;{{ g.cgst|floatformat:2 }}</td>
+          <td class="text-end">&#8377;{{ g.sgst|floatformat:2 }}</td>
+          <td class="text-end">&#8377;{{ g.tax|floatformat:2 }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+      <tfoot>
+        <tr>
+          <td colspan="2">Total</td>
+          <td class="text-end">{{ invoice_count }}</td>
+          <td class="text-end">&#8377;{{ totals.taxable|floatformat:2 }}</td>
+          <td class="text-end">&#8377;{{ totals.cgst|floatformat:2 }}</td>
+          <td class="text-end">&#8377;{{ totals.sgst|floatformat:2 }}</td>
+          <td class="text-end">&#8377;{{ totals.tax|floatformat:2 }}</td>
+        </tr>
+      </tfoot>
+    </table>
+    {% else %}
+    <p class="muted">No invoices for this month.</p>
+    {% endif %}
+
+    <!-- Invoice-wise detail -->
+    <div class="section-title">Invoice-wise Detail</div>
+    {% if rows %}
+    <table>
+      <thead>
+        <tr>
+          <th>Invoice No.</th>
+          <th>Date</th>
+          <th>Client</th>
+          <th>GSTIN</th>
+          <th>HSN/SAC</th>
+          <th class="text-end">Taxable</th>
+          <th class="text-end">Rate</th>
+          <th class="text-end">CGST</th>
+          <th class="text-end">SGST</th>
+          <th class="text-end">Total Tax</th>
+          <th class="text-end">Total</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for r in rows %}
+        <tr>
+          <td>{{ r.invoice_number }}</td>
+          <td>{{ r.issue_date|date:"d M Y" }}</td>
+          <td>{{ r.client }}</td>
+          <td>{% if r.gstin %}{{ r.gstin }}{% else %}<span class="muted">B2C</span>{% endif %}</td>
+          <td>{{ company.hsn_code|default:"—" }}</td>
+          <td class="text-end">&#8377;{{ r.taxable|floatformat:2 }}</td>
+          <td class="text-end">{{ r.rate|floatformat:"-2" }}%</td>
+          <td class="text-end">&#8377;{{ r.cgst|floatformat:2 }}</td>
+          <td class="text-end">&#8377;{{ r.sgst|floatformat:2 }}</td>
+          <td class="text-end">&#8377;{{ r.tax|floatformat:2 }}</td>
+          <td class="text-end">&#8377;{{ r.total|floatformat:2 }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+      <tfoot>
+        <tr>
+          <td colspan="5">Total ({{ invoice_count }} invoices)</td>
+          <td class="text-end">&#8377;{{ totals.taxable|floatformat:2 }}</td>
+          <td></td>
+          <td class="text-end">&#8377;{{ totals.cgst|floatformat:2 }}</td>
+          <td class="text-end">&#8377;{{ totals.sgst|floatformat:2 }}</td>
+          <td class="text-end">&#8377;{{ totals.tax|floatformat:2 }}</td>
+          <td class="text-end">&#8377;{{ totals.total|floatformat:2 }}</td>
+        </tr>
+      </tfoot>
+    </table>
+    {% else %}
+    <p class="muted">No invoices for this month.</p>
+    {% endif %}
+
+    <div class="footer-note">
+      Based on invoice issue date. Drafts and cancelled invoices are excluded.
+      CGST/SGST shown assumes intra-state supply (tax split equally).
+      Generated by {{ company.company_name|default:"Ralfiz Technologies" }} BMS.
+    </div>
+  </div>
+</body>
+</html>

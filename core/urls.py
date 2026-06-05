@@ -118,6 +118,7 @@ urlpatterns = [
     path('reports/monthly/', views.monthly_report_view, name='monthly_report'),
     path('reports/gst-summary/', views.gst_summary_report, name='gst_summary_report'),
     path('reports/gst-summary/export/', views.export_gst_summary, name='export_gst_summary'),
+    path('reports/gst-summary/pdf/', views.gst_summary_pdf, name='gst_summary_pdf'),
 
     # Global Search
     path('search/', views.global_search, name='global_search'),

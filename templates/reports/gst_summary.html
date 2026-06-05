@@ -18,6 +18,9 @@
     <p class="page-subtitle mb-0">{{ month_label }} &middot; {{ month_start|date:"d M" }} – {{ month_end|date:"d M Y" }} &middot; Outward supplies (sales)</p>
   </div>
   <div>
+    <a href="{% url 'gst_summary_pdf' %}?month={{ month_value }}&download=1" class="btn btn-danger">
+      <i class="fas fa-file-pdf me-1"></i> Download PDF
+    </a>
     <a href="{% url 'export_gst_summary' %}?month={{ month_value }}" class="btn btn-success">
       <i class="fas fa-file-excel me-1"></i> Export Excel
     </a>
@@ -78,15 +81,19 @@
   </div>
 </div>
 
-<!-- Rate-wise Summary -->
+<!-- HSN/SAC & Rate-wise Summary -->
 <div class="card mb-4">
-  <div class="card-header"><h3 class="card-title">Rate-wise Summary</h3></div>
+  <div class="card-header">
+    <h3 class="card-title">HSN/SAC &amp; Rate-wise Summary</h3>
+    {% if company.hsn_code %}<span class="text-muted small">HSN/SAC: <strong>{{ company.hsn_code }}</strong></span>{% endif %}
+  </div>
   <div class="card-body">
     {% if rate_summary %}
     <div class="table-responsive">
       <table class="table">
         <thead>
           <tr>
+            <th>HSN/SAC</th>
             <th>Tax Rate</th>
             <th class="text-end">Invoices</th>
             <th class="text-end">Taxable Value</th>
@@ -98,6 +105,7 @@
         <tbody>
           {% for g in rate_summary %}
           <tr>
+            <td>{{ company.hsn_code|default:"—" }}</td>
             <td>{{ g.rate|floatformat:"-2" }}%</td>
             <td class="text-end">{{ g.count }}</td>
             <td class="text-end">&#8377;{{ g.taxable|floatformat:2 }}</td>
@@ -109,7 +117,7 @@
         </tbody>
         <tfoot>
           <tr class="fw-bold">
-            <td>Total</td>
+            <td colspan="2">Total</td>
             <td class="text-end">{{ invoice_count }}</td>
             <td class="text-end">&#8377;{{ totals.taxable|floatformat:2 }}</td>
             <td class="text-end">&#8377;{{ totals.cgst|floatformat:2 }}</td>
@@ -138,6 +146,7 @@
             <th>Date</th>
             <th>Client</th>
             <th>GSTIN</th>
+            <th>HSN/SAC</th>
             <th class="text-end">Taxable</th>
             <th class="text-end">Rate</th>
             <th class="text-end">CGST</th>
@@ -153,6 +162,7 @@
             <td>{{ r.issue_date|date:"d M Y" }}</td>
             <td>{{ r.client }}</td>
             <td>{% if r.gstin %}{{ r.gstin }}{% else %}<span class="text-muted">B2C</span>{% endif %}</td>
+            <td>{{ company.hsn_code|default:"—" }}</td>
             <td class="text-end">&#8377;{{ r.taxable|floatformat:2 }}</td>
             <td class="text-end">{{ r.rate|floatformat:"-2" }}%</td>
             <td class="text-end">&#8377;{{ r.cgst|floatformat:2 }}</td>
@@ -164,7 +174,7 @@
         </tbody>
         <tfoot>
           <tr class="fw-bold">
-            <td colspan="4">Total ({{ invoice_count }} invoices)</td>
+            <td colspan="5">Total ({{ invoice_count }} invoices)</td>
             <td class="text-end">&#8377;{{ totals.taxable|floatformat:2 }}</td>
             <td></td>
             <td class="text-end">&#8377;{{ totals.cgst|floatformat:2 }}</td>

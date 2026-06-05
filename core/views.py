@@ -3839,20 +3839,22 @@ def export_gst_summary(request):
     ws.append([f"Period: {data['month_start'].strftime('%d %b %Y')} to {data['month_end'].strftime('%d %b %Y')}"])
     ws.append([])
 
-    # Rate-wise summary
-    ws.append(["Rate-wise summary"])
+    hsn = company.hsn_code or '—'
+
+    # HSN/SAC- and rate-wise summary (GSTR-1 HSN section)
+    ws.append(["HSN/SAC & rate-wise summary"])
     ws.cell(row=ws.max_row, column=1).font = bold
-    rate_headers = ['Tax Rate %', 'Invoices', 'Taxable Value', 'CGST', 'SGST', 'Total Tax']
+    rate_headers = ['HSN/SAC', 'Tax Rate %', 'Invoices', 'Taxable Value', 'CGST', 'SGST', 'Total Tax']
     ws.append(rate_headers)
     for c in range(1, len(rate_headers) + 1):
         ws.cell(row=ws.max_row, column=c).font = bold
     for g in data['rate_summary']:
         ws.append([
-            float(g['rate']), g['count'], float(g['taxable']),
+            hsn, float(g['rate']), g['count'], float(g['taxable']),
             float(g['cgst']), float(g['sgst']), float(g['tax']),
         ])
     t = data['totals']
-    ws.append(['Total', data['invoice_count'], float(t['taxable']),
+    ws.append(['', 'Total', data['invoice_count'], float(t['taxable']),
                float(t['cgst']), float(t['sgst']), float(t['tax'])])
     for c in range(1, len(rate_headers) + 1):
         ws.cell(row=ws.max_row, column=c).font = bold
@@ -3862,7 +3864,7 @@ def export_gst_summary(request):
     # Invoice-wise detail
     ws.append(["Invoice-wise detail"])
     ws.cell(row=ws.max_row, column=1).font = bold
-    headers = ['Invoice No.', 'Date', 'Client', 'GSTIN', 'Taxable Value',
+    headers = ['Invoice No.', 'Date', 'Client', 'GSTIN', 'HSN/SAC', 'Taxable Value',
                'Rate %', 'CGST', 'SGST', 'Total Tax', 'Invoice Total', 'Filing Status']
     ws.append(headers)
     for c in range(1, len(headers) + 1):
@@ -3873,6 +3875,7 @@ def export_gst_summary(request):
             r['issue_date'].strftime('%Y-%m-%d') if r['issue_date'] else '',
             r['client'],
             r['gstin'] or '',
+            hsn,
             float(r['taxable']),
             float(r['rate']),
             float(r['cgst']),
@@ -3881,14 +3884,14 @@ def export_gst_summary(request):
             float(r['total']),
             r['filing_status'],
         ])
-    ws.append(['', '', '', 'Total', float(t['taxable']), '',
+    ws.append(['', '', '', 'Total', '', float(t['taxable']), '',
                float(t['cgst']), float(t['sgst']), float(t['tax']), float(t['total']), ''])
     for c in range(1, len(headers) + 1):
         ws.cell(row=ws.max_row, column=c).font = bold
 
     # Column widths
-    for col, width in {'A': 16, 'B': 12, 'C': 28, 'D': 20, 'E': 15,
-                       'F': 9, 'G': 13, 'H': 13, 'I': 13, 'J': 15, 'K': 18}.items():
+    for col, width in {'A': 16, 'B': 12, 'C': 28, 'D': 20, 'E': 14, 'F': 15,
+                       'G': 9, 'H': 13, 'I': 13, 'J': 13, 'K': 15, 'L': 18}.items():
         ws.column_dimensions[col].width = width
 
     response = HttpResponse(
@@ -3898,6 +3901,31 @@ def export_gst_summary(request):
     response['Content-Disposition'] = f'attachment; filename="{filename}"'
     wb.save(response)
     return response
+
+
+@login_required
+def gst_summary_pdf(request):
+    """Branded printable / PDF GST summary for the selected month."""
+    from django.http import HttpResponse
+    from django.template.loader import render_to_string
+
+    context = _gst_summary_data(request)
+    download = request.GET.get('download', '0') == '1'
+
+    if download:
+        try:
+            from weasyprint import HTML
+            html_string = render_to_string('reports/gst_summary_pdf.html', context)
+            html = HTML(string=html_string, base_url=request.build_absolute_uri('/'))
+            response = HttpResponse(html.write_pdf(), content_type='application/pdf')
+            response['Content-Disposition'] = (
+                f'attachment; filename="gst_summary_{context["month_value"]}.pdf"'
+            )
+            return response
+        except ImportError:
+            messages.warning(request, 'PDF generation requires WeasyPrint. Showing printable view instead.')
+
+    return render(request, 'reports/gst_summary_pdf.html', context)
 
 
 # ============== Global Search ==============
