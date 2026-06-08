@@ -2462,6 +2462,24 @@ class OwnerProjectStatusUpdateView(APIView):
         return Response(_project_board_card(project))
 
 
+@extend_schema(tags=['Owner'])
+class OwnerTeamMemberListView(APIView):
+    """Owner/Partner: List active team members (for task assignment)."""
+    permission_classes = [IsAuthenticated, IsOwnerOrPartner]
+
+    def get(self, request):
+        from core.models import TeamMember
+
+        members = TeamMember.objects.filter(is_active=True).order_by('name')
+        data = [{
+            'id': str(m.id),
+            'name': m.name,
+            'role': m.role,
+            'role_display': m.get_role_display(),
+        } for m in members]
+        return Response(data)
+
+
 def _daily_task_payload(task):
     return {
         'id': str(task.id),

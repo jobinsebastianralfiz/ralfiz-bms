@@ -94,6 +94,7 @@ urlpatterns = [
     # Owner: Projects Board & Daily Tasks (dashboards)
     path('owner/project-board/', views.OwnerProjectBoardView.as_view(), name='owner_project_board'),
     path('owner/projects/<uuid:pk>/status/', views.OwnerProjectStatusUpdateView.as_view(), name='owner_project_status'),
+    path('owner/team-members/', views.OwnerTeamMemberListView.as_view(), name='owner_team_members'),
     path('owner/daily-tasks/', views.OwnerDailyTaskListCreateView.as_view(), name='owner_daily_tasks'),
     path('owner/daily-tasks/<uuid:pk>/', views.OwnerDailyTaskDetailView.as_view(), name='owner_daily_task_detail'),
     path('owner/credentials/create/', views.OwnerCredentialCreateView.as_view(), name='owner_credential_create'),
