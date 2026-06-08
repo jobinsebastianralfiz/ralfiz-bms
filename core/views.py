@@ -5457,9 +5457,11 @@ def projects_dashboard(request):
     """Sticky-note style board of projects grouped by status."""
     projects = Project.objects.select_related('client').all()
 
-    show_closed = request.GET.get('show_closed') == '1'
-    if not show_closed:
-        projects = projects.exclude(status__in=['completed', 'cancelled'])
+    # By default the board shows only active work (confirmed + in progress).
+    # The "show all" toggle reveals every other status too.
+    show_all = request.GET.get('show_all') == '1'
+    if not show_all:
+        projects = projects.filter(status__in=['confirmed', 'in_progress'])
 
     search = request.GET.get('search', '').strip()
     if search:
@@ -5475,7 +5477,7 @@ def projects_dashboard(request):
         'projects': projects,
         'status_choices': Project.STATUS_CHOICES,
         'search': search,
-        'show_closed': show_closed,
+        'show_all': show_all,
         'total_count': len(projects),
     }
     return render(request, 'dashboards/projects_board.html', context)
