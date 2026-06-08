@@ -2394,7 +2394,11 @@ def _project_board_card(project):
     }
 
 
-@extend_schema(tags=['Owner'])
+@extend_schema(tags=['Owner'], parameters=[
+    OpenApiParameter(name='include_all', type=bool, required=False,
+                     description='Include every status. Default shows only confirmed + in_progress.'),
+    OpenApiParameter(name='search', type=str, required=False),
+])
 class OwnerProjectBoardView(APIView):
     """Owner/Partner: Projects grouped by status for the sticky-note board."""
     permission_classes = [IsAuthenticated, IsOwnerOrPartner]
@@ -2404,8 +2408,14 @@ class OwnerProjectBoardView(APIView):
 
         projects = Project.objects.select_related('client')
 
-        if request.query_params.get('include_closed') not in ('1', 'true', 'True'):
-            projects = projects.exclude(status__in=['completed', 'cancelled'])
+        # By default the board shows only active work (confirmed + in progress).
+        # Pass include_all=1 to return every status. (include_closed kept as a
+        # legacy alias.)
+        params = request.query_params
+        show_all = (params.get('include_all') in ('1', 'true', 'True')
+                    or params.get('include_closed') in ('1', 'true', 'True'))
+        if not show_all:
+            projects = projects.filter(status__in=['confirmed', 'in_progress'])
 
         search = request.query_params.get('search')
         if search:
