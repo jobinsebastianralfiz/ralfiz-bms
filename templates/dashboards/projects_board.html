@@ -1,0 +1,291 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Projects Board - Ralfiz BMS{% endblock %}
+
+{% block extra_css %}
+<style>
+  .pb-header {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 1.5rem;
+  }
+  .pb-header h1 {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .pb-header h1 i { color: var(--primary); }
+  .pb-count {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    font-weight: 500;
+  }
+  .pb-toolbar { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+  .pb-toolbar input[type="text"] {
+    padding: 8px 12px;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    background: var(--bg-card);
+    color: var(--text-primary);
+    font-size: 0.85rem;
+    min-width: 200px;
+  }
+  .pb-toggle {
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    text-decoration: none;
+    padding: 8px 12px;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+  }
+  .pb-toggle.active { background: var(--primary-bg); color: var(--primary); border-color: var(--primary); }
+
+  /* Sticky note grid (mirrors the physical pin board) */
+  .pb-board {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+    gap: 28px 22px;
+    padding: 12px 6px 40px;
+  }
+
+  .sticky {
+    position: relative;
+    background: #fff7d6;
+    background-image: linear-gradient(180deg, #fffbe9 0%, #fff3b8 100%);
+    border-radius: 4px;
+    padding: 26px 18px 16px;
+    min-height: 180px;
+    box-shadow: 0 6px 14px rgba(0,0,0,0.18);
+    display: flex;
+    flex-direction: column;
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+  }
+  .sticky:nth-child(3n) { transform: rotate(-1.4deg); }
+  .sticky:nth-child(3n+1) { transform: rotate(1.1deg); }
+  .sticky:nth-child(4n+2) { transform: rotate(-0.6deg); }
+  .sticky:hover {
+    transform: rotate(0deg) translateY(-3px);
+    box-shadow: 0 12px 22px rgba(0,0,0,0.25);
+    z-index: 5;
+  }
+
+  /* Push pin */
+  .sticky-pin {
+    position: absolute;
+    top: -10px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    box-shadow: inset -2px -2px 4px rgba(0,0,0,0.35), 0 3px 5px rgba(0,0,0,0.3);
+  }
+  .sticky-pin::after {
+    content: '';
+    position: absolute;
+    top: 5px; left: 5px;
+    width: 5px; height: 5px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.7);
+  }
+
+  .sticky-num {
+    position: absolute;
+    top: 8px; right: 12px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: #b08900;
+  }
+
+  .sticky-name {
+    font-size: 1rem;
+    font-weight: 700;
+    color: #3a2f00;
+    line-height: 1.3;
+    margin-bottom: 6px;
+    word-break: break-word;
+  }
+  .sticky-name a { color: inherit; text-decoration: none; }
+  .sticky-name a:hover { text-decoration: underline; }
+
+  .sticky-client {
+    font-size: 0.8rem;
+    color: #6b5a1e;
+    margin-bottom: 4px;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+  }
+  .sticky-type {
+    font-size: 0.72rem;
+    color: #8a7424;
+    margin-bottom: 12px;
+  }
+
+  .sticky-foot { margin-top: auto; }
+
+  .sticky-status-label {
+    font-size: 0.68rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: #8a7424;
+    margin-bottom: 4px;
+    display: block;
+  }
+  .sticky-status-select {
+    width: 100%;
+    padding: 7px 8px;
+    border-radius: 6px;
+    border: 1px solid rgba(0,0,0,0.18);
+    background: rgba(255,255,255,0.65);
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: #3a2f00;
+    cursor: pointer;
+  }
+  .sticky.is-saving { opacity: 0.6; }
+
+  .sticky-badge {
+    display: inline-block;
+    font-size: 0.66rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+    padding: 3px 8px;
+    border-radius: 20px;
+    margin-bottom: 8px;
+  }
+  .st-lead, .st-proposal, .st-negotiation { background: #e0e7ff; color: #3730a3; }
+  .st-confirmed { background: #cffafe; color: #155e75; }
+  .st-in_progress { background: #fef3c7; color: #92400e; }
+  .st-review { background: #fae8ff; color: #86198f; }
+  .st-completed { background: #dcfce7; color: #166534; }
+  .st-on_hold { background: #f1f5f9; color: #475569; }
+  .st-cancelled { background: #fee2e2; color: #991b1b; }
+
+  .sticky-overdue {
+    font-size: 0.7rem;
+    color: #b91c1c;
+    font-weight: 600;
+    margin-top: 6px;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+
+  .pb-empty {
+    text-align: center;
+    padding: 60px 20px;
+    color: var(--text-secondary);
+  }
+  .pb-empty i { font-size: 2.5rem; color: var(--text-muted); margin-bottom: 12px; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="pb-header">
+  <div>
+    <h1><i class="fas fa-thumbtack"></i> Projects Board</h1>
+    <span class="pb-count">{{ total_count }} project{{ total_count|pluralize }}{% if not show_closed %} · active{% endif %}</span>
+  </div>
+  <div class="pb-toolbar">
+    <form method="get" style="display:flex; gap:8px; align-items:center;">
+      <input type="text" name="search" value="{{ search }}" placeholder="Search project or client…">
+      {% if show_closed %}<input type="hidden" name="show_closed" value="1">{% endif %}
+      <a href="{% url 'projects_dashboard' %}{% if not show_closed %}?show_closed=1{% endif %}" class="pb-toggle {% if show_closed %}active{% endif %}">
+        <i class="fas fa-box-archive"></i> {% if show_closed %}Hide{% else %}Show{% endif %} closed
+      </a>
+      <a href="{% url 'project_create' %}" class="pb-toggle"><i class="fas fa-plus"></i> New</a>
+    </form>
+  </div>
+</div>
+
+{% if projects %}
+<div class="pb-board">
+  {% for project in projects %}
+  <div class="sticky" data-project="{{ project.pk }}">
+    <span class="sticky-pin" style="background: {{ project.pin_color }};"></span>
+    <span class="sticky-num">{{ forloop.counter }}</span>
+
+    <div class="sticky-name"><a href="{% url 'project_detail' project.pk %}">{{ project.name }}</a></div>
+    <div class="sticky-client"><i class="fas fa-user"></i> {{ project.client.name|default:"—" }}</div>
+    <div class="sticky-type">{{ project.get_project_type_display }}</div>
+
+    <div class="sticky-foot">
+      <span class="sticky-badge st-{{ project.status }}" data-badge>{{ project.get_status_display }}</span>
+      {% if project.is_overdue %}
+      <div class="sticky-overdue"><i class="fas fa-triangle-exclamation"></i> Overdue</div>
+      {% endif %}
+      <label class="sticky-status-label">Update status</label>
+      <select class="sticky-status-select" data-status-select data-url="{% url 'project_status_update' project.pk %}">
+        {% for value, label in status_choices %}
+        <option value="{{ value }}" {% if project.status == value %}selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% else %}
+<div class="pb-empty">
+  <div><i class="fas fa-thumbtack"></i></div>
+  <p>No projects to show{% if search %} for “{{ search }}”{% endif %}.</p>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  (function () {
+    const csrftoken = '{{ csrf_token }}';
+    const badgeClasses = ['st-lead','st-proposal','st-negotiation','st-confirmed','st-in_progress','st-review','st-completed','st-on_hold','st-cancelled'];
+
+    document.querySelectorAll('[data-status-select]').forEach(function (sel) {
+      sel.addEventListener('change', function () {
+        const card = sel.closest('.sticky');
+        const url = sel.getAttribute('data-url');
+        const newStatus = sel.value;
+        card.classList.add('is-saving');
+
+        const body = new URLSearchParams();
+        body.append('status', newStatus);
+
+        fetch(url, {
+          method: 'POST',
+          headers: { 'X-Requested-With': 'XMLHttpRequest', 'X-CSRFToken': csrftoken },
+          body: body,
+        })
+          .then(r => r.json())
+          .then(data => {
+            card.classList.remove('is-saving');
+            if (data.success) {
+              const badge = card.querySelector('[data-badge]');
+              if (badge) {
+                badge.textContent = data.status_display;
+                badgeClasses.forEach(c => badge.classList.remove(c));
+                badge.classList.add('st-' + data.status);
+              }
+            } else {
+              alert('Could not update status.');
+            }
+          })
+          .catch(() => {
+            card.classList.remove('is-saving');
+            alert('Network error while updating status.');
+          });
+      });
+    });
+  })();
+</script>
+{% endblock %}

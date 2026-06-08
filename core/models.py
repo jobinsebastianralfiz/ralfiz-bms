@@ -1584,3 +1584,46 @@ class FeatureRequestLink(models.Model):
     @property
     def is_submitted(self):
         return self.submitted_at is not None
+
+
+class DailyTask(models.Model):
+    """Lightweight daily to-do item, independent of project-bound Tasks.
+
+    Used by the Daily Tasks dashboard (web + mobile owner app) for ad-hoc
+    day-to-day work that may or may not be tied to a project.
+    """
+    STATUS_CHOICES = [
+        ('pending', 'Pending'),
+        ('in_progress', 'In Progress'),
+        ('done', 'Done'),
+    ]
+    PRIORITY_CHOICES = [
+        ('low', 'Low'),
+        ('medium', 'Medium'),
+        ('high', 'High'),
+    ]
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    title = models.CharField(max_length=255)
+    description = models.TextField(blank=True)
+    date = models.DateField(default=timezone.localdate, help_text='The day this task is planned for')
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
+    priority = models.CharField(max_length=10, choices=PRIORITY_CHOICES, default='medium')
+    assigned_to = models.ForeignKey(
+        'TeamMember', on_delete=models.SET_NULL, null=True, blank=True, related_name='daily_tasks'
+    )
+    project = models.ForeignKey(
+        'Project', on_delete=models.SET_NULL, null=True, blank=True, related_name='daily_tasks'
+    )
+    created_by = models.ForeignKey(
+        User, on_delete=models.SET_NULL, null=True, blank=True, related_name='created_daily_tasks'
+    )
+    completed_at = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['-date', 'status', '-created_at']
+
+    def __str__(self):
+        return self.title

@@ -9,6 +9,7 @@ from .models import (
     AMCContract, AMCPayment, CredentialRenewal,
     BankAccount, InternalTransfer,
     CompanyDocument, Partner, CapitalContribution, CompanyAsset,
+    DailyTask,
 )
 
 
@@ -435,6 +436,15 @@ class CredentialRenewalAdmin(admin.ModelAdmin):
     list_filter = ['renewed_date']
     search_fields = ['credential__name', 'credential__project__name']
     ordering = ['-renewed_date']
+
+
+@admin.register(DailyTask)
+class DailyTaskAdmin(admin.ModelAdmin):
+    list_display = ['title', 'date', 'status', 'priority', 'assigned_to', 'project', 'created_at']
+    list_filter = ['status', 'priority', 'date']
+    search_fields = ['title', 'description', 'assigned_to__name', 'project__name']
+    ordering = ['-date', '-created_at']
+    autocomplete_fields = ['assigned_to', 'project', 'created_by']
 
 
 # Customize admin site

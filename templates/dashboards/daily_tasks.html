@@ -1,0 +1,256 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Daily Tasks - Ralfiz BMS{% endblock %}
+
+{% block extra_css %}
+<style>
+  .dt-header {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 1.25rem;
+  }
+  .dt-header h1 {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .dt-header h1 i { color: var(--primary); }
+  .dt-datenav { display: flex; align-items: center; gap: 8px; }
+  .dt-datenav input[type="date"] {
+    padding: 8px 12px;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    background: var(--bg-card);
+    color: var(--text-primary);
+    font-size: 0.85rem;
+  }
+  .dt-btn {
+    padding: 8px 14px;
+    border-radius: 8px;
+    border: 1px solid var(--border-color);
+    background: var(--bg-card);
+    color: var(--text-secondary);
+    font-size: 0.82rem;
+    cursor: pointer;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .dt-btn-primary { background: var(--primary); color: #fff; border-color: var(--primary); }
+
+  /* Add task form */
+  .dt-add {
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    padding: 14px;
+    margin-bottom: 1.5rem;
+    display: grid;
+    grid-template-columns: 2fr 1fr 1fr 1fr auto;
+    gap: 10px;
+    align-items: end;
+  }
+  .dt-add label { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.4px; color: var(--text-muted); display: block; margin-bottom: 4px; }
+  .dt-add input, .dt-add select {
+    width: 100%;
+    padding: 8px 10px;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    background: var(--bg-body);
+    color: var(--text-primary);
+    font-size: 0.85rem;
+  }
+  @media (max-width: 900px) { .dt-add { grid-template-columns: 1fr 1fr; } }
+
+  /* Columns */
+  .dt-board {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+  }
+  @media (max-width: 900px) { .dt-board { grid-template-columns: 1fr; } }
+
+  .dt-col {
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    display: flex;
+    flex-direction: column;
+    min-height: 200px;
+  }
+  .dt-col-head {
+    padding: 12px 14px;
+    border-bottom: 1px solid var(--border-color);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-weight: 700;
+    font-size: 0.9rem;
+    color: var(--text-primary);
+  }
+  .dt-dot { width: 10px; height: 10px; border-radius: 3px; display: inline-block; margin-right: 8px; }
+  .dt-dot.pending { background: var(--text-muted); }
+  .dt-dot.in_progress { background: var(--info, #3b82f6); }
+  .dt-dot.done { background: var(--success, #22c55e); }
+  .dt-col-count {
+    background: var(--bg-hover);
+    color: var(--text-secondary);
+    padding: 2px 9px;
+    border-radius: 10px;
+    font-size: 0.75rem;
+    font-weight: 600;
+  }
+  .dt-col-body { padding: 10px; display: flex; flex-direction: column; gap: 10px; }
+
+  .dt-card {
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+    padding: 11px 12px;
+    background: var(--bg-body);
+    position: relative;
+  }
+  .dt-card.prio-high { border-left: 3px solid #ef4444; }
+  .dt-card.prio-medium { border-left: 3px solid #f59e0b; }
+  .dt-card.prio-low { border-left: 3px solid #22c55e; }
+  .dt-card-title { font-weight: 600; font-size: 0.88rem; color: var(--text-primary); margin-bottom: 5px; }
+  .dt-card.done .dt-card-title { text-decoration: line-through; color: var(--text-muted); }
+  .dt-card-desc { font-size: 0.78rem; color: var(--text-secondary); margin-bottom: 8px; white-space: pre-wrap; }
+  .dt-card-meta { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 9px; }
+  .dt-tag {
+    font-size: 0.7rem;
+    padding: 2px 7px;
+    border-radius: 5px;
+    background: var(--bg-hover);
+    color: var(--text-secondary);
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+  }
+  .dt-card-actions { display: flex; gap: 6px; align-items: center; }
+  .dt-card-actions select {
+    flex: 1;
+    padding: 5px 7px;
+    border-radius: 6px;
+    border: 1px solid var(--border-color);
+    background: var(--bg-card);
+    color: var(--text-primary);
+    font-size: 0.78rem;
+    cursor: pointer;
+  }
+  .dt-del {
+    border: none;
+    background: transparent;
+    color: var(--text-muted);
+    cursor: pointer;
+    padding: 4px 6px;
+    border-radius: 6px;
+  }
+  .dt-del:hover { color: #ef4444; background: var(--danger-bg, #fee2e2); }
+  .dt-card.is-saving { opacity: 0.55; }
+
+  .dt-empty { text-align: center; padding: 24px 10px; color: var(--text-muted); font-size: 0.82rem; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="dt-header">
+  <div>
+    <h1><i class="fas fa-list-check"></i> Daily Tasks</h1>
+  </div>
+  <form method="get" class="dt-datenav">
+    <a class="dt-btn" href="{% url 'daily_tasks_dashboard' %}?date={{ today|date:'Y-m-d' }}">Today</a>
+    <input type="date" name="date" value="{{ selected_date|date:'Y-m-d' }}" onchange="this.form.submit()">
+  </form>
+</div>
+
+<!-- Add task -->
+<form method="post" action="{% url 'daily_task_create' %}" class="dt-add">
+  {% csrf_token %}
+  <input type="hidden" name="date" value="{{ selected_date|date:'Y-m-d' }}">
+  <div>
+    <label>Task</label>
+    <input type="text" name="title" placeholder="What needs to get done?" required>
+  </div>
+  <div>
+    <label>Assign to</label>
+    <select name="assigned_to">
+      <option value="">— Anyone —</option>
+      {% for m in team_members %}<option value="{{ m.pk }}">{{ m.name }}</option>{% endfor %}
+    </select>
+  </div>
+  <div>
+    <label>Project</label>
+    <select name="project">
+      <option value="">— None —</option>
+      {% for p in projects %}<option value="{{ p.pk }}">{{ p.name }}</option>{% endfor %}
+    </select>
+  </div>
+  <div>
+    <label>Priority</label>
+    <select name="priority">
+      {% for value, label in priority_choices %}<option value="{{ value }}" {% if value == 'medium' %}selected{% endif %}>{{ label }}</option>{% endfor %}
+    </select>
+  </div>
+  <button type="submit" class="dt-btn dt-btn-primary"><i class="fas fa-plus"></i> Add</button>
+</form>
+
+<div class="dt-board">
+  <!-- Pending -->
+  <div class="dt-col">
+    <div class="dt-col-head"><span><span class="dt-dot pending"></span>Pending</span><span class="dt-col-count">{{ pending_tasks|length }}</span></div>
+    <div class="dt-col-body">
+      {% for task in pending_tasks %}{% include 'dashboards/_daily_task_card.html' %}{% empty %}<div class="dt-empty">Nothing pending</div>{% endfor %}
+    </div>
+  </div>
+  <!-- In Progress -->
+  <div class="dt-col">
+    <div class="dt-col-head"><span><span class="dt-dot in_progress"></span>In Progress</span><span class="dt-col-count">{{ in_progress_tasks|length }}</span></div>
+    <div class="dt-col-body">
+      {% for task in in_progress_tasks %}{% include 'dashboards/_daily_task_card.html' %}{% empty %}<div class="dt-empty">None in progress</div>{% endfor %}
+    </div>
+  </div>
+  <!-- Done -->
+  <div class="dt-col">
+    <div class="dt-col-head"><span><span class="dt-dot done"></span>Done</span><span class="dt-col-count">{{ done_tasks|length }}</span></div>
+    <div class="dt-col-body">
+      {% for task in done_tasks %}{% include 'dashboards/_daily_task_card.html' %}{% empty %}<div class="dt-empty">Nothing done yet</div>{% endfor %}
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  (function () {
+    const csrftoken = '{{ csrf_token }}';
+    document.querySelectorAll('[data-dt-status]').forEach(function (sel) {
+      sel.addEventListener('change', function () {
+        const card = sel.closest('.dt-card');
+        card.classList.add('is-saving');
+        const body = new URLSearchParams();
+        body.append('status', sel.value);
+        fetch(sel.getAttribute('data-url'), {
+          method: 'POST',
+          headers: { 'X-Requested-With': 'XMLHttpRequest', 'X-CSRFToken': csrftoken },
+          body: body,
+        })
+          .then(r => r.json())
+          .then(data => {
+            if (data.success) { window.location.reload(); }
+            else { card.classList.remove('is-saving'); alert('Could not update status.'); }
+          })
+          .catch(() => { card.classList.remove('is-saving'); alert('Network error.'); });
+      });
+    });
+  })();
+</script>
+{% endblock %}

@@ -19,6 +19,7 @@ from .models import (
     OpeningBalance, FYResetEvent,
     BankAccount, InternalTransfer,
     CompanyDocument, Partner, CapitalContribution, CompanyAsset,
+    DailyTask,
 )
 from django.contrib.contenttypes.models import ContentType
 from licensing.models import License, LicenseKey, LicenseActivation
@@ -5443,6 +5444,182 @@ def task_status_update(request, pk):
         return JsonResponse({'success': False})
 
     return redirect('task_detail', pk=pk)
+
+
+# ============== Projects Dashboard (sticky-note board) ==============
+
+# Push-pin colours cycled across the sticky notes (mirrors the physical board)
+_STICKY_COLORS = ['#3b82f6', '#f59e0b', '#22c55e', '#ef4444', '#8b5cf6', '#ec4899', '#06b6d4']
+
+
+@login_required
+def projects_dashboard(request):
+    """Sticky-note style board of projects grouped by status."""
+    projects = Project.objects.select_related('client').all()
+
+    show_closed = request.GET.get('show_closed') == '1'
+    if not show_closed:
+        projects = projects.exclude(status__in=['completed', 'cancelled'])
+
+    search = request.GET.get('search', '').strip()
+    if search:
+        projects = projects.filter(
+            Q(name__icontains=search) | Q(client__name__icontains=search)
+        )
+
+    projects = list(projects.order_by('-updated_at'))
+    for idx, p in enumerate(projects):
+        p.pin_color = _STICKY_COLORS[idx % len(_STICKY_COLORS)]
+
+    context = {
+        'projects': projects,
+        'status_choices': Project.STATUS_CHOICES,
+        'search': search,
+        'show_closed': show_closed,
+        'total_count': len(projects),
+    }
+    return render(request, 'dashboards/projects_board.html', context)
+
+
+@login_required
+def project_status_update(request, pk):
+    """Update a project's status from the sticky-note board (AJAX/form)."""
+    from django.http import JsonResponse
+
+    if request.method != 'POST':
+        return redirect('projects_dashboard')
+
+    project = get_object_or_404(Project, pk=pk)
+    new_status = request.POST.get('status')
+
+    if new_status in dict(Project.STATUS_CHOICES):
+        project.status = new_status
+        if new_status == 'completed' and not project.completed_date:
+            project.completed_date = timezone.now().date()
+        project.save(update_fields=['status', 'completed_date', 'updated_at'])
+        log_activity(request, 'updated', project)
+
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            return JsonResponse({
+                'success': True,
+                'status': project.status,
+                'status_display': project.get_status_display(),
+            })
+        messages.success(request, f'"{project.name}" moved to {project.get_status_display()}.')
+        return redirect('projects_dashboard')
+
+    if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+        return JsonResponse({'success': False, 'error': 'Invalid status'}, status=400)
+    return redirect('projects_dashboard')
+
+
+# ============== Daily Tasks Dashboard ==============
+
+@login_required
+def daily_tasks_dashboard(request):
+    """Daily to-do board: create tasks for a day and update their status."""
+    from datetime import datetime as _dt
+
+    date_str = request.GET.get('date', '')
+    if date_str:
+        try:
+            selected_date = _dt.strptime(date_str, '%Y-%m-%d').date()
+        except ValueError:
+            selected_date = timezone.localdate()
+    else:
+        selected_date = timezone.localdate()
+
+    tasks = DailyTask.objects.select_related('assigned_to', 'project').filter(date=selected_date)
+
+    context = {
+        'selected_date': selected_date,
+        'pending_tasks': tasks.filter(status='pending'),
+        'in_progress_tasks': tasks.filter(status='in_progress'),
+        'done_tasks': tasks.filter(status='done'),
+        'total_count': tasks.count(),
+        'team_members': TeamMember.objects.filter(is_active=True),
+        'projects': Project.objects.exclude(status__in=['completed', 'cancelled']).order_by('name'),
+        'status_choices': DailyTask.STATUS_CHOICES,
+        'priority_choices': DailyTask.PRIORITY_CHOICES,
+        'today': timezone.localdate(),
+    }
+    return render(request, 'dashboards/daily_tasks.html', context)
+
+
+@login_required
+def daily_task_create(request):
+    """Create a daily task."""
+    if request.method != 'POST':
+        return redirect('daily_tasks_dashboard')
+
+    title = (request.POST.get('title') or '').strip()
+    if not title:
+        messages.error(request, 'Task title is required.')
+        return redirect('daily_tasks_dashboard')
+
+    date_str = request.POST.get('date') or ''
+    task_date = timezone.localdate()
+    if date_str:
+        from datetime import datetime as _dt
+        try:
+            task_date = _dt.strptime(date_str, '%Y-%m-%d').date()
+        except ValueError:
+            pass
+
+    task = DailyTask.objects.create(
+        title=title,
+        description=(request.POST.get('description') or '').strip(),
+        date=task_date,
+        priority=request.POST.get('priority') if request.POST.get('priority') in dict(DailyTask.PRIORITY_CHOICES) else 'medium',
+        assigned_to_id=request.POST.get('assigned_to') or None,
+        project_id=request.POST.get('project') or None,
+        created_by=request.user,
+    )
+    log_activity(request, 'created', task)
+    messages.success(request, 'Daily task added.')
+    return redirect(f"{reverse('daily_tasks_dashboard')}?date={task_date.isoformat()}")
+
+
+@login_required
+def daily_task_status_update(request, pk):
+    """Update a daily task's status (AJAX/form)."""
+    from django.http import JsonResponse
+
+    if request.method != 'POST':
+        return redirect('daily_tasks_dashboard')
+
+    task = get_object_or_404(DailyTask, pk=pk)
+    new_status = request.POST.get('status')
+
+    if new_status in dict(DailyTask.STATUS_CHOICES):
+        task.status = new_status
+        task.completed_at = timezone.now() if new_status == 'done' else None
+        task.save(update_fields=['status', 'completed_at', 'updated_at'])
+        log_activity(request, 'updated', task)
+
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            return JsonResponse({
+                'success': True,
+                'status': task.status,
+                'status_display': task.get_status_display(),
+            })
+        return redirect(f"{reverse('daily_tasks_dashboard')}?date={task.date.isoformat()}")
+
+    if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+        return JsonResponse({'success': False, 'error': 'Invalid status'}, status=400)
+    return redirect('daily_tasks_dashboard')
+
+
+@login_required
+def daily_task_delete(request, pk):
+    """Delete a daily task."""
+    task = get_object_or_404(DailyTask, pk=pk)
+    task_date = task.date
+    if request.method == 'POST':
+        log_activity(request, 'deleted', task)
+        task.delete()
+        messages.success(request, 'Daily task deleted.')
+    return redirect(f"{reverse('daily_tasks_dashboard')}?date={task_date.isoformat()}")
 
 
 # ============== Time Entry Views ==============

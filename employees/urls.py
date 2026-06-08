@@ -90,6 +90,12 @@ urlpatterns = [
     path('owner/clients/<uuid:pk>/edit/', views.OwnerClientUpdateDeleteView.as_view(), name='owner_client_edit'),
     path('owner/projects/create/', views.OwnerProjectCreateView.as_view(), name='owner_project_create'),
     path('owner/projects/<uuid:pk>/edit/', views.OwnerProjectUpdateDeleteView.as_view(), name='owner_project_edit'),
+
+    # Owner: Projects Board & Daily Tasks (dashboards)
+    path('owner/project-board/', views.OwnerProjectBoardView.as_view(), name='owner_project_board'),
+    path('owner/projects/<uuid:pk>/status/', views.OwnerProjectStatusUpdateView.as_view(), name='owner_project_status'),
+    path('owner/daily-tasks/', views.OwnerDailyTaskListCreateView.as_view(), name='owner_daily_tasks'),
+    path('owner/daily-tasks/<uuid:pk>/', views.OwnerDailyTaskDetailView.as_view(), name='owner_daily_task_detail'),
     path('owner/credentials/create/', views.OwnerCredentialCreateView.as_view(), name='owner_credential_create'),
     path('owner/credentials/<uuid:pk>/edit/', views.OwnerCredentialUpdateDeleteView.as_view(), name='owner_credential_edit'),
     path('owner/invoices/create/', views.OwnerInvoiceCreateView.as_view(), name='owner_invoice_create'),

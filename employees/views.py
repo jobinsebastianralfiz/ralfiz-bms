@@ -2376,6 +2376,232 @@ class OwnerProjectUpdateDeleteView(APIView):
         return Response({'message': 'Project deleted'}, status=status.HTTP_204_NO_CONTENT)
 
 
+# ---- Owner: Projects Board & Daily Tasks (dashboards) ----
+
+def _project_board_card(project):
+    return {
+        'id': str(project.id),
+        'name': project.name,
+        'client_id': str(project.client_id) if project.client_id else None,
+        'client_name': project.client.name if project.client else '',
+        'status': project.status,
+        'status_display': project.get_status_display(),
+        'project_type': project.project_type,
+        'project_type_display': project.get_project_type_display(),
+        'deadline': str(project.deadline) if project.deadline else None,
+        'is_overdue': project.is_overdue,
+        'updated_at': project.updated_at.isoformat(),
+    }
+
+
+@extend_schema(tags=['Owner'])
+class OwnerProjectBoardView(APIView):
+    """Owner/Partner: Projects grouped by status for the sticky-note board."""
+    permission_classes = [IsAuthenticated, IsOwnerOrPartner]
+
+    def get(self, request):
+        from core.models import Project
+
+        projects = Project.objects.select_related('client')
+
+        if request.query_params.get('include_closed') not in ('1', 'true', 'True'):
+            projects = projects.exclude(status__in=['completed', 'cancelled'])
+
+        search = request.query_params.get('search')
+        if search:
+            projects = projects.filter(
+                models.Q(name__icontains=search) | models.Q(client__name__icontains=search)
+            )
+
+        projects = list(projects.order_by('-updated_at'))
+
+        columns = []
+        for value, label in Project.STATUS_CHOICES:
+            cards = [_project_board_card(p) for p in projects if p.status == value]
+            columns.append({'status': value, 'label': label, 'count': len(cards), 'projects': cards})
+
+        return Response({
+            'status_choices': [{'value': v, 'label': l} for v, l in Project.STATUS_CHOICES],
+            'total': len(projects),
+            'columns': columns,
+        })
+
+
+@extend_schema(tags=['Owner'])
+class OwnerProjectStatusUpdateView(APIView):
+    """Owner/Partner: Update only a project's status (board drag/dropdown)."""
+    permission_classes = [IsAuthenticated, IsOwnerOrPartner]
+
+    def post(self, request, pk):
+        from core.models import Project
+        from django.utils import timezone as _tz
+
+        try:
+            project = Project.objects.select_related('client').get(pk=pk)
+        except Project.DoesNotExist:
+            return Response({'error': 'Project not found'}, status=status.HTTP_404_NOT_FOUND)
+
+        new_status = request.data.get('status')
+        if new_status not in dict(Project.STATUS_CHOICES):
+            return Response({'error': 'Invalid status'}, status=status.HTTP_400_BAD_REQUEST)
+
+        project.status = new_status
+        if new_status == 'completed' and not project.completed_date:
+            project.completed_date = _tz.now().date()
+        project.save(update_fields=['status', 'completed_date', 'updated_at'])
+        return Response(_project_board_card(project))
+
+
+def _daily_task_payload(task):
+    return {
+        'id': str(task.id),
+        'title': task.title,
+        'description': task.description,
+        'date': str(task.date),
+        'status': task.status,
+        'status_display': task.get_status_display(),
+        'priority': task.priority,
+        'priority_display': task.get_priority_display(),
+        'assigned_to_id': str(task.assigned_to_id) if task.assigned_to_id else None,
+        'assigned_to_name': task.assigned_to.name if task.assigned_to else None,
+        'project_id': str(task.project_id) if task.project_id else None,
+        'project_name': task.project.name if task.project else None,
+        'completed_at': task.completed_at.isoformat() if task.completed_at else None,
+        'created_at': task.created_at.isoformat(),
+    }
+
+
+@extend_schema(tags=['Owner'], parameters=[
+    OpenApiParameter(name='date', type=str, required=False, description='YYYY-MM-DD (defaults to today)'),
+    OpenApiParameter(name='status', type=str, required=False),
+    OpenApiParameter(name='assigned_to', type=str, required=False, description='TeamMember id'),
+])
+class OwnerDailyTaskListCreateView(APIView):
+    """Owner/Partner: List daily tasks for a day, or create a new one."""
+    permission_classes = [IsAuthenticated, IsOwnerOrPartner]
+
+    def get(self, request):
+        from core.models import DailyTask
+        from datetime import datetime as _dt
+        from django.utils import timezone as _tz
+
+        tasks = DailyTask.objects.select_related('assigned_to', 'project')
+
+        date_str = request.query_params.get('date')
+        if date_str:
+            try:
+                day = _dt.strptime(date_str, '%Y-%m-%d').date()
+            except ValueError:
+                return Response({'error': 'Invalid date, use YYYY-MM-DD'}, status=status.HTTP_400_BAD_REQUEST)
+        else:
+            day = _tz.localdate()
+        tasks = tasks.filter(date=day)
+
+        status_filter = request.query_params.get('status')
+        if status_filter:
+            tasks = tasks.filter(status=status_filter)
+
+        assigned_to = request.query_params.get('assigned_to')
+        if assigned_to:
+            tasks = tasks.filter(assigned_to_id=assigned_to)
+
+        tasks = list(tasks)
+        return Response({
+            'date': str(day),
+            'status_choices': [{'value': v, 'label': l} for v, l in DailyTask.STATUS_CHOICES],
+            'priority_choices': [{'value': v, 'label': l} for v, l in DailyTask.PRIORITY_CHOICES],
+            'counts': {
+                'pending': sum(1 for t in tasks if t.status == 'pending'),
+                'in_progress': sum(1 for t in tasks if t.status == 'in_progress'),
+                'done': sum(1 for t in tasks if t.status == 'done'),
+            },
+            'tasks': [_daily_task_payload(t) for t in tasks],
+        })
+
+    def post(self, request):
+        from core.models import DailyTask
+        from datetime import datetime as _dt
+        from django.utils import timezone as _tz
+
+        title = (request.data.get('title') or '').strip()
+        if not title:
+            return Response({'error': 'title is required'}, status=status.HTTP_400_BAD_REQUEST)
+
+        day = _tz.localdate()
+        date_str = request.data.get('date')
+        if date_str:
+            try:
+                day = _dt.strptime(date_str, '%Y-%m-%d').date()
+            except ValueError:
+                return Response({'error': 'Invalid date, use YYYY-MM-DD'}, status=status.HTTP_400_BAD_REQUEST)
+
+        priority = request.data.get('priority')
+        if priority not in dict(DailyTask.PRIORITY_CHOICES):
+            priority = 'medium'
+
+        task = DailyTask.objects.create(
+            title=title,
+            description=(request.data.get('description') or '').strip(),
+            date=day,
+            priority=priority,
+            assigned_to_id=request.data.get('assigned_to') or None,
+            project_id=request.data.get('project') or None,
+            created_by=request.user,
+        )
+        return Response(_daily_task_payload(task), status=status.HTTP_201_CREATED)
+
+
+@extend_schema(tags=['Owner'])
+class OwnerDailyTaskDetailView(APIView):
+    """Owner/Partner: Update (incl. status) or delete a daily task."""
+    permission_classes = [IsAuthenticated, IsOwnerOrPartner]
+
+    def patch(self, request, pk):
+        from core.models import DailyTask
+        from datetime import datetime as _dt
+        from django.utils import timezone as _tz
+
+        try:
+            task = DailyTask.objects.select_related('assigned_to', 'project').get(pk=pk)
+        except DailyTask.DoesNotExist:
+            return Response({'error': 'Task not found'}, status=status.HTTP_404_NOT_FOUND)
+
+        if 'status' in request.data:
+            new_status = request.data['status']
+            if new_status not in dict(DailyTask.STATUS_CHOICES):
+                return Response({'error': 'Invalid status'}, status=status.HTTP_400_BAD_REQUEST)
+            task.status = new_status
+            task.completed_at = _tz.now() if new_status == 'done' else None
+
+        if 'title' in request.data:
+            task.title = (request.data['title'] or '').strip() or task.title
+        if 'description' in request.data:
+            task.description = request.data['description'] or ''
+        if 'priority' in request.data and request.data['priority'] in dict(DailyTask.PRIORITY_CHOICES):
+            task.priority = request.data['priority']
+        if 'assigned_to' in request.data:
+            task.assigned_to_id = request.data['assigned_to'] or None
+        if 'project' in request.data:
+            task.project_id = request.data['project'] or None
+        if 'date' in request.data and request.data['date']:
+            try:
+                task.date = _dt.strptime(request.data['date'], '%Y-%m-%d').date()
+            except ValueError:
+                return Response({'error': 'Invalid date, use YYYY-MM-DD'}, status=status.HTTP_400_BAD_REQUEST)
+
+        task.save()
+        return Response(_daily_task_payload(task))
+
+    def delete(self, request, pk):
+        from core.models import DailyTask
+        try:
+            task = DailyTask.objects.get(pk=pk)
+        except DailyTask.DoesNotExist:
+            return Response({'error': 'Task not found'}, status=status.HTTP_404_NOT_FOUND)
+        task.delete()
+        return Response({'message': 'Task deleted'}, status=status.HTTP_204_NO_CONTENT)
+
+
 # ---- Owner: Credential CRUD ----
 
 @extend_schema(tags=['Owner'])

@@ -66,6 +66,18 @@
     </div>
 
     <div class="nav-section">
+      <div class="nav-section-title">Dashboards</div>
+      <a href="{% url 'projects_dashboard' %}" class="nav-item {% if request.resolver_match.url_name == 'projects_dashboard' %}active{% endif %}">
+        <i class="fas fa-thumbtack"></i>
+        <span>Projects Board</span>
+      </a>
+      <a href="{% url 'daily_tasks_dashboard' %}" class="nav-item {% if 'daily_task' in request.resolver_match.url_name %}active{% endif %}">
+        <i class="fas fa-list-check"></i>
+        <span>Daily Tasks</span>
+      </a>
+    </div>
+
+    <div class="nav-section">
       <div class="nav-section-title">Management</div>
       <a href="{% url 'client_list' %}" class="nav-item {% if 'client' in request.resolver_match.url_name %}active{% endif %}">
         <i class="fas fa-users"></i>
