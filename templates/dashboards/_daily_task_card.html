@@ -1,7 +1,11 @@
-<div class="dt-card prio-{{ task.priority }} {% if task.status == 'done' %}done{% endif %}" data-task="{{ task.pk }}">
+<div class="dt-card prio-{{ task.priority }} {% if task.status == 'done' %}done{% endif %} {% if task.is_carried %}is-carried{% endif %}" data-task="{{ task.pk }}"
+     data-title="{{ task.title }}" data-description="{{ task.description }}" data-priority="{{ task.priority }}"
+     data-assigned="{{ task.assigned_to_id|default:'' }}" data-project="{{ task.project_id|default:'' }}"
+     data-date="{{ task.date|date:'Y-m-d' }}" data-edit-url="{% url 'daily_task_edit' task.pk %}">
   <div class="dt-card-title">{{ task.title }}</div>
   {% if task.description %}<div class="dt-card-desc">{{ task.description }}</div>{% endif %}
   <div class="dt-card-meta">
+    {% if task.is_carried %}<span class="dt-tag dt-tag-carried"><i class="fas fa-clock-rotate-left"></i> From {{ task.date|date:'M j' }}</span>{% endif %}
     <span class="dt-tag"><i class="fas fa-flag"></i> {{ task.get_priority_display }}</span>
     {% if task.assigned_to %}<span class="dt-tag"><i class="fas fa-user"></i> {{ task.assigned_to.name|truncatechars:14 }}</span>{% endif %}
     {% if task.project %}<span class="dt-tag"><i class="fas fa-folder"></i> {{ task.project.name|truncatechars:14 }}</span>{% endif %}
@@ -12,6 +16,7 @@
       <option value="{{ value }}" {% if task.status == value %}selected{% endif %}>{{ label }}</option>
       {% endfor %}
     </select>
+    <button type="button" class="dt-edit" data-dt-edit title="Edit"><i class="fas fa-pen"></i></button>
     <form method="post" action="{% url 'daily_task_delete' task.pk %}" onsubmit="return confirm('Delete this task?');">
       {% csrf_token %}
       <button type="submit" class="dt-del" title="Delete"><i class="fas fa-trash"></i></button>

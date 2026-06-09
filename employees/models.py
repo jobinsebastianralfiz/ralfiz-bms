@@ -510,6 +510,59 @@ class ScheduledClass(models.Model):
         return False
 
 
+class InternAssessment(models.Model):
+    """A test/assessment given to an intern, with score and downloadable files.
+
+    Created by admins from the HR employee detail page; the intern can view
+    their own assessments (score, test paper, answer key) from their login.
+    """
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    employee = models.ForeignKey(
+        Employee, on_delete=models.CASCADE, related_name='assessments',
+        help_text='The intern this assessment belongs to'
+    )
+    title = models.CharField(max_length=255, help_text='e.g. "Aptitude Test 1"')
+    description = models.TextField(blank=True)
+    date = models.DateField(default=timezone.localdate, help_text='Date the test was taken')
+    max_score = models.DecimalField(max_digits=6, decimal_places=2, help_text='Total marks (out of)')
+    scored = models.DecimalField(
+        max_digits=6, decimal_places=2, null=True, blank=True,
+        help_text='Marks the intern scored (leave blank if not yet graded)'
+    )
+    test_file = models.FileField(
+        upload_to='employees/assessments/papers/', blank=True, null=True,
+        help_text='The test paper (PDF)'
+    )
+    answer_key_file = models.FileField(
+        upload_to='employees/assessments/answer_keys/', blank=True, null=True,
+        help_text='The answer key (PDF) — visible to the intern'
+    )
+    created_by = models.ForeignKey(
+        User, on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='created_assessments'
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['-date', '-created_at']
+        verbose_name = 'Intern Assessment'
+        verbose_name_plural = 'Intern Assessments'
+
+    def __str__(self):
+        return f"{self.title} - {self.employee.full_name}"
+
+    @property
+    def is_graded(self):
+        return self.scored is not None
+
+    @property
+    def percentage(self):
+        if self.scored is None or not self.max_score:
+            return None
+        return round(float(self.scored) / float(self.max_score) * 100, 1)
+
+
 class Payroll(models.Model):
     """Monthly payroll/stipend record for an employee"""
     STATUS_CHOICES = [

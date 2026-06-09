@@ -18,6 +18,8 @@ urlpatterns = [
     path('leads/<int:lead_pk>/note/create/', views.lead_note_create, name='lead_note_create'),
     path('leads/<int:lead_pk>/reference-link/create/', views.lead_reference_link_create, name='lead_reference_link_create'),
     path('leads/<int:lead_pk>/reference-link/<int:ref_pk>/delete/', views.lead_reference_link_delete, name='lead_reference_link_delete'),
+    path('leads/<int:lead_pk>/quote-attachment/create/', views.lead_quote_attachment_create, name='lead_quote_attachment_create'),
+    path('leads/<int:lead_pk>/quote-attachment/<int:att_pk>/delete/', views.lead_quote_attachment_delete, name='lead_quote_attachment_delete'),
 
     # Activities
     path('activities/', views.activity_list, name='activity_list'),

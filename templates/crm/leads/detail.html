@@ -207,6 +207,56 @@
         {% empty %}
         <p class="text-muted">No quotes yet. You can send a quote before converting the lead.</p>
         {% endfor %}
+
+        <hr class="my-4">
+
+        <h4 class="card-title" style="font-size: 1rem;">Attached Quotes (prepared outside the system)</h4>
+        <p class="text-muted text-sm mb-3">Upload a quote you created elsewhere (PDF, image, Word, Excel) to keep it with this lead.</p>
+        <form method="post" action="{% url 'crm:lead_quote_attachment_create' lead_pk=lead.pk %}" enctype="multipart/form-data" class="row g-2 mb-4">
+          {% csrf_token %}
+          <div class="col-12 col-md-5">
+            <input type="text" name="title" class="form-control" placeholder="Label (optional)">
+          </div>
+          <div class="col-8 col-md-4">
+            <input type="number" step="0.01" min="0" name="amount" class="form-control" placeholder="Amount (optional)">
+          </div>
+          <div class="col-12">
+            <input type="file" name="file" class="form-control" required>
+          </div>
+          <div class="col-12">
+            <input type="text" name="notes" class="form-control" placeholder="Notes (optional)">
+          </div>
+          <div class="col-12 col-md-3 d-grid">
+            <button type="submit" class="btn btn-primary">
+              <i class="fas fa-paperclip"></i> Attach
+            </button>
+          </div>
+        </form>
+
+        {% for att in quote_attachments %}
+        <div class="d-flex justify-content-between align-items-center" style="border-bottom: 1px solid var(--border-color); padding: 0.75rem 0;">
+          <div class="text-truncate" style="min-width: 0;">
+            <a href="{{ att.file.url }}" target="_blank" rel="noopener noreferrer" class="fw-medium">
+              <i class="fas fa-file-invoice text-muted me-1"></i>{{ att.title|default:att.filename }}
+            </a>
+            {% if att.amount is not None %}<span class="fw-medium ms-2">&#8377;{{ att.amount|floatformat:2 }}</span>{% endif %}
+            {% if att.title %}<div class="text-muted text-sm text-truncate">{{ att.filename }}</div>{% endif %}
+            {% if att.notes %}<div class="text-muted text-sm">{{ att.notes }}</div>{% endif %}
+            <div class="text-muted text-sm">
+              {% if att.created_by %}{{ att.created_by.get_full_name|default:att.created_by.username }}{% else %}-{% endif %}
+              &middot; {{ att.created_at|date:"d M Y, h:i A" }}
+            </div>
+          </div>
+          <form method="post" action="{% url 'crm:lead_quote_attachment_delete' lead_pk=lead.pk att_pk=att.pk %}" onsubmit="return confirm('Remove this attached quote?');" class="ms-2">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-sm btn-outline-danger" title="Remove">
+              <i class="fas fa-trash"></i>
+            </button>
+          </form>
+        </div>
+        {% empty %}
+        <p class="text-muted">No externally-prepared quotes attached.</p>
+        {% endfor %}
       </div>
     </div>
   </div>

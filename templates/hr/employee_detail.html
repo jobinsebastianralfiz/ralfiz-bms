@@ -392,6 +392,96 @@
       </div>
       {% endif %}
     </div>
+
+    {% if employee.employment_type == 'intern' %}
+    <!-- Assessments (interns) -->
+    <div class="card mt-4">
+      <div class="card-header">
+        <h3 class="card-title"><i class="fas fa-file-signature me-2 text-primary"></i> Assessments</h3>
+      </div>
+      <div class="card-body">
+        <p class="text-muted small mb-3">Test scores and papers. The intern can view these (including the answer key) from their app login.</p>
+        <form method="post" enctype="multipart/form-data" class="row g-2 mb-4">
+          {% csrf_token %}
+          <input type="hidden" name="action" value="add_assessment">
+          <div class="col-12 col-md-6">
+            <label class="form-label small mb-1">Test / Assessment *</label>
+            <input type="text" name="title" class="form-control form-control-sm" placeholder="e.g. Aptitude Test 1" required>
+          </div>
+          <div class="col-6 col-md-3">
+            <label class="form-label small mb-1">Date</label>
+            <input type="date" name="date" value="{{ today|date:'Y-m-d' }}" class="form-control form-control-sm">
+          </div>
+          <div class="col-3 col-md-1">
+            <label class="form-label small mb-1">Out of *</label>
+            <input type="number" step="0.01" min="0" name="max_score" class="form-control form-control-sm" placeholder="100" required>
+          </div>
+          <div class="col-3 col-md-2">
+            <label class="form-label small mb-1">Scored</label>
+            <input type="number" step="0.01" min="0" name="scored" class="form-control form-control-sm" placeholder="—">
+          </div>
+          <div class="col-12 col-md-6">
+            <label class="form-label small mb-1">Test paper (PDF)</label>
+            <input type="file" name="test_file" class="form-control form-control-sm" accept=".pdf,image/*">
+          </div>
+          <div class="col-12 col-md-6">
+            <label class="form-label small mb-1">Answer key (PDF)</label>
+            <input type="file" name="answer_key_file" class="form-control form-control-sm" accept=".pdf,image/*">
+          </div>
+          <div class="col-12">
+            <input type="text" name="description" class="form-control form-control-sm" placeholder="Notes (optional)">
+          </div>
+          <div class="col-12">
+            <button type="submit" class="btn btn-sm btn-primary"><i class="fas fa-plus"></i> Add Assessment</button>
+          </div>
+        </form>
+
+        {% if assessments %}
+        <div class="table-wrapper">
+          <table class="table">
+            <thead>
+              <tr>
+                <th>Test</th>
+                <th>Date</th>
+                <th>Score</th>
+                <th>Files</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for a in assessments %}
+              <tr>
+                <td class="fw-medium">{{ a.title }}{% if a.description %}<div class="text-muted small">{{ a.description }}</div>{% endif %}</td>
+                <td>{{ a.date|date:"d M Y" }}</td>
+                <td>
+                  {% if a.is_graded %}<span class="fw-medium">{{ a.scored }} / {{ a.max_score }}</span>
+                  <span class="text-muted small">({{ a.percentage }}%)</span>
+                  {% else %}<span class="text-muted">/ {{ a.max_score }} · Not graded</span>{% endif %}
+                </td>
+                <td>
+                  {% if a.test_file %}<a href="{{ a.test_file.url }}" target="_blank" class="badge bg-secondary text-decoration-none me-1"><i class="fas fa-file-pdf"></i> Paper</a>{% endif %}
+                  {% if a.answer_key_file %}<a href="{{ a.answer_key_file.url }}" target="_blank" class="badge bg-secondary text-decoration-none"><i class="fas fa-key"></i> Answer key</a>{% endif %}
+                  {% if not a.test_file and not a.answer_key_file %}<span class="text-muted">—</span>{% endif %}
+                </td>
+                <td>
+                  <form method="post" onsubmit="return confirm('Remove this assessment?');">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="delete_assessment">
+                    <input type="hidden" name="assessment_id" value="{{ a.pk }}">
+                    <button type="submit" class="btn btn-sm btn-outline-danger"><i class="fas fa-trash"></i></button>
+                  </form>
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        {% else %}
+        <p class="text-muted mb-0">No assessments yet.</p>
+        {% endif %}
+      </div>
+    </div>
+    {% endif %}
   </div>
 </div>
 {% endblock %}

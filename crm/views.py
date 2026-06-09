@@ -7,7 +7,7 @@ from django.db.models import Q, Sum, Count
 from django.contrib.auth.models import User
 from django.utils import timezone
 
-from .models import InternProfile, Lead, LeadNote, LeadReferenceLink, DailyActivity, Demo, LeadActivity
+from .models import InternProfile, Lead, LeadNote, LeadReferenceLink, LeadQuoteAttachment, DailyActivity, Demo, LeadActivity
 from core.models import Client, Project
 from employees.models import Employee
 
@@ -213,6 +213,7 @@ def lead_detail(request, pk):
     reference_links = lead.reference_links.select_related('created_by').all()
     demos = lead.demos.select_related('conducted_by').all()
     quotes = lead.quotes.order_by('-created_at')
+    quote_attachments = lead.quote_attachments.select_related('created_by').all()
 
     context = {
         'lead': lead,
@@ -220,6 +221,7 @@ def lead_detail(request, pk):
         'reference_links': reference_links,
         'demos': demos,
         'quotes': quotes,
+        'quote_attachments': quote_attachments,
         'status_choices': Lead.STATUS_CHOICES,
         'lost_reason_choices': Lead.LOST_REASON_CHOICES,
         'closed_lost_statuses': Lead.CLOSED_LOST_STATUSES,
@@ -426,6 +428,52 @@ def lead_reference_link_delete(request, lead_pk, ref_pk):
     link = get_object_or_404(LeadReferenceLink, pk=ref_pk, lead_id=lead_pk)
     link.delete()
     messages.success(request, 'Reference link removed.')
+
+    return redirect('crm:lead_detail', pk=lead_pk)
+
+
+@login_required
+def lead_quote_attachment_create(request, lead_pk):
+    if request.method != 'POST':
+        return redirect('crm:lead_detail', pk=lead_pk)
+
+    if not can_access_crm(request.user):
+        messages.error(request, 'Access denied.')
+        return redirect('dashboard')
+
+    lead = get_object_or_404(Lead, pk=lead_pk)
+    upload = request.FILES.get('file')
+
+    if not upload:
+        messages.error(request, 'Please choose a quote file to attach.')
+        return redirect('crm:lead_detail', pk=lead_pk)
+
+    amount = request.POST.get('amount', '').strip()
+    LeadQuoteAttachment.objects.create(
+        lead=lead,
+        title=request.POST.get('title', '').strip(),
+        file=upload,
+        amount=amount or None,
+        notes=request.POST.get('notes', '').strip(),
+        created_by=request.user,
+    )
+    messages.success(request, 'Quote attached successfully.')
+    return redirect('crm:lead_detail', pk=lead_pk)
+
+
+@login_required
+def lead_quote_attachment_delete(request, lead_pk, att_pk):
+    if request.method != 'POST':
+        return redirect('crm:lead_detail', pk=lead_pk)
+
+    if not can_access_crm(request.user):
+        messages.error(request, 'Access denied.')
+        return redirect('dashboard')
+
+    attachment = get_object_or_404(LeadQuoteAttachment, pk=att_pk, lead_id=lead_pk)
+    attachment.file.delete(save=False)
+    attachment.delete()
+    messages.success(request, 'Quote attachment removed.')
 
     return redirect('crm:lead_detail', pk=lead_pk)
 

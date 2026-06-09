@@ -3,9 +3,9 @@ from django.contrib.auth.models import User
 from .models import (
     Employee, DeviceToken, Attendance, LeaveType, LeaveRequest,
     WorkAssignment, WorkUpdate, Notification, QRCode, ScheduledClass, Payroll,
-    CertificateTemplate, Certificate
+    CertificateTemplate, Certificate, InternAssessment
 )
-from crm.models import Lead, LeadNote, LeadReferenceLink, DailyActivity, Demo, FollowUp, LeadActivity
+from crm.models import Lead, LeadNote, LeadReferenceLink, LeadQuoteAttachment, DailyActivity, Demo, FollowUp, LeadActivity
 from core.models import Client, Project
 
 
@@ -257,6 +257,21 @@ class ScheduledClassSerializer(serializers.ModelSerializer):
         return ClassParticipantSerializer(interns, many=True, context=self.context).data
 
 
+class InternAssessmentSerializer(serializers.ModelSerializer):
+    is_graded = serializers.ReadOnlyField()
+    percentage = serializers.ReadOnlyField()
+    created_by_name = serializers.CharField(source='created_by.get_full_name', read_only=True, default='')
+
+    class Meta:
+        model = InternAssessment
+        fields = [
+            'id', 'title', 'description', 'date', 'max_score', 'scored',
+            'is_graded', 'percentage', 'test_file', 'answer_key_file',
+            'created_by_name', 'created_at', 'updated_at',
+        ]
+        read_only_fields = ['id', 'created_by_name', 'created_at', 'updated_at']
+
+
 class PayrollSerializer(serializers.ModelSerializer):
     employee_name = serializers.CharField(source='employee.full_name', read_only=True)
     employee_id_display = serializers.CharField(source='employee.employee_id', read_only=True)
@@ -420,6 +435,25 @@ class LeadReferenceLinkSerializer(serializers.ModelSerializer):
         read_only_fields = ['id', 'created_by_name', 'created_at']
 
 
+class LeadQuoteAttachmentSerializer(serializers.ModelSerializer):
+    created_by_name = serializers.CharField(source='created_by.get_full_name', read_only=True, default='')
+    filename = serializers.CharField(read_only=True)
+    file_url = serializers.SerializerMethodField()
+
+    class Meta:
+        model = LeadQuoteAttachment
+        fields = ['id', 'title', 'file', 'file_url', 'filename', 'amount', 'notes', 'created_by_name', 'created_at']
+        read_only_fields = ['id', 'file_url', 'filename', 'created_by_name', 'created_at']
+        extra_kwargs = {'file': {'write_only': True}}
+
+    def get_file_url(self, obj):
+        if not obj.file:
+            return None
+        request = self.context.get('request')
+        url = obj.file.url
+        return request.build_absolute_uri(url) if request else url
+
+
 class FollowUpSerializer(serializers.ModelSerializer):
     created_by_name = serializers.CharField(source='created_by.get_full_name', read_only=True, default='')
     type_display = serializers.CharField(source='get_follow_up_type_display', read_only=True)
@@ -457,6 +491,7 @@ class LeadSerializer(serializers.ModelSerializer):
     created_by_name = serializers.CharField(source='created_by.get_full_name', read_only=True, default='')
     notes_list = LeadNoteSerializer(source='lead_notes', many=True, read_only=True)
     reference_links = LeadReferenceLinkSerializer(many=True, read_only=True)
+    quote_attachments = LeadQuoteAttachmentSerializer(many=True, read_only=True)
     demo_count = serializers.SerializerMethodField()
     upcoming_follow_ups = serializers.SerializerMethodField()
     overdue_follow_ups = serializers.SerializerMethodField()
@@ -475,7 +510,7 @@ class LeadSerializer(serializers.ModelSerializer):
             'assigned_to', 'assigned_to_name',
             'next_follow_up_date', 'closing_probability', 'notes',
             'lost_reason', 'lost_reason_display',
-            'created_by_name', 'notes_list', 'reference_links', 'demo_count',
+            'created_by_name', 'notes_list', 'reference_links', 'quote_attachments', 'demo_count',
             'upcoming_follow_ups', 'overdue_follow_ups', 'last_activity',
             'client_id', 'client_name',
             'created_at', 'updated_at',

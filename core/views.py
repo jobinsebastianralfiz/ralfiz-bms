@@ -5531,19 +5531,35 @@ def daily_tasks_dashboard(request):
     else:
         selected_date = timezone.localdate()
 
-    tasks = DailyTask.objects.select_related('assigned_to', 'project').filter(date=selected_date)
+    today = timezone.localdate()
+    base = DailyTask.objects.select_related('assigned_to', 'project')
+    tasks = base.filter(date=selected_date)
+
+    # Carry-forward: when viewing today, surface unfinished tasks from earlier
+    # days so they don't get lost. They keep their original date (shown on the
+    # card) but appear in today's columns flagged as "carried over".
+    carried = []
+    if selected_date == today:
+        carried = list(base.filter(date__lt=today).exclude(status='done').order_by('date', '-created_at'))
+        for t in carried:
+            t.is_carried = True
+
+    pending_tasks = [t for t in carried if t.status == 'pending'] + list(tasks.filter(status='pending'))
+    in_progress_tasks = [t for t in carried if t.status == 'in_progress'] + list(tasks.filter(status='in_progress'))
+    done_tasks = list(tasks.filter(status='done'))
 
     context = {
         'selected_date': selected_date,
-        'pending_tasks': tasks.filter(status='pending'),
-        'in_progress_tasks': tasks.filter(status='in_progress'),
-        'done_tasks': tasks.filter(status='done'),
-        'total_count': tasks.count(),
+        'pending_tasks': pending_tasks,
+        'in_progress_tasks': in_progress_tasks,
+        'done_tasks': done_tasks,
+        'carried_count': len(carried),
+        'total_count': len(pending_tasks) + len(in_progress_tasks) + len(done_tasks),
         'team_members': TeamMember.objects.filter(is_active=True),
         'projects': Project.objects.exclude(status__in=['completed', 'cancelled']).order_by('name'),
         'status_choices': DailyTask.STATUS_CHOICES,
         'priority_choices': DailyTask.PRIORITY_CHOICES,
-        'today': timezone.localdate(),
+        'today': today,
     }
     return render(request, 'dashboards/daily_tasks.html', context)
 
@@ -5580,6 +5596,39 @@ def daily_task_create(request):
     log_activity(request, 'created', task)
     messages.success(request, 'Daily task added.')
     return redirect(f"{reverse('daily_tasks_dashboard')}?date={task_date.isoformat()}")
+
+
+@login_required
+def daily_task_edit(request, pk):
+    """Edit a daily task's details (title, description, priority, assignee, etc.)."""
+    task = get_object_or_404(DailyTask, pk=pk)
+    if request.method != 'POST':
+        return redirect(f"{reverse('daily_tasks_dashboard')}?date={task.date.isoformat()}")
+
+    title = (request.POST.get('title') or '').strip()
+    if not title:
+        messages.error(request, 'Task title is required.')
+        return redirect(f"{reverse('daily_tasks_dashboard')}?date={task.date.isoformat()}")
+
+    date_str = request.POST.get('date') or ''
+    if date_str:
+        from datetime import datetime as _dt
+        try:
+            task.date = _dt.strptime(date_str, '%Y-%m-%d').date()
+        except ValueError:
+            pass
+
+    task.title = title
+    task.description = (request.POST.get('description') or '').strip()
+    if request.POST.get('priority') in dict(DailyTask.PRIORITY_CHOICES):
+        task.priority = request.POST.get('priority')
+    task.assigned_to_id = request.POST.get('assigned_to') or None
+    task.project_id = request.POST.get('project') or None
+    task.save()
+
+    log_activity(request, 'updated', task)
+    messages.success(request, 'Daily task updated.')
+    return redirect(f"{reverse('daily_tasks_dashboard')}?date={task.date.isoformat()}")
 
 
 @login_required
@@ -6555,14 +6604,54 @@ def emp_employee_detail(request, pk):
         messages.success(request, f'Attendance {verb} for {att_date:%d %b %Y}.')
         return redirect('emp_employee_detail', pk=pk)
 
+    if request.method == 'POST' and request.POST.get('action') == 'add_assessment':
+        from employees.models import InternAssessment
+        from django.utils.dateparse import parse_date
+        title = (request.POST.get('title') or '').strip()
+        max_score = (request.POST.get('max_score') or '').strip()
+        if not title or not max_score:
+            messages.error(request, 'Assessment title and total marks (out of) are required.')
+            return redirect('emp_employee_detail', pk=pk)
+
+        scored = (request.POST.get('scored') or '').strip()
+        InternAssessment.objects.create(
+            employee=employee,
+            title=title,
+            description=(request.POST.get('description') or '').strip(),
+            date=parse_date(request.POST.get('date') or '') or timezone.localdate(),
+            max_score=max_score,
+            scored=scored or None,
+            test_file=request.FILES.get('test_file'),
+            answer_key_file=request.FILES.get('answer_key_file'),
+            created_by=request.user,
+        )
+        messages.success(request, 'Assessment added.')
+        return redirect('emp_employee_detail', pk=pk)
+
+    if request.method == 'POST' and request.POST.get('action') == 'delete_assessment':
+        from employees.models import InternAssessment
+        assessment = InternAssessment.objects.filter(
+            pk=request.POST.get('assessment_id'), employee=employee
+        ).first()
+        if assessment:
+            if assessment.test_file:
+                assessment.test_file.delete(save=False)
+            if assessment.answer_key_file:
+                assessment.answer_key_file.delete(save=False)
+            assessment.delete()
+            messages.success(request, 'Assessment removed.')
+        return redirect('emp_employee_detail', pk=pk)
+
     recent_attendance = Attendance.objects.filter(employee=employee).order_by('-date')[:15]
     leave_requests = LeaveRequest.objects.filter(employee=employee).order_by('-created_at')[:10]
     work_assignments = WorkAssignment.objects.filter(assigned_to=employee).order_by('-created_at')[:10]
+    assessments = employee.assessments.all() if employee.employment_type == 'intern' else None
     context = {
         'employee': employee,
         'recent_attendance': recent_attendance,
         'leave_requests': leave_requests,
         'work_assignments': work_assignments,
+        'assessments': assessments,
         'employment_types': Employee.EMPLOYMENT_TYPE_CHOICES,
         'roles': Employee.ROLE_CHOICES,
         'departments': Employee.DEPARTMENT_CHOICES,

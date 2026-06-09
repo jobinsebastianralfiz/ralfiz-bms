@@ -4,6 +4,7 @@ from .models import (
     Employee, DeviceToken, Attendance, LeaveType, LeaveRequest,
     WorkAssignment, WorkUpdate, Notification, QRCode, ScheduledClass, Payroll,
     CertificateTemplate, Certificate, OfficeConfig, LateCheckInGrant,
+    InternAssessment,
 )
 from .utils import generate_face_encoding
 
@@ -149,6 +150,14 @@ class ScheduledClassAdmin(admin.ModelAdmin):
     list_filter = ['status', 'date']
     search_fields = ['title', 'instructor']
     filter_horizontal = ['interns']
+    readonly_fields = ['id', 'created_at', 'updated_at']
+
+
+@admin.register(InternAssessment)
+class InternAssessmentAdmin(admin.ModelAdmin):
+    list_display = ['title', 'employee', 'date', 'scored', 'max_score']
+    list_filter = ['date']
+    search_fields = ['title', 'employee__user__first_name', 'employee__user__last_name', 'employee__employee_id']
     readonly_fields = ['id', 'created_at', 'updated_at']
 
 

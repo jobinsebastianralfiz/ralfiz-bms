@@ -121,6 +121,13 @@
   .dt-card.prio-high { border-left: 3px solid #ef4444; }
   .dt-card.prio-medium { border-left: 3px solid #f59e0b; }
   .dt-card.prio-low { border-left: 3px solid #22c55e; }
+  /* Carried-over tasks (unfinished from a previous day) */
+  .dt-card.is-carried {
+    background: #fff7ed;
+    border-color: #fdba74;
+    box-shadow: inset 3px 0 0 #f97316;
+  }
+  .dt-tag-carried { background: #ffedd5; color: #c2410c; font-weight: 600; }
   .dt-card-title { font-weight: 600; font-size: 0.88rem; color: var(--text-primary); margin-bottom: 5px; }
   .dt-card.done .dt-card-title { text-decoration: line-through; color: var(--text-muted); }
   .dt-card-desc { font-size: 0.78rem; color: var(--text-secondary); margin-bottom: 8px; white-space: pre-wrap; }
@@ -155,7 +162,66 @@
     border-radius: 6px;
   }
   .dt-del:hover { color: #ef4444; background: var(--danger-bg, #fee2e2); }
+  .dt-edit {
+    border: none;
+    background: transparent;
+    color: var(--text-muted);
+    cursor: pointer;
+    padding: 4px 6px;
+    border-radius: 6px;
+  }
+  .dt-edit:hover { color: var(--primary); background: var(--bg-hover); }
   .dt-card.is-saving { opacity: 0.55; }
+
+  /* Carried-over notice banner */
+  .dt-carried-note {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: #fff7ed;
+    border: 1px solid #fdba74;
+    color: #9a3412;
+    padding: 9px 14px;
+    border-radius: 10px;
+    font-size: 0.82rem;
+    margin-bottom: 1rem;
+  }
+  .dt-carried-note i { color: #f97316; }
+
+  /* Edit modal */
+  .dt-modal-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.45);
+    z-index: 1050;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+  }
+  .dt-modal-overlay.open { display: flex; }
+  .dt-modal {
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    width: 100%;
+    max-width: 460px;
+    padding: 18px;
+  }
+  .dt-modal h2 { font-size: 1.1rem; font-weight: 700; color: var(--text-primary); margin: 0 0 14px; }
+  .dt-modal label { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.4px; color: var(--text-muted); display: block; margin: 10px 0 4px; }
+  .dt-modal input, .dt-modal select, .dt-modal textarea {
+    width: 100%;
+    padding: 8px 10px;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    background: var(--bg-body);
+    color: var(--text-primary);
+    font-size: 0.85rem;
+  }
+  .dt-modal textarea { resize: vertical; min-height: 64px; }
+  .dt-modal-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .dt-modal-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 18px; }
 
   .dt-empty { text-align: center; padding: 24px 10px; color: var(--text-muted); font-size: 0.82rem; }
 </style>
@@ -203,6 +269,13 @@
   <button type="submit" class="dt-btn dt-btn-primary"><i class="fas fa-plus"></i> Add</button>
 </form>
 
+{% if carried_count %}
+<div class="dt-carried-note">
+  <i class="fas fa-clock-rotate-left"></i>
+  <span><strong>{{ carried_count }}</strong> unfinished task{{ carried_count|pluralize }} carried over from earlier days. They're highlighted in orange below.</span>
+</div>
+{% endif %}
+
 <div class="dt-board">
   <!-- Pending -->
   <div class="dt-col">
@@ -224,6 +297,50 @@
     <div class="dt-col-body">
       {% for task in done_tasks %}{% include 'dashboards/_daily_task_card.html' %}{% empty %}<div class="dt-empty">Nothing done yet</div>{% endfor %}
     </div>
+  </div>
+</div>
+
+<!-- Edit task modal -->
+<div class="dt-modal-overlay" id="dtEditOverlay">
+  <div class="dt-modal">
+    <h2><i class="fas fa-pen"></i> Edit Task</h2>
+    <form method="post" id="dtEditForm">
+      {% csrf_token %}
+      <label>Task</label>
+      <input type="text" name="title" id="dtEditTitle" required>
+      <label>Description</label>
+      <textarea name="description" id="dtEditDescription"></textarea>
+      <div class="dt-modal-grid">
+        <div>
+          <label>Priority</label>
+          <select name="priority" id="dtEditPriority">
+            {% for value, label in priority_choices %}<option value="{{ value }}">{{ label }}</option>{% endfor %}
+          </select>
+        </div>
+        <div>
+          <label>Date</label>
+          <input type="date" name="date" id="dtEditDate">
+        </div>
+        <div>
+          <label>Assign to</label>
+          <select name="assigned_to" id="dtEditAssigned">
+            <option value="">— Anyone —</option>
+            {% for m in team_members %}<option value="{{ m.pk }}">{{ m.name }}</option>{% endfor %}
+          </select>
+        </div>
+        <div>
+          <label>Project</label>
+          <select name="project" id="dtEditProject">
+            <option value="">— None —</option>
+            {% for p in projects %}<option value="{{ p.pk }}">{{ p.name }}</option>{% endfor %}
+          </select>
+        </div>
+      </div>
+      <div class="dt-modal-actions">
+        <button type="button" class="dt-btn" data-dt-close>Cancel</button>
+        <button type="submit" class="dt-btn dt-btn-primary">Save changes</button>
+      </div>
+    </form>
   </div>
 </div>
 {% endblock %}
@@ -251,6 +368,27 @@
           .catch(() => { card.classList.remove('is-saving'); alert('Network error.'); });
       });
     });
+
+    // Edit modal
+    const overlay = document.getElementById('dtEditOverlay');
+    const form = document.getElementById('dtEditForm');
+    function closeModal() { overlay.classList.remove('open'); }
+    document.querySelectorAll('[data-dt-edit]').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        const card = btn.closest('.dt-card');
+        form.action = card.getAttribute('data-edit-url');
+        document.getElementById('dtEditTitle').value = card.getAttribute('data-title') || '';
+        document.getElementById('dtEditDescription').value = card.getAttribute('data-description') || '';
+        document.getElementById('dtEditPriority').value = card.getAttribute('data-priority') || 'medium';
+        document.getElementById('dtEditDate').value = card.getAttribute('data-date') || '';
+        document.getElementById('dtEditAssigned').value = card.getAttribute('data-assigned') || '';
+        document.getElementById('dtEditProject').value = card.getAttribute('data-project') || '';
+        overlay.classList.add('open');
+      });
+    });
+    overlay.querySelectorAll('[data-dt-close]').forEach(b => b.addEventListener('click', closeModal));
+    overlay.addEventListener('click', e => { if (e.target === overlay) closeModal(); });
+    document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
   })();
 </script>
 {% endblock %}

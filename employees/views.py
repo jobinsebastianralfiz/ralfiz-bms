@@ -11,6 +11,7 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated, IsAdminUser
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
 from drf_spectacular.utils import extend_schema, extend_schema_view, OpenApiParameter
 
 from .models import (
@@ -18,7 +19,7 @@ from .models import (
     WorkAssignment, WorkUpdate, Notification, QRCode, ScheduledClass, Payroll,
     CertificateTemplate, Certificate, LateCheckInGrant
 )
-from crm.models import Lead, LeadNote, LeadReferenceLink, DailyActivity, Demo, FollowUp, LeadActivity
+from crm.models import Lead, LeadNote, LeadReferenceLink, LeadQuoteAttachment, DailyActivity, Demo, FollowUp, LeadActivity
 from core.models import (
     Client, Project, Credential, AMCContract, AMCPayment, CredentialRenewal,
     Partner, CapitalContribution, CompanyAsset, CompanyDocument,
@@ -30,11 +31,12 @@ from .serializers import (
     LeaveTypeSerializer, LeaveRequestSerializer, LeaveRequestCreateSerializer,
     WorkAssignmentSerializer, WorkUpdateSerializer, WorkStatusUpdateSerializer,
     NotificationSerializer, ChangePasswordSerializer, ScheduledClassSerializer,
+    InternAssessmentSerializer,
     PayrollSerializer, OwnerClientSerializer, OwnerProjectSerializer,
     OwnerAttendanceEmployeeSerializer,
     CertificateTemplateSerializer, CertificateSerializer, CertificateCreateSerializer,
     LeadSerializer, LeadCreateSerializer, LeadNoteSerializer,
-    LeadReferenceLinkSerializer,
+    LeadReferenceLinkSerializer, LeadQuoteAttachmentSerializer,
     DailyActivitySerializer, DailyActivityCreateSerializer,
     DemoSerializer, DemoCreateSerializer, CRMDashboardSerializer,
     FollowUpSerializer, FollowUpCreateSerializer, LeadActivitySerializer,
@@ -845,6 +847,25 @@ class ScheduledClassListView(generics.ListAPIView):
             qs = qs.filter(date__gte=dt_date.today(), status__in=['scheduled', 'in_progress'])
 
         return qs
+
+
+@extend_schema(tags=['Assessments'])
+class MyAssessmentListView(generics.ListAPIView):
+    """List the logged-in intern's own assessments (scores + test paper + answer key)"""
+    serializer_class = InternAssessmentSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        from .models import InternAssessment
+        employee = get_employee(self.request.user)
+        if not employee:
+            return InternAssessment.objects.none()
+        return InternAssessment.objects.filter(employee=employee).select_related('created_by')
+
+    def get_serializer_context(self):
+        ctx = super().get_serializer_context()
+        ctx['request'] = self.request
+        return ctx
 
 
 @extend_schema(tags=['Classes'])
@@ -2496,6 +2517,7 @@ def _daily_task_payload(task):
         'project_name': task.project.name if task.project else None,
         'completed_at': task.completed_at.isoformat() if task.completed_at else None,
         'created_at': task.created_at.isoformat(),
+        'is_carried': getattr(task, 'is_carried', False),
     }
 
 
@@ -2523,17 +2545,29 @@ class OwnerDailyTaskListCreateView(APIView):
                 return Response({'error': 'Invalid date, use YYYY-MM-DD'}, status=status.HTTP_400_BAD_REQUEST)
         else:
             day = _tz.localdate()
-        tasks = tasks.filter(date=day)
-
-        status_filter = request.query_params.get('status')
-        if status_filter:
-            tasks = tasks.filter(status=status_filter)
 
         assigned_to = request.query_params.get('assigned_to')
-        if assigned_to:
-            tasks = tasks.filter(assigned_to_id=assigned_to)
+        status_filter = request.query_params.get('status')
 
-        tasks = list(tasks)
+        day_tasks = tasks.filter(date=day)
+
+        # Carry-forward: when viewing today, surface unfinished tasks from
+        # earlier days so they don't get lost. They keep their original date.
+        carried = []
+        if day == _tz.localdate():
+            carried_qs = tasks.filter(date__lt=day).exclude(status='done').order_by('date', '-created_at')
+            for t in carried_qs:
+                t.is_carried = True
+                carried.append(t)
+
+        combined = carried + list(day_tasks)
+
+        if assigned_to:
+            combined = [t for t in combined if str(t.assigned_to_id) == str(assigned_to)]
+        if status_filter:
+            combined = [t for t in combined if t.status == status_filter]
+
+        tasks = combined
         return Response({
             'date': str(day),
             'status_choices': [{'value': v, 'label': l} for v, l in DailyTask.STATUS_CHOICES],
@@ -4216,6 +4250,79 @@ class CRMLeadReferenceLinkDeleteView(APIView):
             return Response({'error': 'Reference link not found'}, status=status.HTTP_404_NOT_FOUND)
 
         link.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+@extend_schema(tags=['CRM - Leads'])
+class CRMLeadQuoteAttachmentListCreateView(APIView):
+    """List or attach quotes prepared outside the system (file upload) for a lead"""
+    permission_classes = [IsAuthenticated]
+    parser_classes = [MultiPartParser, FormParser, JSONParser]
+
+    def get_lead(self, pk, user):
+        employee, is_intern = get_intern_employee(user)
+        try:
+            lead = Lead.objects.get(pk=pk)
+        except Lead.DoesNotExist:
+            return None, 'Lead not found'
+        if is_intern and lead.assigned_to != user:
+            return None, 'You can only access leads assigned to you'
+        return lead, None
+
+    def get(self, request, pk):
+        lead, error = self.get_lead(pk, request.user)
+        if error:
+            return Response({'error': error}, status=status.HTTP_404_NOT_FOUND)
+        attachments = lead.quote_attachments.select_related('created_by').all()
+        return Response(
+            LeadQuoteAttachmentSerializer(attachments, many=True, context={'request': request}).data
+        )
+
+    def post(self, request, pk):
+        lead, error = self.get_lead(pk, request.user)
+        if error:
+            return Response({'error': error}, status=status.HTTP_404_NOT_FOUND)
+
+        upload = request.FILES.get('file')
+        if not upload:
+            return Response({'error': 'A quote file is required'}, status=status.HTTP_400_BAD_REQUEST)
+
+        amount = (request.data.get('amount') or '').strip() if isinstance(request.data.get('amount'), str) else request.data.get('amount')
+        attachment = LeadQuoteAttachment.objects.create(
+            lead=lead,
+            title=(request.data.get('title') or '').strip(),
+            file=upload,
+            amount=amount or None,
+            notes=(request.data.get('notes') or '').strip(),
+            created_by=request.user,
+        )
+        return Response(
+            LeadQuoteAttachmentSerializer(attachment, context={'request': request}).data,
+            status=status.HTTP_201_CREATED,
+        )
+
+
+@extend_schema(tags=['CRM - Leads'])
+class CRMLeadQuoteAttachmentDeleteView(APIView):
+    """Delete an attached (externally-prepared) quote from a lead"""
+    permission_classes = [IsAuthenticated]
+
+    def delete(self, request, pk, attachment_id):
+        employee, is_intern = get_intern_employee(request.user)
+        try:
+            lead = Lead.objects.get(pk=pk)
+        except Lead.DoesNotExist:
+            return Response({'error': 'Lead not found'}, status=status.HTTP_404_NOT_FOUND)
+        if is_intern and lead.assigned_to != request.user:
+            return Response({'error': 'You can only modify leads assigned to you'}, status=status.HTTP_403_FORBIDDEN)
+
+        try:
+            attachment = LeadQuoteAttachment.objects.get(pk=attachment_id, lead=lead)
+        except LeadQuoteAttachment.DoesNotExist:
+            return Response({'error': 'Quote attachment not found'}, status=status.HTTP_404_NOT_FOUND)
+
+        attachment.file.delete(save=False)
+        attachment.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 

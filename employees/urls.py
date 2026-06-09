@@ -53,6 +53,7 @@ urlpatterns = [
     path('tasks/<uuid:pk>/activity/', task_api.TaskActivityListView.as_view(), name='task_activity'),
 
     # Scheduled Classes (for interns)
+    path('assessments/', views.MyAssessmentListView.as_view(), name='my_assessments'),
     path('classes/', views.ScheduledClassListView.as_view(), name='class_list'),
     path('classes/<uuid:pk>/', views.ScheduledClassDetailView.as_view(), name='class_detail'),
 
@@ -168,6 +169,8 @@ urlpatterns = [
     path('crm/leads/<int:pk>/notes/', views.CRMLeadNoteCreateView.as_view(), name='crm_lead_notes'),
     path('crm/leads/<int:pk>/reference-links/', views.CRMLeadReferenceLinkListCreateView.as_view(), name='crm_lead_reference_links'),
     path('crm/leads/<int:pk>/reference-links/<int:link_id>/', views.CRMLeadReferenceLinkDeleteView.as_view(), name='crm_lead_reference_link_delete'),
+    path('crm/leads/<int:pk>/quote-attachments/', views.CRMLeadQuoteAttachmentListCreateView.as_view(), name='crm_lead_quote_attachments'),
+    path('crm/leads/<int:pk>/quote-attachments/<int:attachment_id>/', views.CRMLeadQuoteAttachmentDeleteView.as_view(), name='crm_lead_quote_attachment_delete'),
 
     # Daily Activities
     path('crm/activities/', views.CRMActivityListCreateView.as_view(), name='crm_activities'),

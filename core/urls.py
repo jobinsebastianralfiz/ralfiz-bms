@@ -182,6 +182,7 @@ urlpatterns = [
     path('dashboards/projects/<uuid:pk>/status/', views.project_status_update, name='project_status_update'),
     path('dashboards/daily-tasks/', views.daily_tasks_dashboard, name='daily_tasks_dashboard'),
     path('dashboards/daily-tasks/create/', views.daily_task_create, name='daily_task_create'),
+    path('dashboards/daily-tasks/<uuid:pk>/edit/', views.daily_task_edit, name='daily_task_edit'),
     path('dashboards/daily-tasks/<uuid:pk>/status/', views.daily_task_status_update, name='daily_task_status_update'),
     path('dashboards/daily-tasks/<uuid:pk>/delete/', views.daily_task_delete, name='daily_task_delete'),
 
