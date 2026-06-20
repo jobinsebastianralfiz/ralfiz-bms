@@ -407,6 +407,88 @@ def client_detail(request, pk):
 
 
 @login_required
+def client_relationship_summary_pdf(request, pk):
+    """Generate a branded PDF summary of the full client relationship:
+    project-wise invoicing, amounts paid, and pending balances."""
+    from django.http import HttpResponse
+    from django.template.loader import render_to_string
+    from decimal import Decimal
+    from django.db.models import Sum, F
+
+    client = get_object_or_404(Client, pk=pk)
+    company = CompanySettings.get_settings()
+    download = request.GET.get('download', '0') == '1'
+
+    invoices = client.invoices.exclude(status='cancelled').select_related('project')
+
+    def summarise(qs):
+        """Return (invoiced, paid, pending) totals for an invoice queryset."""
+        invoiced = qs.aggregate(t=Sum('total_amount'))['t'] or Decimal('0')
+        paid = qs.aggregate(t=Sum('amount_paid'))['t'] or Decimal('0')
+        return invoiced, paid, invoiced - paid
+
+    # Build per-project rows
+    project_rows = []
+    for project in client.projects.all().order_by('-created_at'):
+        proj_invoices = invoices.filter(project=project)
+        invoiced, paid, pending = summarise(proj_invoices)
+        project_rows.append({
+            'project': project,
+            'invoice_count': proj_invoices.count(),
+            'invoiced': invoiced,
+            'paid': paid,
+            'pending': pending,
+        })
+
+    # Invoices not linked to any project
+    unlinked_invoices = invoices.filter(project__isnull=True)
+    if unlinked_invoices.exists():
+        invoiced, paid, pending = summarise(unlinked_invoices)
+        project_rows.append({
+            'project': None,
+            'invoice_count': unlinked_invoices.count(),
+            'invoiced': invoiced,
+            'paid': paid,
+            'pending': pending,
+        })
+
+    total_invoiced, total_paid, total_pending = summarise(invoices)
+
+    payments = Payment.objects.filter(
+        invoice__client=client
+    ).exclude(invoice__status='cancelled').select_related('invoice').order_by('-payment_date')
+
+    context = {
+        'client': client,
+        'company': company,
+        'project_rows': project_rows,
+        'invoices': invoices.order_by('-issue_date'),
+        'payments': payments,
+        'total_invoiced': total_invoiced,
+        'total_paid': total_paid,
+        'total_pending': total_pending,
+        'generated_on': timezone.now(),
+    }
+
+    if download:
+        try:
+            from weasyprint import HTML
+
+            html_string = render_to_string('clients/relationship_summary_pdf.html', context)
+            html = HTML(string=html_string, base_url=request.build_absolute_uri('/'))
+            pdf = html.write_pdf()
+
+            response = HttpResponse(pdf, content_type='application/pdf')
+            safe_name = (client.company_name or client.name).replace(' ', '_')
+            response['Content-Disposition'] = f'attachment; filename="{safe_name}_relationship_summary.pdf"'
+            return response
+        except ImportError:
+            messages.warning(request, 'PDF generation requires WeasyPrint. Showing printable view instead.')
+
+    return render(request, 'clients/relationship_summary_pdf.html', context)
+
+
+@login_required
 def client_update_retailease(request, pk):
     """Update RetailEase App settings for a client"""
     client = get_object_or_404(Client, pk=pk)

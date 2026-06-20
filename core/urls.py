@@ -34,6 +34,7 @@ urlpatterns = [
     path('clients/create/', views.client_create, name='client_create'),
     path('clients/import/', views.client_import, name='client_import'),
     path('clients/<uuid:pk>/', views.client_detail, name='client_detail'),
+    path('clients/<uuid:pk>/summary-pdf/', views.client_relationship_summary_pdf, name='client_relationship_pdf'),
     path('clients/<uuid:pk>/edit/', views.client_update, name='client_update'),
     path('clients/<uuid:pk>/delete/', views.client_delete, name='client_delete'),
     path('clients/<uuid:pk>/retailease/', views.client_update_retailease, name='client_update_retailease'),

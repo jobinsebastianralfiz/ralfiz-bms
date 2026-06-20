@@ -1,0 +1,446 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{{ client.name }} - Client Relationship Summary</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    @page {
+      size: A4;
+      margin: 15mm;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      font-size: 11px;
+      line-height: 1.4;
+      color: #1e293b;
+      background: #f1f5f9;
+    }
+
+    .doc-container {
+      max-width: 800px;
+      margin: 60px auto 40px;
+      padding: 25px;
+      background: white;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
+      border-radius: 8px;
+    }
+
+    /* Download Bar (screen only) */
+    .download-bar {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      background: #0f172a;
+      padding: 12px 40px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      z-index: 100;
+    }
+
+    .download-bar-title {
+      color: white;
+      font-weight: 600;
+    }
+
+    .download-btn {
+      background: #0d9488;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 6px;
+      font-weight: 500;
+      cursor: pointer;
+      text-decoration: none;
+      font-size: 14px;
+    }
+
+    .download-btn:hover { background: #0f766e; }
+
+    @media print {
+      .download-bar { display: none; }
+      body { background: white; }
+      .doc-container { margin: 0; box-shadow: none; border-radius: 0; max-width: none; }
+    }
+
+    /* Header */
+    .doc-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 20px;
+      padding-bottom: 15px;
+      border-bottom: 2px solid #0d9488;
+    }
+
+    .company-logo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 8px;
+    }
+
+    .logo-icon {
+      width: 36px;
+      height: 36px;
+      background: linear-gradient(135deg, #0d9488, #14b8a6);
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-weight: 700;
+      font-size: 18px;
+    }
+
+    .company-name {
+      font-size: 16px;
+      font-weight: 700;
+      color: #0f172a;
+    }
+
+    .company-details {
+      font-size: 10px;
+      color: #64748b;
+      line-height: 1.5;
+    }
+
+    .doc-title-section { text-align: right; flex-shrink: 0; margin-left: 30px; }
+
+    .doc-title {
+      font-size: 22px;
+      font-weight: 700;
+      color: #0d9488;
+      margin-bottom: 4px;
+    }
+
+    .doc-meta { font-size: 10px; color: #64748b; }
+    .doc-meta strong { color: #1e293b; }
+
+    /* Client block */
+    .client-block {
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 6px;
+      padding: 14px 16px;
+      margin-bottom: 20px;
+    }
+
+    .client-block .label {
+      font-size: 9px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: #94a3b8;
+      font-weight: 600;
+      margin-bottom: 4px;
+    }
+
+    .client-name { font-size: 15px; font-weight: 700; color: #0f172a; }
+    .client-details { font-size: 10px; color: #64748b; line-height: 1.6; margin-top: 4px; }
+
+    /* Summary cards */
+    .summary-cards {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 24px;
+    }
+
+    .summary-card {
+      flex: 1;
+      border: 1px solid #e2e8f0;
+      border-radius: 6px;
+      padding: 14px;
+      text-align: center;
+    }
+
+    .summary-card .card-label {
+      font-size: 9px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: #94a3b8;
+      font-weight: 600;
+      margin-bottom: 6px;
+    }
+
+    .summary-card .card-value { font-size: 18px; font-weight: 700; }
+    .summary-card.invoiced .card-value { color: #0f172a; }
+    .summary-card.paid .card-value { color: #15803d; }
+    .summary-card.pending .card-value { color: #dc2626; }
+
+    /* Section */
+    .section-title {
+      font-size: 13px;
+      font-weight: 700;
+      color: #0f172a;
+      margin: 22px 0 10px;
+      padding-bottom: 6px;
+      border-bottom: 1px solid #e2e8f0;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 10px;
+    }
+
+    thead th {
+      background: #0f172a;
+      color: white;
+      text-align: left;
+      padding: 8px 10px;
+      font-weight: 600;
+      font-size: 9px;
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+    }
+
+    thead th.num, tbody td.num { text-align: right; }
+
+    tbody td {
+      padding: 8px 10px;
+      border-bottom: 1px solid #e2e8f0;
+      vertical-align: top;
+    }
+
+    tbody tr:nth-child(even) { background: #f8fafc; }
+
+    tfoot td {
+      padding: 9px 10px;
+      font-weight: 700;
+      border-top: 2px solid #0f172a;
+      background: #f1f5f9;
+    }
+    tfoot td.num { text-align: right; }
+
+    .status-badge {
+      display: inline-block;
+      padding: 2px 8px;
+      font-size: 8px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+      border-radius: 10px;
+    }
+    .status-badge.paid { background: #dcfce7; color: #15803d; }
+    .status-badge.partial, .status-badge.sent, .status-badge.viewed { background: #fef3c7; color: #b45309; }
+    .status-badge.overdue { background: #fee2e2; color: #dc2626; }
+    .status-badge.draft { background: #f1f5f9; color: #64748b; }
+    .status-badge.completed, .status-badge.in_progress, .status-badge.confirmed { background: #dbeafe; color: #1d4ed8; }
+
+    .pending-amt { color: #dc2626; font-weight: 600; }
+    .paid-amt { color: #15803d; font-weight: 600; }
+    .muted { color: #94a3b8; }
+
+    .footer-note {
+      margin-top: 30px;
+      padding-top: 12px;
+      border-top: 1px solid #e2e8f0;
+      font-size: 9px;
+      color: #94a3b8;
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+  {% if request.GET.download != '1' %}
+  <div class="download-bar">
+    <div class="download-bar-title">Client Relationship Summary &mdash; {{ client.name }}</div>
+    <a href="?download=1" class="download-btn">Download PDF</a>
+  </div>
+  {% endif %}
+
+  <div class="doc-container">
+    <!-- Header -->
+    <div class="doc-header">
+      <div class="company-info" style="flex: 1;">
+        <div class="company-logo">
+          {% if company.logo %}
+          <img src="{{ company.logo.url }}" alt="{{ company.company_name }}" style="width: 36px; height: 36px; object-fit: contain; border-radius: 6px;">
+          {% else %}
+          <div class="logo-icon">{{ company.company_name|slice:":1"|upper|default:"R" }}</div>
+          {% endif %}
+          <div>
+            <div class="company-name">{{ company.company_name|default:"Ralfiz Technologies" }}</div>
+            {% if company.tagline %}<div style="font-size: 9px; color: #64748b;">{{ company.tagline }}</div>{% endif %}
+          </div>
+        </div>
+        <div class="company-details">
+          {{ company.address|linebreaksbr|default:"" }}
+          {% if company.phone %}<br>Phone: {{ company.phone }}{% endif %}
+          {% if company.email %}<br>Email: {{ company.email }}{% endif %}
+          {% if company.gst_number %}<br>GSTIN: {{ company.gst_number }}{% endif %}
+        </div>
+      </div>
+      <div class="doc-title-section">
+        <div class="doc-title">RELATIONSHIP<br>SUMMARY</div>
+        <div class="doc-meta">
+          <div><strong>Generated:</strong> {{ generated_on|date:"d F Y" }}</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Client -->
+    <div class="client-block">
+      <div class="label">Client</div>
+      <div class="client-name">{{ client.company_name|default:client.name }}</div>
+      <div class="client-details">
+        {% if client.company_name and client.name %}Contact: {{ client.name }}<br>{% endif %}
+        {% if client.email %}{{ client.email }}{% endif %}
+        {% if client.phone %} &nbsp;|&nbsp; {{ client.phone }}{% endif %}
+        {% if client.gst_number %}<br>GSTIN: {{ client.gst_number }}{% endif %}
+        {% if client.address %}<br>{{ client.address }}{% endif %}
+        <br>Client since {{ client.created_at|date:"F Y" }}
+      </div>
+    </div>
+
+    <!-- Summary cards -->
+    <div class="summary-cards">
+      <div class="summary-card invoiced">
+        <div class="card-label">Total Invoiced</div>
+        <div class="card-value">&#8377;{{ total_invoiced|floatformat:2 }}</div>
+      </div>
+      <div class="summary-card paid">
+        <div class="card-label">Received</div>
+        <div class="card-value">&#8377;{{ total_paid|floatformat:2 }}</div>
+      </div>
+      <div class="summary-card pending">
+        <div class="card-label">Pending</div>
+        <div class="card-value">&#8377;{{ total_pending|floatformat:2 }}</div>
+      </div>
+    </div>
+
+    <!-- Project-wise breakdown -->
+    <div class="section-title">Project-wise Breakdown</div>
+    <table>
+      <thead>
+        <tr>
+          <th>Project</th>
+          <th>Status</th>
+          <th class="num">Invoices</th>
+          <th class="num">Invoiced</th>
+          <th class="num">Received</th>
+          <th class="num">Pending</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in project_rows %}
+        <tr>
+          <td>
+            {% if row.project %}
+              <strong>{{ row.project.name }}</strong>
+              <div class="muted">{{ row.project.get_project_type_display }}</div>
+            {% else %}
+              <strong>Other / Unlinked Invoices</strong>
+            {% endif %}
+          </td>
+          <td>
+            {% if row.project %}
+              <span class="status-badge {{ row.project.status }}">{{ row.project.get_status_display }}</span>
+            {% else %}
+              <span class="muted">&mdash;</span>
+            {% endif %}
+          </td>
+          <td class="num">{{ row.invoice_count }}</td>
+          <td class="num">&#8377;{{ row.invoiced|floatformat:2 }}</td>
+          <td class="num paid-amt">&#8377;{{ row.paid|floatformat:2 }}</td>
+          <td class="num {% if row.pending > 0 %}pending-amt{% endif %}">&#8377;{{ row.pending|floatformat:2 }}</td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="6" class="muted" style="text-align:center; padding:16px;">No projects or invoices yet.</td></tr>
+        {% endfor %}
+      </tbody>
+      {% if project_rows %}
+      <tfoot>
+        <tr>
+          <td colspan="3">Total</td>
+          <td class="num">&#8377;{{ total_invoiced|floatformat:2 }}</td>
+          <td class="num">&#8377;{{ total_paid|floatformat:2 }}</td>
+          <td class="num">&#8377;{{ total_pending|floatformat:2 }}</td>
+        </tr>
+      </tfoot>
+      {% endif %}
+    </table>
+
+    <!-- Invoice detail -->
+    {% if invoices %}
+    <div class="section-title">Invoices</div>
+    <table>
+      <thead>
+        <tr>
+          <th>Invoice #</th>
+          <th>Title</th>
+          <th>Date</th>
+          <th>Status</th>
+          <th class="num">Amount</th>
+          <th class="num">Paid</th>
+          <th class="num">Balance</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for inv in invoices %}
+        <tr>
+          <td><strong>{{ inv.invoice_number }}</strong></td>
+          <td>{{ inv.title }}{% if inv.project %}<div class="muted">{{ inv.project.name }}</div>{% endif %}</td>
+          <td>{{ inv.issue_date|date:"d M Y" }}</td>
+          <td><span class="status-badge {{ inv.status }}">{{ inv.get_status_display }}</span></td>
+          <td class="num">&#8377;{{ inv.total_amount|floatformat:2 }}</td>
+          <td class="num">&#8377;{{ inv.amount_paid|floatformat:2 }}</td>
+          <td class="num {% if inv.balance_due > 0 %}pending-amt{% endif %}">&#8377;{{ inv.balance_due|floatformat:2 }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% endif %}
+
+    <!-- Payment history -->
+    {% if payments %}
+    <div class="section-title">Payment History</div>
+    <table>
+      <thead>
+        <tr>
+          <th>Date</th>
+          <th>Invoice #</th>
+          <th>Method</th>
+          <th>Reference</th>
+          <th class="num">Amount</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for pay in payments %}
+        <tr>
+          <td>{{ pay.payment_date|date:"d M Y" }}</td>
+          <td>{{ pay.invoice.invoice_number }}</td>
+          <td>{{ pay.get_payment_method_display }}</td>
+          <td>{{ pay.transaction_id|default:"&mdash;" }}</td>
+          <td class="num paid-amt">&#8377;{{ pay.amount|floatformat:2 }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+      <tfoot>
+        <tr>
+          <td colspan="4">Total Received</td>
+          <td class="num">&#8377;{{ total_paid|floatformat:2 }}</td>
+        </tr>
+      </tfoot>
+    </table>
+    {% endif %}
+
+    <div class="footer-note">
+      This is a computer-generated relationship summary from {{ company.company_name|default:"Ralfiz Technologies" }}.
+      Generated on {{ generated_on|date:"d F Y" }} at {{ generated_on|time:"H:i" }}.
+    </div>
+  </div>
+</body>
+</html>

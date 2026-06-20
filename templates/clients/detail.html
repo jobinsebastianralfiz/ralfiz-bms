@@ -115,6 +115,10 @@
       <i class="fas fa-file-alt"></i>
       Create Quote
     </a>
+    <a href="{% url 'client_relationship_pdf' client.pk %}?download=1" class="btn btn-outline-primary">
+      <i class="fas fa-file-pdf"></i>
+      Download Summary
+    </a>
     <a href="{% url 'client_update' client.pk %}" class="btn btn-primary">
       <i class="fas fa-edit"></i>
       Edit Client
