@@ -69,6 +69,23 @@
 
     .download-btn:hover { background: #0f766e; }
 
+    .download-bar-controls {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .project-select {
+      background: #1e293b;
+      color: white;
+      border: 1px solid #334155;
+      border-radius: 6px;
+      padding: 9px 12px;
+      font-size: 13px;
+      font-family: inherit;
+      max-width: 280px;
+    }
+
     @media print {
       .download-bar { display: none; }
       body { background: white; }
@@ -256,8 +273,16 @@
 <body>
   {% if request.GET.download != '1' %}
   <div class="download-bar">
-    <div class="download-bar-title">Client Relationship Summary &mdash; {{ client.name }}</div>
-    <a href="?download=1" class="download-btn">Download PDF</a>
+    <div class="download-bar-title">Relationship Summary &mdash; {{ client.name }}</div>
+    <div class="download-bar-controls">
+      <select class="project-select" onchange="window.location.search='?project='+this.value">
+        <option value="all" {% if not selected_project %}selected{% endif %}>All projects (full summary)</option>
+        {% for p in all_projects %}
+        <option value="{{ p.pk }}" {% if selected_project and selected_project.pk == p.pk %}selected{% endif %}>{{ p.name }}</option>
+        {% endfor %}
+      </select>
+      <a href="?project={{ project_filter }}&download=1" class="download-btn">Download PDF</a>
+    </div>
   </div>
   {% endif %}
 
@@ -284,8 +309,9 @@
         </div>
       </div>
       <div class="doc-title-section">
-        <div class="doc-title">RELATIONSHIP<br>SUMMARY</div>
+        <div class="doc-title">{% if selected_project %}PROJECT<br>SUMMARY{% else %}RELATIONSHIP<br>SUMMARY{% endif %}</div>
         <div class="doc-meta">
+          {% if selected_project %}<div><strong>Project:</strong> {{ selected_project.name }}</div>{% endif %}
           <div><strong>Generated:</strong> {{ generated_on|date:"d F Y" }}</div>
         </div>
       </div>
@@ -308,7 +334,11 @@
     <!-- Summary cards -->
     <div class="summary-cards">
       <div class="summary-card invoiced">
-        <div class="card-label">Total Invoiced</div>
+        <div class="card-label">Project Cost (incl. GST)</div>
+        <div class="card-value">&#8377;{{ total_cost|floatformat:2 }}</div>
+      </div>
+      <div class="summary-card invoiced">
+        <div class="card-label">Invoiced</div>
         <div class="card-value">&#8377;{{ total_invoiced|floatformat:2 }}</div>
       </div>
       <div class="summary-card paid">
@@ -328,7 +358,7 @@
         <tr>
           <th>Project</th>
           <th>Status</th>
-          <th class="num">Invoices</th>
+          <th class="num">Cost (incl. GST)</th>
           <th class="num">Invoiced</th>
           <th class="num">Received</th>
           <th class="num">Pending</th>
@@ -352,7 +382,7 @@
               <span class="muted">&mdash;</span>
             {% endif %}
           </td>
-          <td class="num">{{ row.invoice_count }}</td>
+          <td class="num">&#8377;{{ row.cost|floatformat:2 }}</td>
           <td class="num">&#8377;{{ row.invoiced|floatformat:2 }}</td>
           <td class="num paid-amt">&#8377;{{ row.paid|floatformat:2 }}</td>
           <td class="num {% if row.pending > 0 %}pending-amt{% endif %}">&#8377;{{ row.pending|floatformat:2 }}</td>
@@ -364,7 +394,8 @@
       {% if project_rows %}
       <tfoot>
         <tr>
-          <td colspan="3">Total</td>
+          <td colspan="2">Total</td>
+          <td class="num">&#8377;{{ total_cost|floatformat:2 }}</td>
           <td class="num">&#8377;{{ total_invoiced|floatformat:2 }}</td>
           <td class="num">&#8377;{{ total_paid|floatformat:2 }}</td>
           <td class="num">&#8377;{{ total_pending|floatformat:2 }}</td>

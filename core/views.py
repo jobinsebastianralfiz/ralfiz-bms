@@ -419,51 +419,85 @@ def client_relationship_summary_pdf(request, pk):
     company = CompanySettings.get_settings()
     download = request.GET.get('download', '0') == '1'
 
+    all_projects = list(client.projects.all().order_by('-created_at'))
+
+    # Optional project scope: a specific project id, or 'all' (default)
+    project_filter = request.GET.get('project', 'all')
+    selected_project = None
+    if project_filter and project_filter != 'all':
+        selected_project = next((p for p in all_projects if str(p.pk) == project_filter), None)
+        if selected_project is None:
+            project_filter = 'all'
+
     invoices = client.invoices.exclude(status='cancelled').select_related('project')
+    if selected_project is not None:
+        invoices = invoices.filter(project=selected_project)
 
     def summarise(qs):
-        """Return (invoiced, paid, pending) totals for an invoice queryset."""
+        """Return (invoiced, paid) totals for an invoice queryset. Both are
+        GST-inclusive because Invoice.total_amount already includes tax."""
         invoiced = qs.aggregate(t=Sum('total_amount'))['t'] or Decimal('0')
         paid = qs.aggregate(t=Sum('amount_paid'))['t'] or Decimal('0')
-        return invoiced, paid, invoiced - paid
+        return invoiced, paid
 
-    # Build per-project rows
+    # Build per-project rows (only the selected project when scoped).
+    # Project cost = agreed final amount (incl. GST), falling back to the
+    # estimated budget, then to the invoiced total when neither is set.
+    # Pending = project cost still outstanding after payments received.
     project_rows = []
-    for project in client.projects.all().order_by('-created_at'):
+    total_cost = Decimal('0')
+    total_invoiced = Decimal('0')
+    total_paid = Decimal('0')
+    rows_projects = [selected_project] if selected_project is not None else all_projects
+    for project in rows_projects:
         proj_invoices = invoices.filter(project=project)
-        invoiced, paid, pending = summarise(proj_invoices)
+        invoiced, paid = summarise(proj_invoices)
+        cost = project.final_amount or project.estimated_budget or invoiced
         project_rows.append({
             'project': project,
             'invoice_count': proj_invoices.count(),
+            'cost': cost,
             'invoiced': invoiced,
             'paid': paid,
-            'pending': pending,
+            'pending': cost - paid,
         })
+        total_cost += cost
+        total_invoiced += invoiced
+        total_paid += paid
 
-    # Invoices not linked to any project
-    unlinked_invoices = invoices.filter(project__isnull=True)
-    if unlinked_invoices.exists():
-        invoiced, paid, pending = summarise(unlinked_invoices)
-        project_rows.append({
-            'project': None,
-            'invoice_count': unlinked_invoices.count(),
-            'invoiced': invoiced,
-            'paid': paid,
-            'pending': pending,
-        })
+    # Invoices not linked to any project (only relevant for the full summary)
+    if selected_project is None:
+        unlinked_invoices = invoices.filter(project__isnull=True)
+        if unlinked_invoices.exists():
+            invoiced, paid = summarise(unlinked_invoices)
+            project_rows.append({
+                'project': None,
+                'invoice_count': unlinked_invoices.count(),
+                'cost': invoiced,
+                'invoiced': invoiced,
+                'paid': paid,
+                'pending': invoiced - paid,
+            })
+            total_cost += invoiced
+            total_invoiced += invoiced
+            total_paid += paid
 
-    total_invoiced, total_paid, total_pending = summarise(invoices)
+    total_pending = total_cost - total_paid
 
     payments = Payment.objects.filter(
-        invoice__client=client
-    ).exclude(invoice__status='cancelled').select_related('invoice').order_by('-payment_date')
+        invoice__in=invoices
+    ).select_related('invoice').order_by('-payment_date')
 
     context = {
         'client': client,
         'company': company,
+        'all_projects': all_projects,
+        'selected_project': selected_project,
+        'project_filter': project_filter,
         'project_rows': project_rows,
         'invoices': invoices.order_by('-issue_date'),
         'payments': payments,
+        'total_cost': total_cost,
         'total_invoiced': total_invoiced,
         'total_paid': total_paid,
         'total_pending': total_pending,
@@ -480,7 +514,9 @@ def client_relationship_summary_pdf(request, pk):
 
             response = HttpResponse(pdf, content_type='application/pdf')
             safe_name = (client.company_name or client.name).replace(' ', '_')
-            response['Content-Disposition'] = f'attachment; filename="{safe_name}_relationship_summary.pdf"'
+            if selected_project is not None:
+                safe_name += '_' + selected_project.name.replace(' ', '_')
+            response['Content-Disposition'] = f'attachment; filename="{safe_name}_summary.pdf"'
             return response
         except ImportError:
             messages.warning(request, 'PDF generation requires WeasyPrint. Showing printable view instead.')
