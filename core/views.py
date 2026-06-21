@@ -488,9 +488,24 @@ def client_relationship_summary_pdf(request, pk):
         invoice__in=invoices
     ).select_related('invoice').order_by('-payment_date')
 
+    # Embed the logo as a base64 data URI so it renders in the PDF regardless of
+    # whether media files are served over HTTP (whitenoise/Railway volume).
+    logo_data_uri = ''
+    if company.logo:
+        try:
+            import base64
+            import mimetypes
+            with company.logo.open('rb') as fh:
+                raw = fh.read()
+            mime = mimetypes.guess_type(company.logo.name)[0] or 'image/png'
+            logo_data_uri = f"data:{mime};base64,{base64.b64encode(raw).decode('ascii')}"
+        except Exception:
+            logo_data_uri = ''
+
     context = {
         'client': client,
         'company': company,
+        'logo_data_uri': logo_data_uri,
         'all_projects': all_projects,
         'selected_project': selected_project,
         'project_filter': project_filter,

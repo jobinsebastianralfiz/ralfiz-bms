@@ -291,8 +291,8 @@
     <div class="doc-header">
       <div class="company-info" style="flex: 1;">
         <div class="company-logo">
-          {% if company.logo %}
-          <img src="{{ company.logo.url }}" alt="{{ company.company_name }}" style="width: 36px; height: 36px; object-fit: contain; border-radius: 6px;">
+          {% if logo_data_uri %}
+          <img src="{{ logo_data_uri }}" alt="{{ company.company_name }}" style="width: 36px; height: 36px; object-fit: contain; border-radius: 6px;">
           {% else %}
           <div class="logo-icon">{{ company.company_name|slice:":1"|upper|default:"R" }}</div>
           {% endif %}
