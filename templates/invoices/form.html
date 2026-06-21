@@ -58,7 +58,7 @@
                 <select class="form-control" id="project" name="project">
                   <option value="">Select project (optional)</option>
                   {% for project in projects %}
-                  <option value="{{ project.pk }}" {% if invoice.project_id and invoice.project_id == project.pk %}selected{% endif %}>{{ project.name }}</option>
+                  <option value="{{ project.pk }}" data-client="{{ project.client_id }}" {% if invoice.project_id and invoice.project_id == project.pk %}selected{% endif %}>{{ project.name }}</option>
                   {% endfor %}
                 </select>
               </div>
@@ -547,8 +547,30 @@ function showCloneModal() {
   alert('Clone functionality coming soon!');
 }
 
+// Filter the project dropdown to only projects belonging to the selected client
+function filterProjects() {
+  const clientId = document.getElementById('client').value;
+  const projectSelect = document.getElementById('project');
+  let selectedStillVisible = false;
+  Array.from(projectSelect.options).forEach(opt => {
+    if (!opt.value) { return; } // keep the placeholder option
+    const matches = !clientId || opt.dataset.client === clientId;
+    opt.hidden = !matches;
+    opt.disabled = !matches;
+    if (matches && opt.value === projectSelect.value) {
+      selectedStillVisible = true;
+    }
+  });
+  // If the current selection no longer belongs to the chosen client, reset it
+  if (!selectedStillVisible) {
+    projectSelect.value = '';
+  }
+}
+
 // Calculate on page load
 document.addEventListener('DOMContentLoaded', function() {
+  document.getElementById('client').addEventListener('change', filterProjects);
+  filterProjects();
   document.querySelectorAll('.line-item-row').forEach(row => {
     const qty = parseFloat(row.querySelector('.item-qty')?.value) || 0;
     const price = parseFloat(row.querySelector('.item-price')?.value) || 0;
