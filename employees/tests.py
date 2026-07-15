@@ -1,6 +1,7 @@
 from datetime import date
 
 from django.test import TestCase
+from django.urls import reverse
 
 from employees.models import Certificate
 
@@ -31,9 +32,36 @@ class CertificateBodyRenderTests(TestCase):
         html = self.cert.render_body_html()
         self.assertIn('She did well. We found her sincere, her work good.', html)
 
-    def test_position_is_alias_for_course_name(self):
+    def test_position_uses_position_field_when_set(self):
+        self.cert.position = 'Flutter Developer Intern'
+        self.cert.body_text = 'engaged as a {position}.'
+        self.assertIn('engaged as a Flutter Developer Intern.', self.cert.render_body_html())
+
+    def test_position_falls_back_to_course_name_when_unset(self):
+        """Existing bodies were written when {position} meant course_name."""
+        self.cert.position = ''
         self.cert.body_text = 'engaged as a {position}.'
         self.assertIn('engaged as a Mobile App Development using Flutter.', self.cert.render_body_html())
+
+    def test_position_empty_when_neither_set(self):
+        self.cert.position = ''
+        self.cert.course_name = ''
+        self.cert.body_text = 'as a [{position}].'
+        html = self.cert.render_body_html()
+        self.assertIn('as a [].', html)
+        self.assertNotIn('None', html)
+
+    def test_register_number_placeholder(self):
+        self.cert.register_number = 'BAI247966'
+        self.cert.body_text = 'Reg. No.: {register_number}'
+        self.assertIn('Reg. No.: BAI247966', self.cert.render_body_html())
+
+    def test_register_number_blank_renders_empty(self):
+        self.cert.register_number = ''
+        self.cert.body_text = 'Reg. No.: [{register_number}]'
+        html = self.cert.render_body_html()
+        self.assertIn('Reg. No.: []', html)
+        self.assertNotIn('None', html)
 
     def test_pronoun_object_and_possessive_aliases(self):
         self.cert.body_text = 'We found {pronoun_object} sincere and appreciate {pronoun_possessive} commitment.'
@@ -72,6 +100,25 @@ class CertificateBodyRenderTests(TestCase):
         self.assertIn('<p class="body-text">First para.</p>', html)
         self.assertIn('<p class="body-text">Second para.</p>', html)
 
+    def test_paragraphs_split_on_crlf_blank_lines(self):
+        """Browsers submit textarea line breaks as CRLF, so stored bodies use \\r\\n."""
+        self.cert.body_text = 'First para.\r\n\r\nSecond para.'
+        html = self.cert.render_body_html()
+        self.assertEqual(html.count('<p class="body-text">'), 2)
+        self.assertIn('<p class="body-text">First para.</p>', html)
+        self.assertIn('<p class="body-text">Second para.</p>', html)
+
+    def test_no_carriage_returns_leak_into_html(self):
+        self.cert.body_text = 'Line one.\r\nLine two.\r\n\r\nNext para.'
+        self.assertNotIn('\r', self.cert.render_body_html())
+
+    def test_crlf_paragraph_around_skills_list(self):
+        self.cert.body_text = 'Intro:\r\n\r\n{skills}\r\n\r\nOutro.'
+        html = self.cert.render_body_html()
+        self.assertIn('<p class="body-text">Intro:</p>', html)
+        self.assertIn('<ul class="skills-list">', html)
+        self.assertIn('<p class="body-text">Outro.</p>', html)
+
     def test_blank_optional_fields_render_empty_not_none(self):
         self.cert.college_name = ''
         self.cert.duration_days = None
@@ -83,6 +130,62 @@ class CertificateBodyRenderTests(TestCase):
     def test_malformed_braces_fall_back_to_raw_body(self):
         self.cert.body_text = 'Certify that {student_name} and an unclosed { brace.'
         self.assertIn('unclosed', self.cert.render_body_html())
+
+
+class CertificateFormWiringTests(TestCase):
+    """The new fields must survive the real create/edit views, not just the model."""
+
+    def setUp(self):
+        from django.contrib.auth.models import User
+        self.user = User.objects.create_user('hr', password='pw')
+        self.client.force_login(self.user)
+
+    def _post_data(self, **overrides):
+        data = {
+            'certificate_type': 'inter',
+            'title': 'INTERNSHIP CERTIFICATE',
+            'salutation': 'Mr.',
+            'student_name': 'Mohammed Amal P',
+            'register_number': 'BAI247966',
+            'gender': 'male',
+            'college_name': '',
+            'course_name': '',
+            'position': 'Python Developer Intern',
+            'start_date': '2026-06-01',
+            'end_date': '2026-07-17',
+            'mode': 'offline',
+            'skills': 'Python Programming\nDjango Framework',
+            'body_text': 'Certify {student_name} (Reg. No.: {register_number}) as a {position}.',
+            'wish_text': 'We wish {pronoun} success in {possessive} future.',
+            'date_of_issuance': '2026-07-17',
+        }
+        data.update(overrides)
+        return data
+
+    def test_create_view_saves_register_number_and_position(self):
+        resp = self.client.post(reverse('certificate_create'), self._post_data())
+        self.assertEqual(resp.status_code, 302)
+        cert = Certificate.objects.get()
+        self.assertEqual(cert.register_number, 'BAI247966')
+        self.assertEqual(cert.position, 'Python Developer Intern')
+
+    def test_edit_view_updates_register_number_and_position(self):
+        self.client.post(reverse('certificate_create'), self._post_data())
+        cert = Certificate.objects.get()
+        self.client.post(
+            reverse('certificate_detail', args=[cert.pk]),
+            self._post_data(register_number='XYZ999', position='Flutter Intern'),
+        )
+        cert.refresh_from_db()
+        self.assertEqual(cert.register_number, 'XYZ999')
+        self.assertEqual(cert.position, 'Flutter Intern')
+
+    def test_created_certificate_renders_both_new_placeholders(self):
+        self.client.post(reverse('certificate_create'), self._post_data())
+        html = Certificate.objects.get().render_body_html()
+        self.assertIn('Reg. No.: BAI247966', html)
+        self.assertIn('as a Python Developer Intern.', html)
+        self.assertNotIn('{register_number}', html)
 
 
 class CertificateWishTextTests(TestCase):

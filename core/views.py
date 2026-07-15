@@ -7739,9 +7739,11 @@ def certificate_create(request):
             title=request.POST.get('title', 'INTERNSHIP CERTIFICATE'),
             salutation=request.POST.get('salutation', 'Mr.'),
             student_name=request.POST.get('student_name'),
+            register_number=request.POST.get('register_number', ''),
             gender=request.POST.get('gender', 'male'),
             college_name=request.POST.get('college_name', ''),
             course_name=request.POST.get('course_name', ''),
+            position=request.POST.get('position', ''),
             start_date=request.POST.get('start_date') or None,
             end_date=request.POST.get('end_date') or None,
             duration_days=int(request.POST.get('duration_days')) if request.POST.get('duration_days') else None,
@@ -7820,9 +7822,11 @@ def certificate_detail(request, pk):
         cert.title = request.POST.get('title', cert.title)
         cert.salutation = request.POST.get('salutation', cert.salutation)
         cert.student_name = request.POST.get('student_name', cert.student_name)
+        cert.register_number = request.POST.get('register_number', '')
         cert.gender = request.POST.get('gender', cert.gender)
         cert.college_name = request.POST.get('college_name', '')
         cert.course_name = request.POST.get('course_name', cert.course_name)
+        cert.position = request.POST.get('position', '')
         cert.start_date = request.POST.get('start_date') or None
         cert.end_date = request.POST.get('end_date') or None
         cert.duration_days = int(request.POST.get('duration_days')) if request.POST.get('duration_days') else None

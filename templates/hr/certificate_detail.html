@@ -80,9 +80,21 @@
           </div>
 
           <div class="row mb-3">
-            <div class="col-12">
+            <div class="col-8">
               <label class="form-label">College / Institution</label>
               <input type="text" name="college_name" class="form-control" value="{{ cert.college_name }}">
+            </div>
+            <div class="col-4">
+              <label class="form-label">Register Number</label>
+              <input type="text" name="register_number" class="form-control" value="{{ cert.register_number }}" placeholder="e.g. BAI247966">
+            </div>
+          </div>
+
+          <div class="row mb-3">
+            <div class="col-12">
+              <label class="form-label">Position / Role</label>
+              <input type="text" name="position" class="form-control" value="{{ cert.position }}" placeholder="e.g. Flutter Developer Intern">
+              <small class="text-muted">Used by <code>{position}</code>. Falls back to Course / Program Name when blank.</small>
             </div>
           </div>
 
@@ -123,7 +135,7 @@
           <div class="mb-3">
             <label class="form-label">Certificate Body Content</label>
             <textarea name="body_text" class="form-control" rows="12">{{ cert.body_text }}</textarea>
-            <small class="text-muted">Placeholders: <code>{salutation}</code>, <code>{student_name}</code>, <code>{college_name}</code>, <code>{course_name}</code>, <code>{start_date}</code>, <code>{end_date}</code>, <code>{duration_days}</code>, <code>{mode}</code>, <code>{position}</code>, <code>{skills}</code>, <code>{pronoun}</code>, <code>{pronoun_cap}</code>, <code>{possessive}</code>, <code>{object_pronoun}</code>. Separate paragraphs with blank line.</small>
+            <small class="text-muted">Placeholders: <code>{salutation}</code>, <code>{student_name}</code>, <code>{register_number}</code>, <code>{college_name}</code>, <code>{course_name}</code>, <code>{start_date}</code>, <code>{end_date}</code>, <code>{duration_days}</code>, <code>{mode}</code>, <code>{position}</code>, <code>{skills}</code>, <code>{pronoun}</code>, <code>{pronoun_cap}</code>, <code>{possessive}</code>, <code>{object_pronoun}</code>. Separate paragraphs with blank line.</small>
           </div>
 
           <div class="mb-3">

@@ -709,11 +709,16 @@ class Certificate(models.Model):
     # Student info
     salutation = models.CharField(max_length=10, choices=SALUTATION_CHOICES, default='Mr.')
     student_name = models.CharField(max_length=200)
+    register_number = models.CharField(max_length=50, blank=True,
+                                       help_text='College/university register number, e.g. BAI247966 ({register_number})')
     gender = models.CharField(max_length=10, choices=GENDER_CHOICES, default='male')
     college_name = models.CharField(max_length=300, blank=True)
 
     # Course info
     course_name = models.CharField(max_length=200, blank=True, help_text='e.g. Web Development Internship')
+    position = models.CharField(max_length=200, blank=True,
+                                help_text='Role held, e.g. Flutter Developer Intern ({position}). '
+                                          'Falls back to course_name when blank.')
     start_date = models.DateField(null=True, blank=True)
     end_date = models.DateField(null=True, blank=True)
     duration_days = models.PositiveIntegerField(null=True, blank=True, help_text='Total duration in days')
@@ -722,10 +727,10 @@ class Certificate(models.Model):
     # Certificate content
     body_text = models.TextField(
         blank=True,
-        help_text='Full certificate body content. Use placeholders: {salutation}, {student_name}, {college_name}, '
-                  '{course_name}, {position} (alias of course_name), {start_date}, {end_date}, {duration_days}, '
-                  '{mode}, {skills}, {pronoun} (he/she), {pronoun_cap} (He/She), {possessive} (his/her), '
-                  '{object_pronoun} (him/her). Unknown placeholders render literally.'
+        help_text='Full certificate body content. Use placeholders: {salutation}, {student_name}, '
+                  '{register_number}, {college_name}, {course_name}, {position}, {start_date}, {end_date}, '
+                  '{duration_days}, {mode}, {skills}, {pronoun} (he/she), {pronoun_cap} (He/She), '
+                  '{possessive} (his/her), {object_pronoun} (him/her). Unknown placeholders render literally.'
     )
     skills = models.JSONField(default=list, blank=True, help_text='List of skills (rendered as bullet points in body_text {skills} placeholder)')
     wish_text = models.TextField(
@@ -782,9 +787,11 @@ class Certificate(models.Model):
         return {
             'salutation': self.salutation,
             'student_name': self.student_name,
+            'register_number': self.register_number or '',
             'college_name': self.college_name or '',
             'course_name': self.course_name or '',
-            'position': self.course_name or '',
+            # Bodies predating the position field used {position} to mean course_name.
+            'position': self.position or self.course_name or '',
             'start_date': self._format_date(self.start_date) if self.start_date else '',
             'end_date': self._format_date(self.end_date) if self.end_date else '',
             'duration_days': self.duration_days or '',
@@ -817,6 +824,9 @@ class Certificate(models.Model):
         import re
         body = self._substitute(self.body_text or '', self.placeholder_values())
         body = re.sub(r'\*\*(.+?)\*\*', r'<strong>\1</strong>', body)
+        # Browsers submit textarea newlines as CRLF; normalise so blank-line
+        # paragraph splitting works on stored bodies.
+        body = body.replace('\r\n', '\n').replace('\r', '\n')
 
         html = ''
         for p in body.split('\n\n'):

@@ -76,8 +76,20 @@
           <input type="text" name="college_name" class="form-control" placeholder="Leave empty if not applicable">
         </div>
         <div class="col-6">
+          <label class="form-label">Register Number</label>
+          <input type="text" name="register_number" class="form-control" placeholder="e.g. BAI247966">
+        </div>
+      </div>
+
+      <div class="row mb-3">
+        <div class="col-6">
           <label class="form-label">Course / Program / Designation</label>
           <input type="text" name="course_name" class="form-control" placeholder="e.g. Web Development Internship">
+        </div>
+        <div class="col-6">
+          <label class="form-label">Position / Role</label>
+          <input type="text" name="position" class="form-control" placeholder="e.g. Flutter Developer Intern">
+          <small class="text-muted">Used by <code>{position}</code>. Falls back to Course / Program when blank.</small>
         </div>
       </div>
 
@@ -112,7 +124,7 @@
       <div class="mb-3">
         <label class="form-label">Certificate Body Content *</label>
         <textarea name="body_text" id="cert-body" class="form-control" rows="12" required placeholder="Select a template above to auto-fill, or write your own content..."></textarea>
-        <small class="text-muted">Placeholders: <code>{salutation}</code>, <code>{student_name}</code>, <code>{college_name}</code>, <code>{course_name}</code>,
+        <small class="text-muted">Placeholders: <code>{salutation}</code>, <code>{student_name}</code>, <code>{register_number}</code>, <code>{college_name}</code>, <code>{course_name}</code>,
           <code>{start_date}</code>, <code>{end_date}</code>, <code>{duration_days}</code>, <code>{mode}</code>,
           <code>{position}</code>, <code>{skills}</code>, <code>{pronoun}</code> (he/she), <code>{pronoun_cap}</code> (He/She),
           <code>{possessive}</code> (his/her), <code>{object_pronoun}</code> (him/her). Blank line = new paragraph.</small>

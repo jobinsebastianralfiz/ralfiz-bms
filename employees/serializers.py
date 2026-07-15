@@ -347,8 +347,8 @@ class CertificateSerializer(serializers.ModelSerializer):
         fields = [
             'id', 'certificate_number', 'verification_id', 'template', 'template_name',
             'certificate_type', 'status', 'title',
-            'salutation', 'student_name', 'gender', 'college_name',
-            'course_name', 'start_date', 'end_date', 'duration_days', 'mode',
+            'salutation', 'student_name', 'register_number', 'gender', 'college_name',
+            'course_name', 'position', 'start_date', 'end_date', 'duration_days', 'mode',
             'body_text', 'skills', 'wish_text',
             'date_of_issuance', 'verification_url', 'pdf_url',
             'created_at', 'updated_at',
@@ -388,8 +388,8 @@ class CertificateCreateSerializer(serializers.ModelSerializer):
         model = Certificate
         fields = [
             'template', 'certificate_type', 'status', 'title',
-            'salutation', 'student_name', 'gender', 'college_name',
-            'course_name', 'start_date', 'end_date', 'duration_days', 'mode',
+            'salutation', 'student_name', 'register_number', 'gender', 'college_name',
+            'course_name', 'position', 'start_date', 'end_date', 'duration_days', 'mode',
             'body_text', 'skills', 'wish_text', 'date_of_issuance',
         ]
 
