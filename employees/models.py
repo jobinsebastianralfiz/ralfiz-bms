@@ -723,8 +723,9 @@ class Certificate(models.Model):
     body_text = models.TextField(
         blank=True,
         help_text='Full certificate body content. Use placeholders: {salutation}, {student_name}, {college_name}, '
-                  '{course_name}, {start_date}, {end_date}, {duration_days}, {mode}, {skills}, '
-                  '{pronoun} (he/she), {pronoun_cap} (He/She), {possessive} (his/her), {object_pronoun} (him/her)'
+                  '{course_name}, {position} (alias of course_name), {start_date}, {end_date}, {duration_days}, '
+                  '{mode}, {skills}, {pronoun} (he/she), {pronoun_cap} (He/She), {possessive} (his/her), '
+                  '{object_pronoun} (him/her). Unknown placeholders render literally.'
     )
     skills = models.JSONField(default=list, blank=True, help_text='List of skills (rendered as bullet points in body_text {skills} placeholder)')
     wish_text = models.TextField(
@@ -760,6 +761,76 @@ class Certificate(models.Model):
     @property
     def object_pronoun(self):
         return 'her' if self.gender == 'female' else 'him'
+
+    @staticmethod
+    def _format_date(d):
+        day = d.day
+        if 4 <= day <= 20 or 24 <= day <= 30:
+            suffix = "th"
+        else:
+            suffix = ["st", "nd", "rd"][day % 10 - 1]
+        return f"{day}{suffix} {d.strftime('%B %Y')}"
+
+    def _skills_html(self):
+        from django.utils.html import escape
+        if not self.skills:
+            return ''
+        items = ''.join(f'<li>{escape(s)}</li>' for s in self.skills)
+        return f'<ul class="skills-list">{items}</ul>'
+
+    def placeholder_values(self):
+        return {
+            'salutation': self.salutation,
+            'student_name': self.student_name,
+            'college_name': self.college_name or '',
+            'course_name': self.course_name or '',
+            'position': self.course_name or '',
+            'start_date': self._format_date(self.start_date) if self.start_date else '',
+            'end_date': self._format_date(self.end_date) if self.end_date else '',
+            'duration_days': self.duration_days or '',
+            'mode': self.get_mode_display() if self.mode else '',
+            'skills': self._skills_html(),
+            'pronoun': self.pronoun,
+            'pronoun_cap': self.pronoun_cap,
+            'possessive': self.possessive,
+            'pronoun_possessive': self.possessive,
+            'object_pronoun': self.object_pronoun,
+            'pronoun_object': self.object_pronoun,
+        }
+
+    @staticmethod
+    def _substitute(text, values):
+        """Fill known placeholders, leaving unknown ones visible as literal {name}.
+
+        str.format is all-or-nothing: a single unknown name raises and would
+        otherwise cost us every substitution in the text.
+        """
+        class _Missing(dict):
+            def __missing__(self, key):
+                return '{' + key + '}'
+        try:
+            return text.format_map(_Missing(values))
+        except (IndexError, ValueError):
+            return text
+
+    def render_body_html(self):
+        import re
+        body = self._substitute(self.body_text or '', self.placeholder_values())
+        body = re.sub(r'\*\*(.+?)\*\*', r'<strong>\1</strong>', body)
+
+        html = ''
+        for p in body.split('\n\n'):
+            p = p.strip()
+            if not p:
+                continue
+            html += p if p.startswith('<ul') else f'<p class="body-text">{p}</p>'
+        return html
+
+    def render_wish_text(self):
+        return self._substitute(self.wish_text or '', {
+            'pronoun': self.object_pronoun,
+            'possessive': self.possessive,
+        })
 
     def save(self, *args, **kwargs):
         if isinstance(self.date_of_issuance, str):

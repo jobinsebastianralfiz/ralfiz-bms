@@ -3807,63 +3807,8 @@ class CertificatePDFView(APIView):
         award_badge = (static_dir / 'award_badge.png').as_uri()
         bottom_graphics = (static_dir / 'bottom_graphics.png').as_uri()
 
-        # Format dates
-        def format_date(d):
-            day = d.day
-            if 4 <= day <= 20 or 24 <= day <= 30:
-                suffix = "th"
-            else:
-                suffix = ["st", "nd", "rd"][day % 10 - 1]
-            return f"{day}{suffix} {d.strftime('%B %Y')}"
-
-        # Render body_text with placeholders
-        from django.utils.html import escape
-        skills_html = ''
-        if certificate.skills:
-            items = ''.join(f'<li>{escape(s)}</li>' for s in certificate.skills)
-            skills_html = f'<ul class="skills-list">{items}</ul>'
-
-        body_raw = certificate.body_text or ''
-        try:
-            body_rendered = body_raw.format(
-                salutation=certificate.salutation,
-                student_name=certificate.student_name,
-                college_name=certificate.college_name or '',
-                course_name=certificate.course_name or '',
-                start_date=format_date(certificate.start_date) if certificate.start_date else '',
-                end_date=format_date(certificate.end_date) if certificate.end_date else '',
-                duration_days=certificate.duration_days or '',
-                mode=certificate.get_mode_display() if certificate.mode else '',
-                skills=skills_html,
-                pronoun=certificate.pronoun,
-                pronoun_cap=certificate.pronoun_cap,
-                possessive=certificate.possessive,
-                object_pronoun=certificate.object_pronoun,
-            )
-        except (KeyError, IndexError):
-            body_rendered = body_raw
-
-        # Convert **bold** to <strong> tags
-        import re
-        body_rendered = re.sub(r'\*\*(.+?)\*\*', r'<strong>\1</strong>', body_rendered)
-
-        # Convert paragraphs (double newlines) to HTML
-        paragraphs = body_rendered.split('\n\n')
-        rendered_body = ''
-        for p in paragraphs:
-            p = p.strip()
-            if not p:
-                continue
-            if p.startswith('<ul'):
-                rendered_body += p
-            else:
-                rendered_body += f'<p class="body-text">{p}</p>'
-
-        # Process wish_text placeholders
-        wish_text = certificate.wish_text.format(
-            pronoun=certificate.object_pronoun,
-            possessive=certificate.possessive,
-        )
+        rendered_body = certificate.render_body_html()
+        wish_text = certificate.render_wish_text()
 
         context = {
             'cert': certificate,

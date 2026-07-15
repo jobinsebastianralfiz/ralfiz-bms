@@ -7889,60 +7889,8 @@ def certificate_pdf(request, pk):
     award_badge = (static_dir / 'award_badge.png').as_uri()
     bottom_graphics = (static_dir / 'bottom_graphics.png').as_uri()
 
-    def format_date(d):
-        day = d.day
-        if 4 <= day <= 20 or 24 <= day <= 30:
-            suffix = "th"
-        else:
-            suffix = ["st", "nd", "rd"][day % 10 - 1]
-        return f"{day}{suffix} {d.strftime('%B %Y')}"
-
-    # Render body_text with placeholders
-    from django.utils.html import escape
-    skills_html = ''
-    if cert.skills:
-        items = ''.join(f'<li>{escape(s)}</li>' for s in cert.skills)
-        skills_html = f'<ul class="skills-list">{items}</ul>'
-
-    body_raw = cert.body_text or ''
-    try:
-        body_rendered = body_raw.format(
-            salutation=cert.salutation,
-            student_name=cert.student_name,
-            college_name=cert.college_name or '',
-            course_name=cert.course_name or '',
-            start_date=format_date(cert.start_date) if cert.start_date else '',
-            end_date=format_date(cert.end_date) if cert.end_date else '',
-            duration_days=cert.duration_days or '',
-            mode=cert.get_mode_display() if cert.mode else '',
-            skills=skills_html,
-            pronoun=cert.pronoun,
-            pronoun_cap=cert.pronoun_cap,
-            possessive=cert.possessive,
-            object_pronoun=cert.object_pronoun,
-        )
-    except (KeyError, IndexError):
-        body_rendered = body_raw
-
-    # Convert **bold** to <strong> tags
-    import re
-    body_rendered = re.sub(r'\*\*(.+?)\*\*', r'<strong>\1</strong>', body_rendered)
-
-    paragraphs = body_rendered.split('\n\n')
-    rendered_body = ''
-    for p in paragraphs:
-        p = p.strip()
-        if not p:
-            continue
-        if p.startswith('<ul'):
-            rendered_body += p
-        else:
-            rendered_body += f'<p class="body-text">{p}</p>'
-
-    wish_text = cert.wish_text.format(
-        pronoun=cert.object_pronoun,
-        possessive=cert.possessive,
-    )
+    rendered_body = cert.render_body_html()
+    wish_text = cert.render_wish_text()
 
     context = {
         'cert': cert,
