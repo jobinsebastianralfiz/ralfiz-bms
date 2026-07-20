@@ -13,7 +13,6 @@ grows multi-step planning, that is the point to revisit it.
 
 import json
 import logging
-from functools import partial
 from typing import Optional
 
 from django.conf import settings
@@ -140,30 +139,39 @@ long lists in prose -- summarise and give the headline figures.
 """
 
 
-def build_tools(scope):
-    """Bind every whitelisted function to this caller's scope."""
+def _bind(name, fn, scope, description, args_schema):
+    """Wrap one query function as a scope-bound LangChain tool.
+
+    The binding is a real closure rather than functools.partial on purpose.
+    LangGraph's ToolNode runs typing.get_type_hints() over each tool's
+    callable during graph construction, and get_type_hints() rejects partial
+    objects with "is not a module, class, method, or function" -- the graph
+    fails to build before any model call happens.
+    """
     from langchain_core.tools import StructuredTool
 
-    tools = []
-    for name, (description, args_schema) in TOOL_SPECS.items():
-        fn = TOOL_REGISTRY[name]
-        bound = partial(fn, scope)
+    if args_schema is None:
+        def run() -> dict:
+            return fn(scope)
+    else:
+        def run(**kwargs) -> dict:
+            return fn(scope, **kwargs)
 
-        if args_schema is None:
-            # StructuredTool needs a callable with no required params here.
-            tools.append(StructuredTool.from_function(
-                func=lambda _bound=bound: _bound(),
-                name=name,
-                description=description,
-            ))
-        else:
-            tools.append(StructuredTool.from_function(
-                func=bound,
-                name=name,
-                description=description,
-                args_schema=args_schema,
-            ))
-    return tools
+    run.__name__ = name
+    run.__doc__ = description
+
+    options = {'func': run, 'name': name, 'description': description}
+    if args_schema is not None:
+        options['args_schema'] = args_schema
+    return StructuredTool.from_function(**options)
+
+
+def build_tools(scope):
+    """Bind every whitelisted function to this caller's scope."""
+    return [
+        _bind(name, TOOL_REGISTRY[name], scope, description, args_schema)
+        for name, (description, args_schema) in TOOL_SPECS.items()
+    ]
 
 
 def _build_model():

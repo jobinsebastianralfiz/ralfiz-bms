@@ -141,3 +141,43 @@ class SupervisorWiringTests(TestCase):
         for tool in built:
             with self.subTest(tool=tool.name):
                 self.assertTrue(tool.description.startswith('Call '))
+
+    def test_bound_tools_survive_langgraph_type_inspection(self):
+        """Regression: scope binding must not be a functools.partial.
+
+        LangGraph's ToolNode runs typing.get_type_hints() over each tool's
+        callable while building the graph. get_type_hints() raises TypeError
+        on partial objects, so the graph failed to build before any model call
+        -- invisible to every mocked test. Needs no API key.
+        """
+        import typing
+
+        from langgraph.prebuilt import ToolNode
+
+        from pulse.scoping import PulseScope
+        from pulse.supervisor import build_tools
+
+        scope = PulseScope(user=None, employee=None, can_query_business=True)
+        built = build_tools(scope)
+
+        for tool in built:
+            with self.subTest(tool=tool.name):
+                typing.get_type_hints(tool.func, include_extras=True)
+
+        ToolNode(built)  # raised TypeError before the fix
+
+    def test_bound_tools_actually_reach_the_query_functions(self):
+        """The closure must forward both the scope and the model's arguments."""
+        from pulse.scoping import PulseScope
+        from pulse.supervisor import build_tools
+
+        scope = PulseScope(user=None, employee=None, can_query_business=True)
+        by_name = {t.name: t for t in build_tools(scope)}
+
+        no_args = by_name['count_projects_by_status'].func()
+        self.assertIn('breakdown', no_args)
+
+        with_args = by_name['get_project_summary'].func(
+            project_id='00000000-0000-0000-0000-000000000000'
+        )
+        self.assertFalse(with_args['found'])

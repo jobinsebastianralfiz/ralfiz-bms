@@ -223,3 +223,13 @@ FIREBASE_CREDENTIALS_PATH = os.getenv('FIREBASE_CREDENTIALS_PATH', '')
 # PULSE command center
 ANTHROPIC_API_KEY = os.getenv('ANTHROPIC_API_KEY', '')
 PULSE_MODEL = os.getenv('PULSE_MODEL', 'claude-opus-4-8')
+
+# Embeddings for PULSE document search.
+# Read but NOT yet used -- the RAG phase is not built. Anthropic has no
+# embeddings endpoint, so this is a separate provider and a separate key.
+VOYAGE_API_KEY = os.getenv('VOYAGE_API_KEY', '')
+PULSE_EMBEDDING_MODEL = os.getenv('PULSE_EMBEDDING_MODEL', 'voyage-4')
+
+# Weather for the dashboard.
+# Read but NOT yet used -- the weather tool is not built.
+OPENWEATHER_API_KEY = os.getenv('OPENWEATHER_API_KEY', '')
