@@ -1,0 +1,104 @@
+{% load static %}<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Portfolio — PULSE · Ralfiz</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="{% static 'css/pulse.css' %}">
+</head>
+<body class="pulse-body">
+{% csrf_token %}
+
+<div class="pulse-shell">
+
+  <header class="pulse-bar">
+    <a class="pulse-brand" href="/" title="Back to Ralfiz BMS">
+      <svg class="pulse-brand__mark" viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M12 1.5 14.3 8 21 10.3 14.3 12.6 12 19.1 9.7 12.6 3 10.3 9.7 8Z"/>
+        <path class="pulse-brand__spark" d="M18.5 15.2 19.6 18l2.9 1.1-2.9 1.1-1.1 2.8-1.1-2.8-2.9-1.1 2.9-1.1Z"/>
+      </svg>
+      <span class="pulse-brand__text">
+        <span class="pulse-brand__name">Ralfiz</span>
+        <span class="pulse-brand__sub">Portfolio Intelligence</span>
+      </span>
+    </a>
+
+    <nav class="pulse-bar__center" aria-label="View">
+      <div class="pulse-group" role="group">
+        <button class="pulse-icon is-active" type="button" aria-pressed="true" aria-label="Portfolio view">
+          <svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="10" cy="10" r="2.6"/><circle cx="3.2" cy="5" r="1.7"/><circle cx="16.8" cy="5" r="1.7"/><circle cx="3.2" cy="15" r="1.7"/><circle cx="16.8" cy="15" r="1.7"/><path d="M10 10 3.2 5M10 10l6.8-5M10 10l-6.8 5M10 10l6.8 5"/></svg>
+        </button>
+        <a class="pulse-icon" href="{% url 'pulse:command-center' %}" aria-label="Project view">
+          <svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="7" cy="10" r="3.4"/><path d="M11.6 8.2h5.2M11.6 11.8h5.2"/></svg>
+        </a>
+      </div>
+      <div class="pulse-group graph-legend" aria-label="Legend">
+        {% for item in legend %}
+          <span class="graph-legend__item">
+            <span class="graph-legend__dot" style="background: {{ item.hue }}"></span>{{ item.label }}
+          </span>
+        {% endfor %}
+      </div>
+    </nav>
+
+    <div class="pulse-bar__right">
+      <span class="pulse-operator">{{ operator }}</span>
+      <a class="pulse-exit" href="/">Exit</a>
+    </div>
+  </header>
+
+  <main class="graph-stage" id="graph-stage">
+    <canvas id="graph-canvas" aria-hidden="true"></canvas>
+
+    {# Keyboard and screen-reader route to the same data the canvas paints. #}
+    <nav class="graph-list" aria-label="Clients">
+      <h2 class="graph-list__head">Clients</h2>
+      <ul>
+        {% for node in nodes %}
+          <li>
+            <button class="graph-list__item" data-node="{{ node.id }}" type="button">
+              <span class="graph-list__dot" style="background: {{ node.hue }}"></span>
+              <span class="graph-list__name">{{ node.label }}</span>
+              <span class="graph-list__meta">{{ node.project_count }}p · {{ node.share }}%</span>
+            </button>
+          </li>
+        {% endfor %}
+      </ul>
+    </nav>
+
+    <aside class="graph-panel" id="graph-panel" aria-live="polite"></aside>
+  </main>
+
+  <footer class="pulse-command">
+    <form class="pulse-command__form" id="pulse-form" autocomplete="off">
+      <span class="pulse-command__glyph" aria-hidden="true">&gt;_</span>
+      <label class="pulse-visually-hidden" for="pulse-input">Ask PULSE</label>
+      <input class="pulse-command__input" id="pulse-input" type="text" maxlength="2000"
+             placeholder="Ask PULSE — who owes us the most · which clients are slipping">
+      <button class="pulse-mic" id="pulse-mic" type="button" aria-label="Speak your question">
+        <svg viewBox="0 0 20 20" aria-hidden="true"><rect x="7.4" y="2.5" width="5.2" height="9" rx="2.6"/><path d="M4.5 9.2a5.5 5.5 0 0 0 11 0M10 14.7v2.8"/></svg>
+      </button>
+      <button class="pulse-execute" id="pulse-execute" type="submit">Execute</button>
+    </form>
+    <p class="pulse-command__hint" id="pulse-hint">
+      {{ core.client_count }} clients · {{ core.project_count }} projects · ₹{{ core.billed|floatformat:0 }} billed to date
+    </p>
+  </footer>
+</div>
+
+<section class="pulse-response" id="pulse-response" aria-live="polite" hidden>
+  <header class="pulse-response__head">
+    <span class="pulse-response__intent" id="pulse-response-intent"></span>
+    <button class="pulse-response__close" id="pulse-response-close" type="button" aria-label="Dismiss answer">×</button>
+  </header>
+  <p class="pulse-response__body" id="pulse-response-body"></p>
+</section>
+
+<script id="graph-data" type="application/json">{{ graph_json|safe }}</script>
+<script src="{% static 'js/pulse-graph.js' %}" defer></script>
+<script src="{% static 'js/pulse-ask.js' %}" defer></script>
+</body>
+</html>

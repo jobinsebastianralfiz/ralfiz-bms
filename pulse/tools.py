@@ -29,7 +29,7 @@ from django.db.models import Count, DecimalField, F, Q, Sum, Value
 from django.db.models.functions import Coalesce
 from django.utils import timezone
 
-from core.models import Invoice, Project, Quote, Task, TaskIssue
+from core.models import Client, Invoice, Project, Quote, Task, TaskIssue
 from crm.models import Lead
 from employees.models import Attendance, LeaveRequest
 
@@ -515,6 +515,142 @@ def get_attendance_summary(scope, date=None):
                 'worked_hours': _money(rec.worked_hours),
             }
             for rec in records
+        ],
+    }
+
+
+# --------------------------------------------------------------------------
+# Portfolio graph
+# --------------------------------------------------------------------------
+
+#: Node colour by project status, using the jewel tones from the design spec.
+#: Meaning is encoded in hue -- this is not decoration.
+STATUS_HUE = {
+    'lead': '#7cc4e8',          # cyan   -- not yet won
+    'proposal': '#7cc4e8',
+    'negotiation': '#a78bd6',   # violet -- in play
+    'confirmed': '#a78bd6',
+    'in_progress': '#2fd4d4',   # teal   -- live work
+    'review': '#2fd4d4',
+    'completed': '#4edea3',     # green  -- done
+    'on_hold': '#e08aa0',       # rose   -- needs a human
+    'cancelled': '#6b7d86',     # grey   -- inert
+}
+
+#: Reserved for the node the user has selected. The design spec allows gold on
+#: exactly one thing at a time, so it must not also encode a data condition --
+#: four simultaneously-overdue clients would drown the selection signal.
+SELECTION_HUE = '#e8c07a'
+
+#: Rose doubles as the attention colour on both clients and projects.
+ATTENTION_HUE = '#e08aa0'
+
+
+def get_portfolio_graph(scope):
+    """The whole business as a graph: clients orbiting the core, projects orbiting clients.
+
+    Shape is deliberately generic (nodes + edges + a core) so the renderer
+    does not need to know about Clients or Projects specifically.
+
+    Every number here is real. Clients with no projects are still returned --
+    an empty orbit is information, not something to hide.
+    """
+    scope.require_business()
+    today = timezone.localdate()
+
+    clients = list(
+        Client.objects.filter(is_active=True)
+        .prefetch_related('projects')
+        .order_by('name')
+    )
+
+    invoice_by_project = {
+        row['project_id']: row
+        for row in Invoice.objects.values('project_id').annotate(
+            billed=Coalesce(Sum('total_amount'), _zero_money()),
+            collected=Coalesce(Sum('amount_paid'), _zero_money()),
+        )
+    }
+
+    nodes, edges = [], []
+    total_projects = 0
+    total_billed = Decimal('0.00')
+
+    for client in clients:
+        projects = list(client.projects.all())
+        live = [p for p in projects if p.status in ACTIVE_PROJECT_STATUSES]
+        client_billed = Decimal('0.00')
+
+        satellites = []
+        for project in projects:
+            money = invoice_by_project.get(project.id, {})
+            billed = money.get('billed') or Decimal('0.00')
+            client_billed += billed
+            overdue = bool(
+                project.deadline
+                and project.deadline < today
+                and project.status not in CLOSED_PROJECT_STATUSES
+            )
+            satellites.append({
+                'id': f'project:{project.id}',
+                'label': project.name,
+                'status': project.status,
+                'status_display': project.get_status_display(),
+                'hue': STATUS_HUE.get(project.status, '#7c94a0'),
+                'billed': _money(billed),
+                'deadline': _date(project.deadline),
+                'needs_attention': bool(overdue or project.status == 'on_hold'),
+                'tag': (today - project.deadline).days if overdue else None,
+            })
+            edges.append({'from': f'client:{client.id}', 'to': f'project:{project.id}'})
+
+        total_projects += len(projects)
+        total_billed += client_billed
+
+        nodes.append({
+            'id': f'client:{client.id}',
+            'label': client.name,
+            'company': client.company_name,
+            'kind': 'client',
+            'priority': client.priority,
+            # A client's hue comes from its most urgent live project, so
+            # colour on the graph means "where is the heat".
+            'hue': (
+                ATTENTION_HUE if any(s['needs_attention'] for s in satellites)
+                else (STATUS_HUE.get(live[0].status, '#7c94a0') if live else '#4a5c66')
+            ),
+            'needs_attention': any(s['needs_attention'] for s in satellites),
+            'project_count': len(projects),
+            'active_count': len(live),
+            'billed': _money(client_billed),
+            'satellites': satellites,
+        })
+        edges.append({'from': 'core', 'to': f'client:{client.id}'})
+
+    # Share of billing, so each node can carry a percentage like the reference.
+    for node in nodes:
+        node['share'] = (
+            round(node['billed'] / float(total_billed) * 100)
+            if total_billed else 0
+        )
+
+    return {
+        'core': {
+            'id': 'core',
+            'label': 'Ralfiz',
+            'client_count': len(nodes),
+            'project_count': total_projects,
+            'billed': _money(total_billed),
+        },
+        'nodes': nodes,
+        'edges': edges,
+        'legend': [
+            {'label': 'Live work', 'hue': '#2fd4d4'},
+            {'label': 'In play', 'hue': '#a78bd6'},
+            {'label': 'Prospect', 'hue': '#7cc4e8'},
+            {'label': 'Needs a human', 'hue': ATTENTION_HUE},
+            {'label': 'Delivered', 'hue': '#4edea3'},
+            {'label': 'No projects', 'hue': '#4a5c66'},
         ],
     }
 

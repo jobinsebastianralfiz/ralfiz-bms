@@ -285,3 +285,92 @@ class AttendanceToolTests(TestCase):
     def test_defaults_to_today(self):
         result = tools.get_attendance_summary(self.scope)
         self.assertEqual(result['date'], timezone.localdate().isoformat())
+
+
+class PortfolioGraphTests(TestCase):
+    """The constellation's data layer."""
+
+    def setUp(self):
+        self.scope = owner_scope()
+        self.today = timezone.localdate()
+
+        self.busy = Client.objects.create(name='Busy Co', is_active=True)
+        self.quiet = Client.objects.create(name='Quiet Co', is_active=True)
+        Client.objects.create(name='Gone Co', is_active=False)
+
+        self.live = Project.objects.create(
+            client=self.busy, name='Live One', project_type='web_app',
+            status='in_progress', deadline=self.today + timedelta(days=10),
+        )
+        self.late = Project.objects.create(
+            client=self.busy, name='Late One', project_type='web_app',
+            status='in_progress', deadline=self.today - timedelta(days=7),
+        )
+        Invoice.objects.create(
+            invoice_number='INV-G1', client=self.busy, project=self.live,
+            title='x', status='sent', issue_date=self.today,
+            total_amount=Decimal('100000.00'), amount_paid=Decimal('0.00'),
+        )
+
+    def test_inactive_clients_are_excluded(self):
+        g = tools.get_portfolio_graph(self.scope)
+        self.assertNotIn('Gone Co', [n['label'] for n in g['nodes']])
+
+    def test_clients_with_no_projects_are_kept(self):
+        """An empty orbit is information, not something to hide."""
+        g = tools.get_portfolio_graph(self.scope)
+        quiet = next(n for n in g['nodes'] if n['label'] == 'Quiet Co')
+        self.assertEqual(quiet['project_count'], 0)
+        self.assertEqual(quiet['satellites'], [])
+
+    def test_projects_become_satellites(self):
+        g = tools.get_portfolio_graph(self.scope)
+        busy = next(n for n in g['nodes'] if n['label'] == 'Busy Co')
+        self.assertEqual(
+            {s['label'] for s in busy['satellites']}, {'Live One', 'Late One'}
+        )
+
+    def test_overdue_project_flags_attention_and_carries_day_count(self):
+        g = tools.get_portfolio_graph(self.scope)
+        busy = next(n for n in g['nodes'] if n['label'] == 'Busy Co')
+        late = next(s for s in busy['satellites'] if s['label'] == 'Late One')
+        self.assertTrue(late['needs_attention'])
+        self.assertEqual(late['tag'], 7)
+
+    def test_attention_uses_rose_not_gold(self):
+        """Gold is reserved for selection; it must not also encode data."""
+        g = tools.get_portfolio_graph(self.scope)
+        busy = next(n for n in g['nodes'] if n['label'] == 'Busy Co')
+        self.assertTrue(busy['needs_attention'])
+        self.assertEqual(busy['hue'], tools.ATTENTION_HUE)
+        self.assertNotEqual(busy['hue'], tools.SELECTION_HUE)
+
+    def test_edges_connect_core_to_clients_to_projects(self):
+        g = tools.get_portfolio_graph(self.scope)
+        busy_id = next(n['id'] for n in g['nodes'] if n['label'] == 'Busy Co')
+        self.assertIn({'from': 'core', 'to': busy_id}, g['edges'])
+        self.assertEqual(
+            sum(1 for e in g['edges'] if e['from'] == busy_id), 2
+        )
+
+    def test_core_totals_are_real(self):
+        g = tools.get_portfolio_graph(self.scope)
+        self.assertEqual(g['core']['client_count'], 2)
+        self.assertEqual(g['core']['project_count'], 2)
+        self.assertEqual(g['core']['billed'], 100000.0)
+
+    def test_shares_are_percentages_of_total_billing(self):
+        g = tools.get_portfolio_graph(self.scope)
+        busy = next(n for n in g['nodes'] if n['label'] == 'Busy Co')
+        quiet = next(n for n in g['nodes'] if n['label'] == 'Quiet Co')
+        self.assertEqual(busy['share'], 100)
+        self.assertEqual(quiet['share'], 0)
+
+    def test_no_billing_anywhere_does_not_divide_by_zero(self):
+        Invoice.objects.all().delete()
+        g = tools.get_portfolio_graph(self.scope)
+        self.assertTrue(all(n['share'] == 0 for n in g['nodes']))
+
+    def test_requires_business_scope(self):
+        with self.assertRaises(PermissionDenied):
+            tools.get_portfolio_graph(denied_scope())

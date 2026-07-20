@@ -25,7 +25,11 @@ from core.models import Project
 from .scoping import resolve_scope
 from .serializers import AskRequestSerializer, AskResponseSerializer
 from .supervisor import PulseConfigurationError, ask
-from .tools import ACTIVE_PROJECT_STATUSES, get_project_summary
+from .tools import (
+    ACTIVE_PROJECT_STATUSES,
+    get_portfolio_graph,
+    get_project_summary,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -117,5 +121,27 @@ class CommandCenterView(View):
                 for p in projects
             ],
             'summary_json': json.dumps(summary),
+            'operator': scope.display_name,
+        })
+
+
+@method_decorator(login_required, name='dispatch')
+class GraphDashboardView(View):
+    """The portfolio constellation: the whole business as one graph."""
+
+    template_name = 'pulse/graph_dashboard.html'
+
+    def get(self, request):
+        scope = resolve_scope(request.user)
+        if not scope.can_query_business:
+            return redirect('/')
+
+        graph = get_portfolio_graph(scope)
+
+        return render(request, self.template_name, {
+            'graph_json': json.dumps(graph),
+            'nodes': graph['nodes'],
+            'legend': graph['legend'],
+            'core': graph['core'],
             'operator': scope.display_name,
         })

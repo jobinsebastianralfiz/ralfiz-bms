@@ -580,3 +580,152 @@
   }
   .pulse-card.is-flaring { animation: none; }
 }
+
+/* ==========================================================================
+   Portfolio constellation
+   ========================================================================== */
+
+.graph-legend { gap: 12px; padding: 6px 14px; }
+.graph-legend__item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 10.5px;
+  color: var(--p-ink-2);
+  white-space: nowrap;
+}
+.graph-legend__dot { width: 7px; height: 7px; border-radius: 50%; }
+
+.graph-stage { position: relative; overflow: hidden; }
+.graph-stage > canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
+
+/* Keyboard/screen-reader route to the same data the canvas paints. */
+.graph-list {
+  position: absolute;
+  left: 22px; top: 20px;
+  width: 214px;
+  max-height: calc(100% - 40px);
+  overflow-y: auto;
+  padding: 12px;
+  border: 1px solid var(--p-glass-line);
+  border-radius: var(--p-r);
+  background: linear-gradient(135deg, rgba(30,70,78,.5), rgba(12,28,33,.34));
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+.graph-list__head {
+  margin: 0 0 9px;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 1.3px;
+  text-transform: uppercase;
+  color: var(--p-ink-3);
+}
+.graph-list ul { list-style: none; margin: 0; padding: 0; }
+.graph-list__item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 7px 8px;
+  border: 1px solid transparent;
+  border-radius: 9px;
+  background: transparent;
+  color: var(--p-ink-2);
+  font: 500 12px Inter, sans-serif;
+  text-align: left;
+  cursor: pointer;
+  transition: background .18s var(--p-ease), color .18s var(--p-ease);
+}
+.graph-list__item:hover { background: rgba(47,212,212,.08); color: var(--p-ink); }
+.graph-list__item:focus-visible { outline: 2px solid var(--p-teal); outline-offset: 1px; }
+.graph-list__item.is-selected {
+  border-color: rgba(232,192,122,.4);
+  background: rgba(232,192,122,.1);
+  color: var(--p-gold-bright);
+}
+.graph-list__dot { flex: none; width: 8px; height: 8px; border-radius: 50%; }
+.graph-list__name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.graph-list__meta { font-size: 10px; color: var(--p-ink-3); }
+
+/* Detail panel */
+.graph-panel {
+  position: absolute;
+  right: 22px; top: 20px;
+  width: 320px;
+  max-height: calc(100% - 40px);
+  overflow-y: auto;
+  padding: 22px;
+  border: 1px solid var(--p-glass-line);
+  border-radius: var(--p-r);
+  background: linear-gradient(135deg, rgba(30,70,78,.58), rgba(12,28,33,.42));
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.08), 0 16px 44px rgba(0,0,0,.45);
+}
+.graph-panel__kicker {
+  margin: 0 0 5px;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 1.4px;
+  text-transform: uppercase;
+  color: var(--p-teal);
+}
+.graph-panel__title { margin: 0; font-size: 22px; font-weight: 700; letter-spacing: -.3px; }
+.graph-panel__sub { margin: 4px 0 0; font-size: 12.5px; color: var(--p-ink-2); }
+
+.graph-panel__stats {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 9px;
+  margin: 18px 0 0;
+}
+.graph-stat {
+  padding: 11px 12px;
+  border: 1px solid rgba(120,220,220,.14);
+  border-radius: 11px;
+  background: rgba(6,18,21,.4);
+}
+.graph-stat__v { display: block; font-size: 17px; font-weight: 700; letter-spacing: -.3px; }
+.graph-stat__l { display: block; margin-top: 2px; font-size: 10.5px; color: var(--p-ink-3); }
+
+.graph-panel__flag {
+  margin: 14px 0 0;
+  padding: 9px 12px;
+  border: 1px solid rgba(224,138,160,.3);
+  border-radius: 10px;
+  background: rgba(224,138,160,.1);
+  font-size: 12px;
+  color: var(--p-ink);
+}
+
+.graph-panel__h3 {
+  margin: 20px 0 9px;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 1.3px;
+  text-transform: uppercase;
+  color: var(--p-ink-3);
+}
+.graph-panel__list { list-style: none; margin: 0; padding: 0; }
+.graph-panel__list li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 0;
+  border-bottom: 1px solid rgba(120,220,220,.08);
+  font-size: 12.5px;
+}
+.graph-panel__list li:last-child { border-bottom: none; }
+.graph-panel__list .dot { flex: none; width: 7px; height: 7px; border-radius: 50%; }
+.graph-panel__list .nm { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.graph-panel__list .st { font-size: 10.5px; color: var(--p-ink-3); }
+.graph-panel__list .ov { font-size: 10px; color: var(--p-rose); }
+.graph-panel__empty { margin: 0; font-size: 12.5px; color: var(--p-ink-3); line-height: 1.5; }
+
+@media (max-width: 1200px) {
+  .graph-list { position: static; width: auto; margin: 16px 22px 0; max-height: 190px; }
+  .graph-panel { position: static; width: auto; margin: 14px 22px 24px; }
+  .graph-stage { overflow-y: auto; }
+  .graph-stage > canvas { display: none; }
+}
