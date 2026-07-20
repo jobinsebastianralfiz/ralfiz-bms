@@ -1,4 +1,5 @@
 from django.urls import path
+from pulse import views as pulse_views
 from . import views
 from gympro_licensing import web_views as gympro_web_views
 from eduflow_licensing import web_views as eduflow_web_views
@@ -27,7 +28,16 @@ urlpatterns = [
     path('logout/', views.logout_view, name='logout'),
 
     # Dashboard
-    path('', views.dashboard, name='dashboard'),
+    #
+    # The root is the PULSE portfolio constellation. The original widget
+    # dashboard is still fully wired -- it just lives at an explicit URL now,
+    # because it carries things the constellation does not (revenue chart,
+    # cash position, dues, licences, quick actions).
+    #
+    # Non-owner accounts cannot open the constellation, so PULSE bounces them
+    # to the legacy dashboard rather than to '/', which would loop.
+    path('', pulse_views.GraphDashboardView.as_view(), name='dashboard'),
+    path('dashboard/legacy/', views.dashboard, name='dashboard-legacy'),
 
     # Clients
     path('clients/', views.client_list, name='client_list'),

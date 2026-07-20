@@ -102,3 +102,55 @@ class CommandCenterPageTests(TestCase):
         self.assertIn('js/pulse.js', body)
         self.assertNotIn('css/styles.css', body)
         self.assertNotIn('js/app.js', body)
+
+
+class DashboardRoutingTests(TestCase):
+    """The constellation is mounted at '/'; the classic dashboard moved.
+
+    The loop risk is specific: GraphDashboardView refuses non-owners, and if
+    it refused them *to '/'* that would be an infinite redirect now that '/'
+    is the constellation.
+    """
+
+    def setUp(self):
+        today = timezone.localdate()
+        self.owner = User.objects.create_user(username='o', password='pw')
+        Employee.objects.create(
+            user=self.owner, employee_id='E-O', role='owner',
+            status='active', joining_date=today,
+        )
+        self.worker = User.objects.create_user(username='w', password='pw')
+        Employee.objects.create(
+            user=self.worker, employee_id='E-W', role='employee',
+            status='active', joining_date=today,
+        )
+
+    def test_root_is_the_constellation_for_owners(self):
+        self.client.force_login(self.owner)
+        response = self.client.get('/')
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, 'pulse/graph_dashboard.html')
+
+    def test_non_owner_at_root_does_not_loop(self):
+        self.client.force_login(self.worker)
+        response = self.client.get('/', follow=True)
+        self.assertEqual(response.status_code, 200)
+        # One hop to the legacy dashboard, and it must not bounce again.
+        self.assertEqual(len(response.redirect_chain), 1)
+        self.assertEqual(response.redirect_chain[0][0], '/dashboard/legacy/')
+
+    def test_legacy_dashboard_still_serves_the_original_view(self):
+        self.client.force_login(self.worker)
+        response = self.client.get(reverse('dashboard-legacy'))
+        self.assertEqual(response.status_code, 200)
+
+    def test_login_redirect_target_still_resolves(self):
+        """LOGIN_REDIRECT_URL points at the 'dashboard' name."""
+        from django.conf import settings
+        self.assertEqual(reverse(settings.LOGIN_REDIRECT_URL), '/')
+
+    def test_command_center_non_owner_does_not_loop(self):
+        self.client.force_login(self.worker)
+        response = self.client.get(reverse('pulse:command-center'), follow=True)
+        self.assertEqual(len(response.redirect_chain), 1)
+        self.assertEqual(response.redirect_chain[0][0], '/dashboard/legacy/')

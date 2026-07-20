@@ -88,9 +88,10 @@ class CommandCenterView(View):
     def get(self, request):
         scope = resolve_scope(request.user)
         if not scope.can_query_business:
-            # A plain employee hitting the URL directly gets sent home rather
-            # than shown a dead screen.
-            return redirect('/')
+            # Send non-owners to the legacy dashboard, NOT to '/'. The
+            # constellation is now mounted at '/', so redirecting there would
+            # loop forever.
+            return redirect('dashboard-legacy')
 
         projects = list(
             Project.objects
@@ -134,7 +135,9 @@ class GraphDashboardView(View):
     def get(self, request):
         scope = resolve_scope(request.user)
         if not scope.can_query_business:
-            return redirect('/')
+            # Must NOT be '/': this view is mounted there, so redirecting to
+            # '/' sends a non-owner straight back into this branch forever.
+            return redirect('dashboard-legacy')
 
         graph = get_portfolio_graph(scope)
 

@@ -60,8 +60,12 @@
     <!-- Admin Navigation -->
     <div class="nav-section">
       <a href="{% url 'dashboard' %}" class="nav-item {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}">
+        <i class="fas fa-circle-nodes"></i>
+        <span>Portfolio</span>
+      </a>
+      <a href="{% url 'dashboard-legacy' %}" class="nav-item {% if request.resolver_match.url_name == 'dashboard-legacy' %}active{% endif %}">
         <i class="fas fa-th-large"></i>
-        <span>Dashboard</span>
+        <span>Classic dashboard</span>
       </a>
     </div>
 
