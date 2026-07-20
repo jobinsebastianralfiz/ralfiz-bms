@@ -47,6 +47,7 @@ INSTALLED_APPS = [
     'eduflow_licensing',
     'interiodesk',
     'client_portal',
+    'pulse',
 ]
 
 MIDDLEWARE = [
@@ -218,3 +219,7 @@ CORS_ALLOWED_ORIGINS = os.getenv('CORS_ALLOWED_ORIGINS', '').split(',') if os.ge
 
 # Firebase (for push notifications)
 FIREBASE_CREDENTIALS_PATH = os.getenv('FIREBASE_CREDENTIALS_PATH', '')
+
+# PULSE command center
+ANTHROPIC_API_KEY = os.getenv('ANTHROPIC_API_KEY', '')
+PULSE_MODEL = os.getenv('PULSE_MODEL', 'claude-opus-4-8')

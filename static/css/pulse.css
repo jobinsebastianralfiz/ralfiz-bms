@@ -1,0 +1,582 @@
+/* ==========================================================================
+   PULSE Command Center
+   Self-contained. Does not read from or write to the project's global
+   styles.css, and defines no bare-element selectors that could leak.
+   ========================================================================== */
+
+.pulse-body {
+  --p-void: #05090b;
+  --p-deep: #071316;
+  --p-core: #0a2429;
+
+  --p-teal: #2fd4d4;
+  --p-teal-dim: #1a8a8a;
+  --p-gold: #e8c07a;
+  --p-gold-bright: #f5d896;
+
+  --p-rose: #e08aa0;
+  --p-violet: #a78bd6;
+  --p-cyan: #7cc4e8;
+
+  --p-ink: #e9f2f4;
+  --p-ink-2: #7c94a0;
+  --p-ink-3: #4a5c66;
+
+  --p-glass: rgba(20, 40, 46, .4);
+  --p-glass-line: rgba(120, 220, 220, .22);
+
+  --p-r: 16px;
+  --p-ease: cubic-bezier(.22, .61, .36, 1);
+
+  margin: 0;
+  min-height: 100vh;
+  font-family: Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  color: var(--p-ink);
+  background: var(--p-void);
+  -webkit-font-smoothing: antialiased;
+  overflow: hidden;
+}
+
+/* The teal breath. Never navy, never pure black. */
+.pulse-body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background:
+    radial-gradient(120% 90% at 32% 52%,
+      var(--p-core) 0%, var(--p-deep) 45%, var(--p-void) 78%);
+  z-index: 0;
+  pointer-events: none;
+}
+
+.pulse-visually-hidden {
+  position: absolute;
+  width: 1px; height: 1px;
+  padding: 0; margin: -1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+.pulse-shell {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  height: 100vh;
+}
+
+/* ── Toolbar ───────────────────────────────────────────────────────── */
+
+.pulse-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  padding: 16px 24px;
+}
+
+.pulse-brand {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  text-decoration: none;
+  color: inherit;
+}
+
+.pulse-brand__mark {
+  width: 26px; height: 26px;
+  fill: var(--p-teal);
+  filter: drop-shadow(0 0 7px rgba(47, 212, 212, .5));
+}
+.pulse-brand__spark { fill: var(--p-gold); }
+
+.pulse-brand__text { display: flex; flex-direction: column; line-height: 1.15; }
+.pulse-brand__name { font-size: 14px; font-weight: 700; letter-spacing: -.2px; }
+.pulse-brand__sub {
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 1.4px;
+  text-transform: uppercase;
+  color: var(--p-ink-3);
+}
+
+.pulse-bar__center { display: flex; align-items: center; gap: 10px; }
+
+.pulse-group {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 4px;
+  border: 1px solid var(--p-glass-line);
+  border-radius: 999px;
+  background: var(--p-glass);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+.pulse-icon {
+  display: grid;
+  place-items: center;
+  width: 32px; height: 32px;
+  padding: 0;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--p-ink-2);
+  cursor: pointer;
+  transition: color .2s var(--p-ease), background .2s var(--p-ease);
+}
+.pulse-icon svg { width: 17px; height: 17px; fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linecap: round; }
+.pulse-icon:hover:not(:disabled) { color: var(--p-ink); background: rgba(47, 212, 212, .1); }
+.pulse-icon.is-active { color: var(--p-teal); background: rgba(47, 212, 212, .14); }
+.pulse-icon:disabled { opacity: .32; cursor: not-allowed; }
+
+.pulse-select {
+  min-width: 180px;
+  max-width: 300px;
+  padding: 6px 12px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--p-ink);
+  font: 500 12.5px Inter, sans-serif;
+  cursor: pointer;
+}
+.pulse-select option { background: #0b1a1e; color: var(--p-ink); }
+
+.pulse-bar__right { display: flex; align-items: center; gap: 12px; }
+
+.pulse-operator {
+  max-width: 180px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 12px;
+  color: var(--p-ink-2);
+}
+
+.pulse-exit {
+  padding: 7px 15px;
+  border: 1px solid var(--p-glass-line);
+  border-radius: 999px;
+  background: var(--p-glass);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  color: var(--p-ink-2);
+  font-size: 12px;
+  font-weight: 500;
+  text-decoration: none;
+  transition: color .2s var(--p-ease), border-color .2s var(--p-ease);
+}
+.pulse-exit:hover { color: var(--p-ink); border-color: rgba(120, 220, 220, .4); }
+
+/* ── Stage ─────────────────────────────────────────────────────────── */
+
+.pulse-stage {
+  position: relative;
+  overflow: hidden;
+}
+
+.pulse-field {
+  position: absolute;
+  inset: 0;
+  width: 100%; height: 100%;
+  pointer-events: none;
+}
+
+/* Orb sits left-of-centre; the cards counterweight it on the right. */
+/* Anchored so the ORB (not the whole block) lands near 55% down; the meta
+   hangs below it. The cards counterweight on the right. */
+.pulse-focus {
+  position: absolute;
+  left: 30%;
+  top: 52%;
+  transform: translate(-50%, -42%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+
+.pulse-orb { width: 300px; height: 300px; display: block; }
+
+.pulse-focus__meta { text-align: center; max-width: 380px; }
+
+.pulse-kicker {
+  margin: 0 0 7px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--p-teal);
+}
+
+.pulse-title {
+  margin: 0;
+  font-size: 30px;
+  font-weight: 700;
+  letter-spacing: -.3px;
+  line-height: 1.15;
+}
+.pulse-title .pulse-num { color: var(--p-gold); }
+
+.pulse-client {
+  margin: 6px 0 0;
+  font-size: 13px;
+  color: var(--p-ink-2);
+}
+
+.pulse-chips {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin-top: 16px;
+  flex-wrap: wrap;
+}
+
+.pulse-pill,
+.pulse-meter {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 13px;
+  border: 1px solid var(--p-glass-line);
+  border-radius: 999px;
+  background: var(--p-glass);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+.pulse-pill__label,
+.pulse-meter__label {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 1.1px;
+  text-transform: uppercase;
+  color: var(--p-ink-3);
+}
+.pulse-pill__value { font-size: 13px; font-weight: 700; color: var(--p-gold); }
+
+.pulse-meter__track {
+  position: relative;
+  width: 56px; height: 4px;
+  border-radius: 999px;
+  background: rgba(120, 220, 220, .14);
+  overflow: hidden;
+}
+.pulse-meter__fill {
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 0%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--p-teal-dim), var(--p-teal));
+  transition: width .8s var(--p-ease);
+}
+.pulse-meter__value { font-size: 11px; font-weight: 600; color: var(--p-ink-2); }
+
+/* ── Glass cards ───────────────────────────────────────────────────── */
+
+.pulse-cards {
+  position: absolute;
+  right: 4.5%;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  width: 232px;
+}
+
+.pulse-card {
+  position: relative;
+  display: block;
+  width: 100%;
+  padding: 17px 18px 15px 22px;
+  border: 1px solid var(--p-glass-line);
+  border-radius: var(--p-r);
+  background: linear-gradient(135deg, rgba(30, 70, 78, .55), rgba(12, 28, 33, .35));
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .08), 0 10px 30px rgba(0, 0, 0, .35);
+  text-align: left;
+  cursor: pointer;
+  overflow: hidden;
+  transition: transform .28s var(--p-ease), border-color .28s var(--p-ease),
+              box-shadow .28s var(--p-ease);
+}
+
+.pulse-card__bar {
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 4px;
+  background: linear-gradient(180deg, var(--p-teal), rgba(47, 212, 212, 0));
+  transition: background .28s var(--p-ease);
+}
+
+.pulse-card__glow {
+  position: absolute;
+  right: -30px; top: -30px;
+  width: 110px; height: 110px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(47, 212, 212, .17), transparent 70%);
+  pointer-events: none;
+  transition: background .28s var(--p-ease);
+}
+
+.pulse-card__icon {
+  width: 17px; height: 17px;
+  fill: none;
+  stroke: var(--p-ink-2);
+  stroke-width: 1.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  transition: stroke .28s var(--p-ease);
+}
+
+.pulse-card__value {
+  display: block;
+  margin-top: 8px;
+  font-size: 30px;
+  font-weight: 700;
+  letter-spacing: -.5px;
+  line-height: 1;
+}
+
+.pulse-card__label {
+  display: block;
+  margin-top: 5px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--p-ink-2);
+}
+
+.pulse-card__note {
+  display: block;
+  margin-top: 3px;
+  font-size: 11px;
+  color: var(--p-ink-3);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Lift toward the orb, not straight up. */
+.pulse-card:hover {
+  transform: translateX(-6px);
+  border-color: rgba(120, 220, 220, .42);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .1), 0 16px 40px rgba(0, 0, 0, .45);
+}
+.pulse-card:hover .pulse-card__icon { stroke: var(--p-teal); }
+
+.pulse-card:focus-visible {
+  outline: 2px solid var(--p-teal);
+  outline-offset: 3px;
+}
+
+/* Gold means selected. Exactly one card at a time. */
+.pulse-card.is-selected {
+  border-color: rgba(232, 192, 122, .45);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .1),
+              0 14px 36px rgba(0, 0, 0, .42),
+              0 0 0 1px rgba(232, 192, 122, .4);
+}
+.pulse-card.is-selected .pulse-card__bar {
+  background: linear-gradient(180deg, var(--p-gold), rgba(232, 192, 122, 0));
+}
+.pulse-card.is-selected .pulse-card__glow {
+  background: radial-gradient(circle, rgba(232, 192, 122, .2), transparent 70%);
+}
+.pulse-card.is-selected .pulse-card__icon { stroke: var(--p-gold); }
+.pulse-card.is-selected .pulse-card__value { color: var(--p-gold-bright); }
+
+/* Answer arrival: a brief flare, then settle. */
+@keyframes pulse-flare {
+  0%   { box-shadow: inset 0 1px 0 rgba(255,255,255,.1), 0 10px 30px rgba(0,0,0,.35), 0 0 0 0 rgba(232,192,122,.5); }
+  40%  { box-shadow: inset 0 1px 0 rgba(255,255,255,.16), 0 14px 40px rgba(0,0,0,.45), 0 0 0 5px rgba(232,192,122,.16); }
+  100% { box-shadow: inset 0 1px 0 rgba(255,255,255,.1), 0 10px 30px rgba(0,0,0,.35), 0 0 0 0 rgba(232,192,122,0); }
+}
+.pulse-card.is-flaring { animation: pulse-flare 1.1s var(--p-ease); }
+
+/* ── Response panel ────────────────────────────────────────────────── */
+
+.pulse-response {
+  position: absolute;
+  left: 50%;
+  bottom: 22px;
+  transform: translateX(-50%) translateY(14px);
+  width: min(620px, calc(100% - 48px));
+  padding: 15px 18px;
+  border: 1px solid var(--p-glass-line);
+  border-radius: var(--p-r);
+  background: linear-gradient(135deg, rgba(30, 70, 78, .6), rgba(12, 28, 33, .45));
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .08), 0 16px 44px rgba(0, 0, 0, .5);
+  opacity: 0;
+  transition: opacity .4s var(--p-ease), transform .4s var(--p-ease);
+}
+.pulse-response.is-open { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+.pulse-response__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 7px;
+}
+
+.pulse-response__intent {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 1.3px;
+  text-transform: uppercase;
+  color: var(--p-teal);
+}
+
+.pulse-response__close {
+  border: 0;
+  background: transparent;
+  color: var(--p-ink-3);
+  font-size: 19px;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0 3px;
+}
+.pulse-response__close:hover { color: var(--p-ink); }
+.pulse-response__close:focus-visible { outline: 2px solid var(--p-teal); outline-offset: 2px; }
+
+.pulse-response__body {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--p-ink);
+}
+.pulse-response.is-error .pulse-response__intent { color: var(--p-rose); }
+
+/* ── Command bar ───────────────────────────────────────────────────── */
+
+.pulse-command { padding: 0 24px 22px; }
+
+.pulse-command__form {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: min(720px, 100%);
+  margin: 0 auto;
+  padding: 8px 8px 8px 18px;
+  border: 1px solid var(--p-glass-line);
+  border-radius: 999px;
+  background: linear-gradient(135deg, rgba(30, 70, 78, .5), rgba(12, 28, 33, .38));
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .07), 0 10px 30px rgba(0, 0, 0, .4);
+  transition: border-color .25s var(--p-ease);
+}
+.pulse-command__form:focus-within { border-color: rgba(120, 220, 220, .45); }
+
+.pulse-command__glyph {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--p-teal-dim);
+  letter-spacing: -.5px;
+}
+
+.pulse-command__input {
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  background: transparent;
+  color: var(--p-ink);
+  font: 400 14px Inter, sans-serif;
+}
+.pulse-command__input::placeholder { color: var(--p-ink-3); }
+.pulse-command__input:focus { outline: none; }
+
+.pulse-mic {
+  display: grid;
+  place-items: center;
+  width: 36px; height: 36px;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--p-ink-2);
+  cursor: pointer;
+  transition: color .2s var(--p-ease), background .2s var(--p-ease);
+}
+.pulse-mic svg { width: 17px; height: 17px; fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linecap: round; }
+.pulse-mic:hover { color: var(--p-ink); background: rgba(47, 212, 212, .12); }
+.pulse-mic:focus-visible { outline: 2px solid var(--p-teal); outline-offset: 2px; }
+.pulse-mic.is-listening { color: var(--p-gold); background: rgba(232, 192, 122, .16); }
+.pulse-mic.is-unavailable { opacity: .3; cursor: not-allowed; }
+
+.pulse-execute {
+  padding: 10px 22px;
+  border: 0;
+  border-radius: 999px;
+  background: linear-gradient(135deg, var(--p-gold-bright), var(--p-gold));
+  color: #2a1c06;
+  font: 600 13px Inter, sans-serif;
+  cursor: pointer;
+  transition: filter .2s var(--p-ease), opacity .2s var(--p-ease);
+}
+.pulse-execute:hover { filter: brightness(1.09); }
+.pulse-execute:focus-visible { outline: 2px solid var(--p-gold-bright); outline-offset: 3px; }
+.pulse-execute:disabled { opacity: .5; cursor: progress; }
+
+.pulse-command__hint {
+  margin: 10px auto 0;
+  width: min(720px, 100%);
+  padding-left: 18px;
+  font-size: 11px;
+  color: var(--p-ink-3);
+}
+.pulse-command__hint.is-warning { color: var(--p-gold); }
+
+/* ── Responsive ────────────────────────────────────────────────────── */
+
+@media (max-width: 1080px) {
+  .pulse-stage { overflow-y: auto; }
+  .pulse-field { display: none; }
+
+  .pulse-focus {
+    position: static;
+    transform: none;
+    padding: 20px 24px 0;
+  }
+  .pulse-orb { width: 210px; height: 210px; }
+
+  .pulse-cards {
+    position: static;
+    transform: none;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    width: auto;
+    padding: 26px 24px 120px;
+  }
+  .pulse-card:hover { transform: translateY(-4px); }
+}
+
+@media (max-width: 720px) {
+  .pulse-bar { flex-wrap: wrap; gap: 12px; padding: 14px 16px; }
+  .pulse-bar__center { order: 3; width: 100%; }
+  .pulse-select { min-width: 0; width: 100%; }
+  .pulse-operator { display: none; }
+  .pulse-title { font-size: 24px; }
+  .pulse-command { padding: 0 16px 18px; }
+  .pulse-command__form { padding-left: 14px; }
+  .pulse-command__glyph { display: none; }
+  .pulse-execute { padding: 10px 16px; }
+}
+
+/* ── Reduced motion: freeze ambience, keep state changes ───────────── */
+
+@media (prefers-reduced-motion: reduce) {
+  .pulse-card,
+  .pulse-response,
+  .pulse-meter__fill {
+    transition-duration: .01ms;
+  }
+  .pulse-card.is-flaring { animation: none; }
+}

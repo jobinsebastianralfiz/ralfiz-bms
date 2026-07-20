@@ -16,6 +16,7 @@ urlpatterns = [
     path('crm/', include('crm.urls')),
     path('api/employees/', include('employees.urls')),
     path('api/client/', include('client_portal.api_urls')),
+    path('api/pulse/', include('pulse.urls')),
     path('portal/', include('client_portal.urls')),
 
     # API Documentation

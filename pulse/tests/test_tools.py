@@ -1,0 +1,287 @@
+"""Tests for the whitelisted query functions.
+
+These build their own fixtures rather than relying on dev data, so they assert
+real behaviour (counts, filtering rules, the permission gate) instead of just
+"it did not raise".
+"""
+
+from datetime import timedelta
+from decimal import Decimal
+
+from django.contrib.auth.models import User
+from django.test import TestCase
+from django.utils import timezone
+from rest_framework.exceptions import PermissionDenied
+
+from core.models import Client, Invoice, Project
+from crm.models import Lead
+from employees.models import Employee
+
+from pulse import tools
+from pulse.scoping import PulseScope, resolve_scope
+
+
+def owner_scope():
+    return PulseScope(user=None, employee=None, can_query_business=True)
+
+
+def denied_scope():
+    return PulseScope(user=None, employee=None, can_query_business=False)
+
+
+class PermissionGateTests(TestCase):
+    """Every tool must refuse a scope that lacks business access."""
+
+    def test_all_tools_refuse_unprivileged_scope(self):
+        scope = denied_scope()
+        sample_args = {
+            'get_project_summary': {'project_id': '00000000-0000-0000-0000-000000000000'},
+            'get_team_for_project': {'project_id': '00000000-0000-0000-0000-000000000000'},
+            'get_lead_quotes': {'lead_id': 1},
+        }
+        for name, fn in tools.TOOL_REGISTRY.items():
+            with self.subTest(tool=name):
+                with self.assertRaises(PermissionDenied):
+                    fn(scope, **sample_args.get(name, {}))
+
+    def test_gate_refuses_before_touching_the_database(self):
+        """The refusal must not be a silent empty result."""
+        with self.assertRaises(PermissionDenied):
+            tools.get_outstanding_receivables(denied_scope())
+
+
+class ScopeResolutionTests(TestCase):
+    def setUp(self):
+        self.today = timezone.localdate()
+
+    def _employee(self, username, role, is_staff=False, status='active'):
+        user = User.objects.create_user(username=username, password='x', is_staff=is_staff)
+        Employee.objects.create(
+            user=user,
+            employee_id=f'EMP-{username}',
+            role=role,
+            status=status,
+            joining_date=self.today,
+        )
+        return user
+
+    def test_owner_role_gets_business_access(self):
+        user = self._employee('owner1', 'owner')
+        self.assertTrue(resolve_scope(user).can_query_business)
+
+    def test_partner_role_gets_business_access(self):
+        user = self._employee('partner1', 'partner')
+        self.assertTrue(resolve_scope(user).can_query_business)
+
+    def test_plain_employee_is_refused(self):
+        user = self._employee('emp1', 'employee')
+        self.assertFalse(resolve_scope(user).can_query_business)
+
+    def test_intern_is_refused(self):
+        user = self._employee('intern1', 'intern')
+        self.assertFalse(resolve_scope(user).can_query_business)
+
+    def test_staff_without_employee_record_gets_access(self):
+        """A Django admin with no Employee row must not be locked out."""
+        user = User.objects.create_user(username='admin1', password='x', is_staff=True)
+        self.assertTrue(resolve_scope(user).can_query_business)
+
+    def test_inactive_owner_falls_back_to_no_access(self):
+        """Mirrors employees.views.get_employee, which filters status='active'."""
+        user = self._employee('exowner', 'owner', status='terminated')
+        self.assertFalse(resolve_scope(user).can_query_business)
+
+
+class ProjectToolTests(TestCase):
+    def setUp(self):
+        self.scope = owner_scope()
+        self.today = timezone.localdate()
+        self.client_obj = Client.objects.create(name='Acme Ltd')
+
+        self.overdue = Project.objects.create(
+            client=self.client_obj, name='Late Project',
+            project_type='web_app', status='in_progress',
+            deadline=self.today - timedelta(days=5),
+        )
+        self.on_hold = Project.objects.create(
+            client=self.client_obj, name='Paused Project',
+            project_type='web_app', status='on_hold',
+        )
+        self.healthy = Project.objects.create(
+            client=self.client_obj, name='Fine Project',
+            project_type='web_app', status='in_progress',
+            deadline=self.today + timedelta(days=30),
+        )
+        # Past deadline but finished -- must NOT be flagged.
+        self.done = Project.objects.create(
+            client=self.client_obj, name='Finished Project',
+            project_type='web_app', status='completed',
+            deadline=self.today - timedelta(days=90),
+        )
+
+    def test_needing_attention_finds_overdue_and_on_hold_only(self):
+        result = tools.get_projects_needing_attention(self.scope)
+        names = {p['name'] for p in result['projects']}
+        self.assertEqual(names, {'Late Project', 'Paused Project'})
+        self.assertEqual(result['count'], 2)
+
+    def test_completed_project_past_deadline_is_not_flagged(self):
+        result = tools.get_projects_needing_attention(self.scope)
+        self.assertNotIn('Finished Project', {p['name'] for p in result['projects']})
+
+    def test_days_overdue_is_computed(self):
+        result = tools.get_projects_needing_attention(self.scope)
+        late = next(p for p in result['projects'] if p['name'] == 'Late Project')
+        self.assertEqual(late['days_overdue'], 5)
+        self.assertTrue(late['is_overdue'])
+
+    def test_on_hold_project_reports_reason(self):
+        result = tools.get_projects_needing_attention(self.scope)
+        paused = next(p for p in result['projects'] if p['name'] == 'Paused Project')
+        self.assertEqual(paused['reason'], 'on hold')
+        self.assertEqual(paused['days_overdue'], 0)
+
+    def test_status_counts_include_empty_statuses(self):
+        result = tools.count_projects_by_status(self.scope)
+        self.assertEqual(result['total'], 4)
+        statuses = {row['status'] for row in result['breakdown']}
+        self.assertEqual(statuses, {v for v, _ in Project.STATUS_CHOICES})
+
+    def test_active_count_uses_the_named_constant(self):
+        result = tools.count_projects_by_status(self.scope)
+        # in_progress x2 are active; on_hold and completed are not.
+        self.assertEqual(result['active'], 2)
+        self.assertEqual(result['active_definition'], list(tools.ACTIVE_PROJECT_STATUSES))
+
+    def test_project_summary_returns_found_false_for_unknown_id(self):
+        result = tools.get_project_summary(
+            self.scope, '00000000-0000-0000-0000-000000000000'
+        )
+        self.assertFalse(result['found'])
+
+    def test_project_summary_rejects_malformed_uuid(self):
+        with self.assertRaises(ValueError):
+            tools.get_project_summary(self.scope, 'not-a-uuid')
+
+    def test_project_summary_shape(self):
+        result = tools.get_project_summary(self.scope, str(self.overdue.id))
+        self.assertTrue(result['found'])
+        self.assertEqual(result['name'], 'Late Project')
+        self.assertEqual(result['client'], 'Acme Ltd')
+        self.assertTrue(result['is_overdue'])
+        self.assertIn('by_status', result['tasks'])
+
+
+class InvoiceToolTests(TestCase):
+    def setUp(self):
+        self.scope = owner_scope()
+        self.today = timezone.localdate()
+        self.client_obj = Client.objects.create(name='Payer Ltd')
+
+        self.late = Invoice.objects.create(
+            invoice_number='INV-LATE', client=self.client_obj, title='Late',
+            status='sent', issue_date=self.today - timedelta(days=60),
+            due_date=self.today - timedelta(days=30),
+            total_amount=Decimal('100000.00'), amount_paid=Decimal('25000.00'),
+        )
+        self.settled = Invoice.objects.create(
+            invoice_number='INV-PAID', client=self.client_obj, title='Paid',
+            status='paid', issue_date=self.today - timedelta(days=60),
+            due_date=self.today - timedelta(days=30),
+            total_amount=Decimal('50000.00'), amount_paid=Decimal('50000.00'),
+        )
+        self.draft = Invoice.objects.create(
+            invoice_number='INV-DRAFT', client=self.client_obj, title='Draft',
+            status='draft', issue_date=self.today,
+            due_date=self.today - timedelta(days=1),
+            total_amount=Decimal('9999.00'), amount_paid=Decimal('0.00'),
+        )
+
+    def test_overdue_excludes_paid_and_draft(self):
+        result = tools.get_overdue_invoices(self.scope)
+        numbers = {i['invoice_number'] for i in result['invoices']}
+        self.assertEqual(numbers, {'INV-LATE'})
+
+    def test_balance_is_total_minus_paid(self):
+        result = tools.get_overdue_invoices(self.scope)
+        self.assertEqual(result['invoices'][0]['balance'], 75000.0)
+        self.assertEqual(result['total_outstanding'], 75000.0)
+
+    def test_receivables_totals(self):
+        result = tools.get_outstanding_receivables(self.scope)
+        self.assertEqual(result['total_outstanding'], 75000.0)
+        self.assertEqual(result['open_invoice_count'], 1)
+        self.assertEqual(result['overdue_outstanding'], 75000.0)
+
+
+class LeadToolTests(TestCase):
+    def setUp(self):
+        self.scope = owner_scope()
+        self.today = timezone.localdate()
+
+        self.due = Lead.objects.create(
+            contact_person='Due Follow-up', phone='9000000001',
+            status='interested',
+            next_follow_up_date=self.today - timedelta(days=2),
+            closing_probability=40,
+        )
+        self.future = Lead.objects.create(
+            contact_person='Future', phone='9000000002',
+            status='contacted',
+            next_follow_up_date=self.today + timedelta(days=7),
+        )
+        self.won = Lead.objects.create(
+            contact_person='Won Already', phone='9000000003',
+            status='converted',
+            next_follow_up_date=self.today - timedelta(days=10),
+        )
+        self.lost = Lead.objects.create(
+            contact_person='Lost', phone='9000000004',
+            status='lost',
+            next_follow_up_date=self.today - timedelta(days=10),
+        )
+
+    def test_followup_excludes_closed_and_future_leads(self):
+        result = tools.get_leads_needing_followup(self.scope)
+        names = {lead['contact_person'] for lead in result['leads']}
+        self.assertEqual(names, {'Due Follow-up'})
+
+    def test_followup_reports_days_overdue(self):
+        result = tools.get_leads_needing_followup(self.scope)
+        self.assertEqual(result['leads'][0]['days_overdue'], 2)
+
+    def test_followup_limit_is_clamped(self):
+        result = tools.get_leads_needing_followup(self.scope, limit=99999)
+        self.assertLessEqual(result['count'], 100)
+
+    def test_pipeline_summary_open_excludes_converted_and_lost(self):
+        result = tools.get_lead_pipeline_summary(self.scope)
+        self.assertEqual(result['total'], 4)
+        self.assertEqual(result['open'], 2)
+
+    def test_lead_quotes_accepts_integer_pk(self):
+        """crm.Lead uses BigAutoField, not the UUID keys used elsewhere."""
+        result = tools.get_lead_quotes(self.scope, self.due.pk)
+        self.assertTrue(result['found'])
+        self.assertEqual(result['quotes'], [])
+
+    def test_lead_quotes_rejects_non_integer(self):
+        with self.assertRaises(ValueError):
+            tools.get_lead_quotes(self.scope, 'abc')
+
+    def test_lead_quotes_unknown_id(self):
+        result = tools.get_lead_quotes(self.scope, 999999)
+        self.assertFalse(result['found'])
+
+
+class AttendanceToolTests(TestCase):
+    def setUp(self):
+        self.scope = owner_scope()
+
+    def test_rejects_malformed_date(self):
+        with self.assertRaises(ValueError):
+            tools.get_attendance_summary(self.scope, date='20-07-2026')
+
+    def test_defaults_to_today(self):
+        result = tools.get_attendance_summary(self.scope)
+        self.assertEqual(result['date'], timezone.localdate().isoformat())

@@ -22,6 +22,10 @@ numpy>=1.24
 # QR Code
 qrcode[pil]>=7.4
 
+# PULSE command center (AI query supervisor)
+langgraph>=1.2
+langchain-anthropic>=1.4
+
 # Production dependencies
 gunicorn>=21.0
 psycopg2-binary>=2.9

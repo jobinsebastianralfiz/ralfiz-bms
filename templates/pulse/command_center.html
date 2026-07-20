@@ -1,0 +1,151 @@
+{% load static %}<!DOCTYPE html>
+<html lang="en" data-pulse-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PULSE — Project Intelligence · Ralfiz</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="{% static 'css/pulse.css' %}">
+</head>
+<body class="pulse-body">
+{% csrf_token %}
+
+<div class="pulse-shell">
+
+  <!-- ── Toolbar ─────────────────────────────────────────────── -->
+  <header class="pulse-bar">
+    <a class="pulse-brand" href="/" title="Back to Ralfiz BMS">
+      <svg class="pulse-brand__mark" viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M12 1.5 14.3 8 21 10.3 14.3 12.6 12 19.1 9.7 12.6 3 10.3 9.7 8Z"/>
+        <path class="pulse-brand__spark" d="M18.5 15.2 19.6 18l2.9 1.1-2.9 1.1-1.1 2.8-1.1-2.8-2.9-1.1 2.9-1.1Z"/>
+      </svg>
+      <span class="pulse-brand__text">
+        <span class="pulse-brand__name">Ralfiz</span>
+        <span class="pulse-brand__sub">Project Intelligence</span>
+      </span>
+    </a>
+
+    <nav class="pulse-bar__center" aria-label="View controls">
+      <div class="pulse-group" role="group" aria-label="View mode">
+        <button class="pulse-icon" data-view="graph" type="button" title="Portfolio view (coming next)" disabled aria-label="Portfolio view, not yet available">
+          <svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="10" cy="10" r="2.6"/><circle cx="3.2" cy="5" r="1.7"/><circle cx="16.8" cy="5" r="1.7"/><circle cx="3.2" cy="15" r="1.7"/><circle cx="16.8" cy="15" r="1.7"/><path d="M10 10 3.2 5M10 10l6.8-5M10 10l-6.8 5M10 10l6.8 5"/></svg>
+        </button>
+        <button class="pulse-icon is-active" data-view="detail" type="button" title="Project view" aria-pressed="true" aria-label="Project view">
+          <svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="7" cy="10" r="3.4"/><path d="M11.6 8.2h5.2M11.6 11.8h5.2"/></svg>
+        </button>
+      </div>
+
+      <div class="pulse-group" role="group" aria-label="Project selector">
+        <label class="pulse-visually-hidden" for="pulse-project">Project</label>
+        <select class="pulse-select" id="pulse-project">
+          {% for p in projects %}
+            <option value="{{ p.id }}">{{ p.name }}{% if p.client %} · {{ p.client }}{% endif %}</option>
+          {% endfor %}
+        </select>
+      </div>
+    </nav>
+
+    <div class="pulse-bar__right">
+      <span class="pulse-operator" title="Signed in as {{ operator }}">{{ operator }}</span>
+      <a class="pulse-exit" href="/">Exit</a>
+    </div>
+  </header>
+
+  <!-- ── Stage ───────────────────────────────────────────────── -->
+  <main class="pulse-stage" id="pulse-stage">
+    <canvas class="pulse-field" id="pulse-field" aria-hidden="true"></canvas>
+
+    <section class="pulse-focus" aria-labelledby="pulse-title">
+      <canvas class="pulse-orb" id="pulse-orb" width="440" height="440" aria-hidden="true"></canvas>
+
+      <div class="pulse-focus__meta">
+        <p class="pulse-kicker" id="pulse-kicker">Active project</p>
+        <h1 class="pulse-title" id="pulse-title">
+          <span data-field="name">—</span>
+        </h1>
+        <p class="pulse-client" data-field="client"></p>
+
+        <div class="pulse-chips">
+          <span class="pulse-pill" id="pulse-blockers-pill">
+            <span class="pulse-pill__label">Blockers</span>
+            <span class="pulse-pill__value" data-field="issues-open">0</span>
+          </span>
+          <span class="pulse-meter" id="pulse-health" title="Share of tasks completed">
+            <span class="pulse-meter__label">Progress</span>
+            <span class="pulse-meter__track"><span class="pulse-meter__fill" data-field="progress-fill"></span></span>
+            <span class="pulse-meter__value" data-field="progress-value">—</span>
+          </span>
+        </div>
+      </div>
+    </section>
+
+    <section class="pulse-cards" id="pulse-cards" aria-label="Project metrics">
+      <button class="pulse-card" type="button" data-card="tasks" data-tool="get_project_summary">
+        <span class="pulse-card__bar" aria-hidden="true"></span>
+        <span class="pulse-card__glow" aria-hidden="true"></span>
+        <svg class="pulse-card__icon" viewBox="0 0 20 20" aria-hidden="true"><path d="M3.5 5.5h13M3.5 10h13M3.5 14.5h8"/></svg>
+        <span class="pulse-card__value" data-field="tasks-open">0</span>
+        <span class="pulse-card__label">Open tasks</span>
+        <span class="pulse-card__note" data-field="tasks-total"></span>
+      </button>
+
+      <button class="pulse-card" type="button" data-card="team" data-tool="get_team_for_project">
+        <span class="pulse-card__bar" aria-hidden="true"></span>
+        <span class="pulse-card__glow" aria-hidden="true"></span>
+        <svg class="pulse-card__icon" viewBox="0 0 20 20" aria-hidden="true"><circle cx="7.5" cy="7" r="2.8"/><path d="M2.5 16c0-2.8 2.2-4.6 5-4.6s5 1.8 5 4.6"/><path d="M13.5 5.2a2.6 2.6 0 0 1 0 5M14.5 11.8c2.1.4 3.5 2 3.5 4.2"/></svg>
+        <span class="pulse-card__value" data-field="team-count">0</span>
+        <span class="pulse-card__label">Team assigned</span>
+        <span class="pulse-card__note" data-field="team-names"></span>
+      </button>
+
+      <button class="pulse-card" type="button" data-card="blockers" data-tool="get_project_summary">
+        <span class="pulse-card__bar" aria-hidden="true"></span>
+        <span class="pulse-card__glow" aria-hidden="true"></span>
+        <svg class="pulse-card__icon" viewBox="0 0 20 20" aria-hidden="true"><path d="M10 2.8 18 16.6H2Z"/><path d="M10 8v3.4M10 13.8v.1"/></svg>
+        <span class="pulse-card__value" data-field="issues-open-card">0</span>
+        <span class="pulse-card__label">Blockers open</span>
+        <span class="pulse-card__note" data-field="issues-critical"></span>
+      </button>
+
+      <button class="pulse-card" type="button" data-card="billing" data-tool="get_project_summary">
+        <span class="pulse-card__bar" aria-hidden="true"></span>
+        <span class="pulse-card__glow" aria-hidden="true"></span>
+        <svg class="pulse-card__icon" viewBox="0 0 20 20" aria-hidden="true"><path d="M3 5.5h14v9H3z"/><path d="M3 8.6h14"/><path d="M6 11.8h3"/></svg>
+        <span class="pulse-card__value" data-field="billed">₹0</span>
+        <span class="pulse-card__label">Billed to date</span>
+        <span class="pulse-card__note" data-field="collected"></span>
+      </button>
+    </section>
+
+    <!-- Response panel: eases up from the bottom when an answer lands -->
+    <section class="pulse-response" id="pulse-response" aria-live="polite" hidden>
+      <header class="pulse-response__head">
+        <span class="pulse-response__intent" id="pulse-response-intent"></span>
+        <button class="pulse-response__close" id="pulse-response-close" type="button" aria-label="Dismiss answer">×</button>
+      </header>
+      <p class="pulse-response__body" id="pulse-response-body"></p>
+    </section>
+  </main>
+
+  <!-- ── Command bar ─────────────────────────────────────────── -->
+  <footer class="pulse-command">
+    <form class="pulse-command__form" id="pulse-form" autocomplete="off">
+      <span class="pulse-command__glyph" aria-hidden="true">&gt;_</span>
+      <label class="pulse-visually-hidden" for="pulse-input">Ask PULSE</label>
+      <input class="pulse-command__input" id="pulse-input" type="text" maxlength="2000"
+             placeholder="Ask PULSE — which projects need attention · what are we owed">
+      <button class="pulse-mic" id="pulse-mic" type="button" aria-label="Speak your question" title="Speak your question">
+        <svg viewBox="0 0 20 20" aria-hidden="true"><rect x="7.4" y="2.5" width="5.2" height="9" rx="2.6"/><path d="M4.5 9.2a5.5 5.5 0 0 0 11 0M10 14.7v2.8"/></svg>
+      </button>
+      <button class="pulse-execute" id="pulse-execute" type="submit">Execute</button>
+    </form>
+    <p class="pulse-command__hint" id="pulse-hint">Owner and partner accounts only. Answers come from live records.</p>
+  </footer>
+</div>
+
+<script id="pulse-bootstrap" type="application/json">{{ summary_json|safe }}</script>
+<script src="{% static 'js/pulse.js' %}" defer></script>
+</body>
+</html>
