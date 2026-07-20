@@ -27,6 +27,7 @@ from .serializers import AskRequestSerializer, AskResponseSerializer
 from .supervisor import PulseConfigurationError, ask
 from .tools import (
     ACTIVE_PROJECT_STATUSES,
+    get_dashboard_metrics,
     get_portfolio_graph,
     get_project_summary,
 )
@@ -146,5 +147,6 @@ class GraphDashboardView(View):
             'nodes': graph['nodes'],
             'legend': graph['legend'],
             'core': graph['core'],
+            'metrics': get_dashboard_metrics(scope),
             'operator': scope.display_name,
         })

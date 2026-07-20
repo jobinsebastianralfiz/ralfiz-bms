@@ -29,7 +29,16 @@ from django.db.models import Count, DecimalField, F, Q, Sum, Value
 from django.db.models.functions import Coalesce
 from django.utils import timezone
 
-from core.models import Client, Invoice, Project, Quote, Task, TaskIssue
+from core.models import (
+    Client,
+    Expense,
+    Invoice,
+    Payment,
+    Project,
+    Quote,
+    Task,
+    TaskIssue,
+)
 from crm.models import Lead
 from employees.models import Attendance, LeaveRequest
 
@@ -75,6 +84,29 @@ def _money(value) -> float:
 
 def _date(value):
     return value.isoformat() if value else None
+
+
+def _inr(value) -> str:
+    """Format with Indian digit grouping: 306950 -> '3,06,950'.
+
+    Python has no locale-free way to do this and the rest of the UI already
+    renders lakh-grouped amounts via Intl 'en-IN', so a server-rendered
+    figure must match or the same number looks different in two places.
+    """
+    n = int(round(float(value or 0)))
+    sign = '-' if n < 0 else ''
+    digits = str(abs(n))
+    if len(digits) <= 3:
+        return sign + digits
+    # Last three digits, then pairs, most-significant first.
+    head, tail = digits[:-3], digits[-3:]
+    parts = []
+    while len(head) > 2:
+        parts.insert(0, head[-2:])
+        head = head[:-2]
+    if head:
+        parts.insert(0, head)
+    return sign + ','.join(parts + [tail])
 
 
 def _parse_uuid(value, field_name='id'):
@@ -564,9 +596,22 @@ def get_portfolio_graph(scope):
         .order_by('name')
     )
 
+    # Per-project money drives the satellites.
     invoice_by_project = {
         row['project_id']: row
         for row in Invoice.objects.values('project_id').annotate(
+            billed=Coalesce(Sum('total_amount'), _zero_money()),
+            collected=Coalesce(Sum('amount_paid'), _zero_money()),
+        )
+    }
+
+    # Client totals are summed from the CLIENT, not from their projects.
+    # Rolling up per-project figures silently drops any invoice raised against
+    # a client without a project attached -- real money that would vanish from
+    # both the node total and everyone's percentage share.
+    invoice_by_client = {
+        row['client_id']: row
+        for row in Invoice.objects.values('client_id').annotate(
             billed=Coalesce(Sum('total_amount'), _zero_money()),
             collected=Coalesce(Sum('amount_paid'), _zero_money()),
         )
@@ -579,13 +624,15 @@ def get_portfolio_graph(scope):
     for client in clients:
         projects = list(client.projects.all())
         live = [p for p in projects if p.status in ACTIVE_PROJECT_STATUSES]
-        client_billed = Decimal('0.00')
+
+        client_money = invoice_by_client.get(client.id, {})
+        client_billed = client_money.get('billed') or Decimal('0.00')
+        client_collected = client_money.get('collected') or Decimal('0.00')
 
         satellites = []
         for project in projects:
             money = invoice_by_project.get(project.id, {})
             billed = money.get('billed') or Decimal('0.00')
-            client_billed += billed
             overdue = bool(
                 project.deadline
                 and project.deadline < today
@@ -623,6 +670,9 @@ def get_portfolio_graph(scope):
             'project_count': len(projects),
             'active_count': len(live),
             'billed': _money(client_billed),
+            'collected': _money(client_collected),
+            # The number that actually matters: billed is not the same as owed.
+            'outstanding': _money(client_billed - client_collected),
             'satellites': satellites,
         })
         edges.append({'from': 'core', 'to': f'client:{client.id}'})
@@ -641,6 +691,7 @@ def get_portfolio_graph(scope):
             'client_count': len(nodes),
             'project_count': total_projects,
             'billed': _money(total_billed),
+            'billed_display': _inr(total_billed),
         },
         'nodes': nodes,
         'edges': edges,
@@ -653,6 +704,98 @@ def get_portfolio_graph(scope):
             {'label': 'No projects', 'hue': '#4a5c66'},
         ],
     }
+
+
+def get_dashboard_metrics(scope):
+    """The headline numbers: money in, money owed, pipeline, delivery.
+
+    Six figures chosen because each one can change what you do today. Every
+    one is a real aggregate; none are derived from another.
+    """
+    scope.require_business()
+    today = timezone.localdate()
+    month_start = today.replace(day=1)
+
+    income_month = Payment.objects.filter(
+        payment_date__gte=month_start
+    ).aggregate(s=Coalesce(Sum('amount'), _zero_money()))['s']
+
+    expenses_month = Expense.objects.filter(
+        date__gte=month_start
+    ).aggregate(s=Coalesce(Sum('amount'), _zero_money()))['s']
+
+    open_invoices = (
+        Invoice.objects.filter(status__in=OPEN_INVOICE_STATUSES)
+        .annotate(balance=F('total_amount') - F('amount_paid'))
+        .filter(balance__gt=0)
+    )
+    outstanding = open_invoices.aggregate(
+        s=Coalesce(Sum('balance'), _zero_money())
+    )['s']
+    overdue_count = open_invoices.filter(due_date__lt=today).count()
+
+    open_leads = Lead.objects.exclude(status__in=CLOSED_LEAD_STATUSES).count()
+    due_followups = Lead.objects.exclude(
+        status__in=CLOSED_LEAD_STATUSES
+    ).filter(next_follow_up_date__lte=today).count()
+
+    active_projects = Project.objects.filter(
+        status__in=ACTIVE_PROJECT_STATUSES
+    ).count()
+    attention_projects = (
+        Project.objects.exclude(status__in=CLOSED_PROJECT_STATUSES)
+        .filter(Q(status='on_hold') | Q(deadline__lt=today))
+        .count()
+    )
+
+    def plural(n, one, many):
+        return '%d %s' % (n, one if n == 1 else many)
+
+    spent = _money(expenses_month)
+
+    return [
+        {
+            'key': 'income',
+            'label': 'Income this month',
+            'value': _money(income_month),
+            'display': '₹' + _inr(income_month),
+            'format': 'money',
+            'note': ('against ₹%s spent' % _inr(spent)) if spent else 'nothing spent yet',
+            'href': '/payments/',
+        },
+        {
+            'key': 'outstanding',
+            'label': 'Owed to us',
+            'value': _money(outstanding),
+            'display': '₹' + _inr(outstanding),
+            'format': 'money',
+            'note': (plural(overdue_count, 'invoice overdue', 'invoices overdue')
+                     if overdue_count else 'none overdue'),
+            'alert': overdue_count > 0,
+            'href': '/invoices/',
+        },
+        {
+            'key': 'leads',
+            'label': 'Open leads',
+            'value': open_leads,
+            'display': str(open_leads),
+            'format': 'count',
+            'note': ('%d need chasing' % due_followups) if due_followups else 'all up to date',
+            'alert': due_followups > 0,
+            'href': '/crm/leads/',
+        },
+        {
+            'key': 'projects',
+            'label': 'Active projects',
+            'value': active_projects,
+            'display': str(active_projects),
+            'format': 'count',
+            'note': (plural(attention_projects, 'needs a human', 'need a human')
+                     if attention_projects else 'all on track'),
+            'alert': attention_projects > 0,
+            'href': '/projects/',
+        },
+    ]
 
 
 # --------------------------------------------------------------------------

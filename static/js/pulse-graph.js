@@ -331,7 +331,8 @@
         stat(node.project_count, 'Projects') +
         stat(node.active_count, 'Active') +
         stat(inr.format(node.billed), 'Billed') +
-        stat(node.share + '%', 'Share of billing') +
+        // Billed is not owed. Showing only the former reads as debt.
+        stat(inr.format(node.outstanding), 'Still owed') +
       '</div>' +
       (attention.length
         ? '<p class="graph-panel__flag">' + attention.length +

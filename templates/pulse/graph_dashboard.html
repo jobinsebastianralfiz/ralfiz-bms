@@ -70,6 +70,19 @@
     </nav>
 
     <aside class="graph-panel" id="graph-panel" aria-live="polite"></aside>
+
+    {# Headline numbers. The graph shows shape; this shows state. #}
+    <section class="graph-metrics" aria-label="Business at a glance">
+      {% for m in metrics %}
+        <a class="graph-metric{% if m.alert %} is-alert{% endif %}" href="{{ m.href|default:'#' }}">
+          <span class="graph-metric__label">{{ m.label }}</span>
+          <span class="graph-metric__value">
+            {{ m.display }}
+          </span>
+          <span class="graph-metric__note">{{ m.note }}</span>
+        </a>
+      {% endfor %}
+    </section>
   </main>
 
   <footer class="pulse-command">
@@ -84,7 +97,7 @@
       <button class="pulse-execute" id="pulse-execute" type="submit">Execute</button>
     </form>
     <p class="pulse-command__hint" id="pulse-hint">
-      {{ core.client_count }} clients · {{ core.project_count }} projects · ₹{{ core.billed|floatformat:0 }} billed to date
+      {{ core.client_count }} clients · {{ core.project_count }} projects · ₹{{ core.billed_display }} billed to date
     </p>
   </footer>
 </div>

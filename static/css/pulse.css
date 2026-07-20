@@ -729,3 +729,51 @@
   .graph-stage { overflow-y: auto; }
   .graph-stage > canvas { display: none; }
 }
+
+/* Headline metrics strip — the graph shows shape, this shows state. */
+.graph-metrics {
+  position: absolute;
+  left: 22px; bottom: 20px;
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  max-width: calc(100% - 380px);
+}
+.graph-metric {
+  min-width: 152px;
+  padding: 12px 15px;
+  border: 1px solid var(--p-glass-line);
+  border-radius: 13px;
+  background: linear-gradient(135deg, rgba(30,70,78,.5), rgba(12,28,33,.34));
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.06), 0 10px 28px rgba(0,0,0,.32);
+  text-decoration: none;
+  color: inherit;
+  transition: border-color .2s var(--p-ease), transform .2s var(--p-ease);
+}
+.graph-metric:hover { border-color: rgba(120,220,220,.4); transform: translateY(-2px); }
+.graph-metric:focus-visible { outline: 2px solid var(--p-teal); outline-offset: 2px; }
+.graph-metric__label {
+  display: block;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 1.1px;
+  text-transform: uppercase;
+  color: var(--p-ink-3);
+}
+.graph-metric__value {
+  display: block;
+  margin-top: 5px;
+  font-size: 21px;
+  font-weight: 700;
+  letter-spacing: -.4px;
+  line-height: 1;
+}
+.graph-metric__note { display: block; margin-top: 4px; font-size: 11px; color: var(--p-ink-2); }
+.graph-metric.is-alert .graph-metric__note { color: var(--p-rose); }
+.graph-metric.is-alert { border-color: rgba(224,138,160,.28); }
+
+@media (max-width: 1200px) {
+  .graph-metrics { position: static; max-width: none; margin: 0 22px 18px; }
+}

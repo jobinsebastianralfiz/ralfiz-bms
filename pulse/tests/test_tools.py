@@ -374,3 +374,104 @@ class PortfolioGraphTests(TestCase):
     def test_requires_business_scope(self):
         with self.assertRaises(PermissionDenied):
             tools.get_portfolio_graph(denied_scope())
+
+
+class InrFormattingTests(TestCase):
+    """Indian digit grouping, so server- and client-rendered money match."""
+
+    def test_grouping(self):
+        cases = {
+            0: '0', 5: '5', 999: '999', 1000: '1,000', 12345: '12,345',
+            100300: '1,00,300', 306950: '3,06,950', 598850: '5,98,850',
+            10000000: '1,00,00,000', 123456789: '12,34,56,789',
+        }
+        for raw, expected in cases.items():
+            with self.subTest(raw=raw):
+                self.assertEqual(tools._inr(raw), expected)
+
+    def test_handles_none_and_negatives(self):
+        self.assertEqual(tools._inr(None), '0')
+        self.assertEqual(tools._inr(-306950), '-3,06,950')
+
+
+class DashboardMetricsTests(TestCase):
+    def setUp(self):
+        self.scope = owner_scope()
+        self.today = timezone.localdate()
+        self.client_obj = Client.objects.create(name='Metric Co')
+
+        Project.objects.create(
+            client=self.client_obj, name='Live', project_type='web_app',
+            status='in_progress', deadline=self.today + timedelta(days=5),
+        )
+        Project.objects.create(
+            client=self.client_obj, name='Slipping', project_type='web_app',
+            status='in_progress', deadline=self.today - timedelta(days=3),
+        )
+        Invoice.objects.create(
+            invoice_number='INV-M1', client=self.client_obj, title='m',
+            status='sent', issue_date=self.today - timedelta(days=40),
+            due_date=self.today - timedelta(days=10),
+            total_amount=Decimal('50000.00'), amount_paid=Decimal('20000.00'),
+        )
+        Lead.objects.create(
+            contact_person='Chase me', phone='9000000009', status='interested',
+            next_follow_up_date=self.today - timedelta(days=1),
+        )
+        Lead.objects.create(
+            contact_person='Later', phone='9000000010', status='new',
+            next_follow_up_date=self.today + timedelta(days=9),
+        )
+        Lead.objects.create(
+            contact_person='Won', phone='9000000011', status='converted',
+        )
+
+    def _by_key(self):
+        return {m['key']: m for m in tools.get_dashboard_metrics(self.scope)}
+
+    def test_outstanding_is_billed_minus_paid(self):
+        m = self._by_key()['outstanding']
+        self.assertEqual(m['value'], 30000.0)
+        self.assertEqual(m['display'], '₹30,000')
+        self.assertTrue(m['alert'])
+        self.assertEqual(m['note'], '1 invoice overdue')
+
+    def test_open_leads_excludes_converted(self):
+        m = self._by_key()['leads']
+        self.assertEqual(m['value'], 2)
+        self.assertEqual(m['note'], '1 need chasing')
+
+    def test_active_projects_and_attention_count(self):
+        m = self._by_key()['projects']
+        self.assertEqual(m['value'], 2)
+        self.assertEqual(m['note'], '1 needs a human')
+
+    def test_singular_and_plural_notes(self):
+        Project.objects.create(
+            client=self.client_obj, name='Also late', project_type='web_app',
+            status='in_progress', deadline=self.today - timedelta(days=9),
+        )
+        self.assertEqual(self._by_key()['projects']['note'], '2 need a human')
+
+    def test_no_data_reads_calmly(self):
+        Invoice.objects.all().delete()
+        Lead.objects.all().delete()
+        Project.objects.all().delete()
+        m = self._by_key()
+        self.assertEqual(m['outstanding']['note'], 'none overdue')
+        self.assertFalse(m['outstanding']['alert'])
+        self.assertEqual(m['leads']['note'], 'all up to date')
+        self.assertEqual(m['projects']['note'], 'all on track')
+
+    def test_client_node_separates_billed_from_owed(self):
+        node = next(
+            n for n in tools.get_portfolio_graph(self.scope)['nodes']
+            if n['label'] == 'Metric Co'
+        )
+        self.assertEqual(node['billed'], 50000.0)
+        self.assertEqual(node['collected'], 20000.0)
+        self.assertEqual(node['outstanding'], 30000.0)
+
+    def test_requires_business_scope(self):
+        with self.assertRaises(PermissionDenied):
+            tools.get_dashboard_metrics(denied_scope())
