@@ -28,6 +28,7 @@ from .supervisor import PulseConfigurationError, ask
 from .tools import (
     ACTIVE_PROJECT_STATUSES,
     get_dashboard_metrics,
+    get_dues_and_renewals,
     get_portfolio_graph,
     get_project_summary,
 )
@@ -148,5 +149,6 @@ class GraphDashboardView(View):
             'legend': graph['legend'],
             'core': graph['core'],
             'metrics': get_dashboard_metrics(scope),
+            'dues': get_dues_and_renewals(scope),
             'operator': scope.display_name,
         })

@@ -137,7 +137,9 @@ class SupervisorWiringTests(TestCase):
 
         scope = PulseScope(user=None, employee=None, can_query_business=True)
         built = build_tools(scope)
-        self.assertEqual(len(built), 11)
+        # Derived, not hardcoded: adding a tool should not fail this test.
+        from pulse.tools import TOOL_REGISTRY
+        self.assertEqual(len(built), len(TOOL_REGISTRY))
         for tool in built:
             with self.subTest(tool=tool.name):
                 self.assertTrue(tool.description.startswith('Call '))

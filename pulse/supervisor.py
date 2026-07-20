@@ -46,6 +46,13 @@ class FollowupArgs(BaseModel):
     limit: int = Field(default=25, description='Maximum leads to return (1-100).')
 
 
+class RenewalArgs(BaseModel):
+    horizon_days: int = Field(
+        default=90,
+        description='How many days ahead to look. Use a larger number only if asked.',
+    )
+
+
 class AttendanceArgs(BaseModel):
     date: Optional[str] = Field(
         default=None,
@@ -110,6 +117,12 @@ TOOL_SPECS = {
         'Call when asked about leave awaiting approval, pending time-off '
         'requests, or who has applied for leave.',
         None,
+    ),
+    'get_dues_and_renewals': (
+        'Call when asked what is expiring or coming up for renewal: domains, '
+        'SSL certificates, hosting, or AMC contracts. Also for "what is '
+        'overdue for renewal" or "what do we need to pay for soon".',
+        RenewalArgs,
     ),
     'get_attendance_summary': (
         'Call when asked who is in, present, absent, late or working remotely '

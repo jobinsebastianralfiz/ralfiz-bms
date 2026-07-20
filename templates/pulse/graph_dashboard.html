@@ -51,8 +51,8 @@
   </header>
 
   <main class="graph-stage" id="graph-stage">
-    <canvas id="graph-canvas" aria-hidden="true"></canvas>
 
+    <div class="graph-rail">
     {# Keyboard and screen-reader route to the same data the canvas paints. #}
     <nav class="graph-list" aria-label="Clients">
       <h2 class="graph-list__head">Clients</h2>
@@ -68,6 +68,44 @@
         {% endfor %}
       </ul>
     </nav>
+
+    {# Time-sensitive and invisible everywhere else on this screen. #}
+    <section class="graph-dues{% if dues.overdue_count %} is-alert{% endif %}"
+             aria-label="Dues and renewals">
+      <header class="graph-dues__head">
+        <h2 class="graph-dues__title">Dues &amp; renewals</h2>
+        {% if dues.overdue_count %}
+          <span class="graph-dues__badge">{{ dues.overdue_count }} overdue</span>
+        {% endif %}
+      </header>
+
+      {% if dues.items %}
+        <ul class="graph-dues__list">
+          {% for d in dues.items %}
+            <li class="graph-dues__item{% if d.overdue %} is-overdue{% endif %}">
+              <span class="graph-dues__name">{{ d.label }}</span>
+              <span class="graph-dues__meta">
+                {{ d.kind_label }}{% if d.client %} · {{ d.client }}{% endif %}
+              </span>
+              <span class="graph-dues__when">
+                {% if d.overdue %}{{ d.days_abs }}d overdue{% elif d.days == 0 %}due today{% else %}in {{ d.days_abs }}d{% endif %}
+                {% if d.auto_renew %}<span class="graph-dues__auto">auto</span>{% endif %}
+              </span>
+            </li>
+          {% endfor %}
+        </ul>
+        <a class="graph-dues__all" href="/credentials/">View all credentials</a>
+      {% else %}
+        <p class="graph-dues__empty">
+          Nothing expiring in the next {{ dues.horizon_days }} days.
+        </p>
+      {% endif %}
+    </section>
+    </div>{# /graph-rail #}
+
+    <div class="graph-canvas-wrap" id="graph-canvas-wrap">
+      <canvas id="graph-canvas" aria-hidden="true"></canvas>
+    </div>
 
     <aside class="graph-panel" id="graph-panel" aria-live="polite"></aside>
 

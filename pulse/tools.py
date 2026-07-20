@@ -23,6 +23,7 @@ faked:
 """
 
 import uuid
+from datetime import timedelta
 from decimal import Decimal
 
 from django.db.models import Count, DecimalField, F, Q, Sum, Value
@@ -30,7 +31,9 @@ from django.db.models.functions import Coalesce
 from django.utils import timezone
 
 from core.models import (
+    AMCContract,
     Client,
+    Credential,
     Expense,
     Invoice,
     Payment,
@@ -706,6 +709,95 @@ def get_portfolio_graph(scope):
     }
 
 
+#: How far ahead renewals surface. Beyond this they are not yet actionable
+#: and would only crowd out the things that are.
+RENEWAL_HORIZON_DAYS = 90
+
+
+def get_dues_and_renewals(scope, horizon_days=RENEWAL_HORIZON_DAYS, limit=40):
+    """Credentials expiring and AMC contracts falling due, soonest first.
+
+    Two different models with one thing in common -- a date somebody has to act
+    on -- merged into a single ordered list. Anything already overdue always
+    sorts first, however far past.
+
+    Credentials have no client FK; they reach a client through their project,
+    which is nullable. A credential with no project still appears, because an
+    unattached domain expiring is exactly the kind of thing that gets missed.
+    """
+    scope.require_business()
+    today = timezone.localdate()
+    cutoff = today + timedelta(days=int(horizon_days))
+    items = []
+
+    credentials = (
+        Credential.objects
+        .filter(is_active=True, expiry_date__isnull=False, expiry_date__lte=cutoff)
+        .select_related('project', 'project__client')
+        .order_by('expiry_date')
+    )
+    for cred in credentials:
+        days = (cred.expiry_date - today).days
+        items.append({
+            'id': str(cred.id),
+            'kind': 'credential',
+            'kind_label': cred.get_credential_type_display(),
+            'label': cred.name,
+            'provider': cred.provider or '',
+            'client': (
+                cred.project.client.name
+                if cred.project and cred.project.client else None
+            ),
+            'project': cred.project.name if cred.project else None,
+            'due_date': _date(cred.expiry_date),
+            'days': days,
+            'overdue': days < 0,
+            # Positive magnitude, so templates never have to strip a sign.
+            'days_abs': abs(days),
+            'amount': _money(cred.renewal_cost),
+            'auto_renew': cred.auto_renew,
+        })
+
+    contracts = (
+        AMCContract.objects
+        .filter(status='active', next_due_date__isnull=False, next_due_date__lte=cutoff)
+        .select_related('project', 'project__client')
+        .order_by('next_due_date')
+    )
+    for amc in contracts:
+        days = (amc.next_due_date - today).days
+        items.append({
+            'id': str(amc.id),
+            'kind': 'amc',
+            'kind_label': amc.get_contract_type_display(),
+            'label': amc.project.name if amc.project else 'AMC contract',
+            'provider': amc.get_billing_cycle_display(),
+            'client': (
+                amc.project.client.name
+                if amc.project and amc.project.client else None
+            ),
+            'project': amc.project.name if amc.project else None,
+            'due_date': _date(amc.next_due_date),
+            'days': days,
+            'overdue': days < 0,
+            # Positive magnitude, so templates never have to strip a sign.
+            'days_abs': abs(days),
+            'amount': _money(amc.annual_amount),
+            'auto_renew': amc.auto_renew,
+        })
+
+    items.sort(key=lambda i: i['days'])
+    overdue = [i for i in items if i['overdue']]
+
+    return {
+        'count': len(items),
+        'overdue_count': len(overdue),
+        'horizon_days': int(horizon_days),
+        'total_cost': round(sum(i['amount'] for i in items), 2),
+        'items': items[:int(limit)],
+    }
+
+
 def get_dashboard_metrics(scope):
     """The headline numbers: money in, money owed, pipeline, delivery.
 
@@ -814,4 +906,5 @@ TOOL_REGISTRY = {
     'get_lead_quotes': get_lead_quotes,
     'get_pending_leave_requests': get_pending_leave_requests,
     'get_attendance_summary': get_attendance_summary,
+    'get_dues_and_renewals': get_dues_and_renewals,
 }

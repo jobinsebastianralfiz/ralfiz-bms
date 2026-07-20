@@ -17,7 +17,7 @@
   var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
   var canvas = document.getElementById('graph-canvas');
-  var stage  = document.getElementById('graph-stage');
+  var stage  = document.getElementById('graph-canvas-wrap');
   var panel  = document.getElementById('graph-panel');
   if (!canvas || !stage) return;
 

@@ -475,3 +475,119 @@ class DashboardMetricsTests(TestCase):
     def test_requires_business_scope(self):
         with self.assertRaises(PermissionDenied):
             tools.get_dashboard_metrics(denied_scope())
+
+
+class DuesAndRenewalsTests(TestCase):
+    def setUp(self):
+        from core.models import AMCContract, Credential
+        self.Credential = Credential
+        self.AMCContract = AMCContract
+
+        self.scope = owner_scope()
+        self.today = timezone.localdate()
+        self.client_obj = Client.objects.create(name='Renewal Co')
+        self.project = Project.objects.create(
+            client=self.client_obj, name='Hosted Thing',
+            project_type='web_app', status='in_progress',
+        )
+
+        self.expired = Credential.objects.create(
+            project=self.project, credential_type='domain', name='late.example',
+            expiry_date=self.today - timedelta(days=30), is_active=True,
+        )
+        self.soon = Credential.objects.create(
+            project=self.project, credential_type='ssl', name='ssl.example',
+            expiry_date=self.today + timedelta(days=12), is_active=True,
+            auto_renew=True,
+        )
+        self.far = Credential.objects.create(
+            project=self.project, credential_type='hosting', name='far.example',
+            expiry_date=self.today + timedelta(days=400), is_active=True,
+        )
+        self.inactive = Credential.objects.create(
+            project=self.project, credential_type='domain', name='dead.example',
+            expiry_date=self.today - timedelta(days=2), is_active=False,
+        )
+        Credential.objects.create(
+            project=self.project, credential_type='api', name='no-expiry',
+            is_active=True,
+        )
+
+    def test_beyond_the_horizon_is_excluded(self):
+        labels = {i['label'] for i in
+                  tools.get_dues_and_renewals(self.scope)['items']}
+        self.assertNotIn('far.example', labels)
+
+    def test_inactive_credentials_are_excluded(self):
+        labels = {i['label'] for i in
+                  tools.get_dues_and_renewals(self.scope)['items']}
+        self.assertNotIn('dead.example', labels)
+
+    def test_credentials_without_an_expiry_are_excluded(self):
+        labels = {i['label'] for i in
+                  tools.get_dues_and_renewals(self.scope)['items']}
+        self.assertNotIn('no-expiry', labels)
+
+    def test_overdue_sorts_before_upcoming(self):
+        items = tools.get_dues_and_renewals(self.scope)['items']
+        self.assertEqual(items[0]['label'], 'late.example')
+        self.assertTrue(items[0]['overdue'])
+
+    def test_days_abs_is_positive_for_overdue(self):
+        item = tools.get_dues_and_renewals(self.scope)['items'][0]
+        self.assertEqual(item['days'], -30)
+        self.assertEqual(item['days_abs'], 30)
+
+    def test_client_is_reached_through_the_project(self):
+        item = tools.get_dues_and_renewals(self.scope)['items'][0]
+        self.assertEqual(item['client'], 'Renewal Co')
+
+    def test_project_is_required_by_the_schema(self):
+        """Credential.project is NOT NULL, so an unattached credential cannot
+        exist. The tool still guards for None because the FK could be relaxed
+        later, but nothing can currently reach that branch."""
+        from django.db import IntegrityError, transaction
+        with self.assertRaises(IntegrityError):
+            with transaction.atomic():
+                self.Credential.objects.create(
+                    project=None, credential_type='domain', name='orphan',
+                    expiry_date=self.today, is_active=True,
+                )
+
+    def test_amc_contracts_are_merged_in(self):
+        self.AMCContract.objects.create(
+            project=self.project, contract_type='amc',
+            annual_amount=Decimal('24000.00'), billing_cycle='yearly',
+            start_date=self.today - timedelta(days=365),
+            end_date=self.today + timedelta(days=30),
+            next_due_date=self.today + timedelta(days=5), status='active',
+        )
+        items = tools.get_dues_and_renewals(self.scope)['items']
+        amc = next(i for i in items if i['kind'] == 'amc')
+        self.assertEqual(amc['client'], 'Renewal Co')
+        self.assertEqual(amc['amount'], 24000.0)
+
+    def test_cancelled_amc_is_excluded(self):
+        self.AMCContract.objects.create(
+            project=self.project, contract_type='amc',
+            annual_amount=Decimal('9000.00'), billing_cycle='yearly',
+            start_date=self.today, end_date=self.today + timedelta(days=30),
+            next_due_date=self.today + timedelta(days=3), status='cancelled',
+        )
+        items = tools.get_dues_and_renewals(self.scope)['items']
+        self.assertEqual([i for i in items if i['kind'] == 'amc'], [])
+
+    def test_counts_and_auto_renew_flag(self):
+        result = tools.get_dues_and_renewals(self.scope)
+        self.assertEqual(result['count'], 2)
+        self.assertEqual(result['overdue_count'], 1)
+        ssl = next(i for i in result['items'] if i['label'] == 'ssl.example')
+        self.assertTrue(ssl['auto_renew'])
+
+    def test_horizon_is_adjustable(self):
+        wide = tools.get_dues_and_renewals(self.scope, horizon_days=500)
+        self.assertIn('far.example', {i['label'] for i in wide['items']})
+
+    def test_requires_business_scope(self):
+        with self.assertRaises(PermissionDenied):
+            tools.get_dues_and_renewals(denied_scope())
