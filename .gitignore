@@ -44,3 +44,4 @@ htmlcov/
 # Stray loose files at repo root (assets belong under static/ or media/)
 /*.png
 /logs.*.json
+.gstack/

@@ -11,6 +11,20 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
   <link rel="stylesheet" href="{% static 'css/styles.css' %}">
+  {# PULSE theme layer. Loads after styles.css so its custom-property
+     overrides win on source order. Delete this line to revert. #}
+  <link rel="stylesheet" href="{% static 'css/pulse-theme.css' %}?v=1">
+  <script>
+    // Default new visitors to the PULSE theme. app.js reads this key on
+    // load; seeding it here avoids editing app.js, and an existing choice
+    // is never overwritten -- the moon toggle still returns the light theme.
+    (function () {
+      try {
+        if (!localStorage.getItem('theme')) localStorage.setItem('theme', 'dark');
+        document.documentElement.setAttribute('data-theme', localStorage.getItem('theme'));
+      } catch (e) { /* private mode: fall through to app.js default */ }
+    })();
+  </script>
   {% block extra_css %}{% endblock %}
 </head>
 <body>
