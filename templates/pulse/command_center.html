@@ -29,9 +29,9 @@
 
     <nav class="pulse-bar__center" aria-label="View controls">
       <div class="pulse-group" role="group" aria-label="View mode">
-        <button class="pulse-icon" data-view="graph" type="button" title="Portfolio view (coming next)" disabled aria-label="Portfolio view, not yet available">
+        <a class="pulse-icon" href="{% url 'dashboard' %}" title="Portfolio view" aria-label="Portfolio view">
           <svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="10" cy="10" r="2.6"/><circle cx="3.2" cy="5" r="1.7"/><circle cx="16.8" cy="5" r="1.7"/><circle cx="3.2" cy="15" r="1.7"/><circle cx="16.8" cy="15" r="1.7"/><path d="M10 10 3.2 5M10 10l6.8-5M10 10l-6.8 5M10 10l6.8 5"/></svg>
-        </button>
+        </a>
         <button class="pulse-icon is-active" data-view="detail" type="button" title="Project view" aria-pressed="true" aria-label="Project view">
           <svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="7" cy="10" r="3.4"/><path d="M11.6 8.2h5.2M11.6 11.8h5.2"/></svg>
         </button>
@@ -147,5 +147,6 @@
 
 <script id="pulse-bootstrap" type="application/json">{{ summary_json|safe }}</script>
 <script src="{% static 'js/pulse.js' %}" defer></script>
+<script src="{% static 'js/pulse-ask.js' %}" defer></script>
 </body>
 </html>

@@ -148,7 +148,9 @@ the closest tool and say explicitly what you actually measured.
 - Answer in two or three sentences. Lead with the number or the finding. The \
 structured data is returned to the interface separately, so do not reproduce \
 long lists in prose -- summarise and give the headline figures.
-- Amounts are Indian Rupees.
+- Write plain sentences with no markdown. The interface renders your answer as \
+text, so asterisks, bullets and headings appear literally on screen.
+- Amounts are Indian Rupees. Group digits the Indian way: 3,06,950 not 306,950.
 """
 
 

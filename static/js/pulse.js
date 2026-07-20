@@ -18,15 +18,6 @@
   var fieldCanvas = document.getElementById('pulse-field');
   var stage       = document.getElementById('pulse-stage');
   var cardsWrap   = document.getElementById('pulse-cards');
-  var form        = document.getElementById('pulse-form');
-  var input       = document.getElementById('pulse-input');
-  var execBtn     = document.getElementById('pulse-execute');
-  var micBtn      = document.getElementById('pulse-mic');
-  var hint        = document.getElementById('pulse-hint');
-  var panel       = document.getElementById('pulse-response');
-  var panelBody   = document.getElementById('pulse-response-body');
-  var panelIntent = document.getElementById('pulse-response-intent');
-  var panelClose  = document.getElementById('pulse-response-close');
   var projectSel  = document.getElementById('pulse-project');
 
   var cards = Array.prototype.slice.call(document.querySelectorAll('.pulse-card'));
@@ -281,31 +272,19 @@
     requestAnimationFrame(frame);
   }
 
-  /* ── Asking ─────────────────────────────────────────────────────── */
+  /* ── Reacting to answers ───────────────────────────────────────── */
 
-  function csrf() {
-    var el = document.querySelector('[name=csrfmiddlewaretoken]');
-    return el ? el.value : '';
-  }
-
-  function showAnswer(text, intent, isError) {
-    panelIntent.textContent = isError
-      ? 'Could not answer'
-      : (intent ? intent.replace(/_/g, ' ') : 'Answer');
-    panelBody.textContent = text;
-    panel.classList.toggle('is-error', !!isError);
-    panel.hidden = false;
-    requestAnimationFrame(function () { panel.classList.add('is-open'); });
-  }
-
-  function flare(intent) {
+  // The command bar itself lives in pulse-ask.js, shared with the portfolio
+  // screen. This page only needs to say what happens visually when an answer
+  // lands: light up the card the answer came from.
+  window.pulseOnAnswer = function (body) {
     var map = {
       get_project_summary: 'tasks',
       get_team_for_project: 'team',
       get_overdue_invoices: 'billing',
       get_outstanding_receivables: 'billing'
     };
-    var key = map[intent];
+    var key = map[body && body.intent];
     if (!key) return;
     selectCard(key);
     if (reduceMotion) return;
@@ -314,111 +293,10 @@
     card.classList.remove('is-flaring');
     void card.offsetWidth;
     card.classList.add('is-flaring');
-  }
+  };
 
-  function ask(query) {
-    execBtn.disabled = true;
-    hint.classList.remove('is-warning');
-    hint.textContent = 'Working through live records…';
-
-    fetch('/api/pulse/ask/', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrf() },
-      credentials: 'same-origin',
-      body: JSON.stringify({ query: query })
-    })
-      .then(function (res) {
-        return res.json()
-          .catch(function () { return {}; })
-          .then(function (body) { return { status: res.status, body: body }; });
-      })
-      .then(function (r) {
-        if (r.status === 200) {
-          showAnswer(r.body.answer || 'No answer came back.', r.body.intent, false);
-          flare(r.body.intent);
-          hint.textContent = 'Answers come from live records.';
-          return;
-        }
-        var msg = {
-          400: 'That question could not be turned into a query. Try naming the project or date differently.',
-          403: 'Your account cannot read business-wide data. PULSE is limited to owner and partner accounts.',
-          503: 'PULSE is not configured yet — ANTHROPIC_API_KEY is missing on the server.'
-        }[r.status] || (r.body.detail || 'Something went wrong reaching PULSE.');
-        showAnswer(msg, null, true);
-        hint.textContent = 'Answers come from live records.';
-      })
-      .catch(function () {
-        showAnswer('Could not reach PULSE. Check your connection and try again.', null, true);
-        hint.textContent = 'Answers come from live records.';
-      })
-      .then(function () { execBtn.disabled = false; });
-  }
-
-  /* ── Voice (input only) ─────────────────────────────────────────── */
-
-  function wireMic() {
-    var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-    if (!SR) {
-      micBtn.classList.add('is-unavailable');
-      micBtn.disabled = true;
-      micBtn.title = 'Speech input is not supported in this browser — type instead';
-      return;
-    }
-    var rec = new SR();
-    rec.lang = 'en-IN';
-    rec.interimResults = false;
-    rec.maxAlternatives = 1;
-    var listening = false;
-
-    micBtn.addEventListener('click', function () {
-      if (listening) { rec.stop(); return; }
-      try { rec.start(); } catch (e) { /* already starting */ }
-    });
-
-    rec.addEventListener('start', function () {
-      listening = true;
-      micBtn.classList.add('is-listening');
-      hint.classList.remove('is-warning');
-      hint.textContent = 'Listening — speak your question.';
-    });
-    rec.addEventListener('end', function () {
-      listening = false;
-      micBtn.classList.remove('is-listening');
-      hint.textContent = 'Answers come from live records.';
-    });
-    rec.addEventListener('error', function (e) {
-      listening = false;
-      micBtn.classList.remove('is-listening');
-      hint.classList.add('is-warning');
-      hint.textContent = e.error === 'not-allowed'
-        ? 'Microphone access was blocked. Allow it in your browser, or type instead.'
-        : 'Could not hear that. Try again, or type your question.';
-    });
-    rec.addEventListener('result', function (e) {
-      var said = e.results[0][0].transcript;
-      input.value = said;
-      ask(said);
-    });
-  }
 
   /* ── Wiring ─────────────────────────────────────────────────────── */
-
-  form.addEventListener('submit', function (e) {
-    e.preventDefault();
-    var q = input.value.trim();
-    if (!q) {
-      hint.classList.add('is-warning');
-      hint.textContent = 'Type a question first — try "what needs attention".';
-      input.focus();
-      return;
-    }
-    ask(q);
-  });
-
-  panelClose.addEventListener('click', function () {
-    panel.classList.remove('is-open');
-    setTimeout(function () { panel.hidden = true; }, 380);
-  });
 
   cards.forEach(function (card) {
     card.addEventListener('click', function () {
@@ -450,5 +328,4 @@
     requestAnimationFrame(frame);
   }
 
-  wireMic();
 })();

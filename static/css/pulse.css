@@ -49,6 +49,17 @@
   pointer-events: none;
 }
 
+/* Form controls do not inherit colour or font-family from an ancestor.
+   Without this, every <button> on the page renders in the browser's default
+   near-black system text -- which on a near-black card is invisible. */
+.pulse-body button,
+.pulse-body input,
+.pulse-body select,
+.pulse-body textarea {
+  color: inherit;
+  font-family: inherit;
+}
+
 .pulse-visually-hidden {
   position: absolute;
   width: 1px; height: 1px;
@@ -130,6 +141,8 @@
 .pulse-icon svg { width: 17px; height: 17px; fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linecap: round; }
 .pulse-icon:hover:not(:disabled) { color: var(--p-ink); background: rgba(47, 212, 212, .1); }
 .pulse-icon.is-active { color: var(--p-teal); background: rgba(47, 212, 212, .14); }
+.pulse-icon:focus-visible { outline: 2px solid var(--p-teal); outline-offset: 2px; }
+.pulse-icon:focus:not(:focus-visible) { outline: none; }
 .pulse-icon:disabled { opacity: .32; cursor: not-allowed; }
 
 .pulse-select {
@@ -300,6 +313,7 @@
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, .08), 0 10px 30px rgba(0, 0, 0, .35);
+  color: var(--p-ink);
   text-align: left;
   cursor: pointer;
   overflow: hidden;
