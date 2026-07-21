@@ -463,16 +463,27 @@
     var p = screenToWorld(mx, my);
     for (var i = 0; i < layout.nodes.length; i++) {
       var n = layout.nodes[i];
-      if (Math.hypot(p.x - n.x, p.y - n.y) < n.r + 10) return n;
+      // A focused client's fanned-out satellites are click targets that lead
+      // to the project page. Only once fanned: in the overview the beads
+      // huddle against their client and a miss would swallow the client click.
+      if ((fans[n.data.id] || 0) > 0.5) {
+        for (var j = 0; j < n.satellites.length; j++) {
+          var s = n.satellites[j];
+          if (Math.hypot(p.x - s.x, p.y - s.y) < s.r + 8) {
+            return { node: n, sat: s };
+          }
+        }
+      }
+      if (Math.hypot(p.x - n.x, p.y - n.y) < n.r + 10) return { node: n, sat: null };
     }
     return null;
   }
 
   canvas.addEventListener('mousemove', function (e) {
     var r = canvas.getBoundingClientRect();
-    var n = hit(e.clientX - r.left, e.clientY - r.top);
-    var id = n ? n.data.id : null;
-    canvas.style.cursor = n ? 'pointer' : 'default';
+    var h = hit(e.clientX - r.left, e.clientY - r.top);
+    var id = h ? (h.sat ? h.sat.data.id : h.node.data.id) : null;
+    canvas.style.cursor = h ? 'pointer' : 'default';
     if (id !== hovered) {
       hovered = id;
       // No animation loop under reduced motion, so hover must repaint itself.
@@ -482,10 +493,13 @@
 
   canvas.addEventListener('click', function (e) {
     var r = canvas.getBoundingClientRect();
-    var n = hit(e.clientX - r.left, e.clientY - r.top);
-    if (n) {
-      select(n.data.id);
-      flyTo(n.data.id);
+    var h = hit(e.clientX - r.left, e.clientY - r.top);
+    if (h && h.sat) {
+      // Satellite ids are 'project:<uuid>'; the detail page lives in core.
+      window.location.href = '/projects/' + h.sat.data.id.slice(8) + '/';
+    } else if (h) {
+      select(h.node.data.id);
+      flyTo(h.node.data.id);
     } else if (focusedId) {
       toOverview();
     }
@@ -545,11 +559,13 @@
       '<h3 class="graph-panel__h3">Projects</h3>' +
       (node.satellites.length
         ? '<ul class="graph-panel__list">' + node.satellites.map(function (s) {
-            return '<li><span class="dot" style="background:' + s.hue + '"></span>' +
+            return '<li><a class="graph-panel__link" href="/projects/' +
+              esc(s.id.slice(8)) + '/">' +
+              '<span class="dot" style="background:' + s.hue + '"></span>' +
               '<span class="nm">' + esc(s.label) + '</span>' +
               '<span class="st">' + esc(s.status_display) + '</span>' +
               (s.tag != null ? '<span class="ov">' + s.tag + 'd late</span>' : '') +
-              '</li>';
+              '</a></li>';
           }).join('') + '</ul>'
         : '<p class="graph-panel__empty">No projects yet. This client is a relationship, not a pipeline.</p>');
   }
@@ -564,6 +580,51 @@
       return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c];
     });
   }
+
+  /* ── Reacting to answers ────────────────────────────────────────── */
+
+  // The command bar (pulse-ask.js) calls this with {answer, intent, data}
+  // after every successful ask. Point the constellation at whatever the
+  // answer is about: match project UUIDs from the structured payload and
+  // client names from the text against the graph, and fly there.
+  //
+  // Only when exactly ONE client is implicated. A business-wide answer
+  // (overdue invoices across four clients) names many; flying to the first
+  // would be arbitrary and read as PULSE misunderstanding the question.
+  window.pulseOnAnswer = function (body) {
+    if (!body) return;
+    var hits = {};
+    var blob = JSON.stringify(body.data || '');
+    var text = ((body.answer || '') + ' ' + blob).toLowerCase();
+
+    // Project ids in the payload → the client that owns that satellite.
+    var uuidRe = /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/gi;
+    var m;
+    while ((m = uuidRe.exec(blob))) {
+      var uid = m[0].toLowerCase();
+      data.nodes.forEach(function (n) {
+        if (n.id === 'client:' + uid) hits[n.id] = true;
+        else if (n.satellites.some(function (s) { return s.id === 'project:' + uid; })) {
+          hits[n.id] = true;
+        }
+      });
+    }
+
+    // Client names in the prose. Short labels are skipped: a two-letter
+    // name would substring-match half the dictionary.
+    data.nodes.forEach(function (n) {
+      if (n.label && n.label.length >= 4 &&
+          text.indexOf(n.label.toLowerCase()) !== -1) {
+        hits[n.id] = true;
+      }
+    });
+
+    var ids = Object.keys(hits);
+    if (ids.length === 1) {
+      select(ids[0]);
+      flyTo(ids[0]);
+    }
+  };
 
   /* ── Colour helpers ─────────────────────────────────────────────── */
 

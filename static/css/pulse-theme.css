@@ -306,6 +306,215 @@
   background: rgba(120, 220, 220, .1) !important;
 }
 
+/* Class-based pastel pills. The containment rules above only catch inline
+   styles ([style]); these classes hardcode light-theme hexes in styles.css
+   and in per-template <style> blocks (clients/detail, projects/detail), so
+   they need naming one by one. Same treatment: hue stays in the text and
+   dot, the pastel plate becomes a tint of the same hue. !important because
+   template <style> blocks load after this file. */
+[data-theme="dark"] .status-badge.lead {
+  background: rgba(167, 139, 214, .16) !important;
+  color: #a78bd6 !important;
+}
+[data-theme="dark"] .status-badge.lead::before { background: #a78bd6 !important; }
+
+[data-theme="dark"] .status-badge.proposal {
+  background: rgba(124, 196, 232, .16) !important;
+  color: #7cc4e8 !important;
+}
+[data-theme="dark"] .status-badge.proposal::before { background: #7cc4e8 !important; }
+
+[data-theme="dark"] .status-badge.completed,
+[data-theme="dark"] .status-badge.paid {
+  background: rgba(78, 222, 163, .14) !important;
+  color: #4edea3 !important;
+}
+[data-theme="dark"] .status-badge.completed::before,
+[data-theme="dark"] .status-badge.paid::before { background: #4edea3 !important; }
+
+[data-theme="dark"] .priority-badge.high {
+  background: rgba(224, 138, 160, .14) !important;
+  color: #e08aa0 !important;
+}
+[data-theme="dark"] .priority-badge.medium {
+  background: rgba(232, 192, 122, .14) !important;
+  color: var(--p-gold) !important;
+}
+[data-theme="dark"] .priority-badge.low {
+  background: rgba(78, 222, 163, .14) !important;
+  color: #4edea3 !important;
+}
+
+/* ── App shell: the sidebar joins the PULSE language ──────────────── */
+
+[data-theme="dark"] .sidebar {
+  background:
+    linear-gradient(180deg, rgba(10, 36, 41, .5), rgba(7, 19, 22, .92)),
+    #071316;
+  border-right: 1px solid var(--p-glass-line);
+  overflow-x: hidden;
+}
+
+/* The brand line wraps at 1.25rem once a real company name is in it
+   ("Ralfiz Technologies" + BMS), which is what broke the header. */
+[data-theme="dark"] .sidebar-logo { min-width: 0; }
+[data-theme="dark"] .sidebar-logo-text {
+  font-size: 1rem;
+  letter-spacing: .01em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+[data-theme="dark"] .sidebar-logo-text span { color: var(--p-teal); }
+[data-theme="dark"] .sidebar-logo-img,
+[data-theme="dark"] .sidebar-logo-icon {
+  width: 34px;
+  height: 34px;
+  flex: none;
+  border-radius: 9px;
+  border: 1px solid var(--p-glass-line);
+  background: rgba(6, 18, 21, .6);
+}
+
+[data-theme="dark"] .nav-section-title {
+  letter-spacing: .14em;
+  font-size: .625rem;
+  color: var(--text-muted);
+  opacity: 1;
+}
+
+[data-theme="dark"] .nav-item.active {
+  border-left-color: var(--p-teal);
+  box-shadow: inset 12px 0 24px -18px rgba(47, 212, 212, .8);
+}
+
+[data-theme="dark"] .sidebar-search-input {
+  border: 1px solid rgba(120, 220, 220, .17);
+  background: var(--bg-input);
+  color: var(--text-primary);
+}
+
+/* Scrollbars everywhere, not just the PULSE screens: the stock bar paints
+   a white track that reads as a glitch on the void background. */
+[data-theme="dark"] * {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(124, 148, 160, .35) transparent;
+}
+[data-theme="dark"] ::-webkit-scrollbar { width: 10px; height: 10px; }
+[data-theme="dark"] ::-webkit-scrollbar-track { background: transparent; }
+[data-theme="dark"] ::-webkit-scrollbar-thumb {
+  background: rgba(124, 148, 160, .28);
+  border-radius: 8px;
+  border: 3px solid transparent;
+  background-clip: padding-box;
+}
+[data-theme="dark"] ::-webkit-scrollbar-thumb:hover {
+  background: rgba(124, 148, 160, .5);
+  background-clip: padding-box;
+}
+[data-theme="dark"] ::-webkit-scrollbar-corner { background: transparent; }
+
+/* ── Detail pages: jewel treatment for the stat row and tabs ──────── */
+
+[data-theme="dark"] .stat-card {
+  position: relative;
+  overflow: hidden;
+}
+[data-theme="dark"] .stat-card::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 3px;
+  background: linear-gradient(180deg, var(--p-teal), rgba(47, 212, 212, 0));
+}
+[data-theme="dark"] .stat-card::after {
+  content: '';
+  position: absolute;
+  right: -40px; top: -40px;
+  width: 130px; height: 130px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(47, 212, 212, .13), transparent 70%);
+  pointer-events: none;
+}
+[data-theme="dark"] .stat-card-value { color: var(--text-primary); }
+
+[data-theme="dark"] .tabs {
+  border-bottom: 1px solid var(--p-glass-line);
+}
+[data-theme="dark"] .tab-item { color: var(--text-secondary); }
+[data-theme="dark"] .tab-item:hover { color: var(--text-primary); }
+[data-theme="dark"] .tab-item.active {
+  color: var(--p-teal);
+  border-bottom-color: var(--p-teal);
+}
+
+/* Danger keeps its rose meaning but drops the solid pastel slab. */
+[data-theme="dark"] .btn-danger {
+  background: rgba(224, 138, 160, .12);
+  border: 1px solid rgba(224, 138, 160, .4);
+  color: #e08aa0;
+}
+[data-theme="dark"] .btn-danger:hover {
+  background: rgba(224, 138, 160, .22);
+  border-color: #e08aa0;
+  color: #f4c6d3;
+}
+
+/* ── Detail pages: PULSE structure, not just PULSE colours ────────── */
+
+/* The page header becomes the hero: a glass field with the teal breath,
+   like the command centre's focus area. */
+[data-theme="dark"] .page-header {
+  position: relative;
+  padding: 22px 24px;
+  border: 1px solid var(--p-glass-line);
+  border-radius: 16px;
+  background:
+    radial-gradient(90% 160% at 88% 0%, rgba(47, 212, 212, .14), transparent 62%),
+    linear-gradient(135deg, rgba(30, 70, 78, .58), rgba(12, 28, 33, .4));
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .07), 0 14px 40px rgba(0, 0, 0, .4);
+  overflow: hidden;
+  margin-bottom: 1.5rem;
+}
+
+[data-theme="dark"] .page-title {
+  color: var(--text-primary);
+  letter-spacing: -.5px;
+}
+[data-theme="dark"] .page-subtitle,
+[data-theme="dark"] .page-subtitle a { color: var(--text-secondary); }
+[data-theme="dark"] .page-subtitle a:hover { color: var(--p-teal); }
+
+/* The pastel avatar plate becomes a glass chip with a teal glyph. */
+[data-theme="dark"] .page-header .avatar {
+  background: rgba(47, 212, 212, .1) !important;
+  border: 1px solid rgba(120, 220, 220, .25);
+  color: var(--p-teal) !important;
+}
+
+/* Card headers speak the PULSE kicker language: small caps, wide tracking,
+   muted ink -- same voice as CLIENT / PROJECTS on the constellation panel. */
+[data-theme="dark"] .card-header { border-bottom: 1px solid rgba(120, 220, 220, .12); }
+[data-theme="dark"] .card-title {
+  font-size: .7rem;
+  font-weight: 600;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+}
+
+/* Info rows inside cards: label/value pairs read like the stat tiles. */
+[data-theme="dark"] .info-label,
+[data-theme="dark"] .form-label {
+  font-size: .68rem;
+  font-weight: 600;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
 /* Chart.js draws to canvas and cannot inherit CSS, so give it breathing
    room rather than a light plate behind it. */
 [data-theme="dark"] canvas { filter: saturate(.92); }

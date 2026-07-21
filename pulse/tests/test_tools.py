@@ -35,6 +35,7 @@ class PermissionGateTests(TestCase):
     def test_all_tools_refuse_unprivileged_scope(self):
         scope = denied_scope()
         sample_args = {
+            'find_entity': {'name': 'anything'},
             'get_project_summary': {'project_id': '00000000-0000-0000-0000-000000000000'},
             'get_team_for_project': {'project_id': '00000000-0000-0000-0000-000000000000'},
             'get_lead_quotes': {'lead_id': 1},
@@ -170,6 +171,47 @@ class ProjectToolTests(TestCase):
         self.assertEqual(result['client'], 'Acme Ltd')
         self.assertTrue(result['is_overdue'])
         self.assertIn('by_status', result['tasks'])
+
+
+class FindEntityTests(TestCase):
+    def setUp(self):
+        self.scope = owner_scope()
+        self.ajith = Client.objects.create(
+            name='Dr C Ajithkumar', company_name='runwithajith.com',
+        )
+        self.other = Client.objects.create(name='Zokko Toys')
+        Client.objects.create(name='Ajith Old Account', is_active=False)
+        self.portal = Project.objects.create(
+            client=self.ajith, name='Patient Portal',
+            project_type='web_app', status='in_progress',
+        )
+
+    def test_finds_client_by_partial_name_case_insensitive(self):
+        result = tools.find_entity(self.scope, 'ajith')
+        names = [c['name'] for c in result['clients']]
+        self.assertEqual(names, ['Dr C Ajithkumar'])
+        self.assertEqual(result['clients'][0]['id'], str(self.ajith.id))
+
+    def test_finds_client_by_company_name(self):
+        result = tools.find_entity(self.scope, 'runwithajith')
+        self.assertEqual(result['clients'][0]['name'], 'Dr C Ajithkumar')
+
+    def test_inactive_clients_are_not_returned(self):
+        result = tools.find_entity(self.scope, 'Old Account')
+        self.assertEqual(result['clients'], [])
+
+    def test_finds_project_with_its_client_ids(self):
+        result = tools.find_entity(self.scope, 'patient portal')
+        self.assertEqual(len(result['projects']), 1)
+        row = result['projects'][0]
+        self.assertEqual(row['id'], str(self.portal.id))
+        self.assertEqual(row['client_id'], str(self.ajith.id))
+
+    def test_rejects_queries_too_short_to_mean_anything(self):
+        with self.assertRaises(ValueError):
+            tools.find_entity(self.scope, 'a')
+        with self.assertRaises(ValueError):
+            tools.find_entity(self.scope, '  ')
 
 
 class InvoiceToolTests(TestCase):

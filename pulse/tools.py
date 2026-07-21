@@ -581,6 +581,52 @@ SELECTION_HUE = '#e8c07a'
 ATTENTION_HUE = '#e08aa0'
 
 
+def find_entity(scope, name):
+    """Resolve a client or project NAME to its IDs.
+
+    Users ask about things by name; every detail tool wants an ID. This is
+    the bridge: a case-insensitive substring search over client names,
+    client companies and project names. Capped small on purpose -- it is a
+    lookup, not a browse.
+    """
+    scope.require_business()
+    query = (name or '').strip()
+    if len(query) < 2:
+        raise ValueError('Give at least two characters of the name to search for.')
+
+    clients = list(
+        Client.objects
+        .filter(Q(name__icontains=query) | Q(company_name__icontains=query),
+                is_active=True)
+        .order_by('name')[:8]
+    )
+    projects = list(
+        Project.objects
+        .filter(name__icontains=query)
+        .select_related('client')
+        .order_by('name')[:8]
+    )
+
+    return {
+        'query': query,
+        'clients': [
+            {'id': str(c.id), 'name': c.name, 'company': c.company_name}
+            for c in clients
+        ],
+        'projects': [
+            {
+                'id': str(p.id),
+                'name': p.name,
+                'status': p.status,
+                'status_display': p.get_status_display(),
+                'client': p.client.name if p.client else None,
+                'client_id': str(p.client_id) if p.client_id else None,
+            }
+            for p in projects
+        ],
+    }
+
+
 def get_portfolio_graph(scope):
     """The whole business as a graph: clients orbiting the core, projects orbiting clients.
 
@@ -895,6 +941,7 @@ def get_dashboard_metrics(scope):
 # --------------------------------------------------------------------------
 
 TOOL_REGISTRY = {
+    'find_entity': find_entity,
     'get_projects_needing_attention': get_projects_needing_attention,
     'count_projects_by_status': count_projects_by_status,
     'get_project_summary': get_project_summary,

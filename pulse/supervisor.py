@@ -1,4 +1,8 @@
-"""LangGraph supervisor: route a question to exactly one whitelisted tool.
+"""LangGraph supervisor: route a question to whitelisted tools.
+
+Usually one hop; two when a name must first be resolved to an ID via
+find_entity. The UI's intent/data comes from the LAST tool executed, so the
+detail call, not the lookup, is what the page reacts to.
 
 The model's only capability here is choosing a tool name and its arguments.
 It never sees a database connection, never composes SQL, and cannot reach any
@@ -30,6 +34,10 @@ class PulseConfigurationError(RuntimeError):
 # --------------------------------------------------------------------------
 # Argument schemas. Tools with no arguments get None.
 # --------------------------------------------------------------------------
+
+
+class FindArgs(BaseModel):
+    name: str = Field(description='Name (or part of one) of a client or project.')
 
 
 class ProjectArgs(BaseModel):
@@ -65,6 +73,13 @@ class AttendanceArgs(BaseModel):
 #: Descriptions are prescriptive about *when* to call, not just what the tool
 #: does -- that measurably improves tool selection.
 TOOL_SPECS = {
+    'find_entity': (
+        'Call FIRST whenever the user names a client or project instead of '
+        'giving an ID -- "fetch client ajith", "the patient portal project". '
+        'Resolves the name to client and project UUIDs. Chain the detail tool '
+        'with the returned ID afterwards if more than the identity is asked for.',
+        FindArgs,
+    ),
     'get_projects_needing_attention': (
         'Call when asked which projects are stuck, paused, slipping, late, at '
         'risk, or need attention. Returns projects that are on hold or past '
@@ -134,12 +149,15 @@ TOOL_SPECS = {
 SYSTEM_PROMPT = """You are PULSE, the command centre for Ralfiz Technologies' \
 business management system.
 
-You answer questions about the business by calling exactly one of the tools \
-provided. You have no other access to data.
+You answer questions about the business by calling the tools provided. You \
+have no other access to data.
 
 Rules:
 - Always call a tool before answering a question about the business. Never \
 answer from memory or assumption.
+- When the user names a client or project rather than giving an ID, call \
+find_entity first to resolve the name, then call the detail tool with the ID \
+it returned. Never ask the user for a UUID.
 - If no tool fits the question, say plainly what you cannot answer and name \
 what you can. Do not guess.
 - Some concepts the user may ask for are not recorded by this system. There is \
