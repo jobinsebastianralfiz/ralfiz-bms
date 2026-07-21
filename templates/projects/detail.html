@@ -86,10 +86,10 @@
 <!-- Page Header -->
 <div class="page-header">
   <div class="d-flex align-items-center gap-4">
-    <div class="avatar avatar-xl" style="background: var(--info-light); color: var(--info);">
-      <i class="fas fa-folder-open"></i>
-    </div>
+    {# The jewel this project is on the constellation, at hero scale. #}
+    <span class="pulse-orb-chip st-{{ project.status }}" aria-hidden="true"></span>
     <div>
+      <p class="pulse-kicker mb-0">Project</p>
       <div class="d-flex align-items-center gap-3 mb-2">
         <h1 class="page-title mb-0">{{ project.name }}</h1>
         <span class="status-badge {{ project.status }}">{{ project.get_status_display }}</span>

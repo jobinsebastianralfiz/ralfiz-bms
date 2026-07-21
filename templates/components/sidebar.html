@@ -2,12 +2,14 @@
 <aside class="sidebar" id="sidebar">
   <div class="sidebar-header">
     <a href="{% if request.user.team_profile %}{% url 'team_dashboard' %}{% else %}{% url 'dashboard' %}{% endif %}" class="sidebar-logo">
-      {% if company.logo %}
-      <img src="{{ company.logo.url }}" alt="{{ company.company_name }}" class="sidebar-logo-img">
-      {% else %}
-      <div class="sidebar-logo-icon">{{ company.company_name|slice:":1"|upper|default:"R" }}</div>
-      {% endif %}
-      <div class="sidebar-logo-text">{{ company.company_name|default:"Ralfiz" }}<span>BMS</span></div>
+      {# The PULSE spark — same mark as the constellation header. #}
+      <svg class="sidebar-spark" viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M12 1.5 14.3 8 21 10.3 14.3 12.6 12 19.1 9.7 12.6 3 10.3 9.7 8Z"/>
+        <path class="sidebar-spark__minor" d="M18.5 15.2 19.6 18l2.9 1.1-2.9 1.1-1.1 2.8-1.1-2.8-2.9-1.1 2.9-1.1Z"/>
+      </svg>
+      <span class="sidebar-logo-text">{{ company.company_name|default:"Ralfiz" }}
+        <span class="sidebar-logo-sub">Business Management</span>
+      </span>
     </a>
   </div>
 
