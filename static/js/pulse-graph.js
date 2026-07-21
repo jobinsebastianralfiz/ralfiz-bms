@@ -4,11 +4,21 @@
    Renders the business as a graph: Ralfiz at the core, clients as jewel-toned
    spheres, their projects as satellite beads on dashed tethers.
 
+   Two camera states, nothing in between. The overview is deliberately quiet —
+   spheres and beams only, one label following the pointer — because at real
+   data volume (35 clients) permanent labels collide into noise. Clicking a
+   client flies the camera to it; that focus state is where names, statuses
+   and overdue chips live. Esc, the Overview button, or clicking empty space
+   flies back.
+
    Everything is drawn to one canvas because the reference look depends on
    volumetric beams and shaded spheres that DOM cannot produce cheaply. The
    canvas is aria-hidden and a real list of the same data sits beside it for
    screen readers and keyboard users -- the picture is never the only route
    to the information.
+
+   Geometry draws under the camera transform; text draws in screen space via
+   worldToScreen() so type stays the same crisp size at any zoom.
    ========================================================================== */
 
 (function () {
@@ -16,24 +26,39 @@
 
   var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-  var canvas = document.getElementById('graph-canvas');
-  var stage  = document.getElementById('graph-canvas-wrap');
-  var panel  = document.getElementById('graph-panel');
+  var canvas  = document.getElementById('graph-canvas');
+  var stage   = document.getElementById('graph-canvas-wrap');
+  var panel   = document.getElementById('graph-panel');
+  var backBtn = document.getElementById('graph-overview-btn');
   if (!canvas || !stage) return;
 
   var ctx = canvas.getContext('2d');
   var dpr = Math.min(window.devicePixelRatio || 1, 2);
 
   var GOLD = '#e8c07a';
+  var ROSE = '#e08aa0';
   var data = JSON.parse(document.getElementById('graph-data').textContent);
 
   var inr = new Intl.NumberFormat('en-IN', {
     style: 'currency', currency: 'INR', maximumFractionDigits: 0
   });
 
-  var selected = null;   // node id
-  var hovered  = null;
-  var layout   = { core: null, nodes: [] };
+  var selected  = null;   // node id driving the right panel
+  var hovered   = null;
+  var focusedId = null;   // node id the camera is flown to (null = overview)
+  var layout    = { core: null, nodes: [] };
+
+  /* Camera. Identity in overview; framing the focused client at FOCUS_SCALE
+     otherwise. `cam` eases toward `camTo` every frame. */
+  var FOCUS_SCALE = 2.2;
+  var cam   = { x: 0, y: 0, scale: 1 };
+  var camTo = { x: 0, y: 0, scale: 1 };
+
+  /* fans[id] eases 0→1 as that node's satellites spread into the focus fan.
+     Keyed by id, not stored on layout nodes, so a resize relayout cannot
+     reset an animation in flight. focusAmt is the global ghosting amount. */
+  var fans = {};
+  var focusAmt = 0;
 
   /* ── Layout ─────────────────────────────────────────────────────── */
 
@@ -59,18 +84,61 @@
       var size = 13 + Math.min(node.project_count, 6) * 3.2;
 
       var sats = node.satellites.map(function (s, j) {
-        var sa = a + (-0.34 + (j / Math.max(node.satellites.length - 1, 1)) * 0.68);
-        var sr = size + 34 + (j % 2) * 16;
+        var spread = Math.max(node.satellites.length - 1, 1);
+        // Overview: tight fan hugging the node. Focus: a wide arc with room
+        // for each project's label. Satellites lerp between the two.
+        var oa = a + (-0.34 + (j / spread) * 0.68);
+        var or_ = size + 34 + (j % 2) * 16;
+        var fa = a + (-0.85 + (j / spread) * 1.7);
+        var fr = size + 58 + (j % 2) * 24;
         return {
           data: s,
-          x: x + Math.cos(sa) * sr,
-          y: y + Math.sin(sa) * sr,
+          ox: x + Math.cos(oa) * or_, oy: y + Math.sin(oa) * or_,
+          fx: x + Math.cos(fa) * fr,  fy: y + Math.sin(fa) * fr,
+          x: 0, y: 0,   // current draw position, set per frame
           r: 5.5
         };
       });
 
-      layout.nodes.push({ data: node, x: x, y: y, r: size, angle: a, satellites: sats });
+      layout.nodes.push({
+        data: node, x: x, y: y, r: size, angle: a, satellites: sats,
+        flagged: node.satellites.some(function (s) {
+          return s.needs_attention || s.tag != null;
+        })
+      });
     });
+  }
+
+  function overviewCam() {
+    return { x: stage.clientWidth / 2, y: stage.clientHeight / 2, scale: 1 };
+  }
+
+  function focusCam(n) {
+    // Anchor the focused client left of centre, clear of the right panel.
+    var w = stage.clientWidth, h = stage.clientHeight;
+    return {
+      x: n.x - (w * 0.40 - w / 2) / FOCUS_SCALE,
+      y: n.y - (h * 0.48 - h / 2) / FOCUS_SCALE,
+      scale: FOCUS_SCALE
+    };
+  }
+
+  function worldToScreen(x, y) {
+    return {
+      x: (x - cam.x) * cam.scale + stage.clientWidth / 2,
+      y: (y - cam.y) * cam.scale + stage.clientHeight / 2
+    };
+  }
+
+  function screenToWorld(x, y) {
+    return {
+      x: (x - stage.clientWidth / 2) / cam.scale + cam.x,
+      y: (y - stage.clientHeight / 2) / cam.scale + cam.y
+    };
+  }
+
+  function nodeById(id) {
+    return layout.nodes.filter(function (n) { return n.data.id === id; })[0];
   }
 
   function resize() {
@@ -78,6 +146,9 @@
     canvas.height = Math.round(stage.clientHeight * dpr);
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     computeLayout();
+    var f = focusedId && nodeById(focusedId);
+    camTo = f ? focusCam(f) : overviewCam();
+    if (reduce) snap();
   }
 
   /* ── Drawing primitives ─────────────────────────────────────────── */
@@ -203,21 +274,59 @@
     ctx.closePath();
   }
 
+  function namePlate(label, lx, ly, hue) {
+    ctx.font = '600 13px Inter, sans-serif';
+    var tw = ctx.measureText(label).width;
+    // Plate behind the text keeps it legible over beams and beads.
+    ctx.fillStyle = 'rgba(5,9,11,.62)';
+    roundRect(lx - 6, ly - 12, tw + 12, 18, 5); ctx.fill();
+    ctx.fillStyle = hue;
+    ctx.fillText(label, lx, ly);
+    return tw;
+  }
+
+  function truncate(s) {
+    return s.length > 20 ? s.slice(0, 19) + '…' : s;
+  }
+
   /* ── Frame ──────────────────────────────────────────────────────── */
+
+  function ghostAlpha(n) {
+    // In focus, everything but the focused client dims to a ghost that is
+    // still visible enough to click for the next fly.
+    return n.data.id === focusedId ? 1 : 1 - 0.85 * focusAmt;
+  }
 
   function draw(t) {
     var w = stage.clientWidth, h = stage.clientHeight;
     ctx.clearRect(0, 0, w, h);
     var core = layout.core;
 
+    /* World pass — geometry under the camera transform. */
+    ctx.save();
+    ctx.translate(w / 2, h / 2);
+    ctx.scale(cam.scale, cam.scale);
+    ctx.translate(-cam.x, -cam.y);
+
+    // Current satellite positions: lerp overview fan → focus fan.
+    layout.nodes.forEach(function (n) {
+      var fan = fans[n.data.id] || 0;
+      n.satellites.forEach(function (s) {
+        s.x = s.ox + (s.fx - s.ox) * fan;
+        s.y = s.oy + (s.fy - s.oy) * fan;
+      });
+    });
+
     // Beams first, so nodes sit on top
     layout.nodes.forEach(function (n) {
+      ctx.globalAlpha = ghostAlpha(n);
       var isSel = selected === n.data.id;
       beam(core.x, core.y, n.x, n.y, n.data.hue, isSel ? 1.6 : 1);
     });
 
     // Satellite tethers
     layout.nodes.forEach(function (n) {
+      ctx.globalAlpha = ghostAlpha(n);
       ctx.setLineDash([2, 4]);
       ctx.strokeStyle = hexA(n.data.hue, .3);
       ctx.lineWidth = 1;
@@ -227,63 +336,123 @@
       ctx.setLineDash([]);
     });
 
+    ctx.globalAlpha = 1 - 0.6 * focusAmt;
     sunCore(core.x, core.y, core.r, reduce ? 0 : t);
-
-    // Core label
-    ctx.font = '700 17px Inter, sans-serif';
-    ctx.fillStyle = '#e9f2f4';
-    ctx.fillText(data.core.label, core.x + core.r + 16, core.y + 2);
-    ctx.font = '500 11px Inter, sans-serif';
-    ctx.fillStyle = '#7c94a0';
-    ctx.fillText(
-      data.core.client_count + ' clients · ' + data.core.project_count + ' projects',
-      core.x + core.r + 16, core.y + 18
-    );
 
     // Spheres first, labels second. Drawing them per-node interleaved let a
     // later node's satellite paint over an earlier node's label.
     layout.nodes.forEach(function (n) {
+      ctx.globalAlpha = ghostAlpha(n);
       var bob = reduce ? 0 : Math.sin(t * 0.7 + n.angle * 3) * 2.2;
       n.bob = bob;
       n.satellites.forEach(function (s) {
         sphere(s.x, s.y + bob * 0.6, s.r, s.data.hue, false);
       });
       sphere(n.x, n.y + bob, n.r, n.data.hue, selected === n.data.id);
+
+      // Risk is the one thing the quiet overview must not hide: a rose
+      // ember pinned to any client with an overdue or flagged project.
+      if (n.flagged) {
+        var mx = n.x + n.r * 0.78, my = n.y + bob - n.r * 0.78;
+        var halo = ctx.createRadialGradient(mx, my, 0, mx, my, 9);
+        halo.addColorStop(0, hexA(ROSE, .55));
+        halo.addColorStop(1, hexA(ROSE, 0));
+        ctx.fillStyle = halo;
+        ctx.beginPath(); ctx.arc(mx, my, 9, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = ROSE;
+        ctx.beginPath(); ctx.arc(mx, my, 3, 0, Math.PI * 2); ctx.fill();
+      }
     });
 
+    ctx.restore();
+    ctx.globalAlpha = 1;
+
+    /* Screen pass — text at constant size regardless of zoom. */
+
+    // Core label
+    ctx.globalAlpha = 1 - 0.6 * focusAmt;
+    var cs = worldToScreen(core.x, core.y);
+    ctx.font = '700 17px Inter, sans-serif';
+    ctx.fillStyle = '#e9f2f4';
+    ctx.fillText(data.core.label, cs.x + core.r * cam.scale + 16, cs.y + 2);
+    ctx.font = '500 11px Inter, sans-serif';
+    ctx.fillStyle = '#7c94a0';
+    ctx.fillText(
+      data.core.client_count + ' clients · ' + data.core.project_count + ' projects',
+      cs.x + core.r * cam.scale + 16, cs.y + 18
+    );
+    ctx.globalAlpha = 1;
+
+    // One label in the overview: the node under the pointer. The focused
+    // node keeps a permanent label; everything else stays quiet.
     layout.nodes.forEach(function (n) {
-      var isSel = selected === n.data.id;
-      var isHov = hovered === n.data.id;
+      var isFoc = focusedId === n.data.id;
+      var fan = fans[n.data.id] || 0;
+      if (!isFoc && hovered !== n.data.id) return;
 
-      n.satellites.forEach(function (s) {
-        if (s.data.tag != null) {
-          chip(s.data.tag + 'd', s.x + 9, s.y + n.bob * 0.6 - 9, '#e08aa0');
-        }
-      });
-
+      var p = worldToScreen(n.x, n.y + (n.bob || 0));
       // Labels sit on whichever side has more room, so they stop colliding
       // with the satellites fanned out around the node.
       var right = n.x < stage.clientWidth * 0.56;
-      ctx.font = (isSel || isHov ? '700 ' : '600 ') + '13px Inter, sans-serif';
-      var label = n.data.label.length > 20
-        ? n.data.label.slice(0, 19) + '…' : n.data.label;
+      var label = truncate(n.data.label);
+      ctx.font = '600 13px Inter, sans-serif';
       var tw = ctx.measureText(label).width;
-      var lx = right ? n.x + n.r + 13 : n.x - n.r - 13 - tw;
-      var ly = n.y + n.bob + 1;
+      var lx = right ? p.x + n.r * cam.scale + 13 : p.x - n.r * cam.scale - 13 - tw;
+      var ly = p.y + 1;
 
-      // Plate behind the text keeps it legible over beams and beads.
-      ctx.fillStyle = 'rgba(5,9,11,.62)';
-      roundRect(lx - 6, ly - 12, tw + 12, 18, 5); ctx.fill();
+      namePlate(label, lx, ly, isFoc && selected === n.data.id ? GOLD : '#e9f2f4');
+      chip(n.data.share + '%', lx, ly + 17,
+        isFoc && selected === n.data.id ? GOLD : n.data.hue);
 
-      ctx.fillStyle = isSel ? GOLD : '#e9f2f4';
-      ctx.fillText(label, lx, ly);
-      chip(n.data.share + '%', lx, ly + 17, isSel ? GOLD : n.data.hue);
+      // Project detail belongs to the focus state; fade it in with the fan.
+      if (isFoc && fan > 0.05) {
+        ctx.globalAlpha = fan;
+        n.satellites.forEach(function (s) {
+          var sp = worldToScreen(s.x, s.y + (n.bob || 0) * 0.6);
+          var sx = sp.x + s.r * cam.scale + 8;
+          namePlate(truncate(s.data.label), sx, sp.y - 6, '#e9f2f4');
+          var cw = chip(s.data.status_display, sx, sp.y + 11, s.data.hue);
+          if (s.data.tag != null) {
+            chip(s.data.tag + 'd late', sx + cw + 5, sp.y + 11, ROSE);
+          }
+        });
+        ctx.globalAlpha = 1;
+      }
     });
   }
 
-  var t0 = null;
+  /* ── Animation ──────────────────────────────────────────────────── */
+
+  function step(dt) {
+    // Exponential approach: retargeting mid-flight (client A → client B)
+    // stays smooth because the camera only ever chases camTo.
+    var k = 1 - Math.pow(0.002, dt / 0.55);
+    cam.x += (camTo.x - cam.x) * k;
+    cam.y += (camTo.y - cam.y) * k;
+    cam.scale += (camTo.scale - cam.scale) * k;
+    focusAmt += ((focusedId ? 1 : 0) - focusAmt) * k;
+    layout.nodes.forEach(function (n) {
+      var id = n.data.id;
+      var cur = fans[id] || 0;
+      fans[id] = cur + ((focusedId === id ? 1 : 0) - cur) * k;
+    });
+  }
+
+  function snap() {
+    cam.x = camTo.x; cam.y = camTo.y; cam.scale = camTo.scale;
+    focusAmt = focusedId ? 1 : 0;
+    layout.nodes.forEach(function (n) {
+      fans[n.data.id] = focusedId === n.data.id ? 1 : 0;
+    });
+    draw(0);
+  }
+
+  var t0 = null, last = null;
   function frame(ts) {
     if (t0 === null) t0 = ts;
+    var dt = last === null ? 16 : Math.min(ts - last, 50);
+    last = ts;
+    step(dt / 1000);
     draw((ts - t0) / 1000);
     requestAnimationFrame(frame);
   }
@@ -291,9 +460,10 @@
   /* ── Interaction ────────────────────────────────────────────────── */
 
   function hit(mx, my) {
+    var p = screenToWorld(mx, my);
     for (var i = 0; i < layout.nodes.length; i++) {
       var n = layout.nodes[i];
-      if (Math.hypot(mx - n.x, my - n.y) < n.r + 10) return n;
+      if (Math.hypot(p.x - n.x, p.y - n.y) < n.r + 10) return n;
     }
     return null;
   }
@@ -301,16 +471,50 @@
   canvas.addEventListener('mousemove', function (e) {
     var r = canvas.getBoundingClientRect();
     var n = hit(e.clientX - r.left, e.clientY - r.top);
-    hovered = n ? n.data.id : null;
+    var id = n ? n.data.id : null;
     canvas.style.cursor = n ? 'pointer' : 'default';
+    if (id !== hovered) {
+      hovered = id;
+      // No animation loop under reduced motion, so hover must repaint itself.
+      if (reduce) draw(0);
+    }
   });
 
   canvas.addEventListener('click', function (e) {
     var r = canvas.getBoundingClientRect();
     var n = hit(e.clientX - r.left, e.clientY - r.top);
-    if (n) select(n.data.id);
+    if (n) {
+      select(n.data.id);
+      flyTo(n.data.id);
+    } else if (focusedId) {
+      toOverview();
+    }
   });
 
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape' && focusedId) toOverview();
+  });
+
+  if (backBtn) backBtn.addEventListener('click', toOverview);
+
+  function flyTo(id) {
+    var n = nodeById(id);
+    if (!n) return;
+    focusedId = id;
+    camTo = focusCam(n);
+    if (backBtn) backBtn.hidden = false;
+    if (reduce) snap();
+  }
+
+  function toOverview() {
+    focusedId = null;
+    camTo = overviewCam();
+    if (backBtn) backBtn.hidden = true;
+    if (reduce) snap();
+  }
+
+  /* Selection drives the right panel; the camera is handled separately so
+     boot can select a client without flying at the viewer. */
   function select(id) {
     selected = id;
     var node = data.nodes.filter(function (n) { return n.id === id; })[0];
@@ -381,10 +585,15 @@
   /* ── Boot ───────────────────────────────────────────────────────── */
 
   window.addEventListener('resize', resize);
+  cam = overviewCam();
+  camTo = overviewCam();
   resize();
 
   document.querySelectorAll('.graph-list__item').forEach(function (el) {
-    el.addEventListener('click', function () { select(el.dataset.node); });
+    el.addEventListener('click', function () {
+      select(el.dataset.node);
+      flyTo(el.dataset.node);
+    });
     el.addEventListener('focus', function () { hovered = el.dataset.node; });
     el.addEventListener('blur', function () { hovered = null; });
   });
