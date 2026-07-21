@@ -83,15 +83,16 @@
 {% endblock %}
 
 {% block content %}
-<!-- Page Header -->
-<div class="page-header">
-  <div class="d-flex align-items-center gap-4">
-    {# The client's constellation sphere at hero scale; hue follows priority. #}
-    <span class="pulse-orb-chip pr-{{ client.priority }}" aria-hidden="true"></span>
-    <div>
+{# PULSE stage: the client at the centre of its own space, facets floating around it. #}
+<div class="pstage" id="pulse-stage" data-status="{{ client.priority }}">
+  <canvas id="stage-field" aria-hidden="true"></canvas>
+
+  <header class="pstage-center">
+    <canvas id="stage-orb" width="320" height="320" aria-hidden="true"></canvas>
+    <div class="pstage-id">
       <p class="pulse-kicker mb-0">Client</p>
-      <div class="d-flex align-items-center gap-3 mb-2">
-        <h1 class="page-title mb-0">{{ client.name }}</h1>
+      <h1 class="pd-title">{{ client.name }}</h1>
+      <div class="pd-chips">
         <span class="priority-badge {{ client.priority }}">{{ client.get_priority_display }} Priority</span>
         {% if client.is_active %}
         <span class="badge badge-success">Active</span>
@@ -99,91 +100,54 @@
         <span class="badge badge-secondary">Inactive</span>
         {% endif %}
       </div>
-      <p class="page-subtitle mb-0">
+      <p class="pd-meta">
+        Client since {{ client.created_at|date:"M Y" }}
         {% if client.address %}
-        <i class="fas fa-map-marker-alt me-2"></i>{{ client.address|truncatewords:5 }}
-        <span class="mx-2">|</span>
+        <span class="pd-meta__dot">&middot;</span>{{ client.address|truncatewords:5 }}
         {% endif %}
-        <i class="fas fa-calendar me-2"></i>Client since {{ client.created_at|date:"M Y" }}
       </p>
-    </div>
-  </div>
-  <div class="page-actions">
-    <a href="{% url 'project_create' %}?client={{ client.pk }}" class="btn btn-outline-primary">
-      <i class="fas fa-folder-plus"></i>
-      New Project
-    </a>
-    <a href="{% url 'quote_create' %}?client={{ client.pk }}" class="btn btn-outline-primary">
-      <i class="fas fa-file-alt"></i>
-      Create Quote
-    </a>
-    <a href="{% url 'client_relationship_pdf' client.pk %}" target="_blank" class="btn btn-outline-primary">
-      <i class="fas fa-file-pdf"></i>
-      Relationship Summary
-    </a>
-    <a href="{% url 'client_update' client.pk %}" class="btn btn-primary">
-      <i class="fas fa-edit"></i>
-      Edit Client
-    </a>
-    <a href="{% url 'client_delete' client.pk %}" class="btn btn-danger">
-      <i class="fas fa-trash-alt"></i>
-      Delete
-    </a>
-  </div>
-</div>
 
-<!-- Stats Cards -->
-<div class="row mb-4">
-  <div class="col-3 col-md-6 col-sm-12" style="padding: 0.75rem;">
-    <div class="card stat-card">
-      <div class="stat-card-header">
-        <div class="stat-card-icon primary">
-          <i class="fas fa-folder-open"></i>
-        </div>
-      </div>
-      <div class="stat-card-value">{{ projects.count }}</div>
-      <div class="stat-card-label">Total Projects</div>
+    <div class="pd-actions">
+      <a href="{% url 'client_update' client.pk %}" class="btn btn-primary btn-sm">
+        <i class="fas fa-edit"></i> Edit
+      </a>
+      <a href="{% url 'project_create' %}?client={{ client.pk }}" class="btn btn-outline-primary btn-sm">
+        <i class="fas fa-folder-plus"></i> Project
+      </a>
+      <a href="{% url 'quote_create' %}?client={{ client.pk }}" class="btn btn-outline-primary btn-sm">
+        <i class="fas fa-file-alt"></i> Quote
+      </a>
+      <a href="{% url 'client_relationship_pdf' client.pk %}" target="_blank" class="btn btn-outline-primary btn-sm">
+        <i class="fas fa-file-pdf"></i> Summary
+      </a>
+      <a href="{% url 'client_delete' client.pk %}" class="btn btn-danger btn-sm">
+        <i class="fas fa-trash-alt"></i> Delete
+      </a>
     </div>
-  </div>
-  <div class="col-3 col-md-6 col-sm-12" style="padding: 0.75rem;">
-    <div class="card stat-card">
-      <div class="stat-card-header">
-        <div class="stat-card-icon success">
-          <i class="fas fa-rupee-sign"></i>
-        </div>
-      </div>
-      <div class="stat-card-value">&#8377;{{ total_revenue|floatformat:2|default:"0" }}</div>
-      <div class="stat-card-label">Total Revenue</div>
-    </div>
-  </div>
-  <div class="col-3 col-md-6 col-sm-12" style="padding: 0.75rem;">
-    <div class="card stat-card">
-      <div class="stat-card-header">
-        <div class="stat-card-icon warning">
-          <i class="fas fa-file-invoice"></i>
-        </div>
-      </div>
-      <div class="stat-card-value">&#8377;{{ pending_amount|floatformat:2|default:"0" }}</div>
-      <div class="stat-card-label">Pending Amount</div>
-    </div>
-  </div>
-  <div class="col-3 col-md-6 col-sm-12" style="padding: 0.75rem;">
-    <div class="card stat-card">
-      <div class="stat-card-header">
-        <div class="stat-card-icon info">
-          <i class="fas fa-key"></i>
-        </div>
-      </div>
-      <div class="stat-card-value">{{ credentials_count|default:"0" }}</div>
-      <div class="stat-card-label">Credentials</div>
-    </div>
-  </div>
-</div>
 
-<!-- Main Content Grid -->
-<div class="row">
-  <!-- Left Column - Client Details -->
-  <div class="col-4 col-md-12" style="padding: 0.75rem;">
+    {# Money as one ledger column, not four boxes fighting for width. #}
+    <div class="pd-ledger">
+      <div class="pd-ledger__row">
+        <span class="pd-ledger__label">Projects</span>
+        <span class="pd-ledger__value">{{ projects.count }}</span>
+      </div>
+      <div class="pd-ledger__row is-good">
+        <span class="pd-ledger__label">Total revenue</span>
+        <span class="pd-ledger__value">&#8377;{{ total_revenue|floatformat:2|default:"0" }}</span>
+      </div>
+      <div class="pd-ledger__row is-warn">
+        <span class="pd-ledger__label">Pending</span>
+        <span class="pd-ledger__value">&#8377;{{ pending_amount|floatformat:2|default:"0" }}</span>
+      </div>
+      <div class="pd-ledger__row">
+        <span class="pd-ledger__label">Credentials</span>
+        <span class="pd-ledger__value">{{ credentials_count|default:"0" }}</span>
+      </div>
+    </div>
+    </div>
+  </header>
+
+  <section class="stage-panel sp-col-l">
     <!-- Contact Information -->
     <div class="card mb-4">
       <div class="card-header">
@@ -268,6 +232,9 @@
       </div>
     </div>
 
+  </section>
+
+  <section class="stage-panel sp-col-l">
     <!-- Client Portal Access -->
     <div class="card mt-4">
       <div class="card-header">
@@ -335,39 +302,10 @@
         {% endif %}
       </div>
     </div>
-  </div>
+  </section>
 
-  <!-- Right Column - Projects, Invoices, Quotes, Payments -->
-  <div class="col-8 col-md-12" style="padding: 0.75rem;">
-    <!-- Tabs -->
-    <div class="card">
-      <div class="card-header" style="padding-bottom: 0; border-bottom: none;">
-        <div class="tabs">
-          <button class="tab-item active" data-tab="projectsTab" onclick="switchTab('projectsTab')">
-            <i class="fas fa-folder-open me-2"></i>Projects
-          </button>
-          <button class="tab-item" data-tab="invoicesTab" onclick="switchTab('invoicesTab')">
-            <i class="fas fa-file-invoice-dollar me-2"></i>Invoices
-          </button>
-          <button class="tab-item" data-tab="quotesTab" onclick="switchTab('quotesTab')">
-            <i class="fas fa-file-alt me-2"></i>Quotes
-          </button>
-          <button class="tab-item" data-tab="paymentsTab" onclick="switchTab('paymentsTab')">
-            <i class="fas fa-credit-card me-2"></i>Payments
-          </button>
-          <button class="tab-item" data-tab="licensesTab" onclick="switchTab('licensesTab')">
-            <i class="fas fa-key me-2"></i>Licenses
-          </button>
-          <button class="tab-item" data-tab="retaileaseTab" onclick="switchTab('retaileaseTab')">
-            <i class="fas fa-mobile-alt me-2"></i>RetailEase App
-          </button>
-          <button class="tab-item" data-tab="backupsTab" onclick="switchTab('backupsTab')">
-            <i class="fas fa-cloud-upload-alt me-2"></i>Backups
-          </button>
-        </div>
-      </div>
-
-      <!-- Projects Tab -->
+  <section class="stage-panel sp-col-r">
+    <h2 class="stage-panel__kicker">Projects</h2>
       <div class="tab-content" id="projectsTab">
         <div class="table-wrapper">
           <table class="table">
@@ -410,8 +348,11 @@
         </div>
       </div>
 
-      <!-- Invoices Tab -->
-      <div class="tab-content d-none" id="invoicesTab">
+  </section>
+
+  <section class="stage-panel sp-col-r">
+    <h2 class="stage-panel__kicker">Invoices</h2>
+      <div class="tab-content" id="invoicesTab">
         <div class="table-wrapper">
           <table class="table">
             <thead>
@@ -448,8 +389,11 @@
         </div>
       </div>
 
-      <!-- Quotes Tab -->
-      <div class="tab-content d-none" id="quotesTab">
+  </section>
+
+  <section class="stage-panel sp-col-r">
+    <h2 class="stage-panel__kicker">Quotes</h2>
+      <div class="tab-content" id="quotesTab">
         <div class="table-wrapper">
           <table class="table">
             <thead>
@@ -486,8 +430,11 @@
         </div>
       </div>
 
-      <!-- Payments Tab -->
-      <div class="tab-content d-none" id="paymentsTab">
+  </section>
+
+  <section class="stage-panel sp-col-c">
+    <h2 class="stage-panel__kicker">Payments</h2>
+      <div class="tab-content" id="paymentsTab">
         <div class="table-wrapper">
           <table class="table">
             <thead>
@@ -518,8 +465,11 @@
         </div>
       </div>
 
-      <!-- Licenses Tab -->
-      <div class="tab-content d-none" id="licensesTab">
+  </section>
+
+  <section class="stage-panel sp-col-l">
+    <h2 class="stage-panel__kicker">Licenses</h2>
+      <div class="tab-content" id="licensesTab">
         <div class="table-wrapper">
           <table class="table">
             <thead>
@@ -569,8 +519,11 @@
         </div>
       </div>
 
-      <!-- RetailEase App Tab -->
-      <div class="tab-content d-none" id="retaileaseTab">
+  </section>
+
+  <section class="stage-panel sp-wide">
+    <h2 class="stage-panel__kicker">RetailEase App</h2>
+      <div class="tab-content" id="retaileaseTab">
         <form method="post" action="{% url 'client_update_retailease' client.pk %}">
           {% csrf_token %}
           <div class="card-body">
@@ -729,12 +682,11 @@
           </div>
         </form>
       </div>
-    </div>
-  </div>
-</div>
+  </section>
 
-      <!-- Backups Tab -->
-      <div class="tab-content d-none" id="backupsTab">
+  <section class="stage-panel sp-wide">
+    <h2 class="stage-panel__kicker">Backups</h2>
+      <div class="tab-content" id="backupsTab">
         <div class="card">
           <div class="card-header">
             <h3 class="card-title">
@@ -814,9 +766,12 @@
           </div>
         </div>
       </div>
+  </section>
+</div>{# /pstage #}
 {% endblock %}
 
 {% block extra_js %}
+<script src="{% static 'js/pulse-stage.js' %}?v=1" defer></script>
 <script>
 function switchTab(tabId) {
   // Hide all tab contents

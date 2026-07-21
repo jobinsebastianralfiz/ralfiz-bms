@@ -83,111 +83,74 @@
 {% endblock %}
 
 {% block content %}
-<!-- Page Header -->
-<div class="page-header">
-  <div class="d-flex align-items-center gap-4">
-    {# The jewel this project is on the constellation, at hero scale. #}
-    <span class="pulse-orb-chip st-{{ project.status }}" aria-hidden="true"></span>
-    <div>
+{# PULSE stage: the project at the centre of its own space, facets floating around it. #}
+<div class="pstage" id="pulse-stage" data-status="{{ project.status }}">
+  <canvas id="stage-field" aria-hidden="true"></canvas>
+
+  <header class="pstage-center">
+    <canvas id="stage-orb" width="320" height="320" aria-hidden="true"></canvas>
+    <div class="pstage-id">
       <p class="pulse-kicker mb-0">Project</p>
-      <div class="d-flex align-items-center gap-3 mb-2">
-        <h1 class="page-title mb-0">{{ project.name }}</h1>
+      <h1 class="pd-title">{{ project.name }}</h1>
+      <div class="pd-chips">
         <span class="status-badge {{ project.status }}">{{ project.get_status_display }}</span>
         {% if project.priority %}
         <span class="priority-badge {{ project.priority }}">{{ project.get_priority_display }} Priority</span>
         {% endif %}
+        <span class="badge badge-info">{{ project.get_project_type_display }}</span>
       </div>
-      <p class="page-subtitle mb-0">
-        <a href="{% url 'client_detail' project.client.pk %}" class="text-primary">
+      <p class="pd-meta">
+        <a href="{% url 'client_detail' project.client.pk %}">
           <i class="fas fa-building me-1"></i>{{ project.client.name }}
         </a>
         {% if project.start_date %}
-        <span class="mx-2">|</span>
-        <i class="fas fa-calendar me-1"></i>Started {{ project.start_date|date:"d M Y" }}
+        <span class="pd-meta__dot">&middot;</span>Started {{ project.start_date|date:"d M Y" }}
         {% endif %}
-        <span class="mx-2">|</span>
-        <span class="badge badge-info">{{ project.get_project_type_display }}</span>
       </p>
-    </div>
-  </div>
-  <div class="page-actions">
-    {% if project.status == 'completed' %}
-    <a href="{% url 'project_completion_certificate' project.pk %}" class="btn btn-outline-success">
-      <i class="fas fa-certificate"></i>
-      Completion Certificate
-    </a>
-    {% endif %}
-    <a href="{% url 'credential_create' %}?project={{ project.pk }}" class="btn btn-outline-primary">
-      <i class="fas fa-key"></i>
-      Add Credential
-    </a>
-    <a href="{% url 'invoice_create' %}?project={{ project.pk }}" class="btn btn-outline-primary">
-      <i class="fas fa-file-invoice-dollar"></i>
-      Create Invoice
-    </a>
-    <a href="{% url 'project_update' project.pk %}" class="btn btn-primary">
-      <i class="fas fa-edit"></i>
-      Edit Project
-    </a>
-    <a href="{% url 'project_delete' project.pk %}" class="btn btn-danger">
-      <i class="fas fa-trash-alt"></i>
-      Delete
-    </a>
-  </div>
-</div>
 
-<!-- Stats Cards -->
-<div class="row mb-4">
-  <div class="col-3 col-md-6 col-sm-12" style="padding: 0.75rem;">
-    <div class="card stat-card">
-      <div class="stat-card-header">
-        <div class="stat-card-icon primary">
-          <i class="fas fa-rupee-sign"></i>
-        </div>
-      </div>
-      <div class="stat-card-value">&#8377;{{ total_project_cost|floatformat:2|default:"0" }}</div>
-      <div class="stat-card-label">Project Cost</div>
+    <div class="pd-actions">
+      <a href="{% url 'project_update' project.pk %}" class="btn btn-primary btn-sm">
+        <i class="fas fa-edit"></i> Edit
+      </a>
+      <a href="{% url 'credential_create' %}?project={{ project.pk }}" class="btn btn-outline-primary btn-sm">
+        <i class="fas fa-key"></i> Credential
+      </a>
+      <a href="{% url 'invoice_create' %}?project={{ project.pk }}" class="btn btn-outline-primary btn-sm">
+        <i class="fas fa-file-invoice-dollar"></i> Invoice
+      </a>
+      {% if project.status == 'completed' %}
+      <a href="{% url 'project_completion_certificate' project.pk %}" class="btn btn-outline-primary btn-sm">
+        <i class="fas fa-certificate"></i> Certificate
+      </a>
+      {% endif %}
+      <a href="{% url 'project_delete' project.pk %}" class="btn btn-danger btn-sm">
+        <i class="fas fa-trash-alt"></i> Delete
+      </a>
     </div>
-  </div>
-  <div class="col-3 col-md-6 col-sm-12" style="padding: 0.75rem;">
-    <div class="card stat-card">
-      <div class="stat-card-header">
-        <div class="stat-card-icon success">
-          <i class="fas fa-check-circle"></i>
-        </div>
-      </div>
-      <div class="stat-card-value">&#8377;{{ amount_received|floatformat:2|default:"0" }}</div>
-      <div class="stat-card-label">Amount Received</div>
-    </div>
-  </div>
-  <div class="col-3 col-md-6 col-sm-12" style="padding: 0.75rem;">
-    <div class="card stat-card">
-      <div class="stat-card-header">
-        <div class="stat-card-icon warning">
-          <i class="fas fa-clock"></i>
-        </div>
-      </div>
-      <div class="stat-card-value">&#8377;{{ pending_amount|floatformat:2|default:"0" }}</div>
-      <div class="stat-card-label">Pending Amount</div>
-    </div>
-  </div>
-  <div class="col-3 col-md-6 col-sm-12" style="padding: 0.75rem;">
-    <div class="card stat-card">
-      <div class="stat-card-header">
-        <div class="stat-card-icon info">
-          <i class="fas fa-key"></i>
-        </div>
-      </div>
-      <div class="stat-card-value">{{ credentials.count }}</div>
-      <div class="stat-card-label">Credentials</div>
-    </div>
-  </div>
-</div>
 
-<!-- Main Content Grid -->
-<div class="row">
-  <!-- Left Column - Project Details -->
-  <div class="col-4 col-md-12" style="padding: 0.75rem;">
+    {# Money as one ledger column, not four boxes fighting for width. #}
+    <div class="pd-ledger">
+      <div class="pd-ledger__row">
+        <span class="pd-ledger__label">Project cost</span>
+        <span class="pd-ledger__value">&#8377;{{ total_project_cost|floatformat:2|default:"0" }}</span>
+      </div>
+      <div class="pd-ledger__row is-good">
+        <span class="pd-ledger__label">Received</span>
+        <span class="pd-ledger__value">&#8377;{{ amount_received|floatformat:2|default:"0" }}</span>
+      </div>
+      <div class="pd-ledger__row is-warn">
+        <span class="pd-ledger__label">Pending</span>
+        <span class="pd-ledger__value">&#8377;{{ pending_amount|floatformat:2|default:"0" }}</span>
+      </div>
+      <div class="pd-ledger__row">
+        <span class="pd-ledger__label">Credentials</span>
+        <span class="pd-ledger__value">{{ credentials.count }}</span>
+      </div>
+    </div>
+    </div>
+  </header>
+
+  <section class="stage-panel sp-dossier">
     <!-- Project Information -->
     <div class="card mb-4">
       <div class="card-header">
@@ -244,6 +207,9 @@
       </div>
     </div>
 
+  </section>
+
+  <section class="stage-panel sp-team">
     <!-- Team Members -->
     <div class="card mb-4">
       <div class="card-header">
@@ -279,6 +245,10 @@
       </div>
     </div>
 
+  </section>
+
+  {% if project.live_url or project.staging_url or project.notes %}
+  <section class="stage-panel sp-links">
     <!-- Live URLs -->
     {% if project.live_url or project.staging_url %}
     <div class="card mb-4">
@@ -321,36 +291,12 @@
       </div>
     </div>
     {% endif %}
-  </div>
+  </section>
+  {% endif %}
 
-  <!-- Right Column - Tabs -->
-  <div class="col-8 col-md-12" style="padding: 0.75rem;">
-    <!-- Tabs -->
-    <div class="card">
-      <div class="card-header" style="padding-bottom: 0; border-bottom: none;">
-        <div class="tabs">
-          <button class="tab-item active" data-tab="credentialsTab" onclick="switchTab('credentialsTab')">
-            <i class="fas fa-key me-2"></i>Credentials
-          </button>
-          <button class="tab-item" data-tab="invoicesTab" onclick="switchTab('invoicesTab')">
-            <i class="fas fa-file-invoice-dollar me-2"></i>Invoices
-          </button>
-          <button class="tab-item" data-tab="quotesTab" onclick="switchTab('quotesTab')">
-            <i class="fas fa-file-alt me-2"></i>Quotes
-          </button>
-          <button class="tab-item" data-tab="paymentsTab" onclick="switchTab('paymentsTab')">
-            <i class="fas fa-credit-card me-2"></i>Payments
-          </button>
-          <button class="tab-item" data-tab="amcTab" onclick="switchTab('amcTab')">
-            <i class="fas fa-sync-alt me-2"></i>AMC
-          </button>
-          <button class="tab-item" data-tab="portalTab" onclick="switchTab('portalTab')">
-            <i class="fas fa-globe me-2"></i>Client Portal
-          </button>
-        </div>
-      </div>
-
-      <!-- Credentials Tab -->
+  <section class="stage-panel sp-credentials">
+    <h2 class="stage-panel__kicker">Credentials</h2>
+      <!-- Credentials -->
       <div class="tab-content" id="credentialsTab">
         <div class="d-flex justify-content-between align-items-center p-3 border-bottom">
           <div class="text-sm text-muted">{{ credentials.count }} credentials stored</div>
@@ -417,8 +363,11 @@
         </div>
       </div>
 
-      <!-- Invoices Tab -->
-      <div class="tab-content d-none" id="invoicesTab">
+  </section>
+
+  <section class="stage-panel sp-invoices">
+    <h2 class="stage-panel__kicker">Invoices</h2>
+      <div class="tab-content" id="invoicesTab">
         <div class="table-wrapper">
           <table class="table">
             <thead>
@@ -455,8 +404,11 @@
         </div>
       </div>
 
-      <!-- Quotes Tab -->
-      <div class="tab-content d-none" id="quotesTab">
+  </section>
+
+  <section class="stage-panel sp-quotes">
+    <h2 class="stage-panel__kicker">Quotes</h2>
+      <div class="tab-content" id="quotesTab">
         <div class="table-wrapper">
           <table class="table">
             <thead>
@@ -493,8 +445,11 @@
         </div>
       </div>
 
-      <!-- Payments Tab -->
-      <div class="tab-content d-none" id="paymentsTab">
+  </section>
+
+  <section class="stage-panel sp-payments">
+    <h2 class="stage-panel__kicker">Payments</h2>
+      <div class="tab-content" id="paymentsTab">
         <div class="table-wrapper">
           <table class="table">
             <thead>
@@ -525,8 +480,11 @@
         </div>
       </div>
 
-      <!-- AMC Tab -->
-      <div class="tab-content d-none" id="amcTab">
+  </section>
+
+  <section class="stage-panel sp-amc">
+    <h2 class="stage-panel__kicker">AMC</h2>
+      <div class="tab-content" id="amcTab">
         <div class="d-flex justify-content-between align-items-center p-3 border-bottom">
           <div class="text-sm text-muted">{{ amc_contracts.count }} AMC contract{{ amc_contracts.count|pluralize }}</div>
           <a href="{% url 'amc_create' %}?project={{ project.pk }}" class="btn btn-sm btn-primary">
@@ -607,8 +565,11 @@
         {% endif %}
       </div>
 
-      <!-- Client Portal Tab -->
-      <div class="tab-content d-none" id="portalTab">
+  </section>
+
+  <section class="stage-panel sp-activity">
+    <h2 class="stage-panel__kicker">Client Portal &amp; Activity</h2>
+      <div class="tab-content" id="portalTab">
         <!-- Post Update Form -->
         <div class="p-3 border-bottom" style="background: var(--bg-hover);">
           <h4 style="font-size: 0.9375rem; font-weight: 600; margin-bottom: 0.75rem;">
@@ -730,9 +691,8 @@
         </div>
         {% endif %}
       </div>
-    </div>
-  </div>
-</div>
+  </section>
+</div>{# /pstage #}
 {% endblock %}
 
 <!-- Credential Renewal Modal -->
@@ -770,6 +730,7 @@
 </div>
 
 {% block extra_js %}
+<script src="{% static 'js/pulse-stage.js' %}?v=1" defer></script>
 <script>
 function switchTab(tabId) {
   document.querySelectorAll('.tab-content').forEach(content => {
