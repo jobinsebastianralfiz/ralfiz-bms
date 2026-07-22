@@ -233,6 +233,6 @@ PULSE_EMBEDDING_MODEL = os.getenv('PULSE_EMBEDDING_MODEL', 'voyage-4')
 # pgvector column is created at this dimension by pulse migration 0002.
 PULSE_EMBEDDING_DIM = int(os.getenv('PULSE_EMBEDDING_DIM', '1024'))
 
-# Weather for the dashboard.
-# Read but NOT yet used -- the weather tool is not built.
+# Weather via OpenWeather, surfaced through the PULSE get_weather tool.
 OPENWEATHER_API_KEY = os.getenv('OPENWEATHER_API_KEY', '')
+PULSE_WEATHER_CITY = os.getenv('PULSE_WEATHER_CITY', 'Kochi,IN')

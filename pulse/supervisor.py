@@ -68,6 +68,14 @@ class AttendanceArgs(BaseModel):
     )
 
 
+class WeatherArgs(BaseModel):
+    city: Optional[str] = Field(
+        default=None,
+        description='City to report on, e.g. "Kochi" or "Mumbai,IN". Omit '
+                    'for the office city.',
+    )
+
+
 class SearchDocsArgs(BaseModel):
     query: str = Field(
         description='What to look for, phrased as the user asked it.'
@@ -163,6 +171,12 @@ TOOL_SPECS = {
         'the user names a project, resolve it with find_entity first and '
         'pass project_id.',
         SearchDocsArgs,
+    ),
+    'get_weather': (
+        'Call when asked about the weather, temperature, rain, humidity or '
+        'wind -- "what is the weather", "is it raining". Defaults to the '
+        'office city unless the user names one.',
+        WeatherArgs,
     ),
 }
 

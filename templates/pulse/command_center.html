@@ -7,7 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="{% static 'css/pulse.css' %}?v=2">
+<link rel="stylesheet" href="{% static 'css/pulse.css' %}?v=3">
 </head>
 <body class="pulse-body">
 {% csrf_token %}
@@ -139,6 +139,9 @@
       <button class="pulse-mic" id="pulse-mic" type="button" aria-label="Speak your question" title="Speak your question">
         <svg viewBox="0 0 20 20" aria-hidden="true"><rect x="7.4" y="2.5" width="5.2" height="9" rx="2.6"/><path d="M4.5 9.2a5.5 5.5 0 0 0 11 0M10 14.7v2.8"/></svg>
       </button>
+      <button class="pulse-mic" id="pulse-speaker" type="button" aria-label="Read answers aloud" title="Read answers aloud">
+        <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M4 7.6v4.8h3.2L11.4 16V4L7.2 7.6H4z"/><path d="M13.6 7.4a3.6 3.6 0 0 1 0 5.2M15.6 5.2a6.6 6.6 0 0 1 0 9.6"/></svg>
+      </button>
       <button class="pulse-execute" id="pulse-execute" type="submit">Execute</button>
     </form>
     <p class="pulse-command__hint" id="pulse-hint">Owner and partner accounts only. Answers come from live records.</p>
@@ -147,6 +150,6 @@
 
 <script id="pulse-bootstrap" type="application/json">{{ summary_json|safe }}</script>
 <script src="{% static 'js/pulse.js' %}" defer></script>
-<script src="{% static 'js/pulse-ask.js' %}" defer></script>
+<script src="{% static 'js/pulse-ask.js' %}?v=2" defer></script>
 </body>
 </html>

@@ -16,6 +16,7 @@
   var input     = document.getElementById('pulse-input');
   var execBtn   = document.getElementById('pulse-execute');
   var micBtn    = document.getElementById('pulse-mic');
+  var speakBtn  = document.getElementById('pulse-speaker');
   var hint      = document.getElementById('pulse-hint');
   var panel     = document.getElementById('pulse-response');
   var body      = document.getElementById('pulse-response-body');
@@ -48,8 +49,59 @@
     requestAnimationFrame(function () { panel.classList.add('is-open'); });
   }
 
+  /* ── Voice output ───────────────────────────────────────────────── */
+  /* Read-back is on by default and remembered. The utterance prefers an
+     en-IN voice to match the recognition language. */
+
+  var canSpeak = 'speechSynthesis' in window
+    && 'SpeechSynthesisUtterance' in window;
+  var speakOn = true;
+  try { speakOn = localStorage.getItem('pulseSpeak') !== '0'; } catch (e) {}
+
+  function reflectSpeaker() {
+    if (speakBtn) speakBtn.classList.toggle('is-off', !speakOn);
+  }
+
+  function speak(text) {
+    if (!canSpeak || !speakOn || !text) return;
+    window.speechSynthesis.cancel();
+    var utterance = new SpeechSynthesisUtterance(text);
+    utterance.lang = 'en-IN';
+    var voices = window.speechSynthesis.getVoices();
+    for (var i = 0; i < voices.length; i++) {
+      if (voices[i].lang && voices[i].lang.replace('_', '-') === 'en-IN') {
+        utterance.voice = voices[i];
+        break;
+      }
+    }
+    window.speechSynthesis.speak(utterance);
+  }
+
+  function hush() {
+    if (canSpeak) window.speechSynthesis.cancel();
+  }
+
+  if (speakBtn) {
+    if (!canSpeak) {
+      speakBtn.classList.add('is-unavailable');
+      speakBtn.disabled = true;
+      speakBtn.title = 'Speech output is not supported in this browser';
+    } else {
+      reflectSpeaker();
+      speakBtn.addEventListener('click', function () {
+        speakOn = !speakOn;
+        try { localStorage.setItem('pulseSpeak', speakOn ? '1' : '0'); } catch (e) {}
+        reflectSpeaker();
+        if (!speakOn) hush();
+        setHint(speakOn ? 'PULSE will read answers aloud.'
+                        : 'PULSE is muted — answers stay on screen.');
+      });
+    }
+  }
+
   function ask(query) {
     if (execBtn) execBtn.disabled = true;
+    hush();
     setHint('Working through live records…');
 
     fetch('/api/pulse/ask/', {
@@ -66,6 +118,7 @@
       .then(function (r) {
         if (r.status === 200) {
           show(r.body.answer || 'No answer came back.', r.body.intent, false);
+          speak(r.body.answer);
           if (typeof window.pulseOnAnswer === 'function') {
             try { window.pulseOnAnswer(r.body); } catch (e) { /* page hook failed */ }
           }
@@ -98,6 +151,7 @@
 
   if (closeBtn) {
     closeBtn.addEventListener('click', function () {
+      hush();
       panel.classList.remove('is-open');
       setTimeout(function () { panel.hidden = true; }, 380);
     });

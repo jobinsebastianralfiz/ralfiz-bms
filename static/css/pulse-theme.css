@@ -987,6 +987,7 @@
 .pstage-command .pulse-mic:hover { color: var(--text-primary, #e9f2f4); background: rgba(47, 212, 212, .12); }
 .pstage-command .pulse-mic.is-listening { color: var(--p-gold, #e8c07a); background: rgba(232, 192, 122, .16); }
 .pstage-command .pulse-mic.is-unavailable { opacity: .3; cursor: not-allowed; }
+.pstage-command .pulse-mic.is-off { opacity: .38; }
 
 .pstage-command .pulse-execute {
   padding: 10px 22px;

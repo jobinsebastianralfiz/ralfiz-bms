@@ -992,6 +992,60 @@ def search_documents(scope, query, project_id=None, k=5):
 
 
 # --------------------------------------------------------------------------
+# Weather. The one tool that leaves the building: OpenWeather current
+# conditions for the office city (settings.PULSE_WEATHER_CITY) or a city the
+# user names. Gated like everything else so the registry stays uniform.
+# --------------------------------------------------------------------------
+
+
+def get_weather(scope, city=None):
+    """Current weather via OpenWeather. Returns an error dict, not a raise,
+    when unconfigured or unreachable -- the model can relay that plainly."""
+    scope.require_business()
+
+    import requests
+    from django.conf import settings
+
+    api_key = getattr(settings, 'OPENWEATHER_API_KEY', '')
+    if not api_key:
+        return {'error': 'OPENWEATHER_API_KEY is not set on the server, so '
+                         'PULSE cannot fetch weather.'}
+
+    city = (city or '').strip() or getattr(settings, 'PULSE_WEATHER_CITY', 'Kochi,IN')
+
+    try:
+        response = requests.get(
+            'https://api.openweathermap.org/data/2.5/weather',
+            params={'q': city, 'appid': api_key, 'units': 'metric'},
+            timeout=10,
+        )
+    except requests.RequestException:
+        return {'error': 'Could not reach the weather service.', 'city': city}
+
+    if response.status_code == 404:
+        return {'error': 'No weather data for %r. Name a city like '
+                         '"Kochi" or "Kochi,IN".' % city}
+    if response.status_code != 200:
+        return {'error': 'Weather service returned HTTP %d.' % response.status_code,
+                'city': city}
+
+    payload = response.json()
+    weather = (payload.get('weather') or [{}])[0]
+    main = payload.get('main') or {}
+    wind = payload.get('wind') or {}
+
+    return {
+        'city': payload.get('name') or city,
+        'description': weather.get('description', ''),
+        'temp_c': round(main['temp'], 1) if 'temp' in main else None,
+        'feels_like_c': round(main['feels_like'], 1) if 'feels_like' in main else None,
+        'humidity_pct': main.get('humidity'),
+        # OpenWeather reports m/s with metric units.
+        'wind_kmh': round(wind['speed'] * 3.6, 1) if 'speed' in wind else None,
+    }
+
+
+# --------------------------------------------------------------------------
 # The registry. The supervisor may call these and nothing else.
 # --------------------------------------------------------------------------
 
@@ -1010,4 +1064,5 @@ TOOL_REGISTRY = {
     'get_attendance_summary': get_attendance_summary,
     'get_dues_and_renewals': get_dues_and_renewals,
     'search_documents': search_documents,
+    'get_weather': get_weather,
 }
