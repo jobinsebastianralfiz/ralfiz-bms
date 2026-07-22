@@ -125,8 +125,7 @@
           <span class="graph-metric__note">{{ m.note }}</span>
         </a>
       {% endfor %}
-      {# Weather joins the row once /api/pulse/weather/ answers; stays hidden
-         if the key is missing or the service is down. #}
+      {# Weather fills in once /api/pulse/weather/ answers; hidden if unconfigured. #}
       <a class="graph-metric" id="graph-weather" hidden>
         <span class="graph-metric__label" data-w="label">Weather</span>
         <span class="graph-metric__value" data-w="value">&mdash;</span>
