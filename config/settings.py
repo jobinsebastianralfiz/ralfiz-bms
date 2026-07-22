@@ -229,6 +229,9 @@ PULSE_MODEL = os.getenv('PULSE_MODEL', 'claude-opus-4-8')
 # embeddings endpoint, so this is a separate provider and a separate key.
 VOYAGE_API_KEY = os.getenv('VOYAGE_API_KEY', '')
 PULSE_EMBEDDING_MODEL = os.getenv('PULSE_EMBEDDING_MODEL', 'voyage-4')
+# Must match the embedding model's output width (voyage models: 1024). The
+# pgvector column is created at this dimension by pulse migration 0002.
+PULSE_EMBEDDING_DIM = int(os.getenv('PULSE_EMBEDDING_DIM', '1024'))
 
 # Weather for the dashboard.
 # Read but NOT yet used -- the weather tool is not built.

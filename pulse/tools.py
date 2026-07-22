@@ -937,6 +937,61 @@ def get_dashboard_metrics(scope):
 
 
 # --------------------------------------------------------------------------
+# Document search (Phase 2 RAG). Unlike everything above, this reads the
+# pulse app's own tables; the scope gate is identical.
+# --------------------------------------------------------------------------
+
+
+def search_documents(scope, query, project_id=None, k=5):
+    """Semantic search over ingested documents, with citations.
+
+    Returns the top-k chunks best matching the query, each carrying enough
+    provenance (document title, source, project, chunk number) for the model
+    to cite and for the UI to link.
+    """
+    scope.require_business()
+
+    from .embeddings import get_provider
+    from .vectorstore import get_store
+
+    k = max(1, min(int(k), 20))
+
+    resolved_project = None
+    if project_id:
+        resolved_project = Project.objects.filter(
+            id=_parse_uuid(project_id, 'project_id')
+        ).first()
+        if resolved_project is None:
+            return {'error': 'No project with that ID.', 'results': []}
+
+    provider = get_provider()
+    store = get_store()
+    hits = store.search(
+        provider.embed_query(query),
+        k=k,
+        project_id=resolved_project.id if resolved_project else None,
+    )
+
+    return {
+        'query': query,
+        'project': resolved_project.name if resolved_project else None,
+        'results': [
+            {
+                'document_id': str(chunk.document_id),
+                'title': chunk.document.title,
+                'source': chunk.document.source,
+                'project': chunk.document.project.name,
+                'chunk': chunk.index + 1,
+                'citation': '%s §%d' % (chunk.document.title, chunk.index + 1),
+                'text': chunk.text,
+                'score': round(score, 4),
+            }
+            for chunk, score in hits
+        ],
+    }
+
+
+# --------------------------------------------------------------------------
 # The registry. The supervisor may call these and nothing else.
 # --------------------------------------------------------------------------
 
@@ -954,4 +1009,5 @@ TOOL_REGISTRY = {
     'get_pending_leave_requests': get_pending_leave_requests,
     'get_attendance_summary': get_attendance_summary,
     'get_dues_and_renewals': get_dues_and_renewals,
+    'search_documents': search_documents,
 }

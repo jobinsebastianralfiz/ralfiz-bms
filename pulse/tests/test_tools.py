@@ -39,6 +39,7 @@ class PermissionGateTests(TestCase):
             'get_project_summary': {'project_id': '00000000-0000-0000-0000-000000000000'},
             'get_team_for_project': {'project_id': '00000000-0000-0000-0000-000000000000'},
             'get_lead_quotes': {'lead_id': 1},
+            'search_documents': {'query': 'anything'},
         }
         for name, fn in tools.TOOL_REGISTRY.items():
             with self.subTest(tool=name):

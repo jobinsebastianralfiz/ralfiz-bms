@@ -23,7 +23,12 @@ from rest_framework.views import APIView
 from core.models import Project
 
 from .scoping import resolve_scope
-from .serializers import AskRequestSerializer, AskResponseSerializer
+from .serializers import (
+    AskRequestSerializer,
+    AskResponseSerializer,
+    DocumentIngestSerializer,
+    DocumentSerializer,
+)
 from .supervisor import PulseConfigurationError, ask
 from .tools import (
     ACTIVE_PROJECT_STATUSES,
@@ -75,6 +80,112 @@ class AskView(APIView):
             return Response({'detail': str(exc)}, status=status.HTTP_400_BAD_REQUEST)
 
         return Response(result, status=status.HTTP_200_OK)
+
+
+def _document_payload(document, chunk_count=None):
+    return {
+        'id': str(document.id),
+        'project': document.project.name,
+        'title': document.title,
+        'source': document.source,
+        'chunks': (
+            chunk_count if chunk_count is not None else document.chunks.count()
+        ),
+        'created_at': document.created_at.isoformat(),
+    }
+
+
+class DocumentsView(APIView):
+    """Ingest into and list the PULSE document store.
+
+    POST chunks + embeds text (or an uploaded plain-text file) against a
+    project; GET lists what has been ingested. Owner/partner only, same gate
+    as every other PULSE surface.
+    """
+
+    permission_classes = [IsAuthenticated]
+
+    @extend_schema(
+        responses={200: DocumentSerializer(many=True)},
+        tags=['PULSE'],
+        summary='List ingested documents',
+    )
+    def get(self, request):
+        scope = resolve_scope(request.user)
+        scope.require_business()
+
+        from .models import Document
+
+        documents = Document.objects.select_related('project')
+        project_id = request.GET.get('project')
+        if project_id:
+            documents = documents.filter(project_id=project_id)
+        return Response([_document_payload(d) for d in documents])
+
+    @extend_schema(
+        request=DocumentIngestSerializer,
+        responses={201: DocumentSerializer},
+        tags=['PULSE'],
+        summary='Ingest a document for semantic search',
+    )
+    def post(self, request):
+        serializer = DocumentIngestSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        data = serializer.validated_data
+
+        scope = resolve_scope(request.user)
+        scope.require_business()
+
+        project = Project.objects.filter(id=data['project_id']).first()
+        if project is None:
+            return Response(
+                {'detail': 'No project with that ID.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        text = data.get('text', '')
+        source = data.get('source', '')
+        upload = data.get('file')
+        if upload is not None:
+            from .ingestion import TEXT_EXTENSIONS
+
+            name = upload.name or ''
+            if not name.lower().endswith(TEXT_EXTENSIONS):
+                return Response(
+                    {'detail': 'Only plain-text files are supported: %s'
+                               % ', '.join(TEXT_EXTENSIONS)},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+            try:
+                text = upload.read().decode('utf-8', errors='replace')
+            except Exception:
+                return Response(
+                    {'detail': 'Could not read the uploaded file as text.'},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+            source = source or name
+        source = source or 'pasted text'
+
+        from .embeddings import EmbeddingConfigurationError
+        from .ingestion import ingest_document
+
+        try:
+            document = ingest_document(
+                scope, project, data['title'], text, source=source
+            )
+        except EmbeddingConfigurationError as exc:
+            logger.error('PULSE embeddings not configured: %s', exc)
+            return Response(
+                {'detail': str(exc)},
+                status=status.HTTP_503_SERVICE_UNAVAILABLE,
+            )
+        except ValueError as exc:
+            return Response({'detail': str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+
+        return Response(
+            _document_payload(document),
+            status=status.HTTP_201_CREATED,
+        )
 
 
 @method_decorator(login_required, name='dispatch')

@@ -68,6 +68,17 @@ class AttendanceArgs(BaseModel):
     )
 
 
+class SearchDocsArgs(BaseModel):
+    query: str = Field(
+        description='What to look for, phrased as the user asked it.'
+    )
+    project_id: Optional[str] = Field(
+        default=None,
+        description='UUID of a project to search within. Omit to search all documents.',
+    )
+    k: int = Field(default=5, description='How many passages to return (1-20).')
+
+
 #: name -> (description shown to the model, pydantic args schema or None)
 #:
 #: Descriptions are prescriptive about *when* to call, not just what the tool
@@ -144,6 +155,15 @@ TOOL_SPECS = {
         'on a given day. Defaults to today.',
         AttendanceArgs,
     ),
+    'search_documents': (
+        'Call when the question is about the CONTENT of notes, agreements, '
+        'meeting minutes, specs or other documents that were uploaded to '
+        'PULSE -- "what did we agree with X", "what does the spec say about '
+        'Y". Semantic search; returns matching passages with citations. If '
+        'the user names a project, resolve it with find_entity first and '
+        'pass project_id.',
+        SearchDocsArgs,
+    ),
 }
 
 SYSTEM_PROMPT = """You are PULSE, the command centre for Ralfiz Technologies' \
@@ -166,6 +186,9 @@ the closest tool and say explicitly what you actually measured.
 - Answer in two or three sentences. Lead with the number or the finding. The \
 structured data is returned to the interface separately, so do not reproduce \
 long lists in prose -- summarise and give the headline figures.
+- When the answer comes from search_documents, cite the source in the answer \
+using the citation field, e.g. (Hosting agreement §3). Only state what the \
+retrieved passages actually say; if they do not answer the question, say so.
 - Write plain sentences with no markdown. The interface renders your answer as \
 text, so asterisks, bullets and headings appear literally on screen.
 - Amounts are Indian Rupees. Group digits the Indian way: 3,06,950 not 306,950.
