@@ -62,6 +62,10 @@
     if (speakBtn) speakBtn.classList.toggle('is-off', !speakOn);
   }
 
+  /* The recogniser must not hear PULSE's own voice; the mic section fills
+     these in to pause/resume around each utterance. */
+  var voiceCtl = { pause: function () {}, resume: function () {} };
+
   function speak(text) {
     if (!canSpeak || !speakOn || !text) return;
     window.speechSynthesis.cancel();
@@ -74,6 +78,9 @@
         break;
       }
     }
+    utterance.onstart = voiceCtl.pause;
+    utterance.onend = voiceCtl.resume;
+    utterance.onerror = voiceCtl.resume;
     window.speechSynthesis.speak(utterance);
   }
 
@@ -157,7 +164,12 @@
     });
   }
 
-  /* ── Voice input ────────────────────────────────────────────────── */
+  /* ── Voice input: always listening, wake word "Pulse" ───────────── */
+  /* The engine runs continuously (mic button is a mute toggle, on by
+     default). Speech that begins with the wake word becomes a query;
+     everything else is ignored. A centre overlay animates while words are
+     being captured, and the recogniser pauses while PULSE reads an answer
+     so it never hears itself. */
 
   if (micBtn) {
     var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -168,61 +180,145 @@
     } else {
       var rec = new SR();
       rec.lang = 'en-IN';
-      rec.interimResults = false;
+      rec.continuous = true;
+      rec.interimResults = true;
       rec.maxAlternatives = 1;
-      var listening = false;
 
-      micBtn.addEventListener('click', function () {
-        if (listening) { rec.stop(); return; }
-        hush();
-        try {
-          rec.start();
-        } catch (e) {
-          // A stuck 'already started' session: reset and retry once.
-          try { rec.abort(); rec.start(); } catch (e2) {
-            show('The microphone could not start. Reload the page and try again.', null, true);
-          }
+      //: Common (mis)hearings of the wake word, anchored to the start.
+      var WAKE = /^\s*(?:hey\s+|ok\s+|okay\s+)?(?:pulse|puls|pols|paulse|pulls|paul's)\b[\s,.:;!-]*/i;
+
+      var live = true;          // the user wants the mic hot
+      try { live = localStorage.getItem('pulseLive') !== '0'; } catch (e) {}
+      var running = false;      // the engine is actually running
+      var suspended = false;    // paused while PULSE speaks
+      var restartTimer = null;
+
+      /* Centre stage animation, built here so every page gets it free. */
+      var overlay = document.createElement('div');
+      overlay.className = 'pulse-voice';
+      overlay.hidden = true;
+      overlay.innerHTML =
+        '<div class="pulse-voice__rings" aria-hidden="true">' +
+          '<span></span><span></span><span></span>' +
+          '<i class="pulse-voice__core"></i>' +
+          '<svg viewBox="0 0 20 20"><rect x="7.4" y="2.5" width="5.2" height="9" rx="2.6"/>' +
+          '<path d="M4.5 9.2a5.5 5.5 0 0 0 11 0M10 14.7v2.8"/></svg>' +
+        '</div>' +
+        '<p class="pulse-voice__text"></p>' +
+        '<p class="pulse-voice__hint">Listening &mdash; tap anywhere to dismiss</p>';
+      document.body.appendChild(overlay);
+      var overlayText = overlay.querySelector('.pulse-voice__text');
+
+      function showOverlay(text) {
+        overlayText.textContent = text || 'Listening…';
+        overlay.hidden = false;
+      }
+      function hideOverlay() { overlay.hidden = true; }
+      overlay.addEventListener('click', function () {
+        hideOverlay();
+        stopRec();          // drops the current phrase; end handler revives
+      });
+
+      function startRec() {
+        if (running || suspended || !live) return;
+        try { rec.start(); } catch (e) { /* already starting */ }
+      }
+      function stopRec() {
+        try { rec.abort(); } catch (e) { /* not running */ }
+      }
+
+      function reflectMic() {
+        micBtn.classList.toggle('is-listening', live);
+        micBtn.title = live
+          ? 'Always listening — say "Pulse, …". Click to mute the mic.'
+          : 'Voice is off — click to start listening.';
+      }
+
+      voiceCtl.pause = function () {
+        suspended = true;
+        stopRec();
+      };
+      voiceCtl.resume = function () {
+        suspended = false;
+        startRec();
+      };
+
+      rec.addEventListener('start', function () { running = true; });
+
+      rec.addEventListener('end', function () {
+        running = false;
+        hideOverlay();
+        // Engines give up after silence; quietly come back.
+        if (live && !suspended) {
+          clearTimeout(restartTimer);
+          restartTimer = setTimeout(startRec, 400);
         }
       });
-      rec.addEventListener('start', function () {
-        listening = true;
-        micBtn.classList.add('is-listening');
-        setHint('Listening — speak your question.');
-      });
-      rec.addEventListener('end', function () {
-        listening = false;
-        micBtn.classList.remove('is-listening');
-        setHint(restingHint);
-      });
+
       rec.addEventListener('error', function (e) {
-        listening = false;
-        micBtn.classList.remove('is-listening');
+        running = false;
+        if (e.error === 'no-speech' || e.error === 'aborted') return;
+        hideOverlay();
         var messages = {
           'not-allowed':
             'Microphone access is blocked for this site. Allow it from the ' +
-            'icon in the address bar, reload the page, and try again.',
+            'icon in the address bar, then click the mic to listen again.',
           'service-not-allowed':
             'The browser refused speech recognition for this site. Check the ' +
-            'microphone permission, reload, and try again.',
+            'microphone permission, then click the mic to listen again.',
           'audio-capture':
             'No microphone was found. Plug one in or check your input device.',
           'network':
-            'The speech service could not be reached. Check your connection ' +
-            'and try again, or type your question.',
-          'no-speech':
-            'Nothing was heard. Click the mic and speak your question.'
+            'The speech service could not be reached. Voice is off for now — ' +
+            'click the mic to retry, or type your question.'
         };
-        var message = messages[e.error] ||
-          'Speech input failed (' + e.error + '). Try again, or type your question.';
-        // The hint line is easy to miss -- put the failure where answers go.
-        show(message, 'voice input', true);
-        setHint(restingHint);
+        // A hard failure would otherwise retry in a loop: switch off and say so.
+        live = false;
+        try { localStorage.setItem('pulseLive', '0'); } catch (e2) {}
+        reflectMic();
+        show(messages[e.error] ||
+          'Speech input failed (' + e.error + '). Click the mic to retry, ' +
+          'or type your question.', null, true);
       });
+
       rec.addEventListener('result', function (e) {
-        var said = e.results[0][0].transcript;
-        input.value = said;
-        ask(said);
+        var interim = '', finals = '';
+        for (var i = e.resultIndex; i < e.results.length; i++) {
+          var piece = e.results[i][0].transcript;
+          if (e.results[i].isFinal) finals += piece;
+          else interim += piece;
+        }
+        if (interim.trim()) showOverlay(interim.trim());
+        if (!finals.trim()) return;
+
+        var heard = finals.trim();
+        var wake = WAKE.exec(heard);
+        if (!wake) { hideOverlay(); return; }   // not for us
+        var query = heard.slice(wake[0].length).trim();
+        hideOverlay();
+        if (!query) {
+          setHint('Heard "Pulse" — say the whole question in one go, like ' +
+                  '"Pulse, what are we owed".', true);
+          return;
+        }
+        input.value = query;
+        ask(query);
       });
+
+      micBtn.addEventListener('click', function () {
+        live = !live;
+        try { localStorage.setItem('pulseLive', live ? '1' : '0'); } catch (e) {}
+        reflectMic();
+        if (live) { startRec(); setHint('Listening — say "Pulse, …" then your question.'); }
+        else { hideOverlay(); stopRec(); setHint('Voice is off. Click the mic to listen again.'); }
+      });
+
+      reflectMic();
+      if (live) {
+        startRec();
+        restingHint = 'Say "Pulse, …" then your question — or type it here.';
+        setHint(restingHint);
+      }
     }
   }
 
