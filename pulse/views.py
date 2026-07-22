@@ -36,6 +36,7 @@ from .tools import (
     get_dues_and_renewals,
     get_portfolio_graph,
     get_project_summary,
+    get_weather,
 )
 
 logger = logging.getLogger(__name__)
@@ -80,6 +81,34 @@ class AskView(APIView):
             return Response({'detail': str(exc)}, status=status.HTTP_400_BAD_REQUEST)
 
         return Response(result, status=status.HTTP_200_OK)
+
+
+class WeatherView(APIView):
+    """Office-city weather for the dashboard card.
+
+    Cached for ten minutes so page loads never wait on OpenWeather and the
+    free-tier quota is untouched by refresh-happy mornings. Errors are cached
+    too -- a downed weather service should not be re-probed per pageview.
+    """
+
+    permission_classes = [IsAuthenticated]
+
+    @extend_schema(
+        responses={200: dict},
+        tags=['PULSE'],
+        summary='Current weather for the office city',
+    )
+    def get(self, request):
+        from django.core.cache import cache
+
+        scope = resolve_scope(request.user)
+        scope.require_business()
+
+        payload = cache.get('pulse_weather')
+        if payload is None:
+            payload = get_weather(scope)
+            cache.set('pulse_weather', payload, 600)
+        return Response(payload)
 
 
 def _document_payload(document, chunk_count=None):

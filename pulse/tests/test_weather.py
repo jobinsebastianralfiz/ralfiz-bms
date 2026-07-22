@@ -67,3 +67,27 @@ class WeatherToolTests(TestCase):
         scope = PulseScope(user=None, employee=None, can_query_business=False)
         with self.assertRaises(PermissionDenied):
             tools.get_weather(scope)
+
+
+@override_settings(OPENWEATHER_API_KEY='k', PULSE_WEATHER_CITY='Kochi,IN')
+class WeatherEndpointTests(TestCase):
+    def setUp(self):
+        from django.contrib.auth.models import User
+        from django.core.cache import cache
+        cache.clear()   # the view caches for 10 minutes; tests must not share
+        self.owner = User.objects.create_user('boss', password='x', is_staff=True)
+        self.outsider = User.objects.create_user('intern', password='x')
+
+    def test_owner_gets_cached_weather(self):
+        self.client.force_login(self.owner)
+        with mock.patch('requests.get', return_value=FakeResponse(200, SAMPLE)) as get:
+            first = self.client.get('/api/pulse/weather/')
+            second = self.client.get('/api/pulse/weather/')
+        self.assertEqual(first.status_code, 200)
+        self.assertEqual(first.json()['city'], 'Kochi')
+        self.assertEqual(second.json(), first.json())
+        self.assertEqual(get.call_count, 1)  # second hit served from cache
+
+    def test_non_owner_is_refused(self):
+        self.client.force_login(self.outsider)
+        self.assertEqual(self.client.get('/api/pulse/weather/').status_code, 403)

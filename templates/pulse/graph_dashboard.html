@@ -125,6 +125,13 @@
           <span class="graph-metric__note">{{ m.note }}</span>
         </a>
       {% endfor %}
+      {# Weather joins the row once /api/pulse/weather/ answers; stays hidden
+         if the key is missing or the service is down. #}
+      <a class="graph-metric" id="graph-weather" hidden>
+        <span class="graph-metric__label" data-w="label">Weather</span>
+        <span class="graph-metric__value" data-w="value">&mdash;</span>
+        <span class="graph-metric__note" data-w="note"></span>
+      </a>
     </section>
   </main>
 
@@ -156,8 +163,29 @@
   <p class="pulse-response__body" id="pulse-response-body"></p>
 </section>
 
+<script>
+// Weather card: filled in after load so the page never waits on OpenWeather.
+(function () {
+  fetch('/api/pulse/weather/', { credentials: 'same-origin' })
+    .then(function (r) { return r.ok ? r.json() : null; })
+    .then(function (w) {
+      if (!w || w.error || w.temp_c === null || w.temp_c === undefined) return;
+      var card = document.getElementById('graph-weather');
+      if (!card) return;
+      card.querySelector('[data-w=label]').textContent = 'Weather · ' + w.city;
+      card.querySelector('[data-w=value]').textContent = Math.round(w.temp_c) + '°C';
+      var bits = [];
+      if (w.description) bits.push(w.description);
+      if (w.feels_like_c !== null && w.feels_like_c !== undefined) bits.push('feels ' + Math.round(w.feels_like_c) + '°');
+      if (w.humidity_pct !== null && w.humidity_pct !== undefined) bits.push(w.humidity_pct + '% humidity');
+      card.querySelector('[data-w=note]').textContent = bits.join(' · ');
+      card.hidden = false;
+    })
+    .catch(function () { /* card stays hidden */ });
+})();
+</script>
 <script id="graph-data" type="application/json">{{ graph_json|safe }}</script>
 <script src="{% static 'js/pulse-graph.js' %}?v=2" defer></script>
-<script src="{% static 'js/pulse-ask.js' %}?v=4" defer></script>
+<script src="{% static 'js/pulse-ask.js' %}?v=5" defer></script>
 </body>
 </html>

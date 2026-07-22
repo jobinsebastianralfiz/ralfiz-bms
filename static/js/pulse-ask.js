@@ -305,19 +305,54 @@
         ask(query);
       });
 
-      micBtn.addEventListener('click', function () {
-        live = !live;
-        try { localStorage.setItem('pulseLive', live ? '1' : '0'); } catch (e) {}
+      function goLive() {
+        live = true;
+        try { localStorage.setItem('pulseLive', '1'); } catch (e) {}
         reflectMic();
-        if (live) { startRec(); setHint('Listening — say "Pulse, …" then your question.'); }
-        else { hideOverlay(); stopRec(); setHint('Voice is off. Click the mic to listen again.'); }
+        startRec();
+        restingHint = 'Say "Pulse, …" then your question — or type it here.';
+        setHint(restingHint);
+      }
+
+      micBtn.addEventListener('click', function () {
+        // A dead-looking mic must never be muted further by the click meant
+        // to fix it: only an actually-running engine toggles off. Starting
+        // from a real click also forces the permission prompt that an
+        // automatic page-load start is allowed to suppress.
+        if (!live || !running) { goLive(); return; }
+        live = false;
+        try { localStorage.setItem('pulseLive', '0'); } catch (e) {}
+        reflectMic();
+        hideOverlay();
+        stopRec();
+        setHint('Voice is off. Click the mic to listen again.');
       });
 
       reflectMic();
       if (live) {
-        startRec();
-        restingHint = 'Say "Pulse, …" then your question — or type it here.';
-        setHint(restingHint);
+        var canQuery = navigator.permissions && navigator.permissions.query;
+        if (canQuery) {
+          navigator.permissions.query({ name: 'microphone' }).then(function (st) {
+            if (st.state === 'granted') {
+              goLive();
+            } else if (st.state === 'denied') {
+              show('Microphone access is blocked for this site. Allow it '
+                   + 'from the icon in the address bar (and check the system '
+                   + 'microphone setting for your browser), then click the mic.',
+                   null, true);
+            } else {
+              // Browsers may quietly swallow a prompt we trigger without a
+              // click, so ask for one instead of pretending to listen.
+              setHint('Click the mic once to allow the microphone — voice '
+                      + 'stays hands-free after that.', true);
+            }
+            st.onchange = function () {
+              if (st.state === 'granted' && live) goLive();
+            };
+          }).catch(function () { goLive(); });
+        } else {
+          goLive();
+        }
       }
     }
   }
