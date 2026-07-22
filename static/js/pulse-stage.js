@@ -21,6 +21,44 @@
   var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   var panels = Array.prototype.slice.call(stage.querySelectorAll('.stage-panel'));
 
+  /* ── Collapsible facets ─────────────────────────────────────────── */
+  /* Every panel starts as a compact chip; its kicker toggles the body.
+     Choices persist per panel title. The record's primary dossier
+     (project info / contact info) starts open. */
+
+  var firstLeft = stage.querySelector('.sp-dossier, .sp-col-l');
+  panels.forEach(function (panel) {
+    var kicker = panel.querySelector('.stage-panel__kicker');
+    if (!kicker) {
+      var title = panel.querySelector('.card-title');
+      kicker = document.createElement('h2');
+      kicker.className = 'stage-panel__kicker';
+      kicker.textContent = title ? title.textContent.trim() : 'Details';
+      panel.insertBefore(kicker, panel.firstChild);
+      // The kicker now names the panel; the first card repeating it is noise.
+      if (title) {
+        var header = title.closest('.card-header');
+        if (header) header.style.display = 'none';
+      }
+    }
+    var key = 'pulseStage.' + kicker.textContent.trim();
+
+    var chev = document.createElement('span');
+    chev.className = 'chev';
+    chev.textContent = '▸';
+    kicker.appendChild(chev);
+
+    var saved = null;
+    try { saved = localStorage.getItem(key); } catch (e) {}
+    var collapsed = saved === null ? panel !== firstLeft : saved === '1';
+    if (collapsed) panel.classList.add('is-collapsed');
+
+    kicker.addEventListener('click', function () {
+      var now = panel.classList.toggle('is-collapsed');
+      try { localStorage.setItem(key, now ? '1' : '0'); } catch (e) {}
+    });
+  });
+
   /* Mirrors STATUS_HUE in pulse/tools.py -- one meaning system. Client
      pages pass a priority instead; those map onto the same jewels. */
   var HUES = {
@@ -149,7 +187,7 @@
     if (!fieldCtx) return;
     var s = stage.getBoundingClientRect();
     fieldCtx.clearRect(0, 0, s.width, s.height);
-    if (window.innerWidth <= 1200) return;   // stacked layout: no tendrils
+    if (window.innerWidth <= 1400) return;   // stacked/two-col layout: no tendrils
 
     var orb = orbAnchor();
 

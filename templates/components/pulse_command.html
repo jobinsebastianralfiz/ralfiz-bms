@@ -1,0 +1,27 @@
+{% comment %}
+  PULSE command bar — the same ask box the command centre uses, floated
+  at the bottom of any page that includes this. pulse-ask.js owns the
+  behaviour; the response panel eases up above the bar.
+{% endcomment %}
+<div class="pstage-command">
+  <section class="pulse-response" id="pulse-response" aria-live="polite" hidden>
+    <header class="pulse-response__head">
+      <span class="pulse-response__intent" id="pulse-response-intent"></span>
+      <button class="pulse-response__close" id="pulse-response-close" type="button" aria-label="Dismiss answer">&times;</button>
+    </header>
+    <p class="pulse-response__body" id="pulse-response-body"></p>
+  </section>
+
+  <form class="pulse-command__form" id="pulse-form" autocomplete="off">
+    {% csrf_token %}
+    <span class="pulse-command__glyph" aria-hidden="true">&gt;_</span>
+    <label class="pulse-visually-hidden" for="pulse-input">Ask PULSE</label>
+    <input class="pulse-command__input" id="pulse-input" type="text" maxlength="2000"
+           placeholder="Ask PULSE — which projects need attention &middot; what are we owed">
+    <button class="pulse-mic" id="pulse-mic" type="button" aria-label="Speak your question" title="Speak your question">
+      <svg viewBox="0 0 20 20" aria-hidden="true"><rect x="7.4" y="2.5" width="5.2" height="9" rx="2.6"/><path d="M4.5 9.2a5.5 5.5 0 0 0 11 0M10 14.7v2.8"/></svg>
+    </button>
+    <button class="pulse-execute" id="pulse-execute" type="submit">Execute</button>
+  </form>
+  <p class="pulse-command__hint" id="pulse-hint">Answers come from live records.</p>
+</div>

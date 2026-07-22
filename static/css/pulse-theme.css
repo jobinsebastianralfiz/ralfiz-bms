@@ -708,7 +708,9 @@
 
 /* ── The stage: command-centre treatment for detail pages ─────────── */
 /* The record is an orb at the centre; its facets float around it and
-   tendrils (drawn by pulse-stage.js on #stage-field) tie them back. */
+   tendrils (drawn by pulse-stage.js on #stage-field) tie them back.
+   Each column is its own flex stack so panels pack tight — a tall panel
+   in one column never opens holes in the others. */
 
 .pstage {
   position: relative;
@@ -717,6 +719,18 @@
   gap: 18px;
   align-items: start;
 }
+
+.pstage-col {
+  position: relative;
+  z-index: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+.pstage-col--l { grid-column: 1; grid-row: 1; }
+.pstage-col--c { grid-column: 2; grid-row: 1; }
+.pstage-col--r { grid-column: 3; grid-row: 1; }
 
 #stage-field {
   position: absolute;
@@ -728,10 +742,6 @@
 }
 
 .pstage-center {
-  grid-column: 2;
-  grid-row: 1 / span 2;
-  position: relative;
-  z-index: 1;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -767,21 +777,39 @@
 }
 
 .stage-panel__kicker {
+  display: flex;
+  align-items: center;
+  gap: 8px;
   margin: 0 0 8px;
   font-size: .66rem;
   font-weight: 700;
   letter-spacing: .16em;
   text-transform: uppercase;
   color: var(--text-secondary, #7c94a0);
+  cursor: pointer;
+  -webkit-user-select: none;
+  user-select: none;
 }
+.stage-panel__kicker:hover { color: var(--p-teal, #2fd4d4); }
+.stage-panel__kicker .chev {
+  margin-left: auto;
+  font-size: .8rem;
+  line-height: 1;
+  color: var(--text-muted, #4a5c66);
+  transition: transform .25s ease;
+}
+.stage-panel:not(.is-collapsed) .chev { transform: rotate(90deg); }
 
-/* Column assignment; rows flow. Left: dossier/team/links/amc.
-   Right: credentials/invoices/quotes. Payments under the orb.
-   Activity runs the full width at the bottom. */
-.sp-dossier, .sp-team, .sp-links, .sp-amc, .sp-col-l { grid-column: 1; }
-.sp-credentials, .sp-invoices, .sp-quotes, .sp-col-r { grid-column: 3; }
-.sp-payments, .sp-col-c { grid-column: 2; }
-.sp-activity, .sp-wide { grid-column: 1 / -1; max-height: none; }
+/* Collapsed facet: just a chip — title + chevron, content hidden. */
+.stage-panel.is-collapsed { padding: 13px 18px; }
+.stage-panel.is-collapsed > *:not(.stage-panel__kicker) { display: none; }
+.stage-panel.is-collapsed .stage-panel__kicker { margin: 0; }
+
+/* Wide panels (retailease, backups) escape the columns and run the full
+   width at the bottom — but collapsed they sit as a chip in the centre
+   column. Activity lives in the right column like any other facet. */
+.sp-wide { grid-column: 1 / -1; max-height: none; }
+.sp-wide.is-collapsed { grid-column: 2; }
 
 /* Cards transplanted into panels shed their chrome — the panel is the
    surface now. */
@@ -800,12 +828,235 @@
 [data-theme="dark"] .stage-panel .card-body { padding: 4px 0 10px; }
 [data-theme="dark"] .stage-panel .table th { background: none; }
 
-@media (max-width: 1200px) {
-  .pstage { display: flex; flex-direction: column; }
+/* Narrower desktops: the 3-column stage would starve the centre, so go
+   two columns — identity on top, facet columns beneath. Tendrils assume
+   the 3-column geometry, so they sit this one out. */
+@media (max-width: 1400px) {
+  .pstage { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
   #stage-field { display: none; }
+  .pstage-col--c { grid-column: 1 / -1; grid-row: 1; }
+  .pstage-col--l { grid-column: 1; grid-row: 2; }
+  .pstage-col--r { grid-column: 2; grid-row: 2; }
+  .sp-wide, .sp-wide.is-collapsed { grid-column: 1 / -1; }
+}
+
+/* Tablets and phones: one stack. */
+@media (max-width: 900px) {
+  .pstage { display: flex; flex-direction: column; }
   #stage-orb { width: 170px; height: 170px; }
   .stage-panel { max-height: none; }
 }
+
+/* ── Client portal & activity: compose left, feed right ───────────── */
+
+.pact-compose {
+  margin-bottom: 14px;
+  padding: 14px 16px 16px;
+  border: 1px solid rgba(120, 220, 220, .12);
+  border-radius: 14px;
+  background: rgba(14, 34, 40, .5);
+}
+.pact-compose form { display: flex; flex-direction: column; gap: 8px; }
+.pact-compose__row { display: flex; gap: 8px; }
+.pact-compose__row > * { flex: 1; min-width: 0; }
+.pact-compose__foot { display: flex; align-items: center; gap: 12px; }
+.pact-compose__foot label {
+  display: flex; align-items: center; gap: 6px;
+  margin: 0; font-size: .78rem; color: var(--text-secondary, #7c94a0);
+}
+
+.pact-heading {
+  margin: 0 0 10px;
+  font-size: .84rem;
+  font-weight: 600;
+  color: var(--text-primary, #e9f2f4);
+}
+.pact-feed, .pact-comments { min-width: 0; }
+
+.pact-item {
+  display: flex;
+  gap: 10px;
+  padding: 9px 0;
+  border-bottom: 1px solid rgba(120, 220, 220, .08);
+}
+.pact-item__icon {
+  width: 30px; height: 30px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0; font-size: .68rem;
+  background: rgba(47, 212, 212, .13); color: #2fd4d4;
+}
+.pact-item__icon--milestone { background: rgba(78, 222, 163, .14); color: #4edea3; }
+.pact-item__icon--release { background: rgba(124, 196, 232, .16); color: #7cc4e8; }
+.pact-item__icon--blocker { background: rgba(224, 138, 160, .16); color: #e08aa0; }
+.pact-item__icon--info { background: rgba(167, 139, 214, .16); color: #a78bd6; }
+
+.pact-item__body { flex: 1; min-width: 0; }
+.pact-item__head { display: flex; flex-wrap: wrap; align-items: center; gap: 7px; margin-bottom: 2px; }
+.pact-item__title { font-weight: 600; font-size: .84rem; color: var(--text-primary, #e9f2f4); }
+.pact-item__text { margin: 0 0 3px; font-size: .8rem; line-height: 1.5; color: var(--text-secondary, #7c94a0); }
+.pact-item__meta { font-size: .72rem; color: var(--text-muted, #4a5c66); }
+.pact-item__del { flex-shrink: 0; }
+.pact-item__del .btn { color: var(--text-muted, #4a5c66); padding: 2px 8px; }
+.pact-item__del .btn:hover { color: #e08aa0; }
+
+.pact-chip {
+  font-size: .64rem; font-weight: 600;
+  padding: 2px 8px; border-radius: 999px;
+  background: rgba(120, 220, 220, .1); color: var(--text-secondary, #7c94a0);
+}
+.pact-chip--pct { background: none; color: var(--p-teal, #2fd4d4); font-size: .74rem; font-weight: 700; }
+.pact-chip--internal { background: rgba(232, 192, 122, .14); color: #e8c07a; }
+
+.pact-avatar {
+  width: 28px; height: 28px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0; font-size: .66rem; font-weight: 700; color: #06131a;
+  background: linear-gradient(135deg, #2fd4d4, #4edea3);
+}
+.pact-avatar--client { background: linear-gradient(135deg, #a78bd6, #7cc4e8); }
+
+.pact-reply { display: flex; gap: 8px; margin-top: 10px; }
+
+/* ── PULSE command bar on regular pages ───────────────────────────── */
+/* Same grammar as the command centre's footer bar, but sticky at the
+   bottom of the scrolling content. pulse-ask.js drives it. */
+
+.pstage-command {
+  position: sticky;
+  bottom: 14px;
+  z-index: 60;
+  margin: 26px auto 0;
+  width: min(720px, 100%);
+}
+
+.pulse-visually-hidden {
+  position: absolute;
+  width: 1px; height: 1px;
+  margin: -1px; padding: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.pstage-command .pulse-command__form {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 8px 8px 18px;
+  border: 1px solid var(--p-glass-line, rgba(120, 220, 220, .22));
+  border-radius: 999px;
+  background: linear-gradient(135deg, rgba(24, 52, 58, .92), rgba(9, 22, 26, .94));
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .07), 0 10px 30px rgba(0, 0, 0, .4);
+  transition: border-color .25s ease;
+}
+.pstage-command .pulse-command__form:focus-within { border-color: rgba(120, 220, 220, .45); }
+
+.pstage-command .pulse-command__glyph {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: -.5px;
+  color: #1a8a8a;
+}
+
+.pstage-command .pulse-command__input {
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  background: transparent;
+  color: var(--text-primary, #e9f2f4);
+  font: 400 14px Inter, sans-serif;
+}
+.pstage-command .pulse-command__input::placeholder { color: var(--text-muted, #4a5c66); }
+.pstage-command .pulse-command__input:focus { outline: none; }
+
+.pstage-command .pulse-mic {
+  display: grid;
+  place-items: center;
+  width: 36px; height: 36px;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--text-secondary, #7c94a0);
+  cursor: pointer;
+  transition: color .2s ease, background .2s ease;
+}
+.pstage-command .pulse-mic svg { width: 17px; height: 17px; fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linecap: round; }
+.pstage-command .pulse-mic:hover { color: var(--text-primary, #e9f2f4); background: rgba(47, 212, 212, .12); }
+.pstage-command .pulse-mic.is-listening { color: var(--p-gold, #e8c07a); background: rgba(232, 192, 122, .16); }
+.pstage-command .pulse-mic.is-unavailable { opacity: .3; cursor: not-allowed; }
+
+.pstage-command .pulse-execute {
+  padding: 10px 22px;
+  border: 0;
+  border-radius: 999px;
+  background: linear-gradient(135deg, #2fd4d4, #1a8a8a);
+  color: #06131a;
+  font-weight: 700;
+  font-size: 13px;
+  cursor: pointer;
+}
+.pstage-command .pulse-execute:disabled { opacity: .55; cursor: wait; }
+
+.pstage-command .pulse-command__hint {
+  margin: 6px 0 0;
+  text-align: center;
+  font-size: .68rem;
+  color: var(--text-muted, #4a5c66);
+}
+.pstage-command .pulse-command__hint.is-warning { color: var(--p-gold, #e8c07a); }
+
+.pstage-command .pulse-response {
+  position: absolute;
+  left: 50%;
+  bottom: calc(100% + 12px);
+  transform: translateX(-50%) translateY(14px);
+  width: min(620px, 100%);
+  padding: 15px 18px;
+  border: 1px solid var(--p-glass-line, rgba(120, 220, 220, .22));
+  border-radius: 16px;
+  background: linear-gradient(135deg, rgba(24, 52, 58, .95), rgba(9, 22, 26, .96));
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .08), 0 16px 44px rgba(0, 0, 0, .5);
+  opacity: 0;
+  transition: opacity .4s ease, transform .4s ease;
+}
+.pstage-command .pulse-response.is-open { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+.pstage-command .pulse-response__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 7px;
+}
+.pstage-command .pulse-response__intent {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 1.3px;
+  text-transform: uppercase;
+  color: var(--p-teal, #2fd4d4);
+}
+.pstage-command .pulse-response__close {
+  border: 0;
+  background: transparent;
+  color: var(--text-muted, #4a5c66);
+  font-size: 19px;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0 3px;
+}
+.pstage-command .pulse-response__close:hover { color: var(--text-primary, #e9f2f4); }
+.pstage-command .pulse-response__body {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--text-primary, #e9f2f4);
+}
+.pstage-command .pulse-response.is-error .pulse-response__intent { color: var(--danger, #e08aa0); }
 
 /* Chart.js draws to canvas and cannot inherit CSS, so give it breathing
    room rather than a light plate behind it. */

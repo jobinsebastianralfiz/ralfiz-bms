@@ -87,6 +87,8 @@
 <div class="pstage" id="pulse-stage" data-status="{{ client.priority }}">
   <canvas id="stage-field" aria-hidden="true"></canvas>
 
+  <div class="pstage-col pstage-col--c">
+
   <header class="pstage-center">
     <canvas id="stage-orb" width="320" height="320" aria-hidden="true"></canvas>
     <div class="pstage-id">
@@ -146,6 +148,10 @@
     </div>
     </div>
   </header>
+
+  </div>{# /pstage-col--c #}
+
+  <div class="pstage-col pstage-col--l">
 
   <section class="stage-panel sp-col-l">
     <!-- Contact Information -->
@@ -304,6 +310,63 @@
     </div>
   </section>
 
+  <section class="stage-panel sp-col-l">
+    <h2 class="stage-panel__kicker">Licenses</h2>
+      <div class="tab-content" id="licensesTab">
+        <div class="table-wrapper">
+          <table class="table">
+            <thead>
+              <tr>
+                <th>Customer</th>
+                <th>Type</th>
+                <th>Status</th>
+                <th>Valid Until</th>
+                <th>Activations</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for license in licenses %}
+              <tr>
+                <td class="fw-medium">{{ license.customer_name }}</td>
+                <td><span class="badge badge-info">{{ license.get_license_type_display }}</span></td>
+                <td>
+                  {% if license.status == 'active' %}
+                  <span class="status-badge success">Active</span>
+                  {% elif license.status == 'expired' %}
+                  <span class="status-badge danger">Expired</span>
+                  {% else %}
+                  <span class="status-badge warning">{{ license.get_status_display }}</span>
+                  {% endif %}
+                </td>
+                <td>{{ license.valid_until|date:"d M Y" }}</td>
+                <td>{{ license.current_activations }}/{{ license.max_activations }}</td>
+                <td>
+                  <a href="{% url 'license_detail' license.pk %}" class="btn btn-sm btn-ghost btn-icon">
+                    <i class="fas fa-eye"></i>
+                  </a>
+                </td>
+              </tr>
+              {% empty %}
+              <tr>
+                <td colspan="6" class="text-center py-4 text-muted">No licenses linked to this client</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        <div class="card-footer" style="border-top: 1px solid var(--border-color); padding: 1rem;">
+          <a href="{% url 'license_create' %}?client={{ client.pk }}" class="btn btn-primary btn-sm">
+            <i class="fas fa-plus me-2"></i>Create License
+          </a>
+        </div>
+      </div>
+
+  </section>
+  </div>{# /pstage-col--l #}
+
+  <div class="pstage-col pstage-col--r">
+
   <section class="stage-panel sp-col-r">
     <h2 class="stage-panel__kicker">Projects</h2>
       <div class="tab-content" id="projectsTab">
@@ -431,7 +494,6 @@
       </div>
 
   </section>
-
   <section class="stage-panel sp-col-c">
     <h2 class="stage-panel__kicker">Payments</h2>
       <div class="tab-content" id="paymentsTab">
@@ -467,59 +529,7 @@
 
   </section>
 
-  <section class="stage-panel sp-col-l">
-    <h2 class="stage-panel__kicker">Licenses</h2>
-      <div class="tab-content" id="licensesTab">
-        <div class="table-wrapper">
-          <table class="table">
-            <thead>
-              <tr>
-                <th>Customer</th>
-                <th>Type</th>
-                <th>Status</th>
-                <th>Valid Until</th>
-                <th>Activations</th>
-                <th></th>
-              </tr>
-            </thead>
-            <tbody>
-              {% for license in licenses %}
-              <tr>
-                <td class="fw-medium">{{ license.customer_name }}</td>
-                <td><span class="badge badge-info">{{ license.get_license_type_display }}</span></td>
-                <td>
-                  {% if license.status == 'active' %}
-                  <span class="status-badge success">Active</span>
-                  {% elif license.status == 'expired' %}
-                  <span class="status-badge danger">Expired</span>
-                  {% else %}
-                  <span class="status-badge warning">{{ license.get_status_display }}</span>
-                  {% endif %}
-                </td>
-                <td>{{ license.valid_until|date:"d M Y" }}</td>
-                <td>{{ license.current_activations }}/{{ license.max_activations }}</td>
-                <td>
-                  <a href="{% url 'license_detail' license.pk %}" class="btn btn-sm btn-ghost btn-icon">
-                    <i class="fas fa-eye"></i>
-                  </a>
-                </td>
-              </tr>
-              {% empty %}
-              <tr>
-                <td colspan="6" class="text-center py-4 text-muted">No licenses linked to this client</td>
-              </tr>
-              {% endfor %}
-            </tbody>
-          </table>
-        </div>
-        <div class="card-footer" style="border-top: 1px solid var(--border-color); padding: 1rem;">
-          <a href="{% url 'license_create' %}?client={{ client.pk }}" class="btn btn-primary btn-sm">
-            <i class="fas fa-plus me-2"></i>Create License
-          </a>
-        </div>
-      </div>
-
-  </section>
+  </div>{# /pstage-col--r #}
 
   <section class="stage-panel sp-wide">
     <h2 class="stage-panel__kicker">RetailEase App</h2>
@@ -768,10 +778,13 @@
       </div>
   </section>
 </div>{# /pstage #}
+
+{% include 'components/pulse_command.html' %}
 {% endblock %}
 
 {% block extra_js %}
-<script src="{% static 'js/pulse-stage.js' %}?v=1" defer></script>
+<script src="{% static 'js/pulse-stage.js' %}?v=4" defer></script>
+<script src="{% static 'js/pulse-ask.js' %}" defer></script>
 <script>
 function switchTab(tabId) {
   // Hide all tab contents

@@ -87,6 +87,8 @@
 <div class="pstage" id="pulse-stage" data-status="{{ project.status }}">
   <canvas id="stage-field" aria-hidden="true"></canvas>
 
+  <div class="pstage-col pstage-col--c">
+
   <header class="pstage-center">
     <canvas id="stage-orb" width="320" height="320" aria-hidden="true"></canvas>
     <div class="pstage-id">
@@ -149,6 +151,10 @@
     </div>
     </div>
   </header>
+
+  </div>{# /pstage-col--c #}
+
+  <div class="pstage-col pstage-col--l">
 
   <section class="stage-panel sp-dossier">
     <!-- Project Information -->
@@ -293,6 +299,94 @@
     {% endif %}
   </section>
   {% endif %}
+
+  <section class="stage-panel sp-amc">
+    <h2 class="stage-panel__kicker">AMC</h2>
+      <div class="tab-content" id="amcTab">
+        <div class="d-flex justify-content-between align-items-center p-3 border-bottom">
+          <div class="text-sm text-muted">{{ amc_contracts.count }} AMC contract{{ amc_contracts.count|pluralize }}</div>
+          <a href="{% url 'amc_create' %}?project={{ project.pk }}" class="btn btn-sm btn-primary">
+            <i class="fas fa-plus me-1"></i>Create AMC
+          </a>
+        </div>
+        {% for amc in amc_contracts %}
+        <div class="p-3 {% if not forloop.last %}border-bottom{% endif %}">
+          <div class="d-flex justify-content-between align-items-start mb-3">
+            <div>
+              <div class="fw-semibold">&#8377;{{ amc.annual_amount|floatformat:2 }} / {{ amc.get_billing_cycle_display }}</div>
+              <div class="text-sm text-muted">{{ amc.start_date|date:"d M Y" }} - {{ amc.end_date|date:"d M Y" }}</div>
+            </div>
+            <div class="d-flex gap-2 align-items-center">
+              {% if amc.is_overdue %}
+              <span class="status-badge danger">Overdue</span>
+              {% elif amc.is_due_soon %}
+              <span class="status-badge warning">Due Soon</span>
+              {% else %}
+              <span class="status-badge {{ amc.status }}">{{ amc.get_status_display }}</span>
+              {% endif %}
+              <a href="{% url 'amc_detail' amc.pk %}" class="btn btn-sm btn-ghost btn-icon">
+                <i class="fas fa-arrow-right"></i>
+              </a>
+            </div>
+          </div>
+          <div class="d-flex gap-4 text-sm">
+            <div>
+              <span class="text-muted">Next Due:</span>
+              <span class="fw-medium {% if amc.is_overdue %}text-danger{% endif %}">{{ amc.next_due_date|date:"d M Y" }}</span>
+            </div>
+            <div>
+              <span class="text-muted">Total Paid:</span>
+              <span class="fw-medium text-success">&#8377;{{ amc.total_paid|floatformat:2 }}</span>
+            </div>
+            <div>
+              <span class="text-muted">Days:</span>
+              <span class="fw-medium">{{ amc.days_until_due }}</span>
+            </div>
+          </div>
+        </div>
+        {% empty %}
+        <div class="text-center py-4 text-muted">
+          <i class="fas fa-sync-alt" style="font-size: 1.5rem; opacity: 0.3; display: block; margin-bottom: 0.5rem;"></i>
+          No AMC contracts yet.
+          {% if project.status == 'completed' %}
+          <br><a href="{% url 'amc_create' %}?project={{ project.pk }}">Create one now</a>
+          {% endif %}
+        </div>
+        {% endfor %}
+
+        {% if amc_payments %}
+        <div class="p-3 border-top">
+          <h4 style="font-size: 0.9375rem; font-weight: 600; margin-bottom: 0.75rem;">Payment History</h4>
+          <div class="table-wrapper">
+            <table class="table">
+              <thead>
+                <tr>
+                  <th>Date</th>
+                  <th>Amount</th>
+                  <th>Period</th>
+                  <th>Method</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for payment in amc_payments %}
+                <tr>
+                  <td>{{ payment.payment_date|date:"d M Y" }}</td>
+                  <td class="fw-medium text-success">&#8377;{{ payment.amount|floatformat:2 }}</td>
+                  <td class="text-sm">{{ payment.period_start|date:"d M Y" }} - {{ payment.period_end|date:"d M Y" }}</td>
+                  <td><span class="badge badge-info">{{ payment.get_payment_method_display }}</span></td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+        {% endif %}
+      </div>
+
+  </section>
+  </div>{# /pstage-col--l #}
+
+  <div class="pstage-col pstage-col--r">
 
   <section class="stage-panel sp-credentials">
     <h2 class="stage-panel__kicker">Credentials</h2>
@@ -446,7 +540,6 @@
       </div>
 
   </section>
-
   <section class="stage-panel sp-payments">
     <h2 class="stage-panel__kicker">Payments</h2>
       <div class="tab-content" id="paymentsTab">
@@ -482,164 +575,57 @@
 
   </section>
 
-  <section class="stage-panel sp-amc">
-    <h2 class="stage-panel__kicker">AMC</h2>
-      <div class="tab-content" id="amcTab">
-        <div class="d-flex justify-content-between align-items-center p-3 border-bottom">
-          <div class="text-sm text-muted">{{ amc_contracts.count }} AMC contract{{ amc_contracts.count|pluralize }}</div>
-          <a href="{% url 'amc_create' %}?project={{ project.pk }}" class="btn btn-sm btn-primary">
-            <i class="fas fa-plus me-1"></i>Create AMC
-          </a>
-        </div>
-        {% for amc in amc_contracts %}
-        <div class="p-3 {% if not forloop.last %}border-bottom{% endif %}">
-          <div class="d-flex justify-content-between align-items-start mb-3">
-            <div>
-              <div class="fw-semibold">&#8377;{{ amc.annual_amount|floatformat:2 }} / {{ amc.get_billing_cycle_display }}</div>
-              <div class="text-sm text-muted">{{ amc.start_date|date:"d M Y" }} - {{ amc.end_date|date:"d M Y" }}</div>
-            </div>
-            <div class="d-flex gap-2 align-items-center">
-              {% if amc.is_overdue %}
-              <span class="status-badge danger">Overdue</span>
-              {% elif amc.is_due_soon %}
-              <span class="status-badge warning">Due Soon</span>
-              {% else %}
-              <span class="status-badge {{ amc.status }}">{{ amc.get_status_display }}</span>
-              {% endif %}
-              <a href="{% url 'amc_detail' amc.pk %}" class="btn btn-sm btn-ghost btn-icon">
-                <i class="fas fa-arrow-right"></i>
-              </a>
-            </div>
-          </div>
-          <div class="d-flex gap-4 text-sm">
-            <div>
-              <span class="text-muted">Next Due:</span>
-              <span class="fw-medium {% if amc.is_overdue %}text-danger{% endif %}">{{ amc.next_due_date|date:"d M Y" }}</span>
-            </div>
-            <div>
-              <span class="text-muted">Total Paid:</span>
-              <span class="fw-medium text-success">&#8377;{{ amc.total_paid|floatformat:2 }}</span>
-            </div>
-            <div>
-              <span class="text-muted">Days:</span>
-              <span class="fw-medium">{{ amc.days_until_due }}</span>
-            </div>
-          </div>
-        </div>
-        {% empty %}
-        <div class="text-center py-4 text-muted">
-          <i class="fas fa-sync-alt" style="font-size: 1.5rem; opacity: 0.3; display: block; margin-bottom: 0.5rem;"></i>
-          No AMC contracts yet.
-          {% if project.status == 'completed' %}
-          <br><a href="{% url 'amc_create' %}?project={{ project.pk }}">Create one now</a>
-          {% endif %}
-        </div>
-        {% endfor %}
-
-        {% if amc_payments %}
-        <div class="p-3 border-top">
-          <h4 style="font-size: 0.9375rem; font-weight: 600; margin-bottom: 0.75rem;">Payment History</h4>
-          <div class="table-wrapper">
-            <table class="table">
-              <thead>
-                <tr>
-                  <th>Date</th>
-                  <th>Amount</th>
-                  <th>Period</th>
-                  <th>Method</th>
-                </tr>
-              </thead>
-              <tbody>
-                {% for payment in amc_payments %}
-                <tr>
-                  <td>{{ payment.payment_date|date:"d M Y" }}</td>
-                  <td class="fw-medium text-success">&#8377;{{ payment.amount|floatformat:2 }}</td>
-                  <td class="text-sm">{{ payment.period_start|date:"d M Y" }} - {{ payment.period_end|date:"d M Y" }}</td>
-                  <td><span class="badge badge-info">{{ payment.get_payment_method_display }}</span></td>
-                </tr>
-                {% endfor %}
-              </tbody>
-            </table>
-          </div>
-        </div>
-        {% endif %}
-      </div>
-
-  </section>
-
   <section class="stage-panel sp-activity">
     <h2 class="stage-panel__kicker">Client Portal &amp; Activity</h2>
-      <div class="tab-content" id="portalTab">
-        <!-- Post Update Form -->
-        <div class="p-3 border-bottom" style="background: var(--bg-hover);">
-          <h4 style="font-size: 0.9375rem; font-weight: 600; margin-bottom: 0.75rem;">
-            <i class="fas fa-bullhorn me-2" style="color: var(--primary);"></i>Post Update to Client
-          </h4>
+      <div class="tab-content pactivity" id="portalTab">
+
+        <div class="pact-compose">
+          <h4 class="pact-heading"><i class="fas fa-bullhorn me-2" style="color: var(--primary);"></i>Post Update to Client</h4>
           <form method="post" action="{% url 'project_post_update' project.pk %}">
             {% csrf_token %}
-            <div class="row" style="gap: 0.75rem 0;">
-              <div class="col-6 col-sm-12" style="padding: 0 0.5rem;">
-                <input type="text" name="title" class="form-control" placeholder="Update title" required style="font-size: 0.875rem;">
-              </div>
-              <div class="col-3 col-sm-6" style="padding: 0 0.5rem;">
-                <select name="update_type" class="form-control" style="font-size: 0.875rem;">
-                  <option value="progress">Progress Update</option>
-                  <option value="milestone">Milestone</option>
-                  <option value="release">Release</option>
-                  <option value="blocker">Blocker</option>
-                  <option value="info">Information</option>
-                </select>
-              </div>
-              <div class="col-3 col-sm-6" style="padding: 0 0.5rem;">
-                <input type="number" name="progress_percentage" class="form-control" placeholder="Progress %" min="0" max="100" style="font-size: 0.875rem;">
-              </div>
-              <div class="col-12" style="padding: 0 0.5rem;">
-                <textarea name="description" class="form-control" rows="2" placeholder="Describe the update..." required style="font-size: 0.875rem;"></textarea>
-              </div>
-              <div class="col-12" style="padding: 0 0.5rem; display: flex; align-items: center; gap: 1rem;">
-                <button type="submit" class="btn btn-sm btn-primary">
-                  <i class="fas fa-paper-plane me-1"></i>Post Update
-                </button>
-                <label style="font-size: 0.8125rem; color: var(--text-secondary); display: flex; align-items: center; gap: 0.375rem; margin: 0;">
-                  <input type="checkbox" name="is_visible_to_client" checked> Visible to client
-                </label>
-              </div>
+            <input type="text" name="title" class="form-control" placeholder="Update title" required>
+            <div class="pact-compose__row">
+              <select name="update_type" class="form-control">
+                <option value="progress">Progress Update</option>
+                <option value="milestone">Milestone</option>
+                <option value="release">Release</option>
+                <option value="blocker">Blocker</option>
+                <option value="info">Information</option>
+              </select>
+              <input type="number" name="progress_percentage" class="form-control" placeholder="Progress %" min="0" max="100">
+            </div>
+            <textarea name="description" class="form-control" rows="3" placeholder="Describe the update..." required></textarea>
+            <div class="pact-compose__foot">
+              <button type="submit" class="btn btn-sm btn-primary"><i class="fas fa-paper-plane me-1"></i>Post Update</button>
+              <label><input type="checkbox" name="is_visible_to_client" checked> Visible to client</label>
             </div>
           </form>
         </div>
 
-        <!-- Updates Timeline -->
-        <div class="p-3">
-          <h4 style="font-size: 0.9375rem; font-weight: 600; margin-bottom: 0.75rem;">Project Updates</h4>
+        <div class="pact-feed">
+          <h4 class="pact-heading">Project Updates</h4>
           {% for update in project_updates %}
-          <div style="display: flex; gap: 0.75rem; padding: 0.75rem 0; border-bottom: 1px solid var(--border-color);">
-            <div style="width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0;
-              {% if update.update_type == 'milestone' %}background: #dcfce7; color: #15803d;
-              {% elif update.update_type == 'release' %}background: #dbeafe; color: #1d4ed8;
-              {% elif update.update_type == 'blocker' %}background: #fee2e2; color: #991b1b;
-              {% else %}background: #f1f5f9; color: #475569;{% endif %}
-              font-size: 0.75rem;">
+          <div class="pact-item">
+            <div class="pact-item__icon pact-item__icon--{{ update.update_type }}">
               <i class="fas fa-{% if update.update_type == 'milestone' %}flag{% elif update.update_type == 'release' %}rocket{% elif update.update_type == 'blocker' %}exclamation-triangle{% elif update.update_type == 'info' %}info-circle{% else %}sync{% endif %}"></i>
             </div>
-            <div style="flex: 1;">
-              <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.25rem;">
-                <span style="font-weight: 600; font-size: 0.875rem;">{{ update.title }}</span>
-                <span class="status-badge" style="font-size: 0.6875rem; padding: 0.125rem 0.5rem; border-radius: 999px; background: var(--bg-body); color: var(--text-muted);">{{ update.get_update_type_display }}</span>
+            <div class="pact-item__body">
+              <div class="pact-item__head">
+                <span class="pact-item__title">{{ update.title }}</span>
+                <span class="pact-chip">{{ update.get_update_type_display }}</span>
                 {% if update.progress_percentage is not None %}
-                <span style="font-size: 0.75rem; color: var(--primary); font-weight: 600;">{{ update.progress_percentage }}%</span>
+                <span class="pact-chip pact-chip--pct">{{ update.progress_percentage }}%</span>
                 {% endif %}
                 {% if not update.is_visible_to_client %}
-                <span style="font-size: 0.6875rem; padding: 0.125rem 0.5rem; border-radius: 999px; background: #fef3c7; color: #92400e;">Internal</span>
+                <span class="pact-chip pact-chip--internal">Internal</span>
                 {% endif %}
               </div>
-              <p style="font-size: 0.8125rem; color: var(--text-secondary); margin: 0 0 0.25rem; line-height: 1.5;">{{ update.description|truncatewords:40 }}</p>
-              <span style="font-size: 0.75rem; color: var(--text-muted);">
-                {{ update.author.get_full_name|default:update.author.username }} &middot; {{ update.created_at|timesince }} ago
-              </span>
+              <p class="pact-item__text">{{ update.description|truncatewords:40 }}</p>
+              <span class="pact-item__meta">{{ update.author.get_full_name|default:update.author.username }} &middot; {{ update.created_at|timesince }} ago</span>
             </div>
-            <form method="post" action="{% url 'project_delete_update' project.pk update.pk %}" style="flex-shrink: 0;">
+            <form method="post" action="{% url 'project_delete_update' project.pk update.pk %}" class="pact-item__del">
               {% csrf_token %}
-              <button type="submit" class="btn btn-sm btn-ghost" style="color: var(--text-muted); padding: 0.25rem 0.5rem;" onclick="return confirm('Delete this update?')" title="Delete">
+              <button type="submit" class="btn btn-sm btn-ghost" onclick="return confirm('Delete this update?')" title="Delete">
                 <i class="fas fa-trash-alt"></i>
               </button>
             </form>
@@ -647,52 +633,44 @@
           {% empty %}
           <div class="text-center py-4 text-muted">
             <i class="fas fa-stream" style="font-size: 1.5rem; opacity: 0.3; display: block; margin-bottom: 0.5rem;"></i>
-            No updates posted yet. Post your first update above.
+            No updates posted yet. Post your first update on the left.
           </div>
           {% endfor %}
         </div>
 
-        <!-- Client Comments -->
         {% if client_comments %}
-        <div class="p-3 border-top">
-          <h4 style="font-size: 0.9375rem; font-weight: 600; margin-bottom: 0.75rem;">
-            <i class="fas fa-comments me-2" style="color: var(--info);"></i>Client Comments
-          </h4>
+        <div class="pact-comments">
+          <h4 class="pact-heading"><i class="fas fa-comments me-2" style="color: var(--info);"></i>Client Comments</h4>
           {% for comment in client_comments %}
-          <div style="display: flex; gap: 0.75rem; padding: 0.75rem 0; border-bottom: 1px solid var(--border-color);">
-            <div style="width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 0.6875rem; font-weight: 600; color: white;
-              {% if comment.author.is_staff or comment.author.is_superuser %}background: linear-gradient(135deg, #0d9488, #0f766e);
-              {% else %}background: linear-gradient(135deg, #8b5cf6, #7c3aed);{% endif %}">
+          <div class="pact-item">
+            <div class="pact-avatar {% if not comment.author.is_staff and not comment.author.is_superuser %}pact-avatar--client{% endif %}">
               {{ comment.author.get_full_name|default:comment.author.username|make_list|first|upper }}
             </div>
-            <div style="flex: 1;">
-              <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.125rem;">
-                <span style="font-weight: 600; font-size: 0.8125rem;">{{ comment.author.get_full_name|default:comment.author.username }}</span>
-                <span style="font-size: 0.6875rem; padding: 0.125rem 0.5rem; border-radius: 999px;
-                  {% if comment.author.is_staff or comment.author.is_superuser %}background: #f0fdfa; color: #0d9488;
-                  {% else %}background: #f5f3ff; color: #7c3aed;{% endif %}">
-                  {% if comment.author.is_staff or comment.author.is_superuser %}Team{% else %}Client{% endif %}
-                </span>
-                <span style="font-size: 0.75rem; color: var(--text-muted);">{{ comment.created_at|timesince }} ago</span>
+            <div class="pact-item__body">
+              <div class="pact-item__head">
+                <span class="pact-item__title">{{ comment.author.get_full_name|default:comment.author.username }}</span>
+                <span class="pact-chip">{% if comment.author.is_staff or comment.author.is_superuser %}Team{% else %}Client{% endif %}</span>
+                <span class="pact-item__meta">{{ comment.created_at|timesince }} ago</span>
               </div>
-              <p style="font-size: 0.8125rem; color: var(--text-secondary); margin: 0; line-height: 1.5;">{{ comment.message }}</p>
+              <p class="pact-item__text">{{ comment.message }}</p>
             </div>
           </div>
           {% endfor %}
-
-          <!-- Quick Reply -->
-          <form method="post" action="{% url 'project_reply_comment' project.pk %}" style="margin-top: 0.75rem; display: flex; gap: 0.5rem;">
+          <form method="post" action="{% url 'project_reply_comment' project.pk %}" class="pact-reply">
             {% csrf_token %}
-            <input type="text" name="message" class="form-control" placeholder="Reply to client..." required style="font-size: 0.875rem;">
-            <button type="submit" class="btn btn-sm btn-primary" style="white-space: nowrap;">
-              <i class="fas fa-reply me-1"></i>Reply
-            </button>
+            <input type="text" name="message" class="form-control" placeholder="Reply to client..." required>
+            <button type="submit" class="btn btn-sm btn-primary"><i class="fas fa-reply me-1"></i>Reply</button>
           </form>
         </div>
         {% endif %}
       </div>
   </section>
+
+  </div>{# /pstage-col--r #}
+
 </div>{# /pstage #}
+
+{% include 'components/pulse_command.html' %}
 {% endblock %}
 
 <!-- Credential Renewal Modal -->
@@ -730,7 +708,8 @@
 </div>
 
 {% block extra_js %}
-<script src="{% static 'js/pulse-stage.js' %}?v=1" defer></script>
+<script src="{% static 'js/pulse-stage.js' %}?v=4" defer></script>
+<script src="{% static 'js/pulse-ask.js' %}" defer></script>
 <script>
 function switchTab(tabId) {
   document.querySelectorAll('.tab-content').forEach(content => {
