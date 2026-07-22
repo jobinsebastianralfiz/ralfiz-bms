@@ -174,7 +174,15 @@
 
       micBtn.addEventListener('click', function () {
         if (listening) { rec.stop(); return; }
-        try { rec.start(); } catch (e) { /* already starting */ }
+        hush();
+        try {
+          rec.start();
+        } catch (e) {
+          // A stuck 'already started' session: reset and retry once.
+          try { rec.abort(); rec.start(); } catch (e2) {
+            show('The microphone could not start. Reload the page and try again.', null, true);
+          }
+        }
       });
       rec.addEventListener('start', function () {
         listening = true;
@@ -189,9 +197,26 @@
       rec.addEventListener('error', function (e) {
         listening = false;
         micBtn.classList.remove('is-listening');
-        setHint(e.error === 'not-allowed'
-          ? 'Microphone access was blocked. Allow it in your browser, or type instead.'
-          : 'Could not hear that. Try again, or type your question.', true);
+        var messages = {
+          'not-allowed':
+            'Microphone access is blocked for this site. Allow it from the ' +
+            'icon in the address bar, reload the page, and try again.',
+          'service-not-allowed':
+            'The browser refused speech recognition for this site. Check the ' +
+            'microphone permission, reload, and try again.',
+          'audio-capture':
+            'No microphone was found. Plug one in or check your input device.',
+          'network':
+            'The speech service could not be reached. Check your connection ' +
+            'and try again, or type your question.',
+          'no-speech':
+            'Nothing was heard. Click the mic and speak your question.'
+        };
+        var message = messages[e.error] ||
+          'Speech input failed (' + e.error + '). Try again, or type your question.';
+        // The hint line is easy to miss -- put the failure where answers go.
+        show(message, 'voice input', true);
+        setHint(restingHint);
       });
       rec.addEventListener('result', function (e) {
         var said = e.results[0][0].transcript;
