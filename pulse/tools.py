@@ -1035,7 +1035,7 @@ def get_weather(scope, city=None):
     wind = payload.get('wind') or {}
     icon = weather.get('icon', '')
 
-    return {
+    result = {
         'city': payload.get('name') or city,
         'description': weather.get('description', ''),
         # Condition group ("Clear", "Rain", "Thunderstorm", ...) drives the
@@ -1049,6 +1049,46 @@ def get_weather(scope, city=None):
         # OpenWeather reports m/s with metric units.
         'wind_kmh': round(wind['speed'] * 3.6, 1) if 'speed' in wind else None,
     }
+
+    # Next hours, best-effort: the dashboard card shows a small forecast
+    # strip. A forecast failure never spoils the current conditions.
+    try:
+        fc = requests.get(
+            'https://api.openweathermap.org/data/2.5/forecast',
+            params={'q': city, 'appid': api_key, 'units': 'metric', 'cnt': 6},
+            timeout=10,
+        )
+        fc_payload = fc.json() if fc.status_code == 200 else {}
+    except (requests.RequestException, ValueError):
+        fc_payload = {}
+
+    slots = fc_payload.get('list') or []
+    tz_shift = (fc_payload.get('city') or {}).get('timezone') or 0
+    hourly = []
+    temps = []
+    for slot in slots:
+        s_main = slot.get('main') or {}
+        s_weather = (slot.get('weather') or [{}])[0]
+        s_icon = s_weather.get('icon', '')
+        if 'temp' not in s_main:
+            continue
+        local = (int(slot.get('dt', 0)) + tz_shift) % 86400
+        hourly.append({
+            'at': '%02d:%02d' % (local // 3600, (local % 3600) // 60),
+            'temp_c': round(s_main['temp']),
+            'condition': (s_weather.get('main') or '').lower(),
+            'is_night': s_icon.endswith('n'),
+            # Probability of precipitation arrives as 0..1.
+            'pop_pct': int(round(float(slot.get('pop') or 0) * 100)),
+        })
+        temps.append(s_main['temp'])
+    if hourly:
+        result['hourly'] = hourly
+        if result['temp_c'] is not None:
+            temps.append(result['temp_c'])
+        result['high_c'] = round(max(temps))
+        result['low_c'] = round(min(temps))
+    return result
 
 
 # --------------------------------------------------------------------------

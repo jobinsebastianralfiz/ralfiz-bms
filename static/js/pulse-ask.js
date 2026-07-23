@@ -66,6 +66,20 @@
      these in to pause/resume around each utterance. */
   var voiceCtl = { pause: function () {}, resume: function () {} };
 
+  /* Echo defence. Chrome quietly garbage-collects utterances, losing their
+     onend/onstart events — which broke the pause-while-speaking logic and
+     let PULSE hear its own answer, wake itself with "…PULSE, the command
+     centre…", and loop forever. So: keep a live reference, pause BEFORE
+     speaking instead of on an event, poll as a lost-event backstop, and
+     remember what was said so any echo of it can be discarded. */
+  var currentUtterance = null;
+  var lastSpoken = { text: '', until: 0 };
+
+  function normSpeech(s) {
+    return (s || '').toLowerCase().replace(/[^a-z0-9 ]+/g, ' ')
+      .replace(/\s+/g, ' ').trim();
+  }
+
   function speak(text) {
     if (!canSpeak || !speakOn || !text) return;
     window.speechSynthesis.cancel();
@@ -78,10 +92,24 @@
         break;
       }
     }
-    utterance.onstart = voiceCtl.pause;
-    utterance.onend = voiceCtl.resume;
-    utterance.onerror = voiceCtl.resume;
+    currentUtterance = utterance;
+    lastSpoken.text = normSpeech(text);
+    lastSpoken.until = Infinity;          // still speaking
+    voiceCtl.pause();
+    var done = function () {
+      if (currentUtterance !== utterance) return;
+      currentUtterance = null;
+      lastSpoken.until = Date.now() + 2500;  // echoes can trail the audio
+      voiceCtl.resume();
+    };
+    utterance.onend = done;
+    utterance.onerror = done;
     window.speechSynthesis.speak(utterance);
+    var guard = setInterval(function () {
+      if (currentUtterance === utterance && window.speechSynthesis.speaking) return;
+      clearInterval(guard);
+      done();
+    }, 600);
   }
 
   function hush() {
@@ -370,6 +398,17 @@
 
         var heard = finals.trim();
         vlog('heard: "' + heard + '"' + (armed ? ' (armed)' : ''));
+
+        // PULSE's own answer bleeding into the mic must never become a
+        // query — that is a feedback loop that greets itself forever.
+        var normHeard = normSpeech(heard);
+        if (lastSpoken.text && Date.now() < lastSpoken.until && normHeard &&
+            lastSpoken.text.indexOf(normHeard.slice(0, 48)) !== -1) {
+          vlog('ignored echo of own voice');
+          hideOverlay();
+          return;
+        }
+
         var wake = WAKE.exec(heard);
         var query;
         if (armed) {

@@ -7,7 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="{% static 'css/pulse.css' %}?v=5">
+<link rel="stylesheet" href="{% static 'css/pulse.css' %}?v=6">
 </head>
 <body class="pulse-body">
 {% csrf_token %}
@@ -150,6 +150,6 @@
 
 <script id="pulse-bootstrap" type="application/json">{{ summary_json|safe }}</script>
 <script src="{% static 'js/pulse.js' %}" defer></script>
-<script src="{% static 'js/pulse-ask.js' %}?v=6" defer></script>
+<script src="{% static 'js/pulse-ask.js' %}?v=7" defer></script>
 </body>
 </html>

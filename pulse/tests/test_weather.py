@@ -29,11 +29,30 @@ SAMPLE = {
     'wind': {'speed': 3.5},
 }
 
+FORECAST = {
+    'city': {'timezone': 19800},   # IST = UTC+5:30
+    'list': [
+        # dt 39900 UTC + 19800 = 59700s into the day = 16:35 local.
+        {'dt': 39900, 'main': {'temp': 31.2}, 'pop': 0.06,
+         'weather': [{'main': 'Clouds', 'icon': '02d'}]},
+        {'dt': 50700, 'main': {'temp': 26.4}, 'pop': 0.44,
+         'weather': [{'main': 'Rain', 'icon': '10n'}]},
+    ],
+}
+
+
+def two_call_mock():
+    """requests.get answers current weather first, then the forecast."""
+    return mock.patch(
+        'requests.get',
+        side_effect=[FakeResponse(200, SAMPLE), FakeResponse(200, FORECAST)],
+    )
+
 
 @override_settings(OPENWEATHER_API_KEY='k', PULSE_WEATHER_CITY='Kochi,IN')
 class WeatherToolTests(TestCase):
     def test_maps_openweather_payload(self):
-        with mock.patch('requests.get', return_value=FakeResponse(200, SAMPLE)) as get:
+        with two_call_mock() as get:
             result = tools.get_weather(owner_scope())
         self.assertEqual(result['city'], 'Kochi')
         self.assertEqual(result['description'], 'light rain')
@@ -43,7 +62,31 @@ class WeatherToolTests(TestCase):
         self.assertEqual(result['temp_c'], 29.4)
         self.assertEqual(result['humidity_pct'], 84)
         self.assertEqual(result['wind_kmh'], 12.6)  # 3.5 m/s
-        self.assertEqual(get.call_args.kwargs['params']['q'], 'Kochi,IN')
+        self.assertEqual(get.call_args_list[0].kwargs['params']['q'], 'Kochi,IN')
+
+    def test_maps_forecast_hours(self):
+        with two_call_mock():
+            result = tools.get_weather(owner_scope())
+        self.assertEqual(len(result['hourly']), 2)
+        first = result['hourly'][0]
+        self.assertEqual(first['at'], '16:35')
+        self.assertEqual(first['temp_c'], 31)
+        self.assertEqual(first['condition'], 'clouds')
+        self.assertFalse(first['is_night'])
+        self.assertEqual(first['pop_pct'], 6)
+        self.assertTrue(result['hourly'][1]['is_night'])
+        self.assertEqual(result['high_c'], 31)   # max of slots + current
+        self.assertEqual(result['low_c'], 26)
+
+    def test_forecast_failure_keeps_current_weather(self):
+        import requests
+        with mock.patch(
+            'requests.get',
+            side_effect=[FakeResponse(200, SAMPLE), requests.ConnectionError()],
+        ):
+            result = tools.get_weather(owner_scope())
+        self.assertEqual(result['temp_c'], 29.4)
+        self.assertNotIn('hourly', result)
 
     def test_named_city_overrides_default(self):
         with mock.patch('requests.get', return_value=FakeResponse(200, SAMPLE)) as get:
@@ -83,13 +126,14 @@ class WeatherEndpointTests(TestCase):
 
     def test_owner_gets_cached_weather(self):
         self.client.force_login(self.owner)
-        with mock.patch('requests.get', return_value=FakeResponse(200, SAMPLE)) as get:
+        with two_call_mock() as get:
             first = self.client.get('/api/pulse/weather/')
             second = self.client.get('/api/pulse/weather/')
         self.assertEqual(first.status_code, 200)
         self.assertEqual(first.json()['city'], 'Kochi')
         self.assertEqual(second.json(), first.json())
-        self.assertEqual(get.call_count, 1)  # second hit served from cache
+        # One current + one forecast call; second page hit served from cache.
+        self.assertEqual(get.call_count, 2)
 
     def test_non_owner_is_refused(self):
         self.client.force_login(self.outsider)

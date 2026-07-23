@@ -646,6 +646,17 @@
   /* ── Boot ───────────────────────────────────────────────────────── */
 
   window.addEventListener('resize', resize);
+  // The stage also resizes WITHOUT a window resize — the weather card
+  // arriving async reflows the grid. A stale bitmap leaves a bottom band
+  // that clearRect() no longer covers, and every frame smears into it.
+  if (window.ResizeObserver) {
+    new ResizeObserver(function () {
+      if (canvas.width !== Math.round(stage.clientWidth * dpr) ||
+          canvas.height !== Math.round(stage.clientHeight * dpr)) {
+        resize();
+      }
+    }).observe(stage);
+  }
   cam = overviewCam();
   camTo = overviewCam();
   resize();

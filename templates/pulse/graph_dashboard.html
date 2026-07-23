@@ -7,7 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="{% static 'css/pulse.css' %}?v=5">
+<link rel="stylesheet" href="{% static 'css/pulse.css' %}?v=6">
 </head>
 <body class="pulse-body">
 {% csrf_token %}
@@ -142,8 +142,9 @@
           <span class="graph-metric__label" data-w="label">Weather</span>
           <span class="graph-metric__value graph-weather__temp" data-w="value">&mdash;</span>
           <span class="graph-metric__note graph-weather__desc" data-w="note"></span>
-          <span class="graph-weather__chips" data-w="chips"></span>
+          <span class="graph-weather__range" data-w="range"></span>
         </span>
+        <span class="graph-weather__hours" data-w="hours"></span>
       </a>
     </section>
   </main>
@@ -204,16 +205,48 @@
       card.querySelector('[data-w=value]').textContent = Math.round(w.temp_c) + '°C';
       card.querySelector('[data-w=note]').textContent = w.description || '';
 
-      var chips = [];
-      if (w.feels_like_c !== null && w.feels_like_c !== undefined) chips.push('Feels ' + Math.round(w.feels_like_c) + '°');
-      if (w.humidity_pct !== null && w.humidity_pct !== undefined) chips.push(w.humidity_pct + '% RH');
-      if (w.wind_kmh !== null && w.wind_kmh !== undefined) chips.push(Math.round(w.wind_kmh) + ' km/h');
-      var chipWrap = card.querySelector('[data-w=chips]');
-      chipWrap.textContent = '';
-      chips.forEach(function (c) {
+      var range = [];
+      if (w.high_c !== undefined && w.low_c !== undefined) range.push('↑' + w.high_c + '° ↓' + w.low_c + '°');
+      if (w.feels_like_c !== null && w.feels_like_c !== undefined) range.push('feels ' + Math.round(w.feels_like_c) + '°');
+      if (w.humidity_pct !== null && w.humidity_pct !== undefined) range.push(w.humidity_pct + '%');
+      card.querySelector('[data-w=range]').textContent = range.join(' · ');
+
+      // Tiny condition icons for the forecast strip, in the card's palette.
+      function bucket(c) {
+        c = (c || '').toLowerCase();
+        if (/thunder/.test(c)) return 'thunder';
+        if (/drizzle|rain|squall/.test(c)) return 'rain';
+        if (/snow|sleet/.test(c)) return 'snow';
+        if (/mist|fog|haze|smoke|dust|sand|ash/.test(c)) return 'mist';
+        if (/cloud|overcast/.test(c)) return 'clouds';
+        return 'clear';
+      }
+      function iconSvg(b, night) {
+        var P = { sun: '#e8c07a', cloud: '#9fb9c6', rain: '#7cc4e8', moon: '#e5ddc0' };
+        var body;
+        if (b === 'clear') {
+          body = night
+            ? '<path d="M15 10.5A5.6 5.6 0 0 1 9.4 5 5.4 5.4 0 0 0 10 15.8 5.6 5.6 0 0 0 15 10.5Z" fill="' + P.moon + '"/>'
+            : '<circle cx="10" cy="10" r="3.4" fill="' + P.sun + '"/><g stroke="' + P.sun + '" stroke-width="1.4" stroke-linecap="round"><path d="M10 2.6v2.2M10 15.2v2.2M2.6 10h2.2M15.2 10h2.2M4.8 4.8l1.5 1.5M13.7 13.7l1.5 1.5M15.2 4.8l-1.5 1.5M6.3 13.7l-1.5 1.5"/></g>';
+        } else {
+          var cloud = '<path d="M6 14.6a3.1 3.1 0 0 1-.3-6.2 4.1 4.1 0 0 1 8-.6 2.9 2.9 0 0 1-.4 5.8H6Z" fill="' + P.cloud + '"/>';
+          if (b === 'rain') body = cloud + '<g stroke="' + P.rain + '" stroke-width="1.4" stroke-linecap="round"><path d="M7.2 15.8l-.8 2M10.6 15.8l-.8 2M14 15.8l-.8 2"/></g>';
+          else if (b === 'thunder') body = cloud + '<path d="M10.6 14.4 8.6 17.6h1.6l-.9 2.6 2.9-3.6h-1.7l1-2.2Z" fill="' + P.sun + '"/>';
+          else if (b === 'snow') body = cloud + '<g fill="#dce8ee"><circle cx="7.4" cy="16.6" r=".9"/><circle cx="10.6" cy="17.4" r=".9"/><circle cx="13.6" cy="16.4" r=".9"/></g>';
+          else if (b === 'mist') body = '<g stroke="' + P.cloud + '" stroke-width="1.5" stroke-linecap="round"><path d="M4 8h12M3 11h14M5 14h11"/></g>';
+          else body = cloud + (night ? '' : '<circle cx="14.4" cy="6.4" r="2.3" fill="' + P.sun + '"/>');
+        }
+        return '<svg viewBox="0 0 20 20" aria-hidden="true">' + body + '</svg>';
+      }
+
+      var hoursWrap = card.querySelector('[data-w=hours]');
+      hoursWrap.textContent = '';
+      (w.hourly || []).slice(0, 5).forEach(function (h) {
         var s = document.createElement('span');
-        s.textContent = c;
-        chipWrap.appendChild(s);
+        s.className = 'graph-weather__hour';
+        s.innerHTML = '<i>' + h.at + '</i>' + iconSvg(bucket(h.condition), h.is_night)
+          + '<b>' + h.temp_c + '°</b><u>' + (h.pop_pct || 0) + '%</u>';
+        hoursWrap.appendChild(s);
       });
       card.hidden = false;
     })
@@ -221,7 +254,7 @@
 })();
 </script>
 <script id="graph-data" type="application/json">{{ graph_json|safe }}</script>
-<script src="{% static 'js/pulse-graph.js' %}?v=2" defer></script>
-<script src="{% static 'js/pulse-ask.js' %}?v=6" defer></script>
+<script src="{% static 'js/pulse-graph.js' %}?v=3" defer></script>
+<script src="{% static 'js/pulse-ask.js' %}?v=7" defer></script>
 </body>
 </html>
