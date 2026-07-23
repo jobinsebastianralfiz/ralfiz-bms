@@ -167,9 +167,12 @@
   /* ── Voice input: always listening, wake word "Pulse" ───────────── */
   /* The engine runs continuously (mic button is a mute toggle, on by
      default). Speech that begins with the wake word becomes a query;
-     everything else is ignored. A centre overlay animates while words are
-     being captured, and the recogniser pauses while PULSE reads an answer
-     so it never hears itself. */
+     everything else is ignored — EXCEPT right after an explicit mic click,
+     which arms push-to-talk: the next phrase is the query, wake word or
+     not. A centre overlay animates while words are being captured, and the
+     recogniser pauses while PULSE reads an answer so it never hears
+     itself. Every failure path must end in something visible: a click can
+     never do "nothing". */
 
   if (micBtn) {
     var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -192,6 +195,16 @@
       var running = false;      // the engine is actually running
       var suspended = false;    // paused while PULSE speaks
       var restartTimer = null;
+      var armed = false;        // mic was clicked: next phrase = query
+      var armedTimer = null;
+      var startedAt = 0;        // when the engine last started
+      var heardAnything = false;  // any result since that start
+      var quickDeaths = 0;      // start→end cycles that heard nothing
+      var deliberateStop = false; // we aborted on purpose; not an engine death
+
+      function vlog(msg) {
+        try { console.info('[PULSE voice] ' + msg); } catch (e) {}
+      }
 
       /* Centre stage animation, built here so every page gets it free. */
       var overlay = document.createElement('div');
@@ -209,29 +222,54 @@
       document.body.appendChild(overlay);
       var overlayText = overlay.querySelector('.pulse-voice__text');
 
-      function showOverlay(text) {
+      function showOverlay(text, hintText) {
         overlayText.textContent = text || 'Listening…';
+        var hintEl = overlay.querySelector('.pulse-voice__hint');
+        if (hintEl) {
+          hintEl.textContent = hintText ||
+            'Listening — tap anywhere to dismiss';
+        }
         overlay.hidden = false;
       }
       function hideOverlay() { overlay.hidden = true; }
+
+      function disarm() {
+        armed = false;
+        clearTimeout(armedTimer);
+      }
+
       overlay.addEventListener('click', function () {
+        disarm();
         hideOverlay();
         stopRec();          // drops the current phrase; end handler revives
       });
 
       function startRec() {
         if (running || suspended || !live) return;
-        try { rec.start(); } catch (e) { /* already starting */ }
+        try {
+          rec.start();
+          vlog('engine start requested');
+        } catch (e) {
+          // start() throws when the engine is mid-shutdown; retry shortly
+          // instead of dying in silence.
+          vlog('start() threw (' + (e && e.name) + '), retrying');
+          clearTimeout(restartTimer);
+          restartTimer = setTimeout(function () {
+            try { rec.start(); } catch (e2) { /* still winding down */ }
+          }, 300);
+        }
       }
       function stopRec() {
+        deliberateStop = true;
         try { rec.abort(); } catch (e) { /* not running */ }
       }
 
       function reflectMic() {
         micBtn.classList.toggle('is-listening', live);
         micBtn.title = live
-          ? 'Always listening — say "Pulse, …". Click to mute the mic.'
-          : 'Voice is off — click to start listening.';
+          ? 'Listening — say "Pulse, …", or click to ask straight away. '
+            + 'Click twice to mute.'
+          : 'Voice is off — click to ask by voice.';
       }
 
       voiceCtl.pause = function () {
@@ -243,11 +281,46 @@
         startRec();
       };
 
-      rec.addEventListener('start', function () { running = true; });
+      rec.addEventListener('start', function () {
+        running = true;
+        startedAt = Date.now();
+        heardAnything = false;
+        deliberateStop = false;
+        vlog('engine running');
+        if (armed) showOverlay('Listening…', 'Ask your question — no need to say "Pulse"');
+      });
 
       rec.addEventListener('end', function () {
         running = false;
-        hideOverlay();
+        if (!armed) hideOverlay();
+        vlog('engine ended after ' + (Date.now() - startedAt) + 'ms');
+
+        // An engine that dies instantly without ever hearing audio is not
+        // going to recover by restarting — Chromium builds without a speech
+        // service key (Brave and friends) do exactly this, forever. Detect
+        // the loop and say so instead of pretending to listen. Aborts we
+        // asked for (mute, dismiss, pause-while-speaking) don't count.
+        if (deliberateStop) {
+          deliberateStop = false;
+        } else if (!heardAnything && Date.now() - startedAt < 1500) {
+          quickDeaths++;
+          if (quickDeaths >= 3) {
+            disarm();
+            live = false;
+            try { localStorage.setItem('pulseLive', '0'); } catch (e) {}
+            reflectMic();
+            hideOverlay();
+            show('Speech recognition keeps shutting down before hearing '
+                 + 'anything. This browser’s speech service may not work '
+                 + '(it needs Google Chrome, not Brave or a Chromium build) '
+                 + '— or another app is holding the microphone. Type '
+                 + 'your question instead.', null, true);
+            return;
+          }
+        } else {
+          quickDeaths = 0;
+        }
+
         // Engines give up after silence; quietly come back.
         if (live && !suspended) {
           clearTimeout(restartTimer);
@@ -257,7 +330,9 @@
 
       rec.addEventListener('error', function (e) {
         running = false;
+        vlog('engine error: ' + e.error);
         if (e.error === 'no-speech' || e.error === 'aborted') return;
+        disarm();
         hideOverlay();
         var messages = {
           'not-allowed':
@@ -282,6 +357,8 @@
       });
 
       rec.addEventListener('result', function (e) {
+        heardAnything = true;
+        quickDeaths = 0;
         var interim = '', finals = '';
         for (var i = e.resultIndex; i < e.results.length; i++) {
           var piece = e.results[i][0].transcript;
@@ -292,9 +369,17 @@
         if (!finals.trim()) return;
 
         var heard = finals.trim();
+        vlog('heard: "' + heard + '"' + (armed ? ' (armed)' : ''));
         var wake = WAKE.exec(heard);
-        if (!wake) { hideOverlay(); return; }   // not for us
-        var query = heard.slice(wake[0].length).trim();
+        var query;
+        if (armed) {
+          // The click was the wake word. Strip a spoken one if present.
+          disarm();
+          query = wake ? heard.slice(wake[0].length).trim() : heard;
+        } else {
+          if (!wake) { hideOverlay(); return; }   // not for us
+          query = heard.slice(wake[0].length).trim();
+        }
         hideOverlay();
         if (!query) {
           setHint('Heard "Pulse" — say the whole question in one go, like ' +
@@ -307,6 +392,7 @@
 
       function goLive() {
         live = true;
+        quickDeaths = 0;
         try { localStorage.setItem('pulseLive', '1'); } catch (e) {}
         reflectMic();
         startRec();
@@ -314,12 +400,64 @@
         setHint(restingHint);
       }
 
+      /* An explicit click arms push-to-talk: the very next phrase is the
+         query, wake word optional. The overlay comes up IMMEDIATELY so the
+         click always visibly does something, and getUserMedia runs first —
+         it reliably forces the permission prompt and reports named errors
+         (recognition engines sometimes fail without saying why). */
+      function armFromClick() {
+        disarm();
+        armed = true;
+        showOverlay('Starting the mic…', 'Ask your question — no need to say "Pulse"');
+        armedTimer = setTimeout(function () {
+          disarm();
+          hideOverlay();
+          setHint('Didn’t catch anything. Click the mic and speak, or type '
+                  + 'your question.', true);
+        }, 12000);
+
+        function beginListening() {
+          goLive();
+          if (running) {
+            showOverlay('Listening…', 'Ask your question — no need to say "Pulse"');
+          }
+        }
+
+        var gum = navigator.mediaDevices && navigator.mediaDevices.getUserMedia;
+        if (!gum) { beginListening(); return; }
+        navigator.mediaDevices.getUserMedia({ audio: true }).then(function (stream) {
+          // Only needed the permission + a working device; recognition
+          // opens its own capture.
+          stream.getTracks().forEach(function (t) { t.stop(); });
+          vlog('getUserMedia OK — mic reachable');
+          beginListening();
+        }).catch(function (err) {
+          vlog('getUserMedia failed: ' + (err && err.name));
+          disarm();
+          hideOverlay();
+          show({
+            NotAllowedError:
+              'Microphone access is blocked. Click the icon in the address '
+              + 'bar to allow it — and on a Mac also check System Settings '
+              + '→ Privacy & Security → Microphone for your browser.',
+            NotFoundError:
+              'No microphone was found. Plug one in or check your input device.',
+            NotReadableError:
+              'The microphone is busy in another app. Close whatever is '
+              + 'using it and click the mic again.'
+          }[err && err.name]
+            || ('The microphone could not be opened ('
+                + ((err && err.name) || 'unknown error') + '). Type your '
+                + 'question instead.'), null, true);
+        });
+      }
+
       micBtn.addEventListener('click', function () {
         // A dead-looking mic must never be muted further by the click meant
-        // to fix it: only an actually-running engine toggles off. Starting
-        // from a real click also forces the permission prompt that an
-        // automatic page-load start is allowed to suppress.
-        if (!live || !running) { goLive(); return; }
+        // to fix it: only an actually-running engine toggles off.
+        if (!live || !running) { armFromClick(); return; }
+        if (!armed) { armFromClick(); return; }   // running quietly → talk now
+        disarm();
         live = false;
         try { localStorage.setItem('pulseLive', '0'); } catch (e) {}
         reflectMic();

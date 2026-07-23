@@ -24,7 +24,7 @@ class FakeResponse:
 
 SAMPLE = {
     'name': 'Kochi',
-    'weather': [{'description': 'light rain'}],
+    'weather': [{'description': 'light rain', 'main': 'Rain', 'icon': '10n'}],
     'main': {'temp': 29.4, 'feels_like': 33.1, 'humidity': 84},
     'wind': {'speed': 3.5},
 }
@@ -37,6 +37,9 @@ class WeatherToolTests(TestCase):
             result = tools.get_weather(owner_scope())
         self.assertEqual(result['city'], 'Kochi')
         self.assertEqual(result['description'], 'light rain')
+        self.assertEqual(result['condition'], 'rain')
+        self.assertEqual(result['icon'], '10n')
+        self.assertTrue(result['is_night'])
         self.assertEqual(result['temp_c'], 29.4)
         self.assertEqual(result['humidity_pct'], 84)
         self.assertEqual(result['wind_kmh'], 12.6)  # 3.5 m/s

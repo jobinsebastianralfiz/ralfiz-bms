@@ -1033,10 +1033,16 @@ def get_weather(scope, city=None):
     weather = (payload.get('weather') or [{}])[0]
     main = payload.get('main') or {}
     wind = payload.get('wind') or {}
+    icon = weather.get('icon', '')
 
     return {
         'city': payload.get('name') or city,
         'description': weather.get('description', ''),
+        # Condition group ("Clear", "Rain", "Thunderstorm", ...) drives the
+        # dashboard card's animated scene; the icon suffix says day or night.
+        'condition': (weather.get('main') or '').lower(),
+        'icon': icon,
+        'is_night': icon.endswith('n'),
         'temp_c': round(main['temp'], 1) if 'temp' in main else None,
         'feels_like_c': round(main['feels_like'], 1) if 'feels_like' in main else None,
         'humidity_pct': main.get('humidity'),

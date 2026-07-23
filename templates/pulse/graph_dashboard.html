@@ -7,7 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="{% static 'css/pulse.css' %}?v=4">
+<link rel="stylesheet" href="{% static 'css/pulse.css' %}?v=5">
 </head>
 <body class="pulse-body">
 {% csrf_token %}
@@ -126,10 +126,24 @@
         </a>
       {% endfor %}
       {# Weather fills in once /api/pulse/weather/ answers; hidden if unconfigured. #}
-      <a class="graph-metric" id="graph-weather" hidden>
-        <span class="graph-metric__label" data-w="label">Weather</span>
-        <span class="graph-metric__value" data-w="value">&mdash;</span>
-        <span class="graph-metric__note" data-w="note"></span>
+      <a class="graph-metric graph-weather" id="graph-weather" hidden>
+        <span class="graph-weather__scene" aria-hidden="true">
+          <i class="graph-weather__sun"></i>
+          <i class="graph-weather__moon"></i>
+          <i class="graph-weather__stars"></i>
+          <i class="graph-weather__cloud graph-weather__cloud--a"></i>
+          <i class="graph-weather__cloud graph-weather__cloud--b"></i>
+          <i class="graph-weather__rain"></i>
+          <i class="graph-weather__flash"></i>
+          <i class="graph-weather__mist graph-weather__mist--a"></i>
+          <i class="graph-weather__mist graph-weather__mist--b"></i>
+        </span>
+        <span class="graph-weather__body">
+          <span class="graph-metric__label" data-w="label">Weather</span>
+          <span class="graph-metric__value graph-weather__temp" data-w="value">&mdash;</span>
+          <span class="graph-metric__note graph-weather__desc" data-w="note"></span>
+          <span class="graph-weather__chips" data-w="chips"></span>
+        </span>
       </a>
     </section>
   </main>
@@ -164,6 +178,7 @@
 
 <script>
 // Weather card: filled in after load so the page never waits on OpenWeather.
+// data-cond + is-night select which pieces of the animated scene show.
 (function () {
   fetch('/api/pulse/weather/', { credentials: 'same-origin' })
     .then(function (r) { return r.ok ? r.json() : null; })
@@ -171,13 +186,35 @@
       if (!w || w.error || w.temp_c === null || w.temp_c === undefined) return;
       var card = document.getElementById('graph-weather');
       if (!card) return;
+
+      // Old cached payloads (10-min server cache) may lack `condition`;
+      // fall back to sniffing the description.
+      var raw = (w.condition || w.description || '').toLowerCase();
+      var cond = 'clear';
+      if (/thunder/.test(raw)) cond = 'thunder';
+      else if (/drizzle/.test(raw)) cond = 'drizzle';
+      else if (/rain|squall/.test(raw)) cond = 'rain';
+      else if (/snow|sleet/.test(raw)) cond = 'snow';
+      else if (/mist|fog|haze|smoke|dust|sand|ash/.test(raw)) cond = 'mist';
+      else if (/cloud|overcast/.test(raw)) cond = 'clouds';
+      card.dataset.cond = cond;
+      card.classList.toggle('is-night', !!w.is_night);
+
       card.querySelector('[data-w=label]').textContent = 'Weather · ' + w.city;
       card.querySelector('[data-w=value]').textContent = Math.round(w.temp_c) + '°C';
-      var bits = [];
-      if (w.description) bits.push(w.description);
-      if (w.feels_like_c !== null && w.feels_like_c !== undefined) bits.push('feels ' + Math.round(w.feels_like_c) + '°');
-      if (w.humidity_pct !== null && w.humidity_pct !== undefined) bits.push(w.humidity_pct + '% humidity');
-      card.querySelector('[data-w=note]').textContent = bits.join(' · ');
+      card.querySelector('[data-w=note]').textContent = w.description || '';
+
+      var chips = [];
+      if (w.feels_like_c !== null && w.feels_like_c !== undefined) chips.push('Feels ' + Math.round(w.feels_like_c) + '°');
+      if (w.humidity_pct !== null && w.humidity_pct !== undefined) chips.push(w.humidity_pct + '% RH');
+      if (w.wind_kmh !== null && w.wind_kmh !== undefined) chips.push(Math.round(w.wind_kmh) + ' km/h');
+      var chipWrap = card.querySelector('[data-w=chips]');
+      chipWrap.textContent = '';
+      chips.forEach(function (c) {
+        var s = document.createElement('span');
+        s.textContent = c;
+        chipWrap.appendChild(s);
+      });
       card.hidden = false;
     })
     .catch(function () { /* card stays hidden */ });
@@ -185,6 +222,6 @@
 </script>
 <script id="graph-data" type="application/json">{{ graph_json|safe }}</script>
 <script src="{% static 'js/pulse-graph.js' %}?v=2" defer></script>
-<script src="{% static 'js/pulse-ask.js' %}?v=5" defer></script>
+<script src="{% static 'js/pulse-ask.js' %}?v=6" defer></script>
 </body>
 </html>
