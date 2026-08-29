@@ -346,6 +346,10 @@ body {
   /* Fixed height so the ruled lines align across both columns. */
   height: 68px; display: flex; align-items: flex-end;
 }
+/* The company block pairs a signature with the seal, so it gets a little
+   more room and sits them side by side. */
+.sign-area.company-sign { gap: 12px; align-items: flex-end; }
+.seal-image { max-height: 66px; max-width: 44%; opacity: .92; }
 .sign-image { max-height: 64px; max-width: 100%; display: block; }
 .sign-typed {
   font-size: 22px; color: var(--agr-ink); line-height: 1.1;

@@ -3133,6 +3133,13 @@ def settings_view(request):
 
         if request.FILES.get('logo'):
             company.logo = request.FILES.get('logo')
+        if request.FILES.get('authorized_signature'):
+            company.authorized_signature = request.FILES['authorized_signature']
+        if request.FILES.get('company_seal'):
+            company.company_seal = request.FILES['company_seal']
+        company.signatory_name = request.POST.get('signatory_name', '')
+        company.signatory_designation = request.POST.get(
+            'signatory_designation', 'Authorized Representative')
 
         company.save()
         messages.success(request, 'Settings updated successfully.')

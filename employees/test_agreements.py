@@ -600,3 +600,58 @@ class SendFeeTests(AgreementTestBase):
         body = self.client.get('/hr/agreements/send/?type=all').content.decode()
         self.assertIn(f'fee_{self.intern.id}', body)
         self.assertIn('name="default_fee"', body)
+
+
+class CountersignatureTests(AgreementTestBase):
+    """The "For Ralfiz Technologies" block on the signed copy."""
+
+    def _sign(self):
+        agreement = self._make_request()
+        self.client.post(agreement.public_path(), self._continue_payload())
+        agreement.refresh_from_db()
+        return agreement
+
+    def test_falls_back_to_the_bundled_certificate_assets(self):
+        """So the block is never blank, even before anything is uploaded."""
+        from employees.agreement_views import company_countersignature
+
+        block = company_countersignature(for_pdf=False)
+        self.assertIn('jobin_signature', block['signature_src'])
+        self.assertIn('seal', block['seal_src'])
+
+    def test_uploaded_signature_and_seal_win(self):
+        from django.core.files.base import ContentFile
+
+        from core.models import CompanySettings
+        from employees.agreement_views import company_countersignature
+
+        company = CompanySettings.get_settings()
+        company.authorized_signature.save('sig.png', ContentFile(PNG_BYTES), save=False)
+        company.company_seal.save('seal.png', ContentFile(PNG_BYTES), save=False)
+        company.signatory_name = 'Jobin Sebastian'
+        company.save()
+
+        block = company_countersignature(for_pdf=False)
+        self.assertIn('sig', block['signature_src'])
+        self.assertEqual(block['signatory_name'], 'Jobin Sebastian')
+
+    def test_pdf_embeds_the_images_rather_than_linking_them(self):
+        from employees.agreement_views import company_countersignature
+
+        block = company_countersignature(for_pdf=True)
+        self.assertTrue(block['signature_src'].startswith('data:image/'))
+        self.assertTrue(block['seal_src'].startswith('data:image/'))
+
+    def test_signed_copy_shows_the_company_block(self):
+        agreement = self._sign()
+        response = self.client.get(f'/agreement/{agreement.token}/copy/')
+
+        self.assertContains(response, 'For Ralfiz Technologies')
+        self.assertContains(response, 'Authorized Representative')
+        self.assertContains(response, 'Company seal')
+
+    def test_missing_asset_degrades_to_an_empty_string(self):
+        """A broken path must not blow up the signed copy."""
+        from employees.agreement_views import _static_data_uri
+
+        self.assertEqual(_static_data_uri('certificates/does-not-exist.png'), '')

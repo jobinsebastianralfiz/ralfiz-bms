@@ -237,6 +237,61 @@
                 </div>
               </div>
             </div>
+
+            <hr class="my-4">
+
+            <h4 class="mb-1" style="font-size: 1rem;">Signature &amp; Seal</h4>
+            <p class="form-text mb-3">
+              Stamped into the &ldquo;For Ralfiz Technologies&rdquo; block on signed agreements.
+            </p>
+
+            <div class="row align-items-center">
+              <div class="col-3 col-sm-12" style="padding: 0.5rem;">
+                <div style="height: 90px; background: #fff; border: 1px solid var(--border-color); border-radius: 12px; display: flex; align-items: center; justify-content: center; padding: 8px; gap: 10px;">
+                  {% if company.authorized_signature %}
+                  <img src="{{ company.authorized_signature.url }}" alt="Signature" style="max-height: 70px; max-width: 55%;">
+                  {% endif %}
+                  {% if company.company_seal %}
+                  <img src="{{ company.company_seal.url }}" alt="Seal" style="max-height: 70px; max-width: 40%;">
+                  {% endif %}
+                  {% if not company.authorized_signature and not company.company_seal %}
+                  <span class="text-muted text-sm">No signature or seal</span>
+                  {% endif %}
+                </div>
+              </div>
+              <div class="col-9 col-sm-12" style="padding: 0.5rem;">
+                <div class="row">
+                  <div class="col-6 col-sm-12" style="padding: 0.5rem;">
+                    <div class="form-group mb-0">
+                      <label class="form-label">Authorized Signature</label>
+                      <input type="file" class="form-control" name="authorized_signature" accept="image/*">
+                      <div class="form-text">Transparent PNG works best</div>
+                    </div>
+                  </div>
+                  <div class="col-6 col-sm-12" style="padding: 0.5rem;">
+                    <div class="form-group mb-0">
+                      <label class="form-label">Company Seal</label>
+                      <input type="file" class="form-control" name="company_seal" accept="image/*">
+                      <div class="form-text">Transparent PNG works best</div>
+                    </div>
+                  </div>
+                  <div class="col-6 col-sm-12" style="padding: 0.5rem;">
+                    <div class="form-group mb-0">
+                      <label class="form-label">Signatory Name</label>
+                      <input type="text" class="form-control" name="signatory_name"
+                             value="{{ company.signatory_name|default:'' }}" placeholder="e.g. Jobin Sebastian">
+                    </div>
+                  </div>
+                  <div class="col-6 col-sm-12" style="padding: 0.5rem;">
+                    <div class="form-group mb-0">
+                      <label class="form-label">Designation</label>
+                      <input type="text" class="form-control" name="signatory_designation"
+                             value="{{ company.signatory_designation|default:'Authorized Representative' }}">
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
           <div class="card-footer d-flex justify-content-end">
             <button type="submit" class="btn btn-primary">

@@ -203,8 +203,61 @@ def build_copy_context(agreement, request=None, for_pdf=False):
         'ask_college': agreement.asks_college_fields,
         'signature_src': signature_src,
         'for_pdf': for_pdf,
+        'company': company_countersignature(for_pdf=for_pdf),
         'inline_css': _agreement_css() if for_pdf else '',
         'pdf_url': f'/agreement/{agreement.token}/copy.pdf' if request else '',
+    }
+
+
+def _file_data_uri(field):
+    """Inline an uploaded image so the PDF renderer needs no file access."""
+    if not field:
+        return ''
+    try:
+        with field.open('rb') as handle:
+            raw = handle.read()
+    except (OSError, ValueError):
+        return ''
+    mime = mimetypes.guess_type(field.name)[0] or 'image/png'
+    return f'data:{mime};base64,' + base64.b64encode(raw).decode()
+
+
+def _static_data_uri(relative_path):
+    """Same, for a bundled static asset."""
+    from django.conf import settings
+    from django.contrib.staticfiles import finders
+
+    path = finders.find(relative_path) or (settings.BASE_DIR / 'static' / relative_path)
+    try:
+        with open(path, 'rb') as handle:
+            raw = handle.read()
+    except OSError:
+        return ''
+    mime = mimetypes.guess_type(str(path))[0] or 'image/png'
+    return f'data:{mime};base64,' + base64.b64encode(raw).decode()
+
+
+def company_countersignature(for_pdf=False):
+    """The "For Ralfiz Technologies" block: uploaded signature and seal, or the
+    certificate assets already bundled with the app as a fallback."""
+    from core.models import CompanySettings
+
+    company = CompanySettings.get_settings()
+
+    def resolve(field, static_fallback):
+        if field:
+            return _file_data_uri(field) if for_pdf else field.url
+        if for_pdf:
+            return _static_data_uri(static_fallback)
+        from django.templatetags.static import static
+        return static(static_fallback)
+
+    return {
+        'company_name': company.company_name or 'Ralfiz Technologies',
+        'signature_src': resolve(company.authorized_signature, 'certificates/jobin_signature.png'),
+        'seal_src': resolve(company.company_seal, 'certificates/seal.png'),
+        'signatory_name': company.signatory_name,
+        'signatory_designation': company.signatory_designation or 'Authorized Representative',
     }
 
 

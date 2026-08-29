@@ -726,6 +726,20 @@ class CompanySettings(models.Model):
     hsn_code = models.CharField(max_length=20, blank=True, verbose_name='HSN/SAC Code', help_text='HSN code for goods or SAC code for services')
     logo = models.FileField(upload_to='company/', blank=True, help_text='Accepts PNG, JPG, or SVG files')
 
+    # Countersignature block, stamped onto signed agreements
+    authorized_signature = models.FileField(
+        upload_to='company/', blank=True,
+        help_text='Signature image stamped on signed agreements. Transparent PNG works best.')
+    company_seal = models.FileField(
+        upload_to='company/', blank=True,
+        help_text='Company seal or stamp shown beside the signature. Transparent PNG works best.')
+    signatory_name = models.CharField(
+        max_length=200, blank=True,
+        help_text='Name printed under the company signature, e.g. Jobin Sebastian')
+    signatory_designation = models.CharField(
+        max_length=200, blank=True, default='Authorized Representative',
+        help_text='Printed under the signatory name')
+
     # Bank Details
     bank_name = models.CharField(max_length=100, blank=True)
     bank_account_number = models.CharField(max_length=50, blank=True)

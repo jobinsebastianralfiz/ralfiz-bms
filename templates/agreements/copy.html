@@ -134,10 +134,21 @@
     </div>
 
     <div class="sign-block">
-      <div class="sign-area"></div>
+      <div class="sign-area company-sign">
+        {% if company.signature_src %}
+        <img class="sign-image" src="{{ company.signature_src }}" alt="Authorized signature">
+        {% endif %}
+        {% if company.seal_src %}
+        <img class="seal-image" src="{{ company.seal_src }}" alt="Company seal">
+        {% endif %}
+      </div>
       <div class="sign-line"></div>
-      <strong>For Ralfiz Technologies</strong>
-      <span>Authorized Representative &amp; Date</span>
+      <strong>For {{ company.company_name }}</strong>
+      <span>
+        {% if company.signatory_name %}{{ company.signatory_name }} &middot; {% endif %}
+        {{ company.signatory_designation }}
+      </span>
+      <span>{{ agreement.responded_at|date:"d M Y" }}</span>
     </div>
   </section>
 
