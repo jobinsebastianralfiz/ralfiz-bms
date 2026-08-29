@@ -4,7 +4,7 @@ from .models import (
     Employee, DeviceToken, Attendance, LeaveType, LeaveRequest,
     WorkAssignment, WorkUpdate, Notification, QRCode, ScheduledClass, Payroll,
     CertificateTemplate, Certificate, OfficeConfig, LateCheckInGrant,
-    InternAssessment,
+    InternAssessment, AgreementTemplate, AgreementRequest,
 )
 from .utils import generate_face_encoding
 
@@ -260,3 +260,45 @@ class CertificateAdmin(admin.ModelAdmin):
         if not obj.issued_by:
             obj.issued_by = request.user
         super().save_model(request, obj, form, change)
+
+
+@admin.register(AgreementTemplate)
+class AgreementTemplateAdmin(admin.ModelAdmin):
+    """Edit the wording and the fee without a deploy. Requests already sent keep
+    their own snapshot, so edits here only affect future sends."""
+    list_display = ('name', 'version', 'agreement_type', 'monthly_fee', 'is_active', 'updated_at')
+    list_filter = ('agreement_type', 'is_active')
+    search_fields = ('name', 'version')
+    readonly_fields = ('created_at', 'updated_at')
+    fieldsets = (
+        ('Identity', {'fields': ('name', 'version', 'agreement_type', 'is_active')}),
+        ('Header', {'fields': ('eyebrow', 'heading', 'intro_html')}),
+        ('Body', {'fields': ('sections',),
+                  'description': 'JSON list of sections: no, title, body, bullets, '
+                                 'footnote, callout {style, text}, show_fee.'}),
+        ('Fee', {'fields': ('monthly_fee', 'fee_in_words', 'fee_note')}),
+        ('Decision', {'fields': ('confirmation_html', 'continue_label', 'decline_label',
+                                 'require_college_fields')}),
+        ('Meta', {'fields': ('created_at', 'updated_at')}),
+    )
+
+
+@admin.register(AgreementRequest)
+class AgreementRequestAdmin(admin.ModelAdmin):
+    """Read-only audit view. Send and cancel from /hr/agreements/ instead."""
+    list_display = ('reference', 'employee', 'status', 'decision', 'sent_at', 'responded_at')
+    list_filter = ('status', 'decision')
+    search_fields = ('reference', 'employee__employee_id', 'employee__user__first_name',
+                     'employee__user__last_name', 'full_name')
+    readonly_fields = (
+        'reference', 'token', 'employee', 'template', 'snapshot_json', 'snapshot_version',
+        'snapshot_fee', 'status', 'batch', 'sent_by', 'sent_at', 'expires_at',
+        'first_viewed_at', 'last_viewed_at', 'view_count', 'decision', 'responded_at',
+        'full_name', 'college_name', 'course_department', 'internship_domain',
+        'signed_name', 'signature_image', 'signed_date', 'agreed_to_terms',
+        'decline_reason', 'ip_address', 'user_agent', 'body_hash', 'superseded_by',
+        'created_at', 'updated_at',
+    )
+
+    def has_add_permission(self, request):
+        return False

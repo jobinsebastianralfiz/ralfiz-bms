@@ -1,0 +1,161 @@
+{% extends 'agreements/_doc_base.html' %}
+
+{% block title %}{{ doc.heading }} - {{ agreement.reference }}{% endblock %}
+
+{% block body %}
+<main class="doc-main">
+  {% if not for_pdf %}
+  <div class="copy-toolbar no-print">
+    <div>
+      <strong>Your signed copy</strong>
+      <span class="text-sm">{{ agreement.reference }}</span>
+    </div>
+    <div class="copy-toolbar-actions">
+      <a href="{{ pdf_url }}" class="copy-btn primary">Download PDF</a>
+      <button type="button" class="copy-btn" onclick="window.print()">Print</button>
+    </div>
+  </div>
+  {% endif %}
+
+  <p class="doc-eyebrow">{{ doc.eyebrow }}</p>
+  <h1 class="doc-title">{{ doc.heading }}</h1>
+  <div class="doc-rule"></div>
+
+  <div class="signed-stamp {% if agreement.decision == 'continue' %}ok{% else %}stop{% endif %}">
+    <div>
+      <strong>
+        {% if agreement.decision == 'continue' %}Signed &mdash; continuing
+        {% else %}Signed &mdash; discontinued{% endif %}
+      </strong>
+      <span>{{ agreement.reference }} &middot; {{ agreement.responded_at|date:"d M Y, g:i a" }}</span>
+    </div>
+  </div>
+
+  <div class="doc-greeting">
+    {% for line in intro_lines %}
+    <p>{{ line }}</p>
+    {% endfor %}
+  </div>
+
+  {% include "agreements/_agreement_body.html" %}
+
+  {# ---- The completed form, mirroring the printed original ---- #}
+  <section class="agr-section page-break">
+    <div class="agr-section-head">
+      <span class="agr-no">&bull;</span>
+      <h2>{% if ask_college %}Intern Details{% else %}Signatory Details{% endif %}</h2>
+    </div>
+
+    <div class="filled-grid">
+      <div class="filled-field">
+        <label>Full Name</label>
+        <div class="filled-value">{{ agreement.full_name|default:employee.full_name }}</div>
+      </div>
+      {% if ask_college %}
+      <div class="filled-field">
+        <label>College</label>
+        <div class="filled-value">{{ agreement.college_name|default:"&mdash;" }}</div>
+      </div>
+      <div class="filled-field">
+        <label>Course / Department</label>
+        <div class="filled-value">{{ agreement.course_department|default:"&mdash;" }}</div>
+      </div>
+      <div class="filled-field">
+        <label>Internship Domain</label>
+        <div class="filled-value">{{ agreement.internship_domain|default:"&mdash;" }}</div>
+      </div>
+      {% endif %}
+      <div class="filled-field">
+        <label>Date</label>
+        <div class="filled-value">{{ agreement.signed_date|date:"d M Y" }}</div>
+      </div>
+      <div class="filled-field">
+        <label>Employee ID</label>
+        <div class="filled-value">{{ employee.employee_id }}</div>
+      </div>
+    </div>
+  </section>
+
+  <section class="agr-section">
+    <div class="agr-section-head">
+      <span class="agr-no">&bull;</span>
+      <h2>Continuation Decision</h2>
+    </div>
+
+    <div class="decision-record">
+      <div class="decision-box {% if agreement.decision == 'continue' %}chosen{% endif %}">
+        <span class="tickbox">{% if agreement.decision == 'continue' %}&#10003;{% endif %}</span>
+        <div>
+          <strong>YES</strong>
+          <span>I wish to continue my internship</span>
+        </div>
+      </div>
+      <div class="decision-box {% if agreement.decision == 'discontinue' %}chosen{% endif %}">
+        <span class="tickbox">{% if agreement.decision == 'discontinue' %}&#10003;{% endif %}</span>
+        <div>
+          <strong>NO</strong>
+          <span>I do not wish to continue my internship</span>
+        </div>
+      </div>
+    </div>
+
+    {% if agreement.decision == 'discontinue' and agreement.decline_reason %}
+    <p class="agr-footnote"><strong>Reason given:</strong> {{ agreement.decline_reason }}</p>
+    {% endif %}
+
+    {% if agreement.decision == 'continue' and agreement.snapshot_fee %}
+    <p class="agr-footnote">
+      Agreed to the monthly internship fee of &#8377;{{ agreement.snapshot_fee|floatformat:"-2" }}.
+    </p>
+    {% endif %}
+  </section>
+
+  {# ---- Signature blocks, as on the printed original ---- #}
+  <section class="sign-blocks">
+    <div class="sign-block">
+      <div class="sign-area">
+        {% if agreement.signature_image %}
+        <img class="sign-image" src="{{ signature_src }}" alt="Signature">
+        {% else %}
+        <div class="sign-typed">{{ agreement.signed_name|default:agreement.full_name }}</div>
+        {% endif %}
+      </div>
+      <div class="sign-line"></div>
+      <strong>{% if ask_college %}Intern Signature{% else %}Signature{% endif %}</strong>
+      <span>{{ agreement.signed_name|default:agreement.full_name }}
+            &middot; {{ agreement.signed_date|date:"d M Y" }}</span>
+      {% if agreement.signature_image %}
+      <span class="sign-note">Signed as: {{ agreement.signed_name }}</span>
+      {% endif %}
+    </div>
+
+    <div class="sign-block">
+      <div class="sign-area"></div>
+      <div class="sign-line"></div>
+      <strong>For Ralfiz Technologies</strong>
+      <span>Authorized Representative &amp; Date</span>
+    </div>
+  </section>
+
+  {# ---- Verification footer: what makes this copy checkable ---- #}
+  <section class="verify-block">
+    <strong>Electronic signature record</strong>
+    <div class="verify-grid">
+      <div><span>Reference</span>{{ agreement.reference }}</div>
+      <div><span>Document</span>{{ doc.heading }} {{ agreement.snapshot_version }}</div>
+      <div><span>Signed at</span>{{ agreement.responded_at|date:"d M Y, g:i a" }}</div>
+      {% if agreement.ip_address %}
+      <div><span>Signed from IP</span>{{ agreement.ip_address }}</div>
+      {% endif %}
+    </div>
+    {% if agreement.body_hash %}
+    <div class="verify-hash">
+      <span>Document fingerprint (SHA-256)</span>
+      <code>{{ agreement.body_hash }}</code>
+    </div>
+    {% endif %}
+    <p>This copy was generated from Ralfiz Technologies' records. The fingerprint above
+       identifies the exact wording that was accepted.</p>
+  </section>
+</main>
+{% endblock %}

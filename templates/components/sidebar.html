@@ -180,6 +180,10 @@
         <i class="fas fa-money-bill-wave"></i>
         <span>Payroll</span>
       </a>
+      <a href="{% url 'agreement_list' %}" class="nav-item {% if 'agreement' in request.resolver_match.url_name %}active{% endif %}">
+        <i class="fas fa-file-signature"></i>
+        <span>Agreements</span>
+      </a>
       <a href="{% url 'certificate_list' %}" class="nav-item {% if request.resolver_match.url_name == 'certificate_list' or request.resolver_match.url_name == 'certificate_create' or request.resolver_match.url_name == 'certificate_detail' %}active{% endif %}">
         <i class="fas fa-award"></i>
         <span>Certificates</span>

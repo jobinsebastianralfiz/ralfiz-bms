@@ -1,0 +1,70 @@
+{% extends 'agreements/_doc_base.html' %}
+
+{% block title %}Response recorded - Ralfiz Technologies{% endblock %}
+
+{% block body %}
+<div class="status-card">
+  {% if agreement.decision == 'continue' %}
+  <div class="status-icon ok">&#10003;</div>
+  <h1>Thank you, {{ agreement.full_name|default:employee.full_name }}</h1>
+  <p>Your confirmation to <strong>continue your internship</strong> with Ralfiz Technologies
+     has been recorded. Our team will be in touch about the next steps.</p>
+  {% else %}
+  <div class="status-icon stop">&times;</div>
+  <h1>Your response is recorded</h1>
+  <p>We have noted that you do not wish to continue your internship. Thank you for letting us
+     know, and we wish you all the best.</p>
+  {% endif %}
+
+  <div class="receipt">
+    <div class="receipt-row">
+      <span>Reference</span>
+      <span>{{ agreement.reference }}</span>
+    </div>
+    <div class="receipt-row">
+      <span>Decision</span>
+      <span>
+        {% if agreement.decision == 'continue' %}
+        <span class="pill ok">Continuing</span>
+        {% else %}
+        <span class="pill stop">Discontinued</span>
+        {% endif %}
+      </span>
+    </div>
+    <div class="receipt-row">
+      <span>Name</span>
+      <span>{{ agreement.full_name|default:employee.full_name }}</span>
+    </div>
+    {% if agreement.decision == 'continue' and agreement.college_name %}
+    <div class="receipt-row">
+      <span>College</span>
+      <span>{{ agreement.college_name }}</span>
+    </div>
+    {% endif %}
+    {% if agreement.decision == 'continue' and agreement.internship_domain %}
+    <div class="receipt-row">
+      <span>Domain</span>
+      <span>{{ agreement.internship_domain }}</span>
+    </div>
+    {% endif %}
+    <div class="receipt-row">
+      <span>Signed on</span>
+      <span>{{ agreement.responded_at|date:"d M Y, g:i a" }}</span>
+    </div>
+    <div class="receipt-row">
+      <span>Document</span>
+      <span>{{ doc.heading }} {{ agreement.snapshot_version }}</span>
+    </div>
+  </div>
+
+  <div style="margin-top:26px; display:flex; gap:10px; justify-content:center; flex-wrap:wrap;">
+    <a href="{% url 'agreement_copy_pdf' agreement.token %}" class="copy-btn primary">Download my signed copy (PDF)</a>
+    <a href="{% url 'agreement_copy' agreement.token %}" class="copy-btn">View copy</a>
+  </div>
+
+  <p style="margin-top:22px;font-size:13px;color:var(--agr-muted);">
+    Keep this reference for your records. If anything above is wrong, contact your
+    coordinator at +91 98956 63498.
+  </p>
+</div>
+{% endblock %}

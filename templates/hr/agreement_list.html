@@ -1,0 +1,127 @@
+{% extends 'base.html' %}
+{% block title %}Agreements - Ralfiz BMS{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title">Agreements</h1>
+    <p class="page-subtitle mb-0">Who has confirmed they are continuing, and who has not answered yet</p>
+  </div>
+  <div class="page-actions">
+    <a href="{% url 'agreement_send' %}" class="btn btn-primary"><i class="fas fa-paper-plane"></i> Send Agreement</a>
+  </div>
+</div>
+
+<div class="row mb-4">
+  <div class="col-3 col-md-6 col-sm-12" style="padding: 0.75rem;">
+    <a href="?status=open" class="card stat-card" style="display: block; text-decoration: none;">
+      <div class="stat-card-header">
+        <div class="stat-card-icon info"><i class="fas fa-hourglass-half"></i></div>
+      </div>
+      <div class="stat-card-value">{{ counters.awaiting }}</div>
+      <div class="stat-card-label">Awaiting response</div>
+    </a>
+  </div>
+  <div class="col-3 col-md-6 col-sm-12" style="padding: 0.75rem;">
+    <a href="?status=accepted" class="card stat-card" style="display: block; text-decoration: none;">
+      <div class="stat-card-header">
+        <div class="stat-card-icon success"><i class="fas fa-check"></i></div>
+      </div>
+      <div class="stat-card-value">{{ counters.accepted }}</div>
+      <div class="stat-card-label">Continuing</div>
+    </a>
+  </div>
+  <div class="col-3 col-md-6 col-sm-12" style="padding: 0.75rem;">
+    <a href="?status=declined" class="card stat-card" style="display: block; text-decoration: none;">
+      <div class="stat-card-header">
+        <div class="stat-card-icon danger"><i class="fas fa-times"></i></div>
+      </div>
+      <div class="stat-card-value">{{ counters.declined }}</div>
+      <div class="stat-card-label">Discontinued</div>
+    </a>
+  </div>
+  <div class="col-3 col-md-6 col-sm-12" style="padding: 0.75rem;">
+    <a href="?status=expired" class="card stat-card" style="display: block; text-decoration: none;">
+      <div class="stat-card-header">
+        <div class="stat-card-icon warning"><i class="fas fa-clock"></i></div>
+      </div>
+      <div class="stat-card-value">{{ counters.expired }}</div>
+      <div class="stat-card-label">Expired</div>
+    </a>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header">
+    <h3 class="card-title"><i class="fas fa-file-signature"></i> All Agreements</h3>
+    <div class="card-actions">
+      <form method="get" class="d-flex gap-2">
+        <input type="text" name="q" class="form-control" style="width: auto;" placeholder="Name, ID or reference" value="{{ search }}">
+        <select name="status" class="form-control" style="width: auto;" onchange="this.form.submit()">
+          <option value="">All Status</option>
+          <option value="open" {% if status_filter == 'open' %}selected{% endif %}>Awaiting response</option>
+          <option value="expired" {% if status_filter == 'expired' %}selected{% endif %}>Expired</option>
+          {% for key, label in statuses %}
+          <option value="{{ key }}" {% if status_filter == key %}selected{% endif %}>{{ label }}</option>
+          {% endfor %}
+        </select>
+      </form>
+    </div>
+  </div>
+  <div class="card-body p-0">
+    {% if agreements %}
+    <div class="table-responsive">
+      <table class="table table-hover mb-0">
+        <thead>
+          <tr>
+            <th>Person</th>
+            <th>Reference</th>
+            <th>Sent</th>
+            <th>Status</th>
+            <th>Responded</th>
+            <th class="text-end">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for a in agreements %}
+          <tr>
+            <td>
+              <div class="d-flex align-items-center gap-2">
+                <div class="avatar avatar-sm" style="background: var(--primary); color: white;">
+                  {{ a.employee.full_name|slice:":1"|upper }}
+                </div>
+                <div>
+                  <div class="fw-medium">{{ a.employee.full_name }}</div>
+                  <div class="text-sm text-muted">{{ a.employee.employee_id }}</div>
+                </div>
+              </div>
+            </td>
+            <td class="text-sm">{{ a.reference }}</td>
+            <td class="text-sm text-muted">{{ a.sent_at|date:"d M Y" }}</td>
+            <td><span class="badge" style="{{ a.status_css }}">{{ a.status_label }}</span></td>
+            <td class="text-sm text-muted">
+              {% if a.responded_at %}{{ a.responded_at|date:"d M Y, g:i a" }}
+              {% elif a.first_viewed_at %}<span title="Opened but not answered">opened {{ a.first_viewed_at|date:"d M" }}</span>
+              {% else %}&mdash;{% endif %}
+            </td>
+            <td class="text-end">
+              <a href="{% url 'agreement_detail' a.pk %}" class="btn btn-sm btn-ghost">View</a>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <div class="text-center text-muted" style="padding: 48px;">
+      <i class="fas fa-file-signature fa-2x mb-3 d-block"></i>
+      {% if search or status_filter %}
+      No agreements match this filter.
+      {% else %}
+      No agreements sent yet. <a href="{% url 'agreement_send' %}">Send the first one</a>.
+      {% endif %}
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

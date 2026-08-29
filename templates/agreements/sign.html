@@ -1,0 +1,300 @@
+{% extends 'agreements/_doc_base.html' %}
+
+{% block title %}{{ doc.heading }} - Ralfiz Technologies{% endblock %}
+
+{% block body %}
+<main class="doc-main">
+  <p class="doc-eyebrow">{{ doc.eyebrow }}</p>
+  <h1 class="doc-title">{{ doc.heading }}</h1>
+  <div class="doc-rule"></div>
+
+  <div class="doc-greeting">
+    <p class="greet-name">Hi {{ employee.full_name }},</p>
+    {% for line in intro_lines %}
+    <p>{{ line }}</p>
+    {% endfor %}
+  </div>
+
+  {% include "agreements/_agreement_body.html" %}
+
+  {# Sentinel: the read gate unlocks once this scrolls into view. #}
+  <div id="read-sentinel" aria-hidden="true"></div>
+</main>
+
+<form class="doc-form" method="post" id="agreement-form" novalidate>
+  {% csrf_token %}
+  <input type="hidden" name="decision" id="decision-field" value="{{ posted.decision|default:'' }}">
+  <input type="hidden" name="signature_data" id="signature-data">
+
+  <hr class="form-divider">
+
+  {% if errors %}
+  <div class="alert-error">Please check the highlighted fields below and try again.</div>
+  {% endif %}
+
+  <div class="read-gate is-locked" id="read-gate">
+    <input type="checkbox" id="has-read" disabled>
+    <div>
+      <label for="has-read">I have read and understood the terms above.</label>
+      <div class="gate-hint" id="gate-hint">Please scroll through the full agreement to continue.</div>
+    </div>
+  </div>
+
+  <h3 class="form-heading">Continuation Decision</h3>
+  <div class="decision-grid">
+    <button type="button" class="decision-btn yes" id="btn-continue" disabled>
+      <strong>YES</strong>
+      <span>{{ doc.continue_label }}</span>
+    </button>
+    <button type="button" class="decision-btn no" id="btn-decline" disabled>
+      <strong>NO</strong>
+      <span>{{ doc.decline_label }}</span>
+    </button>
+  </div>
+  {% if errors.decision %}<div class="field-error">{{ errors.decision }}</div>{% endif %}
+
+  {# ---- Continue: intern details + signature ---- #}
+  <div id="panel-continue" hidden>
+    <hr class="form-divider">
+    <h3 class="form-heading">{% if ask_college %}Intern Details{% else %}Your Details{% endif %}</h3>
+
+    <div class="field-row">
+      <div class="field {% if errors.full_name %}has-error{% endif %}">
+        <label for="full_name">Full Name</label>
+        <input type="text" id="full_name" name="full_name"
+               value="{{ posted.full_name|default:employee.full_name }}" autocomplete="name">
+        {% if errors.full_name %}<div class="field-error">{{ errors.full_name }}</div>{% endif %}
+      </div>
+
+      {% if ask_college %}
+      <div class="field {% if errors.college_name %}has-error{% endif %}">
+        <label for="college_name">College</label>
+        <input type="text" id="college_name" name="college_name" value="{{ posted.college_name|default:'' }}">
+        {% if errors.college_name %}<div class="field-error">{{ errors.college_name }}</div>{% endif %}
+      </div>
+      {% endif %}
+    </div>
+
+    {% if ask_college %}
+    <div class="field-row">
+      <div class="field {% if errors.course_department %}has-error{% endif %}">
+        <label for="course_department">Course / Department</label>
+        <input type="text" id="course_department" name="course_department"
+               value="{{ posted.course_department|default:'' }}">
+        {% if errors.course_department %}<div class="field-error">{{ errors.course_department }}</div>{% endif %}
+      </div>
+      <div class="field {% if errors.internship_domain %}has-error{% endif %}">
+        <label for="internship_domain">Internship Domain</label>
+        <input type="text" id="internship_domain" name="internship_domain"
+               value="{{ posted.internship_domain|default:employee.designation }}">
+        {% if errors.internship_domain %}<div class="field-error">{{ errors.internship_domain }}</div>{% endif %}
+      </div>
+    </div>
+    {% endif %}
+
+    <div class="field">
+      <label for="signed_date_display">Date</label>
+      <input type="text" id="signed_date_display" value="{{ today|date:'d M Y' }}" readonly>
+    </div>
+
+    <div class="field">
+      <label>Signature <span style="text-transform:none;letter-spacing:0;font-weight:400;">(draw below - optional)</span></label>
+      <div class="sig-pad-wrap">
+        <canvas class="sig-pad" id="sig-pad"></canvas>
+        <div class="sig-placeholder" id="sig-placeholder">Sign here with your finger or mouse</div>
+      </div>
+      <div class="sig-actions">
+        <span class="sig-hint">Your typed name below is your signature.</span>
+        <button type="button" class="btn-link" id="sig-clear">Clear</button>
+      </div>
+    </div>
+
+    <div class="field {% if errors.signed_name %}has-error{% endif %}">
+      <label for="signed_name">Type your full name to sign</label>
+      <input type="text" id="signed_name" name="signed_name" value="{{ posted.signed_name|default:'' }}"
+             placeholder="e.g. {{ employee.full_name }}">
+      {% if errors.signed_name %}<div class="field-error">{{ errors.signed_name }}</div>{% endif %}
+    </div>
+
+    <div class="confirm-check {% if errors.agreed_to_terms %}has-error{% endif %}">
+      <input type="checkbox" id="agreed_to_terms" name="agreed_to_terms"
+             {% if posted.agreed_to_terms %}checked{% endif %}>
+      <label for="agreed_to_terms">
+        I confirm I have read and understood the terms, and I agree to continue my internship
+        {% if doc.monthly_fee %}and to pay the applicable &#8377;{{ doc.monthly_fee|floatformat:"-2" }} monthly internship fee{% endif %}.
+      </label>
+    </div>
+    {% if errors.agreed_to_terms %}<div class="field-error" style="margin-top:-8px;margin-bottom:14px;">{{ errors.agreed_to_terms }}</div>{% endif %}
+
+    <button type="submit" class="btn-submit">Submit my confirmation</button>
+    <div class="btn-back"><button type="button" class="btn-link js-reset">Change my choice</button></div>
+  </div>
+
+  {# ---- Discontinue ---- #}
+  <div id="panel-decline" hidden>
+    <hr class="form-divider">
+    <h3 class="form-heading">Discontinue Internship</h3>
+    <p>You are about to inform Ralfiz Technologies that you do not wish to continue your internship.
+       This cannot be undone from this link.</p>
+
+    <div class="field">
+      <label for="decline_reason">Reason (optional)</label>
+      <textarea id="decline_reason" name="decline_reason" rows="3"
+                placeholder="Anything you would like us to know?">{{ posted.decline_reason|default:'' }}</textarea>
+    </div>
+
+    <button type="submit" class="btn-submit danger">Confirm discontinuation</button>
+    <div class="btn-back"><button type="button" class="btn-link js-reset">Change my choice</button></div>
+  </div>
+</form>
+{% endblock %}
+
+{% block scripts %}
+<script>
+(function () {
+  var gate = document.getElementById('read-gate');
+  var hasRead = document.getElementById('has-read');
+  var hint = document.getElementById('gate-hint');
+  var btnYes = document.getElementById('btn-continue');
+  var btnNo = document.getElementById('btn-decline');
+  var decisionField = document.getElementById('decision-field');
+  var panelYes = document.getElementById('panel-continue');
+  var panelNo = document.getElementById('panel-decline');
+  var sentinel = document.getElementById('read-sentinel');
+
+  function unlockCheckbox() {
+    hasRead.disabled = false;
+    gate.classList.remove('is-locked');
+    hint.textContent = 'Thanks for reading. Tick the box to enable your choice.';
+  }
+
+  // Unlock once the end of the document has been seen. Fallback for older
+  // browsers: unlock immediately rather than trapping anyone.
+  if ('IntersectionObserver' in window) {
+    var io = new IntersectionObserver(function (entries) {
+      entries.forEach(function (entry) {
+        if (entry.isIntersecting) { unlockCheckbox(); io.disconnect(); }
+      });
+    }, { threshold: 0 });
+    io.observe(sentinel);
+  } else {
+    unlockCheckbox();
+  }
+
+  hasRead.addEventListener('change', function () {
+    btnYes.disabled = !hasRead.checked;
+    btnNo.disabled = !hasRead.checked;
+    if (hasRead.checked) { hint.textContent = 'Choose an option below.'; }
+  });
+
+  function choose(value) {
+    decisionField.value = value;
+    var yes = value === 'continue';
+    panelYes.hidden = !yes;
+    panelNo.hidden = yes;
+    btnYes.classList.toggle('is-active', yes);
+    btnNo.classList.toggle('is-active', !yes);
+    (yes ? panelYes : panelNo).scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
+  btnYes.addEventListener('click', function () { choose('continue'); });
+  btnNo.addEventListener('click', function () { choose('discontinue'); });
+
+  Array.prototype.forEach.call(document.querySelectorAll('.js-reset'), function (btn) {
+    btn.addEventListener('click', function () {
+      decisionField.value = '';
+      panelYes.hidden = true;
+      panelNo.hidden = true;
+      btnYes.classList.remove('is-active');
+      btnNo.classList.remove('is-active');
+      gate.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    });
+  });
+
+  // Re-open the right panel after a validation round-trip.
+  if (decisionField.value) {
+    unlockCheckbox();
+    hasRead.checked = true;
+    btnYes.disabled = false;
+    btnNo.disabled = false;
+    choose(decisionField.value);
+  }
+
+  // ---- Signature pad. Optional by design: the typed name is the binding
+  // signature, so a canvas that misbehaves can never block a submission. ----
+  var canvas = document.getElementById('sig-pad');
+  var placeholder = document.getElementById('sig-placeholder');
+  var dataField = document.getElementById('signature-data');
+  var drawing = false, dirty = false, ctx = null;
+
+  function sizeCanvas() {
+    if (!canvas) return;
+    var ratio = window.devicePixelRatio || 1;
+    var rect = canvas.getBoundingClientRect();
+    if (!rect.width) return;
+    canvas.width = rect.width * ratio;
+    canvas.height = rect.height * ratio;
+    ctx = canvas.getContext('2d');
+    ctx.scale(ratio, ratio);
+    ctx.lineWidth = 2;
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    ctx.strokeStyle = '#0f172a';
+  }
+
+  function pos(e) {
+    var rect = canvas.getBoundingClientRect();
+    var src = e.touches ? e.touches[0] : e;
+    return { x: src.clientX - rect.left, y: src.clientY - rect.top };
+  }
+
+  function start(e) {
+    if (!ctx) sizeCanvas();
+    if (!ctx) return;
+    drawing = true;
+    var p = pos(e);
+    ctx.beginPath();
+    ctx.moveTo(p.x, p.y);
+    e.preventDefault();
+  }
+
+  function move(e) {
+    if (!drawing || !ctx) return;
+    var p = pos(e);
+    ctx.lineTo(p.x, p.y);
+    ctx.stroke();
+    if (!dirty) { dirty = true; placeholder.style.display = 'none'; }
+    e.preventDefault();
+  }
+
+  function end() { drawing = false; }
+
+  if (canvas) {
+    // The pad lives in a hidden panel, so size it when that panel opens too.
+    sizeCanvas();
+    btnYes.addEventListener('click', function () { window.setTimeout(sizeCanvas, 50); });
+    window.addEventListener('resize', function () { if (!dirty) sizeCanvas(); });
+
+    canvas.addEventListener('mousedown', start);
+    canvas.addEventListener('mousemove', move);
+    window.addEventListener('mouseup', end);
+    canvas.addEventListener('touchstart', start, { passive: false });
+    canvas.addEventListener('touchmove', move, { passive: false });
+    canvas.addEventListener('touchend', end);
+
+    document.getElementById('sig-clear').addEventListener('click', function () {
+      if (ctx) ctx.clearRect(0, 0, canvas.width, canvas.height);
+      dirty = false;
+      placeholder.style.display = '';
+      dataField.value = '';
+    });
+  }
+
+  document.getElementById('agreement-form').addEventListener('submit', function () {
+    if (dirty && canvas) {
+      try { dataField.value = canvas.toDataURL('image/png'); } catch (err) { dataField.value = ''; }
+    }
+  });
+})();
+</script>
+{% endblock %}

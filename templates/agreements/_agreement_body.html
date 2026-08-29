@@ -1,0 +1,56 @@
+{% comment %}
+Sections 1-10 of the agreement, rendered from the frozen snapshot.
+Shared by the signing page and the signed copy so the two can never drift.
+{% endcomment %}
+  {% for section in sections %}
+  <section class="agr-section">
+    <div class="agr-section-head">
+      <span class="agr-no">{{ section.no }}</span>
+      <h2>{{ section.title }}</h2>
+    </div>
+
+    {% if section.no == 1 %}
+    <p>{{ section.body }}</p>
+    <div class="choice-preview">
+      <div><strong>{{ doc.continue_label }}</strong>with Ralfiz Technologies</div>
+      <div><strong>{{ doc.decline_label }}</strong>end participation in the program</div>
+    </div>
+    {% else %}
+
+    {% if section.show_fee and doc.monthly_fee %}
+    <div class="agr-fee">
+      <div class="agr-fee-amount">&#8377;{{ doc.monthly_fee|floatformat:"-2" }} / month</div>
+      <div class="agr-fee-note">{{ doc.fee_in_words }} &middot; {{ doc.fee_note }}</div>
+    </div>
+    {% endif %}
+
+    {% if section.body %}<p>{{ section.body }}</p>{% endif %}
+    {% endif %}
+
+    {% if section.bullets %}
+    <ul class="agr-list">
+      {% for bullet in section.bullets %}
+      <li>{{ bullet }}</li>
+      {% endfor %}
+    </ul>
+    {% endif %}
+
+    {% if section.callout %}
+    <div class="agr-callout {{ section.callout.style }}">{{ section.callout.text }}</div>
+    {% endif %}
+
+    {% if section.footnote %}
+    <p class="agr-footnote">{{ section.footnote }}</p>
+    {% endif %}
+  </section>
+  {% endfor %}
+
+  {% if doc.confirmation_html %}
+  <section class="agr-section">
+    <div class="agr-section-head">
+      <span class="agr-no">10</span>
+      <h2>Confirmation</h2>
+    </div>
+    <div class="agr-callout dark">{{ doc.confirmation_html|safe }}</div>
+  </section>
+  {% endif %}

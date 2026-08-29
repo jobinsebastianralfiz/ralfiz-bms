@@ -862,3 +862,7 @@ class Certificate(models.Model):
             else:
                 self.certificate_number = f"{prefix}001"
         super().save(*args, **kwargs)
+
+
+# Agreement e-signing (templates + signable requests)
+from .agreement_models import AgreementTemplate, AgreementRequest  # noqa: E402,F401

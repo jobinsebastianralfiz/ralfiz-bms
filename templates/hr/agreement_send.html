@@ -1,0 +1,181 @@
+{% extends 'base.html' %}
+{% block title %}Send Agreement - Ralfiz BMS{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title">Send Agreement</h1>
+    <p class="page-subtitle mb-0">Select who should receive the agreement, then generate a private link for each person</p>
+  </div>
+  <div class="page-actions">
+    <a href="{% url 'agreement_list' %}" class="btn btn-ghost"><i class="fas fa-list"></i> All Agreements</a>
+  </div>
+</div>
+
+{% if not templates %}
+<div class="card">
+  <div class="card-body text-center" style="padding: 40px;">
+    <i class="fas fa-file-signature fa-2x text-muted mb-3"></i>
+    <h3>No active agreement template</h3>
+    <p class="text-muted">Run <code>python manage.py seed_internship_agreement</code> to create the
+       Internship Continuation &amp; Learning Agreement.</p>
+  </div>
+</div>
+{% else %}
+
+<form method="post" id="send-form">
+  {% csrf_token %}
+
+  <div class="card mb-4">
+    <div class="card-header">
+      <h3 class="card-title"><i class="fas fa-file-signature"></i> Agreement</h3>
+    </div>
+    <div class="card-body">
+      <div class="row g-3">
+        <div class="col-md-8">
+          <label class="form-label" for="template">Template</label>
+          <select name="template" id="template" class="form-control" required>
+            {% for t in templates %}
+            <option value="{{ t.id }}">{{ t.name }} ({{ t.version }}){% if t.monthly_fee %} &mdash; &#8377;{{ t.monthly_fee|floatformat:"-2" }}/month{% endif %}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-md-4">
+          <label class="form-label" for="expiry_days">Link expires in</label>
+          <select name="expiry_days" id="expiry_days" class="form-control">
+            <option value="7">7 days</option>
+            <option value="14" selected>14 days</option>
+            <option value="30">30 days</option>
+            <option value="60">60 days</option>
+          </select>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header">
+      <h3 class="card-title"><i class="fas fa-users"></i> Recipients</h3>
+      <div class="card-actions d-flex gap-2 align-items-center">
+        <span class="text-sm text-muted" id="sel-count">0 selected</span>
+        <div class="btn-group">
+          <a href="?type=intern" class="btn btn-sm {% if type_filter == 'intern' %}btn-primary{% else %}btn-ghost{% endif %}">Interns</a>
+          <a href="?type=staff" class="btn btn-sm {% if type_filter == 'staff' %}btn-primary{% else %}btn-ghost{% endif %}">Staff</a>
+          <a href="?type=all" class="btn btn-sm {% if type_filter == 'all' %}btn-primary{% else %}btn-ghost{% endif %}">All Active</a>
+        </div>
+      </div>
+    </div>
+
+    <div class="card-body p-0">
+      {% if rows %}
+      <div class="table-responsive">
+        <table class="table table-hover mb-0">
+          <thead>
+            <tr>
+              <th style="width: 42px;"><input type="checkbox" id="check-all" title="Select all"></th>
+              <th>Person</th>
+              <th>ID</th>
+              <th>Type</th>
+              <th>Phone</th>
+              <th>Last agreement</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for row in rows %}
+            <tr class="js-row" style="cursor: pointer;">
+              <td>
+                <input type="checkbox" class="js-check" name="employees" value="{{ row.employee.id }}">
+              </td>
+              <td>
+                <div class="d-flex align-items-center gap-2">
+                  <div class="avatar avatar-sm" style="background: var(--primary); color: white;">
+                    {{ row.employee.full_name|slice:":1"|upper }}
+                  </div>
+                  <div>
+                    <div class="fw-medium">{{ row.employee.full_name }}</div>
+                    <div class="text-sm text-muted">{{ row.employee.designation|default:row.employee.get_department_display }}</div>
+                  </div>
+                </div>
+              </td>
+              <td>{{ row.employee.employee_id }}</td>
+              <td><span class="badge" style="background: var(--info-bg); color: var(--info);">{{ row.employee.get_employment_type_display|default:"-" }}</span></td>
+              <td>
+                {% if row.employee.phone %}
+                {{ row.employee.phone }}
+                {% else %}
+                <span class="text-muted text-sm"><i class="fas fa-exclamation-triangle"></i> no phone</span>
+                {% endif %}
+              </td>
+              <td>
+                {% if row.latest %}
+                <span class="badge" style="{{ row.latest.status_css }}">{{ row.latest.status_label }}</span>
+                <span class="text-sm text-muted">{{ row.latest.sent_at|date:"d M Y" }}</span>
+                {% else %}
+                <span class="text-muted text-sm">never sent</span>
+                {% endif %}
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}
+      <div class="text-center text-muted" style="padding: 40px;">No active people match this filter.</div>
+      {% endif %}
+    </div>
+
+    {% if rows %}
+    <div class="card-footer d-flex justify-content-between align-items-center">
+      <span class="text-sm text-muted">
+        Anyone with an open link for a previous agreement will have it replaced by this one.
+      </span>
+      <button type="submit" class="btn btn-primary" id="btn-generate" disabled>
+        <i class="fas fa-link"></i> Generate links
+      </button>
+    </div>
+    {% endif %}
+  </div>
+</form>
+
+{% endif %}
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function () {
+  var checkAll = document.getElementById('check-all');
+  var boxes = Array.prototype.slice.call(document.querySelectorAll('.js-check'));
+  var count = document.getElementById('sel-count');
+  var btn = document.getElementById('btn-generate');
+  if (!boxes.length) return;
+
+  function sync() {
+    var n = boxes.filter(function (b) { return b.checked; }).length;
+    count.textContent = n + ' selected';
+    if (btn) btn.disabled = n === 0;
+    if (checkAll) checkAll.checked = n === boxes.length && n > 0;
+  }
+
+  if (checkAll) {
+    checkAll.addEventListener('change', function () {
+      boxes.forEach(function (b) { b.checked = checkAll.checked; });
+      sync();
+    });
+  }
+
+  boxes.forEach(function (b) { b.addEventListener('change', sync); });
+
+  // Whole row toggles the checkbox, so this is usable on a laptop trackpad.
+  document.querySelectorAll('.js-row').forEach(function (row) {
+    row.addEventListener('click', function (e) {
+      if (e.target.tagName === 'INPUT' || e.target.tagName === 'A') return;
+      var box = row.querySelector('.js-check');
+      box.checked = !box.checked;
+      sync();
+    });
+  });
+
+  sync();
+})();
+</script>
+{% endblock %}

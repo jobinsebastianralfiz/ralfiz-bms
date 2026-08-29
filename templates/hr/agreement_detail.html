@@ -1,0 +1,203 @@
+{% extends 'base.html' %}
+{% block title %}{{ agreement.reference }} - Ralfiz BMS{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title">{{ agreement.employee.full_name }}</h1>
+    <p class="page-subtitle mb-0">{{ agreement.reference }} &middot; {{ doc.heading }} {{ agreement.snapshot_version }}</p>
+  </div>
+  <div class="page-actions d-flex gap-2">
+    <a href="{% url 'agreement_list' %}" class="btn btn-ghost"><i class="fas fa-arrow-left"></i> Back</a>
+    {% if not agreement.has_responded %}
+    <form method="post" action="{% url 'agreement_resend' agreement.pk %}">
+      {% csrf_token %}
+      <button type="submit" class="btn btn-ghost"><i class="fas fa-redo"></i> Resend</button>
+    </form>
+    <form method="post" action="{% url 'agreement_cancel' agreement.pk %}"
+          onsubmit="return confirm('Cancel this link? The recipient will no longer be able to open it.')">
+      {% csrf_token %}
+      <button type="submit" class="btn btn-ghost text-danger"><i class="fas fa-ban"></i> Cancel link</button>
+    </form>
+    {% else %}
+    <a href="{% url 'agreement_pdf' agreement.pk %}" class="btn btn-ghost">
+      <i class="fas fa-file-pdf"></i> Signed copy
+    </a>
+    <form method="post" action="{% url 'agreement_resend' agreement.pk %}"
+          onsubmit="return confirm('Send a fresh agreement to this person? The existing signed record is kept.')">
+      {% csrf_token %}
+      <button type="submit" class="btn btn-ghost"><i class="fas fa-paper-plane"></i> Send new agreement</button>
+    </form>
+    {% endif %}
+  </div>
+</div>
+
+<div class="row">
+  <div class="col-8 col-md-12" style="padding: 0.75rem;">
+    <div class="card mb-4">
+      <div class="card-header">
+        <h3 class="card-title"><i class="fas fa-file-signature"></i> Response</h3>
+        <span class="badge" style="{{ agreement.status_css }}">{{ agreement.status_label }}</span>
+      </div>
+      <div class="card-body">
+        {% if agreement.has_responded %}
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1rem;">
+          <div><label class="text-muted text-sm">Decision</label>
+            <div class="fw-medium">
+              {% if agreement.decision == 'continue' %}
+              <span class="badge bg-success">Continuing</span>
+              {% else %}
+              <span class="badge bg-danger">Discontinued</span>
+              {% endif %}
+            </div>
+          </div>
+          <div><label class="text-muted text-sm">Responded at</label>
+            <div class="fw-medium">{{ agreement.responded_at|date:"d M Y, g:i a" }}</div></div>
+          <div><label class="text-muted text-sm">Full name given</label>
+            <div class="fw-medium">{{ agreement.full_name|default:"-" }}</div></div>
+          {% if agreement.decision == 'continue' %}
+          <div><label class="text-muted text-sm">Typed signature</label>
+            <div class="fw-medium">{{ agreement.signed_name|default:"-" }}</div></div>
+          {% if agreement.college_name %}
+          <div><label class="text-muted text-sm">College</label>
+            <div class="fw-medium">{{ agreement.college_name }}</div></div>
+          {% endif %}
+          {% if agreement.course_department %}
+          <div><label class="text-muted text-sm">Course / Department</label>
+            <div class="fw-medium">{{ agreement.course_department }}</div></div>
+          {% endif %}
+          {% if agreement.internship_domain %}
+          <div><label class="text-muted text-sm">Internship domain</label>
+            <div class="fw-medium">{{ agreement.internship_domain }}</div></div>
+          {% endif %}
+          {% if agreement.snapshot_fee %}
+          <div><label class="text-muted text-sm">Fee agreed</label>
+            <div class="fw-medium">&#8377;{{ agreement.snapshot_fee|floatformat:"-2" }} / month</div></div>
+          {% endif %}
+          {% else %}
+          {% if agreement.decline_reason %}
+          <div style="grid-column: 1 / -1;"><label class="text-muted text-sm">Reason given</label>
+            <div>{{ agreement.decline_reason }}</div></div>
+          {% endif %}
+          {% endif %}
+        </div>
+
+        {% if agreement.signature_image %}
+        <div class="mt-4">
+          <label class="text-muted text-sm">Drawn signature</label>
+          <div style="border: 1px solid var(--border); border-radius: 8px; padding: 10px; background: #fff; max-width: 340px;">
+            <img src="{{ agreement.signature_image.url }}" alt="Signature" style="max-width: 100%; display: block;">
+          </div>
+        </div>
+        {% endif %}
+
+        {% else %}
+        <p class="text-muted mb-3">
+          {% if agreement.is_expired %}
+          This link expired on {{ agreement.expires_at|date:"d M Y" }} without a response.
+          {% elif agreement.status == 'cancelled' %}
+          This link was cancelled and no longer opens.
+          {% elif agreement.status == 'superseded' %}
+          A newer agreement was sent to this person, replacing this link.
+          {% elif agreement.first_viewed_at %}
+          Opened {{ agreement.view_count }} time{{ agreement.view_count|pluralize }}, last on
+          {{ agreement.last_viewed_at|date:"d M Y, g:i a" }} &mdash; but not yet answered.
+          {% else %}
+          Not opened yet.
+          {% endif %}
+        </p>
+
+        {% if agreement.is_open %}
+        <label class="form-label">Signing link</label>
+        <div class="d-flex gap-2">
+          <input type="text" class="form-control" id="link-field" value="{{ url }}" readonly>
+          <button type="button" class="btn btn-ghost" id="btn-copy"><i class="fas fa-copy"></i></button>
+          {% if whatsapp %}
+          <a href="{{ whatsapp }}" target="_blank" rel="noopener" class="btn btn-primary">
+            <i class="fab fa-whatsapp"></i> WhatsApp
+          </a>
+          {% endif %}
+        </div>
+        {% endif %}
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <div class="col-4 col-md-12" style="padding: 0.75rem;">
+    <div class="card mb-4">
+      <div class="card-header"><h3 class="card-title"><i class="fas fa-shield-alt"></i> Audit trail</h3></div>
+      <div class="card-body">
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1rem;">
+          <div><label class="text-muted text-sm">Sent by</label>
+            <div>{% if agreement.sent_by %}{{ agreement.sent_by.get_full_name|default:agreement.sent_by.username }}{% else %}&mdash;{% endif %}</div></div>
+          <div><label class="text-muted text-sm">Sent at</label>
+            <div>{{ agreement.sent_at|date:"d M Y, g:i a" }}</div></div>
+          <div><label class="text-muted text-sm">Expires</label>
+            <div>{{ agreement.expires_at|date:"d M Y" }}</div></div>
+          <div><label class="text-muted text-sm">Opened</label>
+            <div>{{ agreement.view_count }} time{{ agreement.view_count|pluralize }}</div></div>
+          {% if agreement.ip_address %}
+          <div><label class="text-muted text-sm">Signed from IP</label>
+            <div>{{ agreement.ip_address }}</div></div>
+          {% endif %}
+        </div>
+        {% if agreement.body_hash %}
+        <div class="mt-3">
+          <label class="text-muted text-sm">Document fingerprint (SHA-256)</label>
+          <div class="text-sm" style="font-family: monospace; word-break: break-all;">{{ agreement.body_hash }}</div>
+          <div class="text-sm text-muted mt-1">Proves exactly which wording was agreed to.</div>
+        </div>
+        {% endif %}
+        {% if agreement.user_agent %}
+        <div class="mt-3">
+          <label class="text-muted text-sm">Device</label>
+          <div class="text-sm text-muted" style="word-break: break-word;">{{ agreement.user_agent }}</div>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+
+    {% if history %}
+    <div class="card">
+      <div class="card-header"><h3 class="card-title"><i class="fas fa-history"></i> Earlier agreements</h3></div>
+      <div class="card-body p-0">
+        <table class="table table-hover mb-0">
+          <tbody>
+            {% for h in history %}
+            <tr>
+              <td><a href="{% url 'agreement_detail' h.pk %}">{{ h.reference }}</a></td>
+              <td class="text-sm text-muted">{{ h.sent_at|date:"d M Y" }}</td>
+              <td><span class="badge" style="{{ h.status_css }}">{{ h.status_label }}</span></td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+var copyBtn = document.getElementById('btn-copy');
+if (copyBtn) {
+  copyBtn.addEventListener('click', function () {
+    var field = document.getElementById('link-field');
+    field.select();
+    field.setSelectionRange(0, 99999);
+    var done = function () {
+      copyBtn.innerHTML = '<i class="fas fa-check"></i>';
+      setTimeout(function () { copyBtn.innerHTML = '<i class="fas fa-copy"></i>'; }, 1600);
+    };
+    if (navigator.clipboard && window.isSecureContext) {
+      navigator.clipboard.writeText(field.value).then(done);
+    } else {
+      try { document.execCommand('copy'); done(); } catch (e) { /* user can copy manually */ }
+    }
+  });
+}
+</script>
+{% endblock %}

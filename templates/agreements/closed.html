@@ -1,0 +1,19 @@
+{% extends 'agreements/_doc_base.html' %}
+
+{% block title %}Link no longer active - Ralfiz Technologies{% endblock %}
+
+{% block body %}
+<div class="status-card">
+  <div class="status-icon info">&#9432;</div>
+  <h1>This link is no longer active</h1>
+  <p>{% if agreement.status == 'superseded' %}
+     A newer version of this agreement has been sent to you. Please use the most recent link.
+     {% else %}
+     This agreement request was withdrawn. Please contact your coordinator if you were
+     expecting to sign something.
+     {% endif %}</p>
+  <p style="margin-top:18px;font-size:13px;color:var(--agr-muted);">
+    Ralfiz Technologies &middot; +91 98956 63498
+  </p>
+</div>
+{% endblock %}

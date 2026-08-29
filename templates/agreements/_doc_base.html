@@ -1,0 +1,45 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="robots" content="noindex, nofollow">
+  <title>{% block title %}Ralfiz Technologies{% endblock %}</title>
+  <link rel="icon" type="image/svg+xml" href="{% static 'favicon.svg' %}">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  {% if inline_css %}
+  {% comment %}
+  |safe: this is our own stylesheet read from disk, never user input. Without
+  it Django escapes the quotes and > selectors and the CSS silently breaks.
+  {% endcomment %}
+  <style>{{ inline_css|safe }}</style>
+  {% else %}
+  <link rel="stylesheet" href="{% static 'css/agreement.css' %}?v=2">
+  {% endif %}
+</head>
+<body>
+  <div class="doc-shell">
+    <header class="doc-letterhead">
+      <div class="lh-brand">
+        <span class="lh-mark">R</span>
+        <span class="lh-name">RALFIZ<small>TECHNOLOGIES</small></span>
+      </div>
+      <div class="lh-contact">
+        KIMS Avenue, Perinthalmanna, Kerala, India<br>
+        +91 98956 63498 &middot; www.ralfiz.com
+      </div>
+    </header>
+
+    {% block body %}{% endblock %}
+
+    <footer class="doc-footer">
+      <strong>RALFIZ TECHNOLOGIES</strong>
+      <span>{{ doc.heading|default:"Internship Agreement" }}</span>
+    </footer>
+  </div>
+  {% block scripts %}{% endblock %}
+</body>
+</html>

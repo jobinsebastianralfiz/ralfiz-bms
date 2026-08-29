@@ -3,6 +3,7 @@ from pulse import views as pulse_views
 from . import views
 from gympro_licensing import web_views as gympro_web_views
 from eduflow_licensing import web_views as eduflow_web_views
+from . import agreement_web_views
 
 urlpatterns = [
     # Public Pages
@@ -297,6 +298,15 @@ urlpatterns = [
     path('hr/certificate-templates/create/', views.certificate_template_create, name='certificate_template_create'),
     path('hr/certificate-templates/<uuid:pk>/', views.certificate_template_detail, name='certificate_template_detail'),
     path('hr/certificate-templates/<uuid:pk>/delete/', views.certificate_template_delete, name='certificate_template_delete'),
+
+    # Agreements (e-signing)
+    path('hr/agreements/', agreement_web_views.agreement_list, name='agreement_list'),
+    path('hr/agreements/send/', agreement_web_views.agreement_send, name='agreement_send'),
+    path('hr/agreements/batch/<uuid:batch>/', agreement_web_views.agreement_batch, name='agreement_batch'),
+    path('hr/agreements/<uuid:pk>/', agreement_web_views.agreement_detail, name='agreement_detail'),
+    path('hr/agreements/<uuid:pk>/pdf/', agreement_web_views.agreement_pdf, name='agreement_pdf'),
+    path('hr/agreements/<uuid:pk>/cancel/', agreement_web_views.agreement_cancel, name='agreement_cancel'),
+    path('hr/agreements/<uuid:pk>/resend/', agreement_web_views.agreement_resend, name='agreement_resend'),
 
     # Certificates
     path('hr/certificates/', views.certificate_list, name='certificate_list'),
