@@ -9,11 +9,54 @@ import json
 import secrets
 import uuid
 from datetime import timedelta
+from decimal import Decimal
 from urllib.parse import quote
 
 from django.contrib.auth.models import User
 from django.db import models
 from django.utils import timezone
+
+
+ONES = ['', 'One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight', 'Nine',
+        'Ten', 'Eleven', 'Twelve', 'Thirteen', 'Fourteen', 'Fifteen', 'Sixteen',
+        'Seventeen', 'Eighteen', 'Nineteen']
+TENS = ['', '', 'Twenty', 'Thirty', 'Forty', 'Fifty', 'Sixty', 'Seventy', 'Eighty', 'Ninety']
+
+
+def _under_thousand(n):
+    if n < 20:
+        return ONES[n]
+    if n < 100:
+        return (TENS[n // 10] + (' ' + ONES[n % 10] if n % 10 else '')).strip()
+    return (ONES[n // 100] + ' Hundred' + (' and ' + _under_thousand(n % 100) if n % 100 else '')).strip()
+
+
+def rupees_in_words(amount):
+    """Indian-numbering words for a whole-rupee amount, e.g. 'Rupees Seven
+    Hundred and Fifty only'. Returns '' for zero/None, since a free internship
+    has no fee to spell out."""
+    try:
+        rupees = int(Decimal(amount))
+    except (TypeError, ValueError, ArithmeticError):
+        return ''
+    if rupees <= 0:
+        return ''
+
+    parts = []
+    for divisor, label in ((10000000, 'Crore'), (100000, 'Lakh'), (1000, 'Thousand')):
+        if rupees >= divisor:
+            parts.append(f'{_under_thousand(rupees // divisor)} {label}')
+            rupees %= divisor
+    if rupees:
+        parts.append(_under_thousand(rupees))
+    return 'Rupees ' + ' '.join(parts) + ' only'
+
+
+class _NotSet:
+    """Sentinel: lets an explicit None mean 'free', not 'use the default'."""
+
+
+NOT_SET = _NotSet()
 
 
 def default_expiry():
@@ -59,6 +102,10 @@ class AgreementTemplate(models.Model):
 
     confirmation_html = models.TextField(blank=True,
                                          help_text='Final confirmation callout, shown just above the form')
+    confirmation_free_html = models.TextField(
+        blank=True,
+        help_text='Confirmation callout used when the internship carries no monthly fee. '
+                  'Falls back to confirmation_html when blank.')
     continue_label = models.CharField(max_length=100, default='Continue my internship')
     decline_label = models.CharField(max_length=100, default='Discontinue my internship')
 
@@ -77,8 +124,51 @@ class AgreementTemplate(models.Model):
     def __str__(self):
         return f"{self.name} ({self.version})"
 
-    def build_snapshot(self):
-        """Freeze everything the signing page renders."""
+    def resolve_fee(self, fee_override=NOT_SET):
+        """The fee this agreement actually carries.
+
+        `None` or 0 means a free internship; passing nothing falls back to the
+        template's own fee.
+        """
+        fee = self.monthly_fee if fee_override is NOT_SET else fee_override
+        if fee in (None, ''):
+            return None
+        try:
+            fee = Decimal(fee)
+        except (TypeError, ValueError, ArithmeticError):
+            return None
+        return fee if fee > 0 else None
+
+    def build_snapshot(self, fee_override=NOT_SET):
+        """Freeze everything the signing page renders, for one specific fee.
+
+        Interns are on different arrangements - some pay monthly, some are on a
+        free internship - so the fee is resolved per request and the fee-related
+        wording is swapped here rather than being conditional in the templates.
+        """
+        fee = self.resolve_fee(fee_override)
+        is_free = fee is None
+
+        sections = []
+        for section in (self.sections or []):
+            section = dict(section)
+            if is_free and section.get('bullets_free'):
+                section['bullets'] = section['bullets_free']
+            if section.get('show_fee') and is_free:
+                # Section 2 is written around the fee; without one, keep the
+                # list of what the internship provides but drop the fee framing.
+                section['title'] = section.get('title_free') or section['title']
+                section['body'] = section.get('body_free') or section.get('body', '')
+                section['show_fee'] = False
+            for key in ('title_free', 'body_free', 'bullets_free'):
+                section.pop(key, None)
+            sections.append(section)
+
+        if is_free:
+            confirmation = self.confirmation_free_html or self.confirmation_html
+        else:
+            confirmation = self.confirmation_html
+
         return {
             'name': self.name,
             'version': self.version,
@@ -86,11 +176,14 @@ class AgreementTemplate(models.Model):
             'heading': self.heading,
             'eyebrow': self.eyebrow,
             'intro_html': self.intro_html,
-            'sections': self.sections,
-            'monthly_fee': str(self.monthly_fee) if self.monthly_fee is not None else '',
-            'fee_in_words': self.fee_in_words,
-            'fee_note': self.fee_note,
-            'confirmation_html': self.confirmation_html,
+            'sections': sections,
+            'monthly_fee': str(fee) if fee is not None else '',
+            'is_free': is_free,
+            # Regenerated, never copied: a custom amount must not inherit the
+            # template's words for a different number.
+            'fee_in_words': rupees_in_words(fee) if fee is not None else '',
+            'fee_note': self.fee_note if fee is not None else '',
+            'confirmation_html': confirmation,
             'continue_label': self.continue_label,
             'decline_label': self.decline_label,
             'require_college_fields': self.require_college_fields,

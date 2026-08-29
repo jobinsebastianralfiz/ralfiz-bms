@@ -77,6 +77,7 @@
             <th>Person</th>
             <th>Reference</th>
             <th>Sent</th>
+            <th>Fee</th>
             <th>Status</th>
             <th>Responded</th>
             <th class="text-end">Actions</th>
@@ -98,6 +99,10 @@
             </td>
             <td class="text-sm">{{ a.reference }}</td>
             <td class="text-sm text-muted">{{ a.sent_at|date:"d M Y" }}</td>
+            <td class="text-sm">
+              {% if a.snapshot_fee %}&#8377;{{ a.snapshot_fee|floatformat:"0" }}
+              {% else %}<span class="text-muted">Free</span>{% endif %}
+            </td>
             <td><span class="badge" style="{{ a.status_css }}">{{ a.status_label }}</span></td>
             <td class="text-sm text-muted">
               {% if a.responded_at %}{{ a.responded_at|date:"d M Y, g:i a" }}

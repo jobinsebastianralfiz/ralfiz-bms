@@ -36,6 +36,10 @@ SECTIONS = [
         'title': 'Monthly Internship Fee',
         'body': 'The fee supports the structured learning and guidance provided during the internship, including:',
         'show_fee': True,
+        # Used instead when the internship carries no fee.
+        'title_free': 'Learning Support & Guidance',
+        'body_free': 'This internship carries no monthly fee. The structured learning and guidance '
+                     'provided during the internship includes:',
         'bullets': [
             'Guidance and mentorship for assigned work',
             'Work-related learning materials and resources',
@@ -132,6 +136,13 @@ SECTIONS = [
             'Compliance with internship policies and terms',
             'Timely payment of the applicable monthly fee',
         ],
+        'bullets_free': [
+            'Regular attendance',
+            'Satisfactory participation',
+            'Completion of assigned work',
+            'Professional conduct',
+            'Compliance with internship policies and terms',
+        ],
         'footnote': 'The company reserves the right to discontinue an internship where there is continued '
                     'non-compliance, poor participation, misconduct, or other legitimate reasons.',
     },
@@ -140,8 +151,13 @@ SECTIONS = [
 CONFIRMATION = (
     'By selecting <strong>Continue my internship</strong>, I confirm that I have read and understood the '
     'above terms and conditions. I agree to follow the internship policies, maintain regular participation, '
-    'complete assigned work, and pay the applicable <strong>₹750 monthly internship fee</strong> for '
-    'continued participation.'
+    'complete assigned work, and pay the applicable monthly internship fee for continued participation.'
+)
+
+CONFIRMATION_FREE = (
+    'By selecting <strong>Continue my internship</strong>, I confirm that I have read and understood the '
+    'above terms and conditions. I agree to follow the internship policies, maintain regular participation, '
+    'and complete assigned work for continued participation.'
 )
 
 
@@ -163,6 +179,7 @@ class Command(BaseCommand):
             'fee_in_words': 'Rupees Seven Hundred and Fifty only',
             'fee_note': 'applicable for each month of continued participation',
             'confirmation_html': CONFIRMATION,
+            'confirmation_free_html': CONFIRMATION_FREE,
             'continue_label': 'Continue my internship',
             'decline_label': 'Discontinue my internship',
             'require_college_fields': True,

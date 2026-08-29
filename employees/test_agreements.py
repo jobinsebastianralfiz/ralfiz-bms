@@ -24,10 +24,21 @@ class AgreementTestBase(TestCase):
             version='v1.0',
             heading='Internship Continuation & Learning Agreement',
             intro_html='Dear Intern,\nPlease confirm.',
-            sections=[{'no': 1, 'title': 'Internship Continuation', 'body': 'I confirm:'}],
+            sections=[
+                {'no': 1, 'title': 'Internship Continuation', 'body': 'I confirm:'},
+                {'no': 2, 'title': 'Monthly Internship Fee', 'show_fee': True,
+                 'body': 'The fee supports guidance, including:',
+                 'bullets': ['Mentorship'],
+                 'title_free': 'Learning Support & Guidance',
+                 'body_free': 'This internship carries no monthly fee.'},
+                {'no': 9, 'title': 'Completion & Continuation',
+                 'bullets': ['Regular attendance', 'Timely payment of the applicable monthly fee'],
+                 'bullets_free': ['Regular attendance']},
+            ],
             monthly_fee=Decimal('750.00'),
             fee_in_words='Rupees Seven Hundred and Fifty only',
-            confirmation_html='By selecting Continue...',
+            confirmation_html='By selecting Continue, I agree to pay the monthly fee.',
+            confirmation_free_html='By selecting Continue, I agree to the terms.',
         )
         self.intern = self._make_employee('intern1', 'EMP900', 'intern', phone='9895663498')
         self.staff = self._make_employee('staff1', 'EMP901', 'fulltime')
@@ -446,3 +457,146 @@ class HRSignedCopyTests(AgreementTestBase):
         response = self.client.get(f'/hr/agreements/{agreement.pk}/pdf/')
         self.assertEqual(response.status_code, 302)
         self.assertIn('login', response['Location'])
+
+
+class FeeConfigurationTests(AgreementTestBase):
+    """Interns are on different arrangements - some pay monthly, some are free."""
+
+    def _make_with_fee(self, fee):
+        return AgreementRequest.objects.create(
+            employee=self.intern, template=self.template,
+            snapshot_json=self.template.build_snapshot(fee_override=fee),
+            snapshot_version=self.template.version,
+            snapshot_fee=self.template.resolve_fee(fee),
+        )
+
+    def test_default_fee_comes_from_the_template(self):
+        snapshot = self.template.build_snapshot()
+        self.assertEqual(snapshot['monthly_fee'], '750.00')
+        self.assertFalse(snapshot['is_free'])
+
+    def test_custom_fee_regenerates_the_words(self):
+        """A custom amount must never inherit the words for a different number."""
+        snapshot = self.template.build_snapshot(fee_override=Decimal('500'))
+        self.assertEqual(snapshot['monthly_fee'], '500')
+        self.assertEqual(snapshot['fee_in_words'], 'Rupees Five Hundred only')
+        self.assertNotIn('Seven Hundred', snapshot['fee_in_words'])
+
+    def test_zero_and_none_both_mean_free(self):
+        for value in (0, Decimal('0'), None, ''):
+            snapshot = self.template.build_snapshot(fee_override=value)
+            self.assertTrue(snapshot['is_free'], value)
+            self.assertEqual(snapshot['monthly_fee'], '')
+            self.assertEqual(snapshot['fee_in_words'], '')
+
+    def test_free_swaps_the_fee_section_wording(self):
+        snapshot = self.template.build_snapshot(fee_override=0)
+        section = [s for s in snapshot['sections'] if s['no'] == 2][0]
+
+        self.assertEqual(section['title'], 'Learning Support & Guidance')
+        self.assertIn('no monthly fee', section['body'])
+        self.assertFalse(section['show_fee'])
+
+    def test_free_drops_the_fee_payment_condition(self):
+        snapshot = self.template.build_snapshot(fee_override=0)
+        section = [s for s in snapshot['sections'] if s['no'] == 9][0]
+        self.assertNotIn('Timely payment of the applicable monthly fee', section['bullets'])
+
+    def test_paid_keeps_the_fee_payment_condition(self):
+        snapshot = self.template.build_snapshot()
+        section = [s for s in snapshot['sections'] if s['no'] == 9][0]
+        self.assertIn('Timely payment of the applicable monthly fee', section['bullets'])
+
+    def test_free_uses_the_fee_free_confirmation(self):
+        self.assertIn('agree to the terms',
+                      self.template.build_snapshot(fee_override=0)['confirmation_html'])
+        self.assertIn('pay the monthly fee',
+                      self.template.build_snapshot()['confirmation_html'])
+
+    def test_snapshot_never_leaks_the_free_variant_keys(self):
+        for snapshot in (self.template.build_snapshot(), self.template.build_snapshot(fee_override=0)):
+            for section in snapshot['sections']:
+                for key in ('title_free', 'body_free', 'bullets_free'):
+                    self.assertNotIn(key, section)
+
+    def test_free_agreement_page_shows_no_fee(self):
+        agreement = self._make_with_fee(0)
+        body = self.client.get(agreement.public_path()).content.decode()
+
+        self.assertIn('Learning Support', body)
+        self.assertNotIn('750', body)
+        self.assertNotIn('/ month', body)
+
+    def test_paid_agreement_page_shows_the_fee(self):
+        agreement = self._make_with_fee(Decimal('750'))
+        body = self.client.get(agreement.public_path()).content.decode()
+        self.assertIn('750', body)
+
+    def test_free_signed_copy_says_no_fee(self):
+        agreement = self._make_with_fee(0)
+        self.client.post(agreement.public_path(), self._continue_payload())
+
+        body = self.client.get(f'/agreement/{agreement.token}/copy/').content.decode()
+        self.assertIn('no monthly fee', body)
+        self.assertNotIn('750', body)
+
+    def test_free_internship_does_not_break_the_template_default(self):
+        """Sending someone a free agreement must not change the template."""
+        self.template.build_snapshot(fee_override=0)
+        self.template.refresh_from_db()
+        self.assertEqual(self.template.monthly_fee, Decimal('750.00'))
+
+
+class SendFeeTests(AgreementTestBase):
+    def setUp(self):
+        super().setUp()
+        self.hr = User.objects.create_superuser('hr3', 'hr3@example.com', 'pw')
+        self.client.force_login(self.hr)
+
+    def _send(self, **extra):
+        payload = {'template': str(self.template.id),
+                   'employees': [str(self.intern.id), str(self.staff.id)]}
+        payload.update(extra)
+        return self.client.post('/hr/agreements/send/', payload)
+
+    def test_batch_default_fee_applies_to_everyone(self):
+        self._send(default_fee='500')
+        for agreement in AgreementRequest.objects.all():
+            self.assertEqual(agreement.snapshot_fee, Decimal('500'))
+
+    def test_per_person_fee_overrides_the_batch_default(self):
+        self._send(**{'default_fee': '750', f'fee_{self.intern.id}': '0'})
+
+        free = AgreementRequest.objects.get(employee=self.intern)
+        paid = AgreementRequest.objects.get(employee=self.staff)
+        self.assertIsNone(free.snapshot_fee)
+        self.assertTrue(free.snapshot_json['is_free'])
+        self.assertEqual(paid.snapshot_fee, Decimal('750'))
+        self.assertFalse(paid.snapshot_json['is_free'])
+
+    def test_blank_fee_falls_back_to_the_template(self):
+        self._send(default_fee='')
+        for agreement in AgreementRequest.objects.all():
+            self.assertEqual(agreement.snapshot_fee, Decimal('750.00'))
+
+    def test_junk_fee_falls_back_rather_than_erroring(self):
+        response = self._send(default_fee='abc')
+        self.assertEqual(response.status_code, 302)
+        for agreement in AgreementRequest.objects.all():
+            self.assertEqual(agreement.snapshot_fee, Decimal('750.00'))
+
+    def test_resend_keeps_the_persons_existing_fee(self):
+        self._send(**{f'fee_{self.intern.id}': '0'})
+        original = AgreementRequest.objects.get(employee=self.intern)
+
+        self.client.post(f'/hr/agreements/{original.pk}/resend/')
+
+        newest = AgreementRequest.objects.filter(employee=self.intern).order_by('-sent_at').first()
+        self.assertNotEqual(newest.pk, original.pk)
+        self.assertIsNone(newest.snapshot_fee)
+        self.assertTrue(newest.snapshot_json['is_free'])
+
+    def test_send_screen_offers_a_fee_box_per_person(self):
+        body = self.client.get('/hr/agreements/send/?type=all').content.decode()
+        self.assertIn(f'fee_{self.intern.id}', body)
+        self.assertIn('name="default_fee"', body)

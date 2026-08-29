@@ -103,9 +103,13 @@
     <p class="agr-footnote"><strong>Reason given:</strong> {{ agreement.decline_reason }}</p>
     {% endif %}
 
-    {% if agreement.decision == 'continue' and agreement.snapshot_fee %}
+    {% if agreement.decision == 'continue' %}
     <p class="agr-footnote">
+      {% if agreement.snapshot_fee %}
       Agreed to the monthly internship fee of &#8377;{{ agreement.snapshot_fee|floatformat:"-2" }}.
+      {% else %}
+      This internship carries no monthly fee.
+      {% endif %}
     </p>
     {% endif %}
   </section>

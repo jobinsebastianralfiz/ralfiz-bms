@@ -1,6 +1,7 @@
 """HR screens for agreement e-signing: select people, generate links, track responses."""
 import uuid
 from datetime import timedelta
+from decimal import Decimal, InvalidOperation
 
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
@@ -10,6 +11,20 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 
 from employees.models import AgreementRequest, AgreementTemplate, Employee
+
+
+def _posted_fee(request, employee, template):
+    """Fee for one recipient: their own box, else the batch default, else the
+    template's. Blank or 0 means a free internship."""
+    raw = request.POST.get(f'fee_{employee.id}')
+    if raw is None or raw.strip() == '':
+        raw = request.POST.get('default_fee', '')
+    if raw.strip() == '':
+        return template.resolve_fee()
+    try:
+        return template.resolve_fee(Decimal(raw))
+    except (InvalidOperation, ValueError):
+        return template.resolve_fee()
 
 
 @login_required
@@ -77,11 +92,18 @@ def agreement_send(request):
         employees = Employee.objects.select_related('user').filter(id__in=employee_ids)
 
         batch = uuid.uuid4()
-        snapshot = template.build_snapshot()
         expires_at = timezone.now() + timedelta(days=expiry_days)
+        # Snapshots are cached per distinct fee: most sends use one or two.
+        snapshots = {}
 
         created = 0
         for employee in employees:
+            # Interns are on different arrangements - some pay monthly, some
+            # are on a free internship - so the fee is per person.
+            fee = _posted_fee(request, employee, template)
+            if fee not in snapshots:
+                snapshots[fee] = template.build_snapshot(fee_override=fee)
+
             # An older open link for the same person would let them answer twice.
             AgreementRequest.objects.filter(
                 employee=employee, status__in=AgreementRequest.OPEN_STATUSES,
@@ -90,9 +112,9 @@ def agreement_send(request):
             AgreementRequest.objects.create(
                 employee=employee,
                 template=template,
-                snapshot_json=snapshot,
+                snapshot_json=snapshots[fee],
                 snapshot_version=template.version,
-                snapshot_fee=template.monthly_fee,
+                snapshot_fee=fee,
                 sent_by=request.user,
                 expires_at=expires_at,
                 batch=batch,
@@ -190,12 +212,14 @@ def agreement_resend(request, pk):
         messages.error(request, 'No active agreement template to send.')
         return redirect('agreement_detail', pk=pk)
 
+    # Keep whatever arrangement this person was already on.
+    fee = template.resolve_fee(old.snapshot_fee)
     new = AgreementRequest.objects.create(
         employee=old.employee,
         template=template,
-        snapshot_json=template.build_snapshot(),
+        snapshot_json=template.build_snapshot(fee_override=fee),
         snapshot_version=template.version,
-        snapshot_fee=template.monthly_fee,
+        snapshot_fee=fee,
         sent_by=request.user,
         batch=uuid.uuid4(),
     )

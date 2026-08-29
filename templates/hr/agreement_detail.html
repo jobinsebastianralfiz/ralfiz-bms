@@ -70,10 +70,11 @@
           <div><label class="text-muted text-sm">Internship domain</label>
             <div class="fw-medium">{{ agreement.internship_domain }}</div></div>
           {% endif %}
-          {% if agreement.snapshot_fee %}
           <div><label class="text-muted text-sm">Fee agreed</label>
-            <div class="fw-medium">&#8377;{{ agreement.snapshot_fee|floatformat:"-2" }} / month</div></div>
-          {% endif %}
+            <div class="fw-medium">
+              {% if agreement.snapshot_fee %}&#8377;{{ agreement.snapshot_fee|floatformat:"-2" }} / month
+              {% else %}<span class="badge" style="background: var(--info-bg); color: var(--info);">Free internship</span>{% endif %}
+            </div></div>
           {% else %}
           {% if agreement.decline_reason %}
           <div style="grid-column: 1 / -1;"><label class="text-muted text-sm">Reason given</label>
@@ -105,6 +106,12 @@
           {% else %}
           Not opened yet.
           {% endif %}
+        </p>
+
+        <p class="text-sm text-muted mb-3">
+          Fee on this agreement:
+          {% if agreement.snapshot_fee %}<strong>&#8377;{{ agreement.snapshot_fee|floatformat:"-2" }} / month</strong>
+          {% else %}<strong>free internship</strong>{% endif %}
         </p>
 
         {% if agreement.is_open %}
