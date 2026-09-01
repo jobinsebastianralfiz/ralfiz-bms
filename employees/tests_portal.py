@@ -304,10 +304,54 @@ class StaffPortalPwaTests(StaffPortalTestBase):
         self.assertEqual(res.status_code, 200)
         self.assertContains(res, "You're offline")
 
-    def test_login_page_advertises_ios_install(self):
+    def test_login_page_offers_the_install_flow(self):
         res = self.client.get(reverse('staff:login'))
         self.assertContains(res, 'Add to Home Screen')
         self.assertContains(res, 'apple-touch-icon')
+        # The hint must be a real control wired to the install helper.
+        self.assertContains(res, 'id="sfInstallOpen"')
+        self.assertContains(res, 'js/staff.js')
+
+
+class StaffPortalInstallPromptTests(StaffPortalTestBase):
+    """Add-to-home-screen must be discoverable, dismissible and always reachable."""
+
+    def setUp(self):
+        self.login_intern()
+
+    def test_banner_is_present_but_hidden_until_js_decides(self):
+        res = self.client.get(reverse('staff:dashboard'))
+        self.assertContains(res, 'id="sfInstallBanner"')
+        # Hidden server-side; staff.js unhides it only when install is possible
+        # and the user has not dismissed it.
+        self.assertContains(res, '<div class="sf-install" id="sfInstallBanner" hidden>')
+
+    def test_banner_has_both_a_show_me_and_a_dismiss_control(self):
+        res = self.client.get(reverse('staff:dashboard'))
+        self.assertContains(res, 'id="sfInstallOpen"')
+        self.assertContains(res, 'id="sfInstallDismiss"')
+
+    def test_menu_entry_survives_dismissing_the_banner(self):
+        """Dismissing the banner is remembered, so the More sheet is the way back."""
+        res = self.client.get(reverse('staff:dashboard'))
+        self.assertContains(res, 'id="sfInstallEntry"')
+        self.assertContains(res, 'Add to Home Screen')
+
+    def test_every_page_carries_the_install_entry(self):
+        for name in ['dashboard', 'attendance', 'leave', 'work_list', 'profile']:
+            with self.subTest(page=name):
+                res = self.client.get(reverse('staff:' + name))
+                self.assertContains(res, 'id="sfInstallEntry"')
+
+    def test_profile_offers_the_install_flow(self):
+        res = self.client.get(reverse('staff:profile'))
+        self.assertContains(res, 'id="sfInstallOpen"')
+
+    def test_static_assets_are_version_stamped_together(self):
+        """Unhashed statics need a ?v bump or phones serve a stale app."""
+        res = self.client.get(reverse('staff:dashboard')).content.decode()
+        self.assertIn('css/staff.css?v=3', res)
+        self.assertIn('js/staff.js?v=3', res)
 
 
 class MainLoginRoutingTests(StaffPortalTestBase):

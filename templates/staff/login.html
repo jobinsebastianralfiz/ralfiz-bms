@@ -15,7 +15,8 @@
   <link rel="icon" type="image/svg+xml" href="{% static 'favicon.svg' %}">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-  <link rel="stylesheet" href="{% static 'css/staff.css' %}?v=2">
+  <link rel="stylesheet" href="{% static 'css/staff.css' %}?v=3">
+  <script>window.SF_CSRF = "";</script>
 </head>
 <body>
   <div class="sf-auth">
@@ -43,10 +44,10 @@
       <button type="submit" class="sf-btn"><i class="fas fa-arrow-right-to-bracket"></i> Sign in</button>
     </form>
 
-    <p class="sf-dim" style="text-align:center;margin-top:26px">
-      On iPhone: tap <i class="fas fa-arrow-up-from-bracket"></i> Share → <strong>Add to Home Screen</strong>
-      to install this as an app.
-    </p>
+    <button type="button" class="sf-btn sf-btn-ghost" id="sfInstallOpen" style="margin-top:26px">
+      <i class="fas fa-mobile-screen-button"></i> Add to Home Screen
+    </button>
   </div>
+  <script src="{% static 'js/staff.js' %}?v=3"></script>
 </body>
 </html>

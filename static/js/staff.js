@@ -292,6 +292,143 @@
     });
   }
 
+  // --- Install to home screen -----------------------------------------
+
+  var deferredPrompt = null;
+
+  function isStandalone() {
+    return window.matchMedia('(display-mode: standalone)').matches ||
+           window.navigator.standalone === true;
+  }
+
+  function isIOS() {
+    // iPadOS 13+ reports as MacIntel, so touch points are the reliable tell.
+    return /iphone|ipad|ipod/i.test(navigator.userAgent) ||
+           (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  }
+
+  SF.isStandalone = isStandalone;
+
+  function dismissed() {
+    try { return localStorage.getItem('sf-install-dismissed') === '1'; }
+    catch (e) { return false; }
+  }
+
+  function rememberDismissed() {
+    try { localStorage.setItem('sf-install-dismissed', '1'); } catch (e) { /* private mode */ }
+  }
+
+  /* The how-to. iOS Safari has no install API at all, so the only thing we can
+     do there is show the user exactly which buttons to tap. */
+  SF.showInstallHelp = function () {
+    if (isStandalone()) {
+      SF.toast('This is already installed on your home screen.', 'success');
+      return;
+    }
+
+    var modal = SF.openModal('Add to Home Screen');
+    modal.bindClose(function () { modal.close(); });
+
+    if (deferredPrompt) {
+      modal.body.innerHTML =
+        '<p class="sf-muted" style="margin-top:0">Install this as an app so it opens ' +
+        'full screen, straight from your home screen.</p>' +
+        '<button type="button" class="sf-btn" id="sfDoInstall">' +
+          '<i class="fas fa-download"></i> Install app</button>';
+      modal.body.querySelector('#sfDoInstall').addEventListener('click', function () {
+        modal.close();
+        deferredPrompt.prompt();
+        deferredPrompt.userChoice.then(function (choice) {
+          if (choice.outcome === 'accepted') SF.toast('Installing…', 'success');
+          deferredPrompt = null;
+          hideBanner();
+        });
+      });
+      return;
+    }
+
+    if (isIOS()) {
+      modal.body.innerHTML =
+        '<p class="sf-muted" style="margin-top:0">Two taps in Safari and this sits on ' +
+        'your home screen like any other app.</p>' +
+        '<div class="sf-steps" style="margin-bottom:16px">' +
+          '<div class="sf-step active">' +
+            '<span class="sf-step-num">1</span>' +
+            '<div class="sf-step-body">' +
+              '<div class="sf-step-title">Tap Share ' +
+                '<i class="fas fa-arrow-up-from-bracket" style="color:var(--sf-teal)"></i></div>' +
+              '<div class="sf-step-hint">In the bar at the bottom of Safari</div>' +
+            '</div>' +
+          '</div>' +
+          '<div class="sf-step active">' +
+            '<span class="sf-step-num">2</span>' +
+            '<div class="sf-step-body">' +
+              '<div class="sf-step-title">Choose "Add to Home Screen" ' +
+                '<i class="fas fa-square-plus" style="color:var(--sf-teal)"></i></div>' +
+              '<div class="sf-step-hint">Scroll down the share list to find it</div>' +
+            '</div>' +
+          '</div>' +
+          '<div class="sf-step active">' +
+            '<span class="sf-step-num">3</span>' +
+            '<div class="sf-step-body">' +
+              '<div class="sf-step-title">Tap Add</div>' +
+              '<div class="sf-step-hint">The Ralfiz icon appears on your home screen</div>' +
+            '</div>' +
+          '</div>' +
+        '</div>' +
+        '<div class="sf-alert">You must be in <strong>Safari</strong> for this. Chrome ' +
+        'and in-app browsers (WhatsApp, Instagram) have no Add to Home Screen option.</div>';
+      return;
+    }
+
+    modal.body.innerHTML =
+      '<p class="sf-muted" style="margin-top:0">Open your browser menu and choose ' +
+      '<strong>Install app</strong> or <strong>Add to Home screen</strong>.</p>' +
+      '<div class="sf-alert">If you do not see it, your browser may not support installing ' +
+      'web apps. The portal still works normally in the browser.</div>';
+  };
+
+  function hideBanner() {
+    var banner = document.getElementById('sfInstallBanner');
+    if (banner) banner.hidden = true;
+  }
+
+  function initInstall() {
+    var banner = document.getElementById('sfInstallBanner');
+
+    // Already installed: no banner, and drop the menu entry too.
+    if (isStandalone()) {
+      var entry = document.getElementById('sfInstallEntry');
+      if (entry) entry.hidden = true;
+      return;
+    }
+
+    window.addEventListener('beforeinstallprompt', function (e) {
+      e.preventDefault();          // keep Chrome's own mini-infobar out of the way
+      deferredPrompt = e;
+      if (banner && !dismissed()) banner.hidden = false;
+    });
+
+    window.addEventListener('appinstalled', function () {
+      deferredPrompt = null;
+      hideBanner();
+    });
+
+    if (!banner) return;
+
+    // iOS never fires beforeinstallprompt, so offer the banner directly.
+    if (isIOS() && !dismissed()) banner.hidden = false;
+
+    var open = document.getElementById('sfInstallOpen');
+    if (open) open.addEventListener('click', SF.showInstallHelp);
+
+    var no = document.getElementById('sfInstallDismiss');
+    if (no) no.addEventListener('click', function () {
+      rememberDismissed();
+      hideBanner();
+    });
+  }
+
   // --- Service worker -------------------------------------------------
 
   function initServiceWorker() {
@@ -306,5 +443,16 @@
   document.addEventListener('DOMContentLoaded', function () {
     initSheet();
     initServiceWorker();
+    initInstall();
+
+    var entry = document.getElementById('sfInstallEntry');
+    if (entry) entry.addEventListener('click', function (e) {
+      e.preventDefault();
+      var sheet = document.getElementById('sfSheet');
+      var backdrop = document.getElementById('sfSheetBackdrop');
+      if (sheet) sheet.hidden = true;
+      if (backdrop) backdrop.hidden = true;
+      SF.showInstallHelp();
+    });
   });
 })();
