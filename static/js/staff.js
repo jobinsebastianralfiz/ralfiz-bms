@@ -376,8 +376,47 @@
             '</div>' +
           '</div>' +
         '</div>' +
-        '<div class="sf-alert">You must be in <strong>Safari</strong> for this. Chrome ' +
-        'and in-app browsers (WhatsApp, Instagram) have no Add to Home Screen option.</div>';
+        '<div class="sf-alert">Use <strong>Safari</strong>. On iPhone only Safari can ' +
+        'make a real full-screen app -- other browsers either hide the option or add a ' +
+        'plain shortcut. If you opened this from a chat, tap the menu and choose ' +
+        '<strong>Open in Safari</strong> first.</div>';
+      return;
+    }
+
+    // Android. Chrome usually gives us beforeinstallprompt and we never get
+    // here, but Brave and Firefox often withhold it, so spell out the menu.
+    var isAndroid = /android/i.test(navigator.userAgent);
+    if (isAndroid) {
+      modal.body.innerHTML =
+        '<p class="sf-muted" style="margin-top:0">Three taps and this sits on your ' +
+        'home screen like any other app.</p>' +
+        '<div class="sf-steps" style="margin-bottom:16px">' +
+          '<div class="sf-step active">' +
+            '<span class="sf-step-num">1</span>' +
+            '<div class="sf-step-body">' +
+              '<div class="sf-step-title">Tap the menu ' +
+                '<i class="fas fa-ellipsis-vertical" style="color:var(--sf-teal)"></i></div>' +
+              '<div class="sf-step-hint">Three dots, bottom-right in Brave, top-right in Chrome</div>' +
+            '</div>' +
+          '</div>' +
+          '<div class="sf-step active">' +
+            '<span class="sf-step-num">2</span>' +
+            '<div class="sf-step-body">' +
+              '<div class="sf-step-title">Choose "Add to Home screen"</div>' +
+              '<div class="sf-step-hint">Some versions call it "Install app"</div>' +
+            '</div>' +
+          '</div>' +
+          '<div class="sf-step active">' +
+            '<span class="sf-step-num">3</span>' +
+            '<div class="sf-step-body">' +
+              '<div class="sf-step-title">Tap Add</div>' +
+              '<div class="sf-step-hint">The Ralfiz icon appears on your home screen</div>' +
+            '</div>' +
+          '</div>' +
+        '</div>' +
+        '<div class="sf-alert">In-app browsers (WhatsApp, Instagram) cannot install ' +
+        'apps. If you opened this from a chat, tap the menu and choose ' +
+        '<strong>Open in browser</strong> first.</div>';
       return;
     }
 
@@ -414,13 +453,15 @@
       hideBanner();
     });
 
+    // Bind the button FIRST. The login page has one but no banner, so binding
+    // after the banner check left it dead on exactly the page most people see.
+    var open = document.getElementById('sfInstallOpen');
+    if (open) open.addEventListener('click', SF.showInstallHelp);
+
     if (!banner) return;
 
     // iOS never fires beforeinstallprompt, so offer the banner directly.
     if (isIOS() && !dismissed()) banner.hidden = false;
-
-    var open = document.getElementById('sfInstallOpen');
-    if (open) open.addEventListener('click', SF.showInstallHelp);
 
     var no = document.getElementById('sfInstallDismiss');
     if (no) no.addEventListener('click', function () {

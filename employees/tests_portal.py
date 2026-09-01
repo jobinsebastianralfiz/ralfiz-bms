@@ -1,4 +1,5 @@
 """Tests for the staff portal (/staff/) used by interns and employees."""
+import pathlib
 from datetime import date, timedelta
 from decimal import Decimal
 
@@ -347,11 +348,35 @@ class StaffPortalInstallPromptTests(StaffPortalTestBase):
         res = self.client.get(reverse('staff:profile'))
         self.assertContains(res, 'id="sfInstallOpen"')
 
+    def test_install_button_is_bound_before_the_banner_check(self):
+        """Regression: the login page has an install button but no banner.
+
+        initInstall() early-returns when there is no banner, so binding the
+        button after that check left it dead on the login page -- the first
+        screen every intern sees. Order matters here.
+        """
+        js = (pathlib.Path(__file__).resolve().parent.parent
+              / 'static' / 'js' / 'staff.js').read_text()
+        bind_at = js.index("open.addEventListener('click', SF.showInstallHelp)")
+        bail_at = js.index('if (!banner) return;')
+        self.assertLess(bind_at, bail_at,
+                        'the install button must be bound before initInstall() '
+                        'bails out on pages that have no banner')
+
+    def test_install_help_covers_ios_and_android(self):
+        js = (pathlib.Path(__file__).resolve().parent.parent
+              / 'static' / 'js' / 'staff.js').read_text()
+        self.assertIn('isIOS()', js)
+        self.assertIn('/android/i.test(navigator.userAgent)', js)
+        # Both platforms warn about in-app browsers, which cannot install.
+        self.assertIn('Open in Safari', js)
+        self.assertIn('Open in browser', js)
+
     def test_static_assets_are_version_stamped_together(self):
         """Unhashed statics need a ?v bump or phones serve a stale app."""
         res = self.client.get(reverse('staff:dashboard')).content.decode()
-        self.assertIn('css/staff.css?v=3', res)
-        self.assertIn('js/staff.js?v=3', res)
+        self.assertIn('css/staff.css?v=4', res)
+        self.assertIn('js/staff.js?v=4', res)
 
 
 class MainLoginRoutingTests(StaffPortalTestBase):
