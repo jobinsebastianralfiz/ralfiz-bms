@@ -333,8 +333,14 @@
               {{ quote.client_notes|linebreaks }}
             </div>
             {% endif %}
+            {% if quote.payment_terms_display %}
+            <div class="text-sm text-muted mb-2 {% if quote.client_notes %}mt-3{% endif %}">Payment Terms</div>
+            <div class="text-secondary text-sm">
+              {{ quote.payment_terms_display|linebreaks }}
+            </div>
+            {% endif %}
             {% if quote.terms %}
-            <div class="text-sm text-muted mb-2 {% if quote.client_notes %}mt-3{% endif %}">Terms & Conditions</div>
+            <div class="text-sm text-muted mb-2 {% if quote.client_notes or quote.payment_terms_display %}mt-3{% endif %}">Terms & Conditions</div>
             <div class="text-secondary text-sm">
               {{ quote.terms|linebreaks }}
             </div>

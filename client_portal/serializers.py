@@ -231,7 +231,7 @@ class QuoteDetailSerializer(serializers.ModelSerializer):
             'status', 'status_display', 'subtotal', 'discount', 'tax_rate',
             'tax_amount', 'total_amount', 'issue_date', 'valid_until',
             'is_expired', 'duration', 'start_date', 'deliverables',
-            'payment_terms', 'terms', 'client_notes', 'items', 'created_at',
+            'payment_terms', 'payment_terms_display', 'terms', 'client_notes', 'items', 'created_at',
         ]
 
 

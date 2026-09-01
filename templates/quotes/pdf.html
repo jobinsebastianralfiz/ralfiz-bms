@@ -426,6 +426,16 @@
         display: none !important;
       }
     }
+  
+    /* Inlined logo for PDFs. max-width/height rather than object-fit, which
+       WeasyPrint does not reliably honour. */
+    .company-logo-img {
+      max-width: 36px;
+      max-height: 36px;
+      width: auto;
+      height: auto;
+      border-radius: 6px;
+    }
   </style>
 </head>
 <body>
@@ -453,7 +463,9 @@
     <div class="quote-header">
       <div class="company-info" style="flex: 1;">
         <div class="company-logo">
-          {% if company.logo %}
+          {% if company.logo_data_uri %}
+          <img src="{{ company.logo_data_uri }}" alt="{{ company.company_name }}" class="company-logo-img">
+          {% elif company.logo %}
           <img src="{{ company.logo.url }}" alt="{{ company.company_name }}" style="width: 36px; height: 36px; object-fit: contain; border-radius: 6px;">
           {% else %}
           <div class="logo-icon">{{ company.company_name|slice:":1"|upper|default:"R" }}</div>
@@ -577,6 +589,14 @@
     {% if quote.valid_until %}
     <div style="font-size: 9px; color: #92400e; text-align: right; margin-bottom: 12px;">
       <strong>Valid until {{ quote.valid_until|date:"d F Y" }}</strong> - Prices may change after this date.
+    </div>
+    {% endif %}
+
+    <!-- Payment Terms -->
+    {% if quote.payment_terms_display %}
+    <div class="terms-section">
+      <div class="terms-label">Payment Terms</div>
+      <div class="terms-content">{{ quote.payment_terms_display|linebreaksbr }}</div>
     </div>
     {% endif %}
 

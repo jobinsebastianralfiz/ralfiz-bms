@@ -1584,6 +1584,7 @@ def quote_create(request):
             start_date=start_date,
             deliverables=request.POST.get('deliverables', ''),
             payment_terms=request.POST.get('payment_terms', '50-50'),
+            payment_terms_custom=request.POST.get('payment_terms_custom', ''),
         )
 
         # Process line items
@@ -1671,6 +1672,7 @@ def quote_update(request, pk):
             quote.start_date = start_date_val if start_date_val else None
             quote.deliverables = request.POST.get('deliverables', '')
             quote.payment_terms = request.POST.get('payment_terms', '50-50')
+            quote.payment_terms_custom = request.POST.get('payment_terms_custom', '')
 
             quote.save()
 
@@ -1860,6 +1862,7 @@ def quote_clone(request, pk):
         duration=original_quote.duration,
         deliverables=original_quote.deliverables,
         payment_terms=original_quote.payment_terms,
+        payment_terms_custom=original_quote.payment_terms_custom,
     )
 
     # Clone all items

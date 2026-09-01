@@ -387,6 +387,16 @@
       size: A4;
       margin: 10mm;
     }
+  
+    /* Inlined logo for PDFs. max-width/height rather than object-fit, which
+       WeasyPrint does not reliably honour. */
+    .company-logo-img {
+      max-width: 36px;
+      max-height: 36px;
+      width: auto;
+      height: auto;
+      border-radius: 6px;
+    }
   </style>
 </head>
 <body>
@@ -415,7 +425,9 @@
     <!-- Header -->
     <div class="receipt-header">
       <div class="company-logo">
-        {% if company.logo %}
+        {% if company.logo_data_uri %}
+          <img src="{{ company.logo_data_uri }}" alt="{{ company.company_name }}" class="company-logo-img">
+          {% elif company.logo %}
         <div class="logo-icon">
           <img src="{{ company.logo.url }}" alt="{{ company.company_name }}">
         </div>

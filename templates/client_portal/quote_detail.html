@@ -117,10 +117,10 @@
             <span>{{ quote.duration }}</span>
           </div>
           {% endif %}
-          {% if quote.payment_terms %}
+          {% if quote.payment_terms_display %}
           <div class="detail-item">
             <label>Payment Terms</label>
-            <span>{{ quote.payment_terms }}</span>
+            <span>{{ quote.payment_terms_display }}</span>
           </div>
           {% endif %}
           {% if quote.start_date %}

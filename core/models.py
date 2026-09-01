@@ -1,4 +1,9 @@
 import uuid
+import base64
+import os
+import re
+
+from django.utils.functional import cached_property
 from django.db import models
 from django.contrib.auth.models import User
 from django.contrib.contenttypes.fields import GenericForeignKey
@@ -354,6 +359,15 @@ class CredentialRenewal(models.Model):
         return f"Renewal of {self.credential.name} on {self.renewed_date}"
 
 
+PAYMENT_TERMS_CHOICES = [
+    ('50-50', '50% Advance, 50% on Completion'),
+    ('30-30-40', '30% Advance, 30% Mid-project, 40% on Completion'),
+    ('100-advance', '100% Advance'),
+    ('100-completion', '100% on Completion'),
+    ('custom', 'Custom'),
+]
+
+
 class Quote(models.Model):
     """Quotation model"""
     STATUS_CHOICES = [
@@ -387,13 +401,28 @@ class Quote(models.Model):
     duration = models.CharField(max_length=100, blank=True, help_text='e.g., 4-6 weeks')
     start_date = models.DateField(null=True, blank=True)
     deliverables = models.TextField(blank=True)
-    payment_terms = models.CharField(max_length=50, default='50-50', blank=True)
+    payment_terms = models.CharField(
+        max_length=50, default='50-50', blank=True, choices=PAYMENT_TERMS_CHOICES)
+    payment_terms_custom = models.TextField(
+        blank=True,
+        help_text='Free-text payment terms, used when payment_terms is "custom"')
 
     terms = models.TextField(blank=True)
     client_notes = models.TextField(blank=True, help_text='Notes visible to the client on the quote')
     notes = models.TextField(blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+
+    @property
+    def payment_terms_display(self):
+        """Human-readable payment terms.
+
+        Templates must use this rather than ``payment_terms``, which holds a
+        code like ``50-50`` -- the client portal used to show that code raw.
+        """
+        if self.payment_terms == 'custom':
+            return self.payment_terms_custom.strip()
+        return dict(PAYMENT_TERMS_CHOICES).get(self.payment_terms, self.payment_terms)
 
     class Meta:
         ordering = ['-created_at']
@@ -836,6 +865,48 @@ class CompanySettings(models.Model):
         # Ensure only one instance exists
         self.pk = 1
         super().save(*args, **kwargs)
+
+    @cached_property
+    def logo_data_uri(self):
+        """The logo inlined as a base64 data URI, or '' if unavailable.
+
+        PDF templates must use this rather than ``logo.url``. WeasyPrint would
+        otherwise have to fetch ``/media/...`` back over HTTP while rendering,
+        which silently yields no logo whenever that request cannot be made --
+        and produces nothing at all when the file is missing from the media
+        volume, as happened in production.
+
+        Returns '' on any failure so templates fall back to the letter mark.
+        """
+        if not self.logo:
+            return ''
+
+        name = (self.logo.name or '').lower()
+        mime = {
+            '.png': 'image/png',
+            '.jpg': 'image/jpeg',
+            '.jpeg': 'image/jpeg',
+            '.gif': 'image/gif',
+            '.webp': 'image/webp',
+            '.svg': 'image/svg+xml',
+        }.get(os.path.splitext(name)[1])
+        if mime is None:
+            return ''
+
+        try:
+            with self.logo.open('rb') as fh:
+                raw = fh.read()
+        except (FileNotFoundError, OSError, ValueError):
+            # File recorded in the database but absent from storage.
+            return ''
+
+        if mime == 'image/svg+xml':
+            # A DOCTYPE sends the renderer off to fetch w3.org for the DTD,
+            # which stalls or fails inside a container.
+            raw = re.sub(rb'<!DOCTYPE[^>]*>', b'', raw)
+            raw = re.sub(rb'<\?xml[^>]*\?>', b'', raw).strip()
+
+        return 'data:%s;base64,%s' % (mime, base64.b64encode(raw).decode('ascii'))
 
     @classmethod
     def get_settings(cls):
