@@ -1,0 +1,45 @@
+{% extends 'staff/base.html' %}
+
+{% block title %}{{ scheduled.title }}{% endblock %}
+
+{% block appbar %}
+<div class="sf-appbar-main">
+  <a href="{% url 'staff:class_list' %}" class="sf-back"><i class="fas fa-chevron-left"></i> Classes</a>
+</div>
+{% endblock %}
+
+{% block content %}
+
+<h1 style="font-size:21px;font-weight:640;letter-spacing:-.02em;margin:0 0 10px">{{ scheduled.title }}</h1>
+<span class="sf-badge {% if scheduled.status == 'completed' %}sf-badge-ok{% elif scheduled.status == 'cancelled' %}sf-badge-danger{% else %}sf-badge-info{% endif %}">
+  {{ scheduled.get_status_display }}
+</span>
+
+<div class="sf-card" style="margin-top:16px">
+  <div class="sf-kv"><span class="sf-kv-k">Date</span><span class="sf-kv-v">{{ scheduled.date|date:"D, d M Y" }}</span></div>
+  <div class="sf-kv"><span class="sf-kv-k">Time</span><span class="sf-kv-v">{{ scheduled.start_time|time:"h:i A" }} – {{ scheduled.end_time|time:"h:i A" }}</span></div>
+  {% if scheduled.instructor %}
+    <div class="sf-kv"><span class="sf-kv-k">Instructor</span><span class="sf-kv-v">{{ scheduled.instructor }}</span></div>
+  {% endif %}
+  {% if scheduled.location %}
+    <div class="sf-kv"><span class="sf-kv-k">Location</span><span class="sf-kv-v">{{ scheduled.location }}</span></div>
+  {% endif %}
+</div>
+
+{% if scheduled.description %}
+  <div class="sf-section-title">About</div>
+  <div class="sf-card"><div style="white-space:pre-wrap">{{ scheduled.description }}</div></div>
+{% endif %}
+
+{% if scheduled.attachment %}
+  <a href="{{ scheduled.attachment.url }}" class="sf-btn sf-btn-ghost" style="margin-top:12px">
+    <i class="fas fa-download"></i> Study material
+  </a>
+{% endif %}
+
+{% if scheduled.notes %}
+  <div class="sf-section-title">Notes</div>
+  <div class="sf-card"><div style="white-space:pre-wrap">{{ scheduled.notes }}</div></div>
+{% endif %}
+
+{% endblock %}

@@ -1,0 +1,340 @@
+{% extends 'staff/base.html' %}
+
+{% block title %}Attendance{% endblock %}
+{% block heading %}Attendance{% endblock %}
+
+{% block content %}
+
+<div class="sf-att-hero">
+  <div class="sf-att-ring {% if record and record.check_out %}done{% elif record %}in{% endif %}">
+    {% if record and record.check_out %}<i class="fas fa-circle-check"></i>
+    {% elif record %}<i class="fas fa-fingerprint"></i>
+    {% else %}<i class="fas fa-fingerprint"></i>{% endif %}
+  </div>
+
+  {% if record and record.check_out %}
+    <div class="sf-att-state">Day complete</div>
+    <div class="sf-att-sub">{{ record.working_hours }} hours worked{% if record.pending_hours %} · {{ record.pending_hours }}h short{% endif %}</div>
+  {% elif record %}
+    <div class="sf-att-state">You're checked in</div>
+    <div class="sf-att-sub">Since {{ record.check_in|time:"h:i A" }}</div>
+  {% else %}
+    <div class="sf-att-state">Not checked in</div>
+    <div class="sf-att-sub">{{ today|date:"l, d F Y" }}</div>
+  {% endif %}
+
+  {% if record %}
+    <div class="sf-att-times">
+      <div>
+        <div class="sf-dim">CHECK IN</div>
+        <div class="sf-att-time">{{ record.check_in|time:"h:i A"|default:"—" }}</div>
+      </div>
+      <div class="sf-att-divider"></div>
+      <div>
+        <div class="sf-dim">CHECK OUT</div>
+        <div class="sf-att-time">{{ record.check_out|time:"h:i A"|default:"—" }}</div>
+      </div>
+    </div>
+  {% endif %}
+</div>
+
+{# --- Blockers --- #}
+{% if not has_face %}
+  <div class="sf-alert sf-alert-warning">
+    <strong>Register your face first.</strong> Check-in matches a selfie against your
+    registered photo. <a href="{% url 'staff:profile' %}" style="text-decoration:underline">Register now →</a>
+  </div>
+{% endif %}
+
+{% if not office_configured %}
+  <div class="sf-alert sf-alert-warning">
+    No office QR is configured yet. Ask HR to set one up before checking in.
+  </div>
+{% endif %}
+
+{# --- Actions --- #}
+{% if not record %}
+  <button type="button" class="sf-btn" id="sfCheckIn" {% if not has_face %}disabled{% endif %}>
+    <i class="fas fa-right-to-bracket"></i> Check in
+  </button>
+  {% if can_remote %}
+    <button type="button" class="sf-btn sf-btn-ghost" id="sfCheckInRemote" style="margin-top:10px"
+            {% if not has_face %}disabled{% endif %}>
+      <i class="fas fa-house-laptop"></i> Check in remotely
+    </button>
+  {% endif %}
+{% elif not record.check_out %}
+  <button type="button" class="sf-btn" id="sfCheckOut">
+    <i class="fas fa-right-from-bracket"></i> Check out
+  </button>
+  {% if not checkout_allowed and seconds_until_eligible %}
+    <p class="sf-dim" style="text-align:center;margin-top:10px" id="sfEligible"
+       data-seconds="{{ seconds_until_eligible }}">
+      Minimum hours not yet complete.
+    </p>
+  {% endif %}
+{% else %}
+  <a href="{% url 'staff:attendance_history' %}" class="sf-btn sf-btn-ghost">
+    <i class="fas fa-calendar-days"></i> View history
+  </a>
+{% endif %}
+
+{# --- Verification summary --- #}
+{% if record %}
+  <div class="sf-section-title">How today was verified</div>
+  <div class="sf-card">
+    <div class="sf-kv">
+      <span class="sf-kv-k">Method</span>
+      <span class="sf-kv-v">{{ record.get_verification_method_display }}</span>
+    </div>
+    <div class="sf-kv">
+      <span class="sf-kv-k">Face match</span>
+      <span class="sf-kv-v">
+        {% if record.face_verified %}<span class="sf-badge sf-badge-ok">Verified</span>
+        {% else %}<span class="sf-badge sf-badge-muted">Not used</span>{% endif %}
+      </span>
+    </div>
+    <div class="sf-kv">
+      <span class="sf-kv-k">Office QR</span>
+      <span class="sf-kv-v">
+        {% if record.qr_verified %}<span class="sf-badge sf-badge-ok">Scanned</span>
+        {% else %}<span class="sf-badge sf-badge-muted">Not used</span>{% endif %}
+      </span>
+    </div>
+    <div class="sf-kv">
+      <span class="sf-kv-k">Location</span>
+      <span class="sf-kv-v">
+        {% if record.check_in_latitude %}<span class="sf-badge sf-badge-ok">Captured</span>
+        {% else %}<span class="sf-badge sf-badge-muted">Not used</span>{% endif %}
+      </span>
+    </div>
+  </div>
+{% endif %}
+
+<div class="sf-section-title">This month</div>
+<a href="{% url 'staff:attendance_history' %}" class="sf-item">
+  <div class="sf-item-head">
+    <span class="sf-item-title">Attendance history</span>
+    <i class="fas fa-chevron-right sf-dim"></i>
+  </div>
+  <div class="sf-item-meta"><span>Days present, hours, and any shortfall</span></div>
+</a>
+
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html5-qrcode/2.3.8/html5-qrcode.min.js"></script>
+<script>
+(function () {
+  var CHECK_IN  = '/api/employees/attendance/check-in/';
+  var CHECK_OUT = '/api/employees/attendance/check-out/';
+
+  function busy(btn, label) {
+    btn.dataset.html = btn.innerHTML;
+    btn.disabled = true;
+    btn.innerHTML = '<span class="sf-spinner"></span> ' + label;
+  }
+  function unbusy(btn) {
+    btn.disabled = false;
+    if (btn.dataset.html) btn.innerHTML = btn.dataset.html;
+  }
+
+  function showProgress(modal, text) {
+    modal.body.innerHTML =
+      '<div style="text-align:center;padding:56px 20px">' +
+        '<div class="sf-spinner" style="margin:0 auto 16px;width:26px;height:26px;' +
+             'border-color:rgba(47,212,212,.25);border-top-color:#2fd4d4"></div>' +
+        '<div class="sf-muted"></div>' +
+      '</div>';
+    modal.body.querySelector('.sf-muted').textContent = text;
+  }
+
+  /* Runs QR -> selfie -> GPS, then posts. Each step reuses the same modal so
+     iOS only ever has one camera stream alive at a time. */
+  function runCheckIn(btn) {
+    var modal = SF.openModal('Check in');
+    var cancelled = false;
+    modal.bindClose(function () {
+      cancelled = true;
+      if (modal.onClose) modal.onClose();
+      modal.close();
+      unbusy(btn);
+    });
+
+    var payload = {};
+
+    SF.scanQR(modal)
+      .then(function (code) {
+        if (cancelled) throw new Error('cancelled');
+        payload.qr_code = code;
+        modal.onClose = null;
+        modal.setTitle('Take a selfie');
+        return SF.captureSelfie(modal, 'Look at the camera. This is matched against your registered photo.');
+      })
+      .then(function (blob) {
+        if (cancelled) throw new Error('cancelled');
+        payload.face_photo = blob;
+        modal.onClose = null;
+        modal.setTitle('Confirming location');
+        showProgress(modal, 'Getting your location…');
+        return SF.getLocation();
+      })
+      .then(function (loc) {
+        if (cancelled) throw new Error('cancelled');
+        showProgress(modal, 'Submitting your check-in…');
+
+        var fd = new FormData();
+        fd.append('verification_method', 'face_qr');
+        fd.append('qr_code', payload.qr_code);
+        fd.append('latitude', loc.latitude);
+        fd.append('longitude', loc.longitude);
+        fd.append('face_photo', payload.face_photo, 'selfie.jpg');
+        return SF.api(CHECK_IN, { method: 'POST', body: fd });
+      })
+      .then(function (res) {
+        modal.close();
+        if (res.ok) {
+          SF.toast('Checked in successfully.', 'success');
+          setTimeout(function () { location.reload(); }, 700);
+        } else {
+          unbusy(btn);
+          SF.toast(SF.errorText(res.data, 'Check-in failed.'), 'error');
+        }
+      })
+      .catch(function (err) {
+        modal.close();
+        unbusy(btn);
+        if (err && err.message !== 'cancelled') SF.toast(err.message, 'error');
+      });
+  }
+
+  function runRemoteCheckIn(btn) {
+    var modal = SF.openModal('Remote check in');
+    modal.bindClose(function () {
+      if (modal.onClose) modal.onClose();
+      modal.close();
+      unbusy(btn);
+    });
+
+    SF.captureSelfie(modal, 'Remote check-in needs a selfie only.')
+      .then(function (blob) {
+        modal.onClose = null;
+        showProgress(modal, 'Submitting your check-in…');
+        var fd = new FormData();
+        fd.append('verification_method', 'remote');
+        fd.append('is_remote', 'true');
+        fd.append('face_photo', blob, 'selfie.jpg');
+        return SF.api(CHECK_IN, { method: 'POST', body: fd });
+      })
+      .then(function (res) {
+        modal.close();
+        if (res.ok) {
+          SF.toast('Checked in remotely.', 'success');
+          setTimeout(function () { location.reload(); }, 700);
+        } else {
+          unbusy(btn);
+          SF.toast(SF.errorText(res.data, 'Check-in failed.'), 'error');
+        }
+      })
+      .catch(function (err) {
+        modal.close();
+        unbusy(btn);
+        if (err && err.message !== 'cancelled') SF.toast(err.message, 'error');
+      });
+  }
+
+  function postCheckOut(body, btn, modal) {
+    return SF.api(CHECK_OUT, { method: 'POST', body: body }).then(function (res) {
+      if (res.ok) {
+        modal.close();
+        SF.toast('Checked out. Have a good evening.', 'success');
+        setTimeout(function () { location.reload(); }, 700);
+        return;
+      }
+      // Server says the minimum hours aren't done -- offer the same force
+      // path the mobile app uses, with the shortfall spelled out.
+      if (res.data && res.data.can_force) {
+        modal.close();
+        unbusy(btn);
+        var mins = Math.ceil((res.data.seconds_remaining || 0) / 60);
+        if (confirm('You still have about ' + mins + ' minute(s) left of your required hours.\n\n' +
+                    'Check out anyway? The shortfall will be recorded against your attendance.')) {
+          body.force = true;
+          busy(btn, 'Checking out…');
+          var m2 = SF.openModal('Check out');
+          showProgress(m2, 'Submitting your check-out…');
+          postCheckOut(body, btn, m2);
+        }
+        return;
+      }
+      modal.close();
+      unbusy(btn);
+      SF.toast(SF.errorText(res.data, 'Check-out failed.'), 'error');
+    });
+  }
+
+  function runCheckOut(btn) {
+    var modal = SF.openModal('Check out');
+    var cancelled = false;
+    modal.bindClose(function () {
+      cancelled = true;
+      if (modal.onClose) modal.onClose();
+      modal.close();
+      unbusy(btn);
+    });
+
+    var body = {};
+
+    SF.scanQR(modal)
+      .then(function (code) {
+        if (cancelled) throw new Error('cancelled');
+        body.qr_code = code;
+        modal.onClose = null;
+        modal.setTitle('Confirming location');
+        showProgress(modal, 'Getting your location…');
+        return SF.getLocation().catch(function () { return null; });  // location is optional on the way out
+      })
+      .then(function (loc) {
+        if (cancelled) throw new Error('cancelled');
+        if (loc) {
+          body.latitude = loc.latitude;
+          body.longitude = loc.longitude;
+        }
+        showProgress(modal, 'Submitting your check-out…');
+        return postCheckOut(body, btn, modal);
+      })
+      .catch(function (err) {
+        modal.close();
+        unbusy(btn);
+        if (err && err.message !== 'cancelled') SF.toast(err.message, 'error');
+      });
+  }
+
+  var inBtn = document.getElementById('sfCheckIn');
+  if (inBtn) inBtn.addEventListener('click', function () { busy(inBtn, 'Starting…'); runCheckIn(inBtn); });
+
+  var remoteBtn = document.getElementById('sfCheckInRemote');
+  if (remoteBtn) remoteBtn.addEventListener('click', function () { busy(remoteBtn, 'Starting…'); runRemoteCheckIn(remoteBtn); });
+
+  var outBtn = document.getElementById('sfCheckOut');
+  if (outBtn) outBtn.addEventListener('click', function () { busy(outBtn, 'Starting…'); runCheckOut(outBtn); });
+
+  // Live countdown to the earliest allowed check-out.
+  var eligible = document.getElementById('sfEligible');
+  if (eligible) {
+    var left = parseInt(eligible.dataset.seconds, 10) || 0;
+    var tick = setInterval(function () {
+      left -= 1;
+      if (left <= 0) {
+        clearInterval(tick);
+        eligible.textContent = 'You can check out now.';
+        return;
+      }
+      var h = Math.floor(left / 3600), m = Math.floor((left % 3600) / 60), s = left % 60;
+      eligible.textContent = 'Minimum hours complete in ' +
+        (h ? h + 'h ' : '') + m + 'm ' + s + 's.';
+    }, 1000);
+  }
+})();
+</script>
+{% endblock %}

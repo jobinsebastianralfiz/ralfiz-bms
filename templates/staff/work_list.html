@@ -1,0 +1,40 @@
+{% extends 'staff/base.html' %}
+
+{% block title %}Work{% endblock %}
+{% block heading %}Work{% endblock %}
+
+{% block content %}
+
+<div class="sf-chips">
+  <a href="{% url 'staff:work_list' %}" class="sf-chip {% if not status_filter %}active{% endif %}">All</a>
+  {% for value, label in status_choices %}
+    <a href="?status={{ value }}" class="sf-chip {% if status_filter == value %}active{% endif %}">{{ label }}</a>
+  {% endfor %}
+</div>
+
+{% if assignments %}
+  <div class="sf-list">
+    {% for w in assignments %}
+      <a href="{% url 'staff:work_detail' w.pk %}" class="sf-item">
+        <div class="sf-item-head">
+          <span class="sf-item-title">{{ w.title }}</span>
+          <span class="sf-badge {% if w.status == 'completed' %}sf-badge-ok{% elif w.is_overdue %}sf-badge-danger{% elif w.status == 'in_progress' %}sf-badge-info{% else %}sf-badge-muted{% endif %}">
+            {% if w.is_overdue %}Overdue{% else %}{{ w.get_status_display }}{% endif %}
+          </span>
+        </div>
+        <div class="sf-item-meta">
+          <span class="sf-badge {% if w.priority == 'urgent' %}sf-badge-danger{% elif w.priority == 'high' %}sf-badge-warn{% else %}sf-badge-muted{% endif %}">{{ w.get_priority_display }}</span>
+          {% if w.due_date %}<span><i class="fas fa-clock"></i> Due {{ w.due_date|date:"d M" }}</span>{% endif %}
+          {% if w.project %}<span><i class="fas fa-folder"></i> {{ w.project.name }}</span>{% endif %}
+        </div>
+      </a>
+    {% endfor %}
+  </div>
+{% else %}
+  <div class="sf-empty">
+    <i class="fas fa-list-check"></i>
+    No work assignments{% if status_filter %} with this status{% endif %}.
+  </div>
+{% endif %}
+
+{% endblock %}

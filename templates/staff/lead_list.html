@@ -1,0 +1,51 @@
+{% extends 'staff/base.html' %}
+
+{% block title %}My Leads{% endblock %}
+{% block heading %}My Leads{% endblock %}
+
+{% block content %}
+
+<div class="sf-stats">
+  <div class="sf-stat">
+    <div class="sf-stat-val">{{ total }}</div>
+    <div class="sf-stat-lbl">Assigned</div>
+  </div>
+  <div class="sf-stat">
+    <div class="sf-stat-val">{{ converted }}</div>
+    <div class="sf-stat-lbl">Converted</div>
+  </div>
+</div>
+
+<div class="sf-chips">
+  <a href="{% url 'staff:lead_list' %}" class="sf-chip {% if not status_filter %}active{% endif %}">All</a>
+  {% for value, label in status_choices %}
+    <a href="?status={{ value }}" class="sf-chip {% if status_filter == value %}active{% endif %}">{{ label }}</a>
+  {% endfor %}
+</div>
+
+{% if leads %}
+  <div class="sf-list">
+    {% for l in leads %}
+      <a href="{% url 'staff:lead_detail' l.pk %}" class="sf-item">
+        <div class="sf-item-head">
+          <span class="sf-item-title">{{ l.contact_person }}</span>
+          <span class="sf-badge {% if l.status == 'converted' %}sf-badge-ok{% elif l.status in 'lost,unqualified' %}sf-badge-danger{% else %}sf-badge-info{% endif %}">
+            {{ l.get_status_display }}
+          </span>
+        </div>
+        <div class="sf-item-meta">
+          {% if l.company_name %}<span><i class="fas fa-building"></i> {{ l.company_name }}</span>{% endif %}
+          <span><i class="fas fa-phone"></i> {{ l.phone }}</span>
+          {% if l.next_follow_up_date %}<span><i class="fas fa-bell"></i> {{ l.next_follow_up_date|date:"d M" }}</span>{% endif %}
+        </div>
+      </a>
+    {% endfor %}
+  </div>
+{% else %}
+  <div class="sf-empty">
+    <i class="fas fa-bullseye"></i>
+    No leads assigned to you{% if status_filter %} with this status{% endif %}.
+  </div>
+{% endif %}
+
+{% endblock %}

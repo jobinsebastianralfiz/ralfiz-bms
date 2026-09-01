@@ -1,0 +1,118 @@
+{% extends 'staff/base.html' %}
+
+{% block title %}{{ lead.contact_person }}{% endblock %}
+
+{% block appbar %}
+<div class="sf-appbar-main">
+  <a href="{% url 'staff:lead_list' %}" class="sf-back"><i class="fas fa-chevron-left"></i> Leads</a>
+</div>
+{% endblock %}
+
+{% block content %}
+
+<h1 style="font-size:21px;font-weight:640;letter-spacing:-.02em;margin:0 0 4px">{{ lead.contact_person }}</h1>
+{% if lead.company_name %}<div class="sf-muted" style="margin-bottom:12px">{{ lead.company_name }}</div>{% endif %}
+
+<div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap">
+  <a href="tel:{{ lead.phone }}" class="sf-btn sf-btn-ghost sf-btn-sm"><i class="fas fa-phone"></i> Call</a>
+  <a href="https://wa.me/{{ lead.phone|cut:' '|cut:'+' }}" class="sf-btn sf-btn-ghost sf-btn-sm"><i class="fab fa-whatsapp"></i> WhatsApp</a>
+  {% if lead.email %}
+    <a href="mailto:{{ lead.email }}" class="sf-btn sf-btn-ghost sf-btn-sm"><i class="fas fa-envelope"></i> Email</a>
+  {% endif %}
+</div>
+
+<div class="sf-card">
+  <div class="sf-kv"><span class="sf-kv-k">Status</span><span class="sf-kv-v">{{ lead.get_status_display }}</span></div>
+  <div class="sf-kv"><span class="sf-kv-k">Source</span><span class="sf-kv-v">{{ lead.get_source_display }}</span></div>
+  <div class="sf-kv"><span class="sf-kv-k">Phone</span><span class="sf-kv-v">{{ lead.phone }}</span></div>
+  {% if lead.email %}
+    <div class="sf-kv"><span class="sf-kv-k">Email</span><span class="sf-kv-v">{{ lead.email }}</span></div>
+  {% endif %}
+  {% if lead.next_follow_up_date %}
+    <div class="sf-kv"><span class="sf-kv-k">Next follow-up</span><span class="sf-kv-v">{{ lead.next_follow_up_date|date:"d M Y" }}</span></div>
+  {% endif %}
+  <div class="sf-kv"><span class="sf-kv-k">Probability</span><span class="sf-kv-v">{{ lead.closing_probability }}%</span></div>
+</div>
+
+<div class="sf-section-title">Change status</div>
+<div class="sf-card">
+  <div class="sf-field">
+    <select class="sf-select" id="ldStatus">
+      {% for value, label in status_choices %}
+        <option value="{{ value }}" {% if lead.status == value %}selected{% endif %}>{{ label }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <button type="button" class="sf-btn" id="ldStatusSave">Save status</button>
+</div>
+
+<div class="sf-section-title">Notes</div>
+<div class="sf-card">
+  <div class="sf-field">
+    <textarea class="sf-textarea" id="ldNote" placeholder="Add a note about this lead…"></textarea>
+  </div>
+  <button type="button" class="sf-btn sf-btn-ghost" id="ldNoteSend"><i class="fas fa-plus"></i> Add note</button>
+</div>
+
+{% if notes %}
+  <div class="sf-list">
+    {% for n in notes %}
+      <div class="sf-item">
+        <div style="white-space:pre-wrap">{{ n.note }}</div>
+        <div class="sf-item-meta">
+          <span>{{ n.created_by.get_full_name|default:n.created_by.username }}</span>
+          <span>{{ n.created_at|date:"d M Y, h:i A" }}</span>
+        </div>
+      </div>
+    {% endfor %}
+  </div>
+{% else %}
+  <p class="sf-dim" style="text-align:center;padding:16px">No notes yet.</p>
+{% endif %}
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function () {
+  var BASE = '/api/employees/crm/leads/{{ lead.pk }}/';
+
+  document.getElementById('ldStatusSave').addEventListener('click', function () {
+    var btn = this;
+    btn.disabled = true;
+    btn.innerHTML = '<span class="sf-spinner"></span> Saving…';
+    SF.api(BASE + 'status/', {
+      method: 'POST',
+      body: { status: document.getElementById('ldStatus').value }
+    }).then(function (res) {
+      if (res.ok) {
+        SF.toast('Status updated.', 'success');
+        setTimeout(function () { location.reload(); }, 700);
+      } else {
+        btn.disabled = false;
+        btn.textContent = 'Save status';
+        SF.toast(SF.errorText(res.data, 'Could not update the status.'), 'error');
+      }
+    });
+  });
+
+  document.getElementById('ldNoteSend').addEventListener('click', function () {
+    var btn = this;
+    var note = document.getElementById('ldNote').value.trim();
+    if (!note) { SF.toast('Write a note first.', 'warning'); return; }
+    btn.disabled = true;
+    btn.innerHTML = '<span class="sf-spinner"></span> Adding…';
+    SF.api(BASE + 'notes/', { method: 'POST', body: { note: note } }).then(function (res) {
+      if (res.ok) {
+        SF.toast('Note added.', 'success');
+        setTimeout(function () { location.reload(); }, 700);
+      } else {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-plus"></i> Add note';
+        SF.toast(SF.errorText(res.data, 'Could not add the note.'), 'error');
+      }
+    });
+  });
+})();
+</script>
+{% endblock %}

@@ -1,0 +1,143 @@
+{% extends 'staff/base.html' %}
+
+{% block title %}Leave{% endblock %}
+{% block heading %}Leave{% endblock %}
+
+{% block content %}
+
+<button type="button" class="sf-btn" id="sfNewLeave">
+  <i class="fas fa-plus"></i> Request leave
+</button>
+
+<div class="sf-section-title">Balance · {{ year }}</div>
+{% if balances %}
+  {% for b in balances %}
+    <div class="sf-card sf-card-tight">
+      <div class="sf-row">
+        <span class="sf-item-title">{{ b.leave_type.name }}</span>
+        <span class="sf-muted">{{ b.remaining }} of {{ b.total_allowed }} left</span>
+      </div>
+      <div class="sf-bar">
+        <div class="sf-bar-fill" style="width:{% widthratio b.used b.total_allowed 100 %}%;
+             background:{% if b.remaining %}var(--sf-teal){% else %}var(--sf-red){% endif %}"></div>
+      </div>
+    </div>
+  {% endfor %}
+{% else %}
+  <div class="sf-card sf-muted">No leave types configured yet.</div>
+{% endif %}
+
+<div class="sf-section-title">Your requests</div>
+{% if requests %}
+  <div class="sf-list">
+    {% for r in requests %}
+      <div class="sf-item">
+        <div class="sf-item-head">
+          <span class="sf-item-title">{{ r.leave_type.name|default:"Leave" }}</span>
+          <span class="sf-badge {% if r.status == 'approved' %}sf-badge-ok{% elif r.status == 'rejected' %}sf-badge-danger{% elif r.status == 'cancelled' %}sf-badge-muted{% else %}sf-badge-warn{% endif %}">
+            {{ r.get_status_display }}
+          </span>
+        </div>
+        <div class="sf-item-meta">
+          <span><i class="fas fa-calendar"></i> {{ r.start_date|date:"d M" }} – {{ r.end_date|date:"d M Y" }}</span>
+          <span>{{ r.total_days }} day{{ r.total_days|pluralize }}</span>
+        </div>
+        <div class="sf-muted" style="margin-top:7px">{{ r.reason|truncatechars:130 }}</div>
+        {% if r.review_notes %}
+          <div class="sf-dim" style="margin-top:6px"><i class="fas fa-comment-dots"></i> {{ r.review_notes }}</div>
+        {% endif %}
+        {% if r.status == 'pending' %}
+          <button type="button" class="sf-btn sf-btn-ghost sf-btn-sm sf-cancel-leave"
+                  data-id="{{ r.id }}" style="margin-top:10px">Cancel request</button>
+        {% endif %}
+      </div>
+    {% endfor %}
+  </div>
+{% else %}
+  <div class="sf-empty">
+    <i class="fas fa-plane-departure"></i>
+    You haven't requested any leave yet.
+  </div>
+{% endif %}
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function () {
+  var LEAVE_URL = '/api/employees/leave/requests/';
+
+  document.getElementById('sfNewLeave').addEventListener('click', function () {
+    var modal = SF.openModal('Request leave');
+    modal.bindClose(function () { modal.close(); });
+
+    modal.body.innerHTML =
+      '<div class="sf-field">' +
+        '<label class="sf-label" for="lvType">Leave type</label>' +
+        '<select class="sf-select" id="lvType">' +
+          {% for lt in leave_types %}'<option value="{{ lt.id }}">{{ lt.name|escapejs }}</option>' +{% endfor %}
+        '</select>' +
+      '</div>' +
+      '<div class="sf-grid-2">' +
+        '<div class="sf-field"><label class="sf-label" for="lvFrom">From</label>' +
+          '<input class="sf-input" type="date" id="lvFrom"></div>' +
+        '<div class="sf-field"><label class="sf-label" for="lvTo">To</label>' +
+          '<input class="sf-input" type="date" id="lvTo"></div>' +
+      '</div>' +
+      '<div class="sf-field">' +
+        '<label class="sf-label" for="lvReason">Reason</label>' +
+        '<textarea class="sf-textarea" id="lvReason" placeholder="Why do you need this leave?"></textarea>' +
+      '</div>' +
+      '<button type="button" class="sf-btn" id="lvSubmit">Submit request</button>';
+
+    modal.body.querySelector('#lvSubmit').addEventListener('click', function () {
+      var btn = this;
+      var type = modal.body.querySelector('#lvType').value;
+      var from = modal.body.querySelector('#lvFrom').value;
+      var to = modal.body.querySelector('#lvTo').value;
+      var reason = modal.body.querySelector('#lvReason').value.trim();
+
+      if (!type)   { SF.toast('Pick a leave type.', 'warning'); return; }
+      if (!from || !to) { SF.toast('Pick both dates.', 'warning'); return; }
+      if (to < from)    { SF.toast('The end date is before the start date.', 'warning'); return; }
+      if (!reason)      { SF.toast('Add a reason.', 'warning'); return; }
+
+      btn.disabled = true;
+      btn.innerHTML = '<span class="sf-spinner"></span> Submitting…';
+
+      SF.api(LEAVE_URL, {
+        method: 'POST',
+        body: { leave_type: type, start_date: from, end_date: to, reason: reason }
+      }).then(function (res) {
+        if (res.ok) {
+          modal.close();
+          SF.toast('Leave request submitted.', 'success');
+          setTimeout(function () { location.reload(); }, 700);
+        } else {
+          btn.disabled = false;
+          btn.textContent = 'Submit request';
+          SF.toast(SF.errorText(res.data, 'Could not submit the request.'), 'error');
+        }
+      });
+    });
+  });
+
+  Array.prototype.forEach.call(document.querySelectorAll('.sf-cancel-leave'), function (btn) {
+    btn.addEventListener('click', function () {
+      if (!confirm('Cancel this leave request?')) return;
+      btn.disabled = true;
+      SF.api(LEAVE_URL + btn.dataset.id + '/cancel/', { method: 'POST' })
+        .then(function (res) {
+          if (res.ok) {
+            SF.toast('Request cancelled.', 'success');
+            setTimeout(function () { location.reload(); }, 700);
+          } else {
+            btn.disabled = false;
+            SF.toast(SF.errorText(res.data, 'Could not cancel.'), 'error');
+          }
+        });
+    });
+  });
+})();
+</script>
+{% endblock %}

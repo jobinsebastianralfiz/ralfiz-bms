@@ -1,0 +1,71 @@
+{% extends 'staff/base.html' %}
+
+{% block title %}History{% endblock %}
+{% block heading %}Attendance history{% endblock %}
+
+{% block content %}
+
+<form method="get" class="sf-grid-2" style="margin-bottom:14px">
+  <select class="sf-select" name="month" onchange="this.form.submit()">
+    <option value="1"  {% if month == 1 %}selected{% endif %}>January</option>
+    <option value="2"  {% if month == 2 %}selected{% endif %}>February</option>
+    <option value="3"  {% if month == 3 %}selected{% endif %}>March</option>
+    <option value="4"  {% if month == 4 %}selected{% endif %}>April</option>
+    <option value="5"  {% if month == 5 %}selected{% endif %}>May</option>
+    <option value="6"  {% if month == 6 %}selected{% endif %}>June</option>
+    <option value="7"  {% if month == 7 %}selected{% endif %}>July</option>
+    <option value="8"  {% if month == 8 %}selected{% endif %}>August</option>
+    <option value="9"  {% if month == 9 %}selected{% endif %}>September</option>
+    <option value="10" {% if month == 10 %}selected{% endif %}>October</option>
+    <option value="11" {% if month == 11 %}selected{% endif %}>November</option>
+    <option value="12" {% if month == 12 %}selected{% endif %}>December</option>
+  </select>
+  <input class="sf-input" type="number" name="year" value="{{ year }}" min="2020" max="2100"
+         onchange="this.form.submit()">
+</form>
+
+<div class="sf-stats">
+  <div class="sf-stat">
+    <div class="sf-stat-val">{{ present_count }}</div>
+    <div class="sf-stat-lbl">Present</div>
+  </div>
+  <div class="sf-stat">
+    <div class="sf-stat-val">{{ late_count }}</div>
+    <div class="sf-stat-lbl">Late</div>
+  </div>
+  <div class="sf-stat">
+    <div class="sf-stat-val">{{ total_hours|floatformat:1 }}</div>
+    <div class="sf-stat-lbl">Hours</div>
+  </div>
+</div>
+
+<div class="sf-section-title">{{ month_name }} {{ year }}</div>
+
+{% if records %}
+  <div class="sf-list">
+    {% for r in records %}
+      <div class="sf-item">
+        <div class="sf-item-head">
+          <span class="sf-item-title">{{ r.date|date:"D, d M" }}</span>
+          <span class="sf-badge {% if r.status == 'present' %}sf-badge-ok{% elif r.status == 'late' %}sf-badge-warn{% elif r.status == 'absent' %}sf-badge-danger{% else %}sf-badge-info{% endif %}">
+            {{ r.get_status_display }}
+          </span>
+        </div>
+        <div class="sf-item-meta">
+          <span><i class="fas fa-right-to-bracket"></i> {{ r.check_in|time:"h:i A"|default:"—" }}</span>
+          <span><i class="fas fa-right-from-bracket"></i> {{ r.check_out|time:"h:i A"|default:"—" }}</span>
+          {% if r.worked_hours %}<span><i class="fas fa-hourglass-half"></i> {{ r.worked_hours }}h</span>{% endif %}
+          {% if r.pending_hours %}<span style="color:var(--sf-red)"><i class="fas fa-triangle-exclamation"></i> {{ r.pending_hours }}h short</span>{% endif %}
+          {% if r.is_remote %}<span><i class="fas fa-house-laptop"></i> Remote</span>{% endif %}
+        </div>
+      </div>
+    {% endfor %}
+  </div>
+{% else %}
+  <div class="sf-empty">
+    <i class="fas fa-calendar-xmark"></i>
+    No attendance recorded for {{ month_name }} {{ year }}.
+  </div>
+{% endif %}
+
+{% endblock %}

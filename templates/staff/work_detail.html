@@ -1,0 +1,141 @@
+{% extends 'staff/base.html' %}
+
+{% block title %}{{ assignment.title }}{% endblock %}
+
+{% block appbar %}
+<div class="sf-appbar-main">
+  <a href="{% url 'staff:work_list' %}" class="sf-back"><i class="fas fa-chevron-left"></i> Work</a>
+</div>
+{% endblock %}
+
+{% block content %}
+
+<h1 style="font-size:21px;font-weight:640;letter-spacing:-.02em;margin:0 0 10px">{{ assignment.title }}</h1>
+
+<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px">
+  <span class="sf-badge {% if assignment.status == 'completed' %}sf-badge-ok{% elif assignment.status == 'in_progress' %}sf-badge-info{% else %}sf-badge-muted{% endif %}">
+    {{ assignment.get_status_display }}
+  </span>
+  <span class="sf-badge {% if assignment.priority == 'urgent' %}sf-badge-danger{% elif assignment.priority == 'high' %}sf-badge-warn{% else %}sf-badge-muted{% endif %}">
+    {{ assignment.get_priority_display }} priority
+  </span>
+  {% if assignment.is_overdue %}<span class="sf-badge sf-badge-danger">Overdue</span>{% endif %}
+</div>
+
+{% if assignment.description %}
+  <div class="sf-card">
+    <div style="white-space:pre-wrap">{{ assignment.description }}</div>
+  </div>
+{% endif %}
+
+<div class="sf-card">
+  {% if assignment.due_date %}
+    <div class="sf-kv"><span class="sf-kv-k">Due</span><span class="sf-kv-v">{{ assignment.due_date|date:"D, d M Y" }}</span></div>
+  {% endif %}
+  {% if assignment.project %}
+    <div class="sf-kv"><span class="sf-kv-k">Project</span><span class="sf-kv-v">{{ assignment.project.name }}</span></div>
+  {% endif %}
+  <div class="sf-kv"><span class="sf-kv-k">Assigned</span><span class="sf-kv-v">{{ assignment.created_at|date:"d M Y" }}</span></div>
+  {% if assignment.attachment %}
+    <div class="sf-kv">
+      <span class="sf-kv-k">Attachment</span>
+      <a class="sf-kv-v" style="color:var(--sf-teal)" href="{{ assignment.attachment.url }}">
+        <i class="fas fa-paperclip"></i> Download
+      </a>
+    </div>
+  {% endif %}
+</div>
+
+{% if assignment.confidentiality_disclaimer %}
+  <div class="sf-alert sf-alert-warning">
+    <strong>Confidential.</strong> {{ assignment.confidentiality_disclaimer }}
+  </div>
+{% endif %}
+
+<div class="sf-section-title">Update status</div>
+<div class="sf-card">
+  <div class="sf-field">
+    <select class="sf-select" id="wkStatus">
+      {% for value, label in status_choices %}
+        <option value="{{ value }}" {% if assignment.status == value %}selected{% endif %}>{{ label }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <button type="button" class="sf-btn" id="wkStatusSave">Save status</button>
+</div>
+
+<div class="sf-section-title">Progress updates</div>
+<div class="sf-card">
+  <div class="sf-field">
+    <textarea class="sf-textarea" id="wkMessage" placeholder="What did you get done?"></textarea>
+  </div>
+  <button type="button" class="sf-btn sf-btn-ghost" id="wkUpdateSend">
+    <i class="fas fa-paper-plane"></i> Post update
+  </button>
+</div>
+
+{% if updates %}
+  <div class="sf-list">
+    {% for u in updates %}
+      <div class="sf-item">
+        <div style="white-space:pre-wrap">{{ u.message }}</div>
+        <div class="sf-item-meta">
+          <span>{{ u.employee.full_name }}</span>
+          <span>{{ u.created_at|date:"d M Y, h:i A" }}</span>
+        </div>
+        {% if u.attachment %}
+          <a href="{{ u.attachment.url }}" class="sf-dim"><i class="fas fa-paperclip"></i> Attachment</a>
+        {% endif %}
+      </div>
+    {% endfor %}
+  </div>
+{% else %}
+  <p class="sf-dim" style="text-align:center;padding:16px">No updates posted yet.</p>
+{% endif %}
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function () {
+  var BASE = '/api/employees/work/{{ assignment.pk }}/';
+
+  document.getElementById('wkStatusSave').addEventListener('click', function () {
+    var btn = this;
+    btn.disabled = true;
+    btn.innerHTML = '<span class="sf-spinner"></span> Saving…';
+    SF.api(BASE + 'status/', {
+      method: 'POST',
+      body: { status: document.getElementById('wkStatus').value }
+    }).then(function (res) {
+      if (res.ok) {
+        SF.toast('Status updated.', 'success');
+        setTimeout(function () { location.reload(); }, 700);
+      } else {
+        btn.disabled = false;
+        btn.textContent = 'Save status';
+        SF.toast(SF.errorText(res.data, 'Could not update the status.'), 'error');
+      }
+    });
+  });
+
+  document.getElementById('wkUpdateSend').addEventListener('click', function () {
+    var btn = this;
+    var msg = document.getElementById('wkMessage').value.trim();
+    if (!msg) { SF.toast('Write an update first.', 'warning'); return; }
+    btn.disabled = true;
+    btn.innerHTML = '<span class="sf-spinner"></span> Posting…';
+    SF.api(BASE + 'update/', { method: 'POST', body: { message: msg } }).then(function (res) {
+      if (res.ok) {
+        SF.toast('Update posted.', 'success');
+        setTimeout(function () { location.reload(); }, 700);
+      } else {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-paper-plane"></i> Post update';
+        SF.toast(SF.errorText(res.data, 'Could not post the update.'), 'error');
+      }
+    });
+  });
+})();
+</script>
+{% endblock %}

@@ -1,0 +1,348 @@
+"""Tests for the staff portal (/staff/) used by interns and employees."""
+from datetime import date, timedelta
+from decimal import Decimal
+
+from django.contrib.auth.models import User
+from django.test import TestCase
+from django.urls import reverse
+from django.utils import timezone
+
+from .models import (
+    Attendance, Employee, InternAssessment, LeaveRequest, LeaveType,
+    Notification, OfficeConfig, Payroll, ScheduledClass, WorkAssignment,
+)
+
+
+class StaffPortalTestBase(TestCase):
+    @classmethod
+    def setUpTestData(cls):
+        cls.password = 'intern-pass-123'
+
+        cls.intern_user = User.objects.create_user(
+            username='portal_intern', password=cls.password,
+            first_name='Asha', last_name='Nair', email='asha@example.com')
+        cls.intern = Employee.objects.create(
+            user=cls.intern_user, employee_id='EMPT01',
+            employment_type='intern', role='intern', department='marketing',
+            intern_type='digital', status='active')
+
+        cls.employee_user = User.objects.create_user(
+            username='portal_employee', password=cls.password, first_name='Ravi')
+        cls.employee = Employee.objects.create(
+            user=cls.employee_user, employee_id='EMPT02',
+            employment_type='fulltime', role='employee', status='active')
+
+        cls.outsider = User.objects.create_user(username='portal_outsider', password=cls.password)
+
+        cls.inactive_user = User.objects.create_user(username='portal_inactive', password=cls.password)
+        cls.inactive = Employee.objects.create(
+            user=cls.inactive_user, employee_id='EMPT03',
+            employment_type='intern', role='intern', status='terminated')
+
+    def login_intern(self):
+        self.assertTrue(self.client.login(username='portal_intern', password=self.password))
+
+
+class StaffPortalAccessTests(StaffPortalTestBase):
+    def test_login_page_renders_anonymously(self):
+        res = self.client.get(reverse('staff:login'))
+        self.assertEqual(res.status_code, 200)
+        self.assertContains(res, 'Staff sign in')
+
+    def test_intern_can_sign_in(self):
+        res = self.client.post(reverse('staff:login'), {
+            'username': 'portal_intern', 'password': self.password})
+        self.assertRedirects(res, reverse('staff:dashboard'))
+
+    def test_bad_password_is_rejected(self):
+        res = self.client.post(reverse('staff:login'), {
+            'username': 'portal_intern', 'password': 'wrong'})
+        self.assertEqual(res.status_code, 200)
+        self.assertContains(res, 'Invalid username or password')
+
+    def test_user_without_employee_profile_is_refused(self):
+        res = self.client.post(reverse('staff:login'), {
+            'username': 'portal_outsider', 'password': self.password})
+        self.assertEqual(res.status_code, 200)
+        self.assertContains(res, 'no active staff profile')
+
+    def test_terminated_employee_is_refused(self):
+        res = self.client.post(reverse('staff:login'), {
+            'username': 'portal_inactive', 'password': self.password})
+        self.assertEqual(res.status_code, 200)
+        self.assertContains(res, 'no active staff profile')
+
+    def test_anonymous_is_redirected_to_staff_login(self):
+        res = self.client.get(reverse('staff:dashboard'))
+        self.assertEqual(res.status_code, 302)
+        self.assertIn(reverse('staff:login'), res.url)
+
+    def test_logout_returns_to_login(self):
+        self.login_intern()
+        res = self.client.get(reverse('staff:logout'))
+        self.assertRedirects(res, reverse('staff:login'))
+
+
+class StaffPortalPageTests(StaffPortalTestBase):
+    """Every page must render for a freshly-created intern with no data yet."""
+
+    def setUp(self):
+        self.login_intern()
+
+    def test_all_pages_render_with_no_data(self):
+        for name in ['dashboard', 'attendance', 'attendance_history', 'leave',
+                     'work_list', 'class_list', 'assessment_list', 'payslip_list',
+                     'notification_list', 'profile', 'lead_list']:
+            with self.subTest(page=name):
+                res = self.client.get(reverse('staff:' + name))
+                self.assertEqual(res.status_code, 200, f'{name} did not render')
+
+    def test_dashboard_shows_not_checked_in(self):
+        res = self.client.get(reverse('staff:dashboard'))
+        self.assertContains(res, 'Not checked in')
+
+    def test_attendance_warns_when_face_not_registered(self):
+        res = self.client.get(reverse('staff:attendance'))
+        self.assertContains(res, 'Register your face first')
+        # The check-in button must be disabled until a face exists.
+        self.assertContains(res, 'id="sfCheckIn" disabled')
+
+    def test_attendance_warns_when_no_office_qr_configured(self):
+        res = self.client.get(reverse('staff:attendance'))
+        self.assertContains(res, 'No office QR is configured')
+
+    def test_attendance_shows_checked_in_state(self):
+        Attendance.objects.create(
+            employee=self.intern, date=timezone.localdate(),
+            check_in=timezone.now(), status='present', verification_method='face_qr',
+            face_verified=True, qr_verified=True)
+        res = self.client.get(reverse('staff:attendance'))
+        self.assertContains(res, "You're checked in")
+        self.assertContains(res, 'id="sfCheckOut"')
+
+    def test_history_filters_by_month(self):
+        Attendance.objects.create(
+            employee=self.intern, date=date(2026, 3, 14),
+            check_in=timezone.now(), status='present', worked_hours=Decimal('7.50'))
+        res = self.client.get(reverse('staff:attendance_history'), {'year': 2026, 'month': 3})
+        self.assertContains(res, 'March 2026')
+        self.assertContains(res, '7.50')
+
+    def test_history_survives_a_junk_month(self):
+        res = self.client.get(reverse('staff:attendance_history'), {'month': '99', 'year': 'abc'})
+        self.assertEqual(res.status_code, 200)
+
+    def test_leave_balance_counts_approved_days_only(self):
+        lt = LeaveType.objects.create(name='Casual', days_allowed=12)
+        LeaveRequest.objects.create(
+            employee=self.intern, leave_type=lt, start_date=date(timezone.now().year, 5, 1),
+            end_date=date(timezone.now().year, 5, 3), reason='Family', status='approved')
+        LeaveRequest.objects.create(
+            employee=self.intern, leave_type=lt, start_date=date(timezone.now().year, 6, 1),
+            end_date=date(timezone.now().year, 6, 9), reason='Trip', status='pending')
+        res = self.client.get(reverse('staff:leave'))
+        balance = res.context['balances'][0]
+        self.assertEqual(balance['used'], 3)        # only the approved 3 days
+        self.assertEqual(balance['remaining'], 9)
+
+    def test_payslips_hide_drafts(self):
+        Payroll.objects.create(employee=self.intern, month=4, year=2026,
+                               base_salary=Decimal('9000'), net_pay=Decimal('9000'), status='draft')
+        Payroll.objects.create(employee=self.intern, month=5, year=2026,
+                               base_salary=Decimal('9000'), net_pay=Decimal('8500'), status='paid')
+        res = self.client.get(reverse('staff:payslip_list'))
+        self.assertContains(res, 'May 2026')
+        self.assertNotContains(res, 'April 2026')
+
+    def test_assessment_average_uses_graded_only(self):
+        InternAssessment.objects.create(employee=self.intern, title='Aptitude 1',
+                                        max_score=Decimal('100'), scored=Decimal('80'))
+        InternAssessment.objects.create(employee=self.intern, title='Aptitude 2',
+                                        max_score=Decimal('100'), scored=Decimal('60'))
+        InternAssessment.objects.create(employee=self.intern, title='Ungraded',
+                                        max_score=Decimal('100'))
+        res = self.client.get(reverse('staff:assessment_list'))
+        self.assertEqual(res.context['average'], 70.0)
+        self.assertEqual(res.context['graded_count'], 2)
+
+    def test_classes_include_all_intern_broadcasts(self):
+        broadcast = ScheduledClass.objects.create(
+            title='SEO Basics', date=timezone.localdate() + timedelta(days=2),
+            start_time='10:00', end_time='11:00')
+        res = self.client.get(reverse('staff:class_list'))
+        self.assertContains(res, 'SEO Basics')
+        res = self.client.get(reverse('staff:class_detail', args=[broadcast.pk]))
+        self.assertEqual(res.status_code, 200)
+
+    def test_intern_only_nav_hidden_from_employees(self):
+        self.client.logout()
+        self.client.login(username='portal_employee', password=self.password)
+        res = self.client.get(reverse('staff:dashboard'))
+        self.assertNotContains(res, reverse('staff:assessment_list'))
+        self.assertContains(res, reverse('staff:payslip_list'))
+
+
+class StaffPortalIsolationTests(StaffPortalTestBase):
+    """An intern must never see another person's records."""
+
+    def setUp(self):
+        self.login_intern()
+
+    def test_work_of_another_employee_is_404(self):
+        other = WorkAssignment.objects.create(title='Not yours')
+        other.assigned_to.add(self.employee)
+        res = self.client.get(reverse('staff:work_detail', args=[other.pk]))
+        self.assertEqual(res.status_code, 404)
+
+    def test_work_list_excludes_other_employees(self):
+        mine = WorkAssignment.objects.create(title='Mine to do')
+        mine.assigned_to.add(self.intern)
+        theirs = WorkAssignment.objects.create(title='Theirs to do')
+        theirs.assigned_to.add(self.employee)
+        res = self.client.get(reverse('staff:work_list'))
+        self.assertContains(res, 'Mine to do')
+        self.assertNotContains(res, 'Theirs to do')
+
+    def test_payslip_of_another_employee_is_404(self):
+        other = Payroll.objects.create(employee=self.employee, month=5, year=2026,
+                                       net_pay=Decimal('1000'), status='paid')
+        res = self.client.get(reverse('staff:payslip_detail', args=[other.pk]))
+        self.assertEqual(res.status_code, 404)
+
+    def test_assessments_exclude_other_employees(self):
+        InternAssessment.objects.create(employee=self.employee, title='Their test',
+                                        max_score=Decimal('50'))
+        res = self.client.get(reverse('staff:assessment_list'))
+        self.assertNotContains(res, 'Their test')
+
+    def test_class_not_assigned_to_this_intern_is_404(self):
+        private = ScheduledClass.objects.create(
+            title='Private session', date=timezone.localdate(),
+            start_time='10:00', end_time='11:00')
+        private.interns.add(self.employee)
+        res = self.client.get(reverse('staff:class_detail', args=[private.pk]))
+        self.assertEqual(res.status_code, 404)
+
+    def test_leads_of_another_user_are_not_listed(self):
+        from crm.models import Lead
+        Lead.objects.create(contact_person='Their Lead', phone='9000000001',
+                            assigned_to=self.employee_user)
+        mine = Lead.objects.create(contact_person='My Lead', phone='9000000002',
+                                   assigned_to=self.intern_user)
+        res = self.client.get(reverse('staff:lead_list'))
+        self.assertContains(res, 'My Lead')
+        self.assertNotContains(res, 'Their Lead')
+        self.assertEqual(self.client.get(reverse('staff:lead_detail', args=[mine.pk])).status_code, 200)
+
+    def test_lead_of_another_user_is_404(self):
+        from crm.models import Lead
+        theirs = Lead.objects.create(contact_person='Their Lead', phone='9000000003',
+                                     assigned_to=self.employee_user)
+        res = self.client.get(reverse('staff:lead_detail', args=[theirs.pk]))
+        self.assertEqual(res.status_code, 404)
+
+
+class StaffPortalApiBridgeTests(StaffPortalTestBase):
+    """The portal posts writes to the existing DRF endpoints via session auth.
+
+    These prove that path actually works from a browser session, since that is
+    the whole reason the portal does not re-implement the business rules.
+    """
+
+    def setUp(self):
+        self.login_intern()
+
+    def test_session_auth_reaches_the_attendance_api(self):
+        res = self.client.post('/api/employees/attendance/check-in/', {
+            'verification_method': 'face_qr', 'qr_code': 'nope'})
+        # Rejected on the rules, NOT on authentication -- that is the point.
+        self.assertNotIn(res.status_code, (401, 403))
+        self.assertEqual(res.status_code, 400)
+
+    def test_session_auth_can_create_a_leave_request(self):
+        lt = LeaveType.objects.create(name='Sick', days_allowed=6)
+        res = self.client.post('/api/employees/leave/requests/', {
+            'leave_type': str(lt.id),
+            'start_date': '2026-09-10',
+            'end_date': '2026-09-11',
+            'reason': 'Fever',
+        })
+        self.assertEqual(res.status_code, 201, res.content)
+        self.assertTrue(LeaveRequest.objects.filter(employee=self.intern, reason='Fever').exists())
+
+    def test_anonymous_cannot_reach_the_attendance_api(self):
+        self.client.logout()
+        res = self.client.post('/api/employees/attendance/check-in/', {'qr_code': 'x'})
+        self.assertIn(res.status_code, (401, 403))
+
+
+class StaffPortalPwaTests(StaffPortalTestBase):
+    def test_manifest_is_served_with_the_right_type_and_scope(self):
+        res = self.client.get(reverse('staff:manifest'))
+        self.assertEqual(res.status_code, 200)
+        self.assertEqual(res['Content-Type'], 'application/manifest+json')
+        import json
+        data = json.loads(res.content)
+        self.assertEqual(data['scope'], '/staff/')
+        self.assertEqual(data['start_url'], '/staff/')
+        self.assertEqual(data['display'], 'standalone')
+        self.assertEqual(len(data['icons']), 3)
+
+    def test_service_worker_is_scoped_to_the_portal(self):
+        res = self.client.get(reverse('staff:service_worker'))
+        self.assertEqual(res.status_code, 200)
+        self.assertIn('javascript', res['Content-Type'])
+        self.assertEqual(res['Service-Worker-Allowed'], '/staff/')
+
+    def test_service_worker_never_caches_the_api(self):
+        body = self.client.get(reverse('staff:service_worker')).content.decode()
+        self.assertIn("pathname.startsWith('/api/')", body)
+        self.assertIn("req.method !== 'GET'", body)
+
+    def test_offline_page_renders_without_login(self):
+        res = self.client.get(reverse('staff:offline'))
+        self.assertEqual(res.status_code, 200)
+        self.assertContains(res, "You're offline")
+
+    def test_login_page_advertises_ios_install(self):
+        res = self.client.get(reverse('staff:login'))
+        self.assertContains(res, 'Add to Home Screen')
+        self.assertContains(res, 'apple-touch-icon')
+
+
+class MainLoginRoutingTests(StaffPortalTestBase):
+    """The main site login must send interns/employees to the portal, and
+    must not steal owners, team members or admins away from the admin site."""
+
+    def test_intern_lands_on_the_staff_portal(self):
+        res = self.client.post(reverse('login'), {
+            'username': 'portal_intern', 'password': self.password})
+        self.assertRedirects(res, reverse('staff:dashboard'))
+
+    def test_employee_lands_on_the_staff_portal(self):
+        res = self.client.post(reverse('login'), {
+            'username': 'portal_employee', 'password': self.password})
+        self.assertRedirects(res, reverse('staff:dashboard'))
+
+    def test_owner_still_lands_on_the_admin_dashboard(self):
+        owner_user = User.objects.create_user(username='portal_owner', password=self.password)
+        Employee.objects.create(user=owner_user, employee_id='EMPT04',
+                                employment_type='fulltime', role='owner', status='active')
+        res = self.client.post(reverse('login'), {
+            'username': 'portal_owner', 'password': self.password})
+        self.assertRedirects(res, reverse('dashboard'), fetch_redirect_response=False)
+
+    def test_django_staff_user_still_lands_on_the_admin_dashboard(self):
+        staff_user = User.objects.create_user(username='portal_admin', password=self.password,
+                                              is_staff=True)
+        Employee.objects.create(user=staff_user, employee_id='EMPT05',
+                                employment_type='fulltime', role='employee', status='active')
+        res = self.client.post(reverse('login'), {
+            'username': 'portal_admin', 'password': self.password})
+        self.assertRedirects(res, reverse('dashboard'), fetch_redirect_response=False)
+
+    def test_explicit_next_is_still_honoured(self):
+        res = self.client.post(
+            reverse('login') + '?next=' + reverse('staff:profile'),
+            {'username': 'portal_intern', 'password': self.password})
+        self.assertRedirects(res, reverse('staff:profile'))

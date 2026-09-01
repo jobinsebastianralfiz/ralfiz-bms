@@ -1,0 +1,28 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>Offline · Ralfiz Staff</title>
+  <meta name="theme-color" content="#05090b">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <link rel="stylesheet" href="{% static 'css/staff.css' %}?v=2">
+</head>
+<body>
+  <div class="sf-auth">
+    <div class="sf-empty" style="padding-top:0">
+      <i class="fas fa-wifi" style="opacity:.3"></i>
+      <h1 style="font-size:21px;font-weight:640;margin:0 0 8px;color:var(--sf-text)">You're offline</h1>
+      <p class="sf-muted" style="margin-bottom:24px">
+        Attendance needs a live connection, so it can't be marked offline.
+        Reconnect and try again.
+      </p>
+      <button type="button" class="sf-btn" onclick="location.reload()">
+        <i class="fas fa-rotate-right"></i> Try again
+      </button>
+    </div>
+  </div>
+</body>
+</html>

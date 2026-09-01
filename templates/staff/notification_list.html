@@ -1,0 +1,56 @@
+{% extends 'staff/base.html' %}
+
+{% block title %}Notifications{% endblock %}
+{% block heading %}Notifications{% endblock %}
+
+{% block content %}
+
+{% if unread_count %}
+  <button type="button" class="sf-btn sf-btn-ghost" id="sfMarkAll" style="margin-bottom:14px">
+    <i class="fas fa-check-double"></i> Mark all as read
+  </button>
+{% endif %}
+
+{% if notifications %}
+  <div class="sf-list">
+    {% for n in notifications %}
+      <div class="sf-item {% if not n.is_read %}sf-unread{% endif %}">
+        <div class="sf-item-head">
+          <span class="sf-item-title">{{ n.title }}</span>
+          <span class="sf-badge sf-badge-muted">{{ n.get_notification_type_display }}</span>
+        </div>
+        <div class="sf-muted" style="margin-top:5px">{{ n.body }}</div>
+        <div class="sf-item-meta"><span>{{ n.created_at|date:"d M Y, h:i A" }}</span></div>
+      </div>
+    {% endfor %}
+  </div>
+{% else %}
+  <div class="sf-empty">
+    <i class="fas fa-bell-slash"></i>
+    No notifications.
+  </div>
+{% endif %}
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function () {
+  var btn = document.getElementById('sfMarkAll');
+  if (!btn) return;
+  btn.addEventListener('click', function () {
+    btn.disabled = true;
+    btn.innerHTML = '<span class="sf-spinner"></span> Marking…';
+    SF.api('/api/employees/notifications/read/', { method: 'POST' }).then(function (res) {
+      if (res.ok) {
+        location.reload();
+      } else {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-check-double"></i> Mark all as read';
+        SF.toast(SF.errorText(res.data, 'Could not mark as read.'), 'error');
+      }
+    });
+  });
+})();
+</script>
+{% endblock %}

@@ -1,0 +1,156 @@
+{% extends 'staff/base.html' %}
+
+{% block title %}Profile{% endblock %}
+{% block heading %}Profile{% endblock %}
+
+{% block content %}
+
+<div class="sf-card" style="display:flex;align-items:center;gap:14px">
+  <div class="sf-avatar" style="width:54px;height:54px;flex:0 0 54px;border-radius:16px;font-size:21px">
+    {{ employee.full_name|slice:":1"|upper }}
+  </div>
+  <div style="min-width:0">
+    <div style="font-size:17px;font-weight:620;letter-spacing:-.015em">{{ employee.full_name }}</div>
+    <div class="sf-muted">{{ employee.designation|default:employee.get_role_display }}</div>
+  </div>
+</div>
+
+<div class="sf-card">
+  <div class="sf-kv"><span class="sf-kv-k">Staff ID</span><span class="sf-kv-v">{{ employee.employee_id }}</span></div>
+  <div class="sf-kv"><span class="sf-kv-k">Role</span><span class="sf-kv-v">{{ employee.get_role_display }}</span></div>
+  <div class="sf-kv"><span class="sf-kv-k">Type</span><span class="sf-kv-v">{{ employee.get_employment_type_display }}</span></div>
+  <div class="sf-kv"><span class="sf-kv-k">Department</span><span class="sf-kv-v">{{ employee.get_department_display }}</span></div>
+  <div class="sf-kv"><span class="sf-kv-k">Work mode</span><span class="sf-kv-v">{{ work_mode_display }}</span></div>
+  <div class="sf-kv"><span class="sf-kv-k">Joined</span><span class="sf-kv-v">{{ employee.joining_date|date:"d M Y" }}</span></div>
+  {% if employee.phone %}
+    <div class="sf-kv"><span class="sf-kv-k">Phone</span><span class="sf-kv-v">{{ employee.phone }}</span></div>
+  {% endif %}
+  <div class="sf-kv"><span class="sf-kv-k">Email</span><span class="sf-kv-v">{{ employee.user.email|default:"—" }}</span></div>
+</div>
+
+{# --- Face registration: required before QR check-in works --- #}
+<div class="sf-section-title">Face verification</div>
+<div class="sf-card">
+  <div class="sf-row" style="margin-bottom:12px">
+    <div style="min-width:0">
+      <div class="sf-card-title">Registered photo</div>
+      <div class="sf-muted">Your check-in selfie is matched against this.</div>
+    </div>
+    <span class="sf-badge {% if has_face %}sf-badge-ok{% else %}sf-badge-danger{% endif %}">
+      {% if has_face %}Registered{% else %}Missing{% endif %}
+    </span>
+  </div>
+
+  {% if has_face %}
+    <img src="{{ employee.face_photo.url }}" alt="Registered face"
+         style="width:100px;height:100px;object-fit:cover;border-radius:16px;border:1px solid var(--sf-line);margin-bottom:12px">
+  {% else %}
+    <div class="sf-alert sf-alert-warning">
+      You can't check in until a face photo is registered.
+    </div>
+  {% endif %}
+
+  <button type="button" class="sf-btn {% if has_face %}sf-btn-ghost{% endif %}" id="sfFaceBtn">
+    <i class="fas fa-camera"></i> {% if has_face %}Retake photo{% else %}Register your face{% endif %}
+  </button>
+</div>
+
+<div class="sf-section-title">Security</div>
+<div class="sf-card">
+  <div class="sf-field">
+    <label class="sf-label" for="pwOld">Current password</label>
+    <input class="sf-input" type="password" id="pwOld" autocomplete="current-password">
+  </div>
+  <div class="sf-field">
+    <label class="sf-label" for="pwNew">New password</label>
+    <input class="sf-input" type="password" id="pwNew" autocomplete="new-password">
+  </div>
+  <div class="sf-field">
+    <label class="sf-label" for="pwNew2">Confirm new password</label>
+    <input class="sf-input" type="password" id="pwNew2" autocomplete="new-password">
+  </div>
+  <button type="button" class="sf-btn sf-btn-ghost" id="pwSave">Change password</button>
+</div>
+
+<a href="{% url 'staff:logout' %}" class="sf-btn sf-btn-danger" style="margin-top:14px">
+  <i class="fas fa-right-from-bracket"></i> Sign out
+</a>
+
+<p class="sf-dim" style="text-align:center;margin-top:22px">
+  On iPhone: tap <i class="fas fa-arrow-up-from-bracket"></i> Share → <strong>Add to Home Screen</strong>
+  to keep this one tap away.
+</p>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function () {
+  document.getElementById('sfFaceBtn').addEventListener('click', function () {
+    var btn = this;
+    var modal = SF.openModal('Register your face');
+    modal.bindClose(function () {
+      if (modal.onClose) modal.onClose();
+      modal.close();
+    });
+
+    SF.captureSelfie(modal, 'Good light, face centred, no sunglasses or mask.')
+      .then(function (blob) {
+        modal.onClose = null;
+        modal.body.innerHTML =
+          '<div style="text-align:center;padding:56px 20px">' +
+            '<div class="sf-spinner" style="margin:0 auto 16px;width:26px;height:26px;' +
+                 'border-color:rgba(47,212,212,.25);border-top-color:#2fd4d4"></div>' +
+            '<div class="sf-muted">Checking the photo…</div>' +
+          '</div>';
+        var fd = new FormData();
+        fd.append('face_photo', blob, 'face.jpg');
+        return SF.api('/api/employees/profile/face/', { method: 'POST', body: fd });
+      })
+      .then(function (res) {
+        modal.close();
+        if (res.ok) {
+          SF.toast('Face registered. You can check in now.', 'success');
+          setTimeout(function () { location.reload(); }, 900);
+        } else {
+          SF.toast(SF.errorText(res.data, 'Could not register that photo.'), 'error');
+        }
+      })
+      .catch(function (err) {
+        modal.close();
+        if (err && err.message !== 'cancelled') SF.toast(err.message, 'error');
+      });
+  });
+
+  document.getElementById('pwSave').addEventListener('click', function () {
+    var btn = this;
+    var oldPw = document.getElementById('pwOld').value;
+    var newPw = document.getElementById('pwNew').value;
+    var newPw2 = document.getElementById('pwNew2').value;
+
+    if (!oldPw || !newPw) { SF.toast('Fill in both password fields.', 'warning'); return; }
+    if (newPw !== newPw2)  { SF.toast('The new passwords do not match.', 'warning'); return; }
+    if (newPw.length < 6)  { SF.toast('Use at least 6 characters.', 'warning'); return; }
+
+    btn.disabled = true;
+    btn.innerHTML = '<span class="sf-spinner"></span> Saving…';
+
+    SF.api('/api/employees/auth/change-password/', {
+      method: 'POST',
+      body: { old_password: oldPw, new_password: newPw }
+    }).then(function (res) {
+      if (res.ok) {
+        // Django rotates the session hash on password change, so this session
+        // is no longer valid -- send them back to sign in with the new one.
+        SF.toast('Password changed. Please sign in again.', 'success');
+        setTimeout(function () { location.href = '{% url "staff:logout" %}'; }, 1400);
+      } else {
+        btn.disabled = false;
+        btn.textContent = 'Change password';
+        SF.toast(SF.errorText(res.data, 'Could not change the password.'), 'error');
+      }
+    });
+  });
+})();
+</script>
+{% endblock %}

@@ -1,0 +1,32 @@
+{% extends 'staff/base.html' %}
+
+{% block title %}Payslips{% endblock %}
+{% block heading %}Payslips{% endblock %}
+
+{% block content %}
+
+{% if payslips %}
+  <div class="sf-list">
+    {% for p, month_name in payslips %}
+      <a href="{% url 'staff:payslip_detail' p.pk %}" class="sf-item">
+        <div class="sf-item-head">
+          <span class="sf-item-title">{{ month_name }} {{ p.year }}</span>
+          <span class="sf-badge {% if p.status == 'paid' %}sf-badge-ok{% else %}sf-badge-warn{% endif %}">
+            {{ p.get_status_display }}
+          </span>
+        </div>
+        <div class="sf-item-meta">
+          <span style="color:var(--sf-teal);font-weight:600">₹{{ p.net_pay|floatformat:2 }}</span>
+          <span>{{ p.days_present }}/{{ p.working_days }} days</span>
+        </div>
+      </a>
+    {% endfor %}
+  </div>
+{% else %}
+  <div class="sf-empty">
+    <i class="fas fa-receipt"></i>
+    No payslips published yet.
+  </div>
+{% endif %}
+
+{% endblock %}

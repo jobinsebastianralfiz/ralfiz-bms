@@ -1,0 +1,52 @@
+{% extends 'staff/base.html' %}
+
+{% block title %}Classes{% endblock %}
+{% block heading %}Classes{% endblock %}
+
+{% block content %}
+
+{% if upcoming %}
+  <div class="sf-section-title">Upcoming</div>
+  <div class="sf-list">
+    {% for c in upcoming %}
+      <a href="{% url 'staff:class_detail' c.pk %}" class="sf-item">
+        <div class="sf-item-head">
+          <span class="sf-item-title">{{ c.title }}</span>
+          <span class="sf-badge">{{ c.date|date:"d M" }}</span>
+        </div>
+        <div class="sf-item-meta">
+          <span><i class="fas fa-clock"></i> {{ c.start_time|time:"h:i A" }} – {{ c.end_time|time:"h:i A" }}</span>
+          {% if c.instructor %}<span><i class="fas fa-user"></i> {{ c.instructor }}</span>{% endif %}
+          {% if c.location %}<span><i class="fas fa-location-dot"></i> {{ c.location }}</span>{% endif %}
+        </div>
+      </a>
+    {% endfor %}
+  </div>
+{% endif %}
+
+{% if past %}
+  <div class="sf-section-title">Past</div>
+  <div class="sf-list">
+    {% for c in past %}
+      <a href="{% url 'staff:class_detail' c.pk %}" class="sf-item">
+        <div class="sf-item-head">
+          <span class="sf-item-title">{{ c.title }}</span>
+          <span class="sf-badge sf-badge-muted">{{ c.date|date:"d M" }}</span>
+        </div>
+        <div class="sf-item-meta">
+          {% if c.attachment %}<span><i class="fas fa-paperclip"></i> Material</span>{% endif %}
+          <span>{{ c.get_status_display }}</span>
+        </div>
+      </a>
+    {% endfor %}
+  </div>
+{% endif %}
+
+{% if not upcoming and not past %}
+  <div class="sf-empty">
+    <i class="fas fa-chalkboard-user"></i>
+    No classes scheduled for you yet.
+  </div>
+{% endif %}
+
+{% endblock %}

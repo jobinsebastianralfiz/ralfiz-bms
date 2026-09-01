@@ -1,0 +1,98 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0, user-scalable=no">
+  <title>{% block title %}Staff{% endblock %} · Ralfiz</title>
+
+  {# --- PWA: installable on an iPhone home screen --- #}
+  <link rel="manifest" href="{% url 'staff:manifest' %}">
+  <meta name="theme-color" content="#05090b">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Ralfiz Staff">
+  <link rel="apple-touch-icon" href="{% static 'staff/icon-180.png' %}">
+  <link rel="icon" type="image/svg+xml" href="{% static 'favicon.svg' %}">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <link rel="stylesheet" href="{% static 'css/staff.css' %}?v=2">
+  {% block extra_css %}{% endblock %}
+</head>
+<body>
+
+<header class="sf-appbar">
+  {% block appbar %}
+  <div class="sf-appbar-main">
+    <div class="sf-brand">
+      <span class="sf-brand-mark">R</span>
+      <span class="sf-brand-text">{% block heading %}Ralfiz{% endblock %}</span>
+    </div>
+    <a href="{% url 'staff:notification_list' %}" class="sf-appbar-btn" aria-label="Notifications">
+      <i class="fas fa-bell"></i>
+      {% if unread_count %}<span class="sf-dot">{{ unread_count }}</span>{% endif %}
+    </a>
+  </div>
+  {% endblock %}
+</header>
+
+<main class="sf-main">
+  {% if messages %}
+    {% for message in messages %}
+      <div class="sf-alert sf-alert-{{ message.tags }}">{{ message }}</div>
+    {% endfor %}
+  {% endif %}
+  {% block content %}{% endblock %}
+</main>
+
+<nav class="sf-tabbar">
+  <a href="{% url 'staff:dashboard' %}" class="sf-tab {% if active_nav == 'dashboard' %}active{% endif %}">
+    <i class="fas fa-house"></i><span>Home</span>
+  </a>
+  <a href="{% url 'staff:attendance' %}" class="sf-tab {% if active_nav == 'attendance' %}active{% endif %}">
+    <i class="fas fa-fingerprint"></i><span>Attendance</span>
+  </a>
+  <a href="{% url 'staff:work_list' %}" class="sf-tab {% if active_nav == 'work' %}active{% endif %}">
+    <i class="fas fa-list-check"></i><span>Work</span>
+  </a>
+  <a href="{% url 'staff:leave' %}" class="sf-tab {% if active_nav == 'leave' %}active{% endif %}">
+    <i class="fas fa-plane-departure"></i><span>Leave</span>
+  </a>
+  <button type="button" class="sf-tab" id="sfMoreBtn" aria-haspopup="true" aria-expanded="false">
+    <i class="fas fa-ellipsis"></i><span>More</span>
+  </button>
+</nav>
+
+<div class="sf-sheet-backdrop" id="sfSheetBackdrop" hidden></div>
+<div class="sf-sheet" id="sfSheet" role="dialog" aria-label="More" hidden>
+  <div class="sf-sheet-grip"></div>
+  <div class="sf-sheet-head">
+    <div class="sf-avatar">{{ employee.full_name|slice:":1"|upper }}</div>
+    <div>
+      <div class="sf-sheet-name">{{ employee.full_name }}</div>
+      <div class="sf-sheet-sub">{{ employee.employee_id }} · {{ employee.get_role_display }}</div>
+    </div>
+  </div>
+  <div class="sf-sheet-links">
+    {% if is_intern %}
+      <a href="{% url 'staff:class_list' %}"><i class="fas fa-chalkboard-user"></i> Classes</a>
+      <a href="{% url 'staff:assessment_list' %}"><i class="fas fa-file-pen"></i> Assessments</a>
+      <a href="{% url 'staff:lead_list' %}"><i class="fas fa-bullseye"></i> My Leads</a>
+    {% endif %}
+    <a href="{% url 'staff:payslip_list' %}"><i class="fas fa-receipt"></i> Payslips</a>
+    <a href="{% url 'staff:attendance_history' %}"><i class="fas fa-calendar-days"></i> Attendance history</a>
+    <a href="{% url 'staff:notification_list' %}"><i class="fas fa-bell"></i> Notifications</a>
+    <a href="{% url 'staff:profile' %}"><i class="fas fa-user-gear"></i> Profile &amp; face</a>
+    <a href="{% url 'staff:logout' %}" class="sf-sheet-danger"><i class="fas fa-right-from-bracket"></i> Sign out</a>
+  </div>
+</div>
+
+<script>window.SF_CSRF = "{{ csrf_token }}";</script>
+<script src="{% static 'js/staff.js' %}?v=2"></script>
+{% block extra_js %}{% endblock %}
+</body>
+</html>

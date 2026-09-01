@@ -1,0 +1,107 @@
+{% extends 'staff/base.html' %}
+
+{% block title %}Home{% endblock %}
+{% block heading %}Hi, {{ employee.user.first_name|default:employee.user.username }}{% endblock %}
+
+{% block content %}
+
+{# --- Today's attendance --- #}
+<a href="{% url 'staff:attendance' %}" class="sf-card" style="display:block">
+  <div class="sf-row">
+    <div>
+      <div class="sf-dim" style="margin-bottom:4px">TODAY · {{ today|date:"D, d M" }}</div>
+      {% if record and record.check_out %}
+        <div class="sf-card-title">Checked out</div>
+        <div class="sf-muted">{{ record.check_in|time:"h:i A" }} – {{ record.check_out|time:"h:i A" }} · {{ record.working_hours }}h</div>
+      {% elif record %}
+        <div class="sf-card-title">Checked in</div>
+        <div class="sf-muted">Since {{ record.check_in|time:"h:i A" }}</div>
+      {% else %}
+        <div class="sf-card-title">Not checked in</div>
+        <div class="sf-muted">Tap to mark your attendance</div>
+      {% endif %}
+    </div>
+    <span class="sf-badge {% if record and record.check_out %}sf-badge-info{% elif record %}sf-badge-ok{% else %}sf-badge-muted{% endif %}">
+      {% if record %}{{ record.get_status_display }}{% else %}Pending{% endif %}
+    </span>
+  </div>
+</a>
+
+{# --- Quick stats --- #}
+<div class="sf-stats">
+  <div class="sf-stat">
+    <div class="sf-stat-val">{{ days_present }}</div>
+    <div class="sf-stat-lbl">Present</div>
+  </div>
+  <div class="sf-stat">
+    <div class="sf-stat-val">{{ open_work|length }}</div>
+    <div class="sf-stat-lbl">Open tasks</div>
+  </div>
+  <div class="sf-stat">
+    <div class="sf-stat-val">{{ pending_leave }}</div>
+    <div class="sf-stat-lbl">Leave</div>
+  </div>
+</div>
+
+{# --- Work --- #}
+{% if open_work %}
+  <div class="sf-section-title">Your work</div>
+  <div class="sf-list">
+    {% for w in open_work %}
+      <a href="{% url 'staff:work_detail' w.pk %}" class="sf-item">
+        <div class="sf-item-head">
+          <span class="sf-item-title">{{ w.title }}</span>
+          <span class="sf-badge {% if w.is_overdue %}sf-badge-danger{% elif w.status == 'in_progress' %}sf-badge-info{% else %}sf-badge-muted{% endif %}">
+            {% if w.is_overdue %}Overdue{% else %}{{ w.get_status_display }}{% endif %}
+          </span>
+        </div>
+        <div class="sf-item-meta">
+          {% if w.due_date %}<span><i class="fas fa-clock"></i> Due {{ w.due_date|date:"d M" }}</span>{% endif %}
+          {% if w.project %}<span><i class="fas fa-folder"></i> {{ w.project.name }}</span>{% endif %}
+        </div>
+      </a>
+    {% endfor %}
+  </div>
+{% endif %}
+
+{# --- Classes --- #}
+{% if is_intern and upcoming_classes %}
+  <div class="sf-section-title">Upcoming classes</div>
+  <div class="sf-list">
+    {% for c in upcoming_classes %}
+      <a href="{% url 'staff:class_detail' c.pk %}" class="sf-item">
+        <div class="sf-item-head">
+          <span class="sf-item-title">{{ c.title }}</span>
+          <span class="sf-badge">{{ c.date|date:"d M" }}</span>
+        </div>
+        <div class="sf-item-meta">
+          <span><i class="fas fa-clock"></i> {{ c.start_time|time:"h:i A" }}</span>
+          {% if c.location %}<span><i class="fas fa-location-dot"></i> {{ c.location }}</span>{% endif %}
+        </div>
+      </a>
+    {% endfor %}
+  </div>
+{% endif %}
+
+{# --- Notifications --- #}
+{% if recent_notifications %}
+  <div class="sf-section-title">Recent</div>
+  <div class="sf-list">
+    {% for n in recent_notifications %}
+      <div class="sf-item {% if not n.is_read %}sf-unread{% endif %}">
+        <div class="sf-item-title">{{ n.title }}</div>
+        <div class="sf-muted" style="margin-top:3px">{{ n.body|truncatechars:110 }}</div>
+        <div class="sf-item-meta"><span>{{ n.created_at|date:"d M, h:i A" }}</span></div>
+      </div>
+    {% endfor %}
+  </div>
+{% endif %}
+
+{% if not open_work and not upcoming_classes and not recent_notifications %}
+  <div class="sf-empty">
+    <i class="fas fa-mug-hot"></i>
+    Nothing needs your attention right now.
+  </div>
+{% endif %}
+
+{% endblock %}

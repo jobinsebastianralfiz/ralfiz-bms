@@ -1,0 +1,70 @@
+{% extends 'staff/base.html' %}
+
+{% block title %}Assessments{% endblock %}
+{% block heading %}Assessments{% endblock %}
+
+{% block content %}
+
+{% if average is not None %}
+  <div class="sf-stats">
+    <div class="sf-stat">
+      <div class="sf-stat-val">{{ average }}%</div>
+      <div class="sf-stat-lbl">Average</div>
+    </div>
+    <div class="sf-stat">
+      <div class="sf-stat-val">{{ graded_count }}</div>
+      <div class="sf-stat-lbl">Graded</div>
+    </div>
+    <div class="sf-stat">
+      <div class="sf-stat-val">{{ assessments|length }}</div>
+      <div class="sf-stat-lbl">Total</div>
+    </div>
+  </div>
+{% endif %}
+
+{% if assessments %}
+  <div class="sf-list">
+    {% for a in assessments %}
+      <div class="sf-item">
+        <div class="sf-item-head">
+          <span class="sf-item-title">{{ a.title }}</span>
+          {% if a.is_graded %}
+            <span class="sf-badge {% if a.percentage >= 60 %}sf-badge-ok{% elif a.percentage >= 40 %}sf-badge-warn{% else %}sf-badge-danger{% endif %}">
+              {{ a.scored|floatformat:"-2" }}/{{ a.max_score|floatformat:"-2" }}
+            </span>
+          {% else %}
+            <span class="sf-badge sf-badge-muted">Not graded</span>
+          {% endif %}
+        </div>
+        <div class="sf-item-meta">
+          <span><i class="fas fa-calendar"></i> {{ a.date|date:"d M Y" }}</span>
+          {% if a.is_graded %}<span>{{ a.percentage }}%</span>{% endif %}
+        </div>
+        {% if a.description %}<div class="sf-muted" style="margin-top:7px">{{ a.description }}</div>{% endif %}
+        {% if a.is_graded %}
+          <div class="sf-bar">
+            <div class="sf-bar-fill" style="width:{{ a.percentage }}%;
+                 background:{% if a.percentage >= 60 %}var(--sf-green){% elif a.percentage >= 40 %}var(--sf-gold){% else %}var(--sf-red){% endif %}"></div>
+          </div>
+        {% endif %}
+        {% if a.test_file or a.answer_key_file %}
+          <div style="display:flex;gap:8px;margin-top:11px;flex-wrap:wrap">
+            {% if a.test_file %}
+              <a href="{{ a.test_file.url }}" class="sf-btn sf-btn-ghost sf-btn-sm"><i class="fas fa-file-pdf"></i> Test paper</a>
+            {% endif %}
+            {% if a.answer_key_file %}
+              <a href="{{ a.answer_key_file.url }}" class="sf-btn sf-btn-ghost sf-btn-sm"><i class="fas fa-key"></i> Answer key</a>
+            {% endif %}
+          </div>
+        {% endif %}
+      </div>
+    {% endfor %}
+  </div>
+{% else %}
+  <div class="sf-empty">
+    <i class="fas fa-file-pen"></i>
+    No assessments yet.
+  </div>
+{% endif %}
+
+{% endblock %}

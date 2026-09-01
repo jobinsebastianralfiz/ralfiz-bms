@@ -1,0 +1,52 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>Sign in · Ralfiz Staff</title>
+  <link rel="manifest" href="{% url 'staff:manifest' %}">
+  <meta name="theme-color" content="#05090b">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Ralfiz Staff">
+  <link rel="apple-touch-icon" href="{% static 'staff/icon-180.png' %}">
+  <link rel="icon" type="image/svg+xml" href="{% static 'favicon.svg' %}">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <link rel="stylesheet" href="{% static 'css/staff.css' %}?v=2">
+</head>
+<body>
+  <div class="sf-auth">
+    <div class="sf-auth-mark">R</div>
+    <h1>Staff sign in</h1>
+    <p class="sf-auth-sub">Attendance, leave, work and classes — from your phone browser.</p>
+
+    {% if error %}<div class="sf-alert sf-alert-error">{{ error }}</div>{% endif %}
+    {% if messages %}{% for message in messages %}
+      <div class="sf-alert sf-alert-{{ message.tags }}">{{ message }}</div>
+    {% endfor %}{% endif %}
+
+    <form method="post" autocomplete="on">
+      {% csrf_token %}
+      <div class="sf-field">
+        <label class="sf-label" for="username">Username</label>
+        <input class="sf-input" type="text" id="username" name="username"
+               autocapitalize="none" autocorrect="off" autocomplete="username" required>
+      </div>
+      <div class="sf-field">
+        <label class="sf-label" for="password">Password</label>
+        <input class="sf-input" type="password" id="password" name="password"
+               autocomplete="current-password" required>
+      </div>
+      <button type="submit" class="sf-btn"><i class="fas fa-arrow-right-to-bracket"></i> Sign in</button>
+    </form>
+
+    <p class="sf-dim" style="text-align:center;margin-top:26px">
+      On iPhone: tap <i class="fas fa-arrow-up-from-bracket"></i> Share → <strong>Add to Home Screen</strong>
+      to install this as an app.
+    </p>
+  </div>
+</body>
+</html>

@@ -34,11 +34,27 @@ def interiodesk_guide(request):
 
 # ============== Authentication Views ==============
 
+def _staff_portal_user(user):
+    """True if this user belongs in the staff portal rather than the admin site.
+
+    Interns and employees get /staff/. Owners, partners, team members and
+    Django staff/superusers keep the existing admin dashboard.
+    """
+    if user.is_staff or user.is_superuser or hasattr(user, 'team_profile'):
+        return False
+    from employees.models import Employee
+    return Employee.objects.filter(
+        user=user, status='active', role__in=['intern', 'employee']
+    ).exists()
+
+
 def login_view(request):
     if request.user.is_authenticated:
         # Check if user is a team member
         if hasattr(request.user, 'team_profile'):
             return redirect('team_dashboard')
+        if _staff_portal_user(request.user):
+            return redirect('staff:dashboard')
         return redirect('dashboard')
 
     if request.method == 'POST':
@@ -51,6 +67,9 @@ def login_view(request):
             # Redirect team members to their dashboard
             if hasattr(user, 'team_profile'):
                 return redirect('team_dashboard')
+            # Interns/employees belong in the staff portal
+            if _staff_portal_user(user) and not request.GET.get('next'):
+                return redirect('staff:dashboard')
             next_url = request.GET.get('next', 'dashboard')
             return redirect(next_url)
         else:

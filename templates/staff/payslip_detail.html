@@ -1,0 +1,58 @@
+{% extends 'staff/base.html' %}
+
+{% block title %}{{ month_name }} {{ payslip.year }}{% endblock %}
+
+{% block appbar %}
+<div class="sf-appbar-main">
+  <a href="{% url 'staff:payslip_list' %}" class="sf-back"><i class="fas fa-chevron-left"></i> Payslips</a>
+</div>
+{% endblock %}
+
+{% block content %}
+
+<div class="sf-att-hero">
+  <div class="sf-dim">NET PAY · {{ month_name|upper }} {{ payslip.year }}</div>
+  <div style="font-size:33px;font-weight:700;letter-spacing:-.03em;margin-top:6px;color:var(--sf-teal)">
+    ₹{{ payslip.net_pay|floatformat:2 }}
+  </div>
+  <span class="sf-badge {% if payslip.status == 'paid' %}sf-badge-ok{% else %}sf-badge-warn{% endif %}" style="margin-top:12px">
+    {{ payslip.get_status_display }}
+  </span>
+</div>
+
+<div class="sf-section-title">Attendance</div>
+<div class="sf-card">
+  <div class="sf-kv"><span class="sf-kv-k">Working days</span><span class="sf-kv-v">{{ payslip.working_days }}</span></div>
+  <div class="sf-kv"><span class="sf-kv-k">Days present</span><span class="sf-kv-v">{{ payslip.days_present }}</span></div>
+  <div class="sf-kv"><span class="sf-kv-k">Days absent</span><span class="sf-kv-v">{{ payslip.days_absent }}</span></div>
+  <div class="sf-kv"><span class="sf-kv-k">Paid leave</span><span class="sf-kv-v">{{ payslip.paid_leave_days }}</span></div>
+  <div class="sf-kv"><span class="sf-kv-k">Unpaid leave</span><span class="sf-kv-v">{{ payslip.unpaid_leave_days }}</span></div>
+  {% if payslip.total_pending_hours %}
+    <div class="sf-kv"><span class="sf-kv-k">Shortfall hours</span><span class="sf-kv-v">{{ payslip.total_pending_hours }}h</span></div>
+  {% endif %}
+</div>
+
+<div class="sf-section-title">Breakdown</div>
+<div class="sf-card">
+  <div class="sf-kv"><span class="sf-kv-k">Base</span><span class="sf-kv-v">₹{{ payslip.base_salary|floatformat:2 }}</span></div>
+  {% if payslip.bonus %}
+    <div class="sf-kv"><span class="sf-kv-k">Bonus</span><span class="sf-kv-v" style="color:var(--sf-green)">+ ₹{{ payslip.bonus|floatformat:2 }}</span></div>
+  {% endif %}
+  {% if payslip.leave_deduction %}
+    <div class="sf-kv"><span class="sf-kv-k">Leave deduction</span><span class="sf-kv-v" style="color:var(--sf-red)">− ₹{{ payslip.leave_deduction|floatformat:2 }}</span></div>
+  {% endif %}
+  {% if payslip.deductions %}
+    <div class="sf-kv"><span class="sf-kv-k">Other deductions</span><span class="sf-kv-v" style="color:var(--sf-red)">− ₹{{ payslip.deductions|floatformat:2 }}</span></div>
+  {% endif %}
+  <div class="sf-kv">
+    <span class="sf-kv-k">Net pay</span>
+    <span class="sf-kv-v sf-kv-total">₹{{ payslip.net_pay|floatformat:2 }}</span>
+  </div>
+</div>
+
+{% if payslip.notes %}
+  <div class="sf-section-title">Notes</div>
+  <div class="sf-card"><div style="white-space:pre-wrap">{{ payslip.notes }}</div></div>
+{% endif %}
+
+{% endblock %}
