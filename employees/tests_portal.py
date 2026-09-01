@@ -297,7 +297,7 @@ class StaffPortalPwaTests(StaffPortalTestBase):
 
     def test_service_worker_never_caches_the_api(self):
         body = self.client.get(reverse('staff:service_worker')).content.decode()
-        self.assertIn("pathname.startsWith('/api/')", body)
+        self.assertIn("path.startsWith('/api/')", body)
         self.assertIn("req.method !== 'GET'", body)
 
     def test_manifest_declares_a_maskable_icon(self):
@@ -409,9 +409,101 @@ class StaffPortalInstallPromptTests(StaffPortalTestBase):
 
     def test_static_assets_are_version_stamped_together(self):
         """Unhashed statics need a ?v bump or phones serve a stale app."""
+        from employees.portal_views import ASSET_V
         res = self.client.get(reverse('staff:dashboard')).content.decode()
-        self.assertIn('css/staff.css?v=5', res)
-        self.assertIn('js/staff.js?v=5', res)
+        self.assertIn(f'css/staff.css?v={ASSET_V}', res)
+        self.assertIn(f'js/staff.js?v={ASSET_V}', res)
+
+    def test_icon_urls_are_version_stamped(self):
+        """Regression: icons had no ?v, so the cache-first service worker kept
+        serving the old placeholder icon forever while CSS and JS updated."""
+        from employees.portal_views import ASSET_V
+        page = self.client.get(reverse('staff:dashboard')).content.decode()
+        self.assertIn(f'icon-180.png?v={ASSET_V}', page)
+        self.assertIn(f'icon-192.png?v={ASSET_V}', page)
+
+        import json
+        data = json.loads(self.client.get(reverse('staff:manifest')).content)
+        for icon in data['icons']:
+            self.assertIn(f'?v={ASSET_V}', icon['src'],
+                          f"{icon['src']} is unversioned and will be served stale")
+
+    def test_service_worker_cache_name_tracks_the_asset_version(self):
+        """A fixed cache name pins old assets even after they are replaced."""
+        from employees.portal_views import ASSET_V
+        body = self.client.get(reverse('staff:service_worker')).content.decode()
+        self.assertIn(f"const CACHE = 'ralfiz-staff-v{ASSET_V}'", body)
+
+    def test_service_worker_never_caches_the_manifest(self):
+        """The manifest URL never changes, so a cached copy pins old icons."""
+        body = self.client.get(reverse('staff:service_worker')).content.decode()
+        self.assertIn(".webmanifest", body)
+        self.assertIn("path.endsWith('.webmanifest')", body)
+
+
+class StaffPortalPhotoTests(StaffPortalTestBase):
+    """The portal showed a letter everywhere and never rendered the person's
+    actual photo, even after they had enrolled a face for attendance."""
+
+    def setUp(self):
+        self.login_intern()
+
+    def _tiny_jpeg(self, name):
+        import io
+        from PIL import Image
+        from django.core.files.uploadedfile import SimpleUploadedFile
+        buf = io.BytesIO()
+        Image.new('RGB', (40, 40), (120, 90, 200)).save(buf, 'JPEG')
+        return SimpleUploadedFile(name, buf.getvalue(), content_type='image/jpeg')
+
+    def test_letter_avatar_when_there_is_no_photo(self):
+        res = self.client.get(reverse('staff:profile'))
+        self.assertIsNone(res.context['photo_url'])
+        self.assertContains(res, 'A</div>')       # initial of "Asha"
+
+    def test_profile_photo_is_rendered_when_set(self):
+        self.intern.profile_photo = self._tiny_jpeg('me.jpg')
+        self.intern.save()
+        res = self.client.get(reverse('staff:profile'))
+        self.assertIsNotNone(res.context['photo_url'])
+        self.assertContains(res, res.context['photo_url'])
+
+    def test_face_photo_stands_in_when_no_profile_photo(self):
+        """An intern enrolled for attendance already has a usable portrait."""
+        self.intern.face_photo = self._tiny_jpeg('face.jpg')
+        self.intern.save()
+        res = self.client.get(reverse('staff:profile'))
+        self.assertIn('face', res.context['photo_url'])
+
+    def test_profile_photo_wins_over_face_photo(self):
+        self.intern.face_photo = self._tiny_jpeg('face2.jpg')
+        self.intern.profile_photo = self._tiny_jpeg('me2.jpg')
+        self.intern.save()
+        res = self.client.get(reverse('staff:profile'))
+        self.assertIn('me2', res.context['photo_url'])
+
+    def test_photo_reaches_the_shared_nav_on_every_page(self):
+        self.intern.profile_photo = self._tiny_jpeg('me3.jpg')
+        self.intern.save()
+        for name in ['dashboard', 'attendance', 'leave', 'work_list']:
+            with self.subTest(page=name):
+                res = self.client.get(reverse('staff:' + name))
+                self.assertIsNotNone(res.context['photo_url'])
+
+    def test_registered_face_has_a_missing_file_fallback(self):
+        self.intern.face_photo = self._tiny_jpeg('face3.jpg')
+        self.intern.save()
+        res = self.client.get(reverse('staff:profile'))
+        self.assertContains(res, 'sfFaceGone')
+        self.assertContains(res, 'could not be loaded')
+
+    def tearDown(self):
+        for f in (self.intern.profile_photo, self.intern.face_photo):
+            if f:
+                f.delete(save=False)
+        self.intern.profile_photo = None
+        self.intern.face_photo = None
+        self.intern.save()
 
 
 class StaffPortalThemeTests(StaffPortalTestBase):

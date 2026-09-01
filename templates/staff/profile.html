@@ -6,9 +6,14 @@
 {% block content %}
 
 <div class="sf-card" style="display:flex;align-items:center;gap:14px">
-  <div class="sf-avatar" style="width:54px;height:54px;flex:0 0 54px;border-radius:16px;font-size:21px">
-    {{ employee.full_name|slice:":1"|upper }}
-  </div>
+  {% if photo_url %}
+    <img class="sf-avatar" src="{{ photo_url }}" alt="{{ employee.full_name }}"
+         style="width:54px;height:54px;flex:0 0 54px;border-radius:16px">
+  {% else %}
+    <div class="sf-avatar" style="width:54px;height:54px;flex:0 0 54px;border-radius:16px;font-size:21px">
+      {{ employee.full_name|slice:":1"|upper }}
+    </div>
+  {% endif %}
   <div style="min-width:0">
     <div style="font-size:17px;font-weight:620;letter-spacing:-.015em">{{ employee.full_name }}</div>
     <div class="sf-muted">{{ employee.designation|default:employee.get_role_display }}</div>
@@ -42,8 +47,12 @@
   </div>
 
   {% if has_face %}
-    <img src="{{ employee.face_photo.url }}" alt="Registered face"
-         style="width:100px;height:100px;object-fit:cover;border-radius:16px;border:1px solid var(--sf-line);margin-bottom:12px">
+    <img src="{{ employee.face_photo.url }}?v={{ asset_v }}" alt="Registered face"
+         style="width:100px;height:100px;object-fit:cover;border-radius:16px;border:1px solid var(--sf-line);margin-bottom:12px"
+         onerror="this.style.display='none';document.getElementById('sfFaceGone').hidden=false">
+    <div class="sf-alert sf-alert-warning" id="sfFaceGone" hidden>
+      Your registered photo could not be loaded. Retake it below.
+    </div>
   {% else %}
     <div class="sf-alert sf-alert-warning">
       You can't check in until a face photo is registered.

@@ -5,12 +5,12 @@
  * ever served from cache, and no write is ever queued offline -- check-in time
  * must come from the server, not from a replayed request.
  */
-const CACHE = 'ralfiz-staff-v1';
+const CACHE = 'ralfiz-staff-v{{ asset_v }}';
 
 const SHELL = [
-  '{% static "css/staff.css" %}',
-  '{% static "js/staff.js" %}',
-  '{% static "staff/icon-192.png" %}',
+  '{% static "css/staff.css" %}?v={{ asset_v }}',
+  '{% static "js/staff.js" %}?v={{ asset_v }}',
+  '{% static "staff/icon-192.png" %}?v={{ asset_v }}',
   '/staff/offline/'
 ];
 
@@ -40,8 +40,17 @@ self.addEventListener('fetch', (event) => {
   if (req.method !== 'GET') return;
   if (new URL(req.url).origin !== self.location.origin) return;
 
+  const path = new URL(req.url).pathname;
+
   // Never cache the API -- attendance state must always be live.
-  if (new URL(req.url).pathname.startsWith('/api/')) return;
+  if (path.startsWith('/api/')) return;
+
+  // Never cache the manifest. Its URL never changes, so a cached copy would
+  // pin the old icon set on the home screen even after the icons are replaced.
+  if (path.endsWith('.webmanifest')) {
+    event.respondWith(fetch(req).catch(() => caches.match(req)));
+    return;
+  }
 
   // Pages: network first, fall back to the offline card.
   if (req.mode === 'navigate') {

@@ -26,6 +26,12 @@ from .models import (
     Notification, OfficeConfig, Payroll, ScheduledClass, WorkAssignment,
 )
 
+# Bump this whenever a file under static/css, static/js or static/staff
+# changes. Whitenoise serves these unhashed, and the service worker is
+# cache-first for static assets, so an unversioned URL is served from the old
+# cache forever -- which is exactly how the app icon got stuck.
+ASSET_V = '6'
+
 MONTHS = [
     '', 'January', 'February', 'March', 'April', 'May', 'June',
     'July', 'August', 'September', 'October', 'November', 'December',
@@ -53,6 +59,21 @@ def is_intern(employee):
     return employee.role == 'intern' or employee.employment_type == 'intern'
 
 
+def photo_url(employee):
+    """Best available picture of this person, or None for a letter avatar.
+
+    Falls back to the face photo because an intern who has enrolled for
+    attendance has a usable portrait even with no profile photo set.
+    """
+    for field in (employee.profile_photo, employee.face_photo):
+        if field:
+            try:
+                return field.url
+            except ValueError:      # FileField with no file behind it
+                continue
+    return None
+
+
 def _unread_count(employee):
     return Notification.objects.filter(
         Q(employee=employee) | Q(employee__isnull=True), is_read=False
@@ -66,6 +87,8 @@ def _base_context(request, active_nav=''):
         'is_intern': is_intern(employee),
         'active_nav': active_nav,
         'unread_count': _unread_count(employee),
+        'photo_url': photo_url(employee),
+        'asset_v': ASSET_V,
     }
 
 
@@ -81,14 +104,16 @@ def staff_login(request):
         password = request.POST.get('password', '')
         user = authenticate(request, username=username, password=password)
         if user is None:
-            return render(request, 'staff/login.html', {'error': 'Invalid username or password.'})
+            return render(request, 'staff/login.html',
+                          {'error': 'Invalid username or password.', 'asset_v': ASSET_V})
         if not Employee.objects.filter(user=user, status='active').exists():
             return render(request, 'staff/login.html',
-                          {'error': 'This account has no active staff profile.'})
+                          {'error': 'This account has no active staff profile.',
+                           'asset_v': ASSET_V})
         login(request, user)
         return redirect(request.GET.get('next') or 'staff:dashboard')
 
-    return render(request, 'staff/login.html')
+    return render(request, 'staff/login.html', {'asset_v': ASSET_V})
 
 
 def staff_logout(request):
@@ -386,13 +411,13 @@ def lead_detail(request, pk):
 
 def manifest(request):
     """Web app manifest. Served from /staff/ so the PWA scope covers the portal."""
-    body = render_to_string('staff/manifest.webmanifest', request=request)
+    body = render_to_string('staff/manifest.webmanifest', {'asset_v': ASSET_V}, request=request)
     return HttpResponse(body, content_type='application/manifest+json')
 
 
 def service_worker(request):
     """Service worker. Must be served from /staff/ for its scope to cover the portal."""
-    body = render_to_string('staff/sw.js', request=request)
+    body = render_to_string('staff/sw.js', {'asset_v': ASSET_V}, request=request)
     response = HttpResponse(body, content_type='application/javascript')
     response['Service-Worker-Allowed'] = '/staff/'
     response['Cache-Control'] = 'no-cache'
@@ -400,4 +425,4 @@ def service_worker(request):
 
 
 def offline(request):
-    return render(request, 'staff/offline.html')
+    return render(request, 'staff/offline.html', {'asset_v': ASSET_V})

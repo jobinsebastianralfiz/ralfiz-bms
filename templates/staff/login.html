@@ -19,16 +19,16 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="Ralfiz Staff">
-  <link rel="apple-touch-icon" href="{% static 'staff/icon-180.png' %}">
-  <link rel="icon" type="image/png" sizes="32x32" href="{% static 'staff/favicon-32.png' %}">
+  <link rel="apple-touch-icon" href="{% static 'staff/icon-180.png' %}?v={{ asset_v }}">
+  <link rel="icon" type="image/png" sizes="32x32" href="{% static 'staff/favicon-32.png' %}?v={{ asset_v }}">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-  <link rel="stylesheet" href="{% static 'css/staff.css' %}?v=5">
+  <link rel="stylesheet" href="{% static 'css/staff.css' %}?v={{ asset_v }}">
   <script>window.SF_CSRF = "";</script>
 </head>
 <body>
   <div class="sf-auth">
-    <img class="sf-auth-mark" src="{% static 'staff/icon-192.png' %}" alt="Ralfiz" width="60" height="60">
+    <img class="sf-auth-mark" src="{% static 'staff/icon-192.png' %}?v={{ asset_v }}" alt="Ralfiz" width="60" height="60">
     <h1>Staff sign in</h1>
     <p class="sf-auth-sub">Attendance, leave, work and classes — from your phone browser.</p>
 
@@ -56,6 +56,6 @@
       <i class="fas fa-mobile-screen-button"></i> Add to Home Screen
     </button>
   </div>
-  <script src="{% static 'js/staff.js' %}?v=5"></script>
+  <script src="{% static 'js/staff.js' %}?v={{ asset_v }}"></script>
 </body>
 </html>
