@@ -287,7 +287,7 @@ class StaffPortalPwaTests(StaffPortalTestBase):
         self.assertEqual(data['scope'], '/staff/')
         self.assertEqual(data['start_url'], '/staff/')
         self.assertEqual(data['display'], 'standalone')
-        self.assertEqual(len(data['icons']), 3)
+        self.assertEqual(len(data['icons']), 4)
 
     def test_service_worker_is_scoped_to_the_portal(self):
         res = self.client.get(reverse('staff:service_worker'))
@@ -299,6 +299,41 @@ class StaffPortalPwaTests(StaffPortalTestBase):
         body = self.client.get(reverse('staff:service_worker')).content.decode()
         self.assertIn("pathname.startsWith('/api/')", body)
         self.assertIn("req.method !== 'GET'", body)
+
+    def test_manifest_declares_a_maskable_icon(self):
+        import json
+        data = json.loads(self.client.get(reverse('staff:manifest')).content)
+        purposes = [i.get('purpose') for i in data['icons']]
+        self.assertIn('maskable', purposes,
+                      'Android crops non-maskable icons and can clip the logo')
+        self.assertEqual(data['background_color'], '#ffffff')
+
+    def test_icon_files_exist_and_are_the_right_shape(self):
+        from PIL import Image
+        static = pathlib.Path(__file__).resolve().parent.parent / 'static' / 'staff'
+        expected = {
+            'icon-192.png': (192, 192),
+            'icon-512.png': (512, 512),
+            'icon-1024.png': (1024, 1024),
+            'icon-maskable-512.png': (512, 512),
+            'icon-180.png': (180, 180),
+        }
+        for name, size in expected.items():
+            with self.subTest(icon=name):
+                path = static / name
+                self.assertTrue(path.exists(), f'{name} is missing')
+                im = Image.open(path)
+                self.assertEqual(im.size, size)
+
+    def test_ios_and_maskable_icons_are_opaque(self):
+        """iOS paints alpha as black and Android crops, so these must be flat."""
+        from PIL import Image
+        static = pathlib.Path(__file__).resolve().parent.parent / 'static' / 'staff'
+        for name in ['icon-180.png', 'icon-maskable-512.png']:
+            with self.subTest(icon=name):
+                im = Image.open(static / name)
+                self.assertNotIn('A', im.getbands(),
+                                 f'{name} must not carry an alpha channel')
 
     def test_offline_page_renders_without_login(self):
         res = self.client.get(reverse('staff:offline'))
@@ -375,8 +410,48 @@ class StaffPortalInstallPromptTests(StaffPortalTestBase):
     def test_static_assets_are_version_stamped_together(self):
         """Unhashed statics need a ?v bump or phones serve a stale app."""
         res = self.client.get(reverse('staff:dashboard')).content.decode()
-        self.assertIn('css/staff.css?v=4', res)
-        self.assertIn('js/staff.js?v=4', res)
+        self.assertIn('css/staff.css?v=5', res)
+        self.assertIn('js/staff.js?v=5', res)
+
+
+class StaffPortalThemeTests(StaffPortalTestBase):
+    """Staff asked for a light portal; dark stays available behind a toggle."""
+
+    def setUp(self):
+        self.login_intern()
+
+    def test_pages_default_to_light(self):
+        for name in ['dashboard', 'attendance', 'profile']:
+            with self.subTest(page=name):
+                res = self.client.get(reverse('staff:' + name))
+                self.assertContains(res, '<html lang="en" data-theme="light">')
+
+    def test_login_page_defaults_to_light(self):
+        self.client.logout()
+        res = self.client.get(reverse('staff:login'))
+        self.assertContains(res, '<html lang="en" data-theme="light">')
+        self.assertContains(res, '<meta name="theme-color" content="#ffffff">')
+
+    def test_theme_is_applied_before_first_paint(self):
+        """Reading the stored theme after paint would flash the wrong colours."""
+        res = self.client.get(reverse('staff:dashboard')).content.decode()
+        pre_paint = res.index("localStorage.getItem('sf-theme')")
+        stylesheet = res.index('css/staff.css')
+        self.assertLess(pre_paint, stylesheet)
+
+    def test_theme_toggle_is_offered(self):
+        res = self.client.get(reverse('staff:dashboard'))
+        self.assertContains(res, 'id="sfThemeToggle"')
+        self.assertContains(res, 'Switch to dark')
+
+    def test_stylesheet_defines_both_palettes(self):
+        css = (pathlib.Path(__file__).resolve().parent.parent
+               / 'static' / 'css' / 'staff.css').read_text()
+        self.assertIn(':root {', css)
+        self.assertIn('[data-theme="dark"] {', css)
+        # No stray hardcoded colours from the old teal palette.
+        for ghost in ['#2fd4d4', '#04191b', '#1c8f9a']:
+            self.assertNotIn(ghost, css, f'{ghost} survives the theme rewrite')
 
 
 class MainLoginRoutingTests(StaffPortalTestBase):

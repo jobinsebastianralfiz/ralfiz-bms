@@ -258,6 +258,37 @@
     });
   };
 
+  // --- Theme ----------------------------------------------------------
+
+  /* Light is the default for staff. A phone in system dark mode does NOT
+     flip it -- interns asked for light -- but the toggle is always there. */
+  SF.setTheme = function (theme) {
+    var dark = theme === 'dark';
+    document.documentElement.setAttribute('data-theme', dark ? 'dark' : 'light');
+    try { localStorage.setItem('sf-theme', dark ? 'dark' : 'light'); } catch (e) { /* private mode */ }
+
+    var meta = document.querySelector('meta[name="theme-color"]');
+    if (meta) meta.setAttribute('content', dark ? '#0d0f1c' : '#ffffff');
+
+    var label = document.getElementById('sfThemeLabel');
+    if (label) label.textContent = dark ? 'Switch to light' : 'Switch to dark';
+    var icon = document.getElementById('sfThemeIcon');
+    if (icon) icon.className = dark ? 'fas fa-sun' : 'fas fa-moon';
+  };
+
+  SF.currentTheme = function () {
+    return document.documentElement.getAttribute('data-theme') === 'dark' ? 'dark' : 'light';
+  };
+
+  function initTheme() {
+    SF.setTheme(SF.currentTheme());
+    var btn = document.getElementById('sfThemeToggle');
+    if (btn) btn.addEventListener('click', function (e) {
+      e.preventDefault();
+      SF.setTheme(SF.currentTheme() === 'dark' ? 'light' : 'dark');
+    });
+  }
+
   // --- "More" sheet ---------------------------------------------------
 
   function initSheet() {
@@ -482,6 +513,7 @@
   }
 
   document.addEventListener('DOMContentLoaded', function () {
+    initTheme();
     initSheet();
     initServiceWorker();
     initInstall();
