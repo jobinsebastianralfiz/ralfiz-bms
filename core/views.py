@@ -6648,7 +6648,7 @@ def emp_employee_list(request):
 @login_required
 def emp_employee_detail(request, pk):
     """Employee detail with attendance, leave, work"""
-    from employees.models import Employee, Attendance, LeaveRequest, WorkAssignment
+    from employees.models import Employee, Attendance, LeaveRequest, OfficeConfig, WorkAssignment
     from employees.utils import generate_face_encoding
     employee = get_object_or_404(Employee, pk=pk)
 
@@ -6671,6 +6671,11 @@ def emp_employee_detail(request, pk):
         employee.joining_date = request.POST.get('joining_date') or employee.joining_date
         employee.monthly_salary = request.POST.get('monthly_salary') or None
         employee.hourly_rate = request.POST.get('hourly_rate') or None
+        # Flexible timing: blank means "follow the office default", so an empty
+        # box has to clear the override rather than be ignored.
+        employee.custom_check_in_deadline = request.POST.get('custom_check_in_deadline') or None
+        employee.custom_checkout_time_floor = request.POST.get('custom_checkout_time_floor') or None
+        employee.custom_required_hours = request.POST.get('custom_required_hours') or None
         employee.save()
         messages.success(request, 'Employee information updated.')
         return redirect('emp_employee_detail', pk=pk)
@@ -6810,6 +6815,8 @@ def emp_employee_detail(request, pk):
     assessments = employee.assessments.all() if employee.employment_type == 'intern' else None
     context = {
         'employee': employee,
+        'policy': employee.attendance_policy(),
+        'office_config': OfficeConfig.objects.first(),
         'recent_attendance': recent_attendance,
         'leave_requests': leave_requests,
         'work_assignments': work_assignments,

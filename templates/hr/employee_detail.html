@@ -113,6 +113,48 @@
             <input type="date" name="joining_date" class="form-control form-control-sm" value="{{ employee.joining_date|date:'Y-m-d' }}">
           </div>
           <hr class="my-3">
+          <h6 class="text-muted mb-3"><i class="fas fa-clock me-1"></i> Attendance Timing</h6>
+          <p class="text-sm text-muted mb-3">
+            Leave a box empty to follow the office default
+            {% if office_config %}(check in by {{ office_config.check_in_deadline|time:"h:i A" }},
+            check out from {{ office_config.min_checkout_time_floor|time:"h:i A" }},
+            {{ office_config.daily_required_hours|floatformat:"-2" }}h a day){% endif %}.
+            Fill them in only for someone on a flexible shift.
+          </p>
+          <div class="mb-3">
+            <label class="form-label text-sm text-muted">Check-in Deadline</label>
+            <input type="time" name="custom_check_in_deadline" class="form-control form-control-sm"
+                   value="{{ employee.custom_check_in_deadline|time:'H:i' }}">
+          </div>
+          <div class="mb-3">
+            <label class="form-label text-sm text-muted">Earliest Check-out</label>
+            <input type="time" name="custom_checkout_time_floor" class="form-control form-control-sm"
+                   value="{{ employee.custom_checkout_time_floor|time:'H:i' }}">
+          </div>
+          <div class="mb-3">
+            <label class="form-label text-sm text-muted">Required Hours per Day</label>
+            <input type="number" name="custom_required_hours" class="form-control form-control-sm"
+                   step="0.25" min="0" max="24"
+                   value="{{ employee.custom_required_hours|default_if_none:'' }}">
+          </div>
+          <div class="text-sm p-2 mb-3" style="border: 1px solid var(--border-color); border-radius: 8px;">
+            <div class="d-flex justify-content-between gap-2">
+              <span class="text-muted">Check in by</span>
+              <strong>{{ policy.check_in_deadline|time:"h:i A" }}</strong>
+            </div>
+            <div class="d-flex justify-content-between gap-2">
+              <span class="text-muted">Check out from</span>
+              <strong>{{ policy.checkout_floor|time:"h:i A" }}</strong>
+            </div>
+            <div class="d-flex justify-content-between gap-2">
+              <span class="text-muted">Required hours</span>
+              <strong>{{ policy.required_hours|floatformat:"-2" }}h a day</strong>
+            </div>
+            <div class="text-muted mt-1">
+              {% if employee.has_custom_timing %}Flexible shift for this person{% else %}Office default{% endif %}
+            </div>
+          </div>
+          <hr class="my-3">
           <h6 class="text-muted mb-3"><i class="fas fa-money-bill-wave me-1"></i> Compensation</h6>
           <div class="mb-3">
             <label class="form-label text-sm text-muted">Monthly Salary / Stipend</label>
@@ -283,8 +325,16 @@
             <tr>
               <td>{{ a.date|date:"d M Y" }}</td>
               <td>{{ a.check_in|date:"H:i"|default:"-" }}</td>
-              <td>{{ a.check_out|date:"H:i"|default:"-" }}</td>
-              <td>{{ a.working_hours|default:"-" }}h</td>
+              <td>
+                {{ a.check_out|date:"H:i"|default:"-" }}
+                {% if a.is_force_checkout %}
+                <span class="badge bg-warning text-dark" title="{{ a.force_checkout_reason|default:'No reason recorded' }}">Early</span>
+                {% endif %}
+              </td>
+              <td>
+                {{ a.working_hours|default:"-" }}h
+                {% if a.force_checkout_reason %}<div class="text-sm text-muted">{{ a.force_checkout_reason }}</div>{% endif %}
+              </td>
               <td><span class="status-badge {{ a.status }}">{{ a.get_status_display }}</span></td>
               <td>{{ a.get_verification_method_display }}</td>
             </tr>

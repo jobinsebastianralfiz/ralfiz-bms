@@ -103,8 +103,18 @@
             </td>
             <td>{{ a.date|date:"d M Y" }}</td>
             <td>{{ a.check_in|date:"H:i"|default:"-" }}</td>
-            <td>{{ a.check_out|date:"H:i"|default:"-" }}</td>
-            <td>{{ a.working_hours|default:"-" }}h</td>
+            <td>
+              {{ a.check_out|date:"H:i"|default:"-" }}
+              {% if a.is_force_checkout %}
+              <span class="badge" style="background: var(--warning-bg); color: var(--warning);"
+                    title="{{ a.force_checkout_reason|default:'No reason recorded' }}">Early</span>
+              {% endif %}
+            </td>
+            <td>
+              {{ a.working_hours|default:"-" }}h
+              {% if a.pending_hours %}<div class="text-sm" style="color: var(--danger);">{{ a.pending_hours }}h short</div>{% endif %}
+              {% if a.force_checkout_reason %}<div class="text-sm text-muted">{{ a.force_checkout_reason }}</div>{% endif %}
+            </td>
             <td>
               {% if a.status == 'present' %}
               <span class="badge" style="background: var(--success-bg); color: var(--success);">Present</span>

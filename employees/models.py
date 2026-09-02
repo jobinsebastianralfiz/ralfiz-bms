@@ -1,7 +1,14 @@
 import uuid
+from collections import namedtuple
+
 from django.db import models
 from django.contrib.auth.models import User
 from django.utils import timezone
+
+# A person's effective attendance timing: office defaults with the employee's
+# own overrides applied. See Employee.attendance_policy().
+AttendancePolicy = namedtuple(
+    'AttendancePolicy', 'check_in_deadline checkout_floor required_hours')
 
 
 class Employee(models.Model):
@@ -80,6 +87,15 @@ class Employee(models.Model):
     work_mode = models.CharField(max_length=10, choices=WORK_MODE_CHOICES, default='onsite',
                                  help_text='Onsite, Hybrid, or fully Remote. Hybrid/remote can check in without QR/geo-fence.')
 
+    # Flexible timing. Blank means "same as everyone else" -- each field falls
+    # back to OfficeConfig, so only people on a non-standard shift need one set.
+    custom_check_in_deadline = models.TimeField(null=True, blank=True,
+                                                help_text='Personal check-in cutoff (e.g. 12:00). Blank = office default.')
+    custom_checkout_time_floor = models.TimeField(null=True, blank=True,
+                                                  help_text='Earliest time this person may check out (e.g. 18:00). Blank = office default.')
+    custom_required_hours = models.DecimalField(max_digits=4, decimal_places=2, null=True, blank=True,
+                                                help_text='Required working hours per day for this person. Blank = office default.')
+
     profile_photo = models.ImageField(upload_to='employees/photos/', blank=True, null=True)
     notes = models.TextField(blank=True)
 
@@ -104,6 +120,29 @@ class Employee(models.Model):
     @property
     def full_name(self):
         return self.user.get_full_name() or self.user.username
+
+    @property
+    def has_custom_timing(self):
+        return bool(self.custom_check_in_deadline or self.custom_checkout_time_floor
+                    or self.custom_required_hours is not None)
+
+    def attendance_policy(self):
+        """This person's effective check-in cutoff, check-out floor and hours.
+
+        Every piece falls back to OfficeConfig, so a blank override means
+        "follow the office default" rather than "no rule at all".
+        """
+        from datetime import time as dtime
+        from decimal import Decimal
+        cfg = OfficeConfig.objects.first()
+        return AttendancePolicy(
+            check_in_deadline=(self.custom_check_in_deadline
+                               or (cfg.check_in_deadline if cfg else dtime(10, 15))),
+            checkout_floor=(self.custom_checkout_time_floor
+                            or (cfg.min_checkout_time_floor if cfg else dtime(16, 0))),
+            required_hours=(self.custom_required_hours if self.custom_required_hours is not None
+                            else (cfg.daily_required_hours if cfg else Decimal('6.00'))),
+        )
 
 
 class DeviceToken(models.Model):
@@ -181,6 +220,8 @@ class Attendance(models.Model):
                                         help_text='Shortfall = required_hours - worked_hours (0 if worked >= required)')
     is_force_checkout = models.BooleanField(default=False,
                                             help_text='True if employee force-checked-out before completing required hours')
+    force_checkout_reason = models.TextField(blank=True,
+                                             help_text='Why this person left before completing the required hours')
     is_remote = models.BooleanField(default=False,
                                     help_text='True if checked in remotely (hybrid/remote employees)')
 
@@ -211,12 +252,12 @@ class Attendance(models.Model):
         """
         if not self.check_in:
             return None
-        from datetime import datetime, time as dtime, timedelta
+        from datetime import datetime, timedelta
         from django.utils import timezone as tz
         required_delta = self.check_in + timedelta(hours=float(self.required_hours))
         if floor_time is None:
-            cfg = OfficeConfig.objects.first()
-            floor_time = cfg.min_checkout_time_floor if cfg else dtime(16, 0)
+            # Per-person floor first (flexible shifts), office default behind it.
+            floor_time = self.employee.attendance_policy().checkout_floor
         local_check_in = tz.localtime(self.check_in) if tz.is_aware(self.check_in) else self.check_in
         floor_naive = datetime.combine(local_check_in.date(), floor_time)
         if tz.is_aware(self.check_in):

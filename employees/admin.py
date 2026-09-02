@@ -12,7 +12,8 @@ from .utils import generate_face_encoding
 @admin.register(Employee)
 class EmployeeAdmin(admin.ModelAdmin):
     list_display = ['employee_id', 'full_name', 'employment_type', 'role', 'department',
-                    'designation', 'status', 'has_face_photo', 'joining_date']
+                    'designation', 'status', 'has_face_photo', 'has_custom_timing',
+                    'joining_date']
     list_filter = ['employment_type', 'role', 'department', 'status']
     search_fields = ['employee_id', 'user__first_name', 'user__last_name', 'user__username']
     readonly_fields = ['id', 'created_at', 'updated_at', 'face_photo_preview']
@@ -41,6 +42,12 @@ class EmployeeAdmin(admin.ModelAdmin):
         ('Office Location', {
             'fields': ('office_latitude', 'office_longitude', 'allowed_radius_meters'),
         }),
+        ('Flexible Timing', {
+            'fields': ('custom_check_in_deadline', 'custom_checkout_time_floor',
+                       'custom_required_hours'),
+            'description': 'Per-person shift. Leave blank to follow the office defaults '
+                           'in Office Configuration.',
+        }),
         ('Metadata', {
             'fields': ('notes', 'created_at', 'updated_at'),
             'classes': ('collapse',),
@@ -51,6 +58,10 @@ class EmployeeAdmin(admin.ModelAdmin):
         return bool(obj.face_photo)
     has_face_photo.boolean = True
     has_face_photo.short_description = 'Face Photo'
+
+    @admin.display(boolean=True, description='Custom Shift')
+    def has_custom_timing(self, obj):
+        return obj.has_custom_timing
 
     def face_photo_preview(self, obj):
         if obj.face_photo:
@@ -79,8 +90,8 @@ class EmployeeAdmin(admin.ModelAdmin):
 class AttendanceAdmin(admin.ModelAdmin):
     list_display = ['employee', 'date', 'check_in', 'check_out', 'status',
                     'verification_method', 'worked_hours', 'required_hours',
-                    'pending_hours', 'is_force_checkout', 'is_remote',
-                    'face_verified', 'qr_verified']
+                    'pending_hours', 'is_force_checkout', 'force_checkout_reason',
+                    'is_remote', 'face_verified', 'qr_verified']
     list_filter = ['status', 'verification_method', 'date', 'face_verified',
                    'is_force_checkout', 'is_remote']
     search_fields = ['employee__employee_id', 'employee__user__first_name']

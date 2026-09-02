@@ -272,11 +272,9 @@ class CheckInView(APIView):
 
         # Enforce check-in deadline (default 10:15). Owner/partner can bypass.
         # Employees with an unconsumed LateCheckInGrant for today can also bypass.
-        from .models import OfficeConfig
-        from datetime import time as dtime
-        cfg = OfficeConfig.objects.first()
-        deadline_time = cfg.check_in_deadline if cfg else dtime(10, 15)
-        required_hours = float(cfg.daily_required_hours) if cfg else 6.0
+        policy = employee.attendance_policy()
+        deadline_time = policy.check_in_deadline
+        required_hours = float(policy.required_hours)
         now = timezone.localtime(timezone.now())
         is_owner_or_partner = employee.role in ('owner', 'partner')
         grant = LateCheckInGrant.objects.filter(
@@ -456,6 +454,7 @@ class CheckOutView(APIView):
 
         data = serializer.validated_data
         force = bool(data.get('force'))
+        reason = (data.get('reason') or '').strip()
 
         # Onsite attendance must rescan office QR. Remote rows skip QR.
         if not attendance.is_remote:
@@ -469,15 +468,27 @@ class CheckOutView(APIView):
 
         now = timezone.now()
         min_checkout = attendance.minimum_checkout_time()
-        if min_checkout and now < min_checkout and not force:
-            remaining = int((min_checkout - now).total_seconds())
-            return Response({
-                'error': 'Minimum working hours not completed.',
+        is_early = bool(min_checkout and now < min_checkout)
+        if is_early:
+            remaining = max(int((min_checkout - now).total_seconds()), 0)
+            early_payload = {
                 'minimum_checkout_time': min_checkout.isoformat(),
-                'seconds_remaining': max(remaining, 0),
+                'seconds_remaining': remaining,
                 'required_hours': float(attendance.required_hours),
                 'can_force': True,
-            }, status=status.HTTP_400_BAD_REQUEST)
+                'reason_required': True,
+            }
+            if not force:
+                return Response(
+                    dict(early_payload, error='Minimum working hours not completed.'),
+                    status=status.HTTP_400_BAD_REQUEST)
+            # Leaving early is allowed, but it has to be explained -- HR reads
+            # these against the shortfall on the attendance record.
+            if len(reason) < 5:
+                return Response(
+                    dict(early_payload,
+                         error='Please give a reason for leaving early (at least 5 characters).'),
+                    status=status.HTTP_400_BAD_REQUEST)
 
         # Commit check-out + compute shortfall
         from decimal import Decimal
@@ -492,7 +503,9 @@ class CheckOutView(APIView):
         attendance.check_out_longitude = data.get('longitude')
         attendance.worked_hours = worked_hours
         attendance.pending_hours = pending
-        attendance.is_force_checkout = force and pending > 0
+        attendance.is_force_checkout = is_early
+        if is_early:
+            attendance.force_checkout_reason = reason
         if pending > 0 and attendance.status == 'present':
             attendance.status = 'half_day'
         attendance.save()
@@ -540,12 +553,10 @@ class TodayAttendanceView(APIView):
         if not employee:
             return Response({'error': 'Employee profile not found'}, status=status.HTTP_404_NOT_FOUND)
 
-        from .models import OfficeConfig
-        from datetime import time as dtime
-        cfg = OfficeConfig.objects.first()
-        deadline_time = cfg.check_in_deadline if cfg else dtime(10, 15)
-        min_checkout_floor = cfg.min_checkout_time_floor if cfg else dtime(16, 0)
-        required_hours = float(cfg.daily_required_hours) if cfg else 6.0
+        policy = employee.attendance_policy()
+        deadline_time = policy.check_in_deadline
+        min_checkout_floor = policy.checkout_floor
+        required_hours = float(policy.required_hours)
 
         now_local = timezone.localtime(timezone.now())
         is_owner_or_partner = employee.role in ('owner', 'partner')
@@ -568,6 +579,7 @@ class TodayAttendanceView(APIView):
             'min_checkout_time_floor': min_checkout_floor.strftime('%H:%M'),
             'required_hours': required_hours,
             'has_late_checkin_grant': has_late_grant,
+            'has_custom_timing': employee.has_custom_timing,
         })
 
 
@@ -1427,11 +1439,8 @@ class OwnerForceCheckoutView(APIView):
             return Response({'error': f'No open check-in found for {employee.full_name} on {checkout_date}'},
                             status=status.HTTP_404_NOT_FOUND)
 
-        # Use the configured min checkout time or end of day
-        from .models import OfficeConfig
-        from datetime import time as dtime
-        cfg = OfficeConfig.objects.first()
-        min_checkout_floor = cfg.min_checkout_time_floor if cfg else dtime(16, 0)
+        # Use this person's own min checkout time (office default behind it)
+        min_checkout_floor = employee.attendance_policy().checkout_floor
 
         # Set check-out to min_checkout_floor on that date, or now if today
         if checkout_date == date.today():
@@ -1451,6 +1460,9 @@ class OwnerForceCheckoutView(APIView):
         attendance.worked_hours = worked_hours
         attendance.pending_hours = pending
         attendance.is_force_checkout = True
+        attendance.force_checkout_reason = (
+            (request.data.get('reason') or '').strip()
+            or f'Force checked out by {request.user.get_full_name() or request.user.username}')
         if pending > 0 and attendance.status == 'present':
             attendance.status = 'half_day'
         attendance.save()
@@ -1488,9 +1500,7 @@ class OwnerManualCheckInView(APIView):
             return Response({'error': f'{employee.full_name} already has an attendance record for {checkin_date}'},
                             status=status.HTTP_400_BAD_REQUEST)
 
-        from .models import OfficeConfig
-        cfg = OfficeConfig.objects.first()
-        required_hours = float(cfg.daily_required_hours) if cfg else 6.0
+        required_hours = float(employee.attendance_policy().required_hours)
 
         if check_in_time:
             from datetime import datetime as dt

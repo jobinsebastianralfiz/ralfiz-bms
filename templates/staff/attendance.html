@@ -67,10 +67,18 @@
   <button type="button" class="sf-btn" id="sfCheckOut">
     <i class="fas fa-right-from-bracket"></i> Check out
   </button>
-  {% if not checkout_allowed and seconds_until_eligible %}
-    <p class="sf-dim" style="text-align:center;margin-top:10px" id="sfEligible"
-       data-seconds="{{ seconds_until_eligible }}">
-      Minimum hours not yet complete.
+  {% if not checkout_allowed %}
+    {% if seconds_until_eligible %}
+      <p class="sf-dim" style="text-align:center;margin-top:10px" id="sfEligible"
+         data-seconds="{{ seconds_until_eligible }}">
+        Minimum hours not yet complete.
+      </p>
+    {% endif %}
+    <button type="button" class="sf-btn sf-btn-danger" id="sfForceCheckOut" style="margin-top:10px">
+      <i class="fas fa-door-open"></i> Leaving early — check out anyway
+    </button>
+    <p class="sf-dim" style="text-align:center;margin-top:8px">
+      You'll be asked for a reason, and the shortfall is recorded on today's attendance.
     </p>
   {% endif %}
 {% else %}
@@ -78,6 +86,40 @@
     <i class="fas fa-calendar-days"></i> View history
   </a>
 {% endif %}
+
+{# --- Early check-out on record --- #}
+{% if record.is_force_checkout %}
+  <div class="sf-alert sf-alert-warning">
+    <strong>Early check-out recorded.</strong>
+    {% if record.force_checkout_reason %}"{{ record.force_checkout_reason }}"{% endif %}
+    {% if record.pending_hours %} · {{ record.pending_hours }}h short of your required hours.{% endif %}
+  </div>
+{% endif %}
+
+{# --- The timing this person actually works to --- #}
+<div class="sf-section-title">
+  Your timing{% if has_custom_timing %} <span class="sf-badge sf-badge-ok">Custom shift</span>{% endif %}
+</div>
+<div class="sf-card">
+  <div class="sf-kv">
+    <span class="sf-kv-k">Required hours</span>
+    <span class="sf-kv-v">{{ policy.required_hours|floatformat:"-2" }} h a day</span>
+  </div>
+  <div class="sf-kv">
+    <span class="sf-kv-k">Check in by</span>
+    <span class="sf-kv-v">{{ policy.check_in_deadline|time:"h:i A" }}</span>
+  </div>
+  <div class="sf-kv">
+    <span class="sf-kv-k">Check out from</span>
+    <span class="sf-kv-v">{{ policy.checkout_floor|time:"h:i A" }}</span>
+  </div>
+  {% if earliest_checkout %}
+  <div class="sf-kv">
+    <span class="sf-kv-k">Earliest today</span>
+    <span class="sf-kv-v">{{ earliest_checkout|time:"h:i A" }}</span>
+  </div>
+  {% endif %}
+</div>
 
 {# --- Verification summary --- #}
 {% if record %}
@@ -128,6 +170,9 @@
 (function () {
   var CHECK_IN  = '/api/employees/attendance/check-in/';
   var CHECK_OUT = '/api/employees/attendance/check-out/';
+  // Remote check-ins are closed without an office QR; onsite ones must rescan.
+  var NEEDS_QR  = {% if record and record.is_remote %}false{% else %}true{% endif %};
+  var secondsLeft = {{ seconds_until_eligible|default:0 }};
 
   function busy(btn, label) {
     btn.dataset.html = btn.innerHTML;
@@ -243,29 +288,66 @@
       });
   }
 
+  /* Ask why someone is leaving before their hours are up. Resolves with the
+     reason text; rejects with 'cancelled' if they close the sheet. */
+  function askReason(modal, secondsRemaining) {
+    return new Promise(function (resolve, reject) {
+      var mins = Math.ceil((secondsRemaining || 0) / 60);
+      var left = mins >= 60
+        ? Math.floor(mins / 60) + 'h ' + (mins % 60) + 'm'
+        : mins + ' minute' + (mins === 1 ? '' : 's');
+
+      modal.setTitle('Leaving early');
+      modal.body.innerHTML =
+        '<div class="sf-alert sf-alert-warning" style="margin-top:0">' +
+          'You still have <strong id="sfLeftTxt"></strong> left of your required hours. ' +
+          'Checking out now records the shortfall against today\'s attendance.' +
+        '</div>' +
+        '<div class="sf-dim" style="margin-bottom:6px">WHY ARE YOU LEAVING EARLY?</div>' +
+        '<textarea class="sf-textarea" id="sfReason" maxlength="500" ' +
+                  'placeholder="e.g. Doctor appointment at 3 PM"></textarea>' +
+        '<p id="sfReasonErr" style="display:none;color:var(--sf-red);margin:6px 0 0;font-size:13px"></p>' +
+        '<button type="button" class="sf-btn sf-btn-danger" id="sfReasonGo" style="margin-top:14px">' +
+          '<i class="fas fa-door-open"></i> Check out anyway</button>';
+      modal.body.querySelector('#sfLeftTxt').textContent = left;
+
+      var box = modal.body.querySelector('#sfReason');
+      var err = modal.body.querySelector('#sfReasonErr');
+      modal.onClose = function () { reject(new Error('cancelled')); };
+
+      modal.body.querySelector('#sfReasonGo').addEventListener('click', function () {
+        var text = box.value.trim();
+        if (text.length < 5) {
+          err.textContent = 'Please type a short reason (at least 5 characters).';
+          err.style.display = 'block';
+          box.focus();
+          return;
+        }
+        modal.onClose = null;
+        resolve(text);
+      });
+      box.focus();
+    });
+  }
+
   function postCheckOut(body, btn, modal) {
+    showProgress(modal, 'Submitting your check-out…');
     return SF.api(CHECK_OUT, { method: 'POST', body: body }).then(function (res) {
       if (res.ok) {
         modal.close();
-        SF.toast('Checked out. Have a good evening.', 'success');
+        SF.toast(body.force ? 'Checked out early. Your reason was recorded.'
+                            : 'Checked out. Have a good evening.', 'success');
         setTimeout(function () { location.reload(); }, 700);
         return;
       }
-      // Server says the minimum hours aren't done -- offer the same force
-      // path the mobile app uses, with the shortfall spelled out.
+      // Server says the required hours aren't done -- collect a reason and
+      // retry on the same force path the mobile app uses.
       if (res.data && res.data.can_force) {
-        modal.close();
-        unbusy(btn);
-        var mins = Math.ceil((res.data.seconds_remaining || 0) / 60);
-        if (confirm('You still have about ' + mins + ' minute(s) left of your required hours.\n\n' +
-                    'Check out anyway? The shortfall will be recorded against your attendance.')) {
+        return askReason(modal, res.data.seconds_remaining).then(function (reason) {
           body.force = true;
-          busy(btn, 'Checking out…');
-          var m2 = SF.openModal('Check out');
-          showProgress(m2, 'Submitting your check-out…');
-          postCheckOut(body, btn, m2);
-        }
-        return;
+          body.reason = reason;
+          return postCheckOut(body, btn, modal);
+        });
       }
       modal.close();
       unbusy(btn);
@@ -273,8 +355,8 @@
     });
   }
 
-  function runCheckOut(btn) {
-    var modal = SF.openModal('Check out');
+  function runCheckOut(btn, early) {
+    var modal = SF.openModal(early ? 'Leaving early' : 'Check out');
     var cancelled = false;
     modal.bindClose(function () {
       cancelled = true;
@@ -285,10 +367,26 @@
 
     var body = {};
 
-    SF.scanQR(modal)
+    // Leaving early: get the reason before the camera, so nobody scans a QR
+    // only to find out they still owe an explanation.
+    var ready = early
+      ? askReason(modal, secondsLeft).then(function (reason) {
+          body.force = true;
+          body.reason = reason;
+        })
+      : Promise.resolve();
+
+    ready
+      .then(function () {
+        if (cancelled) throw new Error('cancelled');
+        modal.setTitle('Check out');
+        // Remote days have no office QR to scan on the way out.
+        if (!NEEDS_QR) return null;
+        return SF.scanQR(modal);
+      })
       .then(function (code) {
         if (cancelled) throw new Error('cancelled');
-        body.qr_code = code;
+        if (code) body.qr_code = code;
         modal.onClose = null;
         modal.setTitle('Confirming location');
         showProgress(modal, 'Getting your location…');
@@ -300,7 +398,6 @@
           body.latitude = loc.latitude;
           body.longitude = loc.longitude;
         }
-        showProgress(modal, 'Submitting your check-out…');
         return postCheckOut(body, btn, modal);
       })
       .catch(function (err) {
@@ -317,20 +414,25 @@
   if (remoteBtn) remoteBtn.addEventListener('click', function () { busy(remoteBtn, 'Starting…'); runRemoteCheckIn(remoteBtn); });
 
   var outBtn = document.getElementById('sfCheckOut');
-  if (outBtn) outBtn.addEventListener('click', function () { busy(outBtn, 'Starting…'); runCheckOut(outBtn); });
+  if (outBtn) outBtn.addEventListener('click', function () { busy(outBtn, 'Starting…'); runCheckOut(outBtn, false); });
 
-  // Live countdown to the earliest allowed check-out.
+  var forceBtn = document.getElementById('sfForceCheckOut');
+  if (forceBtn) forceBtn.addEventListener('click', function () { busy(forceBtn, 'Starting…'); runCheckOut(forceBtn, true); });
+
+  // Live countdown to the earliest allowed check-out. secondsLeft is also what
+  // the early-exit sheet quotes back, so it stays honest as the day goes on.
   var eligible = document.getElementById('sfEligible');
   if (eligible) {
-    var left = parseInt(eligible.dataset.seconds, 10) || 0;
     var tick = setInterval(function () {
-      left -= 1;
-      if (left <= 0) {
+      secondsLeft -= 1;
+      if (secondsLeft <= 0) {
         clearInterval(tick);
+        secondsLeft = 0;
         eligible.textContent = 'You can check out now.';
+        if (forceBtn) forceBtn.style.display = 'none';
         return;
       }
-      var h = Math.floor(left / 3600), m = Math.floor((left % 3600) / 60), s = left % 60;
+      var h = Math.floor(secondsLeft / 3600), m = Math.floor((secondsLeft % 3600) / 60), s = secondsLeft % 60;
       eligible.textContent = 'Minimum hours complete in ' +
         (h ? h + 'h ' : '') + m + 'm ' + s + 's.';
     }, 1000);

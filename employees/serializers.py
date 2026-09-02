@@ -85,7 +85,7 @@ class AttendanceSerializer(serializers.ModelSerializer):
             'check_out_latitude', 'check_out_longitude', 'face_verified',
             'face_confidence', 'qr_verified', 'working_hours', 'notes',
             'required_hours', 'worked_hours', 'pending_hours',
-            'is_force_checkout', 'is_remote',
+            'is_force_checkout', 'force_checkout_reason', 'is_remote',
             'minimum_checkout_time', 'is_checkout_allowed', 'seconds_until_eligible',
         ]
         read_only_fields = ['id', 'date', 'status', 'verification_method']
@@ -124,7 +124,9 @@ class CheckOutSerializer(serializers.Serializer):
     longitude = serializers.DecimalField(max_digits=10, decimal_places=7, required=False)
     qr_code = serializers.CharField(required=False, help_text='Scanned office QR. Required unless is_remote attendance.')
     force = serializers.BooleanField(required=False, default=False,
-                                     help_text='Force check-out before 6h / 4PM. Shortfall recorded as pending_hours.')
+                                     help_text='Force check-out before the required hours / floor time. Shortfall recorded as pending_hours.')
+    reason = serializers.CharField(required=False, allow_blank=True,
+                                   help_text='Why the person is leaving early. Required when force=true.')
 
 
 class LeaveTypeSerializer(serializers.ModelSerializer):

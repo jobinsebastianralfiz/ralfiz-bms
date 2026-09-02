@@ -168,6 +168,8 @@ def attendance(request):
     today = timezone.localdate()
     cfg = OfficeConfig.objects.first()
     record = Attendance.objects.filter(employee=employee, date=today).first()
+    policy = employee.attendance_policy()
+    open_record = bool(record and record.check_in and not record.check_out)
 
     ctx = _base_context(request, 'attendance')
     ctx.update({
@@ -179,7 +181,12 @@ def attendance(request):
         'can_remote': employee.work_mode in ('hybrid', 'remote'),
         'checkout_allowed': record.is_checkout_allowed() if record and record.check_in else False,
         'seconds_until_eligible': (record.seconds_until_eligible()
-                                   if record and record.check_in and not record.check_out else 0),
+                                   if open_record else 0),
+        # Timing this person actually works to -- their own shift if HR set one,
+        # otherwise the office default.
+        'policy': policy,
+        'has_custom_timing': employee.has_custom_timing,
+        'earliest_checkout': record.minimum_checkout_time() if open_record else None,
     })
     return render(request, 'staff/attendance.html', ctx)
 
