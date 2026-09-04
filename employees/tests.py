@@ -288,3 +288,148 @@ class CertificatePdfLayoutTests(TestCase):
         ctx = self._context()
         self.assertEqual(ctx['verify_host'], 'ralfizdigital.in')
         self.assertIn(str(self.cert.verification_id), ctx['verify_url'])
+
+
+class CertificateBodyRewriteTests(TestCase):
+    """The rewrite has to run against admin-authored prose, so cover its shapes."""
+
+    def _rewrite(self, body):
+        from employees.certificate_body_rewrite import rewrite_body
+        return rewrite_body(body)
+
+    def test_strips_lead_in_register_number_and_college(self):
+        body = (
+            'This is to certify that {salutation} {student_name} (Register No. {register_number}), '
+            'a student of {college_name}, has successfully completed an internship with '
+            '**Ralfiz Technologies** as a **{position}**.'
+        )
+        self.assertEqual(
+            self._rewrite(body),
+            'has successfully completed an internship with **Ralfiz Technologies** as a **{position}**.',
+        )
+
+    def test_strips_plain_lead_in(self):
+        body = 'This is to certify that {student_name} has completed the course.'
+        self.assertEqual(self._rewrite(body), 'has completed the course.')
+
+    def test_handles_of_college_without_a_comma(self):
+        body = 'We hereby certify that {salutation} {student_name} of {college_name} was an intern with us.'
+        self.assertEqual(self._rewrite(body), 'was an intern with us.')
+
+    def test_keeps_later_paragraphs_untouched(self):
+        body = (
+            'This is to certify that {salutation} {student_name} has completed the programme.\n\n'
+            '{pronoun_cap} was punctual throughout.\n\n{skills}'
+        )
+        self.assertEqual(
+            self._rewrite(body),
+            'has completed the programme.\n\n{pronoun_cap} was punctual throughout.\n\n{skills}',
+        )
+
+    def test_capitalises_when_the_remainder_is_not_a_continuation(self):
+        body = 'Certify {student_name} as a {position} for the stated period.'
+        self.assertEqual(self._rewrite(body), 'As a {position} for the stated period.')
+
+    def test_leaves_body_alone_when_the_name_is_mid_sentence(self):
+        body = 'During the programme {student_name} showed real promise.'
+        self.assertEqual(self._rewrite(body), body)
+
+    def test_leaves_body_alone_when_there_is_no_name_placeholder(self):
+        body = 'has successfully completed an internship with **Ralfiz Technologies**.'
+        self.assertEqual(self._rewrite(body), body)
+
+    def test_normalises_crlf_from_the_textarea(self):
+        body = 'This is to certify that {student_name} has completed it.\r\n\r\nWell done.'
+        self.assertEqual(self._rewrite(body), 'has completed it.\n\nWell done.')
+
+    def test_rewritten_body_unlocks_the_large_name(self):
+        from employees.certificate_pdf import build_context
+        cert = Certificate(
+            student_name='Fathima Nasrin',
+            salutation='Ms.',
+            gender='female',
+            date_of_issuance=date(2026, 9, 4),
+            body_text=self._rewrite(
+                'This is to certify that {salutation} {student_name} has completed the programme.'
+            ),
+        )
+        self.assertTrue(build_context(cert)['show_recipient_name'])
+
+
+class PromoteCertificateNamesCommandTests(TestCase):
+    OLD_BODY = (
+        'This is to certify that {salutation} {student_name} (Register No. {register_number}), '
+        'a student of {college_name}, has successfully completed an internship.'
+    )
+    NEW_BODY = 'has successfully completed an internship.'
+
+    def setUp(self):
+        from employees.models import CertificateTemplate
+        self.template = CertificateTemplate.objects.create(
+            name='Internship - Student',
+            certificate_type='inter',
+            title='INTERNSHIP CERTIFICATE',
+            body_text=self.OLD_BODY,
+        )
+
+    def _run(self, *args):
+        from io import StringIO
+        from django.core.management import call_command
+        out = StringIO()
+        call_command('promote_certificate_names', *args, stdout=out)
+        return out.getvalue()
+
+    def test_dry_run_reports_but_writes_nothing(self):
+        output = self._run()
+        self.assertIn('Dry run', output)
+        self.template.refresh_from_db()
+        self.assertEqual(self.template.body_text, self.OLD_BODY)
+
+    def test_apply_rewrites_the_template(self):
+        self._run('--apply')
+        self.template.refresh_from_db()
+        self.assertEqual(self.template.body_text, self.NEW_BODY)
+
+    def test_rerunning_is_a_no_op(self):
+        self._run('--apply')
+        output = self._run('--apply')
+        self.assertIn('0 to rewrite', output)
+
+    def test_certificates_are_left_alone_without_the_flag(self):
+        cert = Certificate.objects.create(
+            student_name='Fathima Nasrin', gender='female',
+            date_of_issuance=date(2026, 9, 4), body_text=self.OLD_BODY,
+        )
+        self._run('--apply')
+        cert.refresh_from_db()
+        self.assertEqual(cert.body_text, self.OLD_BODY)
+
+    def test_draft_certificates_are_rewritten_with_the_flag(self):
+        cert = Certificate.objects.create(
+            student_name='Fathima Nasrin', gender='female', status='draft',
+            date_of_issuance=date(2026, 9, 4), body_text=self.OLD_BODY,
+        )
+        self._run('--certificates', '--apply')
+        cert.refresh_from_db()
+        self.assertEqual(cert.body_text, self.NEW_BODY)
+
+    def test_published_certificates_need_the_extra_flag(self):
+        cert = Certificate.objects.create(
+            student_name='Fathima Nasrin', gender='female', status='published',
+            date_of_issuance=date(2026, 9, 4), body_text=self.OLD_BODY,
+        )
+        self._run('--certificates', '--apply')
+        cert.refresh_from_db()
+        self.assertEqual(cert.body_text, self.OLD_BODY)
+
+        self._run('--certificates', '--include-published', '--apply')
+        cert.refresh_from_db()
+        self.assertEqual(cert.body_text, self.NEW_BODY)
+
+    def test_warns_when_the_name_survives_later_in_the_body(self):
+        self.template.body_text = (
+            'This is to certify that {student_name} did well.\n\nWe thank {student_name}.'
+        )
+        self.template.save()
+        output = self._run()
+        self.assertIn('still appears later', output)
