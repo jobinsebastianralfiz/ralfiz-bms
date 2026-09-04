@@ -243,18 +243,16 @@ class CertificatePdfLayoutTests(TestCase):
         for name in ('SourceSerif4-400.ttf', 'SourceSerif4-700.ttf', 'Inter-400.ttf', 'Inter-600.ttf'):
             self.assertTrue((font_dir / name).exists(), f'missing bundled font {name}')
 
-    def test_name_is_promoted_when_the_body_does_not_use_it(self):
+    def test_the_name_is_always_set_in_the_pill(self):
         self.cert.body_text = 'has completed an internship with **Ralfiz Technologies**.'
-        ctx = self._context()
-        self.assertTrue(ctx['show_recipient_name'])
         html = self._html()
-        self.assertIn('This certificate is proudly presented to', html)
+        self.assertIn('This is to certify that', html)
         self.assertIn('Fathima Nasrin', html)
 
-    def test_name_is_not_printed_twice_for_older_bodies(self):
-        self.cert.body_text = 'This is to certify that {salutation} {student_name} did well.'
-        self.assertFalse(self._context()['show_recipient_name'])
-        self.assertNotIn('This certificate is proudly presented to', self._html())
+    def test_title_is_split_across_the_two_display_lines(self):
+        html = self._html()
+        self.assertIn('>CERTIFICATE<', html)
+        self.assertIn('OF INTERNSHIP', html)
 
     def test_recipient_subtitle_joins_register_number_and_college(self):
         self.cert.body_text = 'has completed an internship.'
@@ -271,7 +269,8 @@ class CertificatePdfLayoutTests(TestCase):
         from employees.certificate_pdf import _density
         self.assertEqual(_density('<p>Short and sweet.</p>', [], False), 'roomy')
         self.assertEqual(_density('<p>' + 'word ' * 130 + '</p>', [], False), 'normal')
-        self.assertEqual(_density('<p>' + 'word ' * 260 + '</p>', ['a', 'b'], False), 'dense')
+        self.assertEqual(_density('<p>' + 'word ' * 250 + '</p>', [], False), 'dense')
+        self.assertEqual(_density('<p>' + 'word ' * 320 + '</p>', ['a', 'b'], False), 'packed')
 
     def test_density_accounts_for_the_promoted_name_block(self):
         from employees.certificate_pdf import _density
@@ -433,3 +432,94 @@ class PromoteCertificateNamesCommandTests(TestCase):
         self.template.save()
         output = self._run()
         self.assertIn('still appears later', output)
+
+
+class CertificateTitleSplitTests(TestCase):
+    """The artboard sets a big CERTIFICATE over a letterspaced second line."""
+
+    def _split(self, title):
+        from employees.certificate_pdf import split_title
+        return split_title(title)
+
+    def test_trailing_certificate_becomes_the_second_line(self):
+        self.assertEqual(self._split('INTERNSHIP CERTIFICATE'), ('CERTIFICATE', 'OF INTERNSHIP'))
+
+    def test_existing_of_phrase_is_not_doubled(self):
+        self.assertEqual(self._split('Certificate of Merit'), ('CERTIFICATE', 'OF MERIT'))
+
+    def test_multi_word_type_is_kept(self):
+        self.assertEqual(self._split('COURSE COMPLETION CERTIFICATE'),
+                         ('CERTIFICATE', 'OF COURSE COMPLETION'))
+
+    def test_bare_certificate_has_no_second_line(self):
+        self.assertEqual(self._split('CERTIFICATE'), ('CERTIFICATE', ''))
+
+    def test_title_without_the_word_is_left_whole(self):
+        self.assertEqual(self._split('Letter of Appreciation'), ('LETTER OF APPRECIATION', ''))
+
+    def test_blank_title_falls_back(self):
+        self.assertEqual(self._split(''), ('CERTIFICATE', ''))
+
+
+class CertificatePaginationTests(TestCase):
+    """A body must never be silently cropped to make the page fit.
+
+    An earlier draft pinned the middle of the page with `position: fixed`,
+    which clipped the tail of a long body instead of showing it.
+    """
+
+    def setUp(self):
+        try:
+            import weasyprint  # noqa: F401
+        except OSError as exc:  # native Pango/Cairo libraries missing
+            self.skipTest(f'weasyprint unavailable: {exc}')
+
+    def _pages(self, cert):
+        import weasyprint
+        from django.template.loader import render_to_string
+        from employees.certificate_pdf import build_context
+        html = render_to_string('employees/certificate_pdf.html', build_context(cert))
+        return weasyprint.HTML(string=html).render().pages
+
+    def _cert(self, body, skills):
+        return Certificate(
+            certificate_number='RT/PR/26/inter/014',
+            title='INTERNSHIP CERTIFICATE',
+            salutation='Ms.',
+            student_name='Fathima Nasrin Abdul Rahman',
+            gender='female',
+            date_of_issuance=date(2026, 9, 4),
+            skills=skills,
+            body_text=body,
+            wish_text='We wish {pronoun} continued success in {possessive} future endeavours.',
+        )
+
+    def test_a_short_body_fits_on_one_page(self):
+        cert = self._cert('has completed an internship with **Ralfiz Technologies**.', [])
+        self.assertEqual(len(self._pages(cert)), 1)
+
+    def test_a_long_body_with_a_full_skills_list_fits_on_one_page(self):
+        body = (
+            'has successfully completed an internship with **Ralfiz Technologies** as a '
+            '**Flutter Developer Intern**, carried out in offline mode from 1st April 2026 '
+            'to 30th June 2026 over a period of 90 days.\n\n'
+            'Throughout this period she demonstrated a strong commitment to learning, '
+            'professional conduct and consistent punctuality, and gained hands-on '
+            'exposure to the following areas of practice:\n\n'
+            '{skills}\n\n'
+            'She completed all assigned responsibilities to our full satisfaction and '
+            'contributed positively to the team. She also took part in internal code '
+            'reviews, daily stand-ups and client demonstration sessions, and was '
+            'commended by the engineering team for the quality of her work.'
+        )
+        skills = [
+            'Cross-platform UI development with Flutter and Dart',
+            'State management using Provider and Riverpod',
+            'REST API integration and local persistence',
+            'Version control with Git and collaborative workflows',
+            'Firebase authentication, Firestore and Cloud Messaging',
+            'Responsive layouts for phone and tablet form factors',
+            'Unit and widget testing with the Flutter test framework',
+            'Play Store release builds, signing and store listings',
+        ]
+        self.assertEqual(len(self._pages(self._cert(body, skills))), 1)

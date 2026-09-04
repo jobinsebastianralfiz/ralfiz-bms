@@ -30,9 +30,13 @@ def _asset_uris():
         'bottom_graphics': (static_dir / 'bottom_graphics.png').as_uri(),
         # Fonts are bundled because the Railway image ships no system fonts.
         'font_dir': (static_dir / 'fonts').as_uri(),
-        # Engraved line work; see the build_certificate_guilloche command.
-        'guilloche_rosette': (static_dir / 'guilloche_rosette.png').as_uri(),
-        'guilloche_border': (static_dir / 'guilloche_border.png').as_uri(),
+        # The navy design: WeasyPrint has no filter or blur, so the gradient
+        # field and the white knockouts are pre-rendered.
+        'certificate_bg': (static_dir / 'certificate_bg.png').as_uri(),
+        'header_logo_white': (static_dir / 'headerlogo_white.png').as_uri(),
+        'rt_mark_white': (static_dir / 'rt_mark_white.png').as_uri(),
+        'signature_white': (static_dir / 'jobin_signature_white.png').as_uri(),
+        'seal_white': (static_dir / 'seal_white.png').as_uri(),
     }
 
 
@@ -56,6 +60,32 @@ def _recipient_subtitle(certificate):
     return ' · '.join(parts)
 
 
+def split_title(title):
+    """Split a stored title into the design's two lines.
+
+    The artboard sets a large CERTIFICATE over a letterspaced "OF INTERNSHIP".
+    Titles are stored as one field, so "INTERNSHIP CERTIFICATE" becomes
+    ("CERTIFICATE", "OF INTERNSHIP") and "CERTIFICATE OF MERIT" becomes
+    ("CERTIFICATE", "OF MERIT"). A title with no such word is left whole.
+    """
+    import re
+
+    raw = (title or '').strip()
+    if not raw:
+        return 'CERTIFICATE', ''
+
+    words = raw.upper().split()
+    if 'CERTIFICATE' not in words:
+        return raw.upper(), ''
+
+    rest = ' '.join(w for w in words if w != 'CERTIFICATE').strip()
+    if not rest:
+        return 'CERTIFICATE', ''
+    if not rest.startswith('OF '):
+        rest = f'OF {rest}'
+    return 'CERTIFICATE', re.sub(r'\s+', ' ', rest)
+
+
 def _density(rendered_body, skills, show_recipient_name):
     """How tightly to set the prose so the certificate stays on one page.
 
@@ -76,7 +106,9 @@ def _density(rendered_body, skills, show_recipient_name):
         return 'roomy'
     if length < 980:
         return 'normal'
-    return 'dense'
+    if length < 1450:
+        return 'dense'
+    return 'packed'
 
 
 def build_context(certificate, request=None):
@@ -97,8 +129,12 @@ def build_context(certificate, request=None):
     name = (certificate.student_name or '').strip()
     show_recipient_name = bool(name) and name.lower() not in rendered_body.lower()
 
+    title_main, title_sub = split_title(certificate.title)
+
     context = {
         'cert': certificate,
+        'title_main': title_main,
+        'title_sub': title_sub,
         'qr_base64': _qr_base64(verify_url),
         'verify_url': verify_url,
         'verify_host': verify_host,
@@ -106,7 +142,9 @@ def build_context(certificate, request=None):
         'wish_text': certificate.render_wish_text(),
         'date_of_issuance_fmt': certificate.date_of_issuance.strftime('%d %B %Y'),
         'show_recipient_name': show_recipient_name,
-        'density': _density(rendered_body, certificate.skills, show_recipient_name),
+        # The navy design always prints the name in its pill, so the block
+        # always costs vertical space regardless of what the body says.
+        'density': _density(rendered_body, certificate.skills, True),
         'recipient_sub': _recipient_subtitle(certificate),
     }
     context.update(_asset_uris())
