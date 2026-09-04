@@ -844,6 +844,15 @@ class Certificate(models.Model):
             'pronoun_possessive': self.possessive,
             'object_pronoun': self.object_pronoun,
             'pronoun_object': self.object_pronoun,
+            # Aliases. The shipped Experience and Internship templates were
+            # written against these names, and an unknown placeholder renders
+            # as a literal "{issue_date}" on the certificate.
+            'employee_name': self.student_name,
+            'name': self.student_name,
+            'designation': self.position or self.course_name or '',
+            'responsibilities': self._skills_html(),
+            'issue_date': self._format_date(self.date_of_issuance) if self.date_of_issuance else '',
+            'company_name': 'Ralfiz Technologies',
         }
 
     @staticmethod

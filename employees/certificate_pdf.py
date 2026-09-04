@@ -41,9 +41,21 @@ def _asset_uris():
 
 
 def _qr_base64(verify_url):
+    """A scannable QR: 4 modules of quiet zone, as the spec requires.
+
+    It used to be generated with `border=1` and then given a `border-radius`
+    in CSS, which rounded away part of all three corner finder patterns and
+    left the code unreadable. The quiet zone lives in the image now, and the
+    rounding is on a white tile behind it.
+    """
     import qrcode
 
-    qr = qrcode.QRCode(version=1, box_size=10, border=1)
+    qr = qrcode.QRCode(
+        version=None,
+        box_size=10,
+        border=4,
+        error_correction=qrcode.constants.ERROR_CORRECT_M,
+    )
     qr.add_data(verify_url)
     qr.make(fit=True)
     buffer = BytesIO()
@@ -114,11 +126,16 @@ def _density(rendered_body, skills, show_recipient_name):
 def build_context(certificate, request=None):
     """Everything `employees/certificate_pdf.html` needs."""
     path = f'/api/employees/certificates/verify/{certificate.verification_id}/'
+    # The QR encodes the short alias; 96 characters of API path pushed the
+    # code to 49 modules, under half a millimetre each on the printed page.
+    short_path = f'/v/{certificate.verification_id}/'
     if request is not None:
         verify_url = request.build_absolute_uri(path)
+        qr_url = request.build_absolute_uri(short_path)
         verify_host = request.get_host().split(':')[0]
     else:
         verify_url = f'https://ralfizdigital.in{path}'
+        qr_url = f'https://ralfizdigital.in{short_path}'
         verify_host = 'ralfizdigital.in'
 
     rendered_body = certificate.render_body_html()
@@ -135,7 +152,8 @@ def build_context(certificate, request=None):
         'cert': certificate,
         'title_main': title_main,
         'title_sub': title_sub,
-        'qr_base64': _qr_base64(verify_url),
+        'qr_base64': _qr_base64(qr_url),
+        'qr_url': qr_url,
         'verify_url': verify_url,
         'verify_host': verify_host,
         'rendered_body': rendered_body,

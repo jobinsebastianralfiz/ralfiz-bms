@@ -42,15 +42,15 @@ class Command(BaseCommand):
         # baked into the source lockup has to be cut away first.
         self._to_white(Image, out_dir / 'headerlogo_alpha.png').save(out_dir / 'headerlogo_white.png')
         self.stdout.write(self.style.SUCCESS(f'wrote {out_dir / "headerlogo_white.png"}'))
-        mark = self._to_white(Image, out_dir / 'headerlogo_alpha.png')
-        self._first_glyph_group(Image, mark).save(out_dir / 'rt_mark_white.png')
+        mark = self._first_glyph_group(Image, self._to_white(Image, out_dir / 'headerlogo_alpha.png'))
+        mark.save(out_dir / 'rt_mark_white.png')
         self.stdout.write(self.style.SUCCESS(f'wrote {out_dir / "rt_mark_white.png"}'))
         for source, target in (('jobin_signature.png', 'jobin_signature_white.png'),
                                ('seal.png', 'seal_white.png')):
             self._inverted(Image, self._keyed_out(Image, out_dir / source)).save(out_dir / target)
             self.stdout.write(self.style.SUCCESS(f'wrote {out_dir / target}'))
 
-        self._background(Image, 1122, 794).save(out_dir / 'certificate_bg.png')
+        self._background(Image, 1122, 794, watermark=mark).save(out_dir / 'certificate_bg.png')
         self.stdout.write(self.style.SUCCESS(f'wrote {out_dir / "certificate_bg.png"}'))
 
     @staticmethod
@@ -124,7 +124,7 @@ class Command(BaseCommand):
         r, g, b = ImageChops.invert(rgb).split()
         return Image.merge('RGBA', (r, g, b, a))
 
-    def _background(self, Image, width, height, scale=3):
+    def _background(self, Image, width, height, scale=3, watermark=None):
         """The navy field: a linear gradient under four blurred radial glows.
 
         Sizes are the design's CSS pixels; `scale` renders above print
@@ -168,6 +168,12 @@ class Command(BaseCommand):
                 alpha = layer.getchannel('A').point(lambda v: int(v * opacity))
                 layer.putalpha(alpha)
             canvas = Image.alpha_composite(canvas, layer)
+
+        # A soft, oversized RT mark sitting in the field. Under the scrim, so
+        # the foot stays dark enough for the address line.
+        if watermark is not None:
+            canvas = Image.alpha_composite(
+                canvas, self._watermark(Image, watermark, w, h, scale))
 
         # Scrim along the foot so the footer type keeps its contrast.
         scrim = self._vertical_scrim(np, w, h, 190 * scale,
@@ -223,3 +229,30 @@ class Command(BaseCommand):
         alphas = np.array([a for _, a in stops], dtype=float)
         out[:, :, 3] = np.interp(t, positions, alphas)[:, None] * 255
         return out.astype('uint8')
+
+    @staticmethod
+    def _watermark(Image, mark, w, h, scale, coverage=0.52, opacity=0.085, blur=6):
+        """The company mark, blown up, softened and dropped to a whisper.
+
+        Only the mark's alpha is used, as a stencil for flat white, and the
+        layer is built by setting that alpha on a fully white canvas. Pasting
+        with an alpha mask instead blends the white toward the transparent
+        layer's black and yields a dim grey smudge; blurring the source RGBA
+        drags its colour channels in as well.
+        """
+        from PIL import ImageFilter
+
+        target_w = int(w * coverage)
+        target_h = max(1, round(mark.height * target_w / mark.width))
+
+        stencil = (mark.getchannel('A')
+                   .resize((target_w, target_h), Image.LANCZOS)
+                   .filter(ImageFilter.GaussianBlur(blur * scale))
+                   .point(lambda v: int(v * opacity)))
+
+        full = Image.new('L', (w, h), 0)
+        full.paste(stencil, ((w - target_w) // 2, (h - target_h) // 2))
+
+        layer = Image.new('RGBA', (w, h), (255, 255, 255, 0))
+        layer.putalpha(full)
+        return layer

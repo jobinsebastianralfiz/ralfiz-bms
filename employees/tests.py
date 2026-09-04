@@ -329,6 +329,27 @@ class CertificateBodyRewriteTests(TestCase):
         body = 'Certify {student_name} as a {position} for the stated period.'
         self.assertEqual(self._rewrite(body), 'As a {position} for the stated period.')
 
+    def test_strips_a_bold_wrapped_name(self):
+        body = ('This is to certify that **{salutation} {student_name}** has successfully '
+                'completed an internship at **Ralfiz Technologies**.')
+        self.assertEqual(
+            self._rewrite(body),
+            'has successfully completed an internship at **Ralfiz Technologies**.',
+        )
+
+    def test_strips_a_bold_name_with_a_bold_college(self):
+        body = ('This is to certify that **{salutation} {student_name}**, a student of '
+                '**{college_name}**, has successfully completed the **{course_name}**.')
+        self.assertEqual(
+            self._rewrite(body),
+            'has successfully completed the **{course_name}**.',
+        )
+
+    def test_drops_a_trailing_issue_date_line(self):
+        body = ('This is to certify that **{student_name}** did well.\n\n'
+                'Well done.\n\nDate: {issue_date}')
+        self.assertEqual(self._rewrite(body), 'did well.\n\nWell done.')
+
     def test_leaves_body_alone_when_the_name_is_mid_sentence(self):
         body = 'During the programme {student_name} showed real promise.'
         self.assertEqual(self._rewrite(body), body)
@@ -523,3 +544,87 @@ class CertificatePaginationTests(TestCase):
             'Play Store release builds, signing and store listings',
         ]
         self.assertEqual(len(self._pages(self._cert(body, skills))), 1)
+
+
+class CertificateQrTests(TestCase):
+    """The QR is the only way a reader can check a certificate is genuine."""
+
+    def setUp(self):
+        self.cert = Certificate(
+            certificate_number='RT/PR/26/inter/014',
+            title='INTERNSHIP CERTIFICATE',
+            student_name='Fathima Nasrin',
+            gender='female',
+            date_of_issuance=date(2026, 9, 4),
+            body_text='has completed an internship.',
+        )
+
+    def _context(self):
+        from employees.certificate_pdf import build_context
+        return build_context(self.cert)
+
+    def _qr_image(self):
+        import base64
+        from io import BytesIO
+        from PIL import Image
+        return Image.open(BytesIO(base64.b64decode(self._context()['qr_base64']))).convert('L')
+
+    def test_it_encodes_the_short_verification_url(self):
+        ctx = self._context()
+        self.assertEqual(ctx['qr_url'],
+                         f'https://ralfizdigital.in/v/{self.cert.verification_id}/')
+
+    def test_the_short_url_resolves_to_the_verification_page(self):
+        from django.urls import resolve
+        match = resolve(f'/v/{self.cert.verification_id}/')
+        self.assertEqual(match.url_name, 'certificate_verify_short')
+
+    def test_it_carries_the_four_module_quiet_zone_the_spec_requires(self):
+        img = self._qr_image()
+        width = img.width
+        # Deduce the module size from the top-left finder pattern, which is
+        # 7 modules wide and starts right after the quiet zone.
+        row = [img.getpixel((x, width // 2)) for x in range(width)]
+        first_dark = next(x for x, v in enumerate(row) if v < 128)
+        # qrcode renders at box_size 10, so a 4-module border is 40px.
+        self.assertGreaterEqual(first_dark, 40)
+
+    def test_the_code_is_never_clipped_by_rounded_corners(self):
+        """The rounding belongs to the tile behind it, not to the code."""
+        from django.template.loader import render_to_string
+        html = render_to_string('employees/certificate_pdf.html', self._context())
+        qr_rule = html.split('.verify img.qr {')[1].split('}')[0]
+        self.assertNotIn('border-radius', qr_rule)
+        self.assertIn('.verify .qr-tile', html)
+
+
+class CertificatePlaceholderAliasTests(TestCase):
+    """Templates HR had already written used names the renderer did not know."""
+
+    def _cert(self, body):
+        return Certificate(
+            student_name='Ravi Kumar',
+            gender='male',
+            position='Flutter Developer Intern',
+            skills=['Flutter', 'Dart'],
+            date_of_issuance=date(2026, 9, 4),
+            body_text=body,
+        )
+
+    def test_employee_name_resolves_to_the_recipient(self):
+        html = self._cert('Certifying {employee_name}.').render_body_html()
+        self.assertIn('Ravi Kumar', html)
+        self.assertNotIn('{employee_name}', html)
+
+    def test_designation_falls_back_to_the_position(self):
+        html = self._cert('Engaged as {designation}.').render_body_html()
+        self.assertIn('Flutter Developer Intern', html)
+
+    def test_responsibilities_renders_the_skills_list(self):
+        html = self._cert('Duties:\n\n{responsibilities}').render_body_html()
+        self.assertIn('<li>Flutter</li>', html)
+
+    def test_issue_date_renders_a_real_date(self):
+        html = self._cert('Date: {issue_date}').render_body_html()
+        self.assertIn('4th September 2026', html)
+        self.assertNotIn('{issue_date}', html)
