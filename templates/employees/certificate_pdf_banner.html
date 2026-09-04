@@ -1,0 +1,288 @@
+{% comment %}Portrait, modern: title reversed out of a deep green banner.{% endcomment %}
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+    @font-face { font-family: 'RalfizSerif'; src: url({{ font_dir }}/SourceSerif4-400.ttf) format('truetype'); font-weight: 400; font-style: normal; }
+    @font-face { font-family: 'RalfizSerif'; src: url({{ font_dir }}/SourceSerif4-400i.ttf) format('truetype'); font-weight: 400; font-style: italic; }
+    @font-face { font-family: 'RalfizSerif'; src: url({{ font_dir }}/SourceSerif4-600.ttf) format('truetype'); font-weight: 600; font-style: normal; }
+    @font-face { font-family: 'RalfizSerif'; src: url({{ font_dir }}/SourceSerif4-700.ttf) format('truetype'); font-weight: 700; font-style: normal; }
+    @font-face { font-family: 'RalfizSans'; src: url({{ font_dir }}/Inter-400.ttf) format('truetype'); font-weight: 400; font-style: normal; }
+    @font-face { font-family: 'RalfizSans'; src: url({{ font_dir }}/Inter-500.ttf) format('truetype'); font-weight: 500; font-style: normal; }
+    @font-face { font-family: 'RalfizSans'; src: url({{ font_dir }}/Inter-600.ttf) format('truetype'); font-weight: 600; font-style: normal; }
+    @font-face { font-family: 'RalfizSans'; src: url({{ font_dir }}/Inter-700.ttf) format('truetype'); font-weight: 700; font-style: normal; }
+
+    @page { size: A4; margin: 0; }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+        font-family: 'RalfizSans', sans-serif;
+        color: #333f39;
+        background: #ffffff;
+        hyphens: none;
+    }
+
+    /* ---------- Banner ---------- */
+    .banner {
+        position: fixed;
+        top: 0; left: 0; right: 0;
+        height: 72mm;
+        background: linear-gradient(160deg, #10402d 0%, #17583e 55%, #1d6b4a 100%);
+        z-index: 1;
+    }
+
+    /* Lime blade slicing across the banner's foot */
+    .blade {
+        position: fixed;
+        top: 63mm; left: 0; right: 0;
+        height: 9mm;
+        background: #95cf5f;
+        transform: skewY(-1.4deg);
+        z-index: 2;
+    }
+
+    .blade-dark {
+        position: fixed;
+        top: 66.5mm; left: 0; right: 0;
+        height: 6mm;
+        background: #143d2c;
+        transform: skewY(-1.4deg);
+        z-index: 1;
+    }
+
+    .banner-content {
+        padding: 18mm 20mm 0 20mm;
+        text-align: center;
+    }
+
+    .banner .eyebrow {
+        font-size: 7pt;
+        font-weight: 600;
+        letter-spacing: 3.4px;
+        text-transform: uppercase;
+        color: #95cf5f;
+    }
+
+    .banner .title {
+        margin-top: 5mm;
+        font-family: 'RalfizSerif', serif;
+        font-size: 30pt;
+        font-weight: 700;
+        line-height: 1.12;
+        letter-spacing: 3.5px;
+        text-transform: uppercase;
+        color: #ffffff;
+    }
+
+    /* ---------- Content ---------- */
+    .sheet {
+        position: relative;
+        z-index: 4;
+        padding: 86mm 24mm 0 24mm;
+        text-align: center;
+        min-height: 224mm;
+    }
+
+    .presented {
+        font-size: 7.5pt;
+        font-weight: 600;
+        letter-spacing: 2.4px;
+        text-transform: uppercase;
+        color: #7d8d84;
+    }
+
+    .name {
+        margin-top: 3mm;
+        font-family: 'RalfizSerif', serif;
+        font-size: 27pt;
+        font-weight: 600;
+        line-height: 1.22;
+        color: #17583e;
+    }
+
+    .name-rule {
+        width: 78mm;
+        height: 1.1mm;
+        margin: 4mm auto 0;
+        background: linear-gradient(90deg, #ffffff, #95cf5f 30%, #17583e 50%, #95cf5f 70%, #ffffff);
+    }
+
+    .name-sub {
+        margin-top: 3mm;
+        font-size: 8.5pt;
+        color: #7d8d84;
+    }
+
+    .prose { width: 156mm; margin: 8mm auto 0; }
+
+    .body-text {
+        font-family: 'RalfizSerif', serif;
+        font-size: 11pt;
+        line-height: 1.8;
+        color: #333f39;
+        margin: 0 0 3.5mm;
+    }
+
+    .body-text:last-child { margin-bottom: 0; }
+    .body-text strong { font-weight: 600; color: #143d2c; }
+
+    .skills-list {
+        list-style: none;
+        margin: 6mm 0;
+        padding: 4mm 5mm;
+        background: #f4f9f1;
+        border-left: 1.2mm solid #95cf5f;
+        column-count: 2;
+        column-gap: 8mm;
+        text-align: left;
+    }
+
+    .skills-list li {
+        font-size: 8.8pt;
+        line-height: 1.55;
+        color: #3d4a43;
+        margin-bottom: 1.6mm;
+        padding-left: 4.5mm;
+        position: relative;
+        break-inside: avoid;
+    }
+
+    .skills-list li:before {
+        content: "";
+        position: absolute;
+        left: 0; top: 4.5px;
+        width: 3.4px; height: 3.4px;
+        background: #17583e;
+        transform: rotate(45deg);
+    }
+
+    .wish {
+        margin-top: 6mm;
+        font-family: 'RalfizSerif', serif;
+        font-style: italic;
+        font-size: 10.5pt;
+        color: #55635c;
+    }
+
+    /* ---------- Footer ---------- */
+    .footer {
+        position: relative;
+        z-index: 4;
+        margin: 0 24mm;
+        padding-bottom: 17mm;
+    }
+
+    .footer table { width: 100%; border-collapse: collapse; }
+    .footer td { padding: 0; vertical-align: bottom; }
+
+    .sign { width: 38%; }
+    .sign img { height: 15mm; display: block; margin-bottom: -1mm; }
+    .sign .line { width: 52mm; border-top: 1pt solid #17583e; margin-bottom: 2mm; }
+    .sign .who { font-family: 'RalfizSerif', serif; font-size: 12pt; font-weight: 600; color: #143d2c; }
+    .sign .role { font-size: 6.5pt; font-weight: 600; letter-spacing: 1.4px; text-transform: uppercase; color: #6f7d76; line-height: 1.7; }
+
+    .seal { width: 24%; text-align: center; }
+    .seal img { height: 23mm; }
+
+    .verify { width: 38%; text-align: right; }
+    .verify img { width: 19mm; height: 19mm; }
+    .verify .cap { font-size: 6pt; font-weight: 600; letter-spacing: 1.3px; text-transform: uppercase; color: #6f7d76; margin-top: 1.5mm; line-height: 1.6; }
+    .verify .host { font-size: 6.5pt; color: #96a29a; }
+
+    .rule { border-top: 0.6pt solid #dbe4de; margin: 6mm 0 4mm; }
+
+    .colophon { width: 100%; border-collapse: collapse; }
+    .colophon td { padding: 0; vertical-align: middle; }
+    .colophon img { height: 8mm; }
+    .colophon .meta { text-align: right; font-size: 7pt; color: #7d8d84; line-height: 1.7; }
+
+    /* Brand chevron along the very bottom */
+    .chevron {
+        position: fixed;
+        bottom: 0; left: 0; right: 0;
+        height: 10mm;
+        background-repeat: no-repeat;
+        background-position: center bottom;
+        background-size: 100% auto;
+        z-index: 2;
+    }
+
+    /* ---------- Density ---------- */
+    body.roomy .body-text { font-size: 12.5pt; line-height: 2; margin-bottom: 5mm; }
+    body.roomy .prose { margin-top: 13mm; }
+    body.roomy .name { font-size: 30pt; }
+    body.roomy .wish { margin-top: 11mm; }
+
+    body.dense .banner { height: 66mm; }
+    body.dense .blade { top: 57mm; }
+    body.dense .blade-dark { top: 60.5mm; }
+    body.dense .banner .title { font-size: 26pt; }
+    body.dense .sheet { padding-top: 78mm; min-height: 218mm; }
+    body.dense .name { font-size: 23pt; }
+    body.dense .prose { margin-top: 5mm; width: 162mm; }
+    body.dense .body-text { font-size: 9.8pt; line-height: 1.62; margin-bottom: 2.6mm; }
+    body.dense .skills-list { margin: 4mm 0; padding: 3mm 4mm; }
+    body.dense .skills-list li { font-size: 8pt; line-height: 1.45; margin-bottom: 1mm; }
+    body.dense .wish { margin-top: 4mm; font-size: 9.8pt; }
+</style>
+</head>
+<body class="{{ density }}">
+    <div class="banner">
+        <div class="banner-content">
+            <div class="eyebrow">Ralfiz Technologies &nbsp;&middot;&nbsp; Perinthalmanna, Kerala</div>
+            <h1 class="title">{{ cert.title }}</h1>
+        </div>
+    </div>
+    <div class="blade-dark"></div>
+    <div class="blade"></div>
+    <div class="chevron" style="background-image: url({{ bottom_graphics }})"></div>
+
+    <div class="sheet">
+        {% if show_recipient_name %}
+        <div class="presented">This certificate is proudly presented to</div>
+        <div class="name">{{ cert.salutation }} {{ cert.student_name }}</div>
+        <div class="name-rule"></div>
+        {% if recipient_sub %}<div class="name-sub">{{ recipient_sub }}</div>{% endif %}
+        {% endif %}
+
+        <div class="prose">
+            {{ rendered_body|safe }}
+            {% if wish_text %}<p class="wish">{{ wish_text }}</p>{% endif %}
+        </div>
+    </div>
+
+    <div class="footer">
+        <table>
+            <tr>
+                <td class="sign">
+                    <img src="{{ signature }}" alt="Signature">
+                    <div class="line"></div>
+                    <div class="who">Jobin Sebastian</div>
+                    <div class="role">Managing Director</div>
+                    <div class="role">Ralfiz Technologies</div>
+                </td>
+                <td class="seal"><img src="{{ seal }}" alt="Company Seal"></td>
+                <td class="verify">
+                    <img src="data:image/png;base64,{{ qr_base64 }}" alt="Verification QR code">
+                    <div class="cap">Scan to verify</div>
+                    <div class="host">{{ verify_host }}</div>
+                </td>
+            </tr>
+        </table>
+
+        <div class="rule"></div>
+
+        <table class="colophon">
+            <tr>
+                <td><img src="{{ header_logo_alpha }}" alt="Ralfiz Technologies"></td>
+                <td class="meta">
+                    Certificate No. {{ cert.certificate_number }} &nbsp;&middot;&nbsp; Issued {{ date_of_issuance_fmt }}<br>
+                    Level 2, KIMS Avenue, Pattambi Road, Perinthalmanna &nbsp;&middot;&nbsp; info@ralfiz.com
+                </td>
+            </tr>
+        </table>
+    </div>
+</body>
+</html>

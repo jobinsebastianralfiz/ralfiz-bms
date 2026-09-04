@@ -21,12 +21,18 @@ def _asset_uris():
     static_dir = settings.BASE_DIR / 'static' / 'certificates'
     return {
         'header_logo': (static_dir / 'headerlogo.png').as_uri(),
+        # Keyed-out variants for tinted stock; see build_certificate_assets.
+        'header_logo_alpha': (static_dir / 'headerlogo_alpha.png').as_uri(),
+        'footer_logo_alpha': (static_dir / 'footer_right_logo_alpha.png').as_uri(),
         'signature': (static_dir / 'jobin_signature.png').as_uri(),
         'seal': (static_dir / 'seal.png').as_uri(),
         'footer_logo': (static_dir / 'footer_right_logo.png').as_uri(),
         'bottom_graphics': (static_dir / 'bottom_graphics.png').as_uri(),
         # Fonts are bundled because the Railway image ships no system fonts.
         'font_dir': (static_dir / 'fonts').as_uri(),
+        # Engraved line work; see the build_certificate_guilloche command.
+        'guilloche_rosette': (static_dir / 'guilloche_rosette.png').as_uri(),
+        'guilloche_border': (static_dir / 'guilloche_border.png').as_uri(),
     }
 
 
