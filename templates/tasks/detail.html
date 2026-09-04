@@ -160,10 +160,10 @@
         <div id="comments" style="margin-top:.5rem;">
           {% for c in comments %}
           <div class="comment">
-            <div class="avatar">{{ c.author.get_full_name|default:c.author.username|slice:":1"|upper }}</div>
+            <div class="avatar">{% firstof c.author.get_full_name c.author.username "?" as c_name %}{{ c_name|slice:":1"|upper }}</div>
             <div style="flex:1; min-width:0;">
               <div class="comment-head">
-                <span class="comment-author">{{ c.author.get_full_name|default:c.author.username }}</span>
+                <span class="comment-author">{% firstof c.author.get_full_name c.author.username "Unknown" %}</span>
                 <span class="comment-meta">· {{ c.created_at|date:"d M Y, H:i" }}</span>
                 {% if c.is_visible_to_client %}<span class="chip chip-client"><i class="fas fa-eye"></i> Client</span>{% endif %}
               </div>
@@ -190,8 +190,8 @@
                 {% if not r.is_deleted %}
                 <div class="reply-block" style="margin-top:.75rem;">
                   <div class="comment-head">
-                    <div class="avatar" style="width:28px; height:28px; font-size:.75rem;">{{ r.author.get_full_name|default:r.author.username|slice:":1"|upper }}</div>
-                    <span class="comment-author">{{ r.author.get_full_name|default:r.author.username }}</span>
+                    <div class="avatar" style="width:28px; height:28px; font-size:.75rem;">{% firstof r.author.get_full_name r.author.username "?" as r_name %}{{ r_name|slice:":1"|upper }}</div>
+                    <span class="comment-author">{% firstof r.author.get_full_name r.author.username "Unknown" %}</span>
                     <span class="comment-meta">· {{ r.created_at|date:"d M Y, H:i" }}</span>
                     {% if r.is_visible_to_client %}<span class="chip chip-client">Client</span>{% endif %}
                   </div>
@@ -225,7 +225,7 @@
               <div class="issue-title" style="margin-top:.4rem;">{{ i.title }}</div>
               {% if i.description %}<div style="color:#475569; font-size:.85rem; margin-top:.35rem; white-space:pre-wrap;">{{ i.description|linebreaksbr }}</div>{% endif %}
               <div class="issue-meta" style="margin-top:.5rem;">
-                Reported by {{ i.reporter.get_full_name|default:i.reporter.username }} · {{ i.created_at|date:"d M Y" }}
+                Reported by {% firstof i.reporter.get_full_name i.reporter.username "Unknown" %} · {{ i.created_at|date:"d M Y" }}
                 {% if i.assignee %}· Assigned to {{ i.assignee.name }}{% endif %}
                 {% if i.resolution %}<div style="margin-top:.35rem;"><strong>Resolution:</strong> {{ i.resolution }}</div>{% endif %}
               </div>
@@ -249,7 +249,7 @@
         <div class="activity-row">
           <span class="activity-dot"></span>
           <div>
-            <strong>{{ a.actor.get_full_name|default:a.actor.username }}</strong>
+            <strong>{% firstof a.actor.get_full_name a.actor.username "System" %}</strong>
             {% if a.verb == 'status_changed' %}
               changed status <span class="chip chip-stat-closed">{{ a.from_value }}</span> → <span class="chip chip-stat-in_progress">{{ a.to_value }}</span>
             {% elif a.verb == 'commented' %}

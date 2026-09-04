@@ -3,331 +3,523 @@
 <head>
 <meta charset="utf-8">
 <style>
+    /* ==========================================================
+       Fonts are bundled in the repo and loaded over file:// so the
+       PDF renders identically here and on Railway, whose slim image
+       ships no system fonts at all.
+       ========================================================== */
+    @font-face {
+        font-family: 'RalfizSerif';
+        src: url({{ font_dir }}/SourceSerif4-400.ttf) format('truetype');
+        font-weight: 400; font-style: normal;
+    }
+    @font-face {
+        font-family: 'RalfizSerif';
+        src: url({{ font_dir }}/SourceSerif4-400i.ttf) format('truetype');
+        font-weight: 400; font-style: italic;
+    }
+    @font-face {
+        font-family: 'RalfizSerif';
+        src: url({{ font_dir }}/SourceSerif4-600.ttf) format('truetype');
+        font-weight: 600; font-style: normal;
+    }
+    @font-face {
+        font-family: 'RalfizSerif';
+        src: url({{ font_dir }}/SourceSerif4-700.ttf) format('truetype');
+        font-weight: 700; font-style: normal;
+    }
+    @font-face {
+        font-family: 'RalfizSans';
+        src: url({{ font_dir }}/Inter-400.ttf) format('truetype');
+        font-weight: 400; font-style: normal;
+    }
+    @font-face {
+        font-family: 'RalfizSans';
+        src: url({{ font_dir }}/Inter-500.ttf) format('truetype');
+        font-weight: 500; font-style: normal;
+    }
+    @font-face {
+        font-family: 'RalfizSans';
+        src: url({{ font_dir }}/Inter-600.ttf) format('truetype');
+        font-weight: 600; font-style: normal;
+    }
+    @font-face {
+        font-family: 'RalfizSans';
+        src: url({{ font_dir }}/Inter-700.ttf) format('truetype');
+        font-weight: 700; font-style: normal;
+    }
+
     @page {
         size: A4;
         margin: 0;
     }
 
-    * {
-        margin: 0;
-        padding: 0;
-        box-sizing: border-box;
-    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
 
     body {
-        font-family: 'Helvetica Neue', 'Arial', 'Helvetica', sans-serif;
-        color: #222;
-        font-size: 14px;
+        font-family: 'RalfizSans', sans-serif;
+        color: #333f39;
+        font-size: 11pt;
         line-height: 1.7;
+        hyphens: none;
     }
 
-    /* ========== BOTTOM GRAPHICS ========== */
+    /* ========== FRAME ==========
+       Fixed, so it repeats identically on a second page if a very
+       long body ever spills over. */
+    .frame-outer,
+    .frame-inner {
+        position: fixed;
+        z-index: 3;
+    }
+
+    .frame-outer {
+        top: 9mm; right: 9mm; bottom: 9mm; left: 9mm;
+        border: 1.6pt solid #286a4d;
+    }
+
+    .frame-inner {
+        top: 11.6mm; right: 11.6mm; bottom: 11.6mm; left: 11.6mm;
+        border: 0.6pt solid #95cf5f;
+    }
+
+    /* Corner diamonds sitting on the inner rule */
+    .corner {
+        position: fixed;
+        width: 7px;
+        height: 7px;
+        background: #286a4d;
+        transform: rotate(45deg);
+        z-index: 4;
+    }
+    .corner.tl { top: 10.3mm; left: 10.3mm; }
+    .corner.tr { top: 10.3mm; right: 10.3mm; }
+    .corner.bl { bottom: 10.3mm; left: 10.3mm; }
+    .corner.br { bottom: 10.3mm; right: 10.3mm; }
+
+    /* ========== BOTTOM GRAPHIC ==========
+       Tucked inside the frame so the brand shape reads as part of the
+       certificate rather than running off the paper. */
     .bottom-graphics {
         position: fixed;
-        bottom: -1px;
-        left: 0;
-        right: 0;
+        bottom: 9mm;
+        left: 9mm;
+        right: 9mm;
+        height: 15mm;
+        background-repeat: no-repeat;
+        background-position: center bottom;
+        background-size: 100% auto;
         z-index: 1;
-        overflow: hidden;
-    }
-
-    .bottom-graphics img {
-        width: 100%;
-        height: auto;
-        display: block;
     }
 
     /* ========== WATERMARK ========== */
     .watermark {
         position: fixed;
-        top: 28%;
+        top: 105mm;
         left: 50%;
-        transform: translateX(-50%);
-        opacity: 0.045;
-        z-index: -1;
+        margin-left: -48mm;
+        width: 96mm;
+        opacity: 0.02;
+        z-index: 0;
     }
 
-    .watermark img {
-        width: 400px;
-    }
+    .watermark img { width: 96mm; display: block; }
 
-    /* ========== CONTENT ========== */
+    /* ========== LAYOUT ========== */
     .content {
-        padding: 28mm 30mm 25mm 30mm;
+        position: relative;
+        z-index: 2;
+        padding: 16mm 22mm 0 22mm;
+        /* Holds the signature block down at the foot of page one for a
+           short certificate, and lets a long one push it over cleanly. */
+        min-height: 216mm;
     }
 
-    /* ========== HEADER ROW: logo left, badge right ========== */
-    .header-row {
+    /* ========== HEADER ========== */
+    .header {
         width: 100%;
         border-collapse: collapse;
-        margin-bottom: 55px;
     }
 
-    .header-row td {
-        padding: 0;
-        vertical-align: top;
+    .header td { padding: 0; vertical-align: middle; }
+
+    .header .logo-cell img { height: 13mm; }
+
+    .header .meta-cell { text-align: right; }
+
+    .meta-label {
+        font-size: 6pt;
+        font-weight: 600;
+        letter-spacing: 1.6px;
+        text-transform: uppercase;
+        color: #8b978f;
+        line-height: 1.4;
     }
 
-    .header-logo-cell {
-        text-align: left;
+    .meta-value {
+        font-size: 8.5pt;
+        font-weight: 600;
+        color: #2b3831;
+        line-height: 1.5;
+        margin-bottom: 4px;
     }
 
-    .header-logo-cell img {
-        height: 52px;
-    }
+    .meta-value:last-child { margin-bottom: 0; }
 
-    .header-badge-cell {
-        text-align: right;
-    }
-
-    .header-badge-cell img {
-        height: 70px;
+    .header-rule {
+        border-top: 0.6pt solid #dbe4de;
+        margin: 5mm 0 8mm;
     }
 
     /* ========== TITLE ========== */
+    .eyebrow {
+        text-align: center;
+        font-size: 7pt;
+        font-weight: 600;
+        letter-spacing: 2.6px;
+        text-transform: uppercase;
+        color: #7d8d84;
+        margin-bottom: 4mm;
+    }
+
     .title {
         text-align: center;
-        font-size: 28px;
-        font-weight: 900;
-        color: #1a1a1a;
-        margin-bottom: 30px;
-        letter-spacing: 1px;
-        font-family: 'Arial Black', 'Helvetica', sans-serif;
+        font-family: 'RalfizSerif', serif;
+        font-size: 26pt;
+        font-weight: 700;
+        line-height: 1.15;
+        color: #16412f;
+        text-transform: uppercase;
+        letter-spacing: 2.5px;
     }
 
-    /* ========== BODY TEXT ========== */
+    /* Rule - diamond - rule ornament */
+    .ornament {
+        text-align: center;
+        margin-top: 4mm;
+    }
+
+    .ornament .bar {
+        display: inline-block;
+        width: 24mm;
+        border-top: 0.8pt solid #95cf5f;
+        vertical-align: middle;
+    }
+
+    .ornament .gem {
+        display: inline-block;
+        width: 5px;
+        height: 5px;
+        background: #286a4d;
+        transform: rotate(45deg);
+        margin: 0 4mm;
+        vertical-align: middle;
+    }
+
+    /* ========== RECIPIENT ========== */
+    .presented-to {
+        text-align: center;
+        font-size: 7.5pt;
+        font-weight: 500;
+        letter-spacing: 2.2px;
+        text-transform: uppercase;
+        color: #7d8d84;
+        margin-top: 8mm;
+    }
+
+    .recipient {
+        text-align: center;
+        font-family: 'RalfizSerif', serif;
+        font-size: 24pt;
+        font-weight: 600;
+        color: #286a4d;
+        line-height: 1.25;
+        margin-top: 3mm;
+    }
+
+    .recipient-rule {
+        width: 95mm;
+        margin: 4mm auto 0;
+        border-top: 0.6pt solid #cfdcd4;
+    }
+
+    .recipient-sub {
+        text-align: center;
+        font-size: 8.5pt;
+        color: #7d8d84;
+        margin-top: 3mm;
+        line-height: 1.5;
+    }
+
+    /* ========== BODY ========== */
+    .body-block {
+        margin: 7mm auto 0;
+        width: 150mm;
+    }
+
     .body-text {
         text-align: center;
-        font-size: 14px;
-        line-height: 1.75;
-        margin: 0 0 12px;
+        font-family: 'RalfizSerif', serif;
+        font-size: 11pt;
+        line-height: 1.8;
+        color: #333f39;
+        margin: 0 0 3.5mm;
     }
 
-    .body-text:last-child {
-        margin-bottom: 0;
-    }
+    .body-text:last-child { margin-bottom: 0; }
 
     .body-text strong {
-        font-weight: bold;
+        font-weight: 600;
+        color: #16412f;
     }
 
-    /* ========== SKILLS LIST ========== */
+    /* ========== DENSITY ==========
+       Bodies are admin-authored and vary from three lines to three
+       paragraphs plus a skills list. Scale the prose so a certificate
+       stays on a single page either way. */
+    body.roomy .body-text { font-size: 13pt; line-height: 2.1; margin-bottom: 6mm; }
+    body.roomy .body-block { margin-top: 14mm; }
+    body.roomy .presented-to { margin-top: 11mm; }
+    body.roomy .recipient { font-size: 27pt; }
+    body.roomy .wish { font-size: 11.5pt; margin-top: 12mm; }
+
+    body.dense .body-text { font-size: 9.8pt; line-height: 1.65; margin-bottom: 3mm; }
+    body.dense .body-block { margin-top: 5mm; width: 156mm; }
+    body.dense .skills-list { margin: 4mm 0; padding: 3mm 0; }
+    body.dense .skills-list li { font-size: 8pt; line-height: 1.5; margin-bottom: 1.2mm; }
+    body.dense .wish { font-size: 9.8pt; margin-top: 4mm; }
+    body.dense .title { font-size: 23pt; }
+    body.dense .recipient { font-size: 21pt; }
+
+    /* ========== SKILLS ========== */
     .skills-list {
-        margin: 16px 0 16px 60px;
+        list-style: none;
+        margin: 5mm 0;
+        padding: 4mm 0;
+        border-top: 0.6pt solid #dbe4de;
+        border-bottom: 0.6pt solid #dbe4de;
+        column-count: 2;
+        column-gap: 9mm;
         text-align: left;
-        font-size: 14px;
-        list-style-type: disc;
-        padding-left: 0;
     }
 
     .skills-list li {
-        margin-bottom: 3px;
+        font-family: 'RalfizSans', sans-serif;
+        font-size: 8.8pt;
+        line-height: 1.6;
+        color: #3d4a43;
+        margin-bottom: 2mm;
+        padding-left: 5mm;
+        position: relative;
+        break-inside: avoid;
+    }
+
+    .skills-list li:before {
+        content: "";
+        position: absolute;
+        left: 0;
+        top: 5.5px;
+        width: 4px;
+        height: 4px;
+        background: #95cf5f;
+        transform: rotate(45deg);
+    }
+
+    /* ========== WISH ========== */
+    .wish {
+        text-align: center;
+        font-family: 'RalfizSerif', serif;
+        font-style: italic;
+        font-size: 10.5pt;
+        color: #55635c;
+        margin-top: 6mm;
+    }
+
+    /* ========== FOOTER ========== */
+    .footer {
+        position: relative;
+        z-index: 2;
+        margin: 0 22mm;
+        padding-bottom: 22mm;
+    }
+
+    .sign-row {
+        width: 100%;
+        border-collapse: collapse;
+    }
+
+    .sign-row td { padding: 0; vertical-align: bottom; }
+
+    .sign-cell { width: 38%; }
+
+    .sign-cell img.signature {
+        height: 16mm;
+        display: block;
+        margin-bottom: -1mm;
+    }
+
+    .sign-cell .rule {
+        width: 52mm;
+        border-top: 1pt solid #2b3831;
+        margin-bottom: 2mm;
+    }
+
+    .sign-cell .name {
+        font-family: 'RalfizSerif', serif;
+        font-size: 12pt;
+        font-weight: 600;
+        color: #16412f;
+        line-height: 1.3;
+    }
+
+    .sign-cell .role {
+        font-size: 6.5pt;
+        font-weight: 600;
+        letter-spacing: 1.4px;
+        text-transform: uppercase;
+        color: #6f7d76;
         line-height: 1.6;
     }
 
-    /* ========== CLOSING / WISH ========== */
-    .closing {
-        text-align: center;
-        font-size: 14px;
-        line-height: 1.75;
-        margin-top: 24px;
-    }
-
-    .wish {
-        text-align: center;
-        font-size: 14px;
-        margin-top: 6px;
-    }
-
-    /* ========== FOOTER AREA ========== */
-    .footer-area {
-        position: fixed;
-        bottom: 38mm;
-        left: 30mm;
-        right: 30mm;
-        z-index: 2;
-    }
-
-    /* Signature row */
-    .sig-row {
-        width: 100%;
-        border-collapse: collapse;
-        margin-bottom: 0;
-    }
-
-    .sig-row td {
-        padding: 0;
-        vertical-align: bottom;
-    }
-
-    .sig-left {
-        width: 45%;
-    }
-
-    .sig-left img {
-        height: 58px;
-        display: block;
-        margin-bottom: -2px;
-    }
-
-    .sig-left .line {
-        width: 175px;
-        border-top: 1.5px solid #333;
-        margin-bottom: 5px;
-    }
-
-    .sig-left .name {
-        font-weight: bold;
-        font-size: 14px;
-        font-family: 'Times New Roman', serif;
-        letter-spacing: 0.5px;
-    }
-
-    .sig-left .designation {
-        font-weight: bold;
-        font-size: 10px;
-        letter-spacing: 1.5px;
-        text-transform: uppercase;
-    }
-
-    .sig-left .company {
-        font-size: 10px;
-        letter-spacing: 0.5px;
-    }
-
-    .sig-center {
-        width: 55%;
+    .seal-cell {
+        width: 24%;
         text-align: center;
     }
 
-    .sig-center img {
-        height: 85px;
-    }
-
-    /* Bottom details row */
-    .details-row {
-        width: 100%;
-        border-collapse: collapse;
-        margin-top: 12px;
-    }
-
-    .details-row td {
-        padding: 0;
-        vertical-align: bottom;
-    }
+    .seal-cell img { height: 24mm; }
 
     .qr-cell {
-        width: 75px;
-    }
-
-    .qr-cell img {
-        width: 60px;
-        height: 60px;
-    }
-
-    .qr-cell .qr-label {
-        font-size: 7px;
-        color: #777;
-    }
-
-    .details-right {
+        width: 38%;
         text-align: right;
     }
 
-    .details-right .logos img {
-        height: 30px;
+    .qr-cell img {
+        width: 20mm;
+        height: 20mm;
     }
 
-    .details-right .issuance {
-        font-size: 10px;
-        font-style: italic;
-        margin-top: 8px;
-        color: #444;
-    }
-
-    .details-right .address {
-        font-size: 9.5px;
-        color: #555;
-        margin-top: 4px;
+    .qr-cell .qr-label {
+        font-size: 6pt;
+        font-weight: 600;
+        letter-spacing: 1.2px;
+        text-transform: uppercase;
+        color: #6f7d76;
+        margin-top: 1.5mm;
         line-height: 1.5;
     }
+
+    .qr-cell .qr-host {
+        font-size: 6.5pt;
+        color: #8b978f;
+        line-height: 1.5;
+    }
+
+    .footer-rule {
+        border-top: 0.6pt solid #dbe4de;
+        margin: 6mm 0 4mm;
+    }
+
+    .colophon {
+        width: 100%;
+        border-collapse: collapse;
+    }
+
+    .colophon td { padding: 0; vertical-align: middle; }
+
+    .colophon .address {
+        font-size: 7pt;
+        color: #7d8d84;
+        line-height: 1.6;
+    }
+
+    .colophon .partners {
+        text-align: right;
+    }
+
+    .colophon .partners img { height: 6mm; }
 </style>
 </head>
-<body>
-    <!-- Bottom graphics -->
-    <div class="bottom-graphics">
-        <img src="{{ bottom_graphics }}" alt="">
-    </div>
+<body class="{{ density }}">
+    <div class="bottom-graphics" style="background-image: url({{ bottom_graphics }})"></div>
+    <div class="watermark"><img src="{{ seal }}" alt=""></div>
 
-    <!-- Watermark -->
-    <div class="watermark">
-        <img src="{{ seal }}" alt="">
-    </div>
+    <div class="frame-outer"></div>
+    <div class="frame-inner"></div>
+    <div class="corner tl"></div>
+    <div class="corner tr"></div>
+    <div class="corner bl"></div>
+    <div class="corner br"></div>
 
-    <!-- Main content -->
     <div class="content">
-        <!-- Header: logo left, badge right -->
-        <table class="header-row">
+        <table class="header">
             <tr>
-                <td class="header-logo-cell">
+                <td class="logo-cell">
                     <img src="{{ header_logo }}" alt="Ralfiz Technologies">
                 </td>
-                <td class="header-badge-cell">
-                    <img src="{{ award_badge }}" alt="Award">
+                <td class="meta-cell">
+                    <div class="meta-label">Certificate No.</div>
+                    <div class="meta-value">{{ cert.certificate_number }}</div>
+                    <div class="meta-label">Date of Issue</div>
+                    <div class="meta-value">{{ date_of_issuance_fmt }}</div>
                 </td>
             </tr>
         </table>
 
-        <!-- Certificate title -->
+        <div class="header-rule"></div>
+
+        <div class="eyebrow">Ralfiz Technologies &nbsp;&middot;&nbsp; Perinthalmanna, Kerala</div>
+
         <h1 class="title">{{ cert.title }}</h1>
 
-        <!-- Certificate body content -->
-        {{ rendered_body|safe }}
+        <div class="ornament">
+            <span class="bar"></span><span class="gem"></span><span class="bar"></span>
+        </div>
 
-        <!-- Wish text -->
-        <p class="wish">
-            {{ wish_text }}
-        </p>
+        {% if show_recipient_name %}
+        <div class="presented-to">This certificate is proudly presented to</div>
+        <div class="recipient">{{ cert.salutation }} {{ cert.student_name }}</div>
+        <div class="recipient-rule"></div>
+        {% if recipient_sub %}<div class="recipient-sub">{{ recipient_sub }}</div>{% endif %}
+        {% endif %}
+
+        <div class="body-block">
+            {{ rendered_body|safe }}
+
+            {% if wish_text %}<p class="wish">{{ wish_text }}</p>{% endif %}
+        </div>
     </div>
 
-    <!-- Footer -->
-    <div class="footer-area">
-        <!-- Signature + Seal -->
-        <table class="sig-row">
+    <div class="footer">
+        <table class="sign-row">
             <tr>
-                <td class="sig-left">
-                    <img src="{{ signature }}" alt="Signature">
-                    <div class="line"></div>
-                    <div class="name">JOBIN SEBASTIAN</div>
-                    <div class="designation">Managing Director</div>
-                    <div class="company">RALFIZ TECHNOLOGIES</div>
+                <td class="sign-cell">
+                    <img class="signature" src="{{ signature }}" alt="Signature">
+                    <div class="rule"></div>
+                    <div class="name">Jobin Sebastian</div>
+                    <div class="role">Managing Director</div>
+                    <div class="role">Ralfiz Technologies</div>
                 </td>
-                <td class="sig-center">
+                <td class="seal-cell">
                     <img src="{{ seal }}" alt="Company Seal">
+                </td>
+                <td class="qr-cell">
+                    <img src="data:image/png;base64,{{ qr_base64 }}" alt="Verification QR code">
+                    <div class="qr-label">Scan to verify</div>
+                    <div class="qr-host">{{ verify_host }}</div>
                 </td>
             </tr>
         </table>
 
-        <!-- QR code + Partner logos + Issuance details -->
-        <table class="details-row">
+        <div class="footer-rule"></div>
+
+        <table class="colophon">
             <tr>
-                <td class="qr-cell">
-                    <img src="data:image/png;base64,{{ qr_base64 }}" alt="QR Code">
-                    <div class="qr-label">Scan to verify</div>
+                <td class="address">
+                    Level 2, KIMS Avenue, Pattambi Road, Perinthalmanna, Kerala<br>
+                    +91 98956 63498 &nbsp;&middot;&nbsp; info@ralfiz.com
                 </td>
-                <td class="details-right">
-                    <div class="logos">
-                        <img src="{{ footer_logo }}" alt="Partner Logos">
-                    </div>
-                    <div class="issuance">
-                        <em>Date of issuance: {{ date_of_issuance_fmt }}</em> &nbsp;&nbsp;
-                        <em>Ref No: {{ cert.certificate_number }}</em>
-                    </div>
-                    <div class="address">
-                        Level 2, KIMS Avenue<br>
-                        Perinthalmanna, Pattambi Road<br>
-                        9895663498, info@ralfiz.com
-                    </div>
+                <td class="partners">
+                    <img src="{{ footer_logo }}" alt="">
                 </td>
             </tr>
         </table>

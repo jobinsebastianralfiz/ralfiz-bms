@@ -51,7 +51,7 @@
               {{ item.profile.get_intern_type_display }}
             </span>
           </td>
-          <td>{{ item.profile.supervisor.get_full_name|default:item.profile.supervisor.username|default:"-" }}</td>
+          <td>{% firstof item.profile.supervisor.get_full_name item.profile.supervisor.username "-" %}</td>
           <td>
             <span class="badge badge-{% if item.profile.status == 'active' %}success{% elif item.profile.status == 'completed' %}info{% else %}secondary{% endif %}">
               {{ item.profile.get_status_display }}

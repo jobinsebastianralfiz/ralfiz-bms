@@ -6834,27 +6834,55 @@ def emp_employee_detail(request, pk):
 @login_required
 def emp_employee_delete(request, pk):
     """Delete an employee and their related data, keeping the User and TeamMember intact"""
-    from employees.models import Employee, Attendance, LeaveRequest, WorkAssignment, WorkUpdate, Notification, DeviceToken
+    from django.db import transaction
+    from django.db.models import ProtectedError
+    from employees.models import (Employee, Attendance, LeaveRequest, WorkAssignment,
+                                  WorkUpdate, Notification, DeviceToken, AgreementRequest)
     if request.method != 'POST':
         return redirect('emp_employee_list')
 
     employee = get_object_or_404(Employee, pk=pk)
     name = employee.full_name
 
-    # Delete employee-related data (keep User and TeamMember)
-    DeviceToken.objects.filter(employee=employee).delete()
-    Notification.objects.filter(employee=employee).delete()
-    WorkUpdate.objects.filter(employee=employee).delete()
-    Attendance.objects.filter(employee=employee).delete()
-    LeaveRequest.objects.filter(employee=employee).delete()
-    # Remove employee from assignments; delete assignments with no remaining assignees
-    for wa in WorkAssignment.objects.filter(assigned_to=employee):
-        wa.assigned_to.remove(employee)
-        if not wa.assigned_to.exists():
-            wa.delete()
-    employee.delete()
+    signed_agreements = AgreementRequest.objects.filter(
+        employee=employee, status__in=AgreementRequest.RESPONDED_STATUSES
+    ).count()
 
-    messages.success(request, f'Employee "{name}" and all related records deleted. User account and team member profile are preserved.')
+    try:
+        with transaction.atomic():
+            # Delete employee-related data (keep User and TeamMember)
+            DeviceToken.objects.filter(employee=employee).delete()
+            Notification.objects.filter(employee=employee).delete()
+            WorkUpdate.objects.filter(employee=employee).delete()
+            Attendance.objects.filter(employee=employee).delete()
+            LeaveRequest.objects.filter(employee=employee).delete()
+            # AgreementRequest.employee is PROTECT so signed agreements are never
+            # lost by accident. Deleting the person is a deliberate act, so clear
+            # them here and say so in the message rather than raising a 500.
+            AgreementRequest.objects.filter(employee=employee).delete()
+            # Remove employee from assignments; delete assignments with no remaining assignees
+            for wa in WorkAssignment.objects.filter(assigned_to=employee):
+                wa.assigned_to.remove(employee)
+                if not wa.assigned_to.exists():
+                    wa.delete()
+            employee.delete()
+    except ProtectedError as exc:
+        blocking = ', '.join(sorted({obj._meta.verbose_name for obj in exc.protected_objects}))
+        messages.error(
+            request,
+            f'"{name}" could not be deleted because other records still reference them ({blocking}). '
+            'Remove those records first.'
+        )
+        return redirect('emp_employee_detail', pk=pk)
+
+    note = ''
+    if signed_agreements:
+        note = f' {signed_agreements} signed internship agreement(s) were removed with them.'
+    messages.success(
+        request,
+        f'Employee "{name}" and all related records deleted. '
+        f'User account and team member profile are preserved.{note}'
+    )
     return redirect('emp_employee_list')
 
 
@@ -7901,61 +7929,15 @@ def certificate_delete(request, pk):
 def certificate_pdf(request, pk):
     """Generate certificate PDF from the custom backend"""
     from employees.models import Certificate
-    from django.template.loader import render_to_string
-    import weasyprint
-    import qrcode
-    import base64
-    from io import BytesIO
+    from employees.certificate_pdf import render_pdf, pdf_filename
 
     cert = get_object_or_404(Certificate, pk=pk)
-
-    # Generate QR code
-    verify_url = request.build_absolute_uri(f'/api/employees/certificates/verify/{cert.verification_id}/')
-    qr = qrcode.QRCode(version=1, box_size=10, border=1)
-    qr.add_data(verify_url)
-    qr.make(fit=True)
-    qr_img = qr.make_image(fill_color="black", back_color="white")
-    buffer = BytesIO()
-    qr_img.save(buffer, format='PNG')
-    qr_base64 = base64.b64encode(buffer.getvalue()).decode()
-
-    # Asset paths
-    from django.conf import settings as django_settings
-    static_dir = django_settings.BASE_DIR / 'static' / 'certificates'
-    header_logo = (static_dir / 'headerlogo.png').as_uri()
-    signature = (static_dir / 'jobin_signature.png').as_uri()
-    seal = (static_dir / 'seal.png').as_uri()
-    footer_logo = (static_dir / 'footer_right_logo.png').as_uri()
-    award_badge = (static_dir / 'award_badge.png').as_uri()
-    bottom_graphics = (static_dir / 'bottom_graphics.png').as_uri()
-
-    rendered_body = cert.render_body_html()
-    wish_text = cert.render_wish_text()
-
-    context = {
-        'cert': cert,
-        'qr_base64': qr_base64,
-        'header_logo': header_logo,
-        'signature': signature,
-        'seal': seal,
-        'footer_logo': footer_logo,
-        'award_badge': award_badge,
-        'bottom_graphics': bottom_graphics,
-        'rendered_body': rendered_body,
-        'date_of_issuance_fmt': cert.date_of_issuance.strftime('%d/%m/%Y'),
-        'wish_text': wish_text,
-    }
-
-    html_string = render_to_string('employees/certificate_pdf.html', context)
-    pdf = weasyprint.HTML(string=html_string).write_pdf()
+    pdf = render_pdf(cert, request)
 
     from django.http import HttpResponse as HR
     response = HR(pdf, content_type='application/pdf')
-    filename = f"Certificate_{cert.student_name.replace(' ', '_')}_{cert.certificate_number.replace('/', '_')}.pdf"
-    if request.GET.get('download'):
-        response['Content-Disposition'] = f'attachment; filename="{filename}"'
-    else:
-        response['Content-Disposition'] = f'inline; filename="{filename}"'
+    disposition = 'attachment' if request.GET.get('download') else 'inline'
+    response['Content-Disposition'] = f'{disposition}; filename="{pdf_filename(cert)}"'
     return response
 
 

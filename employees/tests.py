@@ -203,3 +203,88 @@ class CertificateWishTextTests(TestCase):
     def test_wish_text_unknown_placeholder_does_not_break_render(self):
         self.cert.wish_text = 'We wish {pronoun} success, {bogus}.'
         self.assertEqual(self.cert.render_wish_text(), 'We wish her success, {bogus}.')
+
+
+class CertificatePdfLayoutTests(TestCase):
+    """The print layout is built from `build_context`, so cover it directly.
+
+    The WeasyPrint call itself needs native Cairo/Pango libraries that are not
+    guaranteed on every dev machine, so these render the template rather than
+    the PDF bytes.
+    """
+
+    def setUp(self):
+        self.cert = Certificate(
+            certificate_number='RT/PR/26/inter/007',
+            title='INTERNSHIP CERTIFICATE',
+            salutation='Ms.',
+            student_name='Fathima Nasrin',
+            register_number='BAI247966',
+            college_name='MES College of Engineering',
+            gender='female',
+            position='Flutter Developer Intern',
+            date_of_issuance=date(2026, 9, 4),
+            skills=['Flutter', 'Dart'],
+        )
+
+    def _html(self):
+        from django.template.loader import render_to_string
+        from employees.certificate_pdf import build_context
+        return render_to_string('employees/certificate_pdf.html', build_context(self.cert))
+
+    def _context(self):
+        from employees.certificate_pdf import build_context
+        return build_context(self.cert)
+
+    def test_bundled_fonts_exist_on_disk(self):
+        from pathlib import Path
+        from urllib.parse import urlparse, unquote
+        font_dir = Path(unquote(urlparse(self._context()['font_dir']).path))
+        for name in ('SourceSerif4-400.ttf', 'SourceSerif4-700.ttf', 'Inter-400.ttf', 'Inter-600.ttf'):
+            self.assertTrue((font_dir / name).exists(), f'missing bundled font {name}')
+
+    def test_name_is_promoted_when_the_body_does_not_use_it(self):
+        self.cert.body_text = 'has completed an internship with **Ralfiz Technologies**.'
+        ctx = self._context()
+        self.assertTrue(ctx['show_recipient_name'])
+        html = self._html()
+        self.assertIn('This certificate is proudly presented to', html)
+        self.assertIn('Fathima Nasrin', html)
+
+    def test_name_is_not_printed_twice_for_older_bodies(self):
+        self.cert.body_text = 'This is to certify that {salutation} {student_name} did well.'
+        self.assertFalse(self._context()['show_recipient_name'])
+        self.assertNotIn('This certificate is proudly presented to', self._html())
+
+    def test_recipient_subtitle_joins_register_number_and_college(self):
+        self.cert.body_text = 'has completed an internship.'
+        self.assertEqual(
+            self._context()['recipient_sub'],
+            'Register No. BAI247966 · MES College of Engineering',
+        )
+
+    def test_recipient_subtitle_skips_missing_parts(self):
+        self.cert.register_number = ''
+        self.assertEqual(self._context()['recipient_sub'], 'MES College of Engineering')
+
+    def test_density_scales_with_the_amount_of_copy(self):
+        from employees.certificate_pdf import _density
+        self.assertEqual(_density('<p>Short and sweet.</p>', [], False), 'roomy')
+        self.assertEqual(_density('<p>' + 'word ' * 130 + '</p>', [], False), 'normal')
+        self.assertEqual(_density('<p>' + 'word ' * 260 + '</p>', ['a', 'b'], False), 'dense')
+
+    def test_density_accounts_for_the_promoted_name_block(self):
+        from employees.certificate_pdf import _density
+        body = '<p>' + 'word ' * 150 + '</p>'
+        self.assertEqual(_density(body, [], False), 'normal')
+        self.assertEqual(_density(body, [], True), 'dense')
+
+    def test_header_carries_the_certificate_number_and_issue_date(self):
+        html = self._html()
+        self.assertIn('RT/PR/26/inter/007', html)
+        self.assertIn('04 September 2026', html)
+
+    def test_verification_details_fall_back_without_a_request(self):
+        ctx = self._context()
+        self.assertEqual(ctx['verify_host'], 'ralfizdigital.in')
+        self.assertIn(str(self.cert.verification_id), ctx['verify_url'])

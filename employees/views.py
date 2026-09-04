@@ -3788,62 +3788,12 @@ class CertificatePDFView(APIView):
         except Certificate.DoesNotExist:
             return Response({'error': 'Certificate not found'}, status=status.HTTP_404_NOT_FOUND)
 
-        from django.template.loader import render_to_string
-        from django.conf import settings
-        import weasyprint
-        import qrcode
-        import qrcode.image.svg
-        import base64
-        from io import BytesIO
-
-        # Generate QR code with verification URL
-        verify_url = request.build_absolute_uri(
-            f'/api/employees/certificates/verify/{certificate.verification_id}/'
-        )
-        qr = qrcode.QRCode(version=1, box_size=10, border=1)
-        qr.add_data(verify_url)
-        qr.make(fit=True)
-        qr_img = qr.make_image(fill_color="black", back_color="white")
-        buffer = BytesIO()
-        qr_img.save(buffer, format='PNG')
-        qr_base64 = base64.b64encode(buffer.getvalue()).decode()
-
-        # Build asset paths as file URIs for weasyprint
-        static_dir = settings.BASE_DIR / 'static' / 'certificates'
-        header_logo = (static_dir / 'headerlogo.png').as_uri()
-        signature = (static_dir / 'jobin_signature.png').as_uri()
-        seal = (static_dir / 'seal.png').as_uri()
-        footer_logo = (static_dir / 'footer_right_logo.png').as_uri()
-        award_badge = (static_dir / 'award_badge.png').as_uri()
-        bottom_graphics = (static_dir / 'bottom_graphics.png').as_uri()
-
-        rendered_body = certificate.render_body_html()
-        wish_text = certificate.render_wish_text()
-
-        context = {
-            'cert': certificate,
-            'qr_base64': qr_base64,
-            'header_logo': header_logo,
-            'signature': signature,
-            'seal': seal,
-            'footer_logo': footer_logo,
-            'award_badge': award_badge,
-            'bottom_graphics': bottom_graphics,
-            'rendered_body': rendered_body,
-            'date_of_issuance_fmt': certificate.date_of_issuance.strftime('%d/%m/%Y'),
-            'wish_text': wish_text,
-        }
-
-        html_string = render_to_string('employees/certificate_pdf.html', context)
         from django.http import HttpResponse
-        pdf = weasyprint.HTML(string=html_string).write_pdf()
+        from .certificate_pdf import render_pdf, pdf_filename
 
-        response = HttpResponse(pdf, content_type='application/pdf')
-        filename = f"Certificate_{certificate.student_name.replace(' ', '_')}_{certificate.certificate_number.replace('/', '_')}.pdf"
-        if request.query_params.get('download'):
-            response['Content-Disposition'] = f'attachment; filename="{filename}"'
-        else:
-            response['Content-Disposition'] = f'inline; filename="{filename}"'
+        response = HttpResponse(render_pdf(certificate, request), content_type='application/pdf')
+        disposition = 'attachment' if request.query_params.get('download') else 'inline'
+        response['Content-Disposition'] = f'{disposition}; filename="{pdf_filename(certificate)}"'
         return response
 
 
