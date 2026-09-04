@@ -12,6 +12,11 @@ All of it is deterministic and committed as PNGs:
 * Transparent logos - the source lockups are opaque RGB and would otherwise
   paint a white rectangle wherever the ground is not white.
 
+`rt_mark.png` is the RT mark on its own at 1600px, rasterised from the vector
+in the design file. The mark used to be cut out of the 402x58 lockup, which
+left an 85px source to be blown up twenty times for the watermark - it needed
+so much blur to hide the resampling that the shape went soft.
+
     python manage.py build_certificate_assets
 
 Re-run only when the artwork or the source logos change.
@@ -37,12 +42,11 @@ class Command(BaseCommand):
             self._keyed_out(Image, out_dir / source).save(out_dir / target)
             self.stdout.write(self.style.SUCCESS(f'wrote {out_dir / target}'))
 
-        # White-on-dark variants for the navy design. That design sets the
-        # company name in Poppins beside the RT mark alone, so the wordmark
-        # baked into the source lockup has to be cut away first.
+        # White-on-dark variants for the navy design, which sets the company
+        # name in Poppins beside the RT mark on its own.
         self._to_white(Image, out_dir / 'headerlogo_alpha.png').save(out_dir / 'headerlogo_white.png')
         self.stdout.write(self.style.SUCCESS(f'wrote {out_dir / "headerlogo_white.png"}'))
-        mark = self._first_glyph_group(Image, self._to_white(Image, out_dir / 'headerlogo_alpha.png'))
+        mark = self._to_white(Image, out_dir / 'rt_mark.png')
         mark.save(out_dir / 'rt_mark_white.png')
         self.stdout.write(self.style.SUCCESS(f'wrote {out_dir / "rt_mark_white.png"}'))
         for source, target in (('jobin_signature.png', 'jobin_signature_white.png'),
@@ -56,32 +60,6 @@ class Command(BaseCommand):
     @staticmethod
     def _open(Image, source):
         return source.convert('RGBA') if hasattr(source, 'convert') else Image.open(source).convert('RGBA')
-
-    @classmethod
-    def _first_glyph_group(cls, Image, img):
-        """Crop to the first cluster of ink, i.e. the RT mark on its own.
-
-        The lockup is mark + gap + wordmark, so the first run of blank
-        columns wide enough to be a word space marks the cut.
-        """
-        w, h = img.size
-        px = img.load()
-        ink = [any(px[x, y][3] > 24 for y in range(h)) for x in range(w)]
-
-        cut = w
-        run = 0
-        for x in range(w):
-            if ink[x]:
-                if run >= 8 and any(ink[:x]):
-                    cut = x - run
-                    break
-                run = 0
-            else:
-                run += 1
-
-        rows = [y for y in range(h) if any(px[x, y][3] > 24 for x in range(cut))]
-        left = next(x for x in range(cut) if ink[x])
-        return img.crop((left, rows[0], cut, rows[-1] + 1))
 
     @classmethod
     def _keyed_out(cls, Image, source, threshold=238):
@@ -231,7 +209,7 @@ class Command(BaseCommand):
         return out.astype('uint8')
 
     @staticmethod
-    def _watermark(Image, mark, w, h, scale, coverage=0.52, opacity=0.085, blur=6):
+    def _watermark(Image, mark, w, h, scale, coverage=0.50, opacity=0.075, blur=1.5):
         """The company mark, blown up, softened and dropped to a whisper.
 
         Only the mark's alpha is used, as a stencil for flat white, and the
@@ -245,13 +223,19 @@ class Command(BaseCommand):
         target_w = int(w * coverage)
         target_h = max(1, round(mark.height * target_w / mark.width))
 
-        stencil = (mark.getchannel('A')
-                   .resize((target_w, target_h), Image.LANCZOS)
+        # Pad before blurring. The mark is trimmed to its ink, so blurring it
+        # in place cuts the feather off flat against the canvas edge and the
+        # letterforms end up looking sliced.
+        pad = int(blur * scale * 4) + 8
+        stencil = Image.new('L', (target_w + 2 * pad, target_h + 2 * pad), 0)
+        stencil.paste(mark.getchannel('A').resize((target_w, target_h), Image.LANCZOS),
+                      (pad, pad))
+        stencil = (stencil
                    .filter(ImageFilter.GaussianBlur(blur * scale))
                    .point(lambda v: int(v * opacity)))
 
         full = Image.new('L', (w, h), 0)
-        full.paste(stencil, ((w - target_w) // 2, (h - target_h) // 2))
+        full.paste(stencil, ((w - stencil.width) // 2, (h - stencil.height) // 2))
 
         layer = Image.new('RGBA', (w, h), (255, 255, 255, 0))
         layer.putalpha(full)

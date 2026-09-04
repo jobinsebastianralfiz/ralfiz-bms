@@ -614,6 +614,31 @@ class CertificateQrTests(TestCase):
         self.assertIn('.verify .qr-tile', html)
 
 
+class CertificateFooterNoticeTests(TestCase):
+    """A reader should be able to tell the document was machine-issued."""
+
+    def _html(self):
+        from django.template.loader import render_to_string
+        from employees.certificate_pdf import build_context
+        cert = Certificate(
+            certificate_number='RT/PR/26/inter/014',
+            title='INTERNSHIP CERTIFICATE',
+            student_name='Fathima Nasrin',
+            gender='female',
+            date_of_issuance=date(2026, 9, 4),
+            body_text='has completed an internship.',
+        )
+        return render_to_string('employees/certificate_pdf.html', build_context(cert))
+
+    def test_it_says_the_certificate_is_digitally_generated(self):
+        self.assertIn('digitally generated certificate', self._html())
+
+    def test_the_contact_strip_survives_alongside_it(self):
+        html = self._html()
+        self.assertIn('info@ralfiz.com', html)
+        self.assertIn('+91 98956 63498', html)
+
+
 class CertificatePlaceholderAliasTests(TestCase):
     """Templates HR had already written used names the renderer did not know."""
 
