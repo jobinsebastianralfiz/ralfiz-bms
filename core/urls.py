@@ -236,6 +236,13 @@ urlpatterns = [
     path('team/<uuid:pk>/edit/', views.team_update, name='team_update'),
     path('team/<uuid:pk>/delete/', views.team_delete, name='team_delete'),
 
+    # Login accounts, as distinct from the profiles hanging off them.
+    # Not /accounts/ - that is the bank accounts ledger.
+    path('user-accounts/', views.account_list, name='account_list'),
+    path('user-accounts/<int:pk>/revoke/', views.account_revoke, name='account_revoke'),
+    path('user-accounts/<int:pk>/restore/', views.account_restore, name='account_restore'),
+    path('user-accounts/<int:pk>/delete/', views.account_delete, name='account_delete'),
+
     # Team Member Dashboard & Personal Views
     path('my-dashboard/', views.team_dashboard, name='team_dashboard'),
     path('my-tasks/', views.my_tasks, name='my_tasks'),

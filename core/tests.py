@@ -161,3 +161,87 @@ class RevokeOrphanLoginsCommandTests(TestCase):
         User.objects.create_superuser('boss', password='pw')
         with self.assertRaises(CommandError):
             self._run('--username', 'boss', '--apply')
+
+
+class UserAccountPageTests(TestCase):
+    """The sidebar page for seeing and removing logins."""
+
+    def setUp(self):
+        self.admin = User.objects.create_superuser('boss', password='pw')
+        self.client.force_login(self.admin)
+
+        self.orphan = User.objects.create_user('gone', first_name='Gone', password='pw')
+
+        self.staffer = User.objects.create_user('ravi', first_name='Ravi', password='pw')
+        Employee.objects.create(user=self.staffer, employee_id='EMP910', employment_type='fulltime')
+
+    def test_it_lists_every_account_with_its_roles(self):
+        resp = self.client.get(reverse('account_list'))
+        self.assertEqual(resp.status_code, 200)
+        self.assertContains(resp, 'gone')
+        self.assertContains(resp, 'ravi')
+        self.assertContains(resp, 'Employee')
+        self.assertContains(resp, 'No role')
+
+    def test_it_counts_the_accounts_left_behind_by_deleted_staff(self):
+        resp = self.client.get(reverse('account_list'))
+        self.assertEqual(resp.context['orphan_count'], 1)
+
+    def test_it_can_be_filtered_to_accounts_with_no_role(self):
+        resp = self.client.get(reverse('account_list'), {'role': 'none'})
+        usernames = [r['account'].username for r in resp.context['rows']]
+        self.assertIn('gone', usernames)
+        self.assertNotIn('ravi', usernames)
+
+    def test_non_admins_are_turned_away(self):
+        self.client.force_login(self.staffer)
+        resp = self.client.get(reverse('account_list'))
+        self.assertEqual(resp.status_code, 302)
+
+    def test_revoking_stops_the_login_without_deleting_anything(self):
+        self.client.post(reverse('account_revoke', args=[self.orphan.pk]))
+        self.orphan.refresh_from_db()
+        self.assertFalse(self.orphan.is_active)
+        self.assertFalse(self.orphan.has_usable_password())
+        self.assertTrue(User.objects.filter(pk=self.orphan.pk).exists())
+
+    def test_restoring_lets_them_back_in(self):
+        self.client.post(reverse('account_revoke', args=[self.orphan.pk]))
+        self.client.post(reverse('account_restore', args=[self.orphan.pk]))
+        self.orphan.refresh_from_db()
+        self.assertTrue(self.orphan.is_active)
+
+    def test_the_confirmation_page_says_what_will_be_deleted(self):
+        resp = self.client.get(reverse('account_delete', args=[self.staffer.pk]))
+        self.assertEqual(resp.status_code, 200)
+        labels = dict(resp.context['preview'])
+        self.assertIn('Employees', labels)
+        self.assertIn('Users', labels)
+
+    def test_deleting_removes_the_account_and_its_profile(self):
+        self.client.post(reverse('account_delete', args=[self.staffer.pk]))
+        self.assertFalse(User.objects.filter(pk=self.staffer.pk).exists())
+        self.assertFalse(Employee.objects.filter(employee_id='EMP910').exists())
+
+    def test_you_cannot_delete_the_account_you_are_signed_in_with(self):
+        self.client.post(reverse('account_delete', args=[self.admin.pk]))
+        self.assertTrue(User.objects.filter(pk=self.admin.pk).exists())
+
+    def test_you_cannot_delete_a_superuser(self):
+        other = User.objects.create_superuser('root2', password='pw')
+        self.client.post(reverse('account_delete', args=[other.pk]))
+        self.assertTrue(User.objects.filter(pk=other.pk).exists())
+
+    def test_you_cannot_revoke_your_own_login(self):
+        self.client.post(reverse('account_revoke', args=[self.admin.pk]))
+        self.admin.refresh_from_db()
+        self.assertTrue(self.admin.is_active)
+
+    def test_a_get_never_deletes(self):
+        self.client.get(reverse('account_delete', args=[self.orphan.pk]))
+        self.assertTrue(User.objects.filter(pk=self.orphan.pk).exists())
+
+    def test_the_sidebar_links_to_it(self):
+        resp = self.client.get(reverse('account_list'))
+        self.assertContains(resp, reverse('account_list'))
+        self.assertContains(resp, 'User Accounts')

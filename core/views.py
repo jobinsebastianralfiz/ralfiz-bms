@@ -8808,3 +8808,171 @@ def asset_delete(request, pk):
         messages.success(request, 'Asset deleted.')
         return redirect('asset_list')
     return render(request, 'assets/confirm_delete.html', {'asset': asset})
+
+
+# ============== User Accounts ==============
+
+ACCOUNT_PROFILES = (
+    ('employee_profile', 'Employee'),
+    ('team_profile', 'Team member'),
+    ('intern_profile', 'Intern'),
+    ('client_profile', 'Client'),
+)
+
+
+def _account_roles(account):
+    """The profiles hanging off a login, in the order shown in the table."""
+    return [label for attr, label in ACCOUNT_PROFILES if hasattr(account, attr)]
+
+
+def _deletion_preview(account):
+    """What a hard delete would take with it, as {model label: count}.
+
+    Django cascades a User into time entries, daily activity and the
+    client-facing comment threads, so an admin needs to see the damage
+    before choosing between deleting and revoking.
+    """
+    from django.contrib.admin.utils import NestedObjects
+    from django.db import DEFAULT_DB_ALIAS
+
+    collector = NestedObjects(using=DEFAULT_DB_ALIAS)
+    collector.collect([account])
+    return {
+        model._meta.verbose_name_plural.title(): len(objects)
+        for model, objects in collector.data.items()
+    }
+
+
+def _account_blocker(request, account):
+    """Why this login must not be deleted, or None when it may be."""
+    if account.pk == request.user.pk:
+        return 'You cannot delete the account you are signed in with.'
+    if account.is_superuser:
+        return 'Superuser accounts cannot be deleted here. Use the Django admin.'
+    return None
+
+
+@login_required
+def account_list(request):
+    """Every login in the system, with the profiles attached to it."""
+    if not request.user.is_staff and not request.user.is_superuser:
+        messages.error(request, 'Access denied.')
+        return redirect('dashboard')
+
+    accounts = User.objects.order_by('-is_active', 'first_name', 'username')
+
+    search = request.GET.get('search', '').strip()
+    if search:
+        accounts = accounts.filter(
+            Q(username__icontains=search) | Q(first_name__icontains=search) |
+            Q(last_name__icontains=search) | Q(email__icontains=search)
+        )
+
+    role = request.GET.get('role', '')
+    status = request.GET.get('status', '')
+
+    rows = []
+    for account in accounts:
+        roles = _account_roles(account)
+        if role == 'none' and roles:
+            continue
+        if role and role != 'none' and role not in roles:
+            continue
+        if status == 'active' and not account.is_active:
+            continue
+        if status == 'revoked' and account.is_active:
+            continue
+        rows.append({
+            'account': account,
+            'roles': roles,
+            'blocker': _account_blocker(request, account),
+        })
+
+    return render(request, 'user_accounts/list.html', {
+        'rows': rows,
+        'search': search,
+        'selected_role': role,
+        'selected_status': status,
+        'role_choices': [label for _, label in ACCOUNT_PROFILES],
+        'total': User.objects.count(),
+        'revoked_count': User.objects.filter(is_active=False).count(),
+        'orphan_count': sum(1 for u in User.objects.all()
+                            if not u.is_staff and not u.is_superuser and not _account_roles(u)),
+    })
+
+
+@login_required
+def account_revoke(request, pk):
+    """Stop a login working without deleting anything."""
+    if not request.user.is_staff and not request.user.is_superuser:
+        messages.error(request, 'Access denied.')
+        return redirect('dashboard')
+
+    account = get_object_or_404(User, pk=pk)
+    if request.method != 'POST':
+        return redirect('account_list')
+
+    if account.pk == request.user.pk:
+        messages.error(request, 'You cannot revoke your own login.')
+        return redirect('account_list')
+    if account.is_superuser:
+        messages.error(request, 'Superuser logins cannot be revoked here.')
+        return redirect('account_list')
+
+    revoke_login(account)
+    messages.success(
+        request,
+        f'"{account.get_full_name() or account.username}" can no longer sign in. '
+        'Their records are untouched.'
+    )
+    return redirect('account_list')
+
+
+@login_required
+def account_restore(request, pk):
+    """Let a revoked login back in. They still need a new password."""
+    if not request.user.is_staff and not request.user.is_superuser:
+        messages.error(request, 'Access denied.')
+        return redirect('dashboard')
+
+    account = get_object_or_404(User, pk=pk)
+    if request.method != 'POST':
+        return redirect('account_list')
+
+    account.is_active = True
+    account.save(update_fields=['is_active'])
+    messages.success(
+        request,
+        f'"{account.get_full_name() or account.username}" is active again. '
+        'Set a new password for them - revoking cleared the old one.'
+    )
+    return redirect('account_list')
+
+
+@login_required
+def account_delete(request, pk):
+    """Delete a login and everything Django cascades from it."""
+    if not request.user.is_staff and not request.user.is_superuser:
+        messages.error(request, 'Access denied.')
+        return redirect('dashboard')
+
+    account = get_object_or_404(User, pk=pk)
+    blocker = _account_blocker(request, account)
+
+    if blocker:
+        messages.error(request, blocker)
+        return redirect('account_list')
+
+    if request.method == 'POST':
+        name = account.get_full_name() or account.username
+        removed = _deletion_preview(account)
+        account.delete()
+        detail = ', '.join(f'{count} {label.lower()}' for label, count in sorted(removed.items()))
+        messages.success(request, f'Account "{name}" deleted. Removed: {detail}.')
+        return redirect('account_list')
+
+    return render(request, 'user_accounts/delete.html', {
+        'account': account,
+        'roles': _account_roles(account),
+        'preview': sorted(_deletion_preview(account).items()),
+    })

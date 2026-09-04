@@ -1,0 +1,150 @@
+{% extends 'base.html' %}
+
+{% block title %}User Accounts - Ralfiz BMS{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title">User Accounts</h1>
+    <p class="page-subtitle mb-0">Every login in the system, and the profiles attached to it</p>
+  </div>
+</div>
+
+<div class="row g-3 mb-3">
+  <div class="col-md-4">
+    <div class="card"><div class="card-body">
+      <div class="text-sm text-muted">Total accounts</div>
+      <div class="fs-4 fw-bold">{{ total }}</div>
+    </div></div>
+  </div>
+  <div class="col-md-4">
+    <div class="card"><div class="card-body">
+      <div class="text-sm text-muted">Revoked</div>
+      <div class="fs-4 fw-bold">{{ revoked_count }}</div>
+    </div></div>
+  </div>
+  <div class="col-md-4">
+    <div class="card"><div class="card-body">
+      <div class="text-sm text-muted">No role attached</div>
+      <div class="fs-4 fw-bold">{{ orphan_count }}</div>
+      <div class="text-sm text-muted">Left behind by deleted staff</div>
+    </div></div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header">
+    <h3 class="card-title"><i class="fas fa-id-badge"></i> All Accounts</h3>
+    <div class="card-actions">
+      <form method="get" class="d-flex gap-2">
+        <select name="role" class="form-control" style="width: auto;" onchange="this.form.submit()">
+          <option value="">All roles</option>
+          {% for label in role_choices %}
+          <option value="{{ label }}" {% if selected_role == label %}selected{% endif %}>{{ label }}</option>
+          {% endfor %}
+          <option value="none" {% if selected_role == 'none' %}selected{% endif %}>No role attached</option>
+        </select>
+        <select name="status" class="form-control" style="width: auto;" onchange="this.form.submit()">
+          <option value="">Any status</option>
+          <option value="active" {% if selected_status == 'active' %}selected{% endif %}>Can sign in</option>
+          <option value="revoked" {% if selected_status == 'revoked' %}selected{% endif %}>Revoked</option>
+        </select>
+        <input type="text" name="search" class="form-control" placeholder="Search..." value="{{ search }}" style="width: 200px;">
+        <button type="submit" class="btn btn-outline-primary"><i class="fas fa-search"></i></button>
+      </form>
+    </div>
+  </div>
+  <div class="card-body p-0">
+    {% if rows %}
+    <div class="table-responsive">
+      <table class="table table-hover mb-0">
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th>Username</th>
+            <th>Roles</th>
+            <th>Email</th>
+            <th>Last sign-in</th>
+            <th>Status</th>
+            <th class="text-end">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for row in rows %}
+          <tr>
+            <td>
+              <div class="d-flex align-items-center gap-2">
+                <div class="avatar avatar-sm" style="background: var(--primary); color: white;">
+                  {% firstof row.account.first_name row.account.username "?" as who %}{{ who|slice:":1"|upper }}
+                </div>
+                <div>
+                  <span class="fw-medium">{% firstof row.account.get_full_name row.account.username %}</span>
+                  {% if row.account.is_superuser %}
+                  <br><small class="text-muted"><i class="fas fa-shield-halved"></i> Superuser</small>
+                  {% elif row.account.is_staff %}
+                  <br><small class="text-muted"><i class="fas fa-user-gear"></i> Staff</small>
+                  {% endif %}
+                </div>
+              </div>
+            </td>
+            <td><code>{{ row.account.username }}</code></td>
+            <td>
+              {% for role in row.roles %}
+              <span class="badge bg-primary">{{ role }}</span>
+              {% empty %}
+              <span class="badge bg-warning text-dark">No role</span>
+              {% endfor %}
+            </td>
+            <td>{{ row.account.email|default:"-" }}</td>
+            <td>{{ row.account.last_login|date:"d M Y"|default:"Never" }}</td>
+            <td>
+              {% if row.account.is_active %}
+              <span class="badge bg-success">Can sign in</span>
+              {% else %}
+              <span class="badge bg-secondary">Revoked</span>
+              {% endif %}
+            </td>
+            <td class="text-end">
+              {% if row.blocker %}
+              <span class="text-muted text-sm" title="{{ row.blocker }}"><i class="fas fa-lock"></i> Protected</span>
+              {% else %}
+              {% if row.account.is_active %}
+              <form method="post" action="{% url 'account_revoke' row.account.pk %}" class="d-inline"
+                    onsubmit="return confirm('Stop {% firstof row.account.get_full_name row.account.username %} signing in? Their records stay exactly as they are, and you can undo this.')">
+                {% csrf_token %}
+                <button class="btn btn-sm btn-ghost" title="Stop this login working"><i class="fas fa-ban"></i></button>
+              </form>
+              {% else %}
+              <form method="post" action="{% url 'account_restore' row.account.pk %}" class="d-inline"
+                    onsubmit="return confirm('Let {% firstof row.account.get_full_name row.account.username %} sign in again? You will need to set a new password for them.')">
+                {% csrf_token %}
+                <button class="btn btn-sm btn-ghost" title="Allow this login again"><i class="fas fa-rotate-left"></i></button>
+              </form>
+              {% endif %}
+              <a href="{% url 'account_delete' row.account.pk %}" class="btn btn-sm btn-ghost text-danger" title="Delete this account">
+                <i class="fas fa-trash"></i>
+              </a>
+              {% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <div class="empty-state p-4 text-center">
+      <i class="fas fa-id-badge fa-2x text-muted mb-2"></i>
+      <p class="text-muted mb-0">No accounts match this filter.</p>
+    </div>
+    {% endif %}
+  </div>
+</div>
+
+<p class="text-sm text-muted mt-3">
+  <i class="fas fa-circle-info"></i>
+  Revoking is the safer option: it stops the person signing in anywhere &mdash; the app, the
+  staff portal and the mobile API &mdash; while leaving their work history intact. Deleting is
+  permanent and takes their linked records with it; the confirmation page lists exactly what
+  will go.
+</p>
+{% endblock %}

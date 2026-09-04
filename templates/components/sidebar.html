@@ -101,6 +101,11 @@
         <i class="fas fa-user-friends"></i>
         <span>Team Members</span>
       </a>
+      {# Prefix match, not a substring: 'account' also appears in bank_account_*. #}
+      <a href="{% url 'account_list' %}" class="nav-item {% if request.resolver_match.url_name|slice:":8" == "account_" %}active{% endif %}">
+        <i class="fas fa-id-badge"></i>
+        <span>User Accounts</span>
+      </a>
       <a href="{% url 'credential_list' %}" class="nav-item {% if 'credential' in request.resolver_match.url_name %}active{% endif %}">
         <i class="fas fa-key"></i>
         <span>Credentials</span>
