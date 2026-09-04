@@ -345,6 +345,22 @@ class CertificateBodyRewriteTests(TestCase):
             'has successfully completed the **{course_name}**.',
         )
 
+    def test_strips_separately_bolded_salutation_and_name(self):
+        body = ('This is to certify that **{salutation}** **{student_name}**, a student of '
+                '**{college_name}**, has successfully completed the **{course_name}**.')
+        self.assertEqual(
+            self._rewrite(body),
+            'has successfully completed the **{course_name}**.',
+        )
+
+    def test_strips_a_bold_wrapped_employee_name(self):
+        body = ('This is to certify that **{salutation} {employee_name}** was associated '
+                'with Ralfiz Technologies as a **{designation}**.')
+        self.assertEqual(
+            self._rewrite(body),
+            'was associated with Ralfiz Technologies as a **{designation}**.',
+        )
+
     def test_drops_a_trailing_issue_date_line(self):
         body = ('This is to certify that **{student_name}** did well.\n\n'
                 'Well done.\n\nDate: {issue_date}')

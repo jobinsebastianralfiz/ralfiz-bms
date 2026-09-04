@@ -35,10 +35,16 @@ _LEAD_IN = re.compile(
 # both resolve to the same person.
 _NAME_PLACEHOLDERS = ('{student_name}', '{employee_name}')
 
-# The name itself, optionally preceded by the salutation and, as the shipped
-# templates all do, wrapped in `**bold**`.
+# Asterisks and spaces between the placeholders, in any arrangement. The
+# shipped templates variously write `**{salutation} {student_name}**` and
+# `**{salutation}** **{student_name}**`, so the bold runs cannot be assumed
+# to wrap the pair as a whole. Newlines are excluded so this never swallows
+# the line break into the next sentence.
+_GAP = r'(?:\*|[^\S\n])*'
+
+# The name itself, optionally preceded by the salutation.
 _NAME = re.compile(
-    r'^\*{0,2}(?:\{salutation\}\s*)?\*{0,2}\{(?:student|employee)_name\}\*{0,2}\s*',
+    rf'^{_GAP}(?:\{{salutation\}}{_GAP})?\{{(?:student|employee)_name\}}{_GAP}',
     re.IGNORECASE,
 )
 
