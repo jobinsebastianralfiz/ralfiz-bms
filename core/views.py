@@ -6833,7 +6833,7 @@ def emp_employee_detail(request, pk):
 
 @login_required
 def emp_employee_delete(request, pk):
-    """Delete an employee and their related data, keeping the User and TeamMember intact"""
+    """Delete an employee, revoke their login, and keep the TeamMember profile."""
     from django.db import transaction
     from django.db.models import ProtectedError
     from employees.models import (Employee, Attendance, LeaveRequest, WorkAssignment,
@@ -6843,6 +6843,7 @@ def emp_employee_delete(request, pk):
 
     employee = get_object_or_404(Employee, pk=pk)
     name = employee.full_name
+    account = employee.user
 
     signed_agreements = AgreementRequest.objects.filter(
         employee=employee, status__in=AgreementRequest.RESPONDED_STATUSES
@@ -6866,6 +6867,7 @@ def emp_employee_delete(request, pk):
                 if not wa.assigned_to.exists():
                     wa.delete()
             employee.delete()
+            revoke_login(account)
     except ProtectedError as exc:
         blocking = ', '.join(sorted({obj._meta.verbose_name for obj in exc.protected_objects}))
         messages.error(
@@ -6880,10 +6882,34 @@ def emp_employee_delete(request, pk):
         note = f' {signed_agreements} signed internship agreement(s) were removed with them.'
     messages.success(
         request,
-        f'Employee "{name}" and all related records deleted. '
-        f'User account and team member profile are preserved.{note}'
+        f'Employee "{name}" and all related records deleted, and their login has been revoked — '
+        f'they can no longer sign in to the app or the staff portal. '
+        f'The team member profile and their work history are preserved.{note}'
     )
     return redirect('emp_employee_list')
+
+
+def revoke_login(account):
+    """Shut a departed person out of the app without erasing their history.
+
+    Hard-deleting the User is not an option: it CASCADEs into TimeEntry,
+    DailyActivity and the client-facing ProjectComment/ProjectUpdate rows, so
+    billable hours and client threads would go with them. Deactivating locks
+    every door instead --
+
+      * `ModelBackend.user_can_authenticate` refuses an inactive user, so no
+        password login on web or `/api/token/`;
+      * SimpleJWT's `JWTAuthentication.get_user` re-checks `is_active` on every
+        request, so access tokens already on a phone stop working immediately
+        rather than lasting out their day;
+      * an unusable password changes `get_session_auth_hash()`, which signs out
+        any live staff-portal session on its next request.
+    """
+    if account is None or not account.is_active:
+        return
+    account.is_active = False
+    account.set_unusable_password()
+    account.save(update_fields=['is_active', 'password'])
 
 
 @login_required

@@ -30,7 +30,7 @@
     </div>
   </div>
   <div class="page-actions">
-    <form method="post" action="{% url 'emp_employee_delete' employee.pk %}" onsubmit="return confirm('Are you sure you want to delete this employee? This will remove all their attendance, leave, and work records. The team member profile (if any) will be kept.')">
+    <form method="post" action="{% url 'emp_employee_delete' employee.pk %}" onsubmit="return confirm('Delete this employee? Their attendance, leave, work records and signed agreements will be removed, and their login will be revoked so they can no longer sign in to the app or the staff portal. The team member profile (if any) is kept.')">
       {% csrf_token %}
       <button type="submit" class="btn btn-danger"><i class="fas fa-trash me-1"></i> Delete Employee</button>
     </form>
