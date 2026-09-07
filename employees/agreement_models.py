@@ -73,6 +73,7 @@ class AgreementTemplate(models.Model):
 
     AGREEMENT_TYPE_CHOICES = [
         ('internship_continuation', 'Internship Continuation'),
+        ('internship_new_joinee', 'Internship - New Joinee'),
         ('other', 'Other'),
     ]
 
@@ -108,6 +109,50 @@ class AgreementTemplate(models.Model):
                   'Falls back to confirmation_html when blank.')
     continue_label = models.CharField(max_length=100, default='Continue my internship')
     decline_label = models.CharField(max_length=100, default='Discontinue my internship')
+
+    # The signing page and the signed copy used to hardcode the continuation
+    # wording. A new joiner is accepting an offer, not deciding whether to
+    # carry on, so every visible phrase is template copy. The defaults are the
+    # exact strings that were hardcoded, which keeps existing agreements
+    # rendering byte for byte as before.
+    decision_heading = models.CharField(
+        max_length=120, default='Continuation Decision',
+        help_text='Heading above the YES / NO buttons.')
+    accept_statement = models.CharField(
+        max_length=200, default='I wish to continue my internship',
+        help_text='The YES line recorded in the signed copy.')
+    decline_statement = models.CharField(
+        max_length=200, default='I do not wish to continue my internship',
+        help_text='The NO line recorded in the signed copy.')
+    accept_sub = models.CharField(
+        max_length=120, default='with Ralfiz Technologies',
+        help_text='Small print under the YES button in the numbered decision section.')
+    decline_sub = models.CharField(
+        max_length=120, default='end participation in the program',
+        help_text='Small print under the NO button in the numbered decision section.')
+    accept_confirm_text = models.CharField(
+        max_length=300,
+        default='I confirm I have read and understood the terms, and I agree to continue my internship',
+        help_text='Checkbox beside the signature. The money sentence is appended to it.')
+    money_confirm_suffix = models.CharField(
+        max_length=200, blank=True,
+        default='and to pay the applicable {amount} monthly internship fee',
+        help_text='Appended to the checkbox when an amount applies. {amount} is filled in.')
+    decline_heading = models.CharField(
+        max_length=120, default='Discontinue Internship')
+    decline_intro = models.TextField(
+        default='You are about to inform Ralfiz Technologies that you do not wish to '
+                'continue your internship.',
+        help_text='Shown above the reason box on the decline panel.')
+    decline_button_label = models.CharField(
+        max_length=100, default='Confirm discontinuation')
+    money_agreed_note = models.CharField(
+        max_length=200, blank=True,
+        default='Agreed to the monthly internship fee of {amount}.',
+        help_text='Recorded in the signed copy when an amount applies. {amount} is filled in.')
+    no_money_note = models.CharField(
+        max_length=200, blank=True, default='This internship carries no monthly fee.',
+        help_text='Recorded in the signed copy when there is no amount.')
 
     require_college_fields = models.BooleanField(
         default=True,
@@ -148,6 +193,7 @@ class AgreementTemplate(models.Model):
         """
         fee = self.resolve_fee(fee_override)
         is_free = fee is None
+        money = '' if is_free else f'\u20b9{fee:.2f}'.rstrip('0').rstrip('.')
 
         sections = []
         for section in (self.sections or []):
@@ -186,6 +232,28 @@ class AgreementTemplate(models.Model):
             'confirmation_html': confirmation,
             'continue_label': self.continue_label,
             'decline_label': self.decline_label,
+            'decision_heading': self.decision_heading,
+            'accept_sub': self.accept_sub,
+            'decline_sub': self.decline_sub,
+            # The confirmation block follows the last numbered section, which
+            # is not always nine.
+            'confirmation_no': len(sections) + 1,
+            'accept_statement': self.accept_statement,
+            'decline_statement': self.decline_statement,
+            'accept_confirm_text': self.accept_confirm_text,
+            'money_confirm_suffix': self.money_confirm_suffix,
+            'decline_heading': self.decline_heading,
+            'decline_intro': self.decline_intro,
+            'decline_button_label': self.decline_button_label,
+            # Resolved here, not in the page: the signed wording must name the
+            # amount that was actually agreed, not the template's current one.
+            'money_note': (
+                self.no_money_note if is_free
+                else self.money_agreed_note.replace('{amount}', money)
+            ),
+            'money_confirm_line': (
+                '' if is_free else self.money_confirm_suffix.replace('{amount}', money)
+            ),
             'require_college_fields': self.require_college_fields,
         }
 

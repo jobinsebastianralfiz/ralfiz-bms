@@ -79,7 +79,7 @@
   <section class="agr-section">
     <div class="agr-section-head">
       <span class="agr-no">&bull;</span>
-      <h2>Continuation Decision</h2>
+      <h2>{% firstof doc.decision_heading 'Continuation Decision' %}</h2>
     </div>
 
     <div class="decision-record">
@@ -87,14 +87,14 @@
         <span class="tickbox">{% if agreement.decision == 'continue' %}&#10003;{% endif %}</span>
         <div>
           <strong>YES</strong>
-          <span>I wish to continue my internship</span>
+          <span>{% firstof doc.accept_statement 'I wish to continue my internship' %}</span>
         </div>
       </div>
       <div class="decision-box {% if agreement.decision == 'discontinue' %}chosen{% endif %}">
         <span class="tickbox">{% if agreement.decision == 'discontinue' %}&#10003;{% endif %}</span>
         <div>
           <strong>NO</strong>
-          <span>I do not wish to continue my internship</span>
+          <span>{% firstof doc.decline_statement 'I do not wish to continue my internship' %}</span>
         </div>
       </div>
     </div>
@@ -105,10 +105,9 @@
 
     {% if agreement.decision == 'continue' %}
     <p class="agr-footnote">
-      {% if agreement.snapshot_fee %}
-      Agreed to the monthly internship fee of &#8377;{{ agreement.snapshot_fee|floatformat:"-2" }}.
-      {% else %}
-      This internship carries no monthly fee.
+      {% if doc.money_note %}{{ doc.money_note }}
+      {% elif agreement.snapshot_fee %}Agreed to the monthly internship fee of &#8377;{{ agreement.snapshot_fee|floatformat:"-2" }}.
+      {% else %}This internship carries no monthly fee.
       {% endif %}
     </p>
     {% endif %}

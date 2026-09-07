@@ -40,7 +40,7 @@
     </div>
   </div>
 
-  <h3 class="form-heading">Continuation Decision</h3>
+  <h3 class="form-heading">{% firstof doc.decision_heading 'Continuation Decision' %}</h3>
   <div class="decision-grid">
     <button type="button" class="decision-btn yes" id="btn-continue" disabled>
       <strong>YES</strong>
@@ -120,8 +120,7 @@
       <input type="checkbox" id="agreed_to_terms" name="agreed_to_terms"
              {% if posted.agreed_to_terms %}checked{% endif %}>
       <label for="agreed_to_terms">
-        I confirm I have read and understood the terms, and I agree to continue my internship
-        {% if doc.monthly_fee %}and to pay the applicable &#8377;{{ doc.monthly_fee|floatformat:"-2" }} monthly internship fee{% endif %}.
+        {% firstof doc.accept_confirm_text 'I confirm I have read and understood the terms, and I agree to continue my internship' %}{% if doc.money_confirm_line %} {{ doc.money_confirm_line }}{% elif doc.monthly_fee %} and to pay the applicable &#8377;{{ doc.monthly_fee|floatformat:"-2" }} monthly internship fee{% endif %}.
       </label>
     </div>
     {% if errors.agreed_to_terms %}<div class="field-error" style="margin-top:-8px;margin-bottom:14px;">{{ errors.agreed_to_terms }}</div>{% endif %}
@@ -133,8 +132,8 @@
   {# ---- Discontinue ---- #}
   <div id="panel-decline" hidden>
     <hr class="form-divider">
-    <h3 class="form-heading">Discontinue Internship</h3>
-    <p>You are about to inform Ralfiz Technologies that you do not wish to continue your internship.
+    <h3 class="form-heading">{% firstof doc.decline_heading 'Discontinue Internship' %}</h3>
+    <p>{% firstof doc.decline_intro 'You are about to inform Ralfiz Technologies that you do not wish to continue your internship.' %}
        This cannot be undone from this link.</p>
 
     <div class="field">
@@ -143,7 +142,7 @@
                 placeholder="Anything you would like us to know?">{{ posted.decline_reason|default:'' }}</textarea>
     </div>
 
-    <button type="submit" class="btn-submit danger">Confirm discontinuation</button>
+    <button type="submit" class="btn-submit danger">{% firstof doc.decline_button_label 'Confirm discontinuation' %}</button>
     <div class="btn-back"><button type="button" class="btn-link js-reset">Change my choice</button></div>
   </div>
 </form>

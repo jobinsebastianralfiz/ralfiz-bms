@@ -12,8 +12,8 @@ Shared by the signing page and the signed copy so the two can never drift.
     {% if section.no == 1 %}
     <p>{{ section.body }}</p>
     <div class="choice-preview">
-      <div><strong>{{ doc.continue_label }}</strong>with Ralfiz Technologies</div>
-      <div><strong>{{ doc.decline_label }}</strong>end participation in the program</div>
+      <div><strong>{{ doc.continue_label }}</strong>{% firstof doc.accept_sub 'with Ralfiz Technologies' %}</div>
+      <div><strong>{{ doc.decline_label }}</strong>{% firstof doc.decline_sub 'end participation in the program' %}</div>
     </div>
     {% else %}
 
@@ -48,7 +48,7 @@ Shared by the signing page and the signed copy so the two can never drift.
   {% if doc.confirmation_html %}
   <section class="agr-section">
     <div class="agr-section-head">
-      <span class="agr-no">10</span>
+      <span class="agr-no">{{ doc.confirmation_no }}</span>
       <h2>Confirmation</h2>
     </div>
     <div class="agr-callout dark">{{ doc.confirmation_html|safe }}</div>

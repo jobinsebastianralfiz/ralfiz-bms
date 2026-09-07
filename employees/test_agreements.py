@@ -655,3 +655,97 @@ class CountersignatureTests(AgreementTestBase):
         from employees.agreement_views import _static_data_uri
 
         self.assertEqual(_static_data_uri('certificates/does-not-exist.png'), '')
+
+class NewJoineeAgreementTests(TestCase):
+    """A new joiner accepts an offer; they are not deciding whether to carry on."""
+
+    def setUp(self):
+        from django.core.management import call_command
+        call_command('seed_new_joinee_agreement', verbosity=0)
+        self.template = AgreementTemplate.objects.get(agreement_type='internship_new_joinee')
+
+    def test_it_covers_every_area_the_document_has_to_state(self):
+        titles = ' '.join(s['title'] for s in self.template.sections)
+        for area in ['Internship Offer', 'Period & Renewal', 'Stipend',
+                     'Company Policy', 'Confidentiality', 'Job Offer']:
+            self.assertIn(area, titles, f'missing a section for {area}')
+
+    def test_it_does_not_promise_employment(self):
+        """A promise of a job would bind the company; the wording must stay conditional."""
+        offer = next(s for s in self.template.sections if 'Job Offer' in s['title'])
+        body = ' '.join(offer['bullets']) + ' ' + offer.get('footnote', '')
+        self.assertIn('may be considered', body)
+        self.assertIn('does not by itself create', body)
+        self.assertNotIn('will be offered', body)
+
+    def test_the_decision_wording_is_about_accepting_not_continuing(self):
+        doc = self.template.build_snapshot()
+        self.assertEqual(doc['decision_heading'], 'Internship Offer Decision')
+        self.assertNotIn('continue', doc['accept_statement'].lower())
+        self.assertNotIn('continue', doc['continue_label'].lower())
+
+    def test_a_stipend_is_worded_as_paid_to_the_intern(self):
+        doc = self.template.build_snapshot(fee_override=Decimal('8000'))
+        self.assertEqual(doc['money_note'], 'Accepted on a monthly stipend of \u20b98000.')
+        self.assertIn('stipend', doc['money_confirm_line'])
+
+    def test_no_stipend_swaps_the_section_the_way_the_fee_one_does(self):
+        doc = self.template.build_snapshot(fee_override=None)
+        section = next(s for s in doc['sections'] if s['no'] == 3)
+        self.assertEqual(section['title'], 'Learning Support & Guidance')
+        self.assertFalse(section.get('show_fee'))
+        self.assertEqual(doc['money_note'], 'This internship carries no monthly stipend.')
+
+    def test_seeding_twice_does_not_duplicate_or_clobber_hr_edits(self):
+        from django.core.management import call_command
+        self.template.heading = 'Edited by HR'
+        self.template.save()
+        call_command('seed_new_joinee_agreement', verbosity=0)
+        self.template.refresh_from_db()
+        self.assertEqual(self.template.heading, 'Edited by HR')
+        self.assertEqual(
+            AgreementTemplate.objects.filter(agreement_type='internship_new_joinee').count(), 1)
+
+    def test_force_overwrites_when_asked(self):
+        from django.core.management import call_command
+        self.template.heading = 'Edited by HR'
+        self.template.save()
+        call_command('seed_new_joinee_agreement', '--force', verbosity=0)
+        self.template.refresh_from_db()
+        self.assertEqual(self.template.heading, 'Internship Agreement')
+
+    def test_the_confirmation_block_follows_the_last_section(self):
+        """It was pinned at 10 for the nine-section continuation agreement."""
+        doc = self.template.build_snapshot()
+        self.assertEqual(doc['confirmation_no'], len(doc['sections']) + 1)
+        self.assertEqual(doc['confirmation_no'], 12)
+
+    def test_the_decision_sublabels_do_not_talk_about_ending_participation(self):
+        """A new joiner has not started, so they cannot 'end participation'."""
+        doc = self.template.build_snapshot()
+        self.assertNotIn('end participation', doc['decline_sub'])
+        self.assertEqual(doc['accept_sub'], 'join Ralfiz Technologies as an intern')
+
+
+class ContinuationWordingUnchangedTests(TestCase):
+    """The continuation agreement must read exactly as it did before the
+    decision wording became template copy."""
+
+    def test_the_defaults_are_the_strings_that_used_to_be_hardcoded(self):
+        t = AgreementTemplate(name='x', version='v1')
+        self.assertEqual(t.decision_heading, 'Continuation Decision')
+        self.assertEqual(t.accept_statement, 'I wish to continue my internship')
+        self.assertEqual(t.decline_statement, 'I do not wish to continue my internship')
+        self.assertEqual(t.decline_heading, 'Discontinue Internship')
+        self.assertEqual(t.decline_button_label, 'Confirm discontinuation')
+        self.assertEqual(t.no_money_note, 'This internship carries no monthly fee.')
+
+    def test_the_continuation_confirmation_is_still_numbered_ten(self):
+        from django.core.management import call_command
+        call_command('seed_internship_agreement', verbosity=0)
+        t = AgreementTemplate.objects.get(agreement_type='internship_continuation')
+        doc = t.build_snapshot()
+        self.assertEqual(len(doc['sections']), 9)
+        self.assertEqual(doc['confirmation_no'], 10)
+        self.assertEqual(doc['accept_sub'], 'with Ralfiz Technologies')
+        self.assertEqual(doc['decline_sub'], 'end participation in the program')
