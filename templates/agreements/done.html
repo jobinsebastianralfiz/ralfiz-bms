@@ -7,13 +7,11 @@
   {% if agreement.decision == 'continue' %}
   <div class="status-icon ok">&#10003;</div>
   <h1>Thank you, {{ agreement.full_name|default:employee.full_name }}</h1>
-  <p>Your confirmation to <strong>continue your internship</strong> with Ralfiz Technologies
-     has been recorded. Our team will be in touch about the next steps.</p>
+  <p>{% firstof doc.done_accepted_html 'Your confirmation to <strong>continue your internship</strong> with Ralfiz Technologies has been recorded. Our team will be in touch about the next steps.' %}</p>
   {% else %}
   <div class="status-icon stop">&times;</div>
   <h1>Your response is recorded</h1>
-  <p>We have noted that you do not wish to continue your internship. Thank you for letting us
-     know, and we wish you all the best.</p>
+  <p>{% firstof doc.done_declined_html 'We have noted that you do not wish to continue your internship. Thank you for letting us know, and we wish you all the best.' %}</p>
   {% endif %}
 
   <div class="receipt">
@@ -25,9 +23,9 @@
       <span>Decision</span>
       <span>
         {% if agreement.decision == 'continue' %}
-        <span class="pill ok">Continuing</span>
+        <span class="pill ok">{% firstof doc.accepted_pill 'Continuing' %}</span>
         {% else %}
-        <span class="pill stop">Discontinued</span>
+        <span class="pill stop">{% firstof doc.declined_pill 'Discontinued' %}</span>
         {% endif %}
       </span>
     </div>

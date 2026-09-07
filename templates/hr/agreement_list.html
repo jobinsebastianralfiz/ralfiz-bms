@@ -5,7 +5,7 @@
 <div class="page-header">
   <div>
     <h1 class="page-title">Agreements</h1>
-    <p class="page-subtitle mb-0">Who has confirmed they are continuing, and who has not answered yet</p>
+    <p class="page-subtitle mb-0">Who has accepted, who has declined, and who has not answered yet</p>
   </div>
   <div class="page-actions">
     <a href="{% url 'agreement_send' %}" class="btn btn-primary"><i class="fas fa-paper-plane"></i> Send Agreement</a>
@@ -28,7 +28,7 @@
         <div class="stat-card-icon success"><i class="fas fa-check"></i></div>
       </div>
       <div class="stat-card-value">{{ counters.accepted }}</div>
-      <div class="stat-card-label">Continuing</div>
+      <div class="stat-card-label">Accepted</div>
     </a>
   </div>
   <div class="col-3 col-md-6 col-sm-12" style="padding: 0.75rem;">
@@ -37,7 +37,7 @@
         <div class="stat-card-icon danger"><i class="fas fa-times"></i></div>
       </div>
       <div class="stat-card-value">{{ counters.declined }}</div>
-      <div class="stat-card-label">Discontinued</div>
+      <div class="stat-card-label">Declined</div>
     </a>
   </div>
   <div class="col-3 col-md-6 col-sm-12" style="padding: 0.75rem;">

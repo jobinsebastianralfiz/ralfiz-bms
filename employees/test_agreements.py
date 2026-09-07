@@ -727,6 +727,14 @@ class NewJoineeAgreementTests(TestCase):
         self.assertNotIn('end participation', doc['decline_sub'])
         self.assertEqual(doc['accept_sub'], 'join Ralfiz Technologies as an intern')
 
+    def test_the_outcome_wording_is_not_about_continuing(self):
+        """The thank-you page and the pill said "Continuing" for everyone."""
+        doc = self.template.build_snapshot()
+        self.assertEqual(doc['accepted_pill'], 'Accepted')
+        self.assertEqual(doc['declined_pill'], 'Declined')
+        self.assertNotIn('continue your internship', doc['done_accepted_html'])
+        self.assertIn('start date', doc['done_accepted_html'])
+
 
 class ContinuationWordingUnchangedTests(TestCase):
     """The continuation agreement must read exactly as it did before the
@@ -739,6 +747,9 @@ class ContinuationWordingUnchangedTests(TestCase):
         self.assertEqual(t.decline_statement, 'I do not wish to continue my internship')
         self.assertEqual(t.decline_heading, 'Discontinue Internship')
         self.assertEqual(t.decline_button_label, 'Confirm discontinuation')
+        self.assertEqual(t.accepted_pill, 'Continuing')
+        self.assertEqual(t.declined_pill, 'Discontinued')
+        self.assertIn('continue your internship', t.done_accepted_html)
 
     def test_the_continuation_confirmation_is_still_numbered_ten(self):
         from django.core.management import call_command

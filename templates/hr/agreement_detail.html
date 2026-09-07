@@ -45,9 +45,9 @@
           <div><label class="text-muted text-sm">Decision</label>
             <div class="fw-medium">
               {% if agreement.decision == 'continue' %}
-              <span class="badge bg-success">Continuing</span>
+              <span class="badge bg-success">{% firstof agreement.snapshot_json.accepted_pill 'Continuing' %}</span>
               {% else %}
-              <span class="badge bg-danger">Discontinued</span>
+              <span class="badge bg-danger">{% firstof agreement.snapshot_json.declined_pill 'Discontinued' %}</span>
               {% endif %}
             </div>
           </div>

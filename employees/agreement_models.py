@@ -213,6 +213,20 @@ class AgreementTemplate(models.Model):
         help_text='Shown above the reason box on the decline panel.')
     decline_button_label = models.CharField(
         max_length=100, default='Confirm discontinuation')
+    accepted_pill = models.CharField(
+        max_length=60, default='Continuing',
+        help_text='Outcome shown on the thank-you page when they say yes.')
+    declined_pill = models.CharField(
+        max_length=60, default='Discontinued',
+        help_text='Outcome shown on the thank-you page when they say no.')
+    done_accepted_html = models.TextField(
+        default='Your confirmation to <strong>continue your internship</strong> with Ralfiz '
+                'Technologies has been recorded. Our team will be in touch about the next steps.',
+        help_text='Thank-you paragraph after they say yes.')
+    done_declined_html = models.TextField(
+        default='We have noted that you do not wish to continue your internship. Thank you for '
+                'letting us know, and we wish you all the best.',
+        help_text='Paragraph after they say no.')
 
     require_college_fields = models.BooleanField(
         default=True,
@@ -334,6 +348,10 @@ class AgreementTemplate(models.Model):
             'decline_heading': self.decline_heading,
             'decline_intro': self.decline_intro,
             'decline_button_label': self.decline_button_label,
+            'accepted_pill': self.accepted_pill,
+            'declined_pill': self.declined_pill,
+            'done_accepted_html': self.done_accepted_html,
+            'done_declined_html': self.done_declined_html,
             # Resolved here, not in the page: the signed wording must name the
             # amount that was actually agreed, not the template's current one.
             'money_note': (block.get('agreed_note') or '').replace('{amount}', money),
@@ -355,8 +373,8 @@ class AgreementRequest(models.Model):
     STATUS_CHOICES = [
         (STATUS_PENDING, 'Sent'),
         (STATUS_VIEWED, 'Opened'),
-        (STATUS_ACCEPTED, 'Continuing'),
-        (STATUS_DECLINED, 'Discontinued'),
+        (STATUS_ACCEPTED, 'Accepted'),
+        (STATUS_DECLINED, 'Declined'),
         (STATUS_CANCELLED, 'Cancelled'),
         (STATUS_SUPERSEDED, 'Superseded'),
     ]

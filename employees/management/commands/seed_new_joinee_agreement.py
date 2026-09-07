@@ -248,6 +248,13 @@ class Command(BaseCommand):
             'decline_intro': 'You are about to inform Ralfiz Technologies that you do not wish to take up '
                              'this internship.',
             'decline_button_label': 'Confirm my decision',
+            'accepted_pill': 'Accepted',
+            'declined_pill': 'Declined',
+            'done_accepted_html': 'Your acceptance of this internship with Ralfiz Technologies has '
+                                  'been recorded. Our team will be in touch about your start date '
+                                  'and joining details.',
+            'done_declined_html': 'We have noted that you do not wish to take up this internship. '
+                                  'Thank you for letting us know, and we wish you all the best.',
             'require_college_fields': True,
             'is_active': True,
         }
