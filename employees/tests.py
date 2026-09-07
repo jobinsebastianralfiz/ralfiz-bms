@@ -614,6 +614,63 @@ class CertificateQrTests(TestCase):
         self.assertIn('.verify .qr-tile', html)
 
 
+class CertificateVerifyPageTests(TestCase):
+    """The page a reader lands on after scanning the QR."""
+
+    def _cert(self, **overrides):
+        fields = dict(
+            certificate_number='RT/PR/26/inter/004',
+            student_name='Fathima Hiba K P',
+            salutation='Mr.',
+            college_name="St.Mary's College Puthanangadi",
+            course_name='',
+            position='Flutter Developer Intern',
+            register_number='BAI247966',
+            start_date=date(2026, 5, 3),
+            end_date=date(2026, 8, 31),
+            duration_days=172,
+            mode='offline',
+            skills=['Flutter & Dart'],
+            date_of_issuance=date(2026, 9, 4),
+            body_text='has completed an internship.',
+        )
+        fields.update(overrides)
+        cert = Certificate.objects.create(**fields)
+        return cert
+
+    def _page(self, cert):
+        return self.client.get(f'/v/{cert.verification_id}/').content.decode()
+
+    def test_it_shows_the_position_when_no_program_was_recorded(self):
+        """Certificates issued since the position field exists leave course_name blank."""
+        html = self._page(self._cert())
+        self.assertIn('Position / Role', html)
+        self.assertIn('Flutter Developer Intern', html)
+        self.assertNotIn('>Program<', html)
+
+    def test_it_shows_both_when_the_program_differs_from_the_position(self):
+        html = self._page(self._cert(course_name='Mobile App Development Internship'))
+        self.assertIn('Position / Role', html)
+        self.assertIn('Mobile App Development Internship', html)
+
+    def test_it_shows_the_register_number_college_type_and_skills(self):
+        html = self._page(self._cert())
+        self.assertIn('BAI247966', html)
+        self.assertIn('Internship', html)
+        self.assertIn('Flutter &amp; Dart', html)
+
+    def test_it_omits_rows_that_have_no_value(self):
+        html = self._page(self._cert(register_number='', college_name='', skills=[]))
+        self.assertNotIn('Register No', html)
+        self.assertNotIn('College', html)
+        self.assertNotIn('>Skills<', html)
+
+    def test_an_unknown_id_is_reported_as_invalid(self):
+        import uuid
+        html = self.client.get(f'/v/{uuid.uuid4()}/').content.decode()
+        self.assertIn('Invalid Certificate', html)
+
+
 class CertificateFooterNoticeTests(TestCase):
     """A reader should be able to tell the document was machine-issued."""
 

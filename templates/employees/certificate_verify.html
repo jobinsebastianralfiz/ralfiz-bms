@@ -41,8 +41,12 @@
         .card-body { padding: 24px; }
         .detail { display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid #eee; }
         .detail:last-child { border-bottom: none; }
-        .detail .label { color: #888; font-size: 13px; }
+        .detail .label { color: #888; font-size: 13px; white-space: nowrap; padding-right: 16px; }
         .detail .value { color: #333; font-weight: 500; font-size: 14px; text-align: right; }
+        .detail.skills { align-items: flex-start; }
+        .detail.skills .value ul { list-style: none; }
+        .detail.skills .value li { margin-top: 2px; }
+        .detail.skills .value li:first-child { margin-top: 0; }
         .company-footer {
             text-align: center;
             padding: 16px 24px;
@@ -67,30 +71,62 @@
                 <span class="value">{{ cert.certificate_number }}</span>
             </div>
             <div class="detail">
+                <span class="label">Certificate Type</span>
+                <span class="value">{{ cert.get_certificate_type_display }}</span>
+            </div>
+            <div class="detail">
                 <span class="label">Name</span>
                 <span class="value">{{ cert.salutation }} {{ cert.student_name }}</span>
             </div>
+            {% if cert.register_number %}
+            <div class="detail">
+                <span class="label">Register No</span>
+                <span class="value">{{ cert.register_number }}</span>
+            </div>
+            {% endif %}
             {% if cert.college_name %}
             <div class="detail">
                 <span class="label">College</span>
                 <span class="value">{{ cert.college_name }}</span>
             </div>
             {% endif %}
+            {% if cert.position or cert.course_name %}
+            <div class="detail">
+                <span class="label">Position / Role</span>
+                <span class="value">{% firstof cert.position cert.course_name %}</span>
+            </div>
+            {% endif %}
+            {% if cert.course_name and cert.position and cert.course_name != cert.position %}
             <div class="detail">
                 <span class="label">Program</span>
                 <span class="value">{{ cert.course_name }}</span>
             </div>
+            {% endif %}
+            {% if cert.start_date and cert.end_date %}
             <div class="detail">
                 <span class="label">Duration</span>
-                <span class="value">{{ cert.start_date }} to {{ cert.end_date }} ({{ cert.duration_days }} days)</span>
+                <span class="value">{{ cert.start_date|date:"j M Y" }} to {{ cert.end_date|date:"j M Y" }}{% if cert.duration_days %} ({{ cert.duration_days }} days){% endif %}</span>
             </div>
+            {% endif %}
             <div class="detail">
                 <span class="label">Mode</span>
                 <span class="value">{{ cert.get_mode_display }}</span>
             </div>
+            {% if cert.skills %}
+            <div class="detail skills">
+                <span class="label">Skills</span>
+                <span class="value">
+                    <ul>{% for skill in cert.skills %}<li>{{ skill }}</li>{% endfor %}</ul>
+                </span>
+            </div>
+            {% endif %}
             <div class="detail">
                 <span class="label">Date of Issuance</span>
-                <span class="value">{{ cert.date_of_issuance }}</span>
+                <span class="value">{{ cert.date_of_issuance|date:"j M Y" }}</span>
+            </div>
+            <div class="detail">
+                <span class="label">Issued By</span>
+                <span class="value">Ralfiz Technologies</span>
             </div>
         </div>
         {% else %}
