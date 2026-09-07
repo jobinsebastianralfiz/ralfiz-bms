@@ -77,7 +77,12 @@
       }
       navigator.geolocation.getCurrentPosition(
         function (pos) {
-          resolve({ latitude: pos.coords.latitude, longitude: pos.coords.longitude });
+          // The sensor hands back full double precision; the API stores 7
+          // decimal places (~1cm) and rejects anything longer.
+          resolve({
+            latitude: Number(pos.coords.latitude.toFixed(7)),
+            longitude: Number(pos.coords.longitude.toFixed(7))
+          });
         },
         function (err) {
           if (err.code === 1) {

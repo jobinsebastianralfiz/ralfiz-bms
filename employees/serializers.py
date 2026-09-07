@@ -1,3 +1,4 @@
+import decimal
 from rest_framework import serializers
 from django.contrib.auth.models import User
 from .models import (
@@ -105,9 +106,33 @@ class AttendanceSerializer(serializers.ModelSerializer):
         return obj.seconds_until_eligible()
 
 
+class CoordinateField(serializers.DecimalField):
+    """A latitude or longitude straight off a GPS sensor.
+
+    Browsers and phones hand back a full-precision double
+    (11.028651234567891). DRF counts the digits *before* it quantizes, so
+    such a reading fails max_digits validation and the person cannot check
+    in. The reading is fine, it is just more precise than we store, so
+    round it to our column's precision first. A coordinate is bounded by
+    +/-180, and 7 decimal places is ~1cm, so this always fits.
+    """
+
+    def __init__(self, **kwargs):
+        kwargs.setdefault('max_digits', 10)
+        kwargs.setdefault('decimal_places', 7)
+        super().__init__(**kwargs)
+
+    def to_internal_value(self, data):
+        try:
+            data = round(decimal.Decimal(str(data).strip()), self.decimal_places)
+        except (decimal.InvalidOperation, ValueError, TypeError):
+            pass  # Let the parent raise its own error message.
+        return super().to_internal_value(data)
+
+
 class CheckInSerializer(serializers.Serializer):
-    latitude = serializers.DecimalField(max_digits=10, decimal_places=7, required=False)
-    longitude = serializers.DecimalField(max_digits=10, decimal_places=7, required=False)
+    latitude = CoordinateField(required=False)
+    longitude = CoordinateField(required=False)
     face_confidence = serializers.FloatField(required=False, help_text='Face match confidence from ML Kit (0-1)')
     face_photo = serializers.ImageField(required=False, help_text='Selfie for verification')
     qr_code = serializers.CharField(required=False, help_text='Scanned QR code value')
@@ -120,8 +145,8 @@ class CheckInSerializer(serializers.Serializer):
 
 
 class CheckOutSerializer(serializers.Serializer):
-    latitude = serializers.DecimalField(max_digits=10, decimal_places=7, required=False)
-    longitude = serializers.DecimalField(max_digits=10, decimal_places=7, required=False)
+    latitude = CoordinateField(required=False)
+    longitude = CoordinateField(required=False)
     qr_code = serializers.CharField(required=False, help_text='Scanned office QR. Required unless is_remote attendance.')
     force = serializers.BooleanField(required=False, default=False,
                                      help_text='Force check-out before the required hours / floor time. Shortfall recorded as pending_hours.')

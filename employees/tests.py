@@ -614,6 +614,49 @@ class CertificateQrTests(TestCase):
         self.assertIn('.verify .qr-tile', html)
 
 
+class CoordinatePrecisionTests(TestCase):
+    """A GPS reading is more precise than the column; that is not an error."""
+
+    def _check(self, serializer_cls, value):
+        from employees.serializers import CheckInSerializer, CheckOutSerializer
+        s = serializer_cls(data={'latitude': value, 'longitude': value})
+        return s
+
+    def test_a_full_precision_browser_reading_is_accepted(self):
+        """navigator.geolocation returns a raw double, e.g. 11.028651234567891."""
+        from employees.serializers import CheckInSerializer
+        s = self._check(CheckInSerializer, 11.028651234567891)
+        self.assertTrue(s.is_valid(), s.errors)
+        self.assertEqual(str(s.validated_data['latitude']), '11.0286512')
+
+    def test_check_out_accepts_it_too(self):
+        from employees.serializers import CheckOutSerializer
+        s = self._check(CheckOutSerializer, 76.123456789012345)
+        self.assertTrue(s.is_valid(), s.errors)
+
+    def test_a_string_reading_is_accepted(self):
+        from employees.serializers import CheckInSerializer
+        s = self._check(CheckInSerializer, '11.028651234567891')
+        self.assertTrue(s.is_valid(), s.errors)
+
+    def test_a_negative_coordinate_survives_rounding(self):
+        from employees.serializers import CheckInSerializer
+        s = self._check(CheckInSerializer, -76.987654321987654)
+        self.assertTrue(s.is_valid(), s.errors)
+        self.assertEqual(str(s.validated_data['longitude']), '-76.9876543')
+
+    def test_a_value_that_is_not_a_number_is_still_rejected(self):
+        from employees.serializers import CheckInSerializer
+        s = self._check(CheckInSerializer, 'somewhere')
+        self.assertFalse(s.is_valid())
+
+    def test_an_out_of_range_coordinate_is_still_rejected(self):
+        """Rounding must not smuggle past the max_digits guard."""
+        from employees.serializers import CheckInSerializer
+        s = self._check(CheckInSerializer, 12345.6789)
+        self.assertFalse(s.is_valid())
+
+
 class CertificateVerifyPageTests(TestCase):
     """The page a reader lands on after scanning the QR."""
 
