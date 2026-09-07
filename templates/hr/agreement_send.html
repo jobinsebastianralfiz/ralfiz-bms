@@ -41,11 +41,20 @@
           </select>
         </div>
         <div class="col-md-3">
-          <label class="form-label" for="default_fee">Monthly fee (&#8377;)</label>
+          <label class="form-label" for="default_money_mode">Arrangement</label>
+          <select name="default_money_mode" id="default_money_mode" class="form-control">
+            {% for value, label in money_modes %}
+            <option value="{{ value }}"{% if value == templates.0.money_mode %} selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+          </select>
+          <div class="text-sm text-muted mt-1">Override per person below.</div>
+        </div>
+        <div class="col-md-2">
+          <label class="form-label" for="default_fee">Amount (&#8377;)</label>
           <input type="number" name="default_fee" id="default_fee" class="form-control"
                  min="0" step="1" placeholder="750"
                  value="{% if templates.0.monthly_fee %}{{ templates.0.monthly_fee|floatformat:'0' }}{% endif %}">
-          <div class="text-sm text-muted mt-1">0 = free internship. Override per person below.</div>
+          <div class="text-sm text-muted mt-1">0 = free.</div>
         </div>
         <div class="col-md-4">
           <label class="form-label" for="expiry_days">Link expires in</label>
@@ -84,7 +93,8 @@
               <th>ID</th>
               <th>Type</th>
               <th>Phone</th>
-              <th style="width: 130px;">Monthly fee</th>
+              <th style="width: 150px;">Arrangement</th>
+              <th style="width: 120px;">Amount</th>
               <th>Last agreement</th>
             </tr>
           </thead>
@@ -113,6 +123,15 @@
                 {% else %}
                 <span class="text-muted text-sm"><i class="fas fa-exclamation-triangle"></i> no phone</span>
                 {% endif %}
+              </td>
+              <td onclick="event.stopPropagation();">
+                <select class="form-control form-control-sm js-fee"
+                        name="money_mode_{{ row.employee.id }}">
+                  <option value="">default</option>
+                  {% for value, label in money_modes %}
+                  <option value="{{ value }}"{% if row.latest and row.latest.snapshot_money_mode == value %} selected{% endif %}>{{ label }}</option>
+                  {% endfor %}
+                </select>
               </td>
               <td onclick="event.stopPropagation();">
                 <div class="d-flex align-items-center gap-1">
@@ -144,8 +163,8 @@
     {% if rows %}
     <div class="card-footer d-flex justify-content-between align-items-center">
       <span class="text-sm text-muted">
-        Blank fee boxes use the default above. Enter <strong>0</strong> for a free internship &mdash;
-        the fee section is then removed from that person's agreement.
+        Blank boxes use the defaults above. An amount of <strong>0</strong> means a free internship
+        whichever arrangement is picked &mdash; the money section then says so.
         Anyone with an open link will have it replaced by this one.
       </span>
       <button type="submit" class="btn btn-primary" id="btn-generate" disabled>

@@ -10,21 +10,31 @@ from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 
+from employees.agreement_models import MONEY_MODE_CHOICES
 from employees.models import AgreementRequest, AgreementTemplate, Employee
 
 
-def _posted_fee(request, employee, template):
-    """Fee for one recipient: their own box, else the batch default, else the
-    template's. Blank or 0 means a free internship."""
+def _posted_money(request, employee, template):
+    """The arrangement for one recipient: (mode, amount).
+
+    Both come from their own box, else the batch default, else the template's.
+    Blank or 0 for the amount means a free internship whichever mode was
+    picked - a stipend of zero is not a stipend.
+    """
     raw = request.POST.get(f'fee_{employee.id}')
     if raw is None or raw.strip() == '':
         raw = request.POST.get('default_fee', '')
+
+    mode = request.POST.get(f'money_mode_{employee.id}') or ''
+    if not mode.strip():
+        mode = request.POST.get('default_money_mode', '') or template.money_mode
+
     if raw.strip() == '':
-        return template.resolve_fee()
+        return template.resolve_money(money_mode=mode)
     try:
-        return template.resolve_fee(Decimal(raw))
+        return template.resolve_money(Decimal(raw), money_mode=mode)
     except (InvalidOperation, ValueError):
-        return template.resolve_fee()
+        return template.resolve_money(money_mode=mode)
 
 
 @login_required
@@ -93,16 +103,17 @@ def agreement_send(request):
 
         batch = uuid.uuid4()
         expires_at = timezone.now() + timedelta(days=expiry_days)
-        # Snapshots are cached per distinct fee: most sends use one or two.
+        # Snapshots are cached per distinct arrangement: most sends use one or two.
         snapshots = {}
 
         created = 0
         for employee in employees:
-            # Interns are on different arrangements - some pay monthly, some
-            # are on a free internship - so the fee is per person.
-            fee = _posted_fee(request, employee, template)
-            if fee not in snapshots:
-                snapshots[fee] = template.build_snapshot(fee_override=fee)
+            # Interns are on different arrangements - some pay us a monthly
+            # fee, some are paid a stipend, some neither - so it is per person.
+            mode, fee = _posted_money(request, employee, template)
+            if (mode, fee) not in snapshots:
+                snapshots[(mode, fee)] = template.build_snapshot(
+                    fee_override=fee, money_mode=mode)
 
             # An older open link for the same person would let them answer twice.
             AgreementRequest.objects.filter(
@@ -112,9 +123,10 @@ def agreement_send(request):
             AgreementRequest.objects.create(
                 employee=employee,
                 template=template,
-                snapshot_json=snapshots[fee],
+                snapshot_json=snapshots[(mode, fee)],
                 snapshot_version=template.version,
                 snapshot_fee=fee,
+                snapshot_money_mode=mode,
                 sent_by=request.user,
                 expires_at=expires_at,
                 batch=batch,
@@ -145,6 +157,7 @@ def agreement_send(request):
         'rows': rows,
         'templates': templates,
         'type_filter': type_filter,
+        'money_modes': MONEY_MODE_CHOICES,
     })
 
 
@@ -213,13 +226,14 @@ def agreement_resend(request, pk):
         return redirect('agreement_detail', pk=pk)
 
     # Keep whatever arrangement this person was already on.
-    fee = template.resolve_fee(old.snapshot_fee)
+    mode, fee = template.resolve_money(old.snapshot_fee, money_mode=old.snapshot_money_mode)
     new = AgreementRequest.objects.create(
         employee=old.employee,
         template=template,
-        snapshot_json=template.build_snapshot(fee_override=fee),
+        snapshot_json=template.build_snapshot(fee_override=fee, money_mode=mode),
         snapshot_version=template.version,
         snapshot_fee=fee,
+        snapshot_money_mode=mode,
         sent_by=request.user,
         batch=uuid.uuid4(),
     )

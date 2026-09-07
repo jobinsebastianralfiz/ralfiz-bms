@@ -690,11 +690,12 @@ class NewJoineeAgreementTests(TestCase):
         self.assertIn('stipend', doc['money_confirm_line'])
 
     def test_no_stipend_swaps_the_section_the_way_the_fee_one_does(self):
-        doc = self.template.build_snapshot(fee_override=None)
+        doc = self.template.build_snapshot(fee_override=None, money_mode='stipend')
         section = next(s for s in doc['sections'] if s['no'] == 3)
         self.assertEqual(section['title'], 'Learning Support & Guidance')
         self.assertFalse(section.get('show_fee'))
-        self.assertEqual(doc['money_note'], 'This internship carries no monthly stipend.')
+        self.assertEqual(doc['money_note'],
+                         'This internship carries no monthly fee and no stipend.')
 
     def test_seeding_twice_does_not_duplicate_or_clobber_hr_edits(self):
         from django.core.management import call_command
@@ -738,7 +739,6 @@ class ContinuationWordingUnchangedTests(TestCase):
         self.assertEqual(t.decline_statement, 'I do not wish to continue my internship')
         self.assertEqual(t.decline_heading, 'Discontinue Internship')
         self.assertEqual(t.decline_button_label, 'Confirm discontinuation')
-        self.assertEqual(t.no_money_note, 'This internship carries no monthly fee.')
 
     def test_the_continuation_confirmation_is_still_numbered_ten(self):
         from django.core.management import call_command
@@ -749,3 +749,129 @@ class ContinuationWordingUnchangedTests(TestCase):
         self.assertEqual(doc['confirmation_no'], 10)
         self.assertEqual(doc['accept_sub'], 'with Ralfiz Technologies')
         self.assertEqual(doc['decline_sub'], 'end participation in the program')
+
+
+class MoneyArrangementTests(TestCase):
+    """An internship runs one of three ways, and HR picks per person."""
+
+    def setUp(self):
+        from django.core.management import call_command
+        call_command('seed_internship_agreement', '--force', verbosity=0)
+        call_command('seed_new_joinee_agreement', '--force', verbosity=0)
+        self.cont = AgreementTemplate.objects.get(agreement_type='internship_continuation')
+        self.new = AgreementTemplate.objects.get(agreement_type='internship_new_joinee')
+
+    def _money_section(self, doc):
+        return next(s for s in doc['sections']
+                    if s['title'] in ('Monthly Internship Fee', 'Monthly Stipend',
+                                      'Learning Support & Guidance'))
+
+    def test_either_template_can_carry_a_fee(self):
+        for t in (self.cont, self.new):
+            doc = t.build_snapshot(fee_override=Decimal('750'), money_mode='fee')
+            self.assertEqual(self._money_section(doc)['title'], 'Monthly Internship Fee')
+            self.assertIn('pay', doc['money_confirm_line'])
+            self.assertEqual(doc['money_mode'], 'fee')
+
+    def test_either_template_can_carry_a_stipend(self):
+        for t in (self.cont, self.new):
+            doc = t.build_snapshot(fee_override=Decimal('8000'), money_mode='stipend')
+            self.assertEqual(self._money_section(doc)['title'], 'Monthly Stipend')
+            self.assertIn('stipend', doc['money_confirm_line'])
+            self.assertEqual(doc['money_mode'], 'stipend')
+
+    def test_either_template_can_be_free(self):
+        for t in (self.cont, self.new):
+            doc = t.build_snapshot(fee_override=None, money_mode='none')
+            self.assertEqual(self._money_section(doc)['title'], 'Learning Support & Guidance')
+            self.assertEqual(doc['money_confirm_line'], '')
+            self.assertEqual(doc['money_mode'], 'none')
+
+    def test_a_stipend_of_zero_is_not_a_stipend(self):
+        """An amount of nothing means free, whichever direction was picked."""
+        for mode in ('fee', 'stipend'):
+            doc = self.new.build_snapshot(fee_override=Decimal('0'), money_mode=mode)
+            self.assertEqual(doc['money_mode'], 'none')
+            self.assertTrue(doc['is_free'])
+            self.assertEqual(doc['monthly_fee'], '')
+
+    def test_the_amount_note_says_who_pays(self):
+        fee = self.new.build_snapshot(fee_override=Decimal('750'), money_mode='fee')
+        stipend = self.new.build_snapshot(fee_override=Decimal('8000'), money_mode='stipend')
+        self.assertIn('by the intern', fee['fee_note'])
+        self.assertIn('by Ralfiz Technologies', stipend['fee_note'])
+
+    def test_an_unknown_mode_falls_back_rather_than_breaking_the_link(self):
+        doc = self.new.build_snapshot(fee_override=Decimal('750'), money_mode='nonsense')
+        self.assertEqual(doc['money_mode'], 'fee')
+
+    def test_a_template_saved_before_money_copy_existed_still_renders(self):
+        self.new.money_copy = {}
+        self.new.save()
+        doc = self.new.build_snapshot(fee_override=Decimal('8000'), money_mode='stipend')
+        self.assertEqual(self._money_section(doc)['title'], 'Monthly Stipend')
+
+
+class SendWithMixedArrangementsTests(TestCase):
+    """One send, three people, three different money arrangements."""
+
+    def setUp(self):
+        from django.core.management import call_command
+        call_command('seed_new_joinee_agreement', '--force', verbosity=0)
+        self.template = AgreementTemplate.objects.get(agreement_type='internship_new_joinee')
+        self.hr = User.objects.create_superuser('hr_mixed', 'hr@example.com', 'pw')
+        self.people = []
+        for i, name in enumerate(['payer', 'earner', 'freebie']):
+            u = User.objects.create_user(f'mix_{name}', f'{name}@example.com', 'pw')
+            self.people.append(Employee.objects.create(
+                user=u, employee_id=f'MIX{i}', designation='Intern',
+                employment_type='intern', status='active'))
+        self.client.force_login(self.hr)
+
+    def test_each_person_gets_the_arrangement_they_were_given(self):
+        payer, earner, freebie = self.people
+        resp = self.client.post(reverse('agreement_send'), {
+            'employees': [str(p.id) for p in self.people],
+            'template': str(self.template.id),
+            'expiry_days': '14',
+            'default_money_mode': 'stipend',
+            'default_fee': '8000',
+            f'money_mode_{payer.id}': 'fee',
+            f'fee_{payer.id}': '750',
+            f'money_mode_{freebie.id}': 'none',
+            f'fee_{freebie.id}': '0',
+        })
+        self.assertEqual(resp.status_code, 302)
+
+        got = {r.employee_id: r for r in AgreementRequest.objects.all()}
+        self.assertEqual(len(got), 3)
+
+        self.assertEqual(got[payer.id].snapshot_money_mode, 'fee')
+        self.assertEqual(got[payer.id].snapshot_fee, Decimal('750'))
+        self.assertIn('pay', got[payer.id].snapshot_json['money_confirm_line'])
+
+        # This one took the batch default rather than a box of its own.
+        self.assertEqual(got[earner.id].snapshot_money_mode, 'stipend')
+        self.assertEqual(got[earner.id].snapshot_fee, Decimal('8000'))
+        self.assertIn('stipend', got[earner.id].snapshot_json['money_confirm_line'])
+
+        self.assertEqual(got[freebie.id].snapshot_money_mode, 'none')
+        self.assertIsNone(got[freebie.id].snapshot_fee)
+        self.assertEqual(got[freebie.id].snapshot_json['money_confirm_line'], '')
+
+    def test_the_three_arrangements_do_not_share_one_snapshot(self):
+        """Snapshots are cached per arrangement; caching on amount alone would
+        hand a stipend signer the fee wording."""
+        payer, earner, _ = self.people
+        self.client.post(reverse('agreement_send'), {
+            'employees': [str(payer.id), str(earner.id)],
+            'template': str(self.template.id),
+            'default_money_mode': 'fee',
+            'default_fee': '750',
+            f'money_mode_{earner.id}': 'stipend',
+            f'fee_{earner.id}': '750',
+        })
+        got = {r.employee_id: r for r in AgreementRequest.objects.all()}
+        self.assertEqual(got[payer.id].snapshot_fee, got[earner.id].snapshot_fee)
+        self.assertNotEqual(got[payer.id].snapshot_json['money_note'],
+                            got[earner.id].snapshot_json['money_note'])

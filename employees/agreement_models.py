@@ -59,6 +59,70 @@ class _NotSet:
 NOT_SET = _NotSet()
 
 
+MONEY_FEE = 'fee'          # the intern pays Ralfiz
+MONEY_STIPEND = 'stipend'  # Ralfiz pays the intern
+MONEY_NONE = 'none'        # neither direction
+
+MONEY_MODE_CHOICES = [
+    (MONEY_FEE, 'Intern pays a monthly fee'),
+    (MONEY_STIPEND, 'We pay the intern a monthly stipend'),
+    (MONEY_NONE, 'Free - no fee and no stipend'),
+]
+
+LEARNING_BULLETS = [
+    'Guidance and mentorship for assigned work',
+    'Work-related learning materials and resources',
+    'Technical guidance to improve practical skills',
+    'Support and direction while completing assigned tasks',
+    'Learning resources relevant to the internship domain',
+    'Practical exposure through assigned projects and activities',
+]
+
+
+def default_money_copy():
+    """Wording for each money arrangement, so one agreement covers all three.
+
+    An internship can run any of three ways and HR picks per person when
+    sending, so the money direction cannot live in the template's prose. The
+    block for the chosen mode replaces the section marked `show_fee`.
+    """
+    return {
+        MONEY_FEE: {
+            'section_title': 'Monthly Internship Fee',
+            'section_body': 'The fee supports the structured learning and guidance provided '
+                            'during the internship, including:',
+            'bullets': list(LEARNING_BULLETS),
+            'amount_note': 'payable monthly by the intern',
+            'agreed_note': 'Agreed to the monthly internship fee of {amount}.',
+            'confirm_suffix': 'and to pay the applicable {amount} monthly internship fee',
+        },
+        MONEY_STIPEND: {
+            'section_title': 'Monthly Stipend',
+            'section_body': 'A monthly stipend is payable to you for the duration of the '
+                            'internship, subject to the conditions below:',
+            'bullets': [
+                'The stipend is paid monthly in arrears, for the days actually attended',
+                'The stipend is a contribution towards the cost of attending and is not a salary or wage',
+                'Payment is subject to satisfactory attendance and participation for the month',
+                'Any deduction for unapproved absence will be communicated to you before it is applied',
+                'The stipend may be revised at renewal, in writing',
+            ],
+            'amount_note': 'payable monthly by Ralfiz Technologies, for the days attended',
+            'agreed_note': 'Accepted on a monthly stipend of {amount}.',
+            'confirm_suffix': 'on the stated monthly stipend of {amount}',
+        },
+        MONEY_NONE: {
+            'section_title': 'Learning Support & Guidance',
+            'section_body': 'This internship carries no monthly fee and no stipend. The structured '
+                            'learning and guidance provided during the internship includes:',
+            'bullets': list(LEARNING_BULLETS),
+            'amount_note': '',
+            'agreed_note': 'This internship carries no monthly fee and no stipend.',
+            'confirm_suffix': '',
+        },
+    }
+
+
 def default_expiry():
     return timezone.now() + timedelta(days=14)
 
@@ -95,6 +159,13 @@ class AgreementTemplate(models.Model):
                   '"callout": {"style": "info|warn|dark", "text": "..."}}]'
     )
 
+    money_mode = models.CharField(
+        max_length=10, choices=MONEY_MODE_CHOICES, default=MONEY_FEE,
+        help_text='Default arrangement. HR can pick a different one per person when sending.')
+    money_copy = models.JSONField(
+        default=default_money_copy, blank=True,
+        help_text='Wording for each money arrangement (fee / stipend / none). The block for the '
+                  'chosen mode replaces the section marked show_fee.')
     monthly_fee = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True,
                                       help_text='Monthly internship fee, e.g. 750.00')
     fee_in_words = models.CharField(max_length=200, blank=True)
@@ -134,10 +205,6 @@ class AgreementTemplate(models.Model):
         max_length=300,
         default='I confirm I have read and understood the terms, and I agree to continue my internship',
         help_text='Checkbox beside the signature. The money sentence is appended to it.')
-    money_confirm_suffix = models.CharField(
-        max_length=200, blank=True,
-        default='and to pay the applicable {amount} monthly internship fee',
-        help_text='Appended to the checkbox when an amount applies. {amount} is filled in.')
     decline_heading = models.CharField(
         max_length=120, default='Discontinue Internship')
     decline_intro = models.TextField(
@@ -146,13 +213,6 @@ class AgreementTemplate(models.Model):
         help_text='Shown above the reason box on the decline panel.')
     decline_button_label = models.CharField(
         max_length=100, default='Confirm discontinuation')
-    money_agreed_note = models.CharField(
-        max_length=200, blank=True,
-        default='Agreed to the monthly internship fee of {amount}.',
-        help_text='Recorded in the signed copy when an amount applies. {amount} is filled in.')
-    no_money_note = models.CharField(
-        max_length=200, blank=True, default='This internship carries no monthly fee.',
-        help_text='Recorded in the signed copy when there is no amount.')
 
     require_college_fields = models.BooleanField(
         default=True,
@@ -184,28 +244,57 @@ class AgreementTemplate(models.Model):
             return None
         return fee if fee > 0 else None
 
-    def build_snapshot(self, fee_override=NOT_SET):
-        """Freeze everything the signing page renders, for one specific fee.
+    def resolve_money(self, fee_override=NOT_SET, money_mode=None):
+        """The arrangement this agreement actually carries: (mode, amount).
 
-        Interns are on different arrangements - some pay monthly, some are on a
-        free internship - so the fee is resolved per request and the fee-related
-        wording is swapped here rather than being conditional in the templates.
+        An amount of nothing always means a free internship, whichever mode was
+        asked for - a stipend of zero is not a stipend.
         """
-        fee = self.resolve_fee(fee_override)
+        amount = self.resolve_fee(fee_override)
+        mode = money_mode or self.money_mode or MONEY_FEE
+        if mode not in dict(MONEY_MODE_CHOICES):
+            mode = MONEY_FEE
+        if amount is None:
+            return MONEY_NONE, None
+        if mode == MONEY_NONE:
+            return MONEY_NONE, None
+        return mode, amount
+
+    def money_block(self, mode):
+        """Wording for one arrangement, falling back to the shipped defaults so
+        a template saved before money_copy existed still renders."""
+        copy = self.money_copy or {}
+        block = dict(default_money_copy().get(mode, {}))
+        block.update(copy.get(mode) or {})
+        return block
+
+    def build_snapshot(self, fee_override=NOT_SET, money_mode=None):
+        """Freeze everything the signing page renders, for one arrangement.
+
+        Interns are on different arrangements - some pay us a monthly fee, some
+        are paid a stipend, some neither - so the money is resolved per request
+        and its wording swapped here rather than being conditional in the
+        templates.
+        """
+        mode, fee = self.resolve_money(fee_override, money_mode)
         is_free = fee is None
         money = '' if is_free else f'\u20b9{fee:.2f}'.rstrip('0').rstrip('.')
+        block = self.money_block(mode)
 
         sections = []
         for section in (self.sections or []):
             section = dict(section)
             if is_free and section.get('bullets_free'):
                 section['bullets'] = section['bullets_free']
-            if section.get('show_fee') and is_free:
-                # Section 2 is written around the fee; without one, keep the
-                # list of what the internship provides but drop the fee framing.
-                section['title'] = section.get('title_free') or section['title']
-                section['body'] = section.get('body_free') or section.get('body', '')
-                section['show_fee'] = False
+            if section.get('show_fee'):
+                # This section is written around the money. Swap in the wording
+                # for whichever arrangement applies, and drop the amount when
+                # there is none to show.
+                section['title'] = block.get('section_title') or section['title']
+                section['body'] = block.get('section_body') or section.get('body', '')
+                if block.get('bullets'):
+                    section['bullets'] = block['bullets']
+                section['show_fee'] = not is_free
             for key in ('title_free', 'body_free', 'bullets_free'):
                 section.pop(key, None)
             sections.append(section)
@@ -225,10 +314,11 @@ class AgreementTemplate(models.Model):
             'sections': sections,
             'monthly_fee': str(fee) if fee is not None else '',
             'is_free': is_free,
+            'money_mode': mode,
             # Regenerated, never copied: a custom amount must not inherit the
             # template's words for a different number.
             'fee_in_words': rupees_in_words(fee) if fee is not None else '',
-            'fee_note': self.fee_note if fee is not None else '',
+            'fee_note': (block.get('amount_note') or self.fee_note) if fee is not None else '',
             'confirmation_html': confirmation,
             'continue_label': self.continue_label,
             'decline_label': self.decline_label,
@@ -241,19 +331,13 @@ class AgreementTemplate(models.Model):
             'accept_statement': self.accept_statement,
             'decline_statement': self.decline_statement,
             'accept_confirm_text': self.accept_confirm_text,
-            'money_confirm_suffix': self.money_confirm_suffix,
             'decline_heading': self.decline_heading,
             'decline_intro': self.decline_intro,
             'decline_button_label': self.decline_button_label,
             # Resolved here, not in the page: the signed wording must name the
             # amount that was actually agreed, not the template's current one.
-            'money_note': (
-                self.no_money_note if is_free
-                else self.money_agreed_note.replace('{amount}', money)
-            ),
-            'money_confirm_line': (
-                '' if is_free else self.money_confirm_suffix.replace('{amount}', money)
-            ),
+            'money_note': (block.get('agreed_note') or '').replace('{amount}', money),
+            'money_confirm_line': (block.get('confirm_suffix') or '').replace('{amount}', money),
             'require_college_fields': self.require_college_fields,
         }
 
@@ -300,6 +384,9 @@ class AgreementRequest(models.Model):
     snapshot_json = models.JSONField(default=dict, blank=True)
     snapshot_version = models.CharField(max_length=20, blank=True)
     snapshot_fee = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    snapshot_money_mode = models.CharField(
+        max_length=10, choices=MONEY_MODE_CHOICES, default=MONEY_FEE,
+        help_text='Which way the money went for this person: fee, stipend, or neither.')
 
     status = models.CharField(max_length=12, choices=STATUS_CHOICES, default=STATUS_PENDING, db_index=True)
     batch = models.UUIDField(null=True, blank=True, db_index=True,

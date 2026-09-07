@@ -171,6 +171,7 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         defaults = {
             'agreement_type': 'internship_continuation',
+            'money_mode': 'fee',
             'heading': 'Internship Continuation & Learning Agreement',
             'eyebrow': 'INTERNSHIP CONTINUATION CONFIRMATION',
             'intro_html': INTRO,

@@ -57,6 +57,8 @@ SECTIONS = [
     {
         'no': 3,
         'title': 'Monthly Stipend',
+        # title/body/bullets here are a fallback; build_snapshot swaps in the
+        # wording for whichever arrangement HR picks when sending.
         'body': 'A monthly stipend is payable to you for the duration of the internship, subject to the '
                 'conditions below:',
         'show_fee': True,
@@ -228,6 +230,7 @@ class Command(BaseCommand):
             'eyebrow': 'INTERNSHIP CONFIRMATION',
             'intro_html': INTRO,
             'sections': SECTIONS,
+            'money_mode': 'stipend',
             'monthly_fee': stipend if stipend > 0 else None,
             'fee_note': 'payable monthly for the days attended',
             'confirmation_html': CONFIRMATION,
@@ -241,13 +244,10 @@ class Command(BaseCommand):
             'decline_statement': 'I do not wish to take up this internship',
             'accept_confirm_text': 'I confirm I have read and understood the terms, and I accept this '
                                    'internship with Ralfiz Technologies',
-            'money_confirm_suffix': 'on the stated monthly stipend of {amount}',
             'decline_heading': 'Decline the Internship',
             'decline_intro': 'You are about to inform Ralfiz Technologies that you do not wish to take up '
                              'this internship.',
             'decline_button_label': 'Confirm my decision',
-            'money_agreed_note': 'Accepted on a monthly stipend of {amount}.',
-            'no_money_note': 'This internship carries no monthly stipend.',
             'require_college_fields': True,
             'is_active': True,
         }
