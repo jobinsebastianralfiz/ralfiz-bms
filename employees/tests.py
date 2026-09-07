@@ -633,6 +633,7 @@ class CertificateVerifyPageTests(TestCase):
             skills=['Flutter & Dart'],
             date_of_issuance=date(2026, 9, 4),
             body_text='has completed an internship.',
+            status='published',
         )
         fields.update(overrides)
         cert = Certificate.objects.create(**fields)
@@ -664,6 +665,17 @@ class CertificateVerifyPageTests(TestCase):
         self.assertNotIn('Register No', html)
         self.assertNotIn('College', html)
         self.assertNotIn('>Skills<', html)
+
+    def test_a_draft_certificate_does_not_verify(self):
+        """A draft was never handed over, so its QR must not vouch for it."""
+        html = self._page(self._cert(status='draft'))
+        self.assertIn('Invalid Certificate', html)
+        self.assertNotIn('Fathima Hiba K P', html)
+
+    def test_a_cancelled_certificate_does_not_verify(self):
+        html = self._page(self._cert(status='cancelled'))
+        self.assertIn('Invalid Certificate', html)
+        self.assertNotIn('Fathima Hiba K P', html)
 
     def test_an_unknown_id_is_reported_as_invalid(self):
         import uuid

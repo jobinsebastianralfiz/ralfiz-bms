@@ -3821,8 +3821,12 @@ class CertificateVerifyView(APIView):
 
     @extend_schema(tags=['Certificates'])
     def get(self, request, verification_id):
+        # Only a published certificate is a real one. A draft was never
+        # handed over, and a cancelled one has been withdrawn, so neither
+        # may keep validating itself through its QR code.
         try:
-            certificate = Certificate.objects.get(verification_id=verification_id)
+            certificate = Certificate.objects.get(
+                verification_id=verification_id, status='published')
         except Certificate.DoesNotExist:
             return render(request, 'employees/certificate_verify.html', {
                 'valid': False,
