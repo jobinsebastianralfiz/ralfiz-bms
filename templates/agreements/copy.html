@@ -52,14 +52,18 @@
         <div class="filled-value">{{ agreement.full_name|default:employee.full_name }}</div>
       </div>
       {% if ask_college %}
+      {% if agreement.college_name or not doc.college_fields_optional %}
       <div class="filled-field">
         <label>College</label>
         <div class="filled-value">{{ agreement.college_name|default:"&mdash;" }}</div>
       </div>
+      {% endif %}
+      {% if agreement.course_department or not doc.college_fields_optional %}
       <div class="filled-field">
         <label>Course / Department</label>
         <div class="filled-value">{{ agreement.course_department|default:"&mdash;" }}</div>
       </div>
+      {% endif %}
       <div class="filled-field">
         <label>Internship Domain</label>
         <div class="filled-value">{{ agreement.internship_domain|default:"&mdash;" }}</div>

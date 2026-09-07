@@ -886,3 +886,71 @@ class SendWithMixedArrangementsTests(TestCase):
         self.assertEqual(got[payer.id].snapshot_fee, got[earner.id].snapshot_fee)
         self.assertNotEqual(got[payer.id].snapshot_json['money_note'],
                             got[earner.id].snapshot_json['money_note'])
+
+
+class NewJoinerWithoutCollegeTests(TestCase):
+    """A new joiner may not be studying, and must still be able to sign."""
+
+    def setUp(self):
+        from django.core.management import call_command
+        call_command('seed_new_joinee_agreement', '--force', verbosity=0)
+        self.template = AgreementTemplate.objects.get(agreement_type='internship_new_joinee')
+        u = User.objects.create_user('nocollege', 'nc@example.com', 'pw')
+        self.employee = Employee.objects.create(
+            user=u, employee_id='NC001', designation='Flutter Developer Intern',
+            employment_type='intern', status='active')
+        self.agreement = AgreementRequest.objects.create(
+            employee=self.employee, template=self.template,
+            snapshot_json=self.template.build_snapshot(),
+            snapshot_version=self.template.version)
+
+    def _post(self, **extra):
+        import base64
+        png = base64.b64decode(
+            'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==')
+        data = {
+            'decision': 'continue', 'full_name': 'Rahul K',
+            'internship_domain': 'Flutter', 'signed_name': 'Rahul K',
+            'signature_data': 'data:image/png;base64,' + base64.b64encode(png).decode(),
+            'agreed_to_terms': 'on',
+        }
+        data.update(extra)
+        return self.client.post(f'/agreement/{self.agreement.token}/', data)
+
+    def test_someone_not_studying_can_sign_without_a_college(self):
+        resp = self._post(college_name='', course_department='')
+        self.assertEqual(resp.status_code, 302, 'a blank college blocked the signature')
+        self.agreement.refresh_from_db()
+        self.assertEqual(self.agreement.status, AgreementRequest.STATUS_ACCEPTED)
+        self.assertEqual(self.agreement.college_name, '')
+
+    def test_a_college_is_still_recorded_when_given(self):
+        self._post(college_name='St Marys', course_department='BCA')
+        self.agreement.refresh_from_db()
+        self.assertEqual(self.agreement.college_name, 'St Marys')
+
+    def test_the_domain_is_still_required_of_everyone(self):
+        resp = self._post(college_name='', course_department='', internship_domain='')
+        self.assertEqual(resp.status_code, 400)
+        self.agreement.refresh_from_db()
+        self.assertNotEqual(self.agreement.status, AgreementRequest.STATUS_ACCEPTED)
+
+    def test_the_continuation_agreement_still_demands_a_college(self):
+        """Those interns are all students; nothing about that changed."""
+        from django.core.management import call_command
+        call_command('seed_internship_agreement', '--force', verbosity=0)
+        cont = AgreementTemplate.objects.get(agreement_type='internship_continuation')
+        other = AgreementRequest.objects.create(
+            employee=self.employee, template=cont,
+            snapshot_json=cont.build_snapshot(), snapshot_version=cont.version)
+        self.agreement = other
+        resp = self._post(college_name='', course_department='')
+        self.assertEqual(resp.status_code, 400)
+
+    def test_the_schedule_is_stated_outright_not_conditioned_on_college(self):
+        section = next(s for s in self.template.sections if s['no'] == 4)
+        text = section['body'] + ' ' + ' '.join(section['bullets'])
+        self.assertNotIn('currently attending college', text)
+        self.assertIn('Monday to Saturday', text)
+        self.assertIn('10:00 AM to 4:00 PM', text)
+        self.assertIn('Sunday is a weekly holiday', text)

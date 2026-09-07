@@ -68,7 +68,7 @@
 
       {% if ask_college %}
       <div class="field {% if errors.college_name %}has-error{% endif %}">
-        <label for="college_name">College</label>
+        <label for="college_name">College{% if college_optional %} <span class="opt">(if you are studying)</span>{% endif %}</label>
         <input type="text" id="college_name" name="college_name" value="{{ posted.college_name|default:'' }}">
         {% if errors.college_name %}<div class="field-error">{{ errors.college_name }}</div>{% endif %}
       </div>
@@ -78,7 +78,7 @@
     {% if ask_college %}
     <div class="field-row">
       <div class="field {% if errors.course_department %}has-error{% endif %}">
-        <label for="course_department">Course / Department</label>
+        <label for="course_department">Course / Department{% if college_optional %} <span class="opt">(if you are studying)</span>{% endif %}</label>
         <input type="text" id="course_department" name="course_department"
                value="{{ posted.course_department|default:'' }}">
         {% if errors.course_department %}<div class="field-error">{{ errors.course_department }}</div>{% endif %}

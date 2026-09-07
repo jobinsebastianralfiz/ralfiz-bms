@@ -232,6 +232,11 @@ class AgreementTemplate(models.Model):
         default=True,
         help_text='Ask for College / Course / Domain. Interns yes; overridden off for non-interns.'
     )
+    college_fields_optional = models.BooleanField(
+        default=False,
+        help_text='Ask for College and Course but let them be left blank. For agreements sent to '
+                  'people who may not be studying. The internship domain is still required.'
+    )
 
     is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
@@ -357,6 +362,7 @@ class AgreementTemplate(models.Model):
             'money_note': (block.get('agreed_note') or '').replace('{amount}', money),
             'money_confirm_line': (block.get('confirm_suffix') or '').replace('{amount}', money),
             'require_college_fields': self.require_college_fields,
+            'college_fields_optional': self.college_fields_optional,
         }
 
 
@@ -505,6 +511,14 @@ class AgreementRequest(models.Model):
         if not self.snapshot_json.get('require_college_fields', True):
             return False
         return self.employee.employment_type == 'intern' or self.employee.role == 'intern'
+
+    @property
+    def college_fields_optional(self):
+        """A new joiner may not be studying, so their college can be blank.
+
+        The domain stays required either way - everyone interns in something.
+        """
+        return bool(self.snapshot_json.get('college_fields_optional', False))
 
     # ---- Links ----
     def public_path(self):

@@ -78,6 +78,7 @@ def _sign_context(agreement, errors=None, posted=None):
         'sections': doc.get('sections', []),
         'intro_lines': [line for line in (doc.get('intro_html') or '').split('\n') if line.strip()],
         'ask_college': agreement.asks_college_fields,
+        'college_optional': agreement.college_fields_optional,
         'today': timezone.localdate(),
         'errors': errors or {},
         'posted': posted or {},
@@ -108,10 +109,13 @@ def _handle_submit(request, agreement):
         if not agreed:
             errors['agreed_to_terms'] = 'Please confirm that you have read and accept the terms.'
         if agreement.asks_college_fields:
-            if not college:
-                errors['college_name'] = 'Please enter your college.'
-            if not course:
-                errors['course_department'] = 'Please enter your course or department.'
+            # Someone who is not studying still signs this, so their college and
+            # course may be blank. The domain is asked of everyone.
+            if not agreement.college_fields_optional:
+                if not college:
+                    errors['college_name'] = 'Please enter your college.'
+                if not course:
+                    errors['course_department'] = 'Please enter your course or department.'
             if not domain:
                 errors['internship_domain'] = 'Please enter your internship domain.'
 

@@ -84,15 +84,20 @@ SECTIONS = [
     },
     {
         'no': 4,
-        'title': 'Internship Schedule & Holidays',
-        'body': 'For interns who are currently attending college, the following schedule will apply:',
+        'title': 'Working Days & Hours',
+        # A new joiner may or may not be studying, so the schedule is stated
+        # outright rather than made conditional on attending college.
+        'body': 'The internship follows the company working schedule:',
         'bullets': [
-            'Saturday and Sunday will be treated as holidays',
-            'College-declared holidays, public holidays, and other applicable holidays will be treated '
-            'as holidays for the internship, subject to the company’s schedule and prior communication',
+            'Working days are Monday to Saturday',
+            'Working hours are 10:00 AM to 4:00 PM',
+            'Sunday is a weekly holiday',
+            'Public holidays and company-declared holidays will be treated as holidays for the '
+            'internship, subject to the company’s schedule and prior communication',
+            'Any change to these days or hours will be communicated in advance',
         ],
-        'footnote': 'Interns are expected to attend and participate on the regular working days unless '
-                    'prior permission or an approved leave is obtained.',
+        'footnote': 'Interns are expected to attend and participate on all working days unless prior '
+                    'permission or an approved leave is obtained.',
     },
     {
         'no': 5,
@@ -256,6 +261,8 @@ class Command(BaseCommand):
             'done_declined_html': 'We have noted that you do not wish to take up this internship. '
                                   'Thank you for letting us know, and we wish you all the best.',
             'require_college_fields': True,
+            # A new joiner may not be studying at all.
+            'college_fields_optional': True,
             'is_active': True,
         }
 

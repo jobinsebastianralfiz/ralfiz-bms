@@ -219,6 +219,8 @@ body {
 }
 .confirm-check input { margin-top: 3px; width: 18px; height: 18px; flex: none; accent-color: var(--agr-blue); }
 .confirm-check label { font-size: 14px; color: var(--agr-ink); cursor: pointer; }
+.field label .opt { font-weight: 500; letter-spacing: 0; text-transform: none;
+  color: var(--agr-muted, #8a8a8a); }
 
 .btn-submit {
   width: 100%; padding: 15px;
