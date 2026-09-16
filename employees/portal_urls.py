@@ -20,6 +20,9 @@ urlpatterns = [
     # Leave
     path('leave/', v.leave, name='leave'),
 
+    # Daily report
+    path('daily-report/', v.daily_report, name='daily_report'),
+
     # Work assignments
     path('work/', v.work_list, name='work_list'),
     path('work/<uuid:pk>/', v.work_detail, name='work_detail'),

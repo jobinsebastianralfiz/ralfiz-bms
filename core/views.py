@@ -7433,6 +7433,75 @@ def emp_leave_types(request):
 
 
 @login_required
+def emp_daily_report_list(request):
+    """The daily-update feed: what everyone did and learned, newest first."""
+    from employees.models import DailyReport, Employee
+
+    reports = (DailyReport.objects
+               .select_related('employee__user')
+               .prefetch_related('comments__author'))
+
+    employee_filter = request.GET.get('employee', '')
+    blockers_only = request.GET.get('blockers', '') == '1'
+    start = request.GET.get('start', '')
+    end = request.GET.get('end', '')
+
+    if employee_filter:
+        reports = reports.filter(employee_id=employee_filter)
+    if blockers_only:
+        reports = reports.exclude(blockers='')
+    if start:
+        reports = reports.filter(date__gte=start)
+    if end:
+        reports = reports.filter(date__lte=end)
+
+    today = timezone.localdate()
+    active = Employee.objects.filter(status='active').select_related('user')
+    filed_today = set(DailyReport.objects.filter(date=today)
+                      .values_list('employee_id', flat=True))
+    missing_today = [e for e in active if e.id not in filed_today]
+
+    context = {
+        'reports': reports[:200],
+        'employees': active.order_by('user__first_name'),
+        'employee_filter': employee_filter,
+        'blockers_only': blockers_only,
+        'start': start,
+        'end': end,
+        'today': today,
+        'missing_today': missing_today,
+        'filed_today_count': len(filed_today),
+        'active_count': active.count(),
+    }
+    return render(request, 'hr/daily_report_list.html', context)
+
+
+@login_required
+def emp_daily_report_comment(request, pk):
+    """Reply to someone's daily update. They see it in the portal and the app."""
+    from employees.models import DailyReport
+    from employees.daily_report_api import notify_author
+
+    if request.method != 'POST':
+        return redirect('emp_daily_report_list')
+
+    report = get_object_or_404(
+        DailyReport.objects.select_related('employee__user'), pk=pk)
+    message = (request.POST.get('message') or '').strip()
+    if not message:
+        messages.error(request, 'Write something before sending.')
+    else:
+        report.comments.create(author=request.user, message=message)
+        notify_author(report, request.user, message)
+        messages.success(request, f'Reply sent to {report.employee.full_name}.')
+
+    # Return to the same filtered view the reply was sent from.
+    url = reverse('emp_daily_report_list')
+    qs = request.POST.get('qs', '')
+    return redirect(f'{url}?{qs}' if qs else url)
+
+
+@login_required
 def emp_office_qr(request):
     """Generate and manage office QR code sticker"""
     import qrcode

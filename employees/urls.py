@@ -3,6 +3,7 @@ from rest_framework_simplejwt.views import TokenRefreshView
 
 from . import views
 from . import task_api
+from . import daily_report_api
 from .auth_views import EmployeeTokenObtainView
 
 app_name = 'employees'
@@ -51,6 +52,11 @@ urlpatterns = [
     path('tasks/<uuid:pk>/issues/', task_api.TaskIssueListCreateView.as_view(), name='task_issues'),
     path('tasks/<uuid:pk>/issues/<uuid:issue_id>/', task_api.TaskIssueUpdateView.as_view(), name='task_issue_update'),
     path('tasks/<uuid:pk>/activity/', task_api.TaskActivityListView.as_view(), name='task_activity'),
+
+    # Daily Reports (what I did / learned / blockers)
+    path('daily-reports/', daily_report_api.MyDailyReportListCreateView.as_view(), name='daily_reports'),
+    path('daily-reports/<uuid:pk>/', daily_report_api.MyDailyReportDetailView.as_view(), name='daily_report_detail'),
+    path('daily-reports/<uuid:pk>/comments/', daily_report_api.DailyReportCommentCreateView.as_view(), name='daily_report_comments'),
 
     # Scheduled Classes (for interns)
     path('assessments/', views.MyAssessmentListView.as_view(), name='my_assessments'),
@@ -141,6 +147,10 @@ urlpatterns = [
     path('admin/attendance/report/', views.AdminAttendanceReportView.as_view(), name='admin_attendance_report'),
     path('admin/attendance/qr/', views.AdminGenerateQRView.as_view(), name='admin_generate_qr'),
     path('admin/notifications/send/', views.AdminSendNotificationView.as_view(), name='admin_send_notification'),
+
+    # Admin: Daily Reports
+    path('admin/daily-reports/', daily_report_api.AdminDailyReportListView.as_view(), name='admin_daily_reports'),
+    path('admin/daily-reports/missing/', daily_report_api.AdminDailyReportMissingView.as_view(), name='admin_daily_reports_missing'),
 
     # Admin: Scheduled Classes
     path('admin/classes/', views.AdminScheduledClassListCreateView.as_view(), name='admin_class_list'),

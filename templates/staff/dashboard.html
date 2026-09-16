@@ -27,6 +27,25 @@
   </div>
 </a>
 
+{# --- Today's update --- #}
+<a href="{% url 'staff:daily_report' %}" class="sf-card" style="display:block">
+  <div class="sf-row">
+    <div>
+      <div class="sf-dim" style="margin-bottom:4px">DAILY UPDATE</div>
+      {% if todays_report %}
+        <div class="sf-card-title">Today's update is in</div>
+        <div class="sf-muted">{{ todays_report.work_done|truncatechars:70 }}</div>
+      {% else %}
+        <div class="sf-card-title">Not written yet</div>
+        <div class="sf-muted">What did you work on and learn today?</div>
+      {% endif %}
+    </div>
+    <span class="sf-badge {% if todays_report %}sf-badge-ok{% else %}sf-badge-warn{% endif %}">
+      {% if todays_report %}Done{% else %}Due{% endif %}
+    </span>
+  </div>
+</a>
+
 {# --- Quick stats --- #}
 <div class="sf-stats">
   <div class="sf-stat">

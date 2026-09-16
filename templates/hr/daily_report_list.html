@@ -1,0 +1,179 @@
+{% extends 'base.html' %}
+{% block title %}Daily Updates - Ralfiz BMS{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title">Daily Updates</h1>
+    <p class="page-subtitle mb-0">What the team worked on and learned, day by day</p>
+  </div>
+</div>
+
+<div class="row mb-4">
+  <div class="col-6 col-md-6 col-sm-12" style="padding: 0.75rem;">
+    <div class="card stat-card">
+      <div class="stat-card-header">
+        <div class="stat-card-icon success"><i class="fas fa-check"></i></div>
+      </div>
+      <div class="stat-card-value">{{ filed_today_count }} / {{ active_count }}</div>
+      <div class="stat-card-label">Filed today</div>
+    </div>
+  </div>
+  <div class="col-6 col-md-6 col-sm-12" style="padding: 0.75rem;">
+    <div class="card stat-card">
+      <div class="stat-card-header">
+        <div class="stat-card-icon warning"><i class="fas fa-user-clock"></i></div>
+      </div>
+      <div class="stat-card-value">{{ missing_today|length }}</div>
+      <div class="stat-card-label">Still to write today</div>
+    </div>
+  </div>
+</div>
+
+{% if missing_today %}
+<div class="card mb-3">
+  <div class="card-header">
+    <h3 class="card-title"><i class="fas fa-user-clock"></i> No update yet for {{ today|date:"D, d M" }}</h3>
+  </div>
+  <div class="card-body">
+    {% for e in missing_today %}
+      <span class="badge badge-warning">{{ e.full_name }}</span>
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
+
+<div class="card">
+  <div class="card-header">
+    <h3 class="card-title"><i class="fas fa-pen-to-square"></i> Updates</h3>
+    <div class="card-actions">
+      <form method="get" class="d-flex gap-2 align-items-center">
+        <select name="employee" class="form-control" style="width: auto;" onchange="this.form.submit()">
+          <option value="">Everyone</option>
+          {% for e in employees %}
+            <option value="{{ e.id }}" {% if employee_filter == e.id|stringformat:"s" %}selected{% endif %}>
+              {{ e.full_name }}
+            </option>
+          {% endfor %}
+        </select>
+        <input type="date" name="start" value="{{ start }}" class="form-control" style="width: auto;">
+        <input type="date" name="end" value="{{ end }}" class="form-control" style="width: auto;">
+        <label class="d-flex align-items-center gap-1 text-sm mb-0" style="white-space: nowrap;">
+          <input type="checkbox" name="blockers" value="1" {% if blockers_only %}checked{% endif %}>
+          Blocked only
+        </label>
+        <button type="submit" class="btn btn-secondary btn-sm">Filter</button>
+      </form>
+    </div>
+  </div>
+
+  <div class="card-body">
+    {% if reports %}
+      {% for r in reports %}
+        <div class="dr-entry">
+          <div class="d-flex align-items-center gap-2 mb-2">
+            <div class="avatar avatar-sm" style="background: var(--primary); color: white;">
+              {{ r.employee.full_name|slice:":1"|upper }}
+            </div>
+            <div>
+              <div class="fw-medium">{{ r.employee.full_name }}</div>
+              <div class="text-sm text-muted">
+                {{ r.employee.employee_id }} · {{ r.date|date:"D, d M Y" }}
+              </div>
+            </div>
+            {% if r.blockers %}
+              <span class="badge badge-warning ms-auto">Blocked</span>
+            {% endif %}
+          </div>
+
+          <div class="dr-field">
+            <div class="dr-label">Worked on</div>
+            <div>{{ r.work_done|linebreaksbr }}</div>
+          </div>
+
+          {% if r.learned %}
+            <div class="dr-field">
+              <div class="dr-label">Learned</div>
+              <div>{{ r.learned|linebreaksbr }}</div>
+            </div>
+          {% endif %}
+
+          {% if r.blockers %}
+            <div class="dr-field dr-blocked">
+              <div class="dr-label">Blocked on</div>
+              <div>{{ r.blockers|linebreaksbr }}</div>
+            </div>
+          {% endif %}
+
+          {% for c in r.comments.all %}
+            <div class="dr-comment">
+              <div class="dr-comment-head">{{ c.author_name }} · {{ c.created_at|date:"d M, g:i A" }}</div>
+              <div>{{ c.message|linebreaksbr }}</div>
+            </div>
+          {% endfor %}
+
+          <form method="post" action="{% url 'emp_daily_report_comment' r.id %}" class="dr-reply">
+            {% csrf_token %}
+            <input type="hidden" name="qs" value="{{ request.GET.urlencode }}">
+            <input type="text" name="message" class="form-control"
+                   placeholder="Reply to {{ r.employee.full_name }}…"
+                   autocomplete="off">
+            <button type="submit" class="btn btn-primary btn-sm">Send</button>
+          </form>
+        </div>
+      {% endfor %}
+    {% else %}
+      <div class="text-center text-muted" style="padding: 2.5rem 1rem;">
+        <i class="fas fa-book-open" style="font-size: 2rem; opacity: .4;"></i>
+        <p class="mt-2 mb-0">No daily updates match this filter yet.</p>
+      </div>
+    {% endif %}
+  </div>
+</div>
+
+<style>
+  .dr-entry {
+    padding: 16px 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .dr-entry:last-child { border-bottom: 0; }
+
+  .dr-field { margin-bottom: 10px; }
+
+  .dr-label {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: .04em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    margin-bottom: 2px;
+  }
+
+  .dr-blocked {
+    background: var(--warning-light, rgba(245, 158, 11, .12));
+    border-radius: 8px;
+    padding: 9px 11px;
+  }
+
+  .dr-comment {
+    background: var(--bg-secondary, rgba(120, 130, 160, .08));
+    border-radius: 8px;
+    padding: 9px 11px;
+    margin-top: 8px;
+    font-size: 14px;
+  }
+  .dr-comment-head {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--primary);
+    margin-bottom: 2px;
+  }
+
+  .dr-reply {
+    display: flex;
+    gap: 8px;
+    margin-top: 10px;
+  }
+  .dr-reply .form-control { flex: 1; }
+</style>
+{% endblock %}

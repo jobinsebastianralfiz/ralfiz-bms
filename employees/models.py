@@ -916,3 +916,61 @@ class Certificate(models.Model):
 
 # Agreement e-signing (templates + signable requests)
 from .agreement_models import AgreementTemplate, AgreementRequest  # noqa: E402,F401
+
+
+class DailyReport(models.Model):
+    """One short end-of-day write-up per person, per day.
+
+    Distinct from :class:`WorkUpdate` (which hangs off a single assignment) and
+    from ``crm.DailyActivity`` (marketing numbers only). Every active employee
+    or intern files one of these, whatever their role.
+    """
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    employee = models.ForeignKey(Employee, on_delete=models.CASCADE, related_name='daily_reports')
+    date = models.DateField(default=timezone.localdate)
+    work_done = models.TextField(help_text='What you worked on today')
+    learned = models.TextField(blank=True, help_text='What you learned today')
+    blockers = models.TextField(blank=True, help_text='Anything blocking you or help you need')
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['-date', '-created_at']
+        unique_together = ['employee', 'date']
+
+    def __str__(self):
+        return f"{self.employee.employee_id} - {self.date}"
+
+    @property
+    def is_editable(self):
+        """The author may still fix a report for today or yesterday.
+
+        Older reports freeze so the log stays an honest record of the day.
+        """
+        return (timezone.localdate() - self.date).days <= 1
+
+    @property
+    def has_blockers(self):
+        return bool(self.blockers.strip())
+
+
+class DailyReportComment(models.Model):
+    """A reply on a daily report -- from HR back to the author, or vice versa."""
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    report = models.ForeignKey(DailyReport, on_delete=models.CASCADE, related_name='comments')
+    author = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, related_name='daily_report_comments')
+    message = models.TextField()
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['created_at']
+
+    def __str__(self):
+        who = self.author.get_full_name() or self.author.username if self.author else 'Someone'
+        return f"{who} on {self.report.date}"
+
+    @property
+    def author_name(self):
+        if not self.author:
+            return 'Removed user'
+        return self.author.get_full_name() or self.author.username
