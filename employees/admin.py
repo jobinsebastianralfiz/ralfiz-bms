@@ -5,6 +5,7 @@ from .models import (
     WorkAssignment, WorkUpdate, Notification, QRCode, ScheduledClass, Payroll,
     CertificateTemplate, Certificate, OfficeConfig, LateCheckInGrant,
     InternAssessment, AgreementTemplate, AgreementRequest,
+    DailyReport, DailyReportComment,
 )
 from .utils import generate_face_encoding
 
@@ -313,3 +314,28 @@ class AgreementRequestAdmin(admin.ModelAdmin):
 
     def has_add_permission(self, request):
         return False
+
+
+class DailyReportCommentInline(admin.TabularInline):
+    model = DailyReportComment
+    extra = 0
+    readonly_fields = ('created_at',)
+
+
+@admin.register(DailyReport)
+class DailyReportAdmin(admin.ModelAdmin):
+    list_display = ('date', 'employee', 'short_work', 'has_blockers')
+    list_filter = ('date', 'employee__department', 'employee__employment_type')
+    search_fields = ('employee__employee_id', 'employee__user__first_name',
+                     'employee__user__last_name', 'work_done', 'learned', 'blockers')
+    date_hierarchy = 'date'
+    readonly_fields = ('id', 'created_at', 'updated_at')
+    inlines = [DailyReportCommentInline]
+
+    @admin.display(description='Worked on')
+    def short_work(self, obj):
+        return obj.work_done[:80]
+
+    @admin.display(boolean=True, description='Blocked')
+    def has_blockers(self, obj):
+        return obj.has_blockers

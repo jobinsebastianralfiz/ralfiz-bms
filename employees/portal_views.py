@@ -9,6 +9,7 @@ re-implemented here -- the templates POST to the existing DRF endpoints in
 leave validation and face matching keep exactly one implementation shared with
 the Flutter app.
 """
+from datetime import timedelta
 from functools import wraps
 
 from django.contrib import messages
@@ -22,7 +23,7 @@ from django.utils import timezone
 from django.views.decorators.cache import never_cache
 
 from .models import (
-    Attendance, Employee, InternAssessment, LeaveRequest, LeaveType,
+    Attendance, DailyReport, Employee, InternAssessment, LeaveRequest, LeaveType,
     Notification, OfficeConfig, Payroll, ScheduledClass, WorkAssignment,
 )
 
@@ -30,7 +31,7 @@ from .models import (
 # changes. Whitenoise serves these unhashed, and the service worker is
 # cache-first for static assets, so an unversioned URL is served from the old
 # cache forever -- which is exactly how the app icon got stuck.
-ASSET_V = '7'
+ASSET_V = '8'
 
 MONTHS = [
     '', 'January', 'February', 'March', 'April', 'May', 'June',
@@ -130,7 +131,9 @@ def dashboard(request):
     employee = request.employee
     today = timezone.localdate()
 
-    attendance = Attendance.objects.filter(employee=employee, date=today).first()
+    # Named `record` to match what the template reads -- passing it as
+    # `attendance` meant the card always claimed "Not checked in".
+    record = Attendance.objects.filter(employee=employee, date=today).first()
     open_work = (WorkAssignment.objects
                  .filter(assigned_to=employee)
                  .exclude(status__in=['completed', 'cancelled'])
@@ -148,11 +151,12 @@ def dashboard(request):
     ctx = _base_context(request, 'dashboard')
     ctx.update({
         'today': today,
-        'attendance': attendance,
+        'record': record,
         'open_work': open_work,
         'pending_leave': pending_leave,
         'upcoming_classes': upcoming_classes,
         'days_present': month_attendance.exclude(status='absent').count(),
+        'todays_report': DailyReport.objects.filter(employee=employee, date=today).first(),
         'recent_notifications': Notification.objects.filter(
             Q(employee=employee) | Q(employee__isnull=True))[:5],
     })
@@ -246,6 +250,48 @@ def leave(request):
         'year': year,
     })
     return render(request, 'staff/leave.html', ctx)
+
+
+# --- Daily report ----------------------------------------------------------
+
+@staff_required
+def daily_report(request):
+    """Today's write-up plus the last few weeks of them.
+
+    The form POSTs to the DRF endpoint, so the one-per-day rule and the edit
+    window live in a single place shared with the app.
+    """
+    employee = request.employee
+    today = timezone.localdate()
+
+    reports = list(DailyReport.objects
+                   .filter(employee=employee)
+                   .prefetch_related('comments__author')[:30])
+    todays = next((r for r in reports if r.date == today), None)
+
+    ctx = _base_context(request, 'daily_report')
+    ctx.update({
+        'today': today,
+        'todays_report': todays,
+        'reports': reports,
+        'streak': _report_streak(employee, today),
+    })
+    return render(request, 'staff/daily_report.html', ctx)
+
+
+def _report_streak(employee, today):
+    """How many days running, ending today or yesterday, have a report."""
+    filed = set(DailyReport.objects
+                .filter(employee=employee, date__lte=today)
+                .values_list('date', flat=True)[:120])
+    if not filed:
+        return 0
+    cursor = today if today in filed else today - timedelta(days=1)
+    streak = 0
+    while cursor in filed:
+        streak += 1
+        cursor -= timedelta(days=1)
+    return streak
 
 
 # --- Work assignments ------------------------------------------------------

@@ -165,6 +165,10 @@
         <i class="fas fa-fingerprint"></i>
         <span>Attendance</span>
       </a>
+      <a href="{% url 'emp_daily_report_list' %}" class="nav-item {% if 'emp_daily_report' in request.resolver_match.url_name %}active{% endif %}">
+        <i class="fas fa-pen-to-square"></i>
+        <span>Daily Updates</span>
+      </a>
       <a href="{% url 'emp_leave_list' %}" class="nav-item {% if request.resolver_match.url_name == 'emp_leave_list' or request.resolver_match.url_name == 'emp_leave_action' %}active{% endif %}">
         <i class="fas fa-calendar-minus"></i>
         <span>Leave Requests</span>

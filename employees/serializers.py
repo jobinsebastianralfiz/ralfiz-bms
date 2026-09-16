@@ -4,7 +4,8 @@ from django.contrib.auth.models import User
 from .models import (
     Employee, DeviceToken, Attendance, LeaveType, LeaveRequest,
     WorkAssignment, WorkUpdate, Notification, QRCode, ScheduledClass, Payroll,
-    CertificateTemplate, Certificate, InternAssessment
+    CertificateTemplate, Certificate, InternAssessment,
+    DailyReport, DailyReportComment,
 )
 from crm.models import Lead, LeadNote, LeadReferenceLink, LeadQuoteAttachment, DailyActivity, Demo, FollowUp, LeadActivity
 from core.models import Client, Project
@@ -642,3 +643,45 @@ class CRMDashboardSerializer(serializers.Serializer):
     recent_leads = LeadSerializer(many=True)
     upcoming_demos_list = DemoSerializer(many=True)
     active_assignments = WorkAssignmentSerializer(many=True)
+
+
+# ---- Daily Reports ----
+
+class DailyReportCommentSerializer(serializers.ModelSerializer):
+    author_name = serializers.CharField(read_only=True)
+
+    class Meta:
+        model = DailyReportComment
+        fields = ['id', 'message', 'author_name', 'created_at']
+        read_only_fields = ['id', 'author_name', 'created_at']
+
+
+class DailyReportSerializer(serializers.ModelSerializer):
+    employee_name = serializers.CharField(source='employee.full_name', read_only=True)
+    employee_code = serializers.CharField(source='employee.employee_id', read_only=True)
+    comments = DailyReportCommentSerializer(many=True, read_only=True)
+    is_editable = serializers.BooleanField(read_only=True)
+
+    class Meta:
+        model = DailyReport
+        fields = [
+            'id', 'date', 'work_done', 'learned', 'blockers',
+            'employee_name', 'employee_code', 'is_editable', 'comments',
+            'created_at', 'updated_at',
+        ]
+        read_only_fields = ['id', 'employee_name', 'employee_code', 'is_editable',
+                            'comments', 'created_at', 'updated_at']
+
+    def validate_work_done(self, value):
+        if not value.strip():
+            raise serializers.ValidationError('Tell us what you worked on today.')
+        return value
+
+    def validate_date(self, value):
+        from django.utils import timezone
+        today = timezone.localdate()
+        if value > today:
+            raise serializers.ValidationError('You cannot file a report for a future date.')
+        if (today - value).days > 7:
+            raise serializers.ValidationError('Reports older than a week cannot be filed.')
+        return value

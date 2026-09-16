@@ -1,0 +1,217 @@
+{% extends 'staff/base.html' %}
+
+{% block title %}Daily update{% endblock %}
+{% block heading %}Daily update{% endblock %}
+
+{% block content %}
+
+<div class="sf-card">
+  <div class="sf-row">
+    <span class="sf-item-title">
+      {% if todays_report %}Today's update is in{% else %}Today's update{% endif %}
+    </span>
+    <span class="sf-muted">{{ today|date:"D, d M" }}</span>
+  </div>
+  <div class="sf-muted" style="margin-top:6px">
+    {% if todays_report %}
+      You filed it at {{ todays_report.created_at|time:"g:i A" }}. You can still edit it today.
+    {% else %}
+      A couple of lines is plenty — what you worked on, and what you picked up.
+    {% endif %}
+  </div>
+  {% if streak > 1 %}
+    <div class="sf-dim" style="margin-top:8px">
+      <i class="fas fa-fire"></i> {{ streak }} days in a row
+    </div>
+  {% endif %}
+  <button type="button" class="sf-btn" id="sfWriteUpdate" style="margin-top:12px"
+          data-id="{{ todays_report.id|default:'' }}">
+    <i class="fas {% if todays_report %}fa-pen{% else %}fa-plus{% endif %}"></i>
+    {% if todays_report %}Edit today's update{% else %}Write today's update{% endif %}
+  </button>
+</div>
+
+<div class="sf-section-title">Your updates</div>
+{% if reports %}
+  <div class="sf-list">
+    {% for r in reports %}
+      <div class="sf-item">
+        <div class="sf-item-head">
+          <span class="sf-item-title">{{ r.date|date:"D, d M Y" }}</span>
+          {% if r.date == today %}<span class="sf-badge sf-badge-ok">Today</span>{% endif %}
+        </div>
+
+        <div class="sf-dr-block">
+          <div class="sf-dr-label"><i class="fas fa-briefcase"></i> Worked on</div>
+          <div class="sf-dr-text">{{ r.work_done|linebreaksbr }}</div>
+        </div>
+
+        {% if r.learned %}
+          <div class="sf-dr-block">
+            <div class="sf-dr-label"><i class="fas fa-lightbulb"></i> Learned</div>
+            <div class="sf-dr-text">{{ r.learned|linebreaksbr }}</div>
+          </div>
+        {% endif %}
+
+        {% if r.blockers %}
+          <div class="sf-dr-block sf-dr-blocked">
+            <div class="sf-dr-label"><i class="fas fa-triangle-exclamation"></i> Blocked on</div>
+            <div class="sf-dr-text">{{ r.blockers|linebreaksbr }}</div>
+          </div>
+        {% endif %}
+
+        {% for c in r.comments.all %}
+          <div class="sf-dr-comment">
+            <div class="sf-dr-comment-head">
+              {{ c.author_name }} · {{ c.created_at|date:"d M, g:i A" }}
+            </div>
+            <div>{{ c.message|linebreaksbr }}</div>
+          </div>
+        {% endfor %}
+
+        <div class="sf-dr-actions">
+          {% if r.is_editable %}
+            <button type="button" class="sf-btn sf-btn-ghost sf-btn-sm sf-dr-edit"
+                    data-id="{{ r.id }}"
+                    data-date="{{ r.date|date:'Y-m-d' }}"
+                    data-work="{{ r.work_done }}"
+                    data-learned="{{ r.learned }}"
+                    data-blockers="{{ r.blockers }}">Edit</button>
+          {% endif %}
+          <button type="button" class="sf-btn sf-btn-ghost sf-btn-sm sf-dr-reply"
+                  data-id="{{ r.id }}">Reply</button>
+        </div>
+      </div>
+    {% endfor %}
+  </div>
+{% else %}
+  <div class="sf-empty">
+    <i class="fas fa-book-open"></i>
+    No updates yet. Today is a good day to start.
+  </div>
+{% endif %}
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function () {
+  var URL_BASE = '/api/employees/daily-reports/';
+  var TODAY = '{{ today|date:"Y-m-d" }}';
+
+  function openForm(values) {
+    var modal = SF.openModal(values.id ? 'Edit update' : "Today's update");
+    modal.bindClose(function () { modal.close(); });
+
+    modal.body.innerHTML =
+      '<div class="sf-field">' +
+        '<label class="sf-label" for="drWork">What did you work on today?</label>' +
+        '<textarea class="sf-textarea" id="drWork" rows="4" ' +
+          'placeholder="The tasks, calls or designs you actually moved today"></textarea>' +
+      '</div>' +
+      '<div class="sf-field">' +
+        '<label class="sf-label" for="drLearned">What did you learn?</label>' +
+        '<textarea class="sf-textarea" id="drLearned" rows="3" ' +
+          'placeholder="A tool, a shortcut, feedback that landed — anything new"></textarea>' +
+      '</div>' +
+      '<div class="sf-field">' +
+        '<label class="sf-label" for="drBlockers">Anything blocking you? <span class="sf-muted">(optional)</span></label>' +
+        '<textarea class="sf-textarea" id="drBlockers" rows="2" ' +
+          'placeholder="Stuck on something, or waiting on someone?"></textarea>' +
+      '</div>' +
+      '<button type="button" class="sf-btn" id="drSubmit">Save update</button>';
+
+    modal.body.querySelector('#drWork').value = values.work || '';
+    modal.body.querySelector('#drLearned').value = values.learned || '';
+    modal.body.querySelector('#drBlockers').value = values.blockers || '';
+
+    modal.body.querySelector('#drSubmit').addEventListener('click', function () {
+      var btn = this;
+      var work = modal.body.querySelector('#drWork').value.trim();
+      if (!work) { SF.toast('Tell us what you worked on.', 'warning'); return; }
+
+      btn.disabled = true;
+      btn.innerHTML = '<span class="sf-spinner"></span> Saving…';
+
+      // POST to the collection either way: the API updates an existing report
+      // for the same date instead of erroring, so this stays idempotent.
+      SF.api(URL_BASE, {
+        method: 'POST',
+        body: {
+          date: values.date || TODAY,
+          work_done: work,
+          learned: modal.body.querySelector('#drLearned').value.trim(),
+          blockers: modal.body.querySelector('#drBlockers').value.trim()
+        }
+      }).then(function (res) {
+        if (res.ok) {
+          modal.close();
+          SF.toast('Update saved.', 'success');
+          setTimeout(function () { location.reload(); }, 700);
+        } else {
+          btn.disabled = false;
+          btn.textContent = 'Save update';
+          SF.toast(SF.errorText(res.data, 'Could not save the update.'), 'error');
+        }
+      });
+    });
+  }
+
+  document.getElementById('sfWriteUpdate').addEventListener('click', function () {
+    var existing = document.querySelector('.sf-dr-edit[data-date="' + TODAY + '"]');
+    openForm(existing ? {
+      id: existing.dataset.id,
+      date: existing.dataset.date,
+      work: existing.dataset.work,
+      learned: existing.dataset.learned,
+      blockers: existing.dataset.blockers
+    } : { date: TODAY });
+  });
+
+  Array.prototype.forEach.call(document.querySelectorAll('.sf-dr-edit'), function (btn) {
+    btn.addEventListener('click', function () {
+      openForm({
+        id: btn.dataset.id,
+        date: btn.dataset.date,
+        work: btn.dataset.work,
+        learned: btn.dataset.learned,
+        blockers: btn.dataset.blockers
+      });
+    });
+  });
+
+  Array.prototype.forEach.call(document.querySelectorAll('.sf-dr-reply'), function (btn) {
+    btn.addEventListener('click', function () {
+      var modal = SF.openModal('Reply');
+      modal.bindClose(function () { modal.close(); });
+      modal.body.innerHTML =
+        '<div class="sf-field">' +
+          '<textarea class="sf-textarea" id="drReply" rows="3" placeholder="Add a note"></textarea>' +
+        '</div>' +
+        '<button type="button" class="sf-btn" id="drReplySend">Send</button>';
+
+      modal.body.querySelector('#drReplySend').addEventListener('click', function () {
+        var send = this;
+        var msg = modal.body.querySelector('#drReply').value.trim();
+        if (!msg) { SF.toast('Write something first.', 'warning'); return; }
+        send.disabled = true;
+        send.innerHTML = '<span class="sf-spinner"></span> Sending…';
+        SF.api(URL_BASE + btn.dataset.id + '/comments/', {
+          method: 'POST', body: { message: msg }
+        }).then(function (res) {
+          if (res.ok) {
+            modal.close();
+            SF.toast('Reply sent.', 'success');
+            setTimeout(function () { location.reload(); }, 700);
+          } else {
+            send.disabled = false;
+            send.textContent = 'Send';
+            SF.toast(SF.errorText(res.data, 'Could not send the reply.'), 'error');
+          }
+        });
+      });
+    });
+  });
+})();
+</script>
+{% endblock %}

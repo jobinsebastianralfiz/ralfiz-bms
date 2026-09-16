@@ -866,3 +866,54 @@ img.sf-avatar { object-fit: cover; display: block; }
 @media (max-width: 359px) {
   .sf-install-sub { display: none; }
 }
+
+/* ---- Daily update -------------------------------------------------------
+   Each report is three labelled blocks; the blocker one is tinted so a stuck
+   person is visible without reading the whole card. */
+.sf-dr-block { margin-top: 10px; }
+
+.sf-dr-label {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+  color: var(--sf-text-3);
+  margin-bottom: 3px;
+}
+.sf-dr-label i { margin-right: 5px; }
+
+.sf-dr-text {
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--sf-text-2);
+  white-space: normal;
+}
+
+.sf-dr-blocked {
+  background: var(--sf-warning-dim);
+  border-radius: 10px;
+  padding: 9px 11px;
+}
+.sf-dr-blocked .sf-dr-label { color: var(--sf-warning); }
+
+.sf-dr-comment {
+  margin-top: 10px;
+  padding: 9px 11px;
+  border-radius: 10px;
+  background: var(--sf-primary-dim);
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--sf-text-2);
+}
+.sf-dr-comment-head {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--sf-primary-text);
+  margin-bottom: 3px;
+}
+
+.sf-dr-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+}
