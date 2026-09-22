@@ -95,6 +95,7 @@ urlpatterns = [
     # Invoices
     path('invoices/', views.invoice_list, name='invoice_list'),
     path('invoices/create/', views.invoice_create, name='invoice_create'),
+    path('invoices/no-gst-ledger/', views.non_gst_ledger, name='non_gst_ledger'),
     path('invoices/backup-pdf/', views.invoices_backup_pdf, name='invoices_backup_pdf'),
     path('expenses/backup-pdf/', views.expenses_backup_pdf, name='expenses_backup_pdf'),
     path('clients/backup-pdf/', views.clients_credentials_backup_pdf, name='clients_credentials_backup_pdf'),

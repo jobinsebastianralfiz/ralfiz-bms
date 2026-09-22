@@ -125,7 +125,7 @@ class ProjectDetailSerializer(serializers.ModelSerializer):
         ]
 
     def get_financial_summary(self, obj):
-        invoices = obj.invoices.exclude(status='cancelled')
+        invoices = obj.invoices(manager='all_objects').exclude(status='cancelled')
         from django.db.models import Sum
         total_invoiced = invoices.aggregate(t=Sum('total_amount'))['t'] or 0
         total_paid = invoices.aggregate(t=Sum('amount_paid'))['t'] or 0
@@ -183,7 +183,7 @@ class InvoiceDetailSerializer(serializers.ModelSerializer):
     balance_due = serializers.DecimalField(max_digits=12, decimal_places=2, read_only=True)
     is_overdue = serializers.BooleanField(read_only=True)
     items = InvoiceItemSerializer(many=True, read_only=True)
-    payments = PaymentSerializer(many=True, read_only=True)
+    payments = PaymentSerializer(source='all_payments', many=True, read_only=True)
 
     class Meta:
         model = Invoice

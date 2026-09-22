@@ -57,18 +57,18 @@
             </div>
             <div class="col-3">
               <div class="text-sm text-muted">Payments</div>
-              <div class="fw-medium">{{ invoice.payments.count }}</div>
+              <div class="fw-medium">{{ invoice.all_payments.count }}</div>
             </div>
           </div>
         </div>
 
-        {% if invoice.payments.count > 0 %}
+        {% if invoice.all_payments.count > 0 %}
         <div class="alert alert-warning">
           <i class="fas fa-info-circle alert-icon"></i>
           <div class="alert-content">
             <div class="alert-title">Cannot delete this invoice</div>
             <p class="alert-text mb-0">
-              This invoice has {{ invoice.payments.count }} payment(s) recorded against it totaling &#8377;{{ invoice.amount_paid|floatformat:2 }}.
+              This invoice has {{ invoice.all_payments.count }} payment(s) recorded against it totaling &#8377;{{ invoice.amount_paid|floatformat:2 }}.
               Payments must be deleted first before the invoice can be removed.
             </p>
           </div>
@@ -81,7 +81,7 @@
             <i class="fas fa-arrow-left"></i>
             Cancel
           </a>
-          <button type="submit" class="btn btn-danger" {% if invoice.payments.count > 0 %}disabled{% endif %}>
+          <button type="submit" class="btn btn-danger" {% if invoice.all_payments.count > 0 %}disabled{% endif %}>
             <i class="fas fa-trash-alt"></i>
             Delete Invoice
           </button>

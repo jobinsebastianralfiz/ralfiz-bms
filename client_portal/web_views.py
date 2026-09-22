@@ -104,7 +104,7 @@ def portal_dashboard(request):
         p.task_completed = completed
         active_list.append(p)
 
-    all_invoices = Invoice.objects.filter(client=client).exclude(status='cancelled')
+    all_invoices = Invoice.all_objects.filter(client=client).exclude(status='cancelled')
     pending_invoices = all_invoices.exclude(status='paid')[:5]
     total_invoiced = all_invoices.aggregate(t=Sum('total_amount'))['t'] or 0
     total_paid = all_invoices.aggregate(t=Sum('amount_paid'))['t'] or 0
@@ -185,7 +185,7 @@ def portal_project_detail(request, project_id):
     else:
         progress = 0
 
-    invoices = project.invoices.exclude(status='cancelled')
+    invoices = project.invoices(manager='all_objects').exclude(status='cancelled')
     total_invoiced = invoices.aggregate(t=Sum('total_amount'))['t'] or 0
     total_paid = invoices.aggregate(t=Sum('amount_paid'))['t'] or 0
 
@@ -326,13 +326,13 @@ def portal_add_comment(request, project_id):
 @client_required
 def portal_invoices(request):
     client = request.client
-    qs = Invoice.objects.filter(client=client)
+    qs = Invoice.all_objects.filter(client=client)
 
     status_filter = request.GET.get('status', '')
     if status_filter:
         qs = qs.filter(status=status_filter)
 
-    all_invoices = Invoice.objects.filter(client=client).exclude(status='cancelled')
+    all_invoices = Invoice.all_objects.filter(client=client).exclude(status='cancelled')
     total_paid = all_invoices.aggregate(t=Sum('amount_paid'))['t'] or 0
     total_invoiced = all_invoices.aggregate(t=Sum('total_amount'))['t'] or 0
 
@@ -349,7 +349,7 @@ def portal_invoices(request):
 @client_required
 def portal_invoice_detail(request, invoice_id):
     client = request.client
-    invoice = get_object_or_404(Invoice, id=invoice_id, client=client)
+    invoice = get_object_or_404(Invoice.all_objects, id=invoice_id, client=client)
 
     # Auto-mark as viewed
     if invoice.status == 'sent':

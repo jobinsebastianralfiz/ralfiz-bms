@@ -70,7 +70,7 @@
     </div>
 
     <!-- Payment History -->
-    {% if invoice.payments.count > 0 %}
+    {% if invoice.all_payments.count > 0 %}
     <div class="portal-card">
       <div class="portal-card-header"><h2>Payment History</h2></div>
       <div class="portal-card-body" style="padding: 0;">
@@ -84,7 +84,7 @@
             </tr>
           </thead>
           <tbody>
-            {% for payment in invoice.payments.all %}
+            {% for payment in invoice.all_payments.all %}
             <tr>
               <td>{{ payment.payment_date|date:"M d, Y" }}</td>
               <td>{{ payment.get_payment_method_display }}</td>

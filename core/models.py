@@ -4,7 +4,8 @@ import os
 import re
 
 from django.utils.functional import cached_property
-from django.db import models
+from django.core.exceptions import ValidationError
+from django.db import models, transaction
 from django.contrib.auth.models import User
 from django.contrib.contenttypes.fields import GenericForeignKey
 from django.contrib.contenttypes.models import ContentType
@@ -552,6 +553,24 @@ class QuoteItem(models.Model):
         super().save(*args, **kwargs)
 
 
+# No-GST invoices live in a separate ledger: they are numbered in their own
+# series and left out of every total. The default managers below therefore
+# only see GST invoices and their payments; `all_objects` sees both, and is
+# what single-invoice pages, numbering and the no-GST ledger use.
+GST_INVOICE = models.Q(tax_rate__gt=0) & ~models.Q(gst_filing_status='not_applicable')
+GST_PAYMENT = models.Q(invoice__tax_rate__gt=0) & ~models.Q(invoice__gst_filing_status='not_applicable')
+
+
+class GSTInvoiceManager(models.Manager):
+    def get_queryset(self):
+        return super().get_queryset().filter(GST_INVOICE)
+
+
+class GSTPaymentManager(models.Manager):
+    def get_queryset(self):
+        return super().get_queryset().filter(GST_PAYMENT)
+
+
 class Invoice(models.Model):
     """Invoice model"""
     STATUS_CHOICES = [
@@ -571,6 +590,10 @@ class Invoice(models.Model):
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     invoice_number = models.CharField(max_length=20, unique=True, blank=True)
+    renumbered_from = models.CharField(
+        max_length=20, blank=True,
+        help_text='The number this invoice had before it moved between the GST and no-GST series.'
+    )
     client = models.ForeignKey(Client, on_delete=models.CASCADE, related_name='invoices')
     project = models.ForeignKey(Project, on_delete=models.SET_NULL, null=True, blank=True, related_name='invoices')
     quote = models.ForeignKey(Quote, on_delete=models.SET_NULL, null=True, blank=True, related_name='invoices')
@@ -596,33 +619,103 @@ class Invoice(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
+    objects = GSTInvoiceManager()
+    all_objects = models.Manager()
+
     class Meta:
         ordering = ['-created_at']
+        base_manager_name = 'all_objects'
 
     def __str__(self):
         return f"{self.invoice_number} - {self.client}"
 
+    @property
+    def all_payments(self):
+        """Payments on this invoice, including when it is a no-GST invoice
+        (the plain `payments` accessor only sees GST ones)."""
+        return self.payments(manager='all_objects')
+
+    @property
+    def is_gst(self):
+        """A GST invoice charges tax and is not marked "GST not applicable".
+
+        GST and no-GST invoices are numbered in separate series, because the
+        GST return needs the GST series to run without gaps.
+        """
+        return (self.tax_rate or 0) > 0 and self.gst_filing_status != 'not_applicable'
+
+    @staticmethod
+    def series_number(invoice_number, prefix):
+        """The running number of `invoice_number` in the `prefix` series, else None."""
+        match = re.fullmatch(re.escape(prefix) + r'(\d+)', invoice_number or '')
+        return int(match.group(1)) if match else None
+
+    @classmethod
+    def next_number(cls, gst, exclude_pk=None):
+        settings = CompanySettings.get_settings()
+        if gst:
+            prefix, start = settings.invoice_prefix, settings.invoice_starting_number
+        else:
+            prefix, start = settings.non_gst_invoice_prefix, settings.non_gst_invoice_starting_number
+        numbers = cls.all_objects.filter(invoice_number__startswith=prefix)
+        if exclude_pk:
+            numbers = numbers.exclude(pk=exclude_pk)
+        used = [cls.series_number(n, prefix) for n in numbers.values_list('invoice_number', flat=True)]
+        used = [n for n in used if n is not None]
+        return f'{prefix}{max(used) + 1 if used else start}'
+
     def save(self, *args, **kwargs):
-        if not self.invoice_number:
-            settings = CompanySettings.get_settings()
-            prefix = settings.invoice_prefix
-            # Find the highest invoice number with the same prefix
-            matching_invoices = Invoice.objects.filter(invoice_number__startswith=prefix)
-            max_number = 0
-            for inv in matching_invoices:
-                try:
-                    num = int(inv.invoice_number[len(prefix):])
-                    if num > max_number:
-                        max_number = num
-                except (ValueError, IndexError):
-                    continue
-            if max_number > 0:
-                new_number = max_number + 1
-            else:
-                # Use starting number from settings
-                new_number = settings.invoice_starting_number
-            self.invoice_number = f'{prefix}{new_number}'
-        super().save(*args, **kwargs)
+        settings = CompanySettings.get_settings()
+        other_prefix = settings.non_gst_invoice_prefix if self.is_gst else settings.invoice_prefix
+        # A new invoice, or one whose GST treatment changed so that its number
+        # sits in the other series, takes the next number of its own series.
+        # Hand-typed numbers that fit neither series are left alone.
+        left_series = None
+        if not self.invoice_number or self.series_number(self.invoice_number, other_prefix) is not None:
+            if self.invoice_number:
+                left_series = (other_prefix, self.series_number(self.invoice_number, other_prefix))
+                self._check_can_leave_series(*left_series)
+                self.renumbered_from = self.invoice_number
+            self.invoice_number = self.next_number(self.is_gst, exclude_pk=self.pk)
+            update_fields = kwargs.get('update_fields')
+            if update_fields is not None:
+                kwargs['update_fields'] = set(update_fields) | {'invoice_number', 'renumbered_from'}
+        with transaction.atomic():
+            super().save(*args, **kwargs)
+            if left_series:
+                self._close_gap(*left_series)
+
+    def _later_in_series(self, prefix, number):
+        later = []
+        for inv in Invoice.all_objects.filter(invoice_number__startswith=prefix).exclude(pk=self.pk):
+            n = self.series_number(inv.invoice_number, prefix)
+            if n is not None and n > number:
+                later.append((n, inv))
+        return [inv for _, inv in sorted(later, key=lambda row: row[0])]
+
+    def _check_can_leave_series(self, prefix, number):
+        """Moving out of a series shifts every later invoice down one, so a
+        number already reported in a GST return must not move."""
+        old = Invoice.all_objects.filter(pk=self.pk).values_list('gst_filing_status', flat=True).first()
+        if old == 'filed':
+            raise ValidationError(
+                f'{self.invoice_number} is already filed in GSTR, so it cannot move out of the GST series. '
+                'Issue a credit note instead.'
+            )
+        filed = [i.invoice_number for i in self._later_in_series(prefix, number) if i.gst_filing_status == 'filed']
+        if filed:
+            raise ValidationError(
+                f'Moving {self.invoice_number} out of its series would renumber invoices already filed in GSTR '
+                f'({", ".join(filed)}). Issue a credit note instead.'
+            )
+
+    def _close_gap(self, prefix, number):
+        # Ascending, so each invoice moves into the number just freed below it.
+        for inv in self._later_in_series(prefix, number):
+            Invoice.all_objects.filter(pk=inv.pk).update(
+                invoice_number=f'{prefix}{number}', renumbered_from=inv.invoice_number,
+            )
+            number += 1
 
     @property
     def balance_due(self):
@@ -720,8 +813,12 @@ class Payment(models.Model):
     notes = models.TextField(blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
+    objects = GSTPaymentManager()
+    all_objects = models.Manager()
+
     class Meta:
         ordering = ['-payment_date']
+        base_manager_name = 'all_objects'
 
     def __str__(self):
         return f"Payment of ₹{self.amount} for {self.invoice.invoice_number}"
@@ -733,12 +830,12 @@ class Payment(models.Model):
     def delete(self, *args, **kwargs):
         invoice = self.invoice
         super().delete(*args, **kwargs)
-        total_paid = invoice.payments.aggregate(total=models.Sum('amount'))['total'] or 0
+        total_paid = invoice.all_payments.aggregate(total=models.Sum('amount'))['total'] or 0
         invoice.amount_paid = total_paid
         invoice.update_payment_status()
 
     def _recompute_invoice_totals(self):
-        total_paid = self.invoice.payments.aggregate(total=models.Sum('amount'))['total'] or 0
+        total_paid = self.invoice.all_payments.aggregate(total=models.Sum('amount'))['total'] or 0
         self.invoice.amount_paid = total_paid
         self.invoice.update_payment_status()
 
@@ -779,6 +876,8 @@ class CompanySettings(models.Model):
     # Default settings
     invoice_prefix = models.CharField(max_length=10, default='INVRT', help_text='Prefix for invoice numbers (e.g., INVRT)')
     invoice_starting_number = models.IntegerField(default=201, help_text='Starting number for invoices (used when no invoices exist)')
+    non_gst_invoice_prefix = models.CharField(max_length=10, default='NG', help_text='Prefix for invoices without GST, which are numbered separately')
+    non_gst_invoice_starting_number = models.IntegerField(default=1, help_text='Starting number for invoices without GST (used when none exist with the current prefix)')
     quote_prefix = models.CharField(max_length=10, default='QT')
     quote_starting_number = models.IntegerField(default=1, help_text='Starting number for quotes (used when no quotes exist with the current prefix)')
     default_tax_rate = models.DecimalField(max_digits=5, decimal_places=2, default=18)

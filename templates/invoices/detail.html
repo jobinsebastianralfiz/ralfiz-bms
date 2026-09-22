@@ -197,6 +197,7 @@
               <button type="button" class="btn btn-sm btn-outline-secondary" onclick="toggleInvoiceNumberEdit()"><i class="fas fa-times"></i></button>
             </form>
           </div>
+          <div class="text-sm text-muted mt-1">{% if invoice.is_gst %}GST series{% else %}No-GST series{% endif %}{% if invoice.renumbered_from %} &middot; previously {{ invoice.renumbered_from }}{% endif %}</div>
         </div>
         <div class="mb-3">
           <div class="text-sm text-muted mb-1">Issue Date</div>
@@ -255,8 +256,8 @@
         {% endif %}
       </div>
       <div class="card-body">
-        {% if invoice.payments.all %}
-        {% for payment in invoice.payments.all %}
+        {% if invoice.all_payments.all %}
+        {% for payment in invoice.all_payments.all %}
         <div class="d-flex justify-content-between align-items-center {% if not forloop.last %}mb-3 pb-3{% endif %}" {% if not forloop.last %}style="border-bottom: 1px solid var(--border-color);"{% endif %}>
           <div>
             <div class="fw-medium text-success">&#8377;{{ payment.amount|floatformat:2 }}</div>
@@ -266,6 +267,9 @@
             <div class="text-sm text-muted">{{ payment.payment_date|date:"d M Y" }}</div>
             <a href="{% url 'payment_receipt' payment.pk %}" class="btn btn-ghost btn-sm btn-icon" title="View Receipt">
               <i class="fas fa-receipt"></i>
+            </a>
+            <a href="{% url 'payment_receipt' payment.pk %}?download=1" class="btn btn-ghost btn-sm btn-icon" title="Download Receipt (PDF)">
+              <i class="fas fa-download"></i>
             </a>
             <a href="{% url 'payment_edit' payment.pk %}" class="btn btn-ghost btn-sm btn-icon" title="Edit Payment">
               <i class="fas fa-pen"></i>

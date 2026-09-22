@@ -396,6 +396,20 @@
                   <div class="form-text">Starting number for new invoices (used when no invoices exist)</div>
                 </div>
               </div>
+              <div class="col-6 col-sm-12" style="padding: 0.5rem;">
+                <div class="form-group">
+                  <label class="form-label">No-GST Invoice Prefix</label>
+                  <input type="text" class="form-control" name="non_gst_invoice_prefix" maxlength="10" value="{{ company.non_gst_invoice_prefix|default:'NG' }}">
+                  <div class="form-text">Invoices with 0% tax or "GST not applicable" get their own series, so GST numbers stay continuous</div>
+                </div>
+              </div>
+              <div class="col-6 col-sm-12" style="padding: 0.5rem;">
+                <div class="form-group">
+                  <label class="form-label">No-GST Starting Number</label>
+                  <input type="number" class="form-control" name="non_gst_invoice_starting_number" value="{{ company.non_gst_invoice_starting_number|default:'1' }}" min="1">
+                  <div class="form-text">Used when no no-GST invoice exists with this prefix</div>
+                </div>
+              </div>
               <div class="col-12" style="padding: 0.5rem;">
                 <div class="form-group d-flex flex-wrap gap-2">
                   <button type="button" class="btn btn-outline-primary" onclick="openNewFyModal()">
@@ -1124,6 +1138,11 @@
           <label class="form-label">New Starting Number</label>
           <input type="number" class="form-control" name="new_starting_number" value="1" min="1" required>
           <div class="form-text">Usually 1 at the start of a new FY.</div>
+        </div>
+        <div class="form-group mb-3">
+          <label class="form-label">New No-GST Prefix <span class="text-muted fw-normal">- Optional</span></label>
+          <input type="text" class="form-control" name="new_non_gst_prefix" maxlength="10" placeholder="e.g., NG2627-">
+          <div class="form-text">Current: <strong>{{ company.non_gst_invoice_prefix }}</strong>. Fill in to restart the no-GST series at 1.</div>
         </div>
         <div class="alert alert-warning" style="background:#fff8e1;border:1px solid #ffe082;border-radius:4px;padding:0.75rem;font-size:0.9rem;">
           <i class="fas fa-exclamation-triangle me-2"></i>

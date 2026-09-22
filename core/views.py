@@ -1,6 +1,7 @@
 import uuid
 from django.shortcuts import render, redirect, get_object_or_404
 from django.urls import reverse
+from django.core.exceptions import ValidationError
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth import login, logout, authenticate
 from django.contrib.auth.models import User
@@ -11,7 +12,7 @@ from django.conf import settings
 from datetime import timedelta, datetime
 
 from .models import (
-    Client, Project, Credential, Quote, QuoteItem, Invoice, InvoiceItem, Payment, CompanySettings,
+    Client, Project, Credential, Quote, QuoteItem, Invoice, InvoiceItem, Payment, CompanySettings, GST_INVOICE,
     Expense, TeamMember, Task, TaskAttachment, TimeEntry, ActivityLog, Document,
     TaskComment, TaskIssue, TaskActivity,
     AMCContract, AMCPayment, CredentialRenewal,
@@ -653,7 +654,7 @@ def client_delete(request, pk):
         client_name = str(client)
         # Check for related records
         project_count = client.projects.count()
-        invoice_count = client.invoices.count()
+        invoice_count = client.invoices(manager='all_objects').count()
         quote_count = client.quotes.count()
 
         if project_count > 0 or invoice_count > 0 or quote_count > 0:
@@ -1041,7 +1042,7 @@ def project_delete(request, pk):
 
         # Check for related records
         credential_count = project.credentials.count()
-        invoice_count = project.invoices.count()
+        invoice_count = project.invoices(manager='all_objects').count()
         quote_count = project.quotes.count()
 
         if credential_count > 0 or invoice_count > 0 or quote_count > 0:
@@ -1893,7 +1894,7 @@ def quote_convert(request, pk):
 
     # Check if already converted
     if Invoice.objects.filter(quote=quote).exists():
-        existing_invoice = Invoice.objects.get(quote=quote)
+        existing_invoice = Invoice.all_objects.get(quote=quote)
         messages.warning(request, f'This quote has already been converted to invoice {existing_invoice.invoice_number}.')
         return redirect('invoice_detail', pk=existing_invoice.pk)
 
@@ -2111,9 +2112,31 @@ def invoices_mark_gst_pending(request):
 
 
 @login_required
+def non_gst_ledger(request):
+    """The separate ledger of no-GST invoices, which every other total leaves out."""
+    if not request.user.is_superuser:
+        messages.error(request, 'Only the owner can open the no-GST ledger.')
+        return redirect('invoice_list')
+    invoices = (Invoice.all_objects.exclude(GST_INVOICE)
+                .select_related('client', 'project').order_by('-issue_date', '-created_at'))
+    payments = (Payment.all_objects.exclude(invoice__in=Invoice.objects.all())
+                .select_related('invoice', 'invoice__client').order_by('-payment_date'))
+    open_invoices = invoices.exclude(status__in=['draft', 'cancelled'])
+    totals = open_invoices.aggregate(invoiced=Sum('total_amount'), paid=Sum('amount_paid'))
+    invoiced, paid = totals['invoiced'] or 0, totals['paid'] or 0
+    return render(request, 'invoices/non_gst_ledger.html', {
+        'invoices': invoices,
+        'payments': payments,
+        'total_invoiced': invoiced,
+        'total_received': paid,
+        'total_outstanding': invoiced - paid,
+    })
+
+
+@login_required
 def invoice_set_gst_status(request, pk):
     """Per-invoice GST filing status update (POST only)."""
-    invoice = get_object_or_404(Invoice, pk=pk)
+    invoice = get_object_or_404(Invoice.all_objects, pk=pk)
     if request.method != 'POST':
         return redirect('invoice_detail', pk=pk)
 
@@ -2123,17 +2146,24 @@ def invoice_set_gst_status(request, pk):
         messages.error(request, 'Invalid GST status.')
         return redirect('invoice_detail', pk=pk)
 
+    old_number = invoice.invoice_number
     invoice.gst_filing_status = new_status
     invoice.gst_filed_at = timezone.now() if new_status == 'filed' else None
-    invoice.save(update_fields=['gst_filing_status', 'gst_filed_at'])
+    try:
+        invoice.save(update_fields=['gst_filing_status', 'gst_filed_at'])
+    except ValidationError as e:
+        messages.error(request, ' '.join(e.messages))
+        return redirect('invoice_detail', pk=pk)
     messages.success(request, f'GST status set to "{invoice.get_gst_filing_status_display()}".')
+    if invoice.invoice_number != old_number:
+        messages.info(request, f'Invoice renumbered from {old_number} to {invoice.invoice_number}, in the {"GST" if invoice.is_gst else "no-GST"} series.')
     return redirect('invoice_detail', pk=pk)
 
 
 @login_required
 def invoice_detail(request, pk):
     invoice = get_object_or_404(
-        Invoice.objects.select_related('client', 'project').prefetch_related('items', 'payments'),
+        Invoice.all_objects.select_related('client', 'project').prefetch_related('items', 'payments'),
         pk=pk
     )
 
@@ -2186,7 +2216,7 @@ def invoice_create(request):
         # Allow manual invoice number override
         manual_invoice_number = request.POST.get('invoice_number', '').strip()
         if manual_invoice_number:
-            if Invoice.objects.filter(invoice_number=manual_invoice_number).exists():
+            if Invoice.all_objects.filter(invoice_number=manual_invoice_number).exists():
                 messages.error(request, f'Invoice number "{manual_invoice_number}" is already in use. Please choose a different number or leave blank to auto-generate.')
                 return redirect('invoice_create')
             create_kwargs['invoice_number'] = manual_invoice_number
@@ -2234,7 +2264,7 @@ def invoice_create(request):
 
 @login_required
 def invoice_update(request, pk):
-    invoice = get_object_or_404(Invoice.objects.prefetch_related('items'), pk=pk)
+    invoice = get_object_or_404(Invoice.all_objects.prefetch_related('items'), pk=pk)
     clients = Client.objects.filter(is_active=True)
     projects = Project.objects.select_related('client').all()
     quotes = Quote.objects.filter(status='accepted')
@@ -2242,6 +2272,7 @@ def invoice_update(request, pk):
     if request.method == 'POST':
         from decimal import Decimal, InvalidOperation
 
+        number_before = invoice.invoice_number
         invoice.client_id = request.POST.get('client')
         invoice.project_id = request.POST.get('project') or None
         invoice.quote_id = request.POST.get('quote') or None
@@ -2271,12 +2302,16 @@ def invoice_update(request, pk):
         # Allow manual invoice number override
         manual_invoice_number = request.POST.get('invoice_number', '').strip()
         if manual_invoice_number and manual_invoice_number != invoice.invoice_number:
-            if Invoice.objects.filter(invoice_number=manual_invoice_number).exclude(pk=invoice.pk).exists():
+            if Invoice.all_objects.filter(invoice_number=manual_invoice_number).exclude(pk=invoice.pk).exists():
                 messages.error(request, f'Invoice number "{manual_invoice_number}" is already in use. Please choose a different number.')
                 return redirect('invoice_update', pk=invoice.pk)
             invoice.invoice_number = manual_invoice_number
 
-        invoice.save()
+        try:
+            invoice.save()
+        except ValidationError as e:
+            messages.error(request, ' '.join(e.messages))
+            return redirect('invoice_update', pk=invoice.pk)
 
         # Delete existing items and recreate
         invoice.items.all().delete()
@@ -2313,6 +2348,8 @@ def invoice_update(request, pk):
         invoice.calculate_totals()
 
         messages.success(request, f'Invoice "{invoice.invoice_number}" updated successfully.')
+        if invoice.renumbered_from == number_before and invoice.invoice_number != number_before:
+            messages.info(request, f'Invoice renumbered from {number_before} to {invoice.invoice_number}, in the {"GST" if invoice.is_gst else "no-GST"} series.')
         return redirect('invoice_detail', pk=invoice.pk)
 
     # Get today's date and default due date (15 days from now) for form defaults
@@ -2338,12 +2375,12 @@ def invoice_update(request, pk):
 @login_required
 def invoice_update_number(request, pk):
     """Quick inline update for invoice number from detail page."""
-    invoice = get_object_or_404(Invoice, pk=pk)
+    invoice = get_object_or_404(Invoice.all_objects, pk=pk)
     if request.method == 'POST':
         new_number = request.POST.get('invoice_number', '').strip()
         if new_number and new_number != invoice.invoice_number:
             # Check uniqueness
-            if Invoice.objects.filter(invoice_number=new_number).exclude(pk=pk).exists():
+            if Invoice.all_objects.filter(invoice_number=new_number).exclude(pk=pk).exists():
                 messages.error(request, f'Invoice number "{new_number}" is already in use.')
             else:
                 invoice.invoice_number = new_number
@@ -2360,7 +2397,7 @@ def invoice_pdf(request, pk):
     from decimal import Decimal
 
     invoice = get_object_or_404(
-        Invoice.objects.select_related('client', 'project').prefetch_related('items', 'payments'),
+        Invoice.all_objects.select_related('client', 'project').prefetch_related('items', 'payments'),
         pk=pk
     )
 
@@ -2738,12 +2775,12 @@ def clients_credentials_backup_xlsx(request):
 
 @login_required
 def invoice_delete(request, pk):
-    invoice = get_object_or_404(Invoice, pk=pk)
+    invoice = get_object_or_404(Invoice.all_objects, pk=pk)
 
     if request.method == 'POST':
         invoice_number = invoice.invoice_number
         # Check if invoice has payments
-        payment_count = invoice.payments.count()
+        payment_count = invoice.all_payments.count()
 
         if payment_count > 0:
             messages.error(
@@ -2765,7 +2802,7 @@ def invoice_delete(request, pk):
 def invoice_clone(request, pk):
     """Clone an existing invoice"""
     original_invoice = get_object_or_404(
-        Invoice.objects.prefetch_related('items'),
+        Invoice.all_objects.prefetch_related('items'),
         pk=pk
     )
 
@@ -2815,7 +2852,7 @@ def invoice_split_to_milestones(request, pk):
         return redirect('invoice_detail', pk=pk)
 
     from decimal import Decimal, InvalidOperation
-    source = get_object_or_404(Invoice, pk=pk)
+    source = get_object_or_404(Invoice.all_objects, pk=pk)
 
     labels = request.POST.getlist('milestone_label')
     percents = request.POST.getlist('milestone_percent')
@@ -2963,6 +3000,16 @@ def payment_list(request):
 @login_required
 def payment_create(request):
     invoices = Invoice.objects.exclude(status__in=['paid', 'cancelled']).select_related('client')
+    # A no-GST invoice is not in the dropdown, but "Record Payment" on its own
+    # page passes it in, so offer that one too.
+    preselected = request.GET.get('invoice')
+    if preselected:
+        try:
+            uuid.UUID(preselected)
+            invoices = Invoice.all_objects.exclude(status__in=['paid', 'cancelled']).filter(
+                GST_INVOICE | Q(pk=preselected)).select_related('client')
+        except ValueError:
+            pass
 
     if request.method == 'POST':
         payment = Payment.objects.create(
@@ -2986,7 +3033,7 @@ def payment_create(request):
 @login_required
 def payment_edit(request, pk):
     """Edit an existing payment. Recomputes invoice.amount_paid via Payment.save()."""
-    payment = get_object_or_404(Payment.objects.select_related('invoice', 'invoice__client'), pk=pk)
+    payment = get_object_or_404(Payment.all_objects.select_related('invoice', 'invoice__client'), pk=pk)
 
     if request.method == 'POST':
         try:
@@ -3004,7 +3051,7 @@ def payment_edit(request, pk):
     # For edit, restrict the invoice dropdown to the one this payment belongs to
     # so the user can't accidentally re-link it (which would break amount_paid on
     # both invoices). Reassigning a payment to a different invoice is out of scope.
-    invoices = Invoice.objects.filter(pk=payment.invoice.pk).select_related('client')
+    invoices = Invoice.all_objects.filter(pk=payment.invoice.pk).select_related('client')
 
     return render(request, 'payments/form.html', {
         'invoices': invoices,
@@ -3019,7 +3066,7 @@ def payment_edit(request, pk):
 @login_required
 def payment_delete(request, pk):
     """Delete a payment. Recomputes invoice.amount_paid via Payment.delete()."""
-    payment = get_object_or_404(Payment.objects.select_related('invoice'), pk=pk)
+    payment = get_object_or_404(Payment.all_objects.select_related('invoice'), pk=pk)
     invoice_pk = payment.invoice.pk
     invoice_number = payment.invoice.invoice_number
     amount = payment.amount
@@ -3040,7 +3087,7 @@ def payment_delete(request, pk):
 def payment_receipt(request, pk):
     """Generate receipt for a payment"""
     payment = get_object_or_404(
-        Payment.objects.select_related('invoice', 'invoice__client'),
+        Payment.all_objects.select_related('invoice', 'invoice__client'),
         pk=pk
     )
 
@@ -3064,6 +3111,7 @@ def payment_receipt(request, pk):
     if download:
         try:
             from weasyprint import HTML
+            from django.http import HttpResponse
             from django.template.loader import render_to_string
 
             html_string = render_to_string('payments/receipt.html', context)
@@ -3118,7 +3166,14 @@ def settings_view(request):
         company.invoice_terms = request.POST.get('invoice_terms', '')
         company.quote_terms = request.POST.get('quote_terms', '')
         company.default_payment_terms = request.POST.get('default_payment_terms', '50-50')
-        company.invoice_prefix = request.POST.get('invoice_prefix', 'INVRT')
+        invoice_prefix = request.POST.get('invoice_prefix', 'INVRT').strip() or 'INVRT'
+        non_gst_prefix = request.POST.get('non_gst_invoice_prefix', company.non_gst_invoice_prefix).strip() or 'NG'
+        # The two invoice series must never be able to produce the same number.
+        if invoice_prefix.startswith(non_gst_prefix) or non_gst_prefix.startswith(invoice_prefix):
+            messages.error(request, f'The no-GST prefix "{non_gst_prefix}" must differ from the invoice prefix "{invoice_prefix}", and neither may start with the other.')
+            return redirect('settings')
+        company.invoice_prefix = invoice_prefix
+        company.non_gst_invoice_prefix = non_gst_prefix
         company.quote_prefix = request.POST.get('quote_prefix', 'QT')
 
         # Invoice starting number
@@ -3127,6 +3182,12 @@ def settings_view(request):
             company.invoice_starting_number = int(starting_num) if starting_num else 201
         except (ValueError, TypeError):
             company.invoice_starting_number = 201
+
+        try:
+            ng_starting_num = request.POST.get('non_gst_invoice_starting_number', '1')
+            company.non_gst_invoice_starting_number = int(ng_starting_num) if ng_starting_num else 1
+        except (ValueError, TypeError):
+            company.non_gst_invoice_starting_number = 1
 
         # Quote starting number
         try:
@@ -3336,7 +3397,7 @@ def fy_wizard(request):
     payment_count = Payment.objects.count()
     lead_count = Lead.objects.count()
 
-    invoice_prefix_used = Invoice.objects.filter(invoice_number__startswith=company.invoice_prefix).exists()
+    invoice_prefix_used = Invoice.all_objects.filter(invoice_number__startswith=company.invoice_prefix).exists()
     quote_prefix_used = Quote.objects.filter(quote_number__startswith=company.quote_prefix).exists()
 
     receivables_covered = bool(opening and opening.accounts_receivable >= outstanding_receivables)
@@ -3489,8 +3550,8 @@ def fy_reset(request):
             # Order: Payment first (it has a save() side-effect on Invoice; deleting
             # invoices first would cascade, but explicit deletion is safer and the
             # counts above are computed pre-wipe so they remain accurate.
-            Payment.objects.all().delete()
-            Invoice.objects.all().delete()  # cascades to InvoiceItem (and any leftover Payment)
+            Payment.all_objects.all().delete()
+            Invoice.all_objects.all().delete()  # cascades to InvoiceItem (and any leftover Payment)
             Expense.objects.all().delete()
             Lead.objects.all().delete()  # cascades to LeadNote/FollowUp/Activity/Demo
 
@@ -3539,9 +3600,21 @@ def start_new_fy(request):
         messages.error(request, f'New prefix "{new_prefix}" is the same as the current prefix. Use a different prefix for the new financial year.')
         return redirect('settings')
 
-    if Invoice.objects.filter(invoice_number__startswith=new_prefix).exists():
+    if Invoice.all_objects.filter(invoice_number__startswith=new_prefix).exists():
         messages.error(request, f'Prefix "{new_prefix}" is already used by existing invoices. Pick a prefix that has never been used.')
         return redirect('settings')
+
+    new_ng_prefix = request.POST.get('new_non_gst_prefix', '').strip()
+    if new_ng_prefix:
+        if len(new_ng_prefix) > max_prefix_len:
+            messages.error(request, f'No-GST prefix is too long ({len(new_ng_prefix)} chars). Max {max_prefix_len} characters allowed.')
+            return redirect('settings')
+        if new_prefix.startswith(new_ng_prefix) or new_ng_prefix.startswith(new_prefix):
+            messages.error(request, f'The no-GST prefix "{new_ng_prefix}" must differ from "{new_prefix}", and neither may start with the other.')
+            return redirect('settings')
+        if Invoice.all_objects.filter(invoice_number__startswith=new_ng_prefix).exists():
+            messages.error(request, f'Prefix "{new_ng_prefix}" is already used by existing invoices. Pick a prefix that has never been used.')
+            return redirect('settings')
 
     try:
         new_start = int(new_start_raw) if new_start_raw else 1
@@ -3553,9 +3626,14 @@ def start_new_fy(request):
 
     company.invoice_prefix = new_prefix
     company.invoice_starting_number = new_start
-    company.save(update_fields=['invoice_prefix', 'invoice_starting_number'])
+    update_fields = ['invoice_prefix', 'invoice_starting_number']
+    if new_ng_prefix:
+        company.non_gst_invoice_prefix = new_ng_prefix
+        company.non_gst_invoice_starting_number = 1
+        update_fields += ['non_gst_invoice_prefix', 'non_gst_invoice_starting_number']
+    company.save(update_fields=update_fields)
 
-    messages.success(request, f'New financial year started. Next invoice will be "{new_prefix}{new_start}". Previous invoices are unchanged.')
+    messages.success(request, f'New financial year started. Next invoice will be "{new_prefix}{new_start}", next no-GST invoice "{Invoice.next_number(gst=False)}". Previous invoices are unchanged.')
     return redirect('settings')
 
 
@@ -6094,7 +6172,7 @@ def send_invoice_email(request, pk):
     from django.core.mail import EmailMessage
     from django.template.loader import render_to_string
 
-    invoice = get_object_or_404(Invoice.objects.select_related('client'), pk=pk)
+    invoice = get_object_or_404(Invoice.all_objects.select_related('client'), pk=pk)
     company = CompanySettings.get_settings()
 
     if request.method == 'POST':

@@ -1,0 +1,117 @@
+{% extends 'base.html' %}
+
+{% block title %}No-GST Ledger - Ralfiz BMS{% endblock %}
+
+{% block breadcrumb %}
+<a href="{% url 'dashboard' %}" class="breadcrumb-item">Dashboard</a>
+<span class="breadcrumb-separator">/</span>
+<a href="{% url 'invoice_list' %}" class="breadcrumb-item">Invoices</a>
+<span class="breadcrumb-separator">/</span>
+<span class="breadcrumb-item active">No-GST Ledger</span>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title">No-GST Ledger</h1>
+    <p class="page-subtitle mb-0">Invoices with 0% tax or "GST not applicable". They are numbered separately and left out of every other total.</p>
+  </div>
+  <div class="page-actions">
+    <a href="{% url 'invoice_create' %}" class="btn btn-primary">
+      <i class="fas fa-plus"></i>
+      Create Invoice
+    </a>
+  </div>
+</div>
+
+<div class="row mb-4">
+  <div class="col-4 col-md-12" style="padding: 0.75rem;">
+    <div class="card stat-card">
+      <div class="stat-card-value">&#8377;{{ total_invoiced|floatformat:2 }}</div>
+      <div class="stat-card-label">Invoiced (excl. drafts &amp; cancelled)</div>
+    </div>
+  </div>
+  <div class="col-4 col-md-12" style="padding: 0.75rem;">
+    <div class="card stat-card">
+      <div class="stat-card-value text-success">&#8377;{{ total_received|floatformat:2 }}</div>
+      <div class="stat-card-label">Received</div>
+    </div>
+  </div>
+  <div class="col-4 col-md-12" style="padding: 0.75rem;">
+    <div class="card stat-card">
+      <div class="stat-card-value text-warning">&#8377;{{ total_outstanding|floatformat:2 }}</div>
+      <div class="stat-card-label">Outstanding</div>
+    </div>
+  </div>
+</div>
+
+<div class="card mb-4">
+  <div class="card-header"><h3 class="card-title">Invoices</h3></div>
+  <div class="table-wrapper">
+    <table class="table">
+      <thead>
+        <tr>
+          <th>Invoice #</th>
+          <th>Issue Date</th>
+          <th>Client</th>
+          <th>Title</th>
+          <th>Total</th>
+          <th>Paid</th>
+          <th>Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for invoice in invoices %}
+        <tr>
+          <td><a href="{% url 'invoice_detail' invoice.pk %}" class="fw-medium">{{ invoice.invoice_number }}</a></td>
+          <td>{{ invoice.issue_date|date:"d M Y"|default:"-" }}</td>
+          <td>{{ invoice.client.name }}</td>
+          <td>{{ invoice.title }}</td>
+          <td class="fw-medium">&#8377;{{ invoice.total_amount|floatformat:2 }}</td>
+          <td>&#8377;{{ invoice.amount_paid|floatformat:2 }}</td>
+          <td><span class="status-badge {{ invoice.status }}">{{ invoice.get_status_display }}</span></td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="7" class="text-center text-muted" style="padding: 2rem;">No no-GST invoices yet.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header"><h3 class="card-title">Payments received</h3></div>
+  <div class="table-wrapper">
+    <table class="table">
+      <thead>
+        <tr>
+          <th>Date</th>
+          <th>Invoice #</th>
+          <th>Client</th>
+          <th>Method</th>
+          <th>Amount</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for payment in payments %}
+        <tr>
+          <td>{{ payment.payment_date|date:"d M Y" }}</td>
+          <td><a href="{% url 'invoice_detail' payment.invoice.pk %}">{{ payment.invoice.invoice_number }}</a></td>
+          <td>{{ payment.invoice.client.name }}</td>
+          <td>{{ payment.get_payment_method_display }}</td>
+          <td class="fw-medium text-success">&#8377;{{ payment.amount|floatformat:2 }}</td>
+          <td>
+            <a href="{% url 'payment_receipt' payment.pk %}?download=1" class="btn btn-ghost btn-sm btn-icon" title="Download Receipt (PDF)">
+              <i class="fas fa-download"></i>
+            </a>
+          </td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="6" class="text-center text-muted" style="padding: 2rem;">No payments yet.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

@@ -1767,7 +1767,7 @@ class OwnerInvoiceDetailView(APIView):
         from core.models import Invoice
 
         try:
-            inv = Invoice.objects.select_related('client', 'project', 'quote').get(pk=pk)
+            inv = Invoice.all_objects.select_related('client', 'project', 'quote').get(pk=pk)
         except Invoice.DoesNotExist:
             return Response({'error': 'Invoice not found'}, status=status.HTTP_404_NOT_FOUND)
 
@@ -1786,7 +1786,7 @@ class OwnerInvoiceDetailView(APIView):
             'payment_method': p.payment_method,
             'transaction_id': p.transaction_id,
             'notes': p.notes,
-        } for p in inv.payments.all()]
+        } for p in inv.all_payments.all()]
 
         return Response({
             'id': str(inv.id),
@@ -2799,9 +2799,20 @@ class OwnerInvoiceUpdateDeleteView(APIView):
     permission_classes = [IsAuthenticated, IsOwnerOrPartner]
 
     def patch(self, request, pk):
+        from django.core.exceptions import ValidationError as DjangoValidationError
+        from django.db import transaction
+        # A GST change that would renumber filed invoices is refused by
+        # Invoice.save(); roll back the item rewrite along with it.
+        try:
+            with transaction.atomic():
+                return self._patch(request, pk)
+        except DjangoValidationError as e:
+            return Response({'error': ' '.join(e.messages)}, status=status.HTTP_400_BAD_REQUEST)
+
+    def _patch(self, request, pk):
         from core.models import Invoice, InvoiceItem
         try:
-            inv = Invoice.objects.get(pk=pk)
+            inv = Invoice.all_objects.get(pk=pk)
         except Invoice.DoesNotExist:
             return Response({'error': 'Invoice not found'}, status=status.HTTP_404_NOT_FOUND)
 
@@ -2841,7 +2852,7 @@ class OwnerInvoiceUpdateDeleteView(APIView):
     def delete(self, request, pk):
         from core.models import Invoice
         try:
-            inv = Invoice.objects.get(pk=pk)
+            inv = Invoice.all_objects.get(pk=pk)
         except Invoice.DoesNotExist:
             return Response({'error': 'Invoice not found'}, status=status.HTTP_404_NOT_FOUND)
         if inv.amount_paid > 0:
@@ -2861,9 +2872,10 @@ class OwnerInvoiceGSTStatusView(APIView):
 
     def patch(self, request, pk):
         from core.models import Invoice
+        from django.core.exceptions import ValidationError as DjangoValidationError
         from django.utils import timezone
         try:
-            inv = Invoice.objects.get(pk=pk)
+            inv = Invoice.all_objects.get(pk=pk)
         except Invoice.DoesNotExist:
             return Response({'error': 'Invoice not found'}, status=status.HTTP_404_NOT_FOUND)
 
@@ -2877,7 +2889,10 @@ class OwnerInvoiceGSTStatusView(APIView):
 
         inv.gst_filing_status = new_status
         inv.gst_filed_at = timezone.now() if new_status == 'filed' else None
-        inv.save(update_fields=['gst_filing_status', 'gst_filed_at'])
+        try:
+            inv.save(update_fields=['gst_filing_status', 'gst_filed_at'])
+        except DjangoValidationError as e:
+            return Response({'error': ' '.join(e.messages)}, status=status.HTTP_400_BAD_REQUEST)
 
         return Response({
             'id': str(inv.id),
@@ -2902,7 +2917,7 @@ class OwnerPaymentCreateView(APIView):
             return Response({'error': 'invoice_id and amount are required'}, status=status.HTTP_400_BAD_REQUEST)
 
         try:
-            invoice = Invoice.objects.get(pk=data['invoice_id'])
+            invoice = Invoice.all_objects.get(pk=data['invoice_id'])
         except Invoice.DoesNotExist:
             return Response({'error': 'Invoice not found'}, status=status.HTTP_404_NOT_FOUND)
 
@@ -5549,7 +5564,7 @@ class OwnerInvoicePDFView(APIView):
         from django.http import HttpResponse
 
         try:
-            invoice = Invoice.objects.select_related('client', 'project').prefetch_related(
+            invoice = Invoice.all_objects.select_related('client', 'project').prefetch_related(
                 'items', 'payments'
             ).get(pk=pk)
         except Invoice.DoesNotExist:
@@ -5668,7 +5683,7 @@ class OwnerPaymentDeleteView(APIView):
     def delete(self, request, pk, payment_id):
         from core.models import Payment
         try:
-            payment = Payment.objects.get(pk=payment_id, invoice_id=pk)
+            payment = Payment.all_objects.get(pk=payment_id, invoice_id=pk)
         except Payment.DoesNotExist:
             return Response({'error': 'Payment not found'}, status=status.HTTP_404_NOT_FOUND)
         payment.delete()

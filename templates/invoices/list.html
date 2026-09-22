@@ -16,6 +16,12 @@
     <p class="page-subtitle mb-0">Manage your invoices</p>
   </div>
   <div class="page-actions">
+    {% if request.user.is_superuser %}
+    <a href="{% url 'non_gst_ledger' %}" class="btn btn-outline-secondary">
+      <i class="fas fa-book"></i>
+      No-GST Ledger
+    </a>
+    {% endif %}
     <a href="{% url 'export_invoices' %}?{{ request.GET.urlencode }}" class="btn btn-outline-secondary">
       <i class="fas fa-download"></i>
       Export

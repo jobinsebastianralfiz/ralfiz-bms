@@ -222,19 +222,19 @@ class InvoiceToolTests(TestCase):
         self.client_obj = Client.objects.create(name='Payer Ltd')
 
         self.late = Invoice.objects.create(
-            invoice_number='INV-LATE', client=self.client_obj, title='Late',
+            tax_rate=Decimal('18'), invoice_number='INV-LATE', client=self.client_obj, title='Late',
             status='sent', issue_date=self.today - timedelta(days=60),
             due_date=self.today - timedelta(days=30),
             total_amount=Decimal('100000.00'), amount_paid=Decimal('25000.00'),
         )
         self.settled = Invoice.objects.create(
-            invoice_number='INV-PAID', client=self.client_obj, title='Paid',
+            tax_rate=Decimal('18'), invoice_number='INV-PAID', client=self.client_obj, title='Paid',
             status='paid', issue_date=self.today - timedelta(days=60),
             due_date=self.today - timedelta(days=30),
             total_amount=Decimal('50000.00'), amount_paid=Decimal('50000.00'),
         )
         self.draft = Invoice.objects.create(
-            invoice_number='INV-DRAFT', client=self.client_obj, title='Draft',
+            tax_rate=Decimal('18'), invoice_number='INV-DRAFT', client=self.client_obj, title='Draft',
             status='draft', issue_date=self.today,
             due_date=self.today - timedelta(days=1),
             total_amount=Decimal('9999.00'), amount_paid=Decimal('0.00'),
@@ -350,7 +350,7 @@ class PortfolioGraphTests(TestCase):
             status='in_progress', deadline=self.today - timedelta(days=7),
         )
         Invoice.objects.create(
-            invoice_number='INV-G1', client=self.busy, project=self.live,
+            tax_rate=Decimal('18'), invoice_number='INV-G1', client=self.busy, project=self.live,
             title='x', status='sent', issue_date=self.today,
             total_amount=Decimal('100000.00'), amount_paid=Decimal('0.00'),
         )
@@ -452,7 +452,7 @@ class DashboardMetricsTests(TestCase):
             status='in_progress', deadline=self.today - timedelta(days=3),
         )
         Invoice.objects.create(
-            invoice_number='INV-M1', client=self.client_obj, title='m',
+            tax_rate=Decimal('18'), invoice_number='INV-M1', client=self.client_obj, title='m',
             status='sent', issue_date=self.today - timedelta(days=40),
             due_date=self.today - timedelta(days=10),
             total_amount=Decimal('50000.00'), amount_paid=Decimal('20000.00'),

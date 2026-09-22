@@ -43,7 +43,7 @@ class ClientDashboardView(APIView):
         active_statuses = ['confirmed', 'in_progress', 'review']
         active_projects = projects.filter(status__in=active_statuses)
 
-        all_invoices = Invoice.objects.filter(client=client).exclude(status='cancelled')
+        all_invoices = Invoice.all_objects.filter(client=client).exclude(status='cancelled')
         pending_invoices = all_invoices.exclude(status='paid')
 
         total_invoiced = all_invoices.aggregate(t=Sum('total_amount'))['t'] or 0
@@ -196,7 +196,7 @@ class ClientInvoiceListView(generics.ListAPIView):
 
     def get_queryset(self):
         client = get_client(self.request)
-        qs = Invoice.objects.filter(client=client)
+        qs = Invoice.all_objects.filter(client=client)
 
         status_filter = self.request.query_params.get('status')
         if status_filter:
@@ -212,7 +212,7 @@ class ClientInvoiceDetailView(APIView):
     def get(self, request, invoice_id):
         client = get_client(request)
         try:
-            invoice = Invoice.objects.get(id=invoice_id, client=client)
+            invoice = Invoice.all_objects.get(id=invoice_id, client=client)
         except Invoice.DoesNotExist:
             return Response({'detail': 'Invoice not found.'}, status=status.HTTP_404_NOT_FOUND)
 
