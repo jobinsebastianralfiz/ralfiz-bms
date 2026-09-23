@@ -248,7 +248,8 @@ class NonGstLedgerTests(SeriesSetup):
     def test_ledger_shortcut_is_only_on_owner_pages(self):
         ledger = reverse('non_gst_ledger')
         self.client.force_login(self.owner)
-        self.assertContains(self.client.get(reverse('invoice_list')), ledger)
+        for page in ('invoice_list', 'dashboard'):  # the dashboard has its own layout
+            self.assertContains(self.client.get(reverse(page)), ledger, msg_prefix=page)
         staff = User.objects.create_user('staff', password='pw', is_staff=True)
         self.client.force_login(staff)
         self.assertNotContains(self.client.get(reverse('invoice_list')), ledger)

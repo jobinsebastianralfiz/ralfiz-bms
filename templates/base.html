@@ -54,17 +54,7 @@
 
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
   <script src="{% static 'js/app.js' %}?v=3"></script>
-  {% if request.user.is_superuser %}
-  <script>
-    // Owner shortcut: Ctrl+Shift+L opens the no-GST ledger (the page itself also checks).
-    document.addEventListener('keydown', function (e) {
-      if (e.ctrlKey && e.shiftKey && !e.altKey && e.code === 'KeyL') {
-        e.preventDefault();
-        window.location.href = "{% url 'non_gst_ledger' %}";
-      }
-    });
-  </script>
-  {% endif %}
+  {% include 'components/owner_shortcuts.html' %}
   {% block extra_js %}{% endblock %}
 </body>
 </html>

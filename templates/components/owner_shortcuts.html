@@ -1,0 +1,11 @@
+{% if request.user.is_superuser %}
+<script>
+  // Owner shortcut: Ctrl+Shift+L (Cmd+Shift+L on a Mac) opens the no-GST ledger. The page itself also checks.
+  document.addEventListener('keydown', function (e) {
+    if ((e.ctrlKey || e.metaKey) && e.shiftKey && !e.altKey && e.code === 'KeyL') {
+      e.preventDefault();
+      window.location.href = "{% url 'non_gst_ledger' %}";
+    }
+  });
+</script>
+{% endif %}
