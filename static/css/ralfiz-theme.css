@@ -697,3 +697,93 @@ a.home-list__main:hover .home-list__title { color: var(--primary); }
 .inv-title { min-width: 130px; }
 .inv-table .btn-icon { width: 30px; height: 30px; min-height: 30px; font-size: 0.75rem; }
 .inv-table .table-actions { gap: 6px; }
+
+/* ── Sidebar never scrolls sideways ──────────────────────────────────── */
+/* A wide child made the rail scroll horizontally and a stray swipe hid the
+   icons and the first letters of every label. */
+.sidebar { overflow-x: hidden; }
+.sidebar-nav, .sidebar-promo { max-width: 100%; }
+
+/* ── Bootstrap-style helpers many templates already use ─────────────── */
+/* col-md-* / col-lg-* / g-* were never defined, so "row g-3 > col-md-4"
+   cards shrank to their text instead of sharing the row. */
+.row > [class*="col-md-"], .row > [class*="col-lg-"], .row > [class*="col-sm-"] { padding: 0 0.75rem; flex: 0 0 100%; max-width: 100%; min-width: 0; }
+@media (min-width: 768px) {
+  .col-md-1 { flex: 0 0 8.3333%; max-width: 8.3333%; }
+  .col-md-2 { flex: 0 0 16.6667%; max-width: 16.6667%; }
+  .col-md-3 { flex: 0 0 25.0000%; max-width: 25.0000%; }
+  .col-md-4 { flex: 0 0 33.3333%; max-width: 33.3333%; }
+  .col-md-5 { flex: 0 0 41.6667%; max-width: 41.6667%; }
+  .col-md-6 { flex: 0 0 50.0000%; max-width: 50.0000%; }
+  .col-md-7 { flex: 0 0 58.3333%; max-width: 58.3333%; }
+  .col-md-8 { flex: 0 0 66.6667%; max-width: 66.6667%; }
+  .col-md-9 { flex: 0 0 75.0000%; max-width: 75.0000%; }
+  .col-md-10 { flex: 0 0 83.3333%; max-width: 83.3333%; }
+  .col-md-11 { flex: 0 0 91.6667%; max-width: 91.6667%; }
+  .col-md-12 { flex: 0 0 100.0000%; max-width: 100.0000%; }
+}
+@media (min-width: 992px) {
+  .col-lg-1 { flex: 0 0 8.3333%; max-width: 8.3333%; }
+  .col-lg-2 { flex: 0 0 16.6667%; max-width: 16.6667%; }
+  .col-lg-3 { flex: 0 0 25.0000%; max-width: 25.0000%; }
+  .col-lg-4 { flex: 0 0 33.3333%; max-width: 33.3333%; }
+  .col-lg-5 { flex: 0 0 41.6667%; max-width: 41.6667%; }
+  .col-lg-6 { flex: 0 0 50.0000%; max-width: 50.0000%; }
+  .col-lg-7 { flex: 0 0 58.3333%; max-width: 58.3333%; }
+  .col-lg-8 { flex: 0 0 66.6667%; max-width: 66.6667%; }
+  .col-lg-9 { flex: 0 0 75.0000%; max-width: 75.0000%; }
+  .col-lg-10 { flex: 0 0 83.3333%; max-width: 83.3333%; }
+  .col-lg-11 { flex: 0 0 91.6667%; max-width: 91.6667%; }
+  .col-lg-12 { flex: 0 0 100.0000%; max-width: 100.0000%; }
+}
+.row.g-2 { margin: -4px; }
+.row.g-2 > * { padding: 4px; }
+.row.g-3 { margin: -7px; }
+.row.g-3 > * { padding: 7px; }
+.row.g-4 { margin: -10px; }
+.row.g-4 > * { padding: 10px; }
+.row > [class*="col"] > .card { height: 100%; }
+.fs-3 { font-size: 1.5rem !important; }
+.fs-4 { font-size: 1.25rem !important; }
+.fs-5 { font-size: 1.0625rem !important; }
+.fs-6 { font-size: 0.9375rem !important; }
+.text-end { text-align: right !important; }
+.text-dark { color: var(--text-primary) !important; }
+
+/* Solid bg-* on a badge becomes the reference's tinted pill. */
+.badge.bg-primary   { background: var(--primary-bg) !important; color: var(--primary-hover) !important; }
+.badge.bg-success   { background: var(--success-bg) !important; color: var(--success-strong) !important; }
+.badge.bg-warning   { background: var(--warning-bg) !important; color: var(--warning-strong) !important; }
+.badge.bg-danger    { background: var(--danger-bg)  !important; color: var(--danger-strong) !important; }
+.badge.bg-info      { background: var(--indigo-bg)  !important; color: var(--indigo) !important; }
+.badge.bg-secondary { background: #f1f5f9 !important; color: #475569 !important; }
+.badge { white-space: nowrap; display: inline-flex; align-items: center; gap: 4px; line-height: 1.4; }
+
+code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.8125rem;
+  background: #f1f5f9;
+  color: #334155;
+  padding: 2px 6px;
+  border-radius: 6px;
+}
+
+/* ── User accounts ───────────────────────────────────────────────────── */
+.inv-stats.inv-stats--3 { grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); }
+.acct-head { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }
+.acct-filters { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.acct-filters .form-control { width: auto; min-width: 130px; }
+.acct-filters .inv-input-icon .form-control { width: 240px; }
+.acct-avatar {
+  width: 32px; height: 32px; flex: none; border-radius: 50%;
+  display: grid; place-items: center;
+  background: var(--primary-bg); color: var(--primary-hover);
+  font-weight: 600; font-size: 0.8125rem;
+}
+.acct-roles { display: flex; flex-wrap: wrap; gap: 4px; }
+.acct-when, .acct-table .status-badge { white-space: nowrap; }
+.acct-actions { display: inline-flex; gap: 6px; align-items: center; justify-content: flex-end; }
+.acct-actions form { margin: 0; }
+.acct-table .btn-icon { width: 30px; height: 30px; min-height: 30px; font-size: 0.75rem; }
+.acct-danger { color: var(--danger-strong) !important; }
+.acct-danger:hover { border-color: var(--danger) !important; background: var(--danger-bg) !important; }
