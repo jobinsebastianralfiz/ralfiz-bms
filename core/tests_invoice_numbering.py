@@ -96,6 +96,27 @@ class InvoiceSeriesTests(SeriesSetup):
         inv.save()
         self.assertEqual(inv.invoice_number, 'SPECIAL-7')
 
+    def legacy_no_gst(self):
+        """Invoices as they were before the series split: a no-GST invoice
+        holding a GST number, with GST invoices after it."""
+        a, b, c = self.make(), self.make(), self.make()
+        Invoice.all_objects.filter(pk=b.pk).update(tax_rate=Decimal('0'))
+        return a, Invoice.all_objects.get(pk=b.pk), c
+
+    def test_saving_a_legacy_no_gst_invoice_keeps_every_number(self):
+        a, b, c = self.legacy_no_gst()
+        b.title = 'Edited'
+        b.save()
+        nums = [Invoice.all_objects.get(pk=i.pk).invoice_number for i in (a, b, c)]
+        self.assertEqual(nums, ['INV201', 'INV202', 'INV203'])
+
+    def test_paying_a_legacy_no_gst_invoice_keeps_every_number(self):
+        a, b, c = self.legacy_no_gst()
+        Invoice.all_objects.filter(pk=c.pk).update(gst_filing_status='filed')
+        Payment.all_objects.create(invoice=b, amount=Decimal('100'))
+        nums = [Invoice.all_objects.get(pk=i.pk).invoice_number for i in (a, b, c)]
+        self.assertEqual(nums, ['INV201', 'INV202', 'INV203'])
+
     def test_settings_reject_overlapping_prefixes(self):
         user = User.objects.create_user('owner', password='pw', is_staff=True, is_superuser=True)
         self.client.force_login(user)

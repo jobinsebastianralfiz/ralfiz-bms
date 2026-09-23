@@ -669,9 +669,17 @@ class Invoice(models.Model):
         other_prefix = settings.non_gst_invoice_prefix if self.is_gst else settings.invoice_prefix
         # A new invoice, or one whose GST treatment changed so that its number
         # sits in the other series, takes the next number of its own series.
-        # Hand-typed numbers that fit neither series are left alone.
+        # Hand-typed numbers that fit neither series are left alone, and so are
+        # invoices whose treatment did not change: no-GST invoices numbered in
+        # the GST series before the series split move only via renumber_invoices.
+        stored = Invoice.all_objects.filter(pk=self.pk).values('tax_rate', 'gst_filing_status').first()
+        treatment_changed = stored is None or (
+            ((stored['tax_rate'] or 0) > 0 and stored['gst_filing_status'] != 'not_applicable') != self.is_gst
+        )
         left_series = None
-        if not self.invoice_number or self.series_number(self.invoice_number, other_prefix) is not None:
+        if not self.invoice_number or (
+            treatment_changed and self.series_number(self.invoice_number, other_prefix) is not None
+        ):
             if self.invoice_number:
                 left_series = (other_prefix, self.series_number(self.invoice_number, other_prefix))
                 self._check_can_leave_series(*left_series)
