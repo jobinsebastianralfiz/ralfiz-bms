@@ -1970,6 +1970,93 @@ def _latest_number_first(invoices):
         latest_use[split(inv.invoice_number)[0]], *split(inv.invoice_number)))
 
 
+def _period_range(period):
+    """(from, to) ISO dates for an invoice-list quick filter, or ('', '')."""
+    from datetime import date
+    from calendar import monthrange
+    today = date.today()
+    if period == 'this_fy':
+        # Indian financial year: 1 April to 31 March.
+        start = today.year if today.month >= 4 else today.year - 1
+        return date(start, 4, 1).isoformat(), date(start + 1, 3, 31).isoformat()
+    if period == 'prev_month':
+        year = today.year if today.month > 1 else today.year - 1
+        month = today.month - 1 if today.month > 1 else 12
+    elif period == 'this_month':
+        year, month = today.year, today.month
+    else:
+        return '', ''
+    return date(year, month, 1).isoformat(), date(year, month, monthrange(year, month)[1]).isoformat()
+
+
+def _invoice_page_panels(invoices):
+    """Stat cards and side panels for the invoice list. `invoices` is the
+    filtered GST-only queryset, so every figure follows the filters and no-GST
+    invoices never show up here."""
+    from datetime import date
+    from django.db.models.functions import TruncMonth
+    today = date.today()
+    this_month = today.replace(day=1)
+    last_month = (this_month - timedelta(days=1)).replace(day=1)
+
+    def month_total(start, end, field):
+        rows = invoices.filter(issue_date__gte=start, issue_date__lt=end)
+        return rows.count() if field is None else (rows.aggregate(v=Sum(field))['v'] or 0)
+
+    def trend(field):
+        now = month_total(this_month, date(9999, 1, 1), field)
+        before = month_total(last_month, this_month, field)
+        if not before:
+            return None
+        return round((now - before) * 100 / before)
+
+    live = invoices.exclude(status='cancelled')
+    totals = live.aggregate(total=Sum('total_amount'), paid=Sum('amount_paid'))
+    total, paid = totals['total'] or 0, totals['paid'] or 0
+    stats = {
+        'count': invoices.count(), 'count_trend': trend(None),
+        'total': total, 'total_trend': trend('total_amount'),
+        'paid': paid, 'paid_trend': trend('amount_paid'),
+        'pending': total - paid,
+    }
+
+    counts = {row['status']: row['n'] for row in invoices.values('status').annotate(n=Count('id'))}
+    groups = [
+        ('Paid', counts.get('paid', 0), '#10b981'),
+        ('Pending', sum(counts.get(k, 0) for k in ('sent', 'partial', 'overdue')), '#f59e0b'),
+        ('Draft', counts.get('draft', 0), '#94a3b8'),
+    ]
+    shown = sum(n for _, n, _ in groups)
+    status_mix, stops, start = [], [], 0.0
+    for label, n, colour in groups:
+        pct = n * 100 / shown if shown else 0
+        status_mix.append({'label': label, 'count': n, 'pct': round(pct), 'colour': colour})
+        stops.append(f'{colour} {start:.2f}% {start + pct:.2f}%')
+        start += pct
+    donut = f"conic-gradient({', '.join(stops)})" if shown else 'conic-gradient(#e6ecf3 0 100%)'
+
+    # Money received per month this calendar year, GST payments only.
+    received = {
+        row['month'].month: row['v']
+        for row in Payment.objects.filter(payment_date__year=today.year)
+        .annotate(month=TruncMonth('payment_date')).values('month').annotate(v=Sum('amount'))
+    }
+    peak = max(received.values(), default=0) or 1
+    revenue = [
+        {'label': date(today.year, m, 1).strftime('%b'), 'amount': received.get(m, 0),
+         'height': round((received.get(m, 0) or 0) * 100 / peak)}
+        for m in range(1, today.month + 1)
+    ]
+
+    gst_invoice_ids = [str(pk) for pk in Invoice.objects.values_list('pk', flat=True)]
+    recent = (ActivityLog.objects.filter(
+        Q(model_name='Invoice', object_id__in=gst_invoice_ids) | Q(model_name='Client'))
+        .exclude(action='viewed').order_by('-timestamp')[:4])
+
+    return {'stats': stats, 'status_mix': status_mix, 'status_total': shown, 'status_donut': donut,
+            'revenue': revenue, 'revenue_year': today.year, 'recent_activity': recent}
+
+
 @login_required
 def invoice_list(request):
     from datetime import date
@@ -2000,17 +2087,10 @@ def invoice_list(request):
     from_date = request.GET.get('from_date', '')
     to_date = request.GET.get('to_date', '')
 
-    # Quick preset: ?period=prev_month | this_month fills from/to if empty
+    # Quick preset: ?period=prev_month | this_month | this_fy fills from/to if empty
     period = request.GET.get('period', '')
-    if period in ('prev_month', 'this_month') and not from_date and not to_date:
-        today = date.today()
-        if period == 'prev_month':
-            year = today.year if today.month > 1 else today.year - 1
-            month = today.month - 1 if today.month > 1 else 12
-        else:
-            year, month = today.year, today.month
-        from_date = date(year, month, 1).isoformat()
-        to_date = date(year, month, monthrange(year, month)[1]).isoformat()
+    if period and not from_date and not to_date:
+        from_date, to_date = _period_range(period)
 
     if from_date:
         invoices = invoices.filter(issue_date__gte=from_date)
@@ -2038,6 +2118,7 @@ def invoice_list(request):
         'period': period,
         'totals': totals,
         'invoice_count': invoices.count(),
+        **_invoice_page_panels(invoices),
     }
     return render(request, 'invoices/list.html', context)
 
@@ -2070,15 +2151,8 @@ def _filter_invoices_from_post(request):
     from_date = request.POST.get('from_date', '')
     to_date = request.POST.get('to_date', '')
     period = request.POST.get('period', '')
-    if period in ('prev_month', 'this_month') and not from_date and not to_date:
-        today = date.today()
-        if period == 'prev_month':
-            year = today.year if today.month > 1 else today.year - 1
-            month = today.month - 1 if today.month > 1 else 12
-        else:
-            year, month = today.year, today.month
-        from_date = date(year, month, 1).isoformat()
-        to_date = date(year, month, monthrange(year, month)[1]).isoformat()
+    if period and not from_date and not to_date:
+        from_date, to_date = _period_range(period)
     if from_date:
         invoices = invoices.filter(issue_date__gte=from_date)
     if to_date:

@@ -35,8 +35,12 @@
   var ctx = canvas.getContext('2d');
   var dpr = Math.min(window.devicePixelRatio || 1, 2);
 
-  var GOLD = '#e8c07a';
-  var ROSE = '#e08aa0';
+  // Light-page palette. GOLD keeps its old name: it is the selection colour.
+  var GOLD = '#0284C7';       // selected: primary, darker
+  var ROSE = '#EF4444';       // attention
+  var CORE = '#0EA5E9';       // Ralfiz at the centre: primary
+  var EDGE = '#CBD5E1';       // beams and tethers: light slate
+  var INK = '#0F172A', INK_2 = '#64748B';
   var data = JSON.parse(document.getElementById('graph-data').textContent);
 
   var inr = new Intl.NumberFormat('en-IN', {
@@ -154,21 +158,28 @@
   /* ── Drawing primitives ─────────────────────────────────────────── */
 
   function sphere(x, y, r, hue, lit) {
-    // Bloom
-    var bloom = ctx.createRadialGradient(x, y, r * 0.7, x, y, r * 2.6);
-    bloom.addColorStop(0, hexA(hue, lit ? .34 : .2));
+    // Soft tint halo and a contact shadow: on a light page a glow bloom
+    // reads as a smudge, so depth comes from shadow instead.
+    var bloom = ctx.createRadialGradient(x, y, r * 0.9, x, y, r * 1.9);
+    bloom.addColorStop(0, hexA(hue, lit ? .22 : .12));
     bloom.addColorStop(1, hexA(hue, 0));
     ctx.fillStyle = bloom;
-    ctx.beginPath(); ctx.arc(x, y, r * 2.6, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.arc(x, y, r * 1.9, 0, Math.PI * 2); ctx.fill();
+
+    var drop = ctx.createRadialGradient(x, y + r * 0.35, r * 0.6, x, y + r * 0.35, r * 1.25);
+    drop.addColorStop(0, 'rgba(15,23,42,.12)');
+    drop.addColorStop(1, 'rgba(15,23,42,0)');
+    ctx.fillStyle = drop;
+    ctx.beginPath(); ctx.arc(x, y + r * 0.35, r * 1.25, 0, Math.PI * 2); ctx.fill();
 
     // Body, lit from upper-left
     var g = ctx.createRadialGradient(
       x - r * 0.36, y - r * 0.4, r * 0.05, x, y, r * 1.05
     );
-    g.addColorStop(0, mix(hue, '#ffffff', .68));
-    g.addColorStop(0.34, mix(hue, '#ffffff', .2));
-    g.addColorStop(0.72, hue);
-    g.addColorStop(1, mix(hue, '#000000', .58));
+    g.addColorStop(0, mix(hue, '#ffffff', .6));
+    g.addColorStop(0.34, mix(hue, '#ffffff', .15));
+    g.addColorStop(0.75, hue);
+    g.addColorStop(1, mix(hue, '#0f172a', .3));
     ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2);
     ctx.fillStyle = g; ctx.fill();
 
@@ -176,8 +187,8 @@
     var rim = ctx.createRadialGradient(
       x + r * 0.24, y + r * 0.3, r * 0.42, x, y, r
     );
-    rim.addColorStop(0, 'rgba(4,10,12,0)');
-    rim.addColorStop(1, 'rgba(4,10,12,.5)');
+    rim.addColorStop(0, 'rgba(15,23,42,0)');
+    rim.addColorStop(1, 'rgba(15,23,42,.18)');
     ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2);
     ctx.fillStyle = rim; ctx.fill();
 
@@ -191,17 +202,17 @@
     ctx.fillStyle = s; ctx.fill();
 
     if (lit) {
-      ctx.beginPath(); ctx.arc(x, y, r + 4, 0, Math.PI * 2);
-      ctx.strokeStyle = hexA(GOLD, .75); ctx.lineWidth = 1.5; ctx.stroke();
+      ctx.beginPath(); ctx.arc(x, y, r + 5, 0, Math.PI * 2);
+      ctx.strokeStyle = hexA(GOLD, .9); ctx.lineWidth = 2; ctx.stroke();
     }
   }
 
   function sunCore(x, y, r, t) {
     // Volumetric halo
     var halo = ctx.createRadialGradient(x, y, r * 0.5, x, y, r * 4.2);
-    halo.addColorStop(0, 'rgba(232,192,122,.3)');
-    halo.addColorStop(0.4, 'rgba(200,150,80,.09)');
-    halo.addColorStop(1, 'rgba(200,150,80,0)');
+    halo.addColorStop(0, hexA(CORE, .16));
+    halo.addColorStop(0.4, hexA(CORE, .05));
+    halo.addColorStop(1, hexA(CORE, 0));
     ctx.fillStyle = halo;
     ctx.beginPath(); ctx.arc(x, y, r * 4.2, 0, Math.PI * 2); ctx.fill();
 
@@ -221,33 +232,33 @@
         if (i === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
       }
       ctx.closePath();
-      ctx.strokeStyle = 'rgba(232,192,122,' + (0.4 - k * 0.1) + ')';
+      ctx.strokeStyle = hexA(CORE, 0.45 - k * 0.12);
       ctx.lineWidth = 1;
       ctx.stroke();
       ctx.restore();
     }
 
-    sphere(x, y, r, '#d8a860', false);
+    sphere(x, y, r, CORE, false);
   }
 
   function beam(x1, y1, x2, y2, hue, strength) {
     // Volumetric: a wide soft pass for the glow, a narrow bright pass for the
     // core of the streak. A single hairline reads as a wireframe, not light.
     var wide = ctx.createLinearGradient(x1, y1, x2, y2);
-    wide.addColorStop(0, hexA(GOLD, .3 * strength));
-    wide.addColorStop(0.45, hexA(hue, .16 * strength));
+    wide.addColorStop(0, hexA(CORE, .10 * strength));
+    wide.addColorStop(0.5, hexA(hue, .08 * strength));
     wide.addColorStop(1, hexA(hue, 0));
     ctx.strokeStyle = wide;
-    ctx.lineWidth = 11 * strength;
+    ctx.lineWidth = 8 * strength;
     ctx.lineCap = 'round';
     ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke();
 
     var core = ctx.createLinearGradient(x1, y1, x2, y2);
-    core.addColorStop(0, hexA(GOLD, .75 * strength));
-    core.addColorStop(0.5, hexA(hue, .42 * strength));
-    core.addColorStop(1, hexA(hue, .05));
+    core.addColorStop(0, hexA(EDGE, 1));
+    core.addColorStop(0.6, mix(EDGE, hue, .35 * strength));
+    core.addColorStop(1, hexA(hue, .55 * strength));
     ctx.strokeStyle = core;
-    ctx.lineWidth = 1.8 * strength;
+    ctx.lineWidth = 1.5 * strength;
     ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke();
     ctx.lineCap = 'butt';
   }
@@ -255,11 +266,11 @@
   function chip(text, x, y, hue) {
     ctx.font = '600 10px Inter, sans-serif';
     var w = ctx.measureText(text).width + 12;
-    ctx.fillStyle = 'rgba(6,18,21,.82)';
+    ctx.fillStyle = mix(hue, '#ffffff', .88);
     roundRect(x, y - 8, w, 16, 8); ctx.fill();
-    ctx.strokeStyle = hexA(hue, .35); ctx.lineWidth = 1;
+    ctx.strokeStyle = hexA(hue, .3); ctx.lineWidth = 1;
     roundRect(x, y - 8, w, 16, 8); ctx.stroke();
-    ctx.fillStyle = hue;
+    ctx.fillStyle = mix(hue, '#0f172a', .3);
     ctx.fillText(text, x + 6, y + 3.5);
     return w;
   }
@@ -278,8 +289,10 @@
     ctx.font = '600 13px Inter, sans-serif';
     var tw = ctx.measureText(label).width;
     // Plate behind the text keeps it legible over beams and beads.
-    ctx.fillStyle = 'rgba(5,9,11,.62)';
+    ctx.fillStyle = 'rgba(255,255,255,.92)';
     roundRect(lx - 6, ly - 12, tw + 12, 18, 5); ctx.fill();
+    ctx.strokeStyle = '#E6ECF3'; ctx.lineWidth = 1;
+    roundRect(lx - 6, ly - 12, tw + 12, 18, 5); ctx.stroke();
     ctx.fillStyle = hue;
     ctx.fillText(label, lx, ly);
     return tw;
@@ -328,7 +341,7 @@
     layout.nodes.forEach(function (n) {
       ctx.globalAlpha = ghostAlpha(n);
       ctx.setLineDash([2, 4]);
-      ctx.strokeStyle = hexA(n.data.hue, .3);
+      ctx.strokeStyle = mix(EDGE, n.data.hue, .35);
       ctx.lineWidth = 1;
       n.satellites.forEach(function (s) {
         ctx.beginPath(); ctx.moveTo(n.x, n.y); ctx.lineTo(s.x, s.y); ctx.stroke();
@@ -355,12 +368,14 @@
       if (n.flagged) {
         var mx = n.x + n.r * 0.78, my = n.y + bob - n.r * 0.78;
         var halo = ctx.createRadialGradient(mx, my, 0, mx, my, 9);
-        halo.addColorStop(0, hexA(ROSE, .55));
+        halo.addColorStop(0, hexA(ROSE, .35));
         halo.addColorStop(1, hexA(ROSE, 0));
         ctx.fillStyle = halo;
         ctx.beginPath(); ctx.arc(mx, my, 9, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = '#ffffff';
+        ctx.beginPath(); ctx.arc(mx, my, 4.5, 0, Math.PI * 2); ctx.fill();
         ctx.fillStyle = ROSE;
-        ctx.beginPath(); ctx.arc(mx, my, 3, 0, Math.PI * 2); ctx.fill();
+        ctx.beginPath(); ctx.arc(mx, my, 3.2, 0, Math.PI * 2); ctx.fill();
       }
     });
 
@@ -373,10 +388,10 @@
     ctx.globalAlpha = 1 - 0.6 * focusAmt;
     var cs = worldToScreen(core.x, core.y);
     ctx.font = '700 17px Inter, sans-serif';
-    ctx.fillStyle = '#e9f2f4';
+    ctx.fillStyle = INK;
     ctx.fillText(data.core.label, cs.x + core.r * cam.scale + 16, cs.y + 2);
     ctx.font = '500 11px Inter, sans-serif';
-    ctx.fillStyle = '#7c94a0';
+    ctx.fillStyle = INK_2;
     ctx.fillText(
       data.core.client_count + ' clients · ' + data.core.project_count + ' projects',
       cs.x + core.r * cam.scale + 16, cs.y + 18
@@ -400,7 +415,7 @@
       var lx = right ? p.x + n.r * cam.scale + 13 : p.x - n.r * cam.scale - 13 - tw;
       var ly = p.y + 1;
 
-      namePlate(label, lx, ly, isFoc && selected === n.data.id ? GOLD : '#e9f2f4');
+      namePlate(label, lx, ly, isFoc && selected === n.data.id ? GOLD : INK);
       chip(n.data.share + '%', lx, ly + 17,
         isFoc && selected === n.data.id ? GOLD : n.data.hue);
 
@@ -410,7 +425,7 @@
         n.satellites.forEach(function (s) {
           var sp = worldToScreen(s.x, s.y + (n.bob || 0) * 0.6);
           var sx = sp.x + s.r * cam.scale + 8;
-          namePlate(truncate(s.data.label), sx, sp.y - 6, '#e9f2f4');
+          namePlate(truncate(s.data.label), sx, sp.y - 6, INK);
           var cw = chip(s.data.status_display, sx, sp.y + 11, s.data.hue);
           if (s.data.tag != null) {
             chip(s.data.tag + 'd late', sx + cw + 5, sp.y + 11, ROSE);

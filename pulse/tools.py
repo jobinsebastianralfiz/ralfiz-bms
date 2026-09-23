@@ -558,27 +558,33 @@ def get_attendance_summary(scope, date=None):
 # Portfolio graph
 # --------------------------------------------------------------------------
 
-#: Node colour by project status, using the jewel tones from the design spec.
+#: Node colour by project status, from the app palette (light theme).
 #: Meaning is encoded in hue -- this is not decoration.
+PROSPECT_HUE = '#06B6D4'    # cyan   -- not yet won
+IN_PLAY_HUE = '#6366F1'     # indigo -- in play
+LIVE_HUE = '#0EA5E9'        # blue   -- live work
+DONE_HUE = '#10B981'        # green  -- done
+INERT_HUE = '#94A3B8'       # grey   -- inert / no projects
+
 STATUS_HUE = {
-    'lead': '#7cc4e8',          # cyan   -- not yet won
-    'proposal': '#7cc4e8',
-    'negotiation': '#a78bd6',   # violet -- in play
-    'confirmed': '#a78bd6',
-    'in_progress': '#2fd4d4',   # teal   -- live work
-    'review': '#2fd4d4',
-    'completed': '#4edea3',     # green  -- done
-    'on_hold': '#e08aa0',       # rose   -- needs a human
-    'cancelled': '#6b7d86',     # grey   -- inert
+    'lead': PROSPECT_HUE,
+    'proposal': PROSPECT_HUE,
+    'negotiation': IN_PLAY_HUE,
+    'confirmed': IN_PLAY_HUE,
+    'in_progress': LIVE_HUE,
+    'review': LIVE_HUE,
+    'completed': DONE_HUE,
+    'on_hold': '#EF4444',       # red    -- needs a human
+    'cancelled': INERT_HUE,
 }
 
-#: Reserved for the node the user has selected. The design spec allows gold on
-#: exactly one thing at a time, so it must not also encode a data condition --
-#: four simultaneously-overdue clients would drown the selection signal.
-SELECTION_HUE = '#e8c07a'
+#: Reserved for the node the user has selected, so it must not also encode a
+#: data condition -- four simultaneously-overdue clients would drown the
+#: selection signal. pulse-graph.js draws it as the selection ring.
+SELECTION_HUE = '#0284C7'
 
-#: Rose doubles as the attention colour on both clients and projects.
-ATTENTION_HUE = '#e08aa0'
+#: Red doubles as the attention colour on both clients and projects.
+ATTENTION_HUE = '#EF4444'
 
 
 def find_entity(scope, name):
@@ -692,7 +698,7 @@ def get_portfolio_graph(scope):
                 'label': project.name,
                 'status': project.status,
                 'status_display': project.get_status_display(),
-                'hue': STATUS_HUE.get(project.status, '#7c94a0'),
+                'hue': STATUS_HUE.get(project.status, INERT_HUE),
                 'billed': _money(billed),
                 'deadline': _date(project.deadline),
                 'needs_attention': bool(overdue or project.status == 'on_hold'),
@@ -713,7 +719,7 @@ def get_portfolio_graph(scope):
             # colour on the graph means "where is the heat".
             'hue': (
                 ATTENTION_HUE if any(s['needs_attention'] for s in satellites)
-                else (STATUS_HUE.get(live[0].status, '#7c94a0') if live else '#4a5c66')
+                else (STATUS_HUE.get(live[0].status, INERT_HUE) if live else INERT_HUE)
             ),
             'needs_attention': any(s['needs_attention'] for s in satellites),
             'project_count': len(projects),
@@ -745,12 +751,12 @@ def get_portfolio_graph(scope):
         'nodes': nodes,
         'edges': edges,
         'legend': [
-            {'label': 'Live work', 'hue': '#2fd4d4'},
-            {'label': 'In play', 'hue': '#a78bd6'},
-            {'label': 'Prospect', 'hue': '#7cc4e8'},
+            {'label': 'Live work', 'hue': LIVE_HUE},
+            {'label': 'In play', 'hue': IN_PLAY_HUE},
+            {'label': 'Prospect', 'hue': PROSPECT_HUE},
             {'label': 'Needs a human', 'hue': ATTENTION_HUE},
-            {'label': 'Delivered', 'hue': '#4edea3'},
-            {'label': 'No projects', 'hue': '#4a5c66'},
+            {'label': 'Delivered', 'hue': DONE_HUE},
+            {'label': 'No projects', 'hue': INERT_HUE},
         ],
     }
 

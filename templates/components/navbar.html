@@ -1,32 +1,27 @@
 {% load static %}
 <header class="navbar">
   <div class="navbar-left">
-    <button class="sidebar-toggle" id="sidebarToggle">
+    <button class="sidebar-toggle" id="sidebarToggle" aria-label="Toggle menu">
       <i class="fas fa-bars"></i>
     </button>
-    <div class="breadcrumb">
-      {% block breadcrumb %}
-      <a href="{% url 'dashboard' %}" class="breadcrumb-item">Dashboard</a>
-      {% endblock %}
+    <div class="navbar-search">
+      <i class="fas fa-search"></i>
+      <input type="text" placeholder="Search clients, projects, invoices..." id="globalSearch">
     </div>
+
   </div>
 
   <div class="navbar-right">
-    <div class="navbar-search">
-      <i class="fas fa-search"></i>
-      <input type="text" placeholder="Search clients, projects..." id="globalSearch">
-    </div>
-
     <div class="navbar-actions">
-      <button class="navbar-action-btn" id="themeToggle" title="Toggle Dark Mode">
-        <i class="fas fa-moon" id="themeIcon"></i>
-      </button>
       <button class="navbar-action-btn" title="Notifications">
         <i class="fas fa-bell"></i>
         {% if notifications_count %}
         <span class="badge">{{ notifications_count }}</span>
         {% endif %}
       </button>
+      <a class="navbar-action-btn" href="{% url 'settings' %}" title="Settings">
+        <i class="fas fa-gear"></i>
+      </a>
     </div>
 
     <div class="user-dropdown dropdown">
@@ -52,6 +47,14 @@
           <i class="fas fa-sign-out-alt"></i>
           Logout
         </a>
+      </div>
+    </div>
+
+    <div class="navbar-date">
+      <i class="far fa-calendar"></i>
+      <div>
+        <div class="navbar-date__day">{% now "D, j M Y" %}</div>
+        <div class="navbar-date__note">Have a productive day!</div>
       </div>
     </div>
   </div>

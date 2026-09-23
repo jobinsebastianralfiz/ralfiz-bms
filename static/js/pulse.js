@@ -107,25 +107,25 @@
 
     // Outer bloom
     var bloom = orbCtx.createRadialGradient(cx, cy, R * 0.75, cx, cy, R * 2.1);
-    bloom.addColorStop(0, 'rgba(138, 95, 214, .34)');
-    bloom.addColorStop(0.45, 'rgba(122, 80, 200, .12)');
-    bloom.addColorStop(1, 'rgba(122, 80, 200, 0)');
+    bloom.addColorStop(0, 'rgba(14, 165, 233, .16)');
+    bloom.addColorStop(0.45, 'rgba(99, 102, 241, .06)');
+    bloom.addColorStop(1, 'rgba(99, 102, 241, 0)');
     orbCtx.fillStyle = bloom;
     orbCtx.fillRect(0, 0, SIZE, SIZE);
 
     // Reactive ring — a waveform bent into a circle. Two passes for depth.
-    drawRing(cx, cy, R * 1.24, t, 0.0, 'rgba(47, 212, 212, .5)', 1.4, 17);
-    drawRing(cx, cy, R * 1.40, t, 2.1, 'rgba(167, 139, 214, .32)', 1.1, 13);
+    drawRing(cx, cy, R * 1.24, t, 0.0, 'rgba(14, 165, 233, .55)', 1.4, 17);
+    drawRing(cx, cy, R * 1.40, t, 2.1, 'rgba(99, 102, 241, .32)', 1.1, 13);
 
     // Sphere body: light comes from upper-left.
     var body = orbCtx.createRadialGradient(
       cx - R * 0.36, cy - R * 0.40, R * 0.06,
       cx, cy, R * 1.05
     );
-    body.addColorStop(0.00, '#e6d4ff');
-    body.addColorStop(0.28, '#b89af0');
-    body.addColorStop(0.62, '#8a5fd6');
-    body.addColorStop(1.00, '#4a2a86');
+    body.addColorStop(0.00, '#E0F2FE');
+    body.addColorStop(0.28, '#7DD3FC');
+    body.addColorStop(0.62, '#0EA5E9');
+    body.addColorStop(1.00, '#0369A1');
     orbCtx.beginPath();
     orbCtx.arc(cx, cy, R, 0, Math.PI * 2);
     orbCtx.fillStyle = body;
@@ -136,8 +136,8 @@
       cx + R * 0.22, cy + R * 0.30, R * 0.42,
       cx, cy, R
     );
-    rim.addColorStop(0, 'rgba(24, 10, 46, 0)');
-    rim.addColorStop(1, 'rgba(24, 10, 46, .55)');
+    rim.addColorStop(0, 'rgba(15, 23, 42, 0)');
+    rim.addColorStop(1, 'rgba(15, 23, 42, .22)');
     orbCtx.beginPath();
     orbCtx.arc(cx, cy, R, 0, Math.PI * 2);
     orbCtx.fillStyle = rim;
@@ -236,7 +236,7 @@
     fieldCtx.beginPath();
     fieldCtx.moveTo(a.x, a.y);
     fieldCtx.bezierCurveTo(c1.x, c1.y, c2.x, c2.y, b.x, b.y);
-    fieldCtx.strokeStyle = gold ? 'rgba(232, 192, 122, .55)' : 'rgba(47, 212, 212, .28)';
+    fieldCtx.strokeStyle = gold ? 'rgba(2, 132, 199, .7)' : 'rgba(148, 163, 184, .55)';
     fieldCtx.lineWidth = gold ? 1.6 : 1;
     fieldCtx.stroke();
 
@@ -244,7 +244,7 @@
     var p = ((t * 0.075) + seed * 0.19) % 1;
     var pt = bezierAt(a, c1, c2, b, p);
     var g = fieldCtx.createRadialGradient(pt.x, pt.y, 0, pt.x, pt.y, 5.5);
-    var tint = gold ? '232, 192, 122' : '47, 212, 212';
+    var tint = gold ? '2, 132, 199' : '14, 165, 233';
     g.addColorStop(0, 'rgba(' + tint + ', .95)');
     g.addColorStop(1, 'rgba(' + tint + ', 0)');
     fieldCtx.beginPath();

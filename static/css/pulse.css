@@ -5,27 +5,37 @@
    ========================================================================== */
 
 .pulse-body {
-  --p-void: #05090b;
-  --p-deep: #071316;
-  --p-core: #0a2429;
+  /* Light app palette (design reference, Sep 2026). Names kept from the
+     dark version so every rule below still reads the same variables:
+     "teal" is now the primary blue, "gold" is the selected-state blue. */
+  --p-void: #F4F7FB;
+  --p-deep: #F4F7FB;
+  --p-core: #FFFFFF;
 
-  --p-teal: #2fd4d4;
-  --p-teal-dim: #1a8a8a;
-  --p-gold: #e8c07a;
-  --p-gold-bright: #f5d896;
+  --p-teal: #0EA5E9;
+  --p-teal-dim: #0284C7;
+  --p-gold: #0EA5E9;
+  --p-gold-bright: #0284C7;
+  --p-tint: #E0F2FE;
 
-  --p-rose: #e08aa0;
-  --p-violet: #a78bd6;
-  --p-cyan: #7cc4e8;
+  --p-rose: #EF4444;
+  --p-violet: #6366F1;
+  --p-cyan: #0EA5E9;
+  --p-amber: #F59E0B;
+  --p-green: #10B981;
 
-  --p-ink: #e9f2f4;
-  --p-ink-2: #7c94a0;
-  --p-ink-3: #4a5c66;
+  --p-ink: #0F172A;
+  --p-ink-2: #475569;
+  --p-ink-3: #94A3B8;
 
-  --p-glass: rgba(20, 40, 46, .4);
-  --p-glass-line: rgba(120, 220, 220, .22);
+  --p-glass: #FFFFFF;
+  --p-glass-line: #E6ECF3;
+  --p-field-line: #D9E2EC;
+  --p-divider: #EEF2F6;
+  --p-shadow: 0 1px 2px rgba(15, 23, 42, .04), 0 4px 16px rgba(15, 23, 42, .04);
+  --p-shadow-lift: 0 2px 4px rgba(15, 23, 42, .05), 0 10px 24px rgba(15, 23, 42, .07);
 
-  --p-r: 16px;
+  --p-r: 14px;
   --p-ease: cubic-bezier(.22, .61, .36, 1);
 
   margin: 0;
@@ -37,14 +47,12 @@
   overflow: hidden;
 }
 
-/* The teal breath. Never navy, never pure black. */
+/* Flat page wash; cards carry the structure. */
 .pulse-body::before {
   content: '';
   position: fixed;
   inset: 0;
-  background:
-    radial-gradient(120% 90% at 32% 52%,
-      var(--p-core) 0%, var(--p-deep) 45%, var(--p-void) 78%);
+  background: var(--p-void);
   z-index: 0;
   pointer-events: none;
 }
@@ -84,7 +92,10 @@
   align-items: center;
   justify-content: space-between;
   gap: 18px;
-  padding: 16px 24px;
+  padding: 12px 24px;
+  margin-bottom: 18px;
+  background: #FFFFFF;
+  border-bottom: 1px solid var(--p-glass-line);
 }
 
 .pulse-brand {
@@ -98,18 +109,18 @@
 .pulse-brand__mark {
   width: 26px; height: 26px;
   fill: var(--p-teal);
-  filter: drop-shadow(0 0 7px rgba(47, 212, 212, .5));
 }
-.pulse-brand__spark { fill: var(--p-gold); }
+.pulse-brand__spark { fill: var(--p-amber); }
 
 .pulse-brand__text { display: flex; flex-direction: column; line-height: 1.15; }
-.pulse-brand__name { font-size: 14px; font-weight: 700; letter-spacing: -.2px; }
+.pulse-brand__name { font-size: 16px; font-weight: 700; letter-spacing: -.2px; color: var(--p-ink); }
 .pulse-brand__sub {
+  white-space: nowrap;
   font-size: 10px;
   font-weight: 500;
   letter-spacing: 1.4px;
   text-transform: uppercase;
-  color: var(--p-ink-3);
+  color: var(--p-ink-2);
 }
 
 .pulse-bar__center { display: flex; align-items: center; gap: 10px; }
@@ -120,10 +131,8 @@
   gap: 2px;
   padding: 4px;
   border: 1px solid var(--p-glass-line);
-  border-radius: 999px;
-  background: var(--p-glass);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
+  border-radius: 10px;
+  background: #F8FAFC;
 }
 
 .pulse-icon {
@@ -132,15 +141,15 @@
   width: 32px; height: 32px;
   padding: 0;
   border: 0;
-  border-radius: 999px;
+  border-radius: 8px;
   background: transparent;
   color: var(--p-ink-2);
   cursor: pointer;
   transition: color .2s var(--p-ease), background .2s var(--p-ease);
 }
 .pulse-icon svg { width: 17px; height: 17px; fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linecap: round; }
-.pulse-icon:hover:not(:disabled) { color: var(--p-ink); background: rgba(47, 212, 212, .1); }
-.pulse-icon.is-active { color: var(--p-teal); background: rgba(47, 212, 212, .14); }
+.pulse-icon:hover:not(:disabled):not(.is-active) { color: var(--p-teal-dim); background: var(--p-tint); }
+.pulse-icon.is-active { color: #FFFFFF; background: var(--p-teal); }
 .pulse-icon:focus-visible { outline: 2px solid var(--p-teal); outline-offset: 2px; }
 .pulse-icon:focus:not(:focus-visible) { outline: none; }
 .pulse-icon:disabled { opacity: .32; cursor: not-allowed; }
@@ -150,13 +159,13 @@
   max-width: 300px;
   padding: 6px 12px;
   border: 0;
-  border-radius: 999px;
+  border-radius: 8px;
   background: transparent;
   color: var(--p-ink);
-  font: 500 12.5px Inter, sans-serif;
+  font: 500 13px Inter, sans-serif;
   cursor: pointer;
 }
-.pulse-select option { background: #0b1a1e; color: var(--p-ink); }
+.pulse-select option { background: #fff; color: var(--p-ink); }
 
 .pulse-bar__right { display: flex; align-items: center; gap: 12px; }
 
@@ -165,24 +174,25 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  font-size: 12px;
+  font-size: 13px;
+  font-weight: 500;
   color: var(--p-ink-2);
 }
 
 .pulse-exit {
-  padding: 7px 15px;
-  border: 1px solid var(--p-glass-line);
-  border-radius: 999px;
-  background: var(--p-glass);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  color: var(--p-ink-2);
-  font-size: 12px;
+  white-space: nowrap;
+  padding: 8px 14px;
+  border: 1px solid var(--p-field-line);
+  border-radius: 8px;
+  background: #FFFFFF;
+  color: #334155;
+  font-size: 13px;
   font-weight: 500;
   text-decoration: none;
-  transition: color .2s var(--p-ease), border-color .2s var(--p-ease);
+  transition: color .2s var(--p-ease), border-color .2s var(--p-ease), background .2s var(--p-ease);
 }
-.pulse-exit:hover { color: var(--p-ink); border-color: rgba(120, 220, 220, .4); }
+.pulse-exit:hover { color: var(--p-teal-dim); border-color: var(--p-teal); background: var(--p-tint); }
+.pulse-exit:focus-visible { outline: none; box-shadow: 0 0 0 3px rgba(14, 165, 233, .15); border-color: var(--p-teal); }
 
 /* ── Stage ─────────────────────────────────────────────────────────── */
 
@@ -258,8 +268,6 @@
   border: 1px solid var(--p-glass-line);
   border-radius: 999px;
   background: var(--p-glass);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
 }
 
 .pulse-pill__label,
@@ -276,7 +284,7 @@
   position: relative;
   width: 56px; height: 4px;
   border-radius: 999px;
-  background: rgba(120, 220, 220, .14);
+  background: var(--p-glass-line);
   overflow: hidden;
 }
 .pulse-meter__fill {
@@ -309,10 +317,8 @@
   padding: 17px 18px 15px 22px;
   border: 1px solid var(--p-glass-line);
   border-radius: var(--p-r);
-  background: linear-gradient(135deg, rgba(30, 70, 78, .55), rgba(12, 28, 33, .35));
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .08), 0 10px 30px rgba(0, 0, 0, .35);
+  background: var(--p-glass);
+  box-shadow: var(--p-shadow);
   color: var(--p-ink);
   text-align: left;
   cursor: pointer;
@@ -325,7 +331,7 @@
   position: absolute;
   left: 0; top: 0; bottom: 0;
   width: 4px;
-  background: linear-gradient(180deg, var(--p-teal), rgba(47, 212, 212, 0));
+  background: linear-gradient(180deg, var(--p-teal), rgba(14, 165, 233, 0));
   transition: background .28s var(--p-ease);
 }
 
@@ -334,7 +340,7 @@
   right: -30px; top: -30px;
   width: 110px; height: 110px;
   border-radius: 50%;
-  background: radial-gradient(circle, rgba(47, 212, 212, .17), transparent 70%);
+  background: none;  /* the dark theme's corner glow; a smudge on white */
   pointer-events: none;
   transition: background .28s var(--p-ease);
 }
@@ -379,8 +385,8 @@
 /* Lift toward the orb, not straight up. */
 .pulse-card:hover {
   transform: translateX(-6px);
-  border-color: rgba(120, 220, 220, .42);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .1), 0 16px 40px rgba(0, 0, 0, .45);
+  border-color: rgba(14, 165, 233, .42);
+  box-shadow: var(--p-shadow-lift);
 }
 .pulse-card:hover .pulse-card__icon { stroke: var(--p-teal); }
 
@@ -391,25 +397,23 @@
 
 /* Gold means selected. Exactly one card at a time. */
 .pulse-card.is-selected {
-  border-color: rgba(232, 192, 122, .45);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .1),
-              0 14px 36px rgba(0, 0, 0, .42),
-              0 0 0 1px rgba(232, 192, 122, .4);
+  border-color: rgba(14, 165, 233, .45);
+  box-shadow: var(--p-shadow-lift), 0 0 0 3px rgba(14, 165, 233, .15);
 }
 .pulse-card.is-selected .pulse-card__bar {
-  background: linear-gradient(180deg, var(--p-gold), rgba(232, 192, 122, 0));
+  background: linear-gradient(180deg, var(--p-gold), rgba(14, 165, 233, 0));
 }
 .pulse-card.is-selected .pulse-card__glow {
-  background: radial-gradient(circle, rgba(232, 192, 122, .2), transparent 70%);
+  background: none;
 }
 .pulse-card.is-selected .pulse-card__icon { stroke: var(--p-gold); }
 .pulse-card.is-selected .pulse-card__value { color: var(--p-gold-bright); }
 
 /* Answer arrival: a brief flare, then settle. */
 @keyframes pulse-flare {
-  0%   { box-shadow: inset 0 1px 0 rgba(255,255,255,.1), 0 10px 30px rgba(0,0,0,.35), 0 0 0 0 rgba(232,192,122,.5); }
-  40%  { box-shadow: inset 0 1px 0 rgba(255,255,255,.16), 0 14px 40px rgba(0,0,0,.45), 0 0 0 5px rgba(232,192,122,.16); }
-  100% { box-shadow: inset 0 1px 0 rgba(255,255,255,.1), 0 10px 30px rgba(0,0,0,.35), 0 0 0 0 rgba(232,192,122,0); }
+  0%   { box-shadow: var(--p-shadow), 0 0 0 0 rgba(14, 165, 233, .45); }
+  40%  { box-shadow: var(--p-shadow-lift), 0 0 0 6px rgba(14, 165, 233, .14); }
+  100% { box-shadow: var(--p-shadow), 0 0 0 0 rgba(14, 165, 233, 0); }
 }
 .pulse-card.is-flaring { animation: pulse-flare 1.1s var(--p-ease); }
 
@@ -428,10 +432,8 @@
   padding: 15px 18px;
   border: 1px solid var(--p-glass-line);
   border-radius: var(--p-r);
-  background: linear-gradient(135deg, rgba(30, 70, 78, .6), rgba(12, 28, 33, .45));
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .08), 0 16px 44px rgba(0, 0, 0, .5);
+  background: var(--p-glass);
+  box-shadow: var(--p-shadow-lift);
   opacity: 0;
   transition: opacity .4s var(--p-ease), transform .4s var(--p-ease);
 }
@@ -483,21 +485,19 @@
   gap: 10px;
   width: min(720px, 100%);
   margin: 0 auto;
-  padding: 8px 8px 8px 18px;
-  border: 1px solid var(--p-glass-line);
-  border-radius: 999px;
-  background: linear-gradient(135deg, rgba(30, 70, 78, .5), rgba(12, 28, 33, .38));
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .07), 0 10px 30px rgba(0, 0, 0, .4);
+  padding: 6px 6px 6px 16px;
+  border: 1px solid var(--p-field-line);
+  border-radius: 12px;
+  background: var(--p-glass);
+  box-shadow: var(--p-shadow);
   transition: border-color .25s var(--p-ease);
 }
-.pulse-command__form:focus-within { border-color: rgba(120, 220, 220, .45); }
+.pulse-command__form:focus-within { border-color: var(--p-teal); box-shadow: var(--p-shadow), 0 0 0 3px rgba(14, 165, 233, .15); }
 
 .pulse-command__glyph {
   font-size: 12px;
   font-weight: 700;
-  color: var(--p-teal-dim);
+  color: var(--p-teal);
   letter-spacing: -.5px;
 }
 
@@ -517,31 +517,31 @@
   place-items: center;
   width: 36px; height: 36px;
   border: 1px solid transparent;
-  border-radius: 999px;
+  border-radius: 8px;
   background: transparent;
   color: var(--p-ink-2);
   cursor: pointer;
   transition: color .2s var(--p-ease), background .2s var(--p-ease);
 }
 .pulse-mic svg { width: 17px; height: 17px; fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linecap: round; }
-.pulse-mic:hover { color: var(--p-ink); background: rgba(47, 212, 212, .12); }
+.pulse-mic:hover { color: var(--p-teal-dim); background: var(--p-tint); }
 .pulse-mic:focus-visible { outline: 2px solid var(--p-teal); outline-offset: 2px; }
-.pulse-mic.is-listening { color: var(--p-gold); background: rgba(232, 192, 122, .16); }
+.pulse-mic.is-listening { color: #DC2626; background: #FEF2F2; }
 .pulse-mic.is-unavailable { opacity: .3; cursor: not-allowed; }
 .pulse-mic.is-off { opacity: .38; }
 
 .pulse-execute {
   padding: 10px 22px;
   border: 0;
-  border-radius: 999px;
-  background: linear-gradient(135deg, var(--p-gold-bright), var(--p-gold));
-  color: #2a1c06;
+  border-radius: 8px;
+  background: var(--p-teal);
+  color: #FFFFFF;
   font: 600 13px Inter, sans-serif;
   cursor: pointer;
-  transition: filter .2s var(--p-ease), opacity .2s var(--p-ease);
+  transition: background .2s var(--p-ease), opacity .2s var(--p-ease);
 }
-.pulse-execute:hover { filter: brightness(1.09); }
-.pulse-execute:focus-visible { outline: 2px solid var(--p-gold-bright); outline-offset: 3px; }
+.pulse-execute:hover { background: var(--p-teal-dim); }
+.pulse-execute:focus-visible { outline: none; box-shadow: 0 0 0 3px rgba(14, 165, 233, .25); }
 .pulse-execute:disabled { opacity: .5; cursor: progress; }
 
 .pulse-command__hint {
@@ -551,7 +551,7 @@
   font-size: 11px;
   color: var(--p-ink-3);
 }
-.pulse-command__hint.is-warning { color: var(--p-gold); }
+.pulse-command__hint.is-warning { color: #B45309; }
 
 /* ── Responsive ────────────────────────────────────────────────────── */
 
@@ -645,14 +645,14 @@
   padding: 7px 12px;
   border: 1px solid var(--p-glass-line);
   border-radius: 999px;
-  background: rgba(6, 18, 21, .82);
+  background: var(--p-glass);
+  box-shadow: var(--p-shadow);
   color: var(--p-ink);
   font: 600 11.5px/1 Inter, sans-serif;
   letter-spacing: .02em;
   cursor: pointer;
-  backdrop-filter: blur(6px);
 }
-.graph-overview-btn:hover { border-color: var(--p-gold); color: var(--p-gold); }
+.graph-overview-btn:hover { border-color: var(--p-teal); color: var(--p-teal-dim); background: var(--p-tint); }
 .graph-overview-btn svg {
   width: 13px; height: 13px;
   fill: none; stroke: currentColor; stroke-width: 1.4; stroke-linejoin: round;
@@ -670,12 +670,12 @@
    settings (common on macOS with a mouse) make it permanent. */
 .pulse-body * {
   scrollbar-width: thin;
-  scrollbar-color: rgba(124, 148, 160, .35) transparent;
+  scrollbar-color: rgba(100, 116, 139, .35) transparent;
 }
 .pulse-body ::-webkit-scrollbar { width: 10px; height: 10px; }
 .pulse-body ::-webkit-scrollbar-track { background: transparent; }
 .pulse-body ::-webkit-scrollbar-thumb {
-  background: rgba(124, 148, 160, .28);
+  background: rgba(100, 116, 139, .28);
   border-radius: 8px;
   /* Transparent border + padding-box clip fakes a gutter so the thumb
      floats instead of touching the panel edge. */
@@ -683,7 +683,7 @@
   background-clip: padding-box;
 }
 .pulse-body ::-webkit-scrollbar-thumb:hover {
-  background: rgba(124, 148, 160, .5);
+  background: rgba(100, 116, 139, .5);
   background-clip: padding-box;
 }
 .pulse-body ::-webkit-scrollbar-corner { background: transparent; }
@@ -696,17 +696,13 @@
   padding: 12px;
   border: 1px solid var(--p-glass-line);
   border-radius: var(--p-r);
-  background: linear-gradient(135deg, rgba(30,70,78,.5), rgba(12,28,33,.34));
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
+  background: var(--p-glass);
 }
 .graph-list__head {
   margin: 0 0 9px;
-  font-size: 10px;
+  font-size: 15px;
   font-weight: 600;
-  letter-spacing: 1.3px;
-  text-transform: uppercase;
-  color: var(--p-ink-3);
+  color: var(--p-ink);
 }
 .graph-list ul { list-style: none; margin: 0; padding: 0; }
 .graph-list__item {
@@ -718,22 +714,23 @@
   border: 1px solid transparent;
   border-radius: 9px;
   background: transparent;
-  color: var(--p-ink-2);
-  font: 500 12px Inter, sans-serif;
+  color: #334155;
+  font: 500 13px Inter, sans-serif;
   text-align: left;
   cursor: pointer;
   transition: background .18s var(--p-ease), color .18s var(--p-ease);
 }
-.graph-list__item:hover { background: rgba(47,212,212,.08); color: var(--p-ink); }
+.graph-list__item:hover { background: #F1F5F9; color: var(--p-ink); }
 .graph-list__item:focus-visible { outline: 2px solid var(--p-teal); outline-offset: 1px; }
 .graph-list__item.is-selected {
-  border-color: rgba(232,192,122,.4);
-  background: rgba(232,192,122,.1);
-  color: var(--p-gold-bright);
+  border-color: transparent;
+  background: var(--p-tint);
+  color: var(--p-teal-dim);
+  font-weight: 600;
 }
 .graph-list__dot { flex: none; width: 8px; height: 8px; border-radius: 50%; }
 .graph-list__name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.graph-list__meta { font-size: 10px; color: var(--p-ink-3); }
+.graph-list__meta { font-size: 11px; color: var(--p-ink-3); }
 
 /* Detail panel */
 .graph-panel {
@@ -743,10 +740,8 @@
   padding: 22px;
   border: 1px solid var(--p-glass-line);
   border-radius: var(--p-r);
-  background: linear-gradient(135deg, rgba(30,70,78,.58), rgba(12,28,33,.42));
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
-  box-shadow: inset 0 1px 0 rgba(255,255,255,.08), 0 16px 44px rgba(0,0,0,.45);
+  background: var(--p-glass);
+  box-shadow: var(--p-shadow-lift);
 }
 .graph-panel__kicker {
   margin: 0 0 5px;
@@ -756,7 +751,7 @@
   text-transform: uppercase;
   color: var(--p-teal);
 }
-.graph-panel__title { margin: 0; font-size: 22px; font-weight: 700; letter-spacing: -.3px; }
+.graph-panel__title { margin: 0; font-size: 22px; font-weight: 700; letter-spacing: -.3px; color: var(--p-ink); }
 .graph-panel__sub { margin: 4px 0 0; font-size: 12.5px; color: var(--p-ink-2); }
 
 .graph-panel__stats {
@@ -767,21 +762,21 @@
 }
 .graph-stat {
   padding: 11px 12px;
-  border: 1px solid rgba(120,220,220,.14);
+  border: 1px solid var(--p-glass-line);
   border-radius: 11px;
-  background: rgba(6,18,21,.4);
+  background: #F8FAFC;
 }
-.graph-stat__v { display: block; font-size: 17px; font-weight: 700; letter-spacing: -.3px; }
-.graph-stat__l { display: block; margin-top: 2px; font-size: 10.5px; color: var(--p-ink-3); }
+.graph-stat__v { display: block; font-size: 17px; font-weight: 700; letter-spacing: -.3px; color: var(--p-ink); }
+.graph-stat__l { display: block; margin-top: 2px; font-size: 11px; color: var(--p-ink-2); }
 
 .graph-panel__flag {
   margin: 14px 0 0;
   padding: 9px 12px;
-  border: 1px solid rgba(224,138,160,.3);
+  border: 1px solid rgba(239, 68, 68, .3);
   border-radius: 10px;
-  background: rgba(224,138,160,.1);
+  background: #FEF2F2;
   font-size: 12px;
-  color: var(--p-ink);
+  color: #B91C1C;
 }
 
 .graph-panel__h3 {
@@ -790,11 +785,11 @@
   font-weight: 600;
   letter-spacing: 1.3px;
   text-transform: uppercase;
-  color: var(--p-ink-3);
+  color: var(--p-ink-2);
 }
 .graph-panel__list { list-style: none; margin: 0; padding: 0; }
 .graph-panel__list li {
-  border-bottom: 1px solid rgba(120,220,220,.08);
+  border-bottom: 1px solid var(--p-divider);
   font-size: 12.5px;
 }
 .graph-panel__list li:last-child { border-bottom: none; }
@@ -809,8 +804,8 @@
 }
 .graph-panel__link:hover .nm { color: var(--p-teal); }
 .graph-panel__list .dot { flex: none; width: 7px; height: 7px; border-radius: 50%; }
-.graph-panel__list .nm { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.graph-panel__list .st { font-size: 10.5px; color: var(--p-ink-3); }
+.graph-panel__list .nm { color: var(--p-ink); flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.graph-panel__list .st { font-size: 11px; color: var(--p-ink-2); }
 .graph-panel__list .ov { font-size: 10px; color: var(--p-rose); }
 .graph-panel__empty { margin: 0; font-size: 12.5px; color: var(--p-ink-3); line-height: 1.5; }
 
@@ -840,6 +835,11 @@
   .graph-list { max-height: 260px; }
 }
 
+@media (max-width: 1200px) {
+  /* The legend is the first thing to give way when the top bar gets tight. */
+  .graph-legend { display: none; }
+}
+
 @media (max-width: 720px) {
   .graph-legend { display: none; }
   /* Room to scroll the last card clear of the fixed command bar. */
@@ -859,38 +859,35 @@
   gap: 12px;
 }
 .graph-metric {
-  padding: 12px 15px;
+  padding: 16px 18px;
   border: 1px solid var(--p-glass-line);
-  border-radius: 13px;
-  background: linear-gradient(135deg, rgba(30,70,78,.5), rgba(12,28,33,.34));
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  box-shadow: inset 0 1px 0 rgba(255,255,255,.06), 0 10px 28px rgba(0,0,0,.32);
+  border-radius: var(--p-r);
+  background: var(--p-glass);
+  box-shadow: var(--p-shadow);
   text-decoration: none;
   color: inherit;
   transition: border-color .2s var(--p-ease), transform .2s var(--p-ease);
 }
-.graph-metric:hover { border-color: rgba(120,220,220,.4); transform: translateY(-2px); }
+.graph-metric:hover { border-color: rgba(14, 165, 233, .4); box-shadow: var(--p-shadow-lift); transform: translateY(-2px); }
 .graph-metric:focus-visible { outline: 2px solid var(--p-teal); outline-offset: 2px; }
 .graph-metric__label {
   display: block;
-  font-size: 10px;
-  font-weight: 600;
-  letter-spacing: 1.1px;
-  text-transform: uppercase;
-  color: var(--p-ink-3);
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--p-ink-2);
 }
 .graph-metric__value {
   display: block;
-  margin-top: 5px;
-  font-size: 21px;
+  margin-top: 8px;
+  font-size: 22px;
   font-weight: 700;
   letter-spacing: -.4px;
   line-height: 1;
+  color: var(--p-ink);
 }
-.graph-metric__note { display: block; margin-top: 4px; font-size: 11px; color: var(--p-ink-2); }
-.graph-metric.is-alert .graph-metric__note { color: var(--p-rose); }
-.graph-metric.is-alert { border-color: rgba(224,138,160,.28); }
+.graph-metric__note { display: block; margin-top: 6px; font-size: 12px; color: var(--p-ink-3); }
+.graph-metric.is-alert .graph-metric__note { color: #DC2626; }
+.graph-metric.is-alert { border-color: rgba(239, 68, 68, .22); }
 
 
 
@@ -903,11 +900,9 @@
   padding: 13px;
   border: 1px solid var(--p-glass-line);
   border-radius: var(--p-r);
-  background: linear-gradient(135deg, rgba(30,70,78,.5), rgba(12,28,33,.34));
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
+  background: var(--p-glass);
 }
-.graph-dues.is-alert { border-color: rgba(224,138,160,.3); }
+.graph-dues.is-alert { border-color: rgba(239, 68, 68, .3); }
 
 .graph-dues__head {
   display: flex;
@@ -918,17 +913,15 @@
 }
 .graph-dues__title {
   margin: 0;
-  font-size: 10px;
+  font-size: 15px;
   font-weight: 600;
-  letter-spacing: 1.3px;
-  text-transform: uppercase;
-  color: var(--p-ink-3);
+  color: var(--p-ink);
 }
 .graph-dues__badge {
   padding: 2px 7px;
   border-radius: 999px;
-  background: rgba(224,138,160,.16);
-  font-size: 9.5px;
+  background: #FEF2F2;
+  font-size: 10px;
   font-weight: 600;
   color: var(--p-rose);
   white-space: nowrap;
@@ -943,12 +936,12 @@
 }
 .graph-dues__item {
   padding: 7px 0;
-  border-bottom: 1px solid rgba(120,220,220,.08);
+  border-bottom: 1px solid var(--p-divider);
 }
 .graph-dues__item:last-child { border-bottom: none; }
 .graph-dues__name {
   display: block;
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 500;
   color: var(--p-ink);
   overflow: hidden;
@@ -958,7 +951,7 @@
 .graph-dues__meta {
   display: block;
   margin-top: 1px;
-  font-size: 10px;
+  font-size: 11px;
   color: var(--p-ink-3);
   overflow: hidden;
   text-overflow: ellipsis;
@@ -971,12 +964,12 @@
   font-weight: 600;
   color: var(--p-ink-2);
 }
-.graph-dues__item.is-overdue .graph-dues__when { color: var(--p-rose); }
+.graph-dues__item.is-overdue .graph-dues__when { color: #DC2626; }
 .graph-dues__auto {
   margin-left: 5px;
   padding: 1px 5px;
   border-radius: 4px;
-  background: rgba(47,212,212,.14);
+  background: rgba(14, 165, 233, .14);
   font-size: 9px;
   font-weight: 600;
   color: var(--p-teal);
@@ -985,11 +978,12 @@
 }
 .graph-dues__all {
   margin-top: 9px;
-  font-size: 10.5px;
-  color: var(--p-ink-2);
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--p-teal);
   text-decoration: none;
 }
-.graph-dues__all:hover { color: var(--p-teal); }
+.graph-dues__all:hover { color: var(--p-teal-dim); text-decoration: underline; }
 .graph-dues__all:focus-visible { outline: 2px solid var(--p-teal); outline-offset: 2px; }
 .graph-dues__empty { margin: 0; font-size: 11.5px; color: var(--p-ink-3); line-height: 1.5; }
 
@@ -1006,9 +1000,7 @@
   align-items: center;
   justify-content: center;
   gap: 18px;
-  background: rgba(5, 9, 11, .58);
-  backdrop-filter: blur(6px);
-  -webkit-backdrop-filter: blur(6px);
+  background: rgba(244, 247, 251, .86);
   cursor: pointer;
 }
 .pulse-voice[hidden] { display: none; }
@@ -1026,7 +1018,7 @@
   width: 44px;
   height: 44px;
   fill: none;
-  stroke: #2fd4d4;
+  stroke: #0EA5E9;
   stroke-width: 1.6;
   stroke-linecap: round;
 }
@@ -1034,7 +1026,7 @@
   position: absolute;
   inset: 0;
   border-radius: 50%;
-  border: 1px solid rgba(47, 212, 212, .55);
+  border: 1px solid rgba(14, 165, 233, .55);
   animation: pulse-voice-ring 1.8s ease-out infinite;
 }
 .pulse-voice__rings span:nth-child(2) { animation-delay: .6s; }
@@ -1044,7 +1036,7 @@
   width: 76px;
   height: 76px;
   border-radius: 50%;
-  background: radial-gradient(circle, rgba(47, 212, 212, .3), rgba(47, 212, 212, .05) 70%);
+  background: radial-gradient(circle, rgba(14, 165, 233, .3), rgba(14, 165, 233, .05) 70%);
   animation: pulse-voice-core 1.1s ease-in-out infinite alternate;
 }
 @keyframes pulse-voice-ring {
@@ -1062,7 +1054,7 @@
   text-align: center;
   font-size: 15px;
   line-height: 1.5;
-  color: #e9f2f4;
+  color: #0F172A;
 }
 .pulse-voice__hint {
   margin: 0;
@@ -1070,7 +1062,7 @@
   font-weight: 600;
   letter-spacing: .14em;
   text-transform: uppercase;
-  color: #7c94a0;
+  color: #64748B;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -1141,7 +1133,7 @@
   text-decoration: none;
   font-size: 10px;
   font-weight: 600;
-  color: var(--p-cyan);
+  color: var(--p-teal-dim);
 }
 @media (max-width: 720px) {
   .graph-weather__hour:nth-child(n+4) { display: none; }
@@ -1161,26 +1153,26 @@
 
 /* Sky tint per condition — kept faint so the glass card stays glass. */
 .graph-weather[data-cond="clear"] .graph-weather__scene {
-  background: radial-gradient(120% 130% at 85% 0%, rgba(232,192,122,.22), transparent 55%);
+  background: radial-gradient(120% 130% at 85% 0%, rgba(245, 158, 11, .16), transparent 55%);
 }
 .graph-weather[data-cond="clear"].is-night .graph-weather__scene {
-  background: radial-gradient(120% 130% at 85% 0%, rgba(167,139,214,.20), rgba(7,10,26,.35) 70%);
+  background: radial-gradient(120% 130% at 85% 0%, rgba(99, 102, 241, .14), rgba(99, 102, 241, .04) 70%);
 }
 .graph-weather[data-cond="clouds"] .graph-weather__scene {
-  background: radial-gradient(130% 120% at 80% 0%, rgba(124,196,232,.14), transparent 60%);
+  background: radial-gradient(130% 120% at 80% 0%, rgba(14, 165, 233, .10), transparent 60%);
 }
 .graph-weather[data-cond="rain"] .graph-weather__scene,
 .graph-weather[data-cond="drizzle"] .graph-weather__scene {
-  background: linear-gradient(160deg, rgba(38,72,96,.42), rgba(10,24,33,.2) 70%);
+  background: linear-gradient(160deg, rgba(14, 165, 233, .12), rgba(14, 165, 233, .02) 70%);
 }
 .graph-weather[data-cond="thunder"] .graph-weather__scene {
-  background: linear-gradient(160deg, rgba(60,48,102,.5), rgba(8,10,24,.3) 70%);
+  background: linear-gradient(160deg, rgba(99, 102, 241, .16), rgba(99, 102, 241, .03) 70%);
 }
 .graph-weather[data-cond="snow"] .graph-weather__scene {
-  background: linear-gradient(160deg, rgba(150,180,205,.2), transparent 70%);
+  background: linear-gradient(160deg, rgba(148, 163, 184, .16), transparent 70%);
 }
 .graph-weather[data-cond="mist"] .graph-weather__scene {
-  background: linear-gradient(160deg, rgba(124,148,160,.18), transparent 75%);
+  background: linear-gradient(160deg, rgba(148, 163, 184, .16), transparent 75%);
 }
 
 /* Sun — molten disc with slow-turning rays. */
@@ -1191,8 +1183,8 @@
   top: 8px; right: 12px;
   width: 28px; height: 28px;
   border-radius: 50%;
-  background: radial-gradient(circle at 35% 35%, #f9e3ae, var(--p-gold) 55%, #c9964f);
-  box-shadow: 0 0 18px 4px rgba(232, 192, 122, .4);
+  background: radial-gradient(circle at 35% 35%, #FDE68A, #F59E0B 55%, #D97706);
+  box-shadow: 0 0 14px 3px rgba(245, 158, 11, .35);
   opacity: .85;
   animation: gw-sun-breathe 4.5s ease-in-out infinite alternate;
 }
@@ -1202,7 +1194,7 @@
   inset: -14px;
   border-radius: 50%;
   background: repeating-conic-gradient(
-    rgba(232, 192, 122, .35) 0deg 6deg, transparent 6deg 30deg);
+    rgba(245, 158, 11, .4) 0deg 6deg, transparent 6deg 30deg);
   -webkit-mask: radial-gradient(circle, transparent 52%, #000 56%, #000 78%, transparent 82%);
   mask: radial-gradient(circle, transparent 52%, #000 56%, #000 78%, transparent 82%);
   animation: gw-spin 26s linear infinite;
@@ -1216,21 +1208,21 @@
   top: 9px; right: 14px;
   width: 24px; height: 24px;
   border-radius: 50%;
-  background: radial-gradient(circle at 38% 38%, #f2ecd9, #cfc6a8 70%);
-  box-shadow: 0 0 14px 2px rgba(242, 236, 217, .3),
-    inset -6px -4px 0 2px rgba(7, 19, 22, .55);
+  background: radial-gradient(circle at 38% 38%, #E0E7FF, #A5B4FC 70%);
+  box-shadow: 0 0 12px 2px rgba(99, 102, 241, .25),
+    inset -6px -4px 0 2px rgba(255, 255, 255, .85);
   animation: gw-sun-breathe 5.5s ease-in-out infinite alternate;
 }
 .graph-weather.is-night .graph-weather__stars {
   display: block;
   inset: 0;
   background:
-    radial-gradient(1.2px 1.2px at 18% 30%, #fff 55%, transparent),
-    radial-gradient(1px 1px at 38% 16%, #fff 55%, transparent),
-    radial-gradient(1.4px 1.4px at 56% 36%, #fff 55%, transparent),
-    radial-gradient(1px 1px at 70% 14%, #fff 55%, transparent),
-    radial-gradient(1.2px 1.2px at 84% 44%, #fff 55%, transparent),
-    radial-gradient(1px 1px at 30% 58%, #fff 55%, transparent);
+    radial-gradient(1.2px 1.2px at 18% 30%, #94A3B8 55%, transparent),
+    radial-gradient(1px 1px at 38% 16%, #94A3B8 55%, transparent),
+    radial-gradient(1.4px 1.4px at 56% 36%, #94A3B8 55%, transparent),
+    radial-gradient(1px 1px at 70% 14%, #94A3B8 55%, transparent),
+    radial-gradient(1.2px 1.2px at 84% 44%, #94A3B8 55%, transparent),
+    radial-gradient(1px 1px at 30% 58%, #94A3B8 55%, transparent);
   opacity: .5;
   animation: gw-twinkle 3.4s ease-in-out infinite alternate;
 }
@@ -1244,7 +1236,7 @@
   display: block;
   width: 130px; height: 32px;
   border-radius: 999px;
-  background: radial-gradient(ellipse at 50% 45%, rgba(214, 232, 240, .5), rgba(150, 180, 195, .18) 70%);
+  background: radial-gradient(ellipse at 50% 45%, rgba(148, 163, 184, .55), rgba(148, 163, 184, .15) 70%);
   filter: blur(5px);
 }
 /* The puff on top that makes a lozenge read as a cloud. */
@@ -1269,7 +1261,7 @@
   animation: gw-drift 17s ease-in-out infinite alternate-reverse;
 }
 .graph-weather[data-cond="thunder"] .graph-weather__cloud {
-  background: radial-gradient(ellipse at 50% 45%, rgba(190, 178, 226, .5), rgba(90, 80, 140, .2) 70%);
+  background: radial-gradient(ellipse at 50% 45%, rgba(99, 102, 241, .45), rgba(99, 102, 241, .12) 70%);
 }
 
 /* Rain — slanted streaks falling through the whole card. */
@@ -1282,7 +1274,7 @@
   background: repeating-linear-gradient(
     100deg,
     transparent 0 11px,
-    rgba(124, 196, 232, .38) 11px 12px,
+    rgba(14, 165, 233, .45) 11px 12px,
     transparent 12px 26px);
   -webkit-mask: linear-gradient(90deg, transparent, #000 22%);
   mask: linear-gradient(90deg, transparent, #000 22%);
@@ -1299,10 +1291,10 @@
   display: block;
   inset: -20px 0 0 32%;
   background:
-    radial-gradient(1.6px 1.6px at 20% 20%, #fff 60%, transparent),
-    radial-gradient(1.3px 1.3px at 45% 60%, #fff 60%, transparent),
-    radial-gradient(1.8px 1.8px at 70% 30%, #fff 60%, transparent),
-    radial-gradient(1.2px 1.2px at 88% 70%, #fff 60%, transparent);
+    radial-gradient(1.6px 1.6px at 20% 20%, #94A3B8 60%, transparent),
+    radial-gradient(1.3px 1.3px at 45% 60%, #94A3B8 60%, transparent),
+    radial-gradient(1.8px 1.8px at 70% 30%, #94A3B8 60%, transparent),
+    radial-gradient(1.2px 1.2px at 88% 70%, #94A3B8 60%, transparent);
   background-size: 100% 100%;
   animation: gw-snow 5s linear infinite;
   opacity: .7;
@@ -1312,7 +1304,7 @@
 .graph-weather[data-cond="thunder"] .graph-weather__flash {
   display: block;
   inset: 0;
-  background: radial-gradient(90% 90% at 65% 10%, rgba(236, 230, 255, .9), rgba(167, 139, 214, .3) 55%, transparent 80%);
+  background: radial-gradient(90% 90% at 65% 10%, rgba(255, 251, 235, .95), rgba(245, 158, 11, .18) 55%, transparent 80%);
   opacity: 0;
   animation: gw-flash 6.5s ease-out infinite;
 }
@@ -1323,7 +1315,7 @@
   height: 12px;
   left: -20%; right: -20%;
   border-radius: 999px;
-  background: linear-gradient(90deg, transparent, rgba(200, 216, 224, .28) 30%, rgba(200, 216, 224, .28) 70%, transparent);
+  background: linear-gradient(90deg, transparent, rgba(148, 163, 184, .3) 30%, rgba(148, 163, 184, .3) 70%, transparent);
   filter: blur(4px);
 }
 .graph-weather__mist--a { top: 30%; animation: gw-mist 11s ease-in-out infinite alternate; }
@@ -1331,8 +1323,8 @@
 
 @keyframes gw-spin { to { transform: rotate(360deg); } }
 @keyframes gw-sun-breathe {
-  from { box-shadow: 0 0 14px 2px rgba(232, 192, 122, .35); }
-  to   { box-shadow: 0 0 24px 7px rgba(232, 192, 122, .55); }
+  from { box-shadow: 0 0 10px 2px rgba(245, 158, 11, .28); }
+  to   { box-shadow: 0 0 18px 5px rgba(245, 158, 11, .42); }
 }
 @keyframes gw-twinkle { from { opacity: .28; } to { opacity: .65; } }
 @keyframes gw-drift {

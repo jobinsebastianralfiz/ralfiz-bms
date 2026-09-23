@@ -1,5 +1,5 @@
 {% extends 'base.html' %}
-{% load static %}
+{% load static money %}
 
 {% block title %}Invoices - Ralfiz BMS{% endblock %}
 
@@ -10,10 +10,16 @@
 {% endblock %}
 
 {% block content %}
+<div class="inv-page">
+<div class="inv-main">
+
 <div class="page-header">
-  <div>
-    <h1 class="page-title">Invoices</h1>
-    <p class="page-subtitle mb-0">Manage your invoices</p>
+  <div class="page-header__lead">
+    <span class="page-header__icon"><i class="far fa-file-lines"></i></span>
+    <div>
+      <h1 class="page-title">Invoices</h1>
+      <p class="page-subtitle mb-0">Manage your invoices and track payments</p>
+    </div>
   </div>
   <div class="page-actions">
     <a href="{% url 'export_invoices' %}?{{ request.GET.urlencode }}" class="btn btn-outline-secondary">
@@ -27,22 +33,62 @@
   </div>
 </div>
 
+<div class="inv-stats">
+  <div class="inv-stat">
+    <span class="inv-stat__icon is-primary"><i class="far fa-file-lines"></i></span>
+    <div>
+      <div class="inv-stat__label">Total Invoices</div>
+      <div class="inv-stat__value">{{ stats.count }}
+        {% if stats.count_trend is not None %}<span class="inv-trend {% if stats.count_trend >= 0 %}is-up{% else %}is-down{% endif %}"><i class="fas fa-arrow-{% if stats.count_trend >= 0 %}up{% else %}down{% endif %}"></i>{{ stats.count_trend }}%</span>{% endif %}
+      </div>
+      <div class="inv-stat__note">issued this month vs last</div>
+    </div>
+  </div>
+  <div class="inv-stat">
+    <span class="inv-stat__icon is-warning"><i class="fas fa-indian-rupee-sign"></i></span>
+    <div>
+      <div class="inv-stat__label">Total Amount</div>
+      <div class="inv-stat__value">&#8377;{{ stats.total|inr }}</div>
+      <div class="inv-stat__note">{% if stats.total_trend is not None %}<span class="inv-trend {% if stats.total_trend >= 0 %}is-up{% else %}is-down{% endif %}"><i class="fas fa-arrow-{% if stats.total_trend >= 0 %}up{% else %}down{% endif %}"></i>{{ stats.total_trend }}%</span> vs last month{% else %}excluding cancelled{% endif %}</div>
+    </div>
+  </div>
+  <div class="inv-stat">
+    <span class="inv-stat__icon is-success"><i class="fas fa-check"></i></span>
+    <div>
+      <div class="inv-stat__label">Paid Amount</div>
+      <div class="inv-stat__value">&#8377;{{ stats.paid|inr }}</div>
+      <div class="inv-stat__note">{% if stats.paid_trend is not None %}<span class="inv-trend {% if stats.paid_trend >= 0 %}is-up{% else %}is-down{% endif %}"><i class="fas fa-arrow-{% if stats.paid_trend >= 0 %}up{% else %}down{% endif %}"></i>{{ stats.paid_trend }}%</span> vs last month{% else %}received so far{% endif %}</div>
+    </div>
+  </div>
+  <div class="inv-stat">
+    <span class="inv-stat__icon is-amber"><i class="far fa-clock"></i></span>
+    <div>
+      <div class="inv-stat__label">Pending Amount</div>
+      <div class="inv-stat__value">&#8377;{{ stats.pending|inr }}</div>
+      <div class="inv-stat__note">still to collect</div>
+    </div>
+  </div>
+</div>
+
 <div class="card mb-4">
   <div class="card-body">
-    <form method="get" class="row align-items-end">
-      <div class="col-md-3 col-sm-12" style="padding: 0.5rem;">
+    <form method="get" class="inv-filters">
+      <div class="inv-filters__field inv-filters__search">
         <label class="form-label">Search</label>
-        <input type="text" class="form-control" name="search" placeholder="Search invoices..." value="{{ search }}">
+        <div class="inv-input-icon">
+          <i class="fas fa-search"></i>
+          <input type="text" class="form-control" name="search" placeholder="Search invoices..." value="{{ search }}">
+        </div>
       </div>
-      <div class="col-md-2 col-sm-12" style="padding: 0.5rem;">
+      <div class="inv-filters__field">
         <label class="form-label">From (Issue Date)</label>
         <input type="date" class="form-control" name="from_date" value="{{ from_date }}">
       </div>
-      <div class="col-md-2 col-sm-12" style="padding: 0.5rem;">
+      <div class="inv-filters__field">
         <label class="form-label">To (Issue Date)</label>
         <input type="date" class="form-control" name="to_date" value="{{ to_date }}">
       </div>
-      <div class="col-md-2 col-sm-12" style="padding: 0.5rem;">
+      <div class="inv-filters__field">
         <label class="form-label">Status</label>
         <select class="form-control" name="status">
           <option value="">All Status</option>
@@ -52,7 +98,7 @@
           {% endfor %}
         </select>
       </div>
-      <div class="col-md-2 col-sm-12" style="padding: 0.5rem;">
+      <div class="inv-filters__field">
         <label class="form-label">GST Filing</label>
         <select class="form-control" name="gst_filing">
           <option value="">Any</option>
@@ -61,26 +107,18 @@
           {% endfor %}
         </select>
       </div>
-      <div class="col-md-1 col-sm-12" style="padding: 0.5rem;">
-        <label class="form-label">&nbsp;</label>
-        <div class="d-flex gap-2">
-          <button type="submit" class="btn btn-primary flex-grow-1"><i class="fas fa-filter"></i></button>
-          <a href="{% url 'invoice_list' %}" class="btn btn-outline-secondary" title="Clear"><i class="fas fa-times"></i></a>
-        </div>
+      <div class="inv-filters__buttons">
+        <button type="submit" class="btn btn-primary"><i class="fas fa-filter"></i> Filter</button>
+        <a href="{% url 'invoice_list' %}" class="btn btn-outline-secondary"><i class="fas fa-rotate-right"></i> Reset</a>
       </div>
     </form>
 
-    <div class="mt-2 d-flex flex-wrap gap-2" style="padding: 0 0.5rem;">
-      <span class="text-muted small me-2">Quick:</span>
-      <a href="?period=prev_month&status=paid_partial" class="btn btn-sm btn-outline-primary">
-        <i class="fas fa-calendar"></i> Previous Month (GST)
-      </a>
-      <a href="?period=this_month&status=paid_partial" class="btn btn-sm btn-outline-secondary">
-        This Month (Paid + Partial)
-      </a>
-      <a href="?period=prev_month" class="btn btn-sm btn-outline-secondary">
-        Previous Month (All)
-      </a>
+    <div class="inv-quick">
+      <span class="inv-quick__label">Quick Filters:</span>
+      <a href="?period=prev_month&status=paid_partial" class="inv-chip {% if period == 'prev_month' and status == 'paid_partial' %}is-active{% endif %}">Previous Month (GST)</a>
+      <a href="?period=this_month&status=paid_partial" class="inv-chip {% if period == 'this_month' and status == 'paid_partial' %}is-active{% endif %}">This Month (Paid + Partial)</a>
+      <a href="?period=prev_month" class="inv-chip {% if period == 'prev_month' and not status %}is-active{% endif %}">Previous Month (All)</a>
+      <a href="?period=this_fy" class="inv-chip {% if period == 'this_fy' %}is-active{% endif %}">Current Financial Year</a>
     </div>
 
     {% if gst_filing == 'pending' or status == 'paid_partial' %}
@@ -124,7 +162,7 @@
 </div>
 
 {% if from_date or to_date or status or gst_filing %}
-<div class="card mb-4" style="background: #f0f7ff; border-color: #cfe2ff;">
+<div class="card mb-4 inv-filter-summary">
   <div class="card-body py-3">
     <div class="row align-items-center">
       <div class="col-md-8">
@@ -135,24 +173,24 @@
           </div>
           <div>
             <div class="text-muted small">Subtotal</div>
-            <div class="fw-bold">&#8377;{{ totals.subtotal|default:0|floatformat:2 }}</div>
+            <div class="fw-bold">&#8377;{{ totals.subtotal|inr }}</div>
           </div>
           <div>
             <div class="text-muted small">Tax (GST)</div>
-            <div class="fw-bold text-primary">&#8377;{{ totals.tax|default:0|floatformat:2 }}</div>
+            <div class="fw-bold text-primary">&#8377;{{ totals.tax|inr }}</div>
           </div>
           <div>
             <div class="text-muted small">Total</div>
-            <div class="fw-bold">&#8377;{{ totals.total|default:0|floatformat:2 }}</div>
+            <div class="fw-bold">&#8377;{{ totals.total|inr }}</div>
           </div>
           <div>
             <div class="text-muted small">Paid</div>
-            <div class="fw-bold text-success">&#8377;{{ totals.paid|default:0|floatformat:2 }}</div>
+            <div class="fw-bold text-success">&#8377;{{ totals.paid|inr }}</div>
           </div>
         </div>
       </div>
       <div class="col-md-4 text-md-end mt-2 mt-md-0">
-        <span class="badge bg-info">
+        <span class="badge badge-primary">
           {% if from_date and to_date %}{{ from_date }} &rarr; {{ to_date }}{% elif from_date %}from {{ from_date }}{% elif to_date %}up to {{ to_date }}{% endif %}
           {% if status == 'paid_partial' %} &middot; Paid + Partial{% elif status %} &middot; {{ status|title }}{% endif %}
         </span>
@@ -163,11 +201,17 @@
 {% endif %}
 
 <div class="card">
+  <div class="card-header inv-list-head">
+    <div>
+      <h2 class="card-title mb-0">Invoice List</h2>
+      <p class="inv-list-head__sub">Showing {{ invoice_count }} invoice{{ invoice_count|pluralize }}, latest number first</p>
+    </div>
+  </div>
   <div class="table-wrapper">
-    <table class="table">
+    <table class="table inv-table">
       <thead>
         <tr>
-          <th>Invoice #</th>
+          <th>#</th>
           <th>Issue Date</th>
           <th>Client</th>
           <th>Title</th>
@@ -175,50 +219,103 @@
           <th>Tax</th>
           <th>Total</th>
           <th>Paid</th>
-          <th>Status</th>
-          <th>GST</th>
+          <th>Status / GST</th>
           <th>Actions</th>
         </tr>
       </thead>
       <tbody>
         {% for invoice in invoices %}
         <tr>
-          <td><a href="{% url 'invoice_detail' invoice.pk %}" class="fw-medium">{{ invoice.invoice_number }}</a></td>
-          <td>{{ invoice.issue_date|date:"d M Y"|default:"-" }}</td>
+          <td><a href="{% url 'invoice_detail' invoice.pk %}" class="fw-semibold">{{ invoice.invoice_number }}</a></td>
+          <td class="inv-date">{{ invoice.issue_date|date:"d M"|default:"-" }}<span>{{ invoice.issue_date|date:"Y" }}</span></td>
           <td><a href="{% url 'client_detail' invoice.client.pk %}">{{ invoice.client.name }}</a></td>
-          <td>{{ invoice.title }}</td>
-          <td>&#8377;{{ invoice.subtotal|floatformat:2 }}</td>
-          <td>&#8377;{{ invoice.tax_amount|floatformat:2 }}</td>
-          <td class="fw-medium">&#8377;{{ invoice.total_amount|floatformat:2 }}</td>
-          <td>&#8377;{{ invoice.amount_paid|floatformat:2 }}</td>
-          <td><span class="status-badge {{ invoice.status }}">{{ invoice.get_status_display }}</span></td>
-          <td>
+          <td class="inv-title">{{ invoice.title }}</td>
+          <td class="inv-num">&#8377;{{ invoice.subtotal|inr }}</td>
+          <td class="inv-num">&#8377;{{ invoice.tax_amount|inr }}</td>
+          <td class="inv-num fw-semibold">&#8377;{{ invoice.total_amount|inr }}</td>
+          <td class="inv-num">&#8377;{{ invoice.amount_paid|inr }}</td>
+          <td><div class="inv-status">
+            <span class="status-badge {{ invoice.status }}">{{ invoice.get_status_display }}</span>
             {% if invoice.gst_filing_status == 'filed' %}
-              <span class="badge" style="background:#dcfce7;color:#166534;font-weight:500;" title="Filed{% if invoice.gst_filed_at %} on {{ invoice.gst_filed_at|date:'d M Y' }}{% endif %}">
-                <i class="fas fa-check-circle me-1"></i>Filed
-              </span>
+              <span class="badge badge-success" title="Filed{% if invoice.gst_filed_at %} on {{ invoice.gst_filed_at|date:'d M Y' }}{% endif %}"><i class="fas fa-check-circle"></i> GST filed</span>
             {% elif invoice.gst_filing_status == 'not_applicable' %}
-              <span class="badge" style="background:#e2e8f0;color:#475569;font-weight:500;" title="No GST applicable">
-                N/A
-              </span>
+              <span class="badge badge-secondary" title="No GST applicable">GST N/A</span>
             {% else %}
-              <span class="badge" style="background:#fef3c7;color:#854d0e;font-weight:500;" title="Pending GST filing">
-                <i class="fas fa-hourglass-half me-1"></i>Pending
-              </span>
+              <span class="badge badge-warning" title="Pending GST filing"><i class="fas fa-hourglass-half"></i> GST pending</span>
             {% endif %}
-          </td>
+          </div></td>
           <td>
             <div class="table-actions">
-              <a href="{% url 'invoice_detail' invoice.pk %}" class="btn btn-sm btn-ghost btn-icon"><i class="fas fa-eye"></i></a>
-              <a href="{% url 'invoice_update' invoice.pk %}" class="btn btn-sm btn-ghost btn-icon"><i class="fas fa-edit"></i></a>
+              <a href="{% url 'invoice_detail' invoice.pk %}" class="btn btn-icon" title="View"><i class="fas fa-eye"></i></a>
+              <a href="{% url 'invoice_update' invoice.pk %}" class="btn btn-icon" title="Edit"><i class="fas fa-pen"></i></a>
             </div>
           </td>
         </tr>
         {% empty %}
-        <tr><td colspan="11" class="text-center py-4 text-muted">No invoices found</td></tr>
+        <tr><td colspan="10" class="text-center py-4 text-muted">No invoices found</td></tr>
         {% endfor %}
       </tbody>
     </table>
   </div>
 </div>
+
+</div>{# /inv-main #}
+
+<aside class="inv-rail">
+  <div class="card inv-panel">
+    <h2 class="inv-panel__title">Quick Actions</h2>
+    <div class="inv-actions">
+      <a href="{% url 'invoice_create' %}" class="inv-action"><i class="far fa-file-lines"></i>Create Invoice</a>
+      <a href="{% url 'client_create' %}" class="inv-action"><i class="fas fa-user-plus"></i>Add Client</a>
+      <a href="{% url 'project_create' %}" class="inv-action"><i class="far fa-folder-open"></i>New Project</a>
+      <a href="{% url 'reports' %}" class="inv-action"><i class="fas fa-chart-column"></i>View Reports</a>
+      <a href="{% url 'gst_summary_report' %}" class="inv-action"><i class="fas fa-receipt"></i>GST Summary</a>
+      <a href="{% url 'settings' %}" class="inv-action"><i class="fas fa-gear"></i>Settings</a>
+    </div>
+  </div>
+
+  <div class="card inv-panel">
+    <h2 class="inv-panel__title">Invoice Status</h2>
+    <div class="inv-donut-row">
+      <div class="inv-donut" style="background: {{ status_donut }};">
+        <div class="inv-donut__hole"><strong>{{ status_total }}</strong><span>Total</span></div>
+      </div>
+      <ul class="inv-legend">
+        {% for s in status_mix %}
+        <li><span class="inv-legend__dot" style="background: {{ s.colour }}"></span>{{ s.label }}<span class="inv-legend__n">{{ s.count }} ({{ s.pct }}%)</span></li>
+        {% endfor %}
+      </ul>
+    </div>
+  </div>
+
+  <div class="card inv-panel">
+    <h2 class="inv-panel__title">Money Received <span class="inv-panel__meta">{{ revenue_year }}</span></h2>
+    <div class="inv-bars">
+      {% for m in revenue %}
+      <div class="inv-bars__col" title="{{ m.label }}: &#8377;{{ m.amount|floatformat:0 }}">
+        <div class="inv-bars__bar" style="height: {{ m.height }}%"></div>
+        <span class="inv-bars__label">{{ m.label }}</span>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+
+  <div class="card inv-panel">
+    <h2 class="inv-panel__title">Recent Activity</h2>
+    <ul class="inv-activity">
+      {% for a in recent_activity %}
+      <li>
+        <span class="inv-activity__icon is-{{ a.action }}"><i class="fas {% if a.action == 'created' %}fa-plus{% elif a.action == 'deleted' %}fa-trash{% elif a.action == 'sent' %}fa-paper-plane{% else %}fa-pen{% endif %}"></i></span>
+        <div>
+          <div class="inv-activity__text">{{ a.model_name }} {{ a.object_repr }} {{ a.get_action_display|lower }}</div>
+          <div class="inv-activity__when">{{ a.timestamp|timesince }} ago</div>
+        </div>
+      </li>
+      {% empty %}
+      <li class="inv-activity__empty">Nothing yet.</li>
+      {% endfor %}
+    </ul>
+  </div>
+</aside>
+</div>{# /inv-page #}
 {% endblock %}
