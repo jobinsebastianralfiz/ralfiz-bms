@@ -264,3 +264,17 @@ class NonGstLedgerTests(SeriesSetup):
         self.client.force_login(self.owner)
         self.client.post(reverse('client_delete', args=[other.pk]))
         self.assertTrue(Client.objects.filter(pk=other.pk).exists())
+
+
+class InvoiceListOrderTests(SeriesSetup):
+    def test_list_runs_by_number_highest_first(self):
+        from datetime import date
+        owner = User.objects.create_user('owner', password='pw', is_staff=True, is_superuser=True)
+        self.client.force_login(owner)
+        dates = {'INRT-9': date(2026, 6, 16), 'INRT-10': date(2026, 6, 18), 'INRT-15': date(2026, 7, 11),
+                 'INRT-16': date(2026, 5, 7), 'INV2425-40': date(2025, 3, 30)}
+        for number, issued in dates.items():
+            self.make(invoice_number=number, issue_date=issued)
+        r = self.client.get(reverse('invoice_list'))
+        self.assertEqual([i.invoice_number for i in r.context['invoices']],
+                         ['INRT-16', 'INRT-15', 'INRT-10', 'INRT-9', 'INV2425-40'])

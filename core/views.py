@@ -1951,6 +1951,25 @@ def quote_convert(request, pk):
 
 # ============== Invoices ==============
 
+def _latest_number_first(invoices):
+    """Invoices in number order, highest first. Numbers compare as numbers, so
+    INRT-10 comes before INRT-9, and the series used most recently (e.g. this
+    financial year's prefix) comes before older ones."""
+    import re
+
+    def split(number):
+        match = re.fullmatch(r'(.*?)(\d+)', number or '')
+        return (match.group(1), int(match.group(2))) if match else (number or '', -1)
+
+    rows = list(invoices)
+    latest_use = {}
+    for inv in rows:
+        prefix = split(inv.invoice_number)[0]
+        latest_use[prefix] = max(latest_use.get(prefix, inv.issue_date), inv.issue_date)
+    return sorted(rows, reverse=True, key=lambda inv: (
+        latest_use[split(inv.invoice_number)[0]], *split(inv.invoice_number)))
+
+
 @login_required
 def invoice_list(request):
     from datetime import date
@@ -2008,7 +2027,7 @@ def invoice_list(request):
     )
 
     context = {
-        'invoices': invoices,
+        'invoices': _latest_number_first(invoices),
         'search': search,
         'status': status,
         'status_choices': Invoice.STATUS_CHOICES,
@@ -2125,7 +2144,7 @@ def non_gst_ledger(request):
     totals = open_invoices.aggregate(invoiced=Sum('total_amount'), paid=Sum('amount_paid'))
     invoiced, paid = totals['invoiced'] or 0, totals['paid'] or 0
     return render(request, 'invoices/non_gst_ledger.html', {
-        'invoices': invoices,
+        'invoices': _latest_number_first(invoices),
         'payments': payments,
         'total_invoiced': invoiced,
         'total_received': paid,
