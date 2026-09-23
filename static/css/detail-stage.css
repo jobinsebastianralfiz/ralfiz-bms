@@ -1,0 +1,132 @@
+/* ==========================================================================
+   Detail-page stage (client and project detail), light theme
+
+   The record's orb sits in the centre column with its facets in panels on
+   either side; pulse-stage.js draws tendrils between them on #stage-field.
+   This layout used to live in the dark pulse-theme.css layer. Without it the
+   tendril canvas drops into normal flow at full page height and pushes all
+   the content off screen, so this file must load wherever .pstage is used.
+   ========================================================================== */
+
+.pstage {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(280px, 360px) minmax(0, 1fr) minmax(280px, 360px);
+  gap: 18px;
+  align-items: start;
+}
+
+.pstage-col {
+  position: relative;
+  z-index: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+.pstage-col--l { grid-column: 1; grid-row: 1; }
+.pstage-col--c { grid-column: 2; grid-row: 1; }
+.pstage-col--r { grid-column: 3; grid-row: 1; }
+
+#stage-field {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 0;
+  pointer-events: none;
+}
+
+.pstage-center {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding-top: 6px;
+}
+#stage-orb { width: 240px; height: 240px; }
+.pstage-id { max-width: 400px; margin-top: -10px; }
+.pstage-id .pd-chips { justify-content: center; }
+.pstage-id .pd-actions { justify-content: center; border-bottom: 0; padding-bottom: 8px; }
+.pstage-id .pd-ledger {
+  text-align: left;
+  border-top: 1px solid var(--border-color);
+  border-bottom: 0;
+  margin-top: 6px;
+}
+
+.stage-panel {
+  position: relative;
+  z-index: 1;
+  min-width: 0;
+  padding: 16px 18px 12px;
+  border: 1px solid var(--border-color);
+  border-radius: 14px;
+  background: #fff;
+  box-shadow: var(--shadow);
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+.stage-panel__kicker {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 8px;
+  font-size: .6875rem;
+  font-weight: 600;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: #64748b;
+  cursor: pointer;
+  -webkit-user-select: none;
+  user-select: none;
+}
+.stage-panel__kicker:hover { color: var(--primary); }
+.stage-panel__kicker .chev {
+  margin-left: auto;
+  font-size: .8rem;
+  line-height: 1;
+  color: var(--text-muted);
+  transition: transform .25s ease;
+}
+.stage-panel:not(.is-collapsed) .chev { transform: rotate(90deg); }
+
+/* Collapsed facet: just a chip, title and chevron. */
+.stage-panel.is-collapsed { padding: 13px 18px; }
+.stage-panel.is-collapsed > *:not(.stage-panel__kicker) { display: none; }
+.stage-panel.is-collapsed .stage-panel__kicker { margin: 0; }
+
+/* Wide panels run the full width at the bottom; collapsed they sit in the centre column. */
+.sp-wide { grid-column: 1 / -1; max-height: none; }
+.sp-wide.is-collapsed { grid-column: 2; }
+
+/* Cards moved into panels shed their chrome: the panel is the surface. */
+.stage-panel .card {
+  border: 0;
+  border-radius: 0;
+  background: none;
+  box-shadow: none;
+  margin: 0 !important;
+  overflow: visible;
+}
+.stage-panel .card-header { padding: 0 0 4px; border: 0; background: none; }
+.stage-panel .card-body { padding: 4px 0 10px; }
+.stage-panel .table th { background: none; }
+
+/* Narrower desktops: two columns, identity on top. Tendrils assume three. */
+@media (max-width: 1400px) {
+  .pstage { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+  #stage-field { display: none; }
+  .pstage-col--c { grid-column: 1 / -1; grid-row: 1; }
+  .pstage-col--l { grid-column: 1; grid-row: 2; }
+  .pstage-col--r { grid-column: 2; grid-row: 2; }
+  .sp-wide, .sp-wide.is-collapsed { grid-column: 1 / -1; }
+}
+
+/* Tablets and phones: one stack. */
+@media (max-width: 900px) {
+  .pstage { display: flex; flex-direction: column; }
+  #stage-orb { width: 170px; height: 170px; }
+  .stage-panel { max-height: none; }
+}
