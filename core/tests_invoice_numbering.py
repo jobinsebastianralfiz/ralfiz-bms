@@ -250,9 +250,11 @@ class NonGstLedgerTests(SeriesSetup):
         self.client.force_login(self.owner)
         for page in ('invoice_list', 'dashboard'):  # the dashboard has its own layout
             self.assertContains(self.client.get(reverse(page)), ledger, msg_prefix=page)
+        self.assertContains(self.client.get(reverse('dashboard')), 'No-GST ledger</a>')
         staff = User.objects.create_user('staff', password='pw', is_staff=True)
         self.client.force_login(staff)
         self.assertNotContains(self.client.get(reverse('invoice_list')), ledger)
+        self.assertNotContains(self.client.get(reverse('dashboard')), ledger)
 
     def test_ledger_is_owner_only(self):
         staff = User.objects.create_user('staff', password='pw', is_staff=True)

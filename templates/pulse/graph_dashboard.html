@@ -46,6 +46,9 @@
 
     <div class="pulse-bar__right">
       <span class="pulse-operator">{{ operator }}</span>
+      {% if request.user.is_superuser %}
+      <a class="pulse-exit" href="{% url 'non_gst_ledger' %}">No-GST ledger</a>
+      {% endif %}
       <a class="pulse-exit" href="{% url 'dashboard-legacy' %}">Classic dashboard</a>
     </div>
   </header>
