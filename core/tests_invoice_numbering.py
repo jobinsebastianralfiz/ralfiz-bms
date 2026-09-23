@@ -245,6 +245,14 @@ class NonGstLedgerTests(SeriesSetup):
         self.assertEqual(r.context['total_invoiced'], Decimal('500'))
         self.assertEqual(r.context['total_received'], Decimal('500'))
 
+    def test_ledger_shortcut_is_only_on_owner_pages(self):
+        ledger = reverse('non_gst_ledger')
+        self.client.force_login(self.owner)
+        self.assertContains(self.client.get(reverse('invoice_list')), ledger)
+        staff = User.objects.create_user('staff', password='pw', is_staff=True)
+        self.client.force_login(staff)
+        self.assertNotContains(self.client.get(reverse('invoice_list')), ledger)
+
     def test_ledger_is_owner_only(self):
         staff = User.objects.create_user('staff', password='pw', is_staff=True)
         self.client.force_login(staff)
