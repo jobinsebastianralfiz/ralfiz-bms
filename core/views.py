@@ -88,6 +88,43 @@ def logout_view(request):
 # ============== Dashboard ==============
 
 @login_required
+def home_dashboard(request):
+    """The light dashboard at '/': headline figures, recent invoices, active
+    projects, dues, and the same side panels as the invoice list."""
+    from pulse.scoping import resolve_scope
+    from pulse.tools import (
+        ACTIVE_PROJECT_STATUSES, get_dashboard_metrics, get_dues_and_renewals,
+    )
+
+    scope = resolve_scope(request.user)
+    if not scope.can_query_business:
+        return redirect('dashboard-legacy')
+
+    icons = {
+        'income': ('fa-indian-rupee-sign', 'is-success'),
+        'outstanding': ('fa-hourglass-half', 'is-amber'),
+        'leads': ('fa-user-plus', 'is-primary'),
+        'projects': ('fa-rocket', 'is-warning'),
+    }
+    metrics = [
+        {**m, 'icon': icons.get(m['key'], ('fa-chart-line', 'is-primary'))[0],
+         'tone': icons.get(m['key'], ('fa-chart-line', 'is-primary'))[1]}
+        for m in get_dashboard_metrics(scope)
+    ]
+    projects = (Project.objects.filter(status__in=ACTIVE_PROJECT_STATUSES)
+                .select_related('client').order_by('deadline', 'name')[:6])
+
+    return render(request, 'dashboard/home.html', {
+        'metrics': metrics,
+        'recent_invoices': _latest_number_first(Invoice.objects.select_related('client'))[:6],
+        'active_projects': projects,
+        'dues': get_dues_and_renewals(scope, limit=6),
+        'today': timezone.localdate(),
+        **_invoice_page_panels(Invoice.objects.all()),
+    })
+
+
+@login_required
 def dashboard(request):
     import json
     from dateutil.relativedelta import relativedelta

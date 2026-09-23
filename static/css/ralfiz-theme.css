@@ -549,7 +549,7 @@ hr, .dropdown-divider { border-color: var(--border-color); }
 }
 .inv-filters__buttons .btn { flex: 1; }
 /* Sized from the main column, not the window: the side panels take their share first. */
-@container (min-width: 1040px) {
+@container (min-width: 860px) {
   .inv-stats { grid-template-columns: repeat(4, minmax(0, 1fr)); }
   .inv-filters { grid-template-columns: 1.4fr 1fr 1fr 1fr 1fr auto; }
   .inv-filters__buttons .btn { flex: none; }
@@ -659,3 +659,28 @@ hr, .dropdown-divider { border-color: var(--border-color); }
 .inv-table .table-actions { display: flex; gap: 8px; }
 
 .badge i, .status-badge i { margin-right: 4px; }
+
+/* ── Dashboard (/) ───────────────────────────────────────────────────── */
+a.home-stat { text-decoration: none; color: inherit; transition: border-color .15s, box-shadow .15s; }
+a.home-stat:hover { border-color: #bae6fd; box-shadow: var(--shadow-md); color: inherit; }
+.inv-stat__note.is-alert { color: var(--danger-strong); }
+.inv-stat__value { overflow: hidden; text-overflow: ellipsis; }
+
+.home-split { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; }
+@container (max-width: 700px) { .home-split { grid-template-columns: minmax(0, 1fr); } }
+
+.home-list { list-style: none; margin: 0; padding: 4px 0 8px; }
+.home-list li {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  padding: 12px 22px;
+  border-top: 1px solid #eef2f7;
+}
+.home-list li:first-child { border-top: 0; }
+.home-list__main { display: flex; flex-direction: column; min-width: 0; text-decoration: none; }
+a.home-list__main:hover .home-list__title { color: var(--primary); }
+.home-list__title { color: var(--text-primary); font-weight: 500; font-size: 0.875rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.home-list__sub { color: var(--text-secondary); font-size: 0.75rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.home-list__side { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; flex: none; }
+.home-list__when { font-size: 0.75rem; color: var(--text-secondary); white-space: nowrap; }
+.home-list__when.is-late { color: var(--danger-strong); font-weight: 500; }
+.home-list__empty { color: var(--text-muted); font-size: 0.8125rem; justify-content: flex-start !important; }

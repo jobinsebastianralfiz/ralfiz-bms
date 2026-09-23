@@ -1353,3 +1353,32 @@
   .graph-weather__scene i,
   .graph-weather__scene i::after { animation: none !important; }
 }
+
+/* ── Embedded in the app layout (/portfolio/) ──────────────────────── */
+/* The constellation used to own the whole viewport. Inside base.html it is
+   one block under the page header: no page wash, no fixed height of its own,
+   and the stage sized to what is left of the screen. */
+.pulse-embed {
+  min-height: 0;
+  overflow: visible;
+  background: transparent;
+}
+.pulse-embed::before { display: none; }
+.pulse-embed .graph-stage {
+  height: max(600px, calc(100vh - 300px));
+  padding: 0;
+}
+.pulse-embed .pulse-command { padding: 18px 0 4px; }
+@media (max-width: 1200px) {
+  .pulse-embed .graph-stage { height: auto; }
+}
+
+.portfolio-legend {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  margin-right: 6px;
+  color: #475569;
+}
+@media (max-width: 1400px) { .portfolio-legend { display: none; } }

@@ -30,14 +30,12 @@ urlpatterns = [
 
     # Dashboard
     #
-    # The root is the PULSE portfolio constellation. The original widget
-    # dashboard is still fully wired -- it just lives at an explicit URL now,
-    # because it carries things the constellation does not (revenue chart,
-    # cash position, dues, licences, quick actions).
-    #
-    # Non-owner accounts cannot open the constellation, so PULSE bounces them
-    # to the legacy dashboard rather than to '/', which would loop.
-    path('', pulse_views.GraphDashboardView.as_view(), name='dashboard'),
+    # '/' is the light dashboard. The PULSE constellation lives at /portfolio/
+    # and the original widget dashboard at /dashboard/legacy/. Accounts that
+    # cannot see business figures are sent to the legacy dashboard, never to
+    # '/', which would loop.
+    path('', views.home_dashboard, name='dashboard'),
+    path('portfolio/', pulse_views.GraphDashboardView.as_view(), name='portfolio'),
     path('dashboard/legacy/', views.dashboard, name='dashboard-legacy'),
 
     # Clients

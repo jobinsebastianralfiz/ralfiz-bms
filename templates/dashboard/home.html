@@ -1,0 +1,152 @@
+{% extends 'base.html' %}
+{% load static money %}
+
+{% block title %}Dashboard - Ralfiz BMS{% endblock %}
+
+{% block breadcrumb %}
+<span class="breadcrumb-item active">Dashboard</span>
+{% endblock %}
+
+{% block content %}
+<div class="inv-page">
+<div class="inv-main">
+
+<div class="page-header">
+  <div class="page-header__lead">
+    <span class="page-header__icon"><i class="fas fa-house"></i></span>
+    <div>
+      <h1 class="page-title">{% now "H" as hour %}{% if hour|add:"0" < 12 %}Good morning{% elif hour|add:"0" < 17 %}Good afternoon{% else %}Good evening{% endif %}, {{ request.user.first_name|default:request.user.username }}</h1>
+      <p class="page-subtitle mb-0">Here is how the business stands today</p>
+    </div>
+  </div>
+  <div class="page-actions">
+    <a href="{% url 'portfolio' %}" class="btn btn-outline-secondary">
+      <i class="fas fa-circle-nodes"></i>
+      Portfolio
+    </a>
+    <a href="{% url 'invoice_create' %}" class="btn btn-primary">
+      <i class="fas fa-plus"></i>
+      Create Invoice
+    </a>
+  </div>
+</div>
+
+<div class="inv-stats">
+  {% for m in metrics %}
+  <a class="inv-stat home-stat" href="{{ m.href|default:'#' }}">
+    <span class="inv-stat__icon {{ m.tone }}"><i class="fas {{ m.icon }}"></i></span>
+    <div>
+      <div class="inv-stat__label">{{ m.label }}</div>
+      <div class="inv-stat__value">{{ m.display }}</div>
+      <div class="inv-stat__note{% if m.alert %} is-alert{% endif %}">{{ m.note }}</div>
+    </div>
+  </a>
+  {% endfor %}
+</div>
+
+<div class="card mb-4">
+  <div class="card-header inv-list-head">
+    <div>
+      <h2 class="card-title mb-0">Recent Invoices</h2>
+      <p class="inv-list-head__sub">Latest numbers first</p>
+    </div>
+    <a href="{% url 'invoice_list' %}" class="btn btn-sm btn-outline-secondary">View all</a>
+  </div>
+  <div class="table-wrapper">
+    <table class="table inv-table">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Issue Date</th>
+          <th>Client</th>
+          <th>Title</th>
+          <th>Total</th>
+          <th>Paid</th>
+          <th>Status</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for invoice in recent_invoices %}
+        <tr>
+          <td><a href="{% url 'invoice_detail' invoice.pk %}" class="fw-semibold">{{ invoice.invoice_number }}</a></td>
+          <td class="inv-date">{{ invoice.issue_date|date:"d M"|default:"-" }}<span>{{ invoice.issue_date|date:"Y" }}</span></td>
+          <td><a href="{% url 'client_detail' invoice.client.pk %}">{{ invoice.client.name }}</a></td>
+          <td class="inv-title">{{ invoice.title }}</td>
+          <td class="inv-num fw-semibold">&#8377;{{ invoice.total_amount|inr }}</td>
+          <td class="inv-num">&#8377;{{ invoice.amount_paid|inr }}</td>
+          <td><span class="status-badge {{ invoice.status }}">{{ invoice.get_status_display }}</span></td>
+          <td>
+            <div class="table-actions">
+              <a href="{% url 'invoice_detail' invoice.pk %}" class="btn btn-icon" title="View"><i class="fas fa-eye"></i></a>
+              <a href="{% url 'invoice_update' invoice.pk %}" class="btn btn-icon" title="Edit"><i class="fas fa-pen"></i></a>
+            </div>
+          </td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="8" class="text-center py-4 text-muted">No invoices yet.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<div class="home-split">
+  <div class="card">
+    <div class="card-header inv-list-head">
+      <div>
+        <h2 class="card-title mb-0">Active Projects</h2>
+        <p class="inv-list-head__sub">Confirmed, in progress or in review</p>
+      </div>
+      <a href="{% url 'project_list' %}" class="btn btn-sm btn-outline-secondary">All projects</a>
+    </div>
+    <ul class="home-list">
+      {% for p in active_projects %}
+      <li>
+        <a href="{% url 'project_detail' p.pk %}" class="home-list__main">
+          <span class="home-list__title">{{ p.name }}</span>
+          <span class="home-list__sub">{{ p.client.name }}</span>
+        </a>
+        <div class="home-list__side">
+          <span class="status-badge {{ p.status|cut:'_' }} {{ p.status }}">{{ p.get_status_display }}</span>
+          {% if p.deadline %}<span class="home-list__when{% if p.deadline < today %} is-late{% endif %}">{% if p.deadline < today %}{{ p.deadline|timesince:today }} late{% else %}due {{ p.deadline|date:"d M" }}{% endif %}</span>{% endif %}
+        </div>
+      </li>
+      {% empty %}
+      <li class="home-list__empty">No active projects.</li>
+      {% endfor %}
+    </ul>
+  </div>
+
+  <div class="card">
+    <div class="card-header inv-list-head">
+      <div>
+        <h2 class="card-title mb-0">Dues &amp; Renewals</h2>
+        <p class="inv-list-head__sub">Next {{ dues.horizon_days }} days{% if dues.overdue_count %} · <span class="text-danger">{{ dues.overdue_count }} overdue</span>{% endif %}</p>
+      </div>
+      <a href="{% url 'credential_list' %}" class="btn btn-sm btn-outline-secondary">Credentials</a>
+    </div>
+    <ul class="home-list">
+      {% for d in dues.items %}
+      <li>
+        <div class="home-list__main">
+          <span class="home-list__title">{{ d.label }}</span>
+          <span class="home-list__sub">{{ d.kind_label }}{% if d.client %} · {{ d.client }}{% endif %}</span>
+        </div>
+        <div class="home-list__side">
+          <span class="home-list__when{% if d.overdue %} is-late{% endif %}">{% if d.overdue %}{{ d.days_abs }}d overdue{% elif d.days == 0 %}due today{% else %}in {{ d.days_abs }}d{% endif %}</span>
+          {% if d.auto_renew %}<span class="badge badge-secondary">auto</span>{% endif %}
+        </div>
+      </li>
+      {% empty %}
+      <li class="home-list__empty">Nothing expiring in the next {{ dues.horizon_days }} days.</li>
+      {% endfor %}
+    </ul>
+  </div>
+</div>
+
+</div>{# /inv-main #}
+
+{% include 'components/business_rail.html' %}
+</div>{# /inv-page #}
+{% endblock %}

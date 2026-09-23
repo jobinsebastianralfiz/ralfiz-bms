@@ -1,5 +1,5 @@
 {% extends 'base.html' %}
-{% load static %}
+{% load static money %}
 
 {% block title %}Dashboard - Ralfiz BMS{% endblock %}
 
@@ -8,108 +8,65 @@
   /* ── Foundation ── */
   .db { max-width: 1400px; }
 
-  /* ── Hero Strip ── */
-  .hero {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 1.75rem 2rem;
-    border-radius: 20px;
-    margin-bottom: 1.75rem;
-    background: linear-gradient(135deg, #0284c7 0%, #0ea5e9 55%, #38bdf8 100%);
-    color: #fff;
-    position: relative;
-    overflow: hidden;
-  }
-  .hero::before {
-    content: '';
-    position: absolute;
-    width: 350px; height: 350px;
-    background: rgba(255,255,255,0.07);
-    border-radius: 50%;
-    top: -60%; right: -5%;
-  }
-  .hero::after {
-    content: '';
-    position: absolute;
-    width: 180px; height: 180px;
-    background: rgba(255,255,255,0.05);
-    border-radius: 50%;
-    bottom: -40%; left: 15%;
-  }
-  .hero-left h1 { font-size: 1.5rem; font-weight: 800; margin: 0 0 4px; color: #fff; }
-  .hero-left p { margin: 0; opacity: 0.85; font-size: 0.9rem; color: #fff; }
-  .hero-right { position: relative; z-index: 1; display: flex; gap: 10px; }
-  .hero-btn {
-    padding: 0.6rem 1.25rem;
-    border-radius: 12px;
-    font-weight: 600;
-    font-size: 0.85rem;
-    text-decoration: none;
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    transition: transform 0.15s;
-  }
-  .hero-btn:hover { transform: translateY(-1px); }
-  .hero-btn-white { background: #fff; color: #0284c7; }
-  .hero-btn-glass { background: rgba(255,255,255,0.18); color: #fff; border: 1px solid rgba(255,255,255,0.25); backdrop-filter: blur(6px); }
-
-  /* ── Metric Row ── */
-  .metrics { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin-bottom: 1.75rem; }
+  /* ── Metric Row: same card as the stat row in the reference design ── */
+  .metrics { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; margin-bottom: 1.75rem; }
   .metric {
-    background: var(--bg-card);
+    background: #fff;
     border: 1px solid var(--border-color);
-    border-radius: 16px;
-    padding: 1.35rem 1.5rem;
+    border-radius: 14px;
+    box-shadow: var(--shadow);
+    padding: 18px 20px;
     display: flex;
     align-items: center;
-    gap: 1rem;
-    transition: box-shadow 0.2s;
+    gap: 14px;
+    transition: box-shadow 0.2s, border-color 0.2s;
   }
-  .metric:hover { box-shadow: 0 4px 20px rgba(0,0,0,0.05); }
+  .metric:hover { box-shadow: var(--shadow-md); border-color: #bae6fd; }
   .metric-icon {
-    width: 50px; height: 50px;
-    border-radius: 14px;
+    width: 48px; height: 48px;
+    border-radius: 50%;
     display: grid;
     place-items: center;
-    font-size: 1.2rem;
+    font-size: 1.1rem;
     flex-shrink: 0;
   }
-  .metric-num { font-size: 1.6rem; font-weight: 800; color: var(--text-primary); line-height: 1.1; letter-spacing: -0.5px; }
-  .metric-label { font-size: 0.78rem; color: var(--text-muted); font-weight: 500; margin-top: 2px; }
+  /* Label above the figure, as in the reference. */
+  .metric > div:last-child { display: flex; flex-direction: column-reverse; }
+  .metric-num { font-size: 1.3rem; font-weight: 700; color: var(--text-primary); line-height: 1.2; letter-spacing: -0.01em; margin-top: 4px; font-variant-numeric: tabular-nums; }
+  .metric-label { font-size: 0.8125rem; color: var(--text-secondary); font-weight: 400; margin-top: 0; }
   .metric-badge {
     font-size: 0.65rem;
     font-weight: 700;
     padding: 2px 7px;
-    border-radius: 6px;
+    border-radius: 999px;
     margin-left: 6px;
     vertical-align: middle;
   }
 
   /* ── Shortcuts ── */
-  .shortcuts { display: grid; grid-template-columns: repeat(6, 1fr); gap: 0.75rem; margin-bottom: 1.75rem; }
+  .shortcuts { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 0.75rem; margin-bottom: 1.75rem; }
   .sc {
     display: flex;
     flex-direction: column;
     align-items: center;
     gap: 8px;
     padding: 1rem 0.5rem;
-    border-radius: 14px;
-    background: var(--bg-card);
-    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    background: #f5faff;
+    border: 1px solid #e0effb;
     text-decoration: none;
     transition: all 0.15s;
   }
-  .sc:hover { border-color: #8b5cf6; background: #f5f3ff; transform: translateY(-2px); }
+  .sc:hover { border-color: #bae6fd; background: var(--primary-bg); transform: translateY(-2px); }
   .sc-icon { width: 38px; height: 38px; border-radius: 10px; display: grid; place-items: center; font-size: 0.95rem; }
   .sc-text { font-size: 0.72rem; font-weight: 600; color: var(--text-primary); text-align: center; }
 
   /* ── Card ── */
   .card-db {
-    background: var(--bg-card);
+    background: #fff;
     border: 1px solid var(--border-color);
-    border-radius: 16px;
+    border-radius: 14px;
+    box-shadow: var(--shadow);
     overflow: hidden;
   }
   .card-db-head {
@@ -242,15 +199,18 @@
 {% block content %}
 <div class="db">
 
-<!-- Hero -->
-<div class="hero">
-  <div class="hero-left">
-    <h1>{% now "H" as hour %}{% if hour|add:"0" < 12 %}Good morning{% elif hour|add:"0" < 17 %}Good afternoon{% else %}Good evening{% endif %}, {{ request.user.first_name|default:"Admin" }}</h1>
-    <p>{% now "l, d F Y" %}</p>
+<!-- Header -->
+<div class="page-header mb-4">
+  <div class="page-header__lead">
+    <span class="page-header__icon"><i class="fas fa-table-cells-large"></i></span>
+    <div>
+      <h1 class="page-title">{% now "H" as hour %}{% if hour|add:"0" < 12 %}Good morning{% elif hour|add:"0" < 17 %}Good afternoon{% else %}Good evening{% endif %}, {{ request.user.first_name|default:"Admin" }}</h1>
+      <p class="page-subtitle mb-0">Classic dashboard · {% now "l, d F Y" %}</p>
+    </div>
   </div>
-  <div class="hero-right">
-    <a href="{% url 'invoice_create' %}" class="hero-btn hero-btn-glass"><i class="fas fa-plus"></i> Invoice</a>
-    <a href="{% url 'project_create' %}" class="hero-btn hero-btn-white"><i class="fas fa-folder-plus"></i> Project</a>
+  <div class="page-actions">
+    <a href="{% url 'invoice_create' %}" class="btn btn-outline-secondary"><i class="fas fa-plus"></i> Invoice</a>
+    <a href="{% url 'project_create' %}" class="btn btn-primary"><i class="fas fa-folder-plus"></i> Project</a>
   </div>
 </div>
 
@@ -273,28 +233,28 @@
   <div class="metric">
     <div class="metric-icon" style="background: #fff7ed; color: #f97316;"><i class="fas fa-hourglass-half"></i></div>
     <div>
-      <div class="metric-num">&#8377;{{ pending_amount|floatformat:2|default:"0" }}<span class="metric-badge" style="background: #fff7ed; color: #ea580c;">{{ pending_count }}</span></div>
+      <div class="metric-num">&#8377;{{ pending_amount|inr }}<span class="metric-badge" style="background: #fff7ed; color: #ea580c;">{{ pending_count }}</span></div>
       <div class="metric-label">Pending</div>
     </div>
   </div>
   <div class="metric">
     <div class="metric-icon" style="background: #f0fdf4; color: #16a34a;"><i class="fas fa-arrow-trend-up"></i></div>
     <div>
-      <div class="metric-num">&#8377;{{ revenue_this_month|floatformat:2|default:"0" }}</div>
+      <div class="metric-num">&#8377;{{ revenue_this_month|inr }}</div>
       <div class="metric-label">Income this month</div>
     </div>
   </div>
   <div class="metric">
     <div class="metric-icon" style="background: #fef2f2; color: #ef4444;"><i class="fas fa-receipt"></i></div>
     <div>
-      <div class="metric-num">&#8377;{{ expenses_this_month|floatformat:2|default:"0" }}</div>
+      <div class="metric-num">&#8377;{{ expenses_this_month|inr }}</div>
       <div class="metric-label">Expenses this month</div>
     </div>
   </div>
   <div class="metric">
     <div class="metric-icon" style="background: {% if net_profit_this_month >= 0 %}#ecfdf5; color: #10b981{% else %}#fef2f2; color: #ef4444{% endif %};"><i class="fas fa-chart-line"></i></div>
     <div>
-      <div class="metric-num" style="color: {% if net_profit_this_month >= 0 %}#10b981{% else %}#ef4444{% endif %};">&#8377;{{ net_profit_this_month|floatformat:2|default:"0" }}</div>
+      <div class="metric-num" style="color: {% if net_profit_this_month >= 0 %}#10b981{% else %}#ef4444{% endif %};">&#8377;{{ net_profit_this_month|inr }}</div>
       <div class="metric-label">Net profit this month</div>
     </div>
   </div>
@@ -320,7 +280,7 @@
       <i class="fas {% if row.account.is_cash %}fa-money-bill-wave{% else %}fa-university{% endif %}"></i>
     </div>
     <div>
-      <div class="metric-num">&#8377;{{ row.balance|floatformat:2 }}</div>
+      <div class="metric-num">&#8377;{{ row.balance|inr }}</div>
       <div class="metric-label">
         <a href="{% url 'bank_account_detail' row.account.pk %}" style="color: inherit;">{{ row.account.name }}</a>
       </div>
@@ -331,7 +291,7 @@
   <div class="metric" style="background: #fef9c3;">
     <div class="metric-icon" style="background: #fef3c7; color: #b45309;"><i class="fas fa-piggy-bank"></i></div>
     <div>
-      <div class="metric-num">&#8377;{{ total_other_assets|floatformat:2 }}</div>
+      <div class="metric-num">&#8377;{{ total_other_assets|inr }}</div>
       <div class="metric-label">
         <a href="{% url 'asset_list' %}" style="color: inherit;">Deposits &amp; Advances</a>
       </div>
@@ -341,10 +301,10 @@
   <div class="metric" style="background: #f8fafc;">
     <div class="metric-icon" style="background: #f1f5f9; color: #64748b;"><i class="fas fa-coins"></i></div>
     <div>
-      <div class="metric-num">&#8377;{{ total_assets_combined|floatformat:2 }}</div>
+      <div class="metric-num">&#8377;{{ total_assets_combined|inr }}</div>
       <div class="metric-label">
         Total Assets
-        {% if total_other_assets %}<small class="text-muted">(cash &#8377;{{ total_assets|floatformat:2 }} + deposits)</small>{% endif %}
+        {% if total_other_assets %}<small class="text-muted">(cash &#8377;{{ total_assets|inr }} + deposits)</small>{% endif %}
         {% if pending_transfer_count %} &middot; <a href="{% url 'transfer_list' %}" class="text-warning">{{ pending_transfer_count }} pending</a>{% endif %}
       </div>
     </div>
@@ -402,7 +362,7 @@
   <div class="card-db">
     <div class="card-db-head">
       <h3 class="card-db-title"><i class="fas fa-chart-area me-2" style="color: #8b5cf6;"></i>Revenue</h3>
-      <span style="font-size: 0.75rem; color: var(--text-muted);">Last 6 months &bull; Total: &#8377;{{ total_revenue|floatformat:2|default:"0" }}</span>
+      <span style="font-size: 0.75rem; color: var(--text-muted);">Last 6 months &bull; Total: &#8377;{{ total_revenue|inr }}</span>
     </div>
     <div class="card-db-body">
       <canvas id="revenueChart" height="85"></canvas>
@@ -487,7 +447,7 @@
               <div class="inv-date">{{ invoice.due_date|date:"d M Y"|default:"—" }}</div>
             </td>
             <td>{{ invoice.client.name }}</td>
-            <td class="inv-amt">&#8377;{{ invoice.total_amount|floatformat:2 }}</td>
+            <td class="inv-amt">&#8377;{{ invoice.total_amount|inr }}</td>
             <td><span class="status-badge {{ invoice.status }}">{{ invoice.get_status_display }}</span></td>
             <td><a href="{% url 'invoice_detail' invoice.pk %}" class="btn btn-sm btn-ghost btn-icon"><i class="fas fa-arrow-right"></i></a></td>
           </tr>
@@ -524,7 +484,7 @@
           <div class="pay-name">{{ payment.invoice.client.name }}</div>
           <div class="pay-sub">{{ payment.payment_date|date:"d M Y" }}</div>
         </div>
-        <div class="pay-amt">+&#8377;{{ payment.amount|floatformat:2 }}</div>
+        <div class="pay-amt">+&#8377;{{ payment.amount|inr }}</div>
       </div>
       {% empty %}
       <div class="empty-state"><i class="fas fa-wallet d-block"></i><p>No payments yet</p></div>
@@ -536,7 +496,7 @@
   <div class="card-db">
     <div class="card-db-head" style="background: linear-gradient(135deg, #fefce8, #fef9c3);">
       <h3 class="card-db-title" style="color: #a16207;"><i class="fas fa-file-invoice-dollar me-2"></i>Dues & Renewals</h3>
-      <span style="background: #fef3c7; color: #92400e; font-size: 0.65rem; font-weight: 700; padding: 2px 8px; border-radius: 6px;">&#8377;{{ total_dues|floatformat:2 }}</span>
+      <span style="background: #fef3c7; color: #92400e; font-size: 0.65rem; font-weight: 700; padding: 2px 8px; border-radius: 6px;">&#8377;{{ total_dues|inr }}</span>
     </div>
     <div class="card-db-body np">
       {% for due in upcoming_dues %}
@@ -552,7 +512,7 @@
           <div class="alert-sub">
             {% if due.overdue %}<span style="color: #dc2626; font-weight: 600;">Overdue</span> &bull; {% endif %}
             {{ due.date|date:"d M Y" }} &bull; {{ due.client }}
-            {% if due.amount %} &bull; &#8377;{{ due.amount|floatformat:2 }}{% endif %}
+            {% if due.amount %} &bull; &#8377;{{ due.amount|inr }}{% endif %}
           </div>
         </div>
         <a href="{{ due.url }}" style="color: var(--text-muted);"><i class="fas fa-chevron-right"></i></a>
@@ -588,7 +548,7 @@
         <div class="alert-icon" style="background: #fee2e2; color: #dc2626;"><i class="fas fa-exclamation"></i></div>
         <div class="alert-text">
           <div class="alert-name">{{ invoice.invoice_number }}</div>
-          <div class="alert-sub" style="color: #dc2626;">Overdue &bull; &#8377;{{ invoice.balance_due|floatformat:2 }}</div>
+          <div class="alert-sub" style="color: #dc2626;">Overdue &bull; &#8377;{{ invoice.balance_due|inr }}</div>
         </div>
         <a href="{% url 'invoice_detail' invoice.pk %}" style="color: var(--text-muted);"><i class="fas fa-chevron-right"></i></a>
       </div>

@@ -1,0 +1,57 @@
+{# Side panels shared by the dashboard and the invoice list. Needs the context from core.views._invoice_page_panels. #}
+<aside class="inv-rail">
+  <div class="card inv-panel">
+    <h2 class="inv-panel__title">Quick Actions</h2>
+    <div class="inv-actions">
+      <a href="{% url 'invoice_create' %}" class="inv-action"><i class="far fa-file-lines"></i>Create Invoice</a>
+      <a href="{% url 'client_create' %}" class="inv-action"><i class="fas fa-user-plus"></i>Add Client</a>
+      <a href="{% url 'project_create' %}" class="inv-action"><i class="far fa-folder-open"></i>New Project</a>
+      <a href="{% url 'reports' %}" class="inv-action"><i class="fas fa-chart-column"></i>View Reports</a>
+      <a href="{% url 'gst_summary_report' %}" class="inv-action"><i class="fas fa-receipt"></i>GST Summary</a>
+      <a href="{% url 'settings' %}" class="inv-action"><i class="fas fa-gear"></i>Settings</a>
+    </div>
+  </div>
+
+  <div class="card inv-panel">
+    <h2 class="inv-panel__title">Invoice Status</h2>
+    <div class="inv-donut-row">
+      <div class="inv-donut" style="background: {{ status_donut }};">
+        <div class="inv-donut__hole"><strong>{{ status_total }}</strong><span>Total</span></div>
+      </div>
+      <ul class="inv-legend">
+        {% for s in status_mix %}
+        <li><span class="inv-legend__dot" style="background: {{ s.colour }}"></span>{{ s.label }}<span class="inv-legend__n">{{ s.count }} ({{ s.pct }}%)</span></li>
+        {% endfor %}
+      </ul>
+    </div>
+  </div>
+
+  <div class="card inv-panel">
+    <h2 class="inv-panel__title">Money Received <span class="inv-panel__meta">{{ revenue_year }}</span></h2>
+    <div class="inv-bars">
+      {% for m in revenue %}
+      <div class="inv-bars__col" title="{{ m.label }}: &#8377;{{ m.amount|floatformat:0 }}">
+        <div class="inv-bars__bar" style="height: {{ m.height }}%"></div>
+        <span class="inv-bars__label">{{ m.label }}</span>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+
+  <div class="card inv-panel">
+    <h2 class="inv-panel__title">Recent Activity</h2>
+    <ul class="inv-activity">
+      {% for a in recent_activity %}
+      <li>
+        <span class="inv-activity__icon is-{{ a.action }}"><i class="fas {% if a.action == 'created' %}fa-plus{% elif a.action == 'deleted' %}fa-trash{% elif a.action == 'sent' %}fa-paper-plane{% else %}fa-pen{% endif %}"></i></span>
+        <div>
+          <div class="inv-activity__text">{{ a.model_name }} {{ a.object_repr }} {{ a.get_action_display|lower }}</div>
+          <div class="inv-activity__when">{{ a.timestamp|timesince }} ago</div>
+        </div>
+      </li>
+      {% empty %}
+      <li class="inv-activity__empty">Nothing yet.</li>
+      {% endfor %}
+    </ul>
+  </div>
+</aside>

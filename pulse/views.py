@@ -272,7 +272,7 @@ class CommandCenterView(View):
 class GraphDashboardView(View):
     """The portfolio constellation: the whole business as one graph."""
 
-    template_name = 'pulse/graph_dashboard.html'
+    template_name = 'pulse/portfolio.html'
 
     def get(self, request):
         scope = resolve_scope(request.user)

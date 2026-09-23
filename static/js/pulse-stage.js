@@ -62,13 +62,13 @@
   /* Mirrors STATUS_HUE in pulse/tools.py -- one meaning system. Client
      pages pass a priority instead; those map onto the same jewels. */
   var HUES = {
-    lead: '#7cc4e8', proposal: '#7cc4e8',
-    negotiation: '#a78bd6', confirmed: '#a78bd6',
-    in_progress: '#2fd4d4', review: '#2fd4d4',
-    completed: '#4edea3', on_hold: '#e08aa0', cancelled: '#6b7d86',
-    high: '#e08aa0', medium: '#e8c07a', low: '#4edea3'
+    lead: '#06b6d4', proposal: '#06b6d4',
+    negotiation: '#6366f1', confirmed: '#6366f1',
+    in_progress: '#0ea5e9', review: '#0ea5e9',
+    completed: '#10b981', on_hold: '#ef4444', cancelled: '#94a3b8',
+    high: '#ef4444', medium: '#f59e0b', low: '#10b981'
   };
-  var hue = HUES[stage.dataset.status] || '#2fd4d4';
+  var hue = HUES[stage.dataset.status] || '#0ea5e9';
 
   function rgb(hex) {
     var h = hex.replace('#', '');
@@ -95,33 +95,42 @@
     var cx = SIZE / 2, cy = SIZE / 2;
     orbCtx.clearRect(0, 0, SIZE, SIZE);
 
-    var bloom = orbCtx.createRadialGradient(cx, cy, R * 0.75, cx, cy, R * 2.1);
-    bloom.addColorStop(0, rgba(hue, .3));
-    bloom.addColorStop(0.45, rgba(hue, .1));
+    // Light page: a faint tint halo and a soft floor shadow instead of a glow.
+    var bloom = orbCtx.createRadialGradient(cx, cy, R * 0.8, cx, cy, R * 1.9);
+    bloom.addColorStop(0, rgba(hue, .14));
+    bloom.addColorStop(0.5, rgba(hue, .05));
     bloom.addColorStop(1, rgba(hue, 0));
     orbCtx.fillStyle = bloom;
     orbCtx.fillRect(0, 0, SIZE, SIZE);
 
-    drawRing(cx, cy, R * 1.24, t, 0.0, rgba(hue, .5), 1.4, 15);
-    drawRing(cx, cy, R * 1.40, t, 2.1, rgba('#e8c07a', .22), 1.1, 11);
+    var shadow = orbCtx.createRadialGradient(cx, cy + R * 1.02, 0, cx, cy + R * 1.02, R * 0.9);
+    shadow.addColorStop(0, 'rgba(15, 23, 42, .16)');
+    shadow.addColorStop(1, 'rgba(15, 23, 42, 0)');
+    orbCtx.fillStyle = shadow;
+    orbCtx.beginPath();
+    orbCtx.ellipse(cx, cy + R * 1.02, R * 0.9, R * 0.22, 0, 0, Math.PI * 2);
+    orbCtx.fill();
+
+    drawRing(cx, cy, R * 1.24, t, 0.0, rgba(hue, .45), 1.3, 15);
+    drawRing(cx, cy, R * 1.40, t, 2.1, 'rgba(148, 163, 184, .35)', 1, 11);
 
     var body = orbCtx.createRadialGradient(
       cx - R * 0.36, cy - R * 0.40, R * 0.06, cx, cy, R * 1.05
     );
-    body.addColorStop(0.00, mix(hue, '#ffffff', .72));
-    body.addColorStop(0.28, mix(hue, '#ffffff', .3));
-    body.addColorStop(0.62, hue);
-    body.addColorStop(1.00, mix(hue, '#000000', .58));
+    body.addColorStop(0.00, mix(hue, '#ffffff', .8));
+    body.addColorStop(0.30, mix(hue, '#ffffff', .35));
+    body.addColorStop(0.65, hue);
+    body.addColorStop(1.00, mix(hue, '#0f172a', .3));
     orbCtx.beginPath();
     orbCtx.arc(cx, cy, R, 0, Math.PI * 2);
     orbCtx.fillStyle = body;
     orbCtx.fill();
 
     var rim = orbCtx.createRadialGradient(
-      cx + R * 0.22, cy + R * 0.30, R * 0.42, cx, cy, R
+      cx + R * 0.22, cy + R * 0.30, R * 0.5, cx, cy, R
     );
-    rim.addColorStop(0, 'rgba(5, 10, 14, 0)');
-    rim.addColorStop(1, 'rgba(5, 10, 14, .55)');
+    rim.addColorStop(0, 'rgba(15, 23, 42, 0)');
+    rim.addColorStop(1, 'rgba(15, 23, 42, .18)');
     orbCtx.beginPath();
     orbCtx.arc(cx, cy, R, 0, Math.PI * 2);
     orbCtx.fillStyle = rim;
@@ -192,6 +201,9 @@
     var orb = orbAnchor();
 
     panels.forEach(function (panel, i) {
+      // Full-width panels sit under the identity block; a tether to them
+      // would run straight through the name, actions and ledger.
+      if (panel.classList.contains('sp-wide')) return;
       var c = panel.getBoundingClientRect();
       var px = c.left - s.left, py = c.top - s.top;
       // Arrive at the panel edge nearest the orb.
@@ -220,8 +232,8 @@
     fieldCtx.beginPath();
     fieldCtx.moveTo(a.x, a.y);
     fieldCtx.bezierCurveTo(c1.x, c1.y, c2.x, c2.y, b.x, b.y);
-    fieldCtx.strokeStyle = rgba(hue, .26);
-    fieldCtx.lineWidth = 1;
+    fieldCtx.strokeStyle = 'rgba(148, 163, 184, .55)';   // slate on white
+    fieldCtx.lineWidth = 1.2;
     fieldCtx.stroke();
 
     var p = ((t * 0.075) + seed * 0.19) % 1;
@@ -231,7 +243,7 @@
       y: u*u*u*a.y + 3*u*u*p*c1.y + 3*u*p*p*c2.y + p*p*p*b.y
     };
     var g = fieldCtx.createRadialGradient(pt.x, pt.y, 0, pt.x, pt.y, 5);
-    g.addColorStop(0, rgba(hue, .9));
+    g.addColorStop(0, rgba(hue, 1));
     g.addColorStop(1, rgba(hue, 0));
     fieldCtx.beginPath();
     fieldCtx.arc(pt.x, pt.y, 5, 0, Math.PI * 2);

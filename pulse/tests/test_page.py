@@ -105,7 +105,7 @@ class CommandCenterPageTests(TestCase):
 
 
 class DashboardRoutingTests(TestCase):
-    """The constellation is mounted at '/'; the classic dashboard moved.
+    """'/' is the dashboard, /portfolio/ the constellation, the classic dashboard moved.
 
     The loop risk is specific: GraphDashboardView refuses non-owners, and if
     it refused them *to '/'* that would be an infinite redirect now that '/'
@@ -125,11 +125,25 @@ class DashboardRoutingTests(TestCase):
             status='active', joining_date=today,
         )
 
-    def test_root_is_the_constellation_for_owners(self):
+    def test_root_is_the_dashboard_for_owners(self):
         self.client.force_login(self.owner)
         response = self.client.get('/')
         self.assertEqual(response.status_code, 200)
-        self.assertTemplateUsed(response, 'pulse/graph_dashboard.html')
+        self.assertTemplateUsed(response, 'dashboard/home.html')
+
+    def test_portfolio_is_the_constellation_inside_the_app_layout(self):
+        self.client.force_login(self.owner)
+        response = self.client.get(reverse('portfolio'))
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, 'pulse/portfolio.html')
+        self.assertTemplateUsed(response, 'base.html')
+        self.assertContains(response, 'id="graph-canvas"')
+
+    def test_non_owner_at_portfolio_does_not_loop(self):
+        self.client.force_login(self.worker)
+        response = self.client.get(reverse('portfolio'), follow=True)
+        self.assertEqual(len(response.redirect_chain), 1)
+        self.assertEqual(response.redirect_chain[0][0], '/dashboard/legacy/')
 
     def test_non_owner_at_root_does_not_loop(self):
         self.client.force_login(self.worker)
