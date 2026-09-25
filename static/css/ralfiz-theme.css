@@ -432,10 +432,10 @@ textarea.form-control { min-height: 88px; }
 .status-badge.paid::before, .status-badge.completed::before, .status-badge.accepted::before, .status-badge.confirmed::before {
   background: var(--success);
 }
-.status-badge.partial, .status-badge.on-hold, .status-badge.review, .status-badge.pending {
+.status-badge.partial, .status-badge.on-hold, .status-badge.on_hold, .status-badge.review, .status-badge.pending {
   background: var(--warning-bg); color: var(--warning-strong);
 }
-.status-badge.partial::before, .status-badge.on-hold::before, .status-badge.review::before, .status-badge.pending::before {
+.status-badge.partial::before, .status-badge.on-hold::before, .status-badge.on_hold::before, .status-badge.review::before, .status-badge.pending::before {
   background: var(--warning);
 }
 .status-badge.draft, .status-badge.todo {
@@ -452,8 +452,8 @@ textarea.form-control { min-height: 88px; }
 }
 .status-badge.cancelled::before, .status-badge.overdue::before, .status-badge.rejected::before,
 .status-badge.expired::before { background: var(--danger); }
-.status-badge.lead { background: var(--indigo-bg); color: var(--indigo); }
-.status-badge.lead::before { background: var(--indigo); }
+.status-badge.lead, .status-badge.negotiation { background: var(--indigo-bg); color: var(--indigo); }
+.status-badge.lead::before, .status-badge.negotiation::before { background: var(--indigo); }
 
 /* ── Alerts, modals, tabs, pagination, toasts ────────────────────────── */
 .alert { border-radius: 12px; border: 1px solid transparent; }
@@ -707,7 +707,7 @@ a.home-list__main:hover .home-list__title { color: var(--primary); }
 /* ── Bootstrap-style helpers many templates already use ─────────────── */
 /* col-md-* / col-lg-* / g-* were never defined, so "row g-3 > col-md-4"
    cards shrank to their text instead of sharing the row. */
-.row > [class*="col-md-"], .row > [class*="col-lg-"], .row > [class*="col-sm-"] { padding: 0 0.75rem; flex: 0 0 100%; max-width: 100%; min-width: 0; }
+.row > :where([class*="col-md-"], [class*="col-lg-"], [class*="col-sm-"]) { padding: 0 0.75rem; flex: 0 0 100%; max-width: 100%; min-width: 0; }
 @media (min-width: 768px) {
   .col-md-1 { flex: 0 0 8.3333%; max-width: 8.3333%; }
   .col-md-2 { flex: 0 0 16.6667%; max-width: 16.6667%; }
@@ -736,13 +736,56 @@ a.home-list__main:hover .home-list__title { color: var(--primary); }
   .col-lg-11 { flex: 0 0 91.6667%; max-width: 91.6667%; }
   .col-lg-12 { flex: 0 0 100.0000%; max-width: 100.0000%; }
 }
+/* ── Projects page (reuses the invoice page layout) ─────────────────── */
+@container (min-width: 860px) {
+  .inv-filters.prj-filters { grid-template-columns: 1.6fr 1fr 1fr auto; }
+}
+.prj-name { min-width: 180px; max-width: 280px; }
+.prj-name span { display: block; color: var(--text-secondary); font-size: 0.75rem; margin-top: 2px; }
+.prj-est { color: var(--text-muted); font-size: 0.6875rem; font-weight: 500; margin-left: 4px; }
+.prj-overdue, .prj-overdue span { color: var(--danger-strong) !important; }
+.prj-team { display: flex; align-items: center; }
+.prj-team__avatar, .prj-team__more {
+  width: 26px; height: 26px; border-radius: 50%; margin-left: -6px;
+  display: grid; place-items: center; font-size: 0.6875rem; font-weight: 600;
+  background: var(--primary-bg); color: var(--primary-hover); border: 2px solid #fff;
+}
+.prj-team__avatar:first-child { margin-left: 0; }
+.prj-team__more { background: #f1f5f9; color: #475569; }
+a.inv-activity__text { display: block; text-decoration: none; }
+a.inv-activity__text:hover { color: var(--primary); }
+a.inv-panel__meta { text-decoration: none; }
+ ────────────────────────────────────────── */
+/* Older pages write "col-4 col-md-12" / "col-6 col-sm-12": the plain col-N is
+   the desktop width and styles.css narrows it on smaller screens. The helpers
+   above read those as mobile-first and put every column at full width. */
+@media (min-width: 768px) {
+  .row > .col-2[class*="col-sm-"]:not([class*="col-md-"]) { flex: 0 0 16.6667%; max-width: 16.6667%; }
+  .row > .col-3[class*="col-sm-"]:not([class*="col-md-"]) { flex: 0 0 25.0000%; max-width: 25.0000%; }
+  .row > .col-4[class*="col-sm-"]:not([class*="col-md-"]) { flex: 0 0 33.3333%; max-width: 33.3333%; }
+  .row > .col-5[class*="col-sm-"]:not([class*="col-md-"]) { flex: 0 0 41.6667%; max-width: 41.6667%; }
+  .row > .col-6[class*="col-sm-"]:not([class*="col-md-"]) { flex: 0 0 50.0000%; max-width: 50.0000%; }
+  .row > .col-8[class*="col-sm-"]:not([class*="col-md-"]) { flex: 0 0 66.6667%; max-width: 66.6667%; }
+  .row > .col-9[class*="col-sm-"]:not([class*="col-md-"]) { flex: 0 0 75.0000%; max-width: 75.0000%; }
+}
+@media (min-width: 1025px) {
+  .row > .col-2[class*="col-md-"]:not(.col-md-1) { flex: 0 0 16.6667%; max-width: 16.6667%; }
+  .row > .col-3[class*="col-md-"]:not(.col-md-1):not(.col-md-2) { flex: 0 0 25.0000%; max-width: 25.0000%; }
+  .row > .col-4[class*="col-md-"]:not(.col-md-1):not(.col-md-2):not(.col-md-3) { flex: 0 0 33.3333%; max-width: 33.3333%; }
+  .row > .col-5[class*="col-md-"]:not(.col-md-1):not(.col-md-2):not(.col-md-3):not(.col-md-4) { flex: 0 0 41.6667%; max-width: 41.6667%; }
+  .row > .col-6[class*="col-md-"]:not(.col-md-1):not(.col-md-2):not(.col-md-3):not(.col-md-4):not(.col-md-5) { flex: 0 0 50.0000%; max-width: 50.0000%; }
+  .row > .col-8[class*="col-md-"]:not(.col-md-1):not(.col-md-2):not(.col-md-3):not(.col-md-4):not(.col-md-5):not(.col-md-6):not(.col-md-7) { flex: 0 0 66.6667%; max-width: 66.6667%; }
+  .row > .col-9[class*="col-md-"]:not(.col-md-1):not(.col-md-2):not(.col-md-3):not(.col-md-4):not(.col-md-5):not(.col-md-6):not(.col-md-7):not(.col-md-8) { flex: 0 0 75.0000%; max-width: 75.0000%; }
+}
 .row.g-2 { margin: -4px; }
 .row.g-2 > * { padding: 4px; }
 .row.g-3 { margin: -7px; }
 .row.g-3 > * { padding: 7px; }
 .row.g-4 { margin: -10px; }
 .row.g-4 > * { padding: 10px; }
-.row > [class*="col"] > .card { height: 100%; }
+/* Only a lone card fills its column; stacked cards stretched to the full
+   column height and overlapped the next one. */
+.row > [class*="col"] > .card:only-child { height: 100%; }
 .fs-3 { font-size: 1.5rem !important; }
 .fs-4 { font-size: 1.25rem !important; }
 .fs-5 { font-size: 1.0625rem !important; }
