@@ -41,7 +41,8 @@
         if (header) header.style.display = 'none';
       }
     }
-    var key = 'pulseStage.' + kicker.textContent.trim();
+    // data-key keeps the saved state when a header shows counts or buttons.
+    var key = 'pulseStage.' + (panel.dataset.key || kicker.textContent.trim());
 
     var chev = document.createElement('span');
     chev.className = 'chev';
@@ -54,7 +55,9 @@
     var collapsed = saved === null ? !(panel === firstLeft || panel.hasAttribute('data-open')) : saved === '1';
     if (collapsed) panel.classList.add('is-collapsed');
 
-    kicker.addEventListener('click', function () {
+    kicker.addEventListener('click', function (e) {
+      // Buttons and links in the header (Edit, Add, View All) act on their own.
+      if (e.target.closest('a, button')) return;
       var now = panel.classList.toggle('is-collapsed');
       try { localStorage.setItem(key, now ? '1' : '0'); } catch (e) {}
     });
@@ -67,7 +70,8 @@
     negotiation: '#6366f1', confirmed: '#6366f1',
     in_progress: '#0ea5e9', review: '#0ea5e9',
     completed: '#10b981', on_hold: '#ef4444', cancelled: '#94a3b8',
-    high: '#ef4444', medium: '#f59e0b', low: '#10b981'
+    high: '#ef4444', medium: '#f59e0b', low: '#10b981',
+    client: '#0ea5e9'
   };
   var hue = HUES[stage.dataset.status] || '#0ea5e9';
 
@@ -218,7 +222,7 @@
       };
       // Project page: every line leaves from the orb's side, so none cuts
       // through the name and actions stacked under it.
-      if (end.y > orb.y + 220 && !stage.classList.contains('pstage--project')) {
+      if (end.y > orb.y + 220 && !stage.classList.contains('pstage--open')) {
         start = { x: orb.x, y: orb.y + orb.radius * 0.92 };
       }
       curve(start, end, t, i);
@@ -229,7 +233,7 @@
     var dx = Math.max(90, Math.abs(b.x - a.x) * 0.55) * (b.x < a.x ? -1 : 1);
     var c1 = { x: a.x + dx, y: a.y };
     var c2 = { x: b.x - dx, y: b.y };
-    if (stage.classList.contains('pstage--project')) {
+    if (stage.classList.contains('pstage--open')) {
       // Run out sideways at orb height, then drop beside the panel, so the
       // line stays clear of the title and cost card under the orb.
       c1 = { x: a.x + (b.x - a.x) * 0.8, y: a.y };

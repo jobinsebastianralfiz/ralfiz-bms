@@ -1,5 +1,5 @@
 {% extends 'base.html' %}
-{% load static %}
+{% load static money %}
 
 {% block title %}{{ client.name }} - Ralfiz BMS{% endblock %}
 
@@ -83,456 +83,241 @@
 {% endblock %}
 
 {% block content %}
+{% with initials=client.name|slice:":2"|upper %}
+<div class="page-header cl-hero">
+  <div class="cl-hero__lead">
+    <span class="cl-hero__avatar">{{ initials }}</span>
+    <div>
+      <div class="d-flex align-items-center gap-3">
+        <h1 class="page-title mb-0">{{ client.name }}</h1>
+        {% if client.is_active %}<span class="badge badge-success">Active</span>{% else %}<span class="badge badge-secondary">Inactive</span>{% endif %}
+      </div>
+      {% if client.company_name %}<div class="cl-hero__company">{{ client.company_name }}</div>{% endif %}
+      <div class="cl-hero__since"><i class="far fa-calendar"></i> Client since {{ client.created_at|date:"M Y" }}</div>
+    </div>
+  </div>
+  <div class="page-actions">
+    <span class="cl-priority is-{{ client.priority }}"><i class="fas fa-star"></i> {{ client.get_priority_display }} Priority</span>
+    <a href="{% url 'client_update' client.pk %}" class="btn btn-primary"><i class="fas fa-edit"></i> Edit</a>
+    <a href="{% url 'project_create' %}?client={{ client.pk }}" class="btn btn-outline-primary"><i class="fas fa-folder-plus"></i> Project</a>
+    <a href="{% url 'quote_create' %}?client={{ client.pk }}" class="btn btn-outline-primary"><i class="fas fa-file-alt"></i> Quote</a>
+    <a href="{% url 'client_relationship_pdf' client.pk %}" target="_blank" class="btn btn-outline-primary"><i class="fas fa-chart-column"></i> Summary</a>
+    <a href="{% url 'client_delete' client.pk %}" class="btn btn-danger"><i class="fas fa-trash-alt"></i> Delete</a>
+  </div>
+</div>
+
 {# PULSE stage: the client at the centre of its own space, facets floating around it. #}
-<div class="pstage" id="pulse-stage" data-status="{{ client.priority }}">
+<div class="pstage pstage--open" id="pulse-stage" data-status="client">
   <canvas id="stage-field" aria-hidden="true"></canvas>
 
   <div class="pstage-col pstage-col--c">
-
   <header class="pstage-center">
-    <canvas id="stage-orb" width="320" height="320" aria-hidden="true"></canvas>
+    <div class="pj-orb">
+      <canvas id="stage-orb" width="320" height="320" aria-hidden="true"></canvas>
+      <span class="pj-orb__icon pj-orb__icon--text" aria-hidden="true">{{ initials }}</span>
+    </div>
     <div class="pstage-id">
       <p class="pulse-kicker mb-0">Client</p>
-      <h1 class="pd-title">{{ client.name }}</h1>
+      <h2 class="pd-title">{{ client.name }}</h2>
+      {% if client.company_name %}<p class="pj-desc mb-1">{{ client.company_name }}</p>{% endif %}
       <div class="pd-chips">
-        <span class="priority-badge {{ client.priority }}">{{ client.get_priority_display }} Priority</span>
-        {% if client.is_active %}
-        <span class="badge badge-success">Active</span>
-        {% else %}
-        <span class="badge badge-secondary">Inactive</span>
-        {% endif %}
+        <span class="cl-priority is-{{ client.priority }}"><i class="fas fa-star"></i> {{ client.get_priority_display }} Priority</span>
+        {% if client.is_active %}<span class="badge badge-success"><i class="fas fa-circle-check"></i> Active</span>{% else %}<span class="badge badge-secondary">Inactive</span>{% endif %}
       </div>
-      <p class="pd-meta">
-        Client since {{ client.created_at|date:"M Y" }}
-        {% if client.address %}
-        <span class="pd-meta__dot">&middot;</span>{{ client.address|truncatewords:5 }}
-        {% endif %}
-      </p>
+      <p class="pd-meta"><i class="far fa-calendar"></i>&nbsp; Client since {{ client.created_at|date:"M Y" }}</p>
 
-    <div class="pd-actions">
-      <a href="{% url 'client_update' client.pk %}" class="btn btn-primary btn-sm">
-        <i class="fas fa-edit"></i> Edit
-      </a>
-      <a href="{% url 'project_create' %}?client={{ client.pk }}" class="btn btn-outline-primary btn-sm">
-        <i class="fas fa-folder-plus"></i> Project
-      </a>
-      <a href="{% url 'quote_create' %}?client={{ client.pk }}" class="btn btn-outline-primary btn-sm">
-        <i class="fas fa-file-alt"></i> Quote
-      </a>
-      <a href="{% url 'client_relationship_pdf' client.pk %}" target="_blank" class="btn btn-outline-primary btn-sm">
-        <i class="fas fa-file-pdf"></i> Summary
-      </a>
-      <a href="{% url 'client_delete' client.pk %}" class="btn btn-danger btn-sm">
-        <i class="fas fa-trash-alt"></i> Delete
-      </a>
-    </div>
+      <div class="pd-actions">
+        <a href="{% url 'client_update' client.pk %}" class="btn btn-primary btn-sm"><i class="fas fa-edit"></i> Edit</a>
+        <a href="{% url 'project_create' %}?client={{ client.pk }}" class="btn btn-outline-primary btn-sm"><i class="fas fa-folder-plus"></i> Project</a>
+        <a href="{% url 'quote_create' %}?client={{ client.pk }}" class="btn btn-outline-primary btn-sm"><i class="fas fa-file-alt"></i> Quote</a>
+        <a href="{% url 'client_relationship_pdf' client.pk %}" target="_blank" class="btn btn-outline-primary btn-sm"><i class="fas fa-chart-column"></i> Summary</a>
+        <a href="{% url 'client_delete' client.pk %}" class="btn btn-danger btn-sm"><i class="fas fa-trash-alt"></i> Delete</a>
+      </div>
 
-    {# Money as one ledger column, not four boxes fighting for width. #}
-    <div class="pd-ledger">
-      <div class="pd-ledger__row">
-        <span class="pd-ledger__label">Projects</span>
-        <span class="pd-ledger__value">{{ projects.count }}</span>
+      <div class="cl-stats">
+        <div class="cl-stat"><span class="cl-stat__icon sp-ico--blue"><i class="fas fa-folder-open"></i></span><div><strong>{{ projects.count }}</strong><span>Total Projects</span></div></div>
+        <div class="cl-stat"><span class="cl-stat__icon sp-ico--green"><i class="fas fa-indian-rupee-sign"></i></span><div><strong>&#8377;{{ total_revenue|inr:0 }}</strong><span>Total Revenue</span></div></div>
+        <div class="cl-stat"><span class="cl-stat__icon sp-ico--amber"><i class="far fa-clock"></i></span><div><strong>&#8377;{{ pending_amount|inr:0 }}</strong><span>Pending Amount</span></div></div>
+        <div class="cl-stat"><span class="cl-stat__icon sp-ico--violet"><i class="fas fa-key"></i></span><div><strong>{{ credentials_count }}</strong><span>Credentials</span></div></div>
       </div>
-      <div class="pd-ledger__row is-good">
-        <span class="pd-ledger__label">Total revenue</span>
-        <span class="pd-ledger__value">&#8377;{{ total_revenue|floatformat:2|default:"0" }}</span>
-      </div>
-      <div class="pd-ledger__row is-warn">
-        <span class="pd-ledger__label">Pending</span>
-        <span class="pd-ledger__value">&#8377;{{ pending_amount|floatformat:2|default:"0" }}</span>
-      </div>
-      <div class="pd-ledger__row">
-        <span class="pd-ledger__label">Credentials</span>
-        <span class="pd-ledger__value">{{ credentials_count|default:"0" }}</span>
-      </div>
-    </div>
     </div>
   </header>
-
   </div>{# /pstage-col--c #}
 
   <div class="pstage-col pstage-col--l">
 
-  <section class="stage-panel sp-col-l">
-    <!-- Contact Information -->
-    <div class="card mb-4">
-      <div class="card-header">
-        <h3 class="card-title">Contact Information</h3>
-      </div>
-      <div class="card-body">
-        {% if client.company_name %}
-        <div class="mb-3">
-          <div class="text-sm text-muted mb-1">Contact Person</div>
-          <div class="fw-medium">{{ client.name }}</div>
-        </div>
-        {% endif %}
-        <div class="mb-3">
-          <div class="text-sm text-muted mb-1">Email</div>
-          <div>
-            <a href="mailto:{{ client.email }}" class="d-flex align-items-center gap-2">
-              <i class="fas fa-envelope"></i>
-              {{ client.email }}
-            </a>
-          </div>
-        </div>
-        {% if client.phone %}
-        <div class="mb-3">
-          <div class="text-sm text-muted mb-1">Phone</div>
-          <div>
-            <a href="tel:{{ client.phone }}" class="d-flex align-items-center gap-2">
-              <i class="fas fa-phone"></i>
-              {{ client.phone }}
-            </a>
-          </div>
-        </div>
-        {% endif %}
-        {% if client.whatsapp %}
-        <div class="mb-3">
-          <div class="text-sm text-muted mb-1">WhatsApp</div>
-          <div>
-            <a href="https://wa.me/{{ client.whatsapp }}" target="_blank" class="d-flex align-items-center gap-2">
-              <i class="fab fa-whatsapp"></i>
-              {{ client.whatsapp }}
-            </a>
-          </div>
-        </div>
-        {% endif %}
-        {% if client.address %}
-        <div>
-          <div class="text-sm text-muted mb-1">Address</div>
-          <div class="text-secondary">
-            <i class="fas fa-map-marker-alt me-2"></i>
-            {{ client.address|linebreaksbr }}
-          </div>
-        </div>
-        {% endif %}
-      </div>
-    </div>
-
-    <!-- Business Information -->
-    <div class="card">
-      <div class="card-header">
-        <h3 class="card-title">Business Information</h3>
-      </div>
-      <div class="card-body">
-        {% if client.company_name %}
-        <div class="mb-3">
-          <div class="text-sm text-muted mb-1">Company Name</div>
-          <div class="fw-medium">{{ client.company_name }}</div>
-        </div>
-        {% endif %}
-        {% if client.gst_number %}
-        <div class="mb-3">
-          <div class="text-sm text-muted mb-1">GST Number</div>
-          <div class="fw-medium">{{ client.gst_number }}</div>
-        </div>
-        {% endif %}
-        {% if client.notes %}
-        <div>
-          <div class="text-sm text-muted mb-1">Notes</div>
-          <div class="text-secondary">
-            {{ client.notes|linebreaks }}
-          </div>
-        </div>
-        {% endif %}
-      </div>
-    </div>
-
+  <section class="stage-panel sp-col-l" data-open data-key="contact">
+    <h2 class="stage-panel__kicker"><span class="sp-ico sp-ico--blue"><i class="fas fa-user"></i></span>Contact Information
+      <a href="{% url 'client_update' client.pk %}" class="sp-kicker-act"><i class="fas fa-pen"></i> Edit</a></h2>
+    <dl class="cl-kv">
+      <div><dt><i class="fas fa-user"></i> Contact Person</dt><dd>{{ client.name }}</dd></div>
+      <div><dt><i class="fas fa-envelope"></i> Email</dt><dd><a href="mailto:{{ client.email }}">{{ client.email }}</a></dd></div>
+      <div><dt><i class="fas fa-phone"></i> Phone</dt><dd>{% if client.phone %}<a href="tel:{{ client.phone }}">{{ client.phone }}</a>{% else %}&ndash;{% endif %}</dd></div>
+      <div><dt><i class="fab fa-whatsapp"></i> WhatsApp</dt><dd>{% if client.whatsapp %}<a href="https://wa.me/{{ client.whatsapp }}" target="_blank" rel="noopener">{{ client.whatsapp }}</a>{% else %}&ndash;{% endif %}</dd></div>
+    </dl>
   </section>
 
-  <section class="stage-panel sp-col-l">
-    <!-- Client Portal Access -->
-    <div class="card mt-4">
-      <div class="card-header">
-        <h3 class="card-title"><i class="fas fa-globe me-2"></i>Client Portal</h3>
-      </div>
-      <div class="card-body">
-        {% if client.user %}
-          <div class="mb-3">
-            <div class="text-sm text-muted mb-1">Portal Status</div>
-            <div>
-              {% if client.user.is_active %}
-                <span class="badge badge-success"><i class="fas fa-check-circle me-1"></i>Active</span>
-              {% else %}
-                <span class="badge badge-secondary"><i class="fas fa-times-circle me-1"></i>Deactivated</span>
-              {% endif %}
-            </div>
-          </div>
-          <div class="mb-3">
-            <div class="text-sm text-muted mb-1">Username</div>
-            <div class="fw-medium">{{ client.user.username }}</div>
-          </div>
-          <div class="mb-3">
-            <div class="text-sm text-muted mb-1">Last Login</div>
-            <div class="text-secondary">{{ client.user.last_login|date:"M d, Y H:i"|default:"Never" }}</div>
-          </div>
-          <div class="d-flex gap-2" style="flex-wrap: wrap;">
-            <form method="post" action="{% url 'client_portal_reset_password' client.pk %}" style="display: inline;">
-              {% csrf_token %}
-              <button type="submit" class="btn btn-sm btn-outline-primary" onclick="return confirm('This will generate a new password. Continue?')">
-                <i class="fas fa-key me-1"></i>Reset Password
-              </button>
-            </form>
-            <form method="post" action="{% url 'client_portal_toggle' client.pk %}" style="display: inline;">
-              {% csrf_token %}
-              <button type="submit" class="btn btn-sm {% if client.user.is_active %}btn-outline-danger{% else %}btn-outline-success{% endif %}">
-                {% if client.user.is_active %}
-                  <i class="fas fa-ban me-1"></i>Deactivate
-                {% else %}
-                  <i class="fas fa-check me-1"></i>Activate
-                {% endif %}
-              </button>
-            </form>
-          </div>
-          <div style="margin-top: 0.75rem;">
-            <a href="/portal/" target="_blank" class="text-sm" style="color: var(--primary);">
-              <i class="fas fa-external-link-alt me-1"></i>Open Client Portal
-            </a>
-          </div>
-        {% else %}
-          <p class="text-secondary text-sm mb-3">No portal account. Create one to give this client access to view projects, invoices, and communicate with your team.</p>
-          <form method="post" action="{% url 'client_portal_create_account' client.pk %}">
-            {% csrf_token %}
-            <div class="mb-3">
-              <label class="form-label text-sm">Username</label>
-              <input type="text" name="username" class="form-control" value="{{ client.email }}" placeholder="Username for client login">
-            </div>
-            <div class="mb-3">
-              <label class="form-label text-sm">Password <span class="text-muted">(leave blank to auto-generate)</span></label>
-              <input type="text" name="password" class="form-control" placeholder="Auto-generated if empty">
-            </div>
-            <button type="submit" class="btn btn-primary btn-sm">
-              <i class="fas fa-user-plus me-1"></i>Create Portal Account
-            </button>
-          </form>
-        {% endif %}
-      </div>
-    </div>
+  <section class="stage-panel sp-col-l" data-open data-key="business">
+    <h2 class="stage-panel__kicker"><span class="sp-ico sp-ico--violet"><i class="fas fa-briefcase"></i></span>Business Information
+      <a href="{% url 'client_update' client.pk %}" class="sp-kicker-act"><i class="fas fa-pen"></i> Edit</a></h2>
+    <dl class="cl-kv">
+      <div><dt><i class="far fa-building"></i> Company Name</dt><dd>{{ client.company_name|default:"–" }}</dd></div>
+      <div><dt><i class="fas fa-location-dot"></i> Address</dt><dd>{{ client.address|default:"–"|linebreaksbr }}</dd></div>
+      <div><dt><i class="fas fa-receipt"></i> GST / Tax ID</dt><dd>{{ client.gst_number|default:"–" }}</dd></div>
+      {% if client.notes %}<div><dt><i class="fas fa-note-sticky"></i> Notes</dt><dd>{{ client.notes|linebreaksbr }}</dd></div>{% endif %}
+    </dl>
   </section>
 
-  <section class="stage-panel sp-col-l">
-    <h2 class="stage-panel__kicker">Licenses</h2>
-      <div class="tab-content" id="licensesTab">
-        <div class="table-wrapper">
-          <table class="table">
-            <thead>
-              <tr>
-                <th>Customer</th>
-                <th>Type</th>
-                <th>Status</th>
-                <th>Valid Until</th>
-                <th>Activations</th>
-                <th></th>
-              </tr>
-            </thead>
-            <tbody>
-              {% for license in licenses %}
-              <tr>
-                <td class="fw-medium">{{ license.customer_name }}</td>
-                <td><span class="badge badge-info">{{ license.get_license_type_display }}</span></td>
-                <td>
-                  {% if license.status == 'active' %}
-                  <span class="status-badge success">Active</span>
-                  {% elif license.status == 'expired' %}
-                  <span class="status-badge danger">Expired</span>
-                  {% else %}
-                  <span class="status-badge warning">{{ license.get_status_display }}</span>
-                  {% endif %}
-                </td>
-                <td>{{ license.valid_until|date:"d M Y" }}</td>
-                <td>{{ license.current_activations }}/{{ license.max_activations }}</td>
-                <td>
-                  <a href="{% url 'license_detail' license.pk %}" class="btn btn-sm btn-ghost btn-icon">
-                    <i class="fas fa-eye"></i>
-                  </a>
-                </td>
-              </tr>
-              {% empty %}
-              <tr>
-                <td colspan="6" class="text-center py-4 text-muted">No licenses linked to this client</td>
-              </tr>
-              {% endfor %}
-            </tbody>
-          </table>
-        </div>
-        <div class="card-footer" style="border-top: 1px solid var(--border-color); padding: 1rem;">
-          <a href="{% url 'license_create' %}?client={{ client.pk }}" class="btn btn-primary btn-sm">
-            <i class="fas fa-plus me-2"></i>Create License
-          </a>
-        </div>
-      </div>
+  <section class="stage-panel sp-col-l" data-open data-key="portal">
+    <h2 class="stage-panel__kicker"><span class="sp-ico sp-ico--green"><i class="fas fa-globe"></i></span>Client Portal</h2>
+    {% if client.user %}
+    <dl class="cl-kv">
+      <div><dt><i class="fas fa-signal"></i> Status</dt><dd>{% if client.user.is_active %}<span class="badge badge-success">Active</span>{% else %}<span class="badge badge-secondary">Deactivated</span>{% endif %}</dd></div>
+      <div><dt><i class="fas fa-user-lock"></i> Username</dt><dd>{{ client.user.username }}</dd></div>
+      <div><dt><i class="far fa-clock"></i> Last Login</dt><dd>{{ client.user.last_login|date:"d M Y, H:i"|default:"Never" }}</dd></div>
+    </dl>
+    <div class="d-flex gap-2 flex-wrap mt-2">
+      <form method="post" action="{% url 'client_portal_reset_password' client.pk %}">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-sm btn-outline-primary" onclick="return confirm('This will generate a new password. Continue?')"><i class="fas fa-key"></i> Reset Password</button>
+      </form>
+      <form method="post" action="{% url 'client_portal_toggle' client.pk %}">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-sm btn-outline-primary">{% if client.user.is_active %}<i class="fas fa-ban"></i> Deactivate{% else %}<i class="fas fa-check"></i> Activate{% endif %}</button>
+      </form>
+      <a href="/portal/" target="_blank" class="btn btn-sm btn-ghost"><i class="fas fa-arrow-up-right-from-square"></i> Open Portal</a>
+    </div>
+    {% else %}
+    <p class="cl-note"><u>No portal account yet</u>. Create one to give this client access to view projects, invoices, and communicate with your team.</p>
+    <details class="cl-portal-form">
+      <summary class="pj-add"><i class="fas fa-plus"></i> Create Portal Account</summary>
+      <form method="post" action="{% url 'client_portal_create_account' client.pk %}">
+        {% csrf_token %}
+        <label class="form-label text-sm">Username</label>
+        <input type="text" name="username" class="form-control mb-2" value="{{ client.email }}" placeholder="Username for client login">
+        <label class="form-label text-sm">Password <span class="text-muted">(leave blank to auto-generate)</span></label>
+        <input type="text" name="password" class="form-control mb-2" placeholder="Auto-generated if empty">
+        <button type="submit" class="btn btn-primary btn-sm w-100"><i class="fas fa-user-plus"></i> Create Portal Account</button>
+      </form>
+    </details>
+    {% endif %}
+  </section>
 
+  <section class="stage-panel sp-col-l" data-open data-key="licenses">
+    <h2 class="stage-panel__kicker"><span class="sp-ico sp-ico--amber"><i class="fas fa-shield-halved"></i></span>Licenses
+      <a href="{% url 'license_create' %}?client={{ client.pk }}" class="sp-kicker-act"><i class="fas fa-plus"></i> Add License</a></h2>
+    {% for license in licenses %}
+    <div class="pj-row">
+      <span class="pj-row__icon"><i class="fas fa-key"></i></span>
+      <div class="pj-row__main">
+        <a href="{% url 'license_detail' license.pk %}" class="pj-row__title">{{ license.customer_name }}</a>
+        <span class="pj-row__sub">{{ license.get_license_type_display }} &middot; until {{ license.valid_until|date:"d M Y" }} &middot; {{ license.current_activations }}/{{ license.max_activations }} devices</span>
+      </div>
+      {% if license.status == 'active' %}<span class="status-badge paid">Active</span>
+      {% elif license.status == 'expired' %}<span class="status-badge overdue">Expired</span>
+      {% else %}<span class="status-badge pending">{{ license.get_status_display }}</span>{% endif %}
+    </div>
+    {% empty %}
+    <p class="cl-note mb-0">No licenses added yet.</p>
+    {% endfor %}
   </section>
   </div>{# /pstage-col--l #}
 
   <div class="pstage-col pstage-col--r">
 
-  <section class="stage-panel sp-col-r">
-    <h2 class="stage-panel__kicker">Projects</h2>
-      <div class="tab-content" id="projectsTab">
-        <div class="table-wrapper">
-          <table class="table">
-            <thead>
-              <tr>
-                <th>Project</th>
-                <th>Type</th>
-                <th>Status</th>
-                <th>Amount</th>
-                <th>Deadline</th>
-                <th></th>
-              </tr>
-            </thead>
-            <tbody>
-              {% for project in projects %}
-              <tr>
-                <td>
-                  <a href="{% url 'project_detail' project.pk %}" class="fw-medium">{{ project.name }}</a>
-                  {% if project.tech_stack %}
-                  <div class="text-sm text-muted">{{ project.tech_stack|truncatewords:5 }}</div>
-                  {% endif %}
-                </td>
-                <td><span class="badge badge-info">{{ project.get_project_type_display }}</span></td>
-                <td><span class="status-badge {{ project.status }}">{{ project.get_status_display }}</span></td>
-                <td class="fw-medium">&#8377;{{ project.estimated_budget|floatformat:2|default:"-" }}</td>
-                <td>{{ project.deadline|date:"d M Y"|default:"-" }}</td>
-                <td>
-                  <a href="{% url 'project_detail' project.pk %}" class="btn btn-sm btn-ghost btn-icon">
-                    <i class="fas fa-arrow-right"></i>
-                  </a>
-                </td>
-              </tr>
-              {% empty %}
-              <tr>
-                <td colspan="6" class="text-center py-4 text-muted">No projects yet</td>
-              </tr>
-              {% endfor %}
-            </tbody>
-          </table>
-        </div>
+  <section class="stage-panel sp-col-r" data-open data-key="projects">
+    <h2 class="stage-panel__kicker"><span class="sp-ico sp-ico--blue"><i class="fas fa-folder-open"></i></span>Projects ({{ projects.count }})
+      <a href="{% url 'project_list' %}?search={{ client.name|urlencode }}" class="sp-kicker-act">View All</a></h2>
+    {% for project in projects %}
+    <a href="{% url 'project_detail' project.pk %}" class="pj-row pj-row--link">
+      <span class="pj-row__icon sp-ico--blue"><i class="far fa-folder"></i></span>
+      <div class="pj-row__main">
+        <span class="pj-row__title">{{ project.name }}</span>
+        <span class="pj-row__sub">{{ project.get_project_type_display }}</span>
       </div>
-
+      <span class="status-badge {{ project.status }}">{{ project.get_status_display }}</span>
+      <i class="fas fa-chevron-right cl-chev"></i>
+    </a>
+    {% empty %}
+    <div class="cl-empty"><i class="far fa-folder"></i><strong>No projects yet.</strong><span>Start one with the Project button.</span></div>
+    {% endfor %}
   </section>
 
-  <section class="stage-panel sp-col-r">
-    <h2 class="stage-panel__kicker">Invoices</h2>
-      <div class="tab-content" id="invoicesTab">
-        <div class="table-wrapper">
-          <table class="table">
-            <thead>
-              <tr>
-                <th>Invoice #</th>
-                <th>Project</th>
-                <th>Amount</th>
-                <th>Due Date</th>
-                <th>Status</th>
-                <th></th>
-              </tr>
-            </thead>
-            <tbody>
-              {% for invoice in invoices %}
-              <tr>
-                <td><a href="{% url 'invoice_detail' invoice.pk %}" class="fw-medium">{{ invoice.invoice_number }}</a></td>
-                <td>{{ invoice.project.name|default:"-" }}</td>
-                <td class="fw-medium">&#8377;{{ invoice.total_amount|floatformat:2 }}</td>
-                <td>{{ invoice.due_date|date:"d M Y"|default:"-" }}</td>
-                <td><span class="status-badge {{ invoice.status }}">{{ invoice.get_status_display }}</span></td>
-                <td>
-                  <a href="{% url 'invoice_detail' invoice.pk %}" class="btn btn-sm btn-ghost btn-icon">
-                    <i class="fas fa-arrow-right"></i>
-                  </a>
-                </td>
-              </tr>
-              {% empty %}
-              <tr>
-                <td colspan="6" class="text-center py-4 text-muted">No invoices yet</td>
-              </tr>
-              {% endfor %}
-            </tbody>
-          </table>
-        </div>
+  <section class="stage-panel sp-col-r" data-open data-key="invoices">
+    <h2 class="stage-panel__kicker"><span class="sp-ico sp-ico--green"><i class="fas fa-file-lines"></i></span>Invoices ({{ invoices.count }})
+      <a href="{% url 'invoice_create' %}?client={{ client.pk }}" class="btn btn-sm btn-primary sp-kicker-btn"><i class="fas fa-plus"></i> Add Invoice</a></h2>
+    {% for invoice in invoices %}
+    <a href="{% url 'invoice_detail' invoice.pk %}" class="pj-row pj-row--link">
+      <span class="pj-row__icon"><i class="far fa-file-lines"></i></span>
+      <div class="pj-row__main">
+        <span class="pj-row__title">{{ invoice.invoice_number }}</span>
+        <span class="pj-row__sub">{{ invoice.project.name|default:invoice.title }}</span>
       </div>
-
+      <div class="pj-row__end">
+        <span class="pj-amount">&#8377;{{ invoice.total_amount|inr }}</span>
+        <span class="status-badge {{ invoice.status }}">{{ invoice.get_status_display }}</span>
+      </div>
+    </a>
+    {% empty %}
+    <div class="cl-empty"><i class="far fa-file-lines"></i><strong>No invoices yet.</strong><span>Create an invoice to track project billing.</span></div>
+    {% endfor %}
   </section>
 
-  <section class="stage-panel sp-col-r">
-    <h2 class="stage-panel__kicker">Quotes</h2>
-      <div class="tab-content" id="quotesTab">
-        <div class="table-wrapper">
-          <table class="table">
-            <thead>
-              <tr>
-                <th>Quote #</th>
-                <th>Title</th>
-                <th>Amount</th>
-                <th>Valid Until</th>
-                <th>Status</th>
-                <th></th>
-              </tr>
-            </thead>
-            <tbody>
-              {% for quote in quotes %}
-              <tr>
-                <td><a href="{% url 'quote_detail' quote.pk %}" class="fw-medium">{{ quote.quote_number }}</a></td>
-                <td>{{ quote.title }}</td>
-                <td class="fw-medium">&#8377;{{ quote.total_amount|floatformat:2 }}</td>
-                <td>{{ quote.valid_until|date:"d M Y"|default:"-" }}</td>
-                <td><span class="status-badge {{ quote.status }}">{{ quote.get_status_display }}</span></td>
-                <td>
-                  <a href="{% url 'quote_detail' quote.pk %}" class="btn btn-sm btn-ghost btn-icon">
-                    <i class="fas fa-arrow-right"></i>
-                  </a>
-                </td>
-              </tr>
-              {% empty %}
-              <tr>
-                <td colspan="6" class="text-center py-4 text-muted">No quotes yet</td>
-              </tr>
-              {% endfor %}
-            </tbody>
-          </table>
-        </div>
+  <section class="stage-panel sp-col-r" data-open data-key="quotes">
+    <h2 class="stage-panel__kicker"><span class="sp-ico sp-ico--amber"><i class="fas fa-file-invoice"></i></span>Quotes ({{ quotes.count }})
+      <a href="{% url 'quote_create' %}?client={{ client.pk }}" class="btn btn-sm btn-primary sp-kicker-btn"><i class="fas fa-plus"></i> Add Quote</a></h2>
+    {% for quote in quotes %}
+    <a href="{% url 'quote_detail' quote.pk %}" class="pj-row pj-row--link">
+      <span class="pj-row__icon"><i class="fas fa-file-invoice"></i></span>
+      <div class="pj-row__main">
+        <span class="pj-row__title">{{ quote.quote_number }}</span>
+        <span class="pj-row__sub">{{ quote.title }}</span>
       </div>
-
+      <div class="pj-row__end">
+        <span class="pj-amount">&#8377;{{ quote.total_amount|inr }}</span>
+        <span class="status-badge {{ quote.status }}">{{ quote.get_status_display }}</span>
+      </div>
+    </a>
+    {% empty %}
+    <div class="cl-empty"><i class="fas fa-file-invoice"></i><strong>No quotes yet.</strong><span>Create a quote to share with your client.</span></div>
+    {% endfor %}
   </section>
-  <section class="stage-panel sp-col-c">
-    <h2 class="stage-panel__kicker">Payments</h2>
-      <div class="tab-content" id="paymentsTab">
-        <div class="table-wrapper">
-          <table class="table">
-            <thead>
-              <tr>
-                <th>Date</th>
-                <th>Invoice</th>
-                <th>Amount</th>
-                <th>Method</th>
-                <th>Transaction ID</th>
-              </tr>
-            </thead>
-            <tbody>
-              {% for payment in payments %}
-              <tr>
-                <td>{{ payment.payment_date|date:"d M Y" }}</td>
-                <td><a href="{% url 'invoice_detail' payment.invoice.pk %}">{{ payment.invoice.invoice_number }}</a></td>
-                <td class="fw-medium text-success">&#8377;{{ payment.amount|floatformat:2 }}</td>
-                <td><span class="badge badge-info">{{ payment.get_payment_method_display }}</span></td>
-                <td class="text-muted">{{ payment.transaction_id|default:"-" }}</td>
-              </tr>
-              {% empty %}
-              <tr>
-                <td colspan="5" class="text-center py-4 text-muted">No payments yet</td>
-              </tr>
-              {% endfor %}
-            </tbody>
-          </table>
-        </div>
-      </div>
 
+  <section class="stage-panel sp-col-r" data-open data-key="payments">
+    <h2 class="stage-panel__kicker"><span class="sp-ico sp-ico--violet"><i class="fas fa-credit-card"></i></span>Payments ({{ payments.count }})
+      <a href="{% url 'payment_create' %}" class="btn btn-sm btn-primary sp-kicker-btn"><i class="fas fa-plus"></i> Add Payment</a></h2>
+    {% for payment in payments %}
+    <a href="{% url 'invoice_detail' payment.invoice.pk %}" class="pj-row pj-row--link">
+      <span class="pj-row__icon"><i class="fas fa-indian-rupee-sign"></i></span>
+      <div class="pj-row__main">
+        <span class="pj-row__title">{{ payment.invoice.invoice_number }}</span>
+        <span class="pj-row__sub">{{ payment.payment_date|date:"d M Y" }} &middot; {{ payment.get_payment_method_display }}</span>
+      </div>
+      <span class="pj-amount is-good">&#8377;{{ payment.amount|inr }}</span>
+    </a>
+    {% empty %}
+    <div class="cl-empty"><strong>No payments yet.</strong><span>Record payments received for this client.</span></div>
+    {% endfor %}
+  </section>
+
+  <section class="stage-panel sp-col-r" data-open data-key="activity">
+    <h2 class="stage-panel__kicker"><span class="sp-ico sp-ico--blue"><i class="fas fa-chart-line"></i></span>Client Activity</h2>
+    <ul class="cl-activity">
+      {% for e in client_activity %}
+      <li class="is-{{ e.kind }}">
+        <i class="fas fa-circle-check"></i>
+        <span class="cl-activity__text">{{ e.text }}{% if e.amount %} &middot; &#8377;{{ e.amount|inr }}{% endif %}</span>
+        <span class="cl-activity__when">{{ e.when|date:"d M Y" }}</span>
+      </li>
+      {% endfor %}
+    </ul>
   </section>
 
   </div>{# /pstage-col--r #}
+{% endwith %}
 
   <section class="stage-panel sp-wide">
-    <h2 class="stage-panel__kicker">RetailEase App</h2>
+    <h2 class="stage-panel__kicker"><span class="sp-ico sp-ico--blue"><i class="fas fa-mobile-screen"></i></span>RetailEase App</h2>
       <div class="tab-content" id="retaileaseTab">
         <form method="post" action="{% url 'client_update_retailease' client.pk %}">
           {% csrf_token %}
@@ -695,7 +480,7 @@
   </section>
 
   <section class="stage-panel sp-wide">
-    <h2 class="stage-panel__kicker">Backups</h2>
+    <h2 class="stage-panel__kicker"><span class="sp-ico sp-ico--slate"><i class="fas fa-database"></i></span>Backups</h2>
       <div class="tab-content" id="backupsTab">
         <div class="card">
           <div class="card-header">
@@ -783,7 +568,7 @@
 {% endblock %}
 
 {% block extra_js %}
-<script src="{% static 'js/pulse-stage.js' %}?v=9" defer></script>
+<script src="{% static 'js/pulse-stage.js' %}?v=10" defer></script>
 <script src="{% static 'js/pulse-ask.js' %}?v=7" defer></script>
 <script>
 function switchTab(tabId) {

@@ -451,6 +451,9 @@ def client_detail(request, pk):
     businesses = Business.objects.filter(license_id__in=license_ids)
     backups = Backup.objects.filter(business__in=businesses).select_related('business', 'counter').order_by('-created_at')
 
+    total_revenue = payments.aggregate(t=Sum('amount'))['t'] or 0
+    credentials_count = Credential.objects.filter(project__client=client).count()
+
     context = {
         'client': client,
         'projects': projects,
@@ -459,8 +462,36 @@ def client_detail(request, pk):
         'licenses': licenses,
         'payments': payments,
         'backups': backups,
+        'total_revenue': total_revenue,
+        'pending_amount': client.pending_amount,
+        'credentials_count': credentials_count,
+        'client_activity': _client_activity(client, projects, invoices, quotes, payments),
     }
     return render(request, 'clients/detail.html', context)
+
+
+def _client_activity(client, projects, invoices, quotes, payments, limit=5):
+    """Newest-first timeline of what happened with a client, built from the
+    records themselves (nothing writes ActivityLog rows for clients)."""
+    from datetime import datetime
+
+    def day(value):
+        return value.date() if isinstance(value, datetime) else value
+
+    events = [{'when': day(client.created_at), 'kind': 'created', 'text': 'Client added'}]
+    for p in projects.order_by('-created_at')[:limit]:
+        events.append({'when': day(p.created_at), 'kind': 'project', 'text': f'Project {p.name} started'})
+    for inv in invoices.order_by('-issue_date')[:limit]:
+        if inv.issue_date:
+            events.append({'when': inv.issue_date, 'kind': 'invoice', 'text': f'Invoice {inv.invoice_number} issued'})
+    for q in quotes.order_by('-issue_date')[:limit]:
+        if q.issue_date:
+            events.append({'when': q.issue_date, 'kind': 'quote', 'text': f'Quote {q.quote_number} created'})
+    for pay in payments.select_related('invoice')[:limit]:
+        events.append({'when': pay.payment_date, 'kind': 'payment',
+                       'text': f'Payment received for {pay.invoice.invoice_number}', 'amount': pay.amount})
+    events.sort(key=lambda e: e['when'], reverse=True)
+    return events[:limit]
 
 
 @login_required

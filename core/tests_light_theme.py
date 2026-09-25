@@ -86,3 +86,35 @@ class ProjectListPageTests(TestCase):
     def test_pipeline_quick_filter(self):
         r = self.client.get(reverse('project_list'), {'quick': 'pipeline'})
         self.assertEqual([p.name for p in r.context['projects']], ['Maybe'])
+
+
+class ClientDetailPageTests(TestCase):
+    """The client page used to read total_revenue / pending_amount /
+    credentials_count from the context without the view ever setting them,
+    so it always showed zero."""
+
+    def setUp(self):
+        from .models import Credential, Payment, Project
+        self.user = User.objects.create_superuser('boss', 'b@x.com', 'pw')
+        self.client.force_login(self.user)
+        self.c = Client.objects.create(name='Acme', email='a@acme.test')
+        project = Project.objects.create(client=self.c, name='Site')
+        Credential.objects.create(project=project, name='Admin')
+        inv = Invoice.objects.create(client=self.c, project=project, title='Build',
+                                     issue_date=date(2026, 3, 1), due_date=date(2026, 3, 15),
+                                     total_amount=Decimal('1000'), tax_rate=Decimal('18'), status='partial', amount_paid=Decimal('0'))
+        Payment.objects.create(invoice=inv, amount=Decimal('400'), payment_date=date(2026, 3, 5),
+                               payment_method='upi')
+
+    def test_money_and_counts_reach_the_page(self):
+        r = self.client.get(reverse('client_detail', args=[self.c.pk]))
+        self.assertEqual(r.status_code, 200)
+        self.assertEqual(r.context['total_revenue'], Decimal('400'))
+        self.assertEqual(r.context['pending_amount'], Decimal('600'))
+        self.assertEqual(r.context['credentials_count'], 1)
+
+    def test_activity_is_newest_first(self):
+        r = self.client.get(reverse('client_detail', args=[self.c.pk]))
+        whens = [e['when'] for e in r.context['client_activity']]
+        self.assertEqual(whens, sorted(whens, reverse=True))
+        self.assertTrue(any(e['kind'] == 'payment' for e in r.context['client_activity']))
