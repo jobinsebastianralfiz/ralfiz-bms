@@ -3256,10 +3256,12 @@ def payment_create(request):
             notes=request.POST.get('notes', ''),
         )
         messages.success(request, f'Payment of ₹{payment.amount} recorded successfully.')
-        return redirect('invoice_detail', pk=payment.invoice.pk)
+        # Straight to the receipt, which can be printed, downloaded or shared.
+        return redirect('payment_receipt', pk=payment.pk)
 
     return render(request, 'payments/form.html', {
         'invoices': invoices,
+        'selected_invoice': preselected or '',
         'form_title': 'Record New Payment',
         'method_choices': Payment.METHOD_CHOICES,
     })
@@ -3290,11 +3292,11 @@ def payment_edit(request, pk):
 
     return render(request, 'payments/form.html', {
         'invoices': invoices,
+        'selected_invoice': str(payment.invoice.pk),
         'payment': payment,
         'form_title': f'Edit Payment for {payment.invoice.invoice_number}',
         'method_choices': Payment.METHOD_CHOICES,
         'is_edit': True,
-        'selected_invoice': payment.invoice.pk,
     })
 
 

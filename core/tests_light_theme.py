@@ -136,3 +136,32 @@ class ClientListPageTests(TestCase):
                          {'total': 2, 'new_this_month': 2, 'active': 1, 'inactive': 1, 'high': 1})
         counts = {c.name: c.project_count for c in r.context['clients']}
         self.assertEqual(counts, {'A': 2, 'B': 0})
+
+
+class RecordPaymentFlowTests(TestCase):
+    """Recording a payment used to land back on the invoice with no receipt in
+    sight, and "Record Payment" from an invoice did not preselect it."""
+
+    def setUp(self):
+        self.client.force_login(User.objects.create_superuser('boss', 'b@x.com', 'pw'))
+        c = Client.objects.create(name='Acme', email='a@acme.test')
+        self.inv = Invoice.objects.create(client=c, title='Build', issue_date=date(2026, 3, 1),
+                                          due_date=date(2026, 3, 15), total_amount=Decimal('1000'),
+                                          tax_rate=Decimal('18'), status='sent')
+
+    def test_invoice_is_preselected(self):
+        r = self.client.get(reverse('payment_create'), {'invoice': str(self.inv.pk)})
+        self.assertContains(r, f'value="{self.inv.pk}"')
+        self.assertRegex(r.content.decode(), rf'value="{self.inv.pk}"[^>]*selected')
+
+    def test_recording_opens_the_receipt(self):
+        from .models import Payment
+        r = self.client.post(reverse('payment_create'), {
+            'invoice': str(self.inv.pk), 'amount': '400', 'payment_date': '2026-03-05',
+            'payment_method': 'upi', 'transaction_id': 'T1',
+        })
+        payment = Payment.all_objects.get(transaction_id='T1')
+        self.assertRedirects(r, reverse('payment_receipt', args=[payment.pk]), fetch_redirect_response=False)
+        page = self.client.get(reverse('payment_receipt', args=[payment.pk]))
+        self.assertEqual(page.status_code, 200)
+        self.assertContains(page, 'T1')
