@@ -10,19 +10,21 @@
 {% endblock %}
 
 {% block content %}
-<!-- Page Header -->
 <div class="page-header">
-  <div>
-    <h1 class="page-title">Clients</h1>
-    <p class="page-subtitle mb-0">Manage your client database</p>
+  <div class="page-header__lead">
+    <span class="page-header__icon"><i class="fas fa-users"></i></span>
+    <div>
+      <h1 class="page-title">Clients</h1>
+      <p class="page-subtitle mb-0">Manage your client database and relationships</p>
+    </div>
   </div>
   <div class="page-actions">
     <a href="{% url 'export_clients' %}" class="btn btn-outline-secondary">
       <i class="fas fa-download"></i>
       Export
     </a>
-    <a href="{% url 'client_import' %}" class="btn btn-outline-success">
-      <i class="fas fa-file-excel"></i>
+    <a href="{% url 'client_import' %}" class="btn btn-outline-primary">
+      <i class="fas fa-upload"></i>
       Import
     </a>
     <a href="{% url 'client_create' %}" class="btn btn-primary">
@@ -32,18 +34,53 @@
   </div>
 </div>
 
-<!-- Filters -->
+<div class="inv-main">
+<div class="inv-stats">
+  <a href="{% url 'client_list' %}" class="inv-stat cls-stat">
+    <span class="inv-stat__icon is-primary"><i class="fas fa-users"></i></span>
+    <div>
+      <div class="inv-stat__label">Total Clients</div>
+      <div class="inv-stat__value">{{ stats.total }}</div>
+      <div class="inv-stat__note">{% if stats.new_this_month %}<span class="inv-trend is-up"><i class="fas fa-arrow-up"></i>{{ stats.new_this_month }}</span> this month{% else %}none new this month{% endif %}</div>
+    </div>
+  </a>
+  <a href="?status=active" class="inv-stat cls-stat">
+    <span class="inv-stat__icon is-success"><i class="fas fa-folder-open"></i></span>
+    <div>
+      <div class="inv-stat__label">Active Clients</div>
+      <div class="inv-stat__value">{{ stats.active }}</div>
+      <div class="inv-stat__note">currently working with us</div>
+    </div>
+  </a>
+  <a href="?priority=high&status=active" class="inv-stat cls-stat">
+    <span class="inv-stat__icon is-amber"><i class="fas fa-star"></i></span>
+    <div>
+      <div class="inv-stat__label">High Priority</div>
+      <div class="inv-stat__value">{{ stats.high }}</div>
+      <div class="inv-stat__note">active clients to watch</div>
+    </div>
+  </a>
+  <a href="?status=inactive" class="inv-stat cls-stat">
+    <span class="inv-stat__icon cls-stat__icon--red"><i class="fas fa-circle-xmark"></i></span>
+    <div>
+      <div class="inv-stat__label">Inactive</div>
+      <div class="inv-stat__value">{{ stats.inactive }}</div>
+      <div class="inv-stat__note">completed or paused</div>
+    </div>
+  </a>
+</div>
+
 <div class="card mb-4">
   <div class="card-body">
-    <form method="get" class="row align-items-end">
-      <div class="col-4 col-md-6 col-sm-12" style="padding: 0.5rem;">
-        <label class="form-label">Search</label>
-        <div class="navbar-search" style="width: 100%;">
+    <form method="get" class="inv-filters cls-filters">
+      <div class="inv-filters__field inv-filters__search">
+        <label class="form-label">Search Clients</label>
+        <div class="inv-input-icon">
           <i class="fas fa-search"></i>
-          <input type="text" class="form-control" name="search" placeholder="Search by name, email, company..." value="{{ search }}" style="padding-left: 2.5rem; width: 100%;">
+          <input type="text" class="form-control" name="search" placeholder="Search by name, email, company..." value="{{ search }}">
         </div>
       </div>
-      <div class="col-2 col-md-6 col-sm-12" style="padding: 0.5rem;">
+      <div class="inv-filters__field">
         <label class="form-label">Priority</label>
         <select class="form-control" name="priority">
           <option value="">All Priorities</option>
@@ -52,7 +89,7 @@
           <option value="low" {% if priority == 'low' %}selected{% endif %}>Low</option>
         </select>
       </div>
-      <div class="col-2 col-md-6 col-sm-12" style="padding: 0.5rem;">
+      <div class="inv-filters__field">
         <label class="form-label">Status</label>
         <select class="form-control" name="status">
           <option value="">All Status</option>
@@ -60,20 +97,23 @@
           <option value="inactive" {% if status == 'inactive' %}selected{% endif %}>Inactive</option>
         </select>
       </div>
-      <div class="col-2 col-md-6 col-sm-12" style="padding: 0.5rem;">
-        <button type="submit" class="btn btn-outline-secondary w-100">
-          <i class="fas fa-filter"></i>
-          Apply Filters
-        </button>
+      <div class="inv-filters__buttons">
+        <a href="{% url 'client_list' %}" class="btn btn-outline-secondary">Reset</a>
+        <button type="submit" class="btn btn-primary"><i class="fas fa-filter"></i> Apply Filters</button>
       </div>
     </form>
   </div>
 </div>
 
-<!-- Clients Table -->
 <div class="card">
+  <div class="card-header inv-list-head">
+    <div>
+      <h2 class="card-title mb-0">Client List</h2>
+      <p class="inv-list-head__sub">Showing {{ client_count }} client{{ client_count|pluralize }}, newest first</p>
+    </div>
+  </div>
   <div class="table-wrapper">
-    <table class="table" id="clientsTable">
+    <table class="table inv-table cls-table">
       <thead>
         <tr>
           <th>Client</th>
@@ -81,52 +121,49 @@
           <th>Projects</th>
           <th>Priority</th>
           <th>Status</th>
-          <th style="width: 120px;">Actions</th>
+          <th>Joined</th>
+          <th>Actions</th>
         </tr>
       </thead>
       <tbody>
         {% for client in clients %}
         <tr>
           <td>
-            <div class="d-flex align-items-center gap-3">
-              <div class="avatar">{{ client.name|slice:":2"|upper }}</div>
-              <div>
-                <a href="{% url 'client_detail' client.pk %}" class="fw-medium d-block">{{ client.name }}</a>
-                <span class="text-sm text-muted">{{ client.company_name|default:"" }}</span>
+            <div class="cls-client">
+              <span class="cls-avatar">{{ client.name|slice:":2"|upper }}</span>
+              <div class="cls-client__text">
+                <a href="{% url 'client_detail' client.pk %}" class="fw-semibold">{{ client.name }}</a>
+                {% if client.company_name %}<span>{{ client.company_name }}</span>{% endif %}
               </div>
             </div>
           </td>
           <td>
-            <div class="text-sm">
-              <div><i class="fas fa-envelope text-muted me-2"></i>{{ client.email }}</div>
-              {% if client.phone %}<div><i class="fas fa-phone text-muted me-2"></i>{{ client.phone }}</div>{% endif %}
+            <div class="cls-contact">
+              <span><i class="fas fa-envelope"></i>{{ client.email }}</span>
+              {% if client.phone %}<span><i class="fas fa-phone"></i>{{ client.phone }}</span>{% endif %}
             </div>
           </td>
-          <td>
-            <span class="fw-medium">{{ client.projects.count }}</span>
-          </td>
-          <td><span class="priority-badge {{ client.priority }}">{{ client.get_priority_display }}</span></td>
+          <td><span class="cls-count">{{ client.project_count }}</span></td>
+          <td><span class="cls-prio is-{{ client.priority }}">{{ client.get_priority_display }}</span></td>
           <td>
             {% if client.is_active %}
-            <span class="badge badge-success">Active</span>
+            <span class="status-badge paid">Active</span>
             {% else %}
-            <span class="badge badge-secondary">Inactive</span>
+            <span class="status-badge draft">Inactive</span>
             {% endif %}
           </td>
+          <td class="inv-date">{{ client.created_at|date:"d M Y" }}</td>
           <td>
             <div class="table-actions">
-              <a href="{% url 'client_detail' client.pk %}" class="btn btn-sm btn-ghost btn-icon" title="View">
-                <i class="fas fa-eye"></i>
-              </a>
-              <a href="{% url 'client_update' client.pk %}" class="btn btn-sm btn-ghost btn-icon" title="Edit">
-                <i class="fas fa-edit"></i>
-              </a>
+              <a href="{% url 'client_detail' client.pk %}" class="btn btn-icon" title="View"><i class="fas fa-eye"></i></a>
+              <a href="{% url 'client_update' client.pk %}" class="btn btn-icon" title="Edit"><i class="fas fa-pen"></i></a>
+              <a href="{% url 'client_delete' client.pk %}" class="btn btn-icon cls-del" title="Delete"><i class="fas fa-trash"></i></a>
             </div>
           </td>
         </tr>
         {% empty %}
         <tr>
-          <td colspan="6" class="text-center py-4 text-muted">
+          <td colspan="7" class="text-center py-4 text-muted">
             <i class="fas fa-users mb-2" style="font-size: 2rem;"></i>
             <p class="mb-0">No clients found</p>
           </td>
@@ -135,5 +172,6 @@
       </tbody>
     </table>
   </div>
+</div>
 </div>
 {% endblock %}

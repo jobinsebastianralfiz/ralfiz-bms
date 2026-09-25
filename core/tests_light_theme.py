@@ -118,3 +118,21 @@ class ClientDetailPageTests(TestCase):
         whens = [e['when'] for e in r.context['client_activity']]
         self.assertEqual(whens, sorted(whens, reverse=True))
         self.assertTrue(any(e['kind'] == 'payment' for e in r.context['client_activity']))
+
+
+class ClientListPageTests(TestCase):
+    def setUp(self):
+        from .models import Project
+        self.client.force_login(User.objects.create_superuser('boss', 'b@x.com', 'pw'))
+        a = Client.objects.create(name='A', email='a@x.test', priority='high')
+        Client.objects.create(name='B', email='b@x.test', is_active=False)
+        Project.objects.create(client=a, name='P1')
+        Project.objects.create(client=a, name='P2')
+
+    def test_stats_and_project_counts(self):
+        r = self.client.get(reverse('client_list'))
+        self.assertEqual(r.status_code, 200)
+        self.assertEqual(r.context['stats'],
+                         {'total': 2, 'new_this_month': 2, 'active': 1, 'inactive': 1, 'high': 1})
+        counts = {c.name: c.project_count for c in r.context['clients']}
+        self.assertEqual(counts, {'A': 2, 'B': 0})

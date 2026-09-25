@@ -424,8 +424,21 @@ def client_list(request):
     elif status == 'inactive':
         clients = clients.filter(is_active=False)
 
+    everyone = Client.objects.all()
+    month_start = timezone.now().replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+    stats = {
+        'total': everyone.count(),
+        'new_this_month': everyone.filter(created_at__gte=month_start).count(),
+        'active': everyone.filter(is_active=True).count(),
+        'inactive': everyone.filter(is_active=False).count(),
+        'high': everyone.filter(priority='high', is_active=True).count(),
+    }
+    clients = clients.annotate(project_count=Count('projects')).order_by('-created_at')
+
     context = {
         'clients': clients,
+        'client_count': clients.count(),
+        'stats': stats,
         'search': search,
         'priority': priority,
         'status': status,
