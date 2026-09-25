@@ -11,8 +11,8 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
   <link rel="stylesheet" href="{% static 'css/styles.css' %}">
-  <link rel="stylesheet" href="{% static 'css/ralfiz-theme.css' %}?v=19">
-  <link rel="stylesheet" href="{% static 'css/detail-stage.css' %}?v=2">
+  <link rel="stylesheet" href="{% static 'css/ralfiz-theme.css' %}?v=26">
+  <link rel="stylesheet" href="{% static 'css/detail-stage.css' %}?v=5">
   <script>
     // The app is light only now; pin it so an old saved "dark" choice cannot return.
     try { localStorage.setItem('theme', 'light'); } catch (e) {}
@@ -56,6 +56,40 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
   <script src="{% static 'js/app.js' %}?v=3"></script>
   {% include 'components/owner_shortcuts.html' %}
+  <script>
+    // Pages that never set a breadcrumb only show "Dashboard". Fill in the
+    // sidebar section and the page title so every page says where you are.
+    (function () {
+      var nav = document.querySelector('.page-crumbs');
+      if (!nav || nav.querySelectorAll('.breadcrumb-item').length !== 1 || location.pathname === '/') return;
+      var h1 = document.querySelector('.content-wrapper .page-title, .content-wrapper h1');
+      var title = (h1 ? h1.textContent : document.title.split(' - ')[0]).replace(/\s+/g, ' ').trim();
+      var section = document.querySelector('.sidebar .nav-item.active');
+      function add(el) {
+        var sep = document.createElement('span');
+        sep.className = 'breadcrumb-separator';
+        sep.textContent = '/';
+        nav.appendChild(sep);
+        nav.appendChild(el);
+      }
+      if (section) {
+        var label = section.textContent.replace(/\s+/g, ' ').trim();
+        if (label && label !== 'Dashboard' && label !== title && section.getAttribute('href') !== location.pathname) {
+          var a = document.createElement('a');
+          a.className = 'breadcrumb-item';
+          a.href = section.getAttribute('href');
+          a.textContent = label;
+          add(a);
+        }
+      }
+      if (title && title !== 'Dashboard') {
+        var here = document.createElement('span');
+        here.className = 'breadcrumb-item active';
+        here.textContent = title;
+        add(here);
+      }
+    })();
+  </script>
   {% block extra_js %}{% endblock %}
 </body>
 </html>

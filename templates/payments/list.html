@@ -136,7 +136,7 @@
           <th>Method</th>
           <th>Transaction ID</th>
           <th>Notes</th>
-          <th style="width: 80px;">Actions</th>
+          <th>Actions</th>
         </tr>
       </thead>
       <tbody>
@@ -166,6 +166,7 @@
             {{ payment.notes|truncatewords:5|default:"-" }}
           </td>
           <td>
+            <div class="table-actions">
             <a href="{% url 'payment_receipt' payment.pk %}" class="btn btn-ghost btn-sm btn-icon" title="View Receipt">
               <i class="fas fa-receipt"></i>
             </a>
@@ -178,6 +179,7 @@
             <a href="{% url 'payment_delete' payment.pk %}" class="btn btn-ghost btn-sm btn-icon" title="Delete Payment" style="color:#dc2626;">
               <i class="fas fa-trash"></i>
             </a>
+            </div>
           </td>
         </tr>
         {% empty %}

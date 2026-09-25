@@ -36,7 +36,7 @@
     color: var(--info);
   }
   .activity-icon.primary {
-    background: var(--primary-light, #dbeafe);
+    background: var(--primary-bg, #dbeafe);
     color: var(--primary);
   }
   .activity-content {
@@ -62,7 +62,7 @@
 <!-- Page Header -->
 <div class="page-header">
   <div class="d-flex align-items-center gap-4">
-    <div class="avatar avatar-xl" style="background: var(--primary-light, #dbeafe); color: var(--primary);">
+    <div class="avatar avatar-xl" style="background: var(--primary-bg, #dbeafe); color: var(--primary);">
       <i class="fas fa-file-alt"></i>
     </div>
     <div>
@@ -163,8 +163,9 @@
         {% endif %}
         {% if quote.is_lead_quote %}
         <div class="alert alert-warning mt-2 mb-0 text-sm">
-          <i class="fas fa-info-circle me-1"></i>This quote is for an unconverted lead. Convert the
-          <a href="{% url 'crm:lead_detail' quote.lead.pk %}">lead</a> to create a client &amp; project.
+          <i class="fas fa-info-circle me-1"></i>
+          <span>This quote is for an unconverted lead. Convert the
+          <a href="{% url 'crm:lead_detail' quote.lead.pk %}">lead</a> to create a client &amp; project.</span>
         </div>
         {% endif %}
       </div>

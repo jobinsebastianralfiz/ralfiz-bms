@@ -367,6 +367,13 @@
       height: 16px;
     }
 
+    /* Phones only; print and the PDF keep the two-column layout. */
+    @media screen and (max-width: 600px) {
+      .details-grid { grid-template-columns: minmax(0, 1fr); }
+      .detail-section { min-width: 0; }
+      .invoice-reference { overflow-x: auto; }
+    }
+
     @media print {
       body {
         background: white;

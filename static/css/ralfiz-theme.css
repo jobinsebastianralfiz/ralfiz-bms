@@ -299,6 +299,11 @@ a:hover { color: var(--primary-hover); }
   box-shadow: 0 6px 16px rgba(14, 165, 233, 0.28);
 }
 .page-header__lead { display: flex; align-items: center; gap: 14px; }
+/* Pages with many actions (invoice, quote) squeezed each button until its
+   label broke onto two lines; wrap the row of buttons instead. */
+.page-header { gap: 14px; flex-wrap: wrap; }
+.page-actions { flex-wrap: wrap; justify-content: flex-end; }
+.page-actions .btn { white-space: nowrap; }
 
 /* ── Cards ───────────────────────────────────────────────────────────── */
 .card, .stat-card {
@@ -689,6 +694,9 @@ a.home-list__main:hover .home-list__title { color: var(--primary); }
 /* Compact rhythm: the big 1.5rem utility gaps between blocks become 14px. */
 .content-wrapper .mb-4 { margin-bottom: 14px !important; }
 .content-wrapper .mt-4 { margin-top: 14px !important; }
+/* Used by a few templates but never defined, so their dividers had no gap. */
+.my-3 { margin-top: 12px !important; margin-bottom: 12px !important; }
+.my-4 { margin-top: 16px !important; margin-bottom: 16px !important; }
 .inv-stats { margin-bottom: 14px; }
 .inv-donut { width: 96px; height: 96px; }
 .inv-donut__hole { width: 66px; height: 66px; }
@@ -755,7 +763,8 @@ a.home-list__main:hover .home-list__title { color: var(--primary); }
 a.inv-activity__text { display: block; text-decoration: none; }
 a.inv-activity__text:hover { color: var(--primary); }
 a.inv-panel__meta { text-decoration: none; }
- ────────────────────────────────────────── */
+
+/* ── Desktop-first columns ────────────────────────────────────────── */
 /* Older pages write "col-4 col-md-12" / "col-6 col-sm-12": the plain col-N is
    the desktop width and styles.css narrows it on smaller screens. The helpers
    above read those as mobile-first and put every column at full width. */
@@ -774,6 +783,7 @@ a.inv-panel__meta { text-decoration: none; }
   .row > .col-4[class*="col-md-"]:not(.col-md-1):not(.col-md-2):not(.col-md-3) { flex: 0 0 33.3333%; max-width: 33.3333%; }
   .row > .col-5[class*="col-md-"]:not(.col-md-1):not(.col-md-2):not(.col-md-3):not(.col-md-4) { flex: 0 0 41.6667%; max-width: 41.6667%; }
   .row > .col-6[class*="col-md-"]:not(.col-md-1):not(.col-md-2):not(.col-md-3):not(.col-md-4):not(.col-md-5) { flex: 0 0 50.0000%; max-width: 50.0000%; }
+  .row > .col-7[class*="col-md-"]:not(.col-md-1):not(.col-md-2):not(.col-md-3):not(.col-md-4):not(.col-md-5):not(.col-md-6) { flex: 0 0 58.3333%; max-width: 58.3333%; }
   .row > .col-8[class*="col-md-"]:not(.col-md-1):not(.col-md-2):not(.col-md-3):not(.col-md-4):not(.col-md-5):not(.col-md-6):not(.col-md-7) { flex: 0 0 66.6667%; max-width: 66.6667%; }
   .row > .col-9[class*="col-md-"]:not(.col-md-1):not(.col-md-2):not(.col-md-3):not(.col-md-4):not(.col-md-5):not(.col-md-6):not(.col-md-7):not(.col-md-8) { flex: 0 0 75.0000%; max-width: 75.0000%; }
 }
@@ -830,3 +840,27 @@ code {
 .acct-table .btn-icon { width: 30px; height: 30px; min-height: 30px; font-size: 0.75rem; }
 .acct-danger { color: var(--danger-strong) !important; }
 .acct-danger:hover { border-color: var(--danger) !important; background: var(--danger-bg) !important; }
+
+/* ── Phones: nothing may push the page sideways ─────────────────────── */
+/* .table-responsive is a Bootstrap class 21 templates use but nothing
+   defined, so wide tables stretched the whole page instead of scrolling. */
+.table-responsive { overflow-x: auto; -webkit-overflow-scrolling: touch; max-width: 100%; }
+@media (max-width: 768px) {
+  /* Card headers carry filter forms; let them drop under the title. */
+  .card-header { flex-wrap: wrap; gap: 8px; }
+  .card-actions { flex: 1 1 100%; min-width: 0; }
+  .card-actions form, .card-actions > .d-flex { flex-wrap: wrap; }
+  .card-actions .form-control { flex: 1 1 140px; width: auto !important; min-width: 0; }
+  .content-wrapper .d-flex.gap-2 { flex-wrap: wrap; }
+  .content-wrapper td .d-flex { flex-wrap: nowrap; }
+  /* Page headers: title, badges and meta rows wrap instead of widening the page. */
+  .page-header .d-flex { flex-wrap: wrap; }
+  .page-header > div { min-width: 0; }
+  /* Plain col-N with no responsive class stayed a sliver on phones (a col-4
+     sidebar came out ~110px). Wide ones stack; narrow ones go two across. */
+  .row > :is(.col-4, .col-5, .col-8, .col-9):not([class*="col-sm-"]):not([class*="col-md-"]) { flex: 0 0 100%; max-width: 100%; }
+  .row > :is(.col-2, .col-3):not([class*="col-sm-"]):not([class*="col-md-"]) { flex: 0 0 50%; max-width: 50%; }
+  .row > .col { flex: 0 0 50%; max-width: 50%; }
+  /* License pages hard-code four stat columns inline. */
+  .stats-grid { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
+}

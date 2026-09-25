@@ -1,17 +1,21 @@
 {% extends 'base.html' %}
 
+{% block breadcrumb %}
+<a href="{% url 'dashboard' %}" class="breadcrumb-item">Dashboard</a>
+<span class="breadcrumb-separator">/</span>
+<a href="{% url 'gym_license_list' %}" class="breadcrumb-item">GymPro Licenses</a>
+<span class="breadcrumb-separator">/</span>
+<span class="breadcrumb-item active">Issue New License</span>
+{% endblock %}
+
 {% block content %}
-<div class="content-header">
+<div class="page-header">
+  <div class="page-header__lead">
+    <span class="page-header__icon"><i class="fas fa-plus-circle"></i></span>
     <div>
-        <nav class="breadcrumb">
-            <a href="{% url 'dashboard' %}">Dashboard</a>
-            <span>/</span>
-            <a href="{% url 'gym_license_list' %}">GymPro Licenses</a>
-            <span>/</span>
-            <span>Issue New License</span>
-        </nav>
-        <h1><i class="fas fa-plus-circle"></i> Issue New GymPro License</h1>
+      <h1 class="page-title">Issue New GymPro License</h1>
     </div>
+  </div>
 </div>
 
 <form method="POST" style="max-width: 800px;">
