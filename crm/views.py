@@ -47,16 +47,17 @@ def crm_dashboard(request):
 
 # ─── Leads ────────────────────────────────────────────────────────────
 
-@login_required
-def lead_list(request):
-    if not can_access_crm(request.user):
-        messages.error(request, 'Access denied.')
-        return redirect('dashboard')
-
+def _visible_leads(request):
+    """Leads this user may see: interns only get the ones assigned to them."""
     leads = Lead.objects.select_related('assigned_to', 'created_by')
-
     if is_intern(request.user):
         leads = leads.filter(assigned_to=request.user)
+    return leads
+
+
+def _filtered_leads(request):
+    """The lead list's filters and sort, shared by the page and its CSV export."""
+    leads = _visible_leads(request)
 
     search = request.GET.get('search', '')
     if search:
@@ -103,29 +104,73 @@ def lead_list(request):
     }
     if sort_by in valid_sorts:
         leads = leads.order_by(valid_sorts[sort_by])
+    return leads, {
+        'search': search, 'status_filter': status_filter, 'source_filter': source_filter,
+        'assigned_filter': assigned_filter, 'date_from': date_from, 'date_to': date_to,
+        'sort_by': sort_by,
+    }
 
-    # Build date-wise submission summary (for admin)
-    datewise_summary = []
-    if not is_intern(request.user):
-        from django.db.models.functions import TruncDate
-        from django.db.models import Count
-        from collections import defaultdict
 
-        summary_qs = leads  # use the same filtered queryset
-        date_intern_groups = defaultdict(lambda: defaultdict(lambda: defaultdict(int)))
-        for lead in summary_qs.select_related('created_by').all():
-            d = lead.created_at.date()
-            creator = lead.created_by.get_full_name() if lead.created_by else 'Unknown'
-            date_intern_groups[d][creator][lead.status] += 1
+LEAD_IN_PROGRESS = ['contacted', 'interested', 'qualified', 'demo_scheduled', 'demo_completed',
+                    'proposal_sent', 'negotiation', 'follow_up', 'on_hold']
 
-        for d in sorted(date_intern_groups.keys(), reverse=True)[:30]:
-            for intern_name, statuses in date_intern_groups[d].items():
-                datewise_summary.append({
-                    'date': d,
-                    'submitted_by': intern_name,
-                    'count': sum(statuses.values()),
-                    'status_breakdown': dict(statuses),
-                })
+
+def _lead_stats(leads):
+    """Stat cards over every lead the user can see (filters do not apply)."""
+    month_start = timezone.now().replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+    counts = {row['status']: row['n'] for row in leads.values('status').annotate(n=Count('id'))}
+    total = sum(counts.values())
+    converted = counts.get('converted', 0)
+    return {
+        'total': total,
+        'this_month': leads.filter(created_at__gte=month_start).count(),
+        'new': counts.get('new', 0),
+        'new_this_month': leads.filter(status='new', created_at__gte=month_start).count(),
+        'converted': converted,
+        'conversion': round(converted * 100 / total) if total else 0,
+        'in_progress': sum(counts.get(k, 0) for k in LEAD_IN_PROGRESS),
+        'lost': sum(counts.get(k, 0) for k in Lead.CLOSED_LOST_STATUSES),
+    }
+
+
+LEAD_CHART_RANGES = {'7': 7, '30': 30, '90': 90}
+
+
+def _lead_chart(leads, days):
+    """One bar per day for the last `days` days, with who submitted what."""
+    from collections import defaultdict
+    today = timezone.localdate()
+    start = today - timedelta(days=days - 1)
+    per_day = defaultdict(lambda: defaultdict(int))
+    for created_at, first, last, username in leads.filter(created_at__date__gte=start).values_list(
+            'created_at', 'created_by__first_name', 'created_by__last_name', 'created_by__username'):
+        who = f'{first} {last}'.strip() or username or 'Unknown'
+        per_day[timezone.localtime(created_at).date()][who] += 1
+    bars = []
+    for i in range(days):
+        d = start + timedelta(days=i)
+        people = per_day.get(d, {})
+        bars.append({'date': d, 'count': sum(people.values()),
+                     'people': sorted(people.items(), key=lambda kv: -kv[1])})
+    peak = max((b['count'] for b in bars), default=0) or 1
+    step = max(1, days // 9)
+    for i, b in enumerate(bars):
+        b['height'] = round(b['count'] * 100 / peak)
+        b['label'] = i % step == 0
+    return {'bars': bars, 'peak': peak, 'total': sum(b['count'] for b in bars)}
+
+
+@login_required
+def lead_list(request):
+    if not can_access_crm(request.user):
+        messages.error(request, 'Access denied.')
+        return redirect('dashboard')
+
+    leads, filters = _filtered_leads(request)
+    visible = _visible_leads(request)
+    chart_range = request.GET.get('range', '30')
+    if chart_range not in LEAD_CHART_RANGES:
+        chart_range = '30'
 
     paginator = Paginator(leads, 20)
     page_number = request.GET.get('page')
@@ -135,19 +180,42 @@ def lead_list(request):
 
     context = {
         'leads': leads,
-        'search': search,
-        'status_filter': status_filter,
-        'source_filter': source_filter,
-        'assigned_filter': assigned_filter,
-        'date_from': date_from,
-        'date_to': date_to,
-        'sort_by': sort_by,
+        **filters,
         'status_choices': Lead.STATUS_CHOICES,
         'source_choices': Lead.SOURCE_CHOICES,
         'interns': interns,
-        'datewise_summary': datewise_summary,
+        'stats': _lead_stats(visible),
+        'chart': _lead_chart(visible, LEAD_CHART_RANGES[chart_range]),
+        'chart_range': chart_range,
     }
     return render(request, 'crm/leads/list.html', context)
+
+
+@login_required
+def lead_export(request):
+    """CSV of the leads the list is currently showing (same filters and sort)."""
+    import csv
+    from django.http import HttpResponse
+    if not can_access_crm(request.user):
+        messages.error(request, 'Access denied.')
+        return redirect('dashboard')
+    leads, _ = _filtered_leads(request)
+    response = HttpResponse(content_type='text/csv')
+    response['Content-Disposition'] = f'attachment; filename="leads_{timezone.localdate():%Y%m%d}.csv"'
+    writer = csv.writer(response)
+    writer.writerow(['Contact Person', 'Company', 'Phone', 'Email', 'Status', 'Source', 'Assigned To',
+                     'Submitted By', 'Submitted On', 'Next Follow-up', 'Probability %', 'Notes'])
+    for lead in leads:
+        writer.writerow([
+            lead.contact_person, lead.company_name, lead.phone, lead.email,
+            lead.get_status_display(), lead.get_source_display(),
+            lead.assigned_to.get_full_name() or lead.assigned_to.username if lead.assigned_to else '',
+            lead.created_by.get_full_name() or lead.created_by.username if lead.created_by else '',
+            timezone.localtime(lead.created_at).strftime('%d-%m-%Y %H:%M'),
+            lead.next_follow_up_date.strftime('%d-%m-%Y') if lead.next_follow_up_date else '',
+            lead.closing_probability, lead.notes,
+        ])
+    return response
 
 
 @login_required

@@ -13,202 +13,216 @@
 <div class="page-header">
   <div>
     <h1 class="page-title">Leads</h1>
-    <p class="page-subtitle mb-0">Manage prospect leads</p>
+    <p class="page-subtitle mb-0">Manage and track your prospect leads</p>
   </div>
   <div class="page-actions">
+    <a href="{% url 'crm:lead_export' %}?{{ request.GET.urlencode }}" class="btn btn-outline-secondary">
+      <i class="fas fa-download"></i> Export
+    </a>
     <a href="{% url 'crm:lead_create' %}" class="btn btn-primary">
       <i class="fas fa-plus"></i> New Lead
     </a>
   </div>
 </div>
 
-<!-- Filters -->
-<div class="card mb-4">
-  <div class="card-body">
-    <form method="get" class="row align-items-end">
-      <div class="col-md-3 col-sm-6" style="padding: 0.5rem;">
-        <label class="form-label">Search</label>
-        <div class="navbar-search" style="width: 100%;">
-          <i class="fas fa-search"></i>
-          <input type="text" class="form-control" name="search" placeholder="Name, company, phone..." value="{{ search }}" style="padding-left: 2.5rem; width: 100%;">
-        </div>
-      </div>
-      <div class="col-md-2 col-sm-6" style="padding: 0.5rem;">
-        <label class="form-label">Status</label>
-        <select class="form-control" name="status">
-          <option value="">All Status</option>
-          {% for value, label in status_choices %}
-          <option value="{{ value }}" {% if status_filter == value %}selected{% endif %}>{{ label }}</option>
-          {% endfor %}
-        </select>
-      </div>
-      <div class="col-md-2 col-sm-6" style="padding: 0.5rem;">
-        <label class="form-label">Source</label>
-        <select class="form-control" name="source">
-          <option value="">All Sources</option>
-          {% for value, label in source_choices %}
-          <option value="{{ value }}" {% if source_filter == value %}selected{% endif %}>{{ label }}</option>
-          {% endfor %}
-        </select>
-      </div>
-      {% if request.user.is_superuser or request.user.is_staff %}
-      <div class="col-md-2 col-sm-6" style="padding: 0.5rem;">
-        <label class="form-label">Assigned To</label>
-        <select class="form-control" name="assigned_to">
-          <option value="">All Interns</option>
-          {% for intern in interns %}
-          <option value="{{ intern.pk }}" {% if assigned_filter == intern.pk|stringformat:"d" %}selected{% endif %}>{{ intern.get_full_name|default:intern.username }}</option>
-          {% endfor %}
-        </select>
-      </div>
-      {% endif %}
-      <div class="col-md-2 col-sm-6" style="padding: 0.5rem;">
-        <label class="form-label">Sort By</label>
-        <select class="form-control" name="sort">
-          <option value="-created_at" {% if sort_by == '-created_at' %}selected{% endif %}>Newest First</option>
-          <option value="created_at" {% if sort_by == 'created_at' %}selected{% endif %}>Oldest First</option>
-          <option value="status" {% if sort_by == 'status' %}selected{% endif %}>Status (A-Z)</option>
-          <option value="-status" {% if sort_by == '-status' %}selected{% endif %}>Status (Z-A)</option>
-          <option value="contact_person" {% if sort_by == 'contact_person' %}selected{% endif %}>Name (A-Z)</option>
-          <option value="-closing_probability" {% if sort_by == '-closing_probability' %}selected{% endif %}>Probability (High-Low)</option>
-          <option value="next_follow_up_date" {% if sort_by == 'next_follow_up_date' %}selected{% endif %}>Follow-up Date</option>
-        </select>
-      </div>
-
-      <!-- Date range row -->
-      <div class="col-md-2 col-sm-6" style="padding: 0.5rem;">
-        <label class="form-label">Created From</label>
-        <input type="date" class="form-control" name="date_from" value="{{ date_from }}">
-      </div>
-      <div class="col-md-2 col-sm-6" style="padding: 0.5rem;">
-        <label class="form-label">Created To</label>
-        <input type="date" class="form-control" name="date_to" value="{{ date_to }}">
-      </div>
-
-      <div class="col-md-1 col-sm-3" style="padding: 0.5rem;">
-        <button type="submit" class="btn btn-outline-secondary w-100">
-          <i class="fas fa-filter"></i> Filter
-        </button>
-      </div>
-      <div class="col-md-1 col-sm-3" style="padding: 0.5rem;">
-        <a href="{% url 'crm:lead_list' %}" class="btn btn-ghost w-100">Reset</a>
-      </div>
-    </form>
+<div class="ld-stats">
+  <a href="{% url 'crm:lead_list' %}" class="inv-stat">
+    <span class="inv-stat__icon is-primary"><i class="fas fa-users"></i></span>
+    <div>
+      <div class="inv-stat__label">Total Leads</div>
+      <div class="inv-stat__value">{{ stats.total }}</div>
+      <div class="inv-stat__note">{% if stats.this_month %}<span class="inv-trend is-up"><i class="fas fa-arrow-up"></i>{{ stats.this_month }}</span> this month{% else %}none this month{% endif %}</div>
+    </div>
+  </a>
+  <a href="?status=new" class="inv-stat">
+    <span class="inv-stat__icon ld-ico--violet"><i class="fas fa-bullseye"></i></span>
+    <div>
+      <div class="inv-stat__label">New Leads</div>
+      <div class="inv-stat__value">{{ stats.new }}</div>
+      <div class="inv-stat__note">{{ stats.new_this_month }} added this month</div>
+    </div>
+  </a>
+  <a href="?status=converted" class="inv-stat">
+    <span class="inv-stat__icon is-success"><i class="fas fa-user-check"></i></span>
+    <div>
+      <div class="inv-stat__label">Converted</div>
+      <div class="inv-stat__value">{{ stats.converted }}</div>
+      <div class="inv-stat__note">{{ stats.conversion }}% conversion</div>
+    </div>
+  </a>
+  <div class="inv-stat">
+    <span class="inv-stat__icon is-amber"><i class="far fa-clock"></i></span>
+    <div>
+      <div class="inv-stat__label">In Progress</div>
+      <div class="inv-stat__value">{{ stats.in_progress }}</div>
+      <div class="inv-stat__note">being followed up</div>
+    </div>
   </div>
+  <a href="?status=lost" class="inv-stat">
+    <span class="inv-stat__icon ld-ico--red"><i class="fas fa-circle-xmark"></i></span>
+    <div>
+      <div class="inv-stat__label">Lost</div>
+      <div class="inv-stat__value">{{ stats.lost }}</div>
+      <div class="inv-stat__note">lost or not qualified</div>
+    </div>
+  </a>
 </div>
 
-<!-- Date-wise Submission Summary -->
-{% if datewise_summary %}
-<div class="card mb-4">
-  <div class="card-body">
-    <h3 style="font-size: 1rem; font-weight: 700; margin-bottom: 1rem;">
-      <i class="fas fa-calendar-alt" style="margin-right: 0.5rem; color: var(--primary);"></i>
-      Date-wise Lead Submissions
-    </h3>
-    <div class="table-wrapper">
-      <table class="table" style="margin-bottom: 0;">
-        <thead>
-          <tr>
-            <th>Date</th>
-            <th>Submitted By</th>
-            <th style="text-align: center;">Count</th>
-            <th>Statuses</th>
-          </tr>
-        </thead>
-        <tbody>
-          {% for entry in datewise_summary %}
-          <tr>
-            <td><span class="fw-medium">{{ entry.date|date:"d M Y" }}</span></td>
-            <td>{{ entry.submitted_by }}</td>
-            <td style="text-align: center;">
-              <span class="badge badge-primary" style="font-size: 0.85em;">{{ entry.count }}</span>
-            </td>
-            <td>
-              {% for status, cnt in entry.status_breakdown.items %}
-              <span class="badge badge-{% if status == 'new' %}info{% elif status == 'contacted' %}primary{% elif status == 'interested' %}warning{% elif status == 'converted' %}success{% elif status == 'lost' %}danger{% else %}secondary{% endif %}" style="margin-right: 4px;">
-                {{ status|title }}: {{ cnt }}
-              </span>
-              {% endfor %}
-            </td>
-          </tr>
+<div class="ld-top">
+  <div class="card ld-filter">
+    <div class="card-header ld-card-head">
+      <h2 class="card-title mb-0"><i class="fas fa-filter text-primary me-2"></i>Filter Leads</h2>
+      <a href="{% url 'crm:lead_list' %}" class="sp-kicker-act">Clear All</a>
+    </div>
+    <div class="card-body">
+      <form method="get" class="ld-filter__grid">
+        <input type="hidden" name="range" value="{{ chart_range }}">
+        <div class="ld-span-2">
+          <label class="form-label">Search</label>
+          <div class="inv-input-icon">
+            <i class="fas fa-search"></i>
+            <input type="text" class="form-control" name="search" placeholder="Name, company, phone, email..." value="{{ search }}">
+          </div>
+        </div>
+        <div>
+          <label class="form-label">Status</label>
+          <select class="form-control" name="status">
+            <option value="">All Statuses</option>
+            {% for value, label in status_choices %}
+            <option value="{{ value }}" {% if status_filter == value %}selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div>
+          <label class="form-label">Source</label>
+          <select class="form-control" name="source">
+            <option value="">All Sources</option>
+            {% for value, label in source_choices %}
+            <option value="{{ value }}" {% if source_filter == value %}selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        {% if request.user.is_superuser or request.user.is_staff %}
+        <div class="ld-span-2">
+          <label class="form-label">Assigned To</label>
+          <select class="form-control" name="assigned_to">
+            <option value="">All Interns</option>
+            {% for intern in interns %}
+            <option value="{{ intern.pk }}" {% if assigned_filter == intern.pk|stringformat:"d" %}selected{% endif %}>{{ intern.get_full_name|default:intern.username }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        {% endif %}
+        <div class="ld-span-2">
+          <label class="form-label">Sort By</label>
+          <select class="form-control" name="sort">
+            <option value="-created_at" {% if sort_by == '-created_at' %}selected{% endif %}>Newest First</option>
+            <option value="created_at" {% if sort_by == 'created_at' %}selected{% endif %}>Oldest First</option>
+            <option value="status" {% if sort_by == 'status' %}selected{% endif %}>Status (A-Z)</option>
+            <option value="-status" {% if sort_by == '-status' %}selected{% endif %}>Status (Z-A)</option>
+            <option value="contact_person" {% if sort_by == 'contact_person' %}selected{% endif %}>Name (A-Z)</option>
+            <option value="-closing_probability" {% if sort_by == '-closing_probability' %}selected{% endif %}>Probability (High-Low)</option>
+            <option value="next_follow_up_date" {% if sort_by == 'next_follow_up_date' %}selected{% endif %}>Follow-up Date</option>
+          </select>
+        </div>
+        <div class="ld-span-2">
+          <label class="form-label">Created From</label>
+          <input type="date" class="form-control" name="date_from" value="{{ date_from }}">
+        </div>
+        <div class="ld-span-2">
+          <label class="form-label">Created To</label>
+          <input type="date" class="form-control" name="date_to" value="{{ date_to }}">
+        </div>
+        <button type="submit" class="btn btn-primary ld-span-2"><i class="fas fa-filter"></i> Apply Filters</button>
+        <a href="{% url 'crm:lead_list' %}" class="btn btn-outline-primary ld-span-2"><i class="fas fa-rotate-right"></i> Reset</a>
+      </form>
+    </div>
+  </div>
+
+  <div class="card ld-chart">
+    <div class="card-header ld-card-head">
+      <h2 class="card-title mb-0"><i class="far fa-calendar text-primary me-2"></i>Date-wise Lead Submissions</h2>
+      <form method="get" class="ld-range">
+        {% for key, value in request.GET.items %}{% if key != 'range' and key != 'page' %}<input type="hidden" name="{{ key }}" value="{{ value }}">{% endif %}{% endfor %}
+        <select name="range" class="form-control" onchange="this.form.submit()">
+          <option value="7" {% if chart_range == '7' %}selected{% endif %}>Last 7 Days</option>
+          <option value="30" {% if chart_range == '30' %}selected{% endif %}>Last 30 Days</option>
+          <option value="90" {% if chart_range == '90' %}selected{% endif %}>Last 90 Days</option>
+        </select>
+      </form>
+    </div>
+    <div class="card-body">
+      <p class="ld-chart__sum">{% if chart.total %}{{ chart.total }} lead{{ chart.total|pluralize }} in this period &middot; busiest day had {{ chart.peak }}{% else %}No leads submitted in this period.{% endif %}</p>
+      <div class="ld-bars" style="--days: {{ chart.bars|length }}">
+        <div class="ld-bars__axis"><span>{{ chart.peak }}</span><span>0</span></div>
+        <div class="ld-bars__plot">
+          {% for b in chart.bars %}
+          <div class="ld-bar{% if b.count == chart.peak and b.count %} is-peak{% endif %}" tabindex="0">
+            <div class="ld-bar__fill" style="height: {{ b.height }}%"></div>
+            {% if b.label %}<span class="ld-bar__label">{{ b.date|date:"d M" }}</span>{% endif %}
+            <div class="ld-bar__tip" role="tooltip">
+              <strong>{{ b.date|date:"d M Y" }}</strong>
+              <span class="ld-bar__tip-n"><i></i>{{ b.count }} lead{{ b.count|pluralize }}</span>
+              {% for who, n in b.people %}<span>{{ who }}: {{ n }}</span>{% endfor %}
+            </div>
+          </div>
           {% endfor %}
-        </tbody>
-      </table>
+        </div>
+      </div>
     </div>
   </div>
 </div>
-{% endif %}
 
-<!-- Leads Table -->
 <div class="card">
+  <div class="card-header ld-card-head">
+    <h2 class="card-title mb-0"><i class="fas fa-users text-primary me-2"></i>Leads ({{ leads.paginator.count }})</h2>
+  </div>
   <div class="table-wrapper">
-    <table class="table">
+    <table class="table inv-table ld-table">
       <thead>
         <tr>
-          <th>
-            <a href="?{{ request.GET.urlencode }}&sort={% if sort_by == 'contact_person' %}-contact_person{% else %}contact_person{% endif %}" style="color: inherit; text-decoration: none;">
-              Contact Person {% if sort_by == 'contact_person' %}<i class="fas fa-sort-up"></i>{% elif sort_by == '-contact_person' %}<i class="fas fa-sort-down"></i>{% endif %}
-            </a>
-          </th>
+          <th><a href="?{{ request.GET.urlencode }}&sort={% if sort_by == 'contact_person' %}-contact_person{% else %}contact_person{% endif %}">Contact Person {% if sort_by == 'contact_person' %}<i class="fas fa-sort-up"></i>{% elif sort_by == '-contact_person' %}<i class="fas fa-sort-down"></i>{% endif %}</a></th>
+          <th>Company</th>
           <th>Phone</th>
-          <th>
-            <a href="?{{ request.GET.urlencode }}&sort={% if sort_by == 'status' %}-status{% else %}status{% endif %}" style="color: inherit; text-decoration: none;">
-              Status {% if sort_by == 'status' %}<i class="fas fa-sort-up"></i>{% elif sort_by == '-status' %}<i class="fas fa-sort-down"></i>{% endif %}
-            </a>
-          </th>
+          <th><a href="?{{ request.GET.urlencode }}&sort={% if sort_by == 'status' %}-status{% else %}status{% endif %}">Status {% if sort_by == 'status' %}<i class="fas fa-sort-up"></i>{% elif sort_by == '-status' %}<i class="fas fa-sort-down"></i>{% endif %}</a></th>
           <th>Source</th>
-          <th>Submitted By</th>
-          <th>
-            <a href="?{{ request.GET.urlencode }}&sort={% if sort_by == '-created_at' %}created_at{% else %}-created_at{% endif %}" style="color: inherit; text-decoration: none;">
-              Submitted On {% if sort_by == '-created_at' %}<i class="fas fa-sort-down"></i>{% elif sort_by == 'created_at' %}<i class="fas fa-sort-up"></i>{% endif %}
-            </a>
-          </th>
           <th>Assigned To</th>
-          <th>
-            <a href="?{{ request.GET.urlencode }}&sort={% if sort_by == '-closing_probability' %}closing_probability{% else %}-closing_probability{% endif %}" style="color: inherit; text-decoration: none;">
-              Prob. {% if sort_by == '-closing_probability' %}<i class="fas fa-sort-down"></i>{% elif sort_by == 'closing_probability' %}<i class="fas fa-sort-up"></i>{% endif %}
-            </a>
-          </th>
-          <th style="width: 100px;">Actions</th>
+          <th><a href="?{{ request.GET.urlencode }}&sort={% if sort_by == '-created_at' %}created_at{% else %}-created_at{% endif %}">Submitted On {% if sort_by == '-created_at' %}<i class="fas fa-sort-down"></i>{% elif sort_by == 'created_at' %}<i class="fas fa-sort-up"></i>{% endif %}</a></th>
+          <th><a href="?{{ request.GET.urlencode }}&sort={% if sort_by == '-closing_probability' %}closing_probability{% else %}-closing_probability{% endif %}">Prob. {% if sort_by == '-closing_probability' %}<i class="fas fa-sort-down"></i>{% elif sort_by == 'closing_probability' %}<i class="fas fa-sort-up"></i>{% endif %}</a></th>
+          <th>Actions</th>
         </tr>
       </thead>
       <tbody>
         {% for lead in leads %}
         <tr>
           <td>
-            <div>
-              <a href="{% url 'crm:lead_detail' pk=lead.pk %}" class="fw-medium d-block">{{ lead.contact_person }}</a>
-              <span class="text-sm text-muted">{{ lead.company_name|default:"" }}</span>
+            <div class="cls-client">
+              <span class="cls-avatar ld-av-{% cycle 'a' 'b' 'c' 'd' %}">{{ lead.contact_person|slice:":2"|upper }}</span>
+              <div class="cls-client__text">
+                <a href="{% url 'crm:lead_detail' pk=lead.pk %}" class="fw-semibold">{{ lead.contact_person }}</a>
+                {% if lead.company_name %}<span>{{ lead.company_name }}</span>{% endif %}
+              </div>
             </div>
           </td>
-          <td><span class="text-sm">{{ lead.phone }}</span></td>
+          <td>{{ lead.company_name|default:"–" }}</td>
+          <td class="ld-phone"><i class="fas fa-phone"></i>{{ lead.phone }}</td>
+          <td><span class="badge badge-{{ lead.status_badge }}">{{ lead.get_status_display }}</span></td>
+          <td>{{ lead.get_source_display }}</td>
           <td>
-            <span class="badge badge-{{ lead.status_badge }}">
-              {{ lead.get_status_display }}
-            </span>
+            {% if lead.assigned_to %}
+            {% with name=lead.assigned_to.get_full_name|default:lead.assigned_to.username %}
+            <div class="ld-person"><span class="ld-person__av">{{ name|slice:":2"|upper }}</span>{{ name }}</div>
+            {% endwith %}
+            {% else %}<span class="text-muted">Unassigned</span>{% endif %}
           </td>
-          <td><span class="text-sm">{{ lead.get_source_display }}</span></td>
+          <td class="inv-date">{{ lead.created_at|date:"d M Y" }}<span>{{ lead.created_at|date:"h:i A" }}{% if lead.created_by %} &middot; by {{ lead.created_by.get_full_name|default:lead.created_by.username }}{% endif %}</span></td>
           <td>
-            {% if lead.created_by %}
-            <span class="text-sm fw-medium">{{ lead.created_by.get_full_name|default:lead.created_by.username }}</span>
-            {% else %}
-            <span class="text-sm text-muted">-</span>
-            {% endif %}
+            <div class="ld-prob"><span>{{ lead.closing_probability }}%</span><i class="ld-prob__bar"><b style="width: {{ lead.closing_probability }}%" class="{% if lead.closing_probability >= 60 %}is-high{% elif lead.closing_probability >= 30 %}is-mid{% else %}is-low{% endif %}"></b></i></div>
           </td>
-          <td>
-            <span class="text-sm">{{ lead.created_at|date:"d M Y" }}</span>
-            <br><span class="text-sm text-muted">{{ lead.created_at|date:"h:i A" }}</span>
-          </td>
-          <td><span class="text-sm">{% if lead.assigned_to %}{{ lead.assigned_to.get_full_name|default:lead.assigned_to.username }}{% else %}-{% endif %}</span></td>
-          <td><span class="text-sm">{{ lead.closing_probability }}%</span></td>
           <td>
             <div class="table-actions">
-              <a href="{% url 'crm:lead_detail' pk=lead.pk %}" class="btn btn-sm btn-ghost btn-icon" title="View">
-                <i class="fas fa-eye"></i>
-              </a>
-              <a href="{% url 'crm:lead_edit' pk=lead.pk %}" class="btn btn-sm btn-ghost btn-icon" title="Edit">
-                <i class="fas fa-edit"></i>
-              </a>
+              <a href="{% url 'crm:lead_detail' pk=lead.pk %}" class="btn btn-icon" title="View"><i class="fas fa-eye"></i></a>
+              <a href="{% url 'crm:lead_edit' pk=lead.pk %}" class="btn btn-icon" title="Edit"><i class="fas fa-pen"></i></a>
             </div>
           </td>
         </tr>
@@ -224,15 +238,14 @@
     </table>
   </div>
 
-  <!-- Pagination -->
   {% if leads.has_other_pages %}
-  <div class="card-body" style="border-top: 1px solid var(--border-color); display: flex; justify-content: center; gap: 0.5rem;">
+  <div class="card-body ld-pages">
     {% if leads.has_previous %}
-    <a href="?page={{ leads.previous_page_number }}&search={{ search }}&status={{ status_filter }}&source={{ source_filter }}&assigned_to={{ assigned_filter }}&sort={{ sort_by }}&date_from={{ date_from }}&date_to={{ date_to }}" class="btn btn-sm btn-ghost">&laquo; Prev</a>
+    <a href="?page={{ leads.previous_page_number }}&search={{ search }}&status={{ status_filter }}&source={{ source_filter }}&assigned_to={{ assigned_filter }}&sort={{ sort_by }}&date_from={{ date_from }}&date_to={{ date_to }}&range={{ chart_range }}" class="btn btn-sm btn-outline-secondary">&laquo; Prev</a>
     {% endif %}
-    <span class="btn btn-sm btn-ghost" style="pointer-events: none;">Page {{ leads.number }} of {{ leads.paginator.num_pages }}</span>
+    <span class="ld-pages__at">Page {{ leads.number }} of {{ leads.paginator.num_pages }}</span>
     {% if leads.has_next %}
-    <a href="?page={{ leads.next_page_number }}&search={{ search }}&status={{ status_filter }}&source={{ source_filter }}&assigned_to={{ assigned_filter }}&sort={{ sort_by }}&date_from={{ date_from }}&date_to={{ date_to }}" class="btn btn-sm btn-ghost">Next &raquo;</a>
+    <a href="?page={{ leads.next_page_number }}&search={{ search }}&status={{ status_filter }}&source={{ source_filter }}&assigned_to={{ assigned_filter }}&sort={{ sort_by }}&date_from={{ date_from }}&date_to={{ date_to }}&range={{ chart_range }}" class="btn btn-sm btn-outline-secondary">Next &raquo;</a>
     {% endif %}
   </div>
   {% endif %}
