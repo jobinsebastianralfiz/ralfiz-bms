@@ -988,6 +988,8 @@ def project_detail(request, pk):
     # Pending amount = Total Project Cost - Amount Received
     pending_amount = total_project_cost - amount_received
 
+    project_expenses = project.expenses.aggregate(total=Sum('amount'))['total'] or Decimal('0')
+
     # Client portal data
     from client_portal.models import ProjectUpdate, ProjectComment
     project_updates = ProjectUpdate.objects.filter(project=project).select_related('author')
@@ -1009,6 +1011,7 @@ def project_detail(request, pk):
         'total_invoiced': total_invoiced,
         'amount_received': amount_received,
         'pending_amount': pending_amount,
+        'project_expenses': project_expenses,
         'project_updates': project_updates,
         'client_comments': client_comments,
         'amc_contracts': amc_contracts,
@@ -7303,9 +7306,13 @@ def emp_leave_list(request):
     status_filter = request.GET.get('status', '')
     if status_filter:
         leaves = leaves.filter(status=status_filter)
+    employee_filter = request.GET.get('employee', '')
+    if employee_filter:
+        leaves = leaves.filter(employee__pk=employee_filter)
     context = {
         'leaves': leaves,
         'status_filter': status_filter,
+        'employee_filter': employee_filter,
     }
     return render(request, 'hr/leave_list.html', context)
 
@@ -7538,9 +7545,13 @@ def emp_work_list(request):
     status_filter = request.GET.get('status', '')
     if status_filter:
         assignments = assignments.filter(status=status_filter)
+    employee_filter = request.GET.get('employee', '')
+    if employee_filter:
+        assignments = assignments.filter(assigned_to__pk=employee_filter).distinct()
     employees = Employee.objects.filter(status='active').order_by('employee_id')
     context = {
         'assignments': assignments,
+        'employee_filter': employee_filter,
         'employees': employees,
         'status_filter': status_filter,
         'status_choices': WorkAssignment.STATUS_CHOICES,

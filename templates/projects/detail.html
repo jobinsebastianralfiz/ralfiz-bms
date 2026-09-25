@@ -1,5 +1,5 @@
 {% extends 'base.html' %}
-{% load static %}
+{% load static money %}
 
 {% block title %}{{ project.name }} - Ralfiz BMS{% endblock %}
 
@@ -84,30 +84,28 @@
 
 {% block content %}
 {# PULSE stage: the project at the centre of its own space, facets floating around it. #}
-<div class="pstage" id="pulse-stage" data-status="{{ project.status }}">
+<div class="pstage pstage--project" id="pulse-stage" data-status="{{ project.status }}">
   <canvas id="stage-field" aria-hidden="true"></canvas>
 
   <div class="pstage-col pstage-col--c">
 
   <header class="pstage-center">
-    <canvas id="stage-orb" width="320" height="320" aria-hidden="true"></canvas>
+    <div class="pj-orb">
+      <canvas id="stage-orb" width="320" height="320" aria-hidden="true"></canvas>
+      <span class="pj-orb__icon" aria-hidden="true"><i class="fas {% if project.project_type == 'mobile_app' %}fa-mobile-screen{% elif project.project_type == 'full_stack' %}fa-layer-group{% elif project.project_type == 'api' %}fa-plug{% elif project.project_type == 'maintenance' %}fa-screwdriver-wrench{% elif project.project_type == 'consulting' %}fa-comments{% elif project.project_type == 'web_app' %}fa-globe{% else %}fa-folder-open{% endif %}"></i></span>
+    </div>
     <div class="pstage-id">
       <p class="pulse-kicker mb-0">Project</p>
       <h1 class="pd-title">{{ project.name }}</h1>
+      {% if project.description %}<p class="pj-desc">{{ project.description|truncatewords:14 }}</p>{% endif %}
       <div class="pd-chips">
         <span class="status-badge {{ project.status }}">{{ project.get_status_display }}</span>
-        {% if project.priority %}
-        <span class="priority-badge {{ project.priority }}">{{ project.get_priority_display }} Priority</span>
-        {% endif %}
-        <span class="badge badge-info">{{ project.get_project_type_display }}</span>
+        <span class="badge badge-primary">{{ project.get_project_type_display }}</span>
       </div>
       <p class="pd-meta">
         <a href="{% url 'client_detail' project.client.pk %}">
-          <i class="fas fa-building me-1"></i>{{ project.client.name }}
+          <i class="fas fa-user-group me-1"></i>{{ project.client.name }}
         </a>
-        {% if project.start_date %}
-        <span class="pd-meta__dot">&middot;</span>Started {{ project.start_date|date:"d M Y" }}
-        {% endif %}
       </p>
 
     <div class="pd-actions">
@@ -130,23 +128,32 @@
       </a>
     </div>
 
-    {# Money as one ledger column, not four boxes fighting for width. #}
-    <div class="pd-ledger">
-      <div class="pd-ledger__row">
-        <span class="pd-ledger__label">Project cost</span>
-        <span class="pd-ledger__value">&#8377;{{ total_project_cost|floatformat:2|default:"0" }}</span>
+    <div class="pj-cost">
+      <div class="pj-cost__head">
+        <span class="sp-ico sp-ico--amber"><i class="fas fa-indian-rupee-sign"></i></span>
+        <span>Project Cost</span>
       </div>
-      <div class="pd-ledger__row is-good">
-        <span class="pd-ledger__label">Received</span>
-        <span class="pd-ledger__value">&#8377;{{ amount_received|floatformat:2|default:"0" }}</span>
-      </div>
-      <div class="pd-ledger__row is-warn">
-        <span class="pd-ledger__label">Pending</span>
-        <span class="pd-ledger__value">&#8377;{{ pending_amount|floatformat:2|default:"0" }}</span>
-      </div>
-      <div class="pd-ledger__row">
-        <span class="pd-ledger__label">Credentials</span>
-        <span class="pd-ledger__value">{{ credentials.count }}</span>
+      <div class="pd-ledger">
+        <div class="pd-ledger__row">
+          <span class="pd-ledger__label">Total Cost</span>
+          <span class="pd-ledger__value">&#8377;{{ total_project_cost|inr }}</span>
+        </div>
+        <div class="pd-ledger__row is-good">
+          <span class="pd-ledger__label">Received</span>
+          <span class="pd-ledger__value">&#8377;{{ amount_received|inr }}</span>
+        </div>
+        <div class="pd-ledger__row is-warn">
+          <span class="pd-ledger__label">Pending</span>
+          <span class="pd-ledger__value">&#8377;{{ pending_amount|inr }}</span>
+        </div>
+        <div class="pd-ledger__row">
+          <span class="pd-ledger__label">Expenses</span>
+          <span class="pd-ledger__value">&#8377;{{ project_expenses|inr }}</span>
+        </div>
+        <div class="pd-ledger__row">
+          <span class="pd-ledger__label">Credentials</span>
+          <span class="pd-ledger__value">{{ credentials.count }}</span>
+        </div>
       </div>
     </div>
     </div>
@@ -156,427 +163,194 @@
 
   <div class="pstage-col pstage-col--l">
 
-  <section class="stage-panel sp-dossier">
-    <!-- Project Information -->
-    <div class="card mb-4">
-      <div class="card-header">
-        <h3 class="card-title">Project Information</h3>
-      </div>
-      <div class="card-body">
-        {% if project.description %}
-        <div class="mb-3">
-          <div class="text-sm text-muted mb-1">Description</div>
-          <div class="text-secondary">
-            {{ project.description }}
-          </div>
-        </div>
-        {% endif %}
-        {% if project.tech_stack %}
-        <div class="mb-3">
-          <div class="text-sm text-muted mb-1">Technologies</div>
-          <div class="d-flex flex-wrap gap-2">
-            {% for tech in project.tech_stack.split %}
-            <span class="badge badge-secondary">{{ tech }}</span>
-            {% endfor %}
-          </div>
-        </div>
-        {% endif %}
-        <div class="mb-3">
-          <div class="text-sm text-muted mb-1">Timeline</div>
-          <div>
-            <i class="fas fa-calendar-alt me-2 text-muted"></i>
-            {{ project.start_date|date:"d M Y"|default:"Not set" }} - {{ project.deadline|date:"d M Y"|default:"Not set" }}
-          </div>
-          {% if project.deadline and project.days_remaining >= 0 %}
-          <div class="text-sm text-warning mt-1">
-            <i class="fas fa-exclamation-triangle me-1"></i>{{ project.days_remaining }} days remaining
-          </div>
-          {% elif project.deadline and project.days_remaining < 0 %}
-          <div class="text-sm text-danger mt-1">
-            <i class="fas fa-exclamation-circle me-1"></i>Overdue
-          </div>
-          {% endif %}
-        </div>
-        <div class="mb-3">
-          <div class="text-sm text-muted mb-1">Billing Type</div>
-          <div class="fw-medium">{{ project.get_billing_type_display|default:"Fixed Price" }}</div>
-        </div>
-        {% if project.github_repo %}
+  <section class="stage-panel sp-dossier" data-open>
+    <h2 class="stage-panel__kicker"><span class="sp-ico sp-ico--blue"><i class="fas fa-info"></i></span>Project Information</h2>
+    <ul class="pj-facts">
+      <li>
+        <i class="far fa-calendar"></i>
         <div>
-          <div class="text-sm text-muted mb-1">Repository</div>
-          <a href="{{ project.github_repo }}" target="_blank" class="d-flex align-items-center gap-2">
-            <i class="fab fa-github"></i>
-            {{ project.github_repo|truncatechars:35 }}
-          </a>
+          <span>Timeline</span>
+          <strong>{{ project.start_date|date:"d M Y"|default:"Not set" }} &ndash; {{ project.deadline|date:"d M Y"|default:"Not set" }}</strong>
+          {% if project.is_overdue %}<em class="pj-late"><i class="fas fa-circle-exclamation"></i> Past the deadline</em>{% endif %}
         </div>
-        {% endif %}
-      </div>
-    </div>
-
+      </li>
+      <li>
+        <i class="fas fa-tag"></i>
+        <div><span>Type</span><strong>{{ project.get_project_type_display }}</strong></div>
+      </li>
+      {% if project.tech_stack %}
+      <li>
+        <i class="fas fa-code"></i>
+        <div><span>Tech stack</span><strong>{{ project.tech_stack }}</strong></div>
+      </li>
+      {% endif %}
+      <li>
+        <i class="far fa-clock"></i>
+        <div><span>Created On</span><strong>{{ project.created_at|date:"d M Y" }}</strong></div>
+      </li>
+      {% if project.github_repo %}
+      <li>
+        <i class="fab fa-github"></i>
+        <div><span>Repository</span><a href="{{ project.github_repo }}" target="_blank" rel="noopener">{{ project.github_repo|truncatechars:34 }}</a></div>
+      </li>
+      {% endif %}
+      {% if project.live_url %}
+      <li>
+        <i class="fas fa-globe"></i>
+        <div><span>Live site</span><a href="{{ project.live_url }}" target="_blank" rel="noopener">{{ project.live_url|truncatechars:34 }}</a></div>
+      </li>
+      {% endif %}
+    </ul>
   </section>
 
-  <section class="stage-panel sp-team">
-    <!-- Team Members -->
-    <div class="card mb-4">
-      <div class="card-header">
-        <h3 class="card-title"><i class="fas fa-users me-2 text-primary"></i> Team Members</h3>
+  <section class="stage-panel sp-team" data-open>
+    <h2 class="stage-panel__kicker"><span class="sp-ico sp-ico--violet"><i class="fas fa-users"></i></span>Team Members</h2>
+    {% for member in project.team_members.all %}
+    <div class="pj-row">
+      <span class="pj-avatar">{{ member.name|slice:":2"|upper }}</span>
+      <div class="pj-row__main">
+        <a href="{% url 'team_detail' member.pk %}" class="pj-row__title">{{ member.name }}</a>
+        <span class="pj-row__sub">{{ member.get_role_display }}</span>
       </div>
-      <div class="card-body">
-        {% if project.team_members.all %}
-        {% for member in project.team_members.all %}
-        <div class="d-flex align-items-center gap-3 {% if not forloop.last %}mb-3{% endif %} p-2 rounded" style="background: var(--bg-hover);">
-          <div class="avatar avatar-sm" style="background: var(--primary); color: white;">
-            {{ member.name|slice:":1"|upper }}
-          </div>
-          <div class="flex-1">
-            <div class="fw-medium">{{ member.name }}</div>
-            <div class="text-sm text-muted">{{ member.get_role_display }}</div>
-          </div>
-          {% if member.is_freelancer %}
-          <span class="badge" style="background: var(--warning-bg); color: var(--warning);">Freelancer</span>
-          {% else %}
-          <span class="badge" style="background: var(--primary-bg); color: var(--primary);">Permanent</span>
-          {% endif %}
-        </div>
-        {% endfor %}
-        {% else %}
-        <div class="text-center text-muted py-3">
-          <i class="fas fa-user-plus mb-2" style="font-size: 1.5rem; display: block;"></i>
-          <p class="mb-2">No team members assigned</p>
-          <a href="{% url 'project_update' project.pk %}" class="btn btn-sm btn-primary">
-            <i class="fas fa-plus me-1"></i>Assign Team
-          </a>
-        </div>
-        {% endif %}
-      </div>
+      <span class="badge {% if member.is_freelancer %}badge-warning{% else %}badge-primary{% endif %}">{{ member.get_employment_type_display }}</span>
     </div>
-
+    {% empty %}
+    <p class="pj-empty"><i class="fas fa-user-plus"></i> No team members assigned</p>
+    {% endfor %}
+    <a href="{% url 'project_update' project.pk %}" class="pj-add"><i class="fas fa-plus"></i> Add Member</a>
   </section>
 
-  {% if project.live_url or project.staging_url or project.notes %}
+  {% if project.notes %}
   <section class="stage-panel sp-links">
-    <!-- Live URLs -->
-    {% if project.live_url or project.staging_url %}
-    <div class="card mb-4">
-      <div class="card-header">
-        <h3 class="card-title">Live URLs</h3>
-      </div>
-      <div class="card-body">
-        {% if project.live_url %}
-        <div class="mb-3">
-          <div class="text-sm text-muted mb-1">Production</div>
-          <a href="{{ project.live_url }}" target="_blank" class="d-flex align-items-center gap-2">
-            <i class="fas fa-globe text-success"></i>
-            {{ project.live_url|truncatechars:35 }}
-          </a>
-        </div>
-        {% endif %}
-        {% if project.staging_url %}
-        <div>
-          <div class="text-sm text-muted mb-1">Staging</div>
-          <a href="{{ project.staging_url }}" target="_blank" class="d-flex align-items-center gap-2">
-            <i class="fas fa-globe text-warning"></i>
-            {{ project.staging_url|truncatechars:35 }}
-          </a>
-        </div>
-        {% endif %}
-      </div>
-    </div>
-    {% endif %}
-
-    <!-- Notes -->
-    {% if project.notes %}
-    <div class="card">
-      <div class="card-header">
-        <h3 class="card-title">Notes</h3>
-      </div>
-      <div class="card-body">
-        <div class="text-secondary">
-          {{ project.notes|linebreaks }}
-        </div>
-      </div>
-    </div>
-    {% endif %}
+    <h2 class="stage-panel__kicker"><span class="sp-ico sp-ico--slate"><i class="fas fa-note-sticky"></i></span>Notes</h2>
+    <div class="pj-notes">{{ project.notes|linebreaks }}</div>
   </section>
   {% endif %}
 
-  <section class="stage-panel sp-amc">
-    <h2 class="stage-panel__kicker">AMC</h2>
-      <div class="tab-content" id="amcTab">
-        <div class="d-flex justify-content-between align-items-center p-3 border-bottom">
-          <div class="text-sm text-muted">{{ amc_contracts.count }} AMC contract{{ amc_contracts.count|pluralize }}</div>
-          <a href="{% url 'amc_create' %}?project={{ project.pk }}" class="btn btn-sm btn-primary">
-            <i class="fas fa-plus me-1"></i>Create AMC
-          </a>
-        </div>
-        {% for amc in amc_contracts %}
-        <div class="p-3 {% if not forloop.last %}border-bottom{% endif %}">
-          <div class="d-flex justify-content-between align-items-start mb-3">
-            <div>
-              <div class="fw-semibold">&#8377;{{ amc.annual_amount|floatformat:2 }} / {{ amc.get_billing_cycle_display }}</div>
-              <div class="text-sm text-muted">{{ amc.start_date|date:"d M Y" }} - {{ amc.end_date|date:"d M Y" }}</div>
-            </div>
-            <div class="d-flex gap-2 align-items-center">
-              {% if amc.is_overdue %}
-              <span class="status-badge danger">Overdue</span>
-              {% elif amc.is_due_soon %}
-              <span class="status-badge warning">Due Soon</span>
-              {% else %}
-              <span class="status-badge {{ amc.status }}">{{ amc.get_status_display }}</span>
-              {% endif %}
-              <a href="{% url 'amc_detail' amc.pk %}" class="btn btn-sm btn-ghost btn-icon">
-                <i class="fas fa-arrow-right"></i>
-              </a>
-            </div>
-          </div>
-          <div class="d-flex gap-4 text-sm">
-            <div>
-              <span class="text-muted">Next Due:</span>
-              <span class="fw-medium {% if amc.is_overdue %}text-danger{% endif %}">{{ amc.next_due_date|date:"d M Y" }}</span>
-            </div>
-            <div>
-              <span class="text-muted">Total Paid:</span>
-              <span class="fw-medium text-success">&#8377;{{ amc.total_paid|floatformat:2 }}</span>
-            </div>
-            <div>
-              <span class="text-muted">Days:</span>
-              <span class="fw-medium">{{ amc.days_until_due }}</span>
-            </div>
-          </div>
-        </div>
-        {% empty %}
-        <div class="text-center py-4 text-muted">
-          <i class="fas fa-sync-alt" style="font-size: 1.5rem; opacity: 0.3; display: block; margin-bottom: 0.5rem;"></i>
-          No AMC contracts yet.
-          {% if project.status == 'completed' %}
-          <br><a href="{% url 'amc_create' %}?project={{ project.pk }}">Create one now</a>
-          {% endif %}
-        </div>
-        {% endfor %}
-
-        {% if amc_payments %}
-        <div class="p-3 border-top">
-          <h4 style="font-size: 0.9375rem; font-weight: 600; margin-bottom: 0.75rem;">Payment History</h4>
-          <div class="table-wrapper">
-            <table class="table">
-              <thead>
-                <tr>
-                  <th>Date</th>
-                  <th>Amount</th>
-                  <th>Period</th>
-                  <th>Method</th>
-                </tr>
-              </thead>
-              <tbody>
-                {% for payment in amc_payments %}
-                <tr>
-                  <td>{{ payment.payment_date|date:"d M Y" }}</td>
-                  <td class="fw-medium text-success">&#8377;{{ payment.amount|floatformat:2 }}</td>
-                  <td class="text-sm">{{ payment.period_start|date:"d M Y" }} - {{ payment.period_end|date:"d M Y" }}</td>
-                  <td><span class="badge badge-info">{{ payment.get_payment_method_display }}</span></td>
-                </tr>
-                {% endfor %}
-              </tbody>
-            </table>
-          </div>
-        </div>
-        {% endif %}
+  <section class="stage-panel sp-amc" data-open>
+    <h2 class="stage-panel__kicker"><span class="sp-ico sp-ico--green"><i class="fas fa-shield-halved"></i></span>AMC</h2>
+    {% for amc in amc_contracts %}
+    <div class="pj-row">
+      <span class="pj-row__icon"><i class="fas fa-rotate"></i></span>
+      <div class="pj-row__main">
+        <a href="{% url 'amc_detail' amc.pk %}" class="pj-row__title">&#8377;{{ amc.annual_amount|inr }} / {{ amc.get_billing_cycle_display }}</a>
+        <span class="pj-row__sub">Next due {{ amc.next_due_date|date:"d M Y" }} &middot; paid &#8377;{{ amc.total_paid|inr }}</span>
       </div>
-
+      {% if amc.is_overdue %}<span class="status-badge overdue">Overdue</span>
+      {% elif amc.is_due_soon %}<span class="status-badge pending">Due Soon</span>
+      {% else %}<span class="status-badge {{ amc.status }}">{{ amc.get_status_display }}</span>{% endif %}
+    </div>
+    {% empty %}
+    <p class="pj-empty"><i class="far fa-calendar-xmark"></i> No AMC details added</p>
+    {% endfor %}
+    {% if amc_payments %}
+    <p class="pj-subhead">AMC payments</p>
+    {% for payment in amc_payments|slice:":4" %}
+    <div class="pj-row pj-row--thin">
+      <div class="pj-row__main">
+        <span class="pj-row__title">{{ payment.payment_date|date:"d M Y" }}</span>
+        <span class="pj-row__sub">{{ payment.period_start|date:"d M Y" }} &ndash; {{ payment.period_end|date:"d M Y" }}</span>
+      </div>
+      <span class="pj-amount is-good">&#8377;{{ payment.amount|inr }}</span>
+    </div>
+    {% endfor %}
+    {% endif %}
+    <a href="{% url 'amc_create' %}?project={{ project.pk }}" class="pj-add"><i class="fas fa-plus"></i> Add AMC</a>
   </section>
   </div>{# /pstage-col--l #}
 
   <div class="pstage-col pstage-col--r">
 
-  <section class="stage-panel sp-credentials">
-    <h2 class="stage-panel__kicker">Credentials</h2>
-      <!-- Credentials -->
-      <div class="tab-content" id="credentialsTab">
-        <div class="d-flex justify-content-between align-items-center p-3 border-bottom">
-          <div class="text-sm text-muted">{{ credentials.count }} credentials stored</div>
-          <a href="{% url 'credential_create' %}?project={{ project.pk }}" class="btn btn-sm btn-primary">
-            <i class="fas fa-plus me-1"></i>Add Credential
-          </a>
-        </div>
-        <div class="table-wrapper">
-          <table class="table">
-            <thead>
-              <tr>
-                <th>Name</th>
-                <th>Type</th>
-                <th>Username</th>
-                <th>Expiry</th>
-                <th>Status</th>
-                <th></th>
-              </tr>
-            </thead>
-            <tbody>
-              {% for cred in credentials %}
-              <tr>
-                <td>
-                  <a href="{% url 'credential_detail' cred.pk %}" class="fw-medium">{{ cred.name }}</a>
-                  {% if cred.provider %}
-                  <div class="text-sm text-muted">{{ cred.provider }}</div>
-                  {% endif %}
-                </td>
-                <td><span class="badge badge-secondary">{{ cred.get_credential_type_display }}</span></td>
-                <td>{% if cred.username %}<code>{{ cred.username }}</code>{% else %}-{% endif %}</td>
-                <td>{{ cred.expiry_date|date:"d M Y"|default:"-" }}</td>
-                <td>
-                  {% if cred.is_expired %}
-                  <span class="status-badge danger">Expired</span>
-                  {% elif cred.is_expiring_soon %}
-                  <span class="status-badge warning">Expiring Soon</span>
-                  {% else %}
-                  <span class="status-badge success">Active</span>
-                  {% endif %}
-                </td>
-                <td>
-                  <div class="d-flex gap-1">
-                    {% if cred.is_expired or cred.is_expiring_soon %}
-                    <button class="btn btn-sm btn-ghost btn-icon" title="Renew Credential" onclick="openRenewModal('{{ cred.pk }}', '{{ cred.name|escapejs }}')">
-                      <i class="fas fa-redo text-warning"></i>
-                    </button>
-                    {% endif %}
-                    <button class="btn btn-sm btn-ghost btn-icon" title="Copy Password" onclick="copyPassword('{{ cred.pk }}')">
-                      <i class="fas fa-copy"></i>
-                    </button>
-                    <a href="{% url 'credential_detail' cred.pk %}" class="btn btn-sm btn-ghost btn-icon">
-                      <i class="fas fa-arrow-right"></i>
-                    </a>
-                  </div>
-                </td>
-              </tr>
-              {% empty %}
-              <tr>
-                <td colspan="6" class="text-center py-4 text-muted">No credentials yet</td>
-              </tr>
-              {% endfor %}
-            </tbody>
-          </table>
-        </div>
+  <section class="stage-panel sp-credentials" data-open>
+    <h2 class="stage-panel__kicker"><span class="sp-ico sp-ico--blue"><i class="fas fa-key"></i></span>Credentials</h2>
+    <div class="pj-bar">
+      <span>{{ credentials.count }} credential{{ credentials.count|pluralize }} stored</span>
+      <a href="{% url 'credential_create' %}?project={{ project.pk }}" class="btn btn-sm btn-primary"><i class="fas fa-plus"></i> Add Credential</a>
+    </div>
+    {% for cred in credentials %}
+    <div class="pj-row">
+      <span class="pj-row__icon"><i class="fas fa-globe"></i></span>
+      <div class="pj-row__main">
+        <a href="{% url 'credential_detail' cred.pk %}" class="pj-row__title">{{ cred.name }}</a>
+        <span class="pj-row__sub">{% if cred.url %}{{ cred.url|truncatechars:38 }}{% elif cred.username %}{{ cred.username }}{% else %}{{ cred.get_credential_type_display }}{% endif %}</span>
       </div>
-
+      {% if cred.is_expired %}<span class="status-badge overdue">Expired</span>
+      {% elif cred.is_expiring_soon %}
+      <button type="button" class="btn btn-sm btn-ghost btn-icon" title="Renew credential" onclick="openRenewModal('{{ cred.pk }}', '{{ cred.name|escapejs }}')"><i class="fas fa-redo text-warning"></i></button>
+      {% endif %}
+      <a href="{% url 'credential_detail' cred.pk %}" class="btn btn-sm btn-ghost btn-icon" title="Open"><i class="fas fa-ellipsis-vertical"></i></a>
+    </div>
+    {% endfor %}
   </section>
 
-  <section class="stage-panel sp-invoices">
-    <h2 class="stage-panel__kicker">Invoices</h2>
-      <div class="tab-content" id="invoicesTab">
-        <div class="table-wrapper">
-          <table class="table">
-            <thead>
-              <tr>
-                <th>Invoice #</th>
-                <th>Description</th>
-                <th>Amount</th>
-                <th>Due Date</th>
-                <th>Status</th>
-                <th></th>
-              </tr>
-            </thead>
-            <tbody>
-              {% for invoice in invoices %}
-              <tr>
-                <td><a href="{% url 'invoice_detail' invoice.pk %}" class="fw-medium">{{ invoice.invoice_number }}</a></td>
-                <td>{{ invoice.title|truncatewords:5 }}</td>
-                <td class="fw-medium">&#8377;{{ invoice.total_amount|floatformat:2 }}</td>
-                <td>{{ invoice.due_date|date:"d M Y"|default:"-" }}</td>
-                <td><span class="status-badge {{ invoice.status }}">{{ invoice.get_status_display }}</span></td>
-                <td>
-                  <a href="{% url 'invoice_detail' invoice.pk %}" class="btn btn-sm btn-ghost btn-icon">
-                    <i class="fas fa-arrow-right"></i>
-                  </a>
-                </td>
-              </tr>
-              {% empty %}
-              <tr>
-                <td colspan="6" class="text-center py-4 text-muted">No invoices yet</td>
-              </tr>
-              {% endfor %}
-            </tbody>
-          </table>
-        </div>
+  <section class="stage-panel sp-invoices" data-open>
+    <h2 class="stage-panel__kicker"><span class="sp-ico sp-ico--green"><i class="fas fa-file-lines"></i></span>Invoices</h2>
+    <div class="pj-bar">
+      <span>{{ invoices.count }} invoice{{ invoices.count|pluralize }}</span>
+      <a href="{% url 'invoice_create' %}?project={{ project.pk }}" class="btn btn-sm btn-primary"><i class="fas fa-plus"></i> Add Invoice</a>
+    </div>
+    {% for invoice in invoices %}
+    <div class="pj-row">
+      <span class="pj-row__icon"><i class="far fa-file-lines"></i></span>
+      <div class="pj-row__main">
+        <a href="{% url 'invoice_detail' invoice.pk %}" class="pj-row__title">{{ invoice.invoice_number }}</a>
+        <span class="pj-row__sub">{{ invoice.title|truncatewords:5 }}</span>
       </div>
-
+      <div class="pj-row__end">
+        <span class="pj-amount">&#8377;{{ invoice.total_amount|inr }}</span>
+        <span class="status-badge {{ invoice.status }}">{{ invoice.get_status_display }}</span>
+      </div>
+    </div>
+    {% empty %}
+    <p class="pj-empty"><i class="far fa-file-lines"></i> No invoices yet</p>
+    {% endfor %}
   </section>
 
-  <section class="stage-panel sp-quotes">
-    <h2 class="stage-panel__kicker">Quotes</h2>
-      <div class="tab-content" id="quotesTab">
-        <div class="table-wrapper">
-          <table class="table">
-            <thead>
-              <tr>
-                <th>Quote #</th>
-                <th>Title</th>
-                <th>Amount</th>
-                <th>Valid Until</th>
-                <th>Status</th>
-                <th></th>
-              </tr>
-            </thead>
-            <tbody>
-              {% for quote in quotes %}
-              <tr>
-                <td><a href="{% url 'quote_detail' quote.pk %}" class="fw-medium">{{ quote.quote_number }}</a></td>
-                <td>{{ quote.title|truncatewords:5 }}</td>
-                <td class="fw-medium">&#8377;{{ quote.total_amount|floatformat:2 }}</td>
-                <td>{{ quote.valid_until|date:"d M Y"|default:"-" }}</td>
-                <td><span class="status-badge {{ quote.status }}">{{ quote.get_status_display }}</span></td>
-                <td>
-                  <a href="{% url 'quote_detail' quote.pk %}" class="btn btn-sm btn-ghost btn-icon">
-                    <i class="fas fa-arrow-right"></i>
-                  </a>
-                </td>
-              </tr>
-              {% empty %}
-              <tr>
-                <td colspan="6" class="text-center py-4 text-muted">No quotes yet</td>
-              </tr>
-              {% endfor %}
-            </tbody>
-          </table>
-        </div>
+  <section class="stage-panel sp-quotes" data-open>
+    <h2 class="stage-panel__kicker"><span class="sp-ico sp-ico--amber"><i class="fas fa-file-invoice"></i></span>Quotes</h2>
+    <div class="pj-bar">
+      <span>{{ quotes.count }} quote{{ quotes.count|pluralize }}</span>
+      <a href="{% url 'quote_create' %}?project={{ project.pk }}" class="btn btn-sm btn-primary"><i class="fas fa-plus"></i> Add Quote</a>
+    </div>
+    {% for quote in quotes %}
+    <div class="pj-row">
+      <span class="pj-row__icon"><i class="fas fa-file-invoice"></i></span>
+      <div class="pj-row__main">
+        <a href="{% url 'quote_detail' quote.pk %}" class="pj-row__title">{{ quote.quote_number }}</a>
+        <span class="pj-row__sub">{{ quote.title|truncatewords:5 }}</span>
       </div>
-
+      <div class="pj-row__end">
+        <span class="pj-amount">&#8377;{{ quote.total_amount|inr }}</span>
+        <span class="status-badge {{ quote.status }}">{{ quote.get_status_display }}</span>
+      </div>
+    </div>
+    {% empty %}
+    <p class="pj-empty"><i class="fas fa-file-invoice"></i> No quotes yet</p>
+    {% endfor %}
   </section>
-  <section class="stage-panel sp-payments">
-    <h2 class="stage-panel__kicker">Payments</h2>
-      <div class="tab-content" id="paymentsTab">
-        <div class="table-wrapper">
-          <table class="table">
-            <thead>
-              <tr>
-                <th>Date</th>
-                <th>Invoice</th>
-                <th>Amount</th>
-                <th>Method</th>
-                <th>Transaction ID</th>
-              </tr>
-            </thead>
-            <tbody>
-              {% for payment in payments %}
-              <tr>
-                <td>{{ payment.payment_date|date:"d M Y" }}</td>
-                <td><a href="{% url 'invoice_detail' payment.invoice.pk %}">{{ payment.invoice.invoice_number }}</a></td>
-                <td class="fw-medium text-success">&#8377;{{ payment.amount|floatformat:2 }}</td>
-                <td><span class="badge badge-info">{{ payment.get_payment_method_display }}</span></td>
-                <td class="text-muted">{{ payment.transaction_id|default:"-" }}</td>
-              </tr>
-              {% empty %}
-              <tr>
-                <td colspan="5" class="text-center py-4 text-muted">No payments yet</td>
-              </tr>
-              {% endfor %}
-            </tbody>
-          </table>
-        </div>
-      </div>
 
+  <section class="stage-panel sp-payments" data-open>
+    <h2 class="stage-panel__kicker"><span class="sp-ico sp-ico--violet"><i class="fas fa-credit-card"></i></span>Payments</h2>
+    <div class="pj-bar">
+      <span>{{ payments.count }} payment{{ payments.count|pluralize }}</span>
+      <a href="{% url 'payment_create' %}" class="btn btn-sm btn-primary"><i class="fas fa-plus"></i> Add Payment</a>
+    </div>
+    {% for payment in payments %}
+    <div class="pj-row">
+      <span class="pj-row__icon"><i class="fas fa-indian-rupee-sign"></i></span>
+      <div class="pj-row__main">
+        <a href="{% url 'invoice_detail' payment.invoice.pk %}" class="pj-row__title">{{ payment.invoice.invoice_number }}</a>
+        <span class="pj-row__sub">{{ payment.payment_date|date:"d M Y" }} &middot; {{ payment.get_payment_method_display }}</span>
+      </div>
+      <span class="pj-amount is-good">&#8377;{{ payment.amount|inr }}</span>
+    </div>
+    {% empty %}
+    <p class="pj-empty"><i class="far fa-credit-card"></i> No payments yet</p>
+    {% endfor %}
   </section>
 
   <section class="stage-panel sp-activity">
-    <h2 class="stage-panel__kicker">Client Portal &amp; Activity</h2>
+    <h2 class="stage-panel__kicker"><span class="sp-ico sp-ico--blue"><i class="fas fa-bullhorn"></i></span>Client Portal &amp; Activity</h2>
       <div class="tab-content pactivity" id="portalTab">
 
         <div class="pact-compose">
@@ -708,7 +482,7 @@
 </div>
 
 {% block extra_js %}
-<script src="{% static 'js/pulse-stage.js' %}?v=6" defer></script>
+<script src="{% static 'js/pulse-stage.js' %}?v=9" defer></script>
 <script src="{% static 'js/pulse-ask.js' %}?v=7" defer></script>
 <script>
 function switchTab(tabId) {

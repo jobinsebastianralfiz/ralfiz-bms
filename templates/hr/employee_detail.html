@@ -11,43 +11,74 @@
 
 {% block extra_css %}
 <style>
+  .emp-hero { display: flex; align-items: center; gap: 22px; }
+  .emp-hero__photo { width: 88px; height: 88px; border-radius: 50%; object-fit: cover; flex: none;
+                     border: 3px solid #fff; box-shadow: 0 0 0 1px var(--border-color), 0 6px 16px rgba(15, 23, 42, .12); }
+  .emp-hero__initial { display: grid; place-items: center; background: var(--primary); color: #fff; font-size: 2rem; font-weight: 700; }
+  .emp-hero .page-title { font-size: 1.5rem; }
+  .emp-hero__tags { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+  .emp-hero__tags .badge { font-size: 0.75rem; padding: 4px 10px; }
   /* Two fields per row so the edit form is not one long stack. */
-  .emp-fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 12px; }
+  .emp-fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 14px; }
   .emp-fields > .mb-3 { min-width: 0; }
   .emp-fields .emp-wide { grid-column: 1 / -1; }
-  .emp-section { font-size: 0.8125rem; font-weight: 600; color: var(--text-secondary, #64748b);
-                 text-transform: uppercase; letter-spacing: .04em; margin: 4px 0 10px;
-                 padding-top: 12px; border-top: 1px solid var(--border-color); }
+  .emp-fields .form-label { color: var(--text-secondary); font-size: 0.8125rem; margin-bottom: 4px; }
+  .emp-section { grid-column: 1 / -1; display: flex; align-items: center; gap: 8px; margin: 8px 0 6px;
+                 font-size: 1rem; font-weight: 600; color: var(--text-primary); }
+  .emp-section i { color: var(--primary); }
+  .emp-policy { display: flex; gap: 12px; align-items: flex-start; padding: 12px 14px; margin-bottom: 14px;
+                background: #f5faff; border: 1px solid #e0effb; border-radius: 10px; font-size: 0.8125rem; }
+  .emp-policy > i { color: var(--primary); margin-top: 2px; }
+  .emp-policy__rows { flex: 1; display: grid; gap: 2px; }
+  .emp-policy__rows div { display: flex; justify-content: space-between; gap: 8px; }
+  .emp-policy__rows span { color: var(--text-secondary); }
+  .emp-card-head { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+  .emp-photo-body { display: flex; flex-direction: column; gap: 12px; }
+  .emp-photo-empty { display: grid; place-items: center; gap: 6px; padding: 18px 10px; text-align: center;
+                     border: 1px dashed var(--border-strong, #cbd5e1); border-radius: 10px; color: var(--text-muted); font-size: 0.8125rem; }
+  .emp-photo-empty i { font-size: 2rem; color: #94a3b8; }
+  .emp-photo-view { display: flex; gap: 14px; align-items: flex-start; }
+  .emp-photo-view img { width: 120px; height: 120px; object-fit: cover; border-radius: 10px; flex: none; }
+  .emp-photo-view__side { display: flex; flex-direction: column; align-items: flex-start; gap: 8px; min-width: 0; }
+  .emp-photo-cards { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+  .emp-photo-cards .card { height: 100%; }
+  .emp-photo-upload { display: flex; flex-wrap: wrap; gap: 8px; }
+  .emp-photo-upload .form-control { flex: 1 1 170px; min-width: 0; }
+  .emp-photo-upload .btn { flex: 1 1 auto; }
+  .emp-remove { display: inline-flex; align-items: center; gap: 6px; padding: 4px 12px; border: 1px solid #fecaca;
+                border-radius: 999px; background: var(--danger-bg); color: var(--danger-strong); font-size: 0.75rem; font-weight: 600; cursor: pointer; }
+  .emp-remove:hover { background: #fee2e2; }
+  .emp-photo-upload .btn { white-space: nowrap; }
+  .emp-fields .inv-input-icon:has(textarea) i { top: 16px; transform: none; }
   @media (max-width: 1280px) { .emp-fields { grid-template-columns: 1fr; } }
+  @media (max-width: 767px) { .emp-photo-cards { grid-template-columns: 1fr; } }
 </style>
 {% endblock %}
 
 {% block content %}
 <div class="page-header">
-  <div class="d-flex align-items-center gap-4">
+  <div class="emp-hero">
     {% if employee.profile_photo %}
-    <img src="{{ employee.profile_photo.url }}" alt="{{ employee.full_name }}" style="width: 64px; height: 64px; border-radius: 50%; object-fit: cover; border: 2px solid var(--border-color);">
+    <img src="{{ employee.profile_photo.url }}" alt="{{ employee.full_name }}" class="emp-hero__photo">
     {% elif employee.face_photo %}
-    <img src="{{ employee.face_photo.url }}" alt="{{ employee.full_name }}" style="width: 64px; height: 64px; border-radius: 50%; object-fit: cover; border: 2px solid var(--border-color);">
+    <img src="{{ employee.face_photo.url }}" alt="{{ employee.full_name }}" class="emp-hero__photo">
     {% else %}
-    <div class="avatar avatar-xl" style="background: var(--primary); color: white;">
-      {{ employee.full_name|slice:":1"|upper }}
-    </div>
+    <div class="emp-hero__photo emp-hero__initial">{{ employee.full_name|slice:":1"|upper }}</div>
     {% endif %}
     <div>
-      <div class="d-flex align-items-center gap-3 mb-2">
+      <div class="d-flex align-items-center gap-3">
         <h1 class="page-title mb-0">{{ employee.full_name }}</h1>
         {% if employee.status == 'active' %}
-        <span class="badge" style="background: var(--success-bg); color: var(--success);">Active</span>
+        <span class="badge badge-success">Active</span>
         {% else %}
-        <span class="badge" style="background: var(--danger-bg); color: var(--danger);">{{ employee.get_status_display }}</span>
+        <span class="badge badge-danger">{{ employee.get_status_display }}</span>
         {% endif %}
       </div>
-      <p class="page-subtitle mb-0">
-        <span class="badge" style="background: var(--primary-bg); color: var(--primary);">{{ employee.employee_id }}</span>
-        <span class="badge ms-1" style="background: var(--info-bg); color: var(--info);">{{ employee.get_department_display }}</span>
-        <span class="text-muted ms-2">{{ employee.designation }}</span>
-      </p>
+      <div class="emp-hero__tags">
+        <span class="badge badge-primary">{{ employee.employee_id }}</span>
+        <span class="badge badge-primary">{{ employee.get_department_display }}</span>
+        {% if employee.designation %}<span class="badge badge-secondary">{{ employee.designation }}</span>{% endif %}
+      </div>
     </div>
   </div>
   <div class="page-actions">
@@ -60,10 +91,10 @@
 
 <div class="row">
   <!-- Left Column -->
-  <div class="col-4 col-md-12" style="padding: 0.75rem;">
+  <div class="col-5 col-md-12" style="padding: 0.75rem;">
     <div class="card mb-4">
       <div class="card-header">
-        <h3 class="card-title"><i class="fas fa-user me-2 text-primary"></i> Information</h3>
+        <h3 class="card-title"><i class="fas fa-user me-2 text-primary"></i> Personal Information</h3>
       </div>
       <div class="card-body">
         <form method="post">
@@ -80,7 +111,9 @@
           </div>
           <div class="mb-3 emp-wide">
             <label class="form-label text-sm text-muted">Email</label>
-            <input type="email" name="email" class="form-control form-control-sm" value="{{ employee.user.email }}">
+            <div class="inv-input-icon"><i class="fas fa-envelope"></i>
+              <input type="email" name="email" class="form-control form-control-sm" value="{{ employee.user.email }}">
+            </div>
           </div>
           <div class="mb-3">
             <label class="form-label text-sm text-muted">Employment Type</label>
@@ -120,21 +153,27 @@
           </div>
           <div class="mb-3">
             <label class="form-label text-sm text-muted">Phone</label>
-            <input type="text" name="phone" class="form-control form-control-sm" value="{{ employee.phone }}">
+            <div class="inv-input-icon"><i class="fas fa-phone"></i>
+              <input type="text" name="phone" class="form-control form-control-sm" value="{{ employee.phone }}">
+            </div>
           </div>
           <div class="mb-3">
             <label class="form-label text-sm text-muted">Emergency Contact</label>
-            <input type="text" name="emergency_contact" class="form-control form-control-sm" value="{{ employee.emergency_contact }}">
+            <div class="inv-input-icon"><i class="fas fa-phone-volume"></i>
+              <input type="text" name="emergency_contact" class="form-control form-control-sm" placeholder="Enter emergency contact" value="{{ employee.emergency_contact }}">
+            </div>
           </div>
           <div class="mb-3 emp-wide">
             <label class="form-label text-sm text-muted">Address</label>
-            <textarea name="address" class="form-control form-control-sm" rows="2">{{ employee.address }}</textarea>
+            <div class="inv-input-icon"><i class="fas fa-location-dot"></i>
+              <textarea name="address" class="form-control form-control-sm" rows="2" placeholder="Enter address">{{ employee.address }}</textarea>
+            </div>
           </div>
           <div class="mb-3">
             <label class="form-label text-sm text-muted">Joining Date</label>
             <input type="date" name="joining_date" class="form-control form-control-sm" value="{{ employee.joining_date|date:'Y-m-d' }}">
           </div>
-          <div class="emp-section emp-wide"><i class="fas fa-clock me-1"></i> Attendance Timing</div>
+          <div class="emp-section"><i class="fas fa-clock"></i> Attendance Settings</div>
           <p class="text-sm text-muted mb-3 emp-wide">
             Leave a box empty to follow the office default
             {% if office_config %}(check in by {{ office_config.check_in_deadline|time:"h:i A" }},
@@ -154,28 +193,20 @@
           </div>
           <div class="mb-3">
             <label class="form-label text-sm text-muted">Required Hours per Day</label>
-            <input type="number" name="custom_required_hours" class="form-control form-control-sm"
+            <input type="number" name="custom_required_hours" class="form-control form-control-sm" placeholder="e.g. 8"
                    step="0.25" min="0" max="24"
                    value="{{ employee.custom_required_hours|default_if_none:'' }}">
           </div>
-          <div class="text-sm p-2 mb-3 emp-wide" style="border: 1px solid var(--border-color); border-radius: 8px;">
-            <div class="d-flex justify-content-between gap-2">
-              <span class="text-muted">Check in by</span>
-              <strong>{{ policy.check_in_deadline|time:"h:i A" }}</strong>
-            </div>
-            <div class="d-flex justify-content-between gap-2">
-              <span class="text-muted">Check out from</span>
-              <strong>{{ policy.checkout_floor|time:"h:i A" }}</strong>
-            </div>
-            <div class="d-flex justify-content-between gap-2">
-              <span class="text-muted">Required hours</span>
-              <strong>{{ policy.required_hours|floatformat:"-2" }}h a day</strong>
-            </div>
-            <div class="text-muted mt-1">
-              {% if employee.has_custom_timing %}Flexible shift for this person{% else %}Office default{% endif %}
+          <div class="emp-policy emp-wide">
+            <i class="fas fa-circle-info"></i>
+            <div class="emp-policy__rows">
+              <div><span>Check in by</span><strong>{{ policy.check_in_deadline|time:"h:i A" }}</strong></div>
+              <div><span>Check out from</span><strong>{{ policy.checkout_floor|time:"h:i A" }}</strong></div>
+              <div><span>Required hours</span><strong>{{ policy.required_hours|floatformat:"-2" }}h a day</strong></div>
+              <div><span>{% if employee.has_custom_timing %}Flexible shift for this person{% else %}Office default{% endif %}</span></div>
             </div>
           </div>
-          <div class="emp-section emp-wide"><i class="fas fa-money-bill-wave me-1"></i> Compensation</div>
+          <div class="emp-section"><i class="fas fa-money-bill-wave"></i> Compensation</div>
           <div class="mb-3">
             <label class="form-label text-sm text-muted">Monthly Salary / Stipend</label>
             <input type="number" name="monthly_salary" class="form-control form-control-sm" step="0.01" value="{{ employee.monthly_salary|default_if_none:'' }}">
@@ -190,91 +221,10 @@
       </div>
     </div>
 
-    <!-- Profile Photo -->
-    <div class="card mb-4">
-      <div class="card-header">
-        <h3 class="card-title"><i class="fas fa-image me-2 text-primary"></i> Profile Photo</h3>
-      </div>
-      <div class="card-body">
-        {% if employee.profile_photo %}
-        <div class="text-center mb-3">
-          <img src="{{ employee.profile_photo.url }}" alt="Profile photo" style="width: 150px; height: 150px; object-fit: cover; border-radius: 12px; border: 2px solid var(--border-color);">
-        </div>
-        <form method="post" action="" class="text-center mb-2">
-          {% csrf_token %}
-          <input type="hidden" name="action" value="remove_profile_photo">
-          <button type="submit" class="btn btn-sm btn-outline-danger" onclick="return confirm('Remove profile photo?')">
-            <i class="fas fa-trash me-1"></i> Remove Photo
-          </button>
-        </form>
-        {% else %}
-        <div class="text-center mb-3">
-          <div style="width: 150px; height: 150px; margin: 0 auto; border-radius: 12px; background: var(--bg-secondary); display: flex; align-items: center; justify-content: center;">
-            <i class="fas fa-user text-muted" style="font-size: 2.5rem;"></i>
-          </div>
-        </div>
-        <p class="text-muted text-center text-sm mb-3">No profile photo uploaded.</p>
-        {% endif %}
-        <form method="post" action="" enctype="multipart/form-data" class="mt-2">
-          {% csrf_token %}
-          <input type="hidden" name="action" value="upload_profile_photo">
-          <div class="mb-2">
-            <input type="file" name="profile_photo" accept="image/*" class="form-control form-control-sm" required>
-          </div>
-          <button type="submit" class="btn btn-sm btn-primary w-100">
-            <i class="fas fa-upload me-1"></i> {% if employee.profile_photo %}Update{% else %}Upload{% endif %} Profile Photo
-          </button>
-        </form>
-      </div>
-    </div>
-
-    <!-- Face Recognition Photo -->
-    <div class="card mb-4">
-      <div class="card-header">
-        <h3 class="card-title"><i class="fas fa-camera me-2 text-info"></i> Face Recognition</h3>
-      </div>
-      <div class="card-body">
-        {% if employee.face_photo %}
-        <div class="text-center mb-3">
-          <img src="{{ employee.face_photo.url }}" alt="Face photo" style="width: 150px; height: 150px; object-fit: cover; border-radius: 12px; border: 2px solid var(--border-color);">
-        </div>
-        <div class="d-flex align-items-center justify-content-center gap-2 mb-3">
-          <span class="badge" style="background: var(--success-bg); color: var(--success);"><i class="fas fa-check me-1"></i>Face Registered</span>
-          {% if employee.face_encoding %}
-          <span class="badge" style="background: var(--info-bg); color: var(--info);"><i class="fas fa-fingerprint me-1"></i>Encoding Ready</span>
-          {% endif %}
-        </div>
-        <form method="post" action="" class="text-center">
-          {% csrf_token %}
-          <input type="hidden" name="action" value="remove_face">
-          <button type="submit" class="btn btn-sm btn-outline-danger" onclick="return confirm('Remove face photo?')">
-            <i class="fas fa-trash me-1"></i> Remove Photo
-          </button>
-        </form>
-        {% else %}
-        <div class="text-center mb-3">
-          <div style="width: 150px; height: 150px; margin: 0 auto; border-radius: 12px; background: var(--bg-secondary); display: flex; align-items: center; justify-content: center;">
-            <i class="fas fa-user-slash text-muted" style="font-size: 2.5rem;"></i>
-          </div>
-        </div>
-        <p class="text-muted text-center text-sm mb-3">No face photo registered. Upload a clear face photo for attendance verification.</p>
-        {% endif %}
-        <form method="post" action="" enctype="multipart/form-data" class="mt-2">
-          {% csrf_token %}
-          <input type="hidden" name="action" value="upload_face">
-          <div class="mb-2">
-            <input type="file" name="face_photo" accept="image/*" class="form-control form-control-sm" required>
-          </div>
-          <button type="submit" class="btn btn-sm btn-primary w-100">
-            <i class="fas fa-upload me-1"></i> {% if employee.face_photo %}Update{% else %}Upload{% endif %} Face Photo
-          </button>
-        </form>
-      </div>
-    </div>
   </div>
 
   <!-- Right Column -->
-  <div class="col-8 col-md-12" style="padding: 0.75rem;">
+  <div class="col-7 col-md-12" style="padding: 0.75rem;">
     <!-- Mark Attendance (Manual) -->
     <div class="card mb-4">
       <div class="card-header d-flex justify-content-between align-items-center">
@@ -325,8 +275,9 @@
 
     <!-- Recent Attendance -->
     <div class="card mb-4">
-      <div class="card-header">
+      <div class="card-header emp-card-head">
         <h3 class="card-title"><i class="fas fa-fingerprint me-2 text-success"></i> Recent Attendance</h3>
+        <a href="{% url 'emp_attendance_list' %}?employee={{ employee.pk }}" class="btn btn-sm btn-outline-primary">View All</a>
       </div>
       {% if recent_attendance %}
       <div class="table-wrapper">
@@ -372,8 +323,9 @@
 
     <!-- Leave Requests -->
     <div class="card mb-4">
-      <div class="card-header">
+      <div class="card-header emp-card-head">
         <h3 class="card-title"><i class="fas fa-calendar-minus me-2 text-warning"></i> Leave Requests</h3>
+        <a href="{% url 'emp_leave_list' %}?employee={{ employee.pk }}" class="btn btn-sm btn-outline-primary">View All</a>
       </div>
       {% if leave_requests %}
       <div class="table-wrapper">
@@ -431,8 +383,9 @@
 
     <!-- Work Assignments -->
     <div class="card">
-      <div class="card-header">
+      <div class="card-header emp-card-head">
         <h3 class="card-title"><i class="fas fa-clipboard-list me-2 text-info"></i> Work Assignments</h3>
+        <a href="{% url 'emp_work_list' %}?employee={{ employee.pk }}" class="btn btn-sm btn-outline-primary">View All</a>
       </div>
       {% if work_assignments %}
       <div class="table-wrapper">
@@ -464,6 +417,75 @@
       {% endif %}
     </div>
 
+    <!-- Photos -->
+    <div class="emp-photo-cards mt-4">
+      <div>
+        <div class="card">
+          <div class="card-header">
+            <h3 class="card-title"><i class="fas fa-image me-2 text-primary"></i> Profile Photo</h3>
+          </div>
+          <div class="card-body emp-photo-body">
+            {% if employee.profile_photo %}
+            <div class="emp-photo-view">
+              <a href="{{ employee.profile_photo.url }}" target="_blank" title="Open full size"><img src="{{ employee.profile_photo.url }}" alt="Profile photo"></a>
+              <div class="emp-photo-view__side">
+                <span class="badge badge-success"><i class="fas fa-check"></i> Uploaded</span>
+                <form method="post" onsubmit="return confirm('Remove profile photo?')">
+                  {% csrf_token %}
+                  <input type="hidden" name="action" value="remove_profile_photo">
+                  <button type="submit" class="emp-remove"><i class="fas fa-trash"></i> Remove Photo</button>
+                </form>
+              </div>
+            </div>
+            {% else %}
+            <div class="emp-photo-empty"><i class="fas fa-user"></i>No profile photo uploaded.</div>
+            {% endif %}
+            <form method="post" enctype="multipart/form-data" class="emp-photo-upload">
+              {% csrf_token %}
+              <input type="hidden" name="action" value="upload_profile_photo">
+              <input type="file" name="profile_photo" accept="image/*" class="form-control form-control-sm" required>
+              <button type="submit" class="btn btn-sm btn-primary"><i class="fas fa-upload"></i> {% if employee.profile_photo %}Update{% else %}Upload{% endif %} Profile Photo</button>
+            </form>
+          </div>
+        </div>
+      </div>
+      <div>
+        <div class="card">
+          <div class="card-header">
+            <h3 class="card-title"><i class="fas fa-camera me-2 text-primary"></i> Face Recognition</h3>
+          </div>
+          <div class="card-body emp-photo-body">
+            {% if employee.face_photo %}
+            <div class="emp-photo-view">
+              <a href="{{ employee.face_photo.url }}" target="_blank" title="Open full size"><img src="{{ employee.face_photo.url }}" alt="Face recognition photo"></a>
+              <div class="emp-photo-view__side">
+                {% if employee.face_encoding %}
+                <span class="badge badge-success"><i class="fas fa-check"></i> Face Registered</span>
+                <span class="badge badge-primary"><i class="fas fa-fingerprint"></i> Encoding Ready</span>
+                {% else %}
+                <span class="badge badge-warning" title="Try a clear, front-facing, well-lit photo">No face detected</span>
+                {% endif %}
+                <form method="post" onsubmit="return confirm('Remove face photo? Face check-in stops working until they register again.')">
+                  {% csrf_token %}
+                  <input type="hidden" name="action" value="remove_face">
+                  <button type="submit" class="emp-remove"><i class="fas fa-trash"></i> Remove Photo</button>
+                </form>
+              </div>
+            </div>
+            {% else %}
+            <div class="emp-photo-empty"><i class="fas fa-user-slash"></i>No face registered. Upload a clear, front-facing photo for attendance.</div>
+            {% endif %}
+            <form method="post" enctype="multipart/form-data" class="emp-photo-upload">
+              {% csrf_token %}
+              <input type="hidden" name="action" value="upload_face">
+              <input type="file" name="face_photo" accept="image/*" class="form-control form-control-sm" required>
+              <button type="submit" class="btn btn-sm btn-primary"><i class="fas fa-upload"></i> {% if employee.face_photo %}Update{% else %}Upload{% endif %} Face Photo</button>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+
     {% if employee.employment_type == 'intern' %}
     <!-- Assessments (interns) -->
     <div class="card mt-4">
@@ -479,11 +501,11 @@
             <label class="form-label small mb-1">Test / Assessment *</label>
             <input type="text" name="title" class="form-control form-control-sm" placeholder="e.g. Aptitude Test 1" required>
           </div>
-          <div class="col-6 col-md-2">
+          <div class="col-6 col-md-3">
             <label class="form-label small mb-1">Date</label>
             <input type="date" name="date" value="{{ today|date:'Y-m-d' }}" class="form-control form-control-sm">
           </div>
-          <div class="col-6 col-md-3">
+          <div class="col-6 col-md-2">
             <label class="form-label small mb-1">Out of *</label>
             <input type="number" step="0.01" min="0" name="max_score" class="form-control form-control-sm" placeholder="100" required>
           </div>

@@ -50,7 +50,8 @@
 
     var saved = null;
     try { saved = localStorage.getItem(key); } catch (e) {}
-    var collapsed = saved === null ? panel !== firstLeft : saved === '1';
+    // A panel marked data-open starts open, like the primary dossier.
+    var collapsed = saved === null ? !(panel === firstLeft || panel.hasAttribute('data-open')) : saved === '1';
     if (collapsed) panel.classList.add('is-collapsed');
 
     kicker.addEventListener('click', function () {
@@ -215,7 +216,11 @@
         x: orb.x + (end.x < orb.x ? -orb.radius * 0.92 : orb.radius * 0.92),
         y: orb.y
       };
-      if (end.y > orb.y + 220) start = { x: orb.x, y: orb.y + orb.radius * 0.92 };
+      // Project page: every line leaves from the orb's side, so none cuts
+      // through the name and actions stacked under it.
+      if (end.y > orb.y + 220 && !stage.classList.contains('pstage--project')) {
+        start = { x: orb.x, y: orb.y + orb.radius * 0.92 };
+      }
       curve(start, end, t, i);
     });
   }
@@ -224,6 +229,12 @@
     var dx = Math.max(90, Math.abs(b.x - a.x) * 0.55) * (b.x < a.x ? -1 : 1);
     var c1 = { x: a.x + dx, y: a.y };
     var c2 = { x: b.x - dx, y: b.y };
+    if (stage.classList.contains('pstage--project')) {
+      // Run out sideways at orb height, then drop beside the panel, so the
+      // line stays clear of the title and cost card under the orb.
+      c1 = { x: a.x + (b.x - a.x) * 0.8, y: a.y };
+      c2 = { x: b.x - (b.x - a.x) * 0.12, y: b.y };
+    }
     if (Math.abs(b.x - a.x) < 60) {   // vertical run
       c1 = { x: a.x, y: a.y + 90 };
       c2 = { x: b.x, y: b.y - 90 };
