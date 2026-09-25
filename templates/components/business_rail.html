@@ -1,16 +1,6 @@
 {# Side panels shared by the dashboard and the invoice list. Needs the context from core.views._invoice_page_panels. #}
 <aside class="inv-rail">
-  <div class="card inv-panel">
-    <h2 class="inv-panel__title">Quick Actions</h2>
-    <div class="inv-actions">
-      <a href="{% url 'invoice_create' %}" class="inv-action"><i class="far fa-file-lines"></i>Create Invoice</a>
-      <a href="{% url 'client_create' %}" class="inv-action"><i class="fas fa-user-plus"></i>Add Client</a>
-      <a href="{% url 'project_create' %}" class="inv-action"><i class="far fa-folder-open"></i>New Project</a>
-      <a href="{% url 'reports' %}" class="inv-action"><i class="fas fa-chart-column"></i>View Reports</a>
-      <a href="{% url 'gst_summary_report' %}" class="inv-action"><i class="fas fa-receipt"></i>GST Summary</a>
-      <a href="{% url 'settings' %}" class="inv-action"><i class="fas fa-gear"></i>Settings</a>
-    </div>
-  </div>
+  {% include 'components/quick_actions.html' %}
 
   <div class="card inv-panel">
     <h2 class="inv-panel__title">Invoice Status</h2>

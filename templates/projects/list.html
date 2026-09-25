@@ -1,5 +1,5 @@
 {% extends 'base.html' %}
-{% load static %}
+{% load static money %}
 
 {% block title %}Projects - Ralfiz BMS{% endblock %}
 
@@ -10,18 +10,23 @@
 {% endblock %}
 
 {% block content %}
-<!-- Page Header -->
+<div class="inv-page">
+<div class="inv-main">
+
 <div class="page-header">
-  <div>
-    <h1 class="page-title">Projects</h1>
-    <p class="page-subtitle mb-0">Manage your projects</p>
+  <div class="page-header__lead">
+    <span class="page-header__icon"><i class="far fa-folder-open"></i></span>
+    <div>
+      <h1 class="page-title">Projects</h1>
+      <p class="page-subtitle mb-0">Manage your projects and track delivery</p>
+    </div>
   </div>
   <div class="page-actions">
     <a href="{% url 'export_projects' %}" class="btn btn-outline-secondary">
       <i class="fas fa-download"></i>
       Export
     </a>
-    <a href="{% url 'project_import' %}" class="btn btn-outline-success">
+    <a href="{% url 'project_import' %}" class="btn btn-outline-secondary">
       <i class="fas fa-file-excel"></i>
       Import
     </a>
@@ -32,18 +37,52 @@
   </div>
 </div>
 
-<!-- Filters -->
+<div class="inv-stats">
+  <div class="inv-stat">
+    <span class="inv-stat__icon is-primary"><i class="far fa-folder-open"></i></span>
+    <div>
+      <div class="inv-stat__label">Total Projects</div>
+      <div class="inv-stat__value">{{ stats.count }}</div>
+      <div class="inv-stat__note">{{ stats.pipeline }} in the pipeline</div>
+    </div>
+  </div>
+  <div class="inv-stat">
+    <span class="inv-stat__icon is-warning"><i class="fas fa-spinner"></i></span>
+    <div>
+      <div class="inv-stat__label">Active</div>
+      <div class="inv-stat__value">{{ stats.active }}</div>
+      <div class="inv-stat__note">in progress or review</div>
+    </div>
+  </div>
+  <div class="inv-stat">
+    <span class="inv-stat__icon is-success"><i class="fas fa-check"></i></span>
+    <div>
+      <div class="inv-stat__label">Completed</div>
+      <div class="inv-stat__value">{{ stats.completed }}</div>
+      <div class="inv-stat__note">delivered so far</div>
+    </div>
+  </div>
+  <div class="inv-stat">
+    <span class="inv-stat__icon is-amber"><i class="far fa-clock"></i></span>
+    <div>
+      <div class="inv-stat__label">Overdue</div>
+      <div class="inv-stat__value">{{ stats.overdue }}</div>
+      <div class="inv-stat__note">past the deadline</div>
+    </div>
+  </div>
+</div>
+
 <div class="card mb-4">
   <div class="card-body">
-    <form method="get" class="row align-items-end">
-      <div class="col-3 col-md-6 col-sm-12" style="padding: 0.5rem;">
+    <form method="get" class="inv-filters prj-filters">
+      <div class="inv-filters__field inv-filters__search">
         <label class="form-label">Search</label>
-        <div class="navbar-search" style="width: 100%;">
+        <div class="inv-input-icon">
           <i class="fas fa-search"></i>
-          <input type="text" class="form-control" name="search" placeholder="Search projects..." value="{{ search }}" style="padding-left: 2.5rem; width: 100%;">
+          <input type="text" class="form-control" name="search" placeholder="Search projects or clients..." value="{{ search }}">
         </div>
       </div>
-      <div class="col-2 col-md-6 col-sm-12" style="padding: 0.5rem;">
+      <div class="inv-filters__field">
         <label class="form-label">Status</label>
         <select class="form-control" name="status">
           <option value="">All Status</option>
@@ -52,7 +91,7 @@
           {% endfor %}
         </select>
       </div>
-      <div class="col-2 col-md-6 col-sm-12" style="padding: 0.5rem;">
+      <div class="inv-filters__field">
         <label class="form-label">Type</label>
         <select class="form-control" name="type">
           <option value="">All Types</option>
@@ -61,58 +100,81 @@
           {% endfor %}
         </select>
       </div>
-      <div class="col-2 col-md-6 col-sm-12" style="padding: 0.5rem;">
-        <button type="submit" class="btn btn-outline-secondary w-100">
-          <i class="fas fa-filter"></i>
-          Apply Filters
-        </button>
+      <div class="inv-filters__buttons">
+        <button type="submit" class="btn btn-primary"><i class="fas fa-filter"></i> Filter</button>
+        <a href="{% url 'project_list' %}" class="btn btn-outline-secondary"><i class="fas fa-rotate-right"></i> Reset</a>
       </div>
     </form>
+
+    <div class="inv-quick">
+      <span class="inv-quick__label">Quick Filters:</span>
+      <a href="?quick=active" class="inv-chip {% if quick == 'active' %}is-active{% endif %}">Active</a>
+      <a href="?quick=pipeline" class="inv-chip {% if quick == 'pipeline' %}is-active{% endif %}">Leads &amp; Proposals</a>
+      <a href="?quick=overdue" class="inv-chip {% if quick == 'overdue' %}is-active{% endif %}">Overdue</a>
+      <a href="?quick=completed" class="inv-chip {% if quick == 'completed' %}is-active{% endif %}">Completed</a>
+    </div>
   </div>
 </div>
 
-<!-- Projects Table -->
 <div class="card">
+  <div class="card-header inv-list-head">
+    <div>
+      <h2 class="card-title mb-0">Project List</h2>
+      <p class="inv-list-head__sub">Showing {{ project_count }} project{{ project_count|pluralize }}, newest first</p>
+    </div>
+  </div>
   <div class="table-wrapper">
-    <table class="table">
+    <table class="table inv-table">
       <thead>
         <tr>
           <th>Project</th>
           <th>Client</th>
           <th>Type</th>
-          <th>Status</th>
+          <th>Team</th>
           <th>Budget</th>
           <th>Deadline</th>
-          <th style="width: 120px;">Actions</th>
+          <th>Status</th>
+          <th>Actions</th>
         </tr>
       </thead>
       <tbody>
         {% for project in projects %}
         <tr>
-          <td>
-            <a href="{% url 'project_detail' project.pk %}" class="fw-medium">{{ project.name }}</a>
+          <td class="prj-name">
+            <a href="{% url 'project_detail' project.pk %}" class="fw-semibold">{{ project.name }}</a>
+            {% if project.tech_stack %}<span>{{ project.tech_stack }}</span>{% endif %}
           </td>
+          <td><a href="{% url 'client_detail' project.client.pk %}">{{ project.client.name }}</a></td>
+          <td class="inv-num">{{ project.get_project_type_display }}</td>
           <td>
-            <a href="{% url 'client_detail' project.client.pk %}">{{ project.client.name }}</a>
+            {% with team=project.team_members.all %}
+            {% if team %}
+            <div class="prj-team">
+              {% for m in team|slice:":3" %}<span class="prj-team__avatar" title="{{ m.name }}">{{ m.name|slice:":1"|upper }}</span>{% endfor %}
+              {% if team|length > 3 %}<span class="prj-team__more">+{{ team|length|add:"-3" }}</span>{% endif %}
+            </div>
+            {% else %}<span class="text-muted">&mdash;</span>{% endif %}
+            {% endwith %}
           </td>
-          <td>{{ project.get_project_type_display }}</td>
+          <td class="inv-num fw-semibold">
+            {% if project.final_amount %}&#8377;{{ project.final_amount|inr }}
+            {% elif project.estimated_budget %}&#8377;{{ project.estimated_budget|inr }}<span class="prj-est">est.</span>
+            {% else %}<span class="text-muted">&mdash;</span>{% endif %}
+          </td>
+          <td class="inv-date {% if project.is_overdue %}prj-overdue{% endif %}">
+            {% if project.deadline %}{{ project.deadline|date:"d M" }}<span>{{ project.deadline|date:"Y" }}{% if project.is_overdue %} &middot; overdue{% endif %}</span>{% else %}<span class="text-muted">&mdash;</span>{% endif %}
+          </td>
           <td><span class="status-badge {{ project.status }}">{{ project.get_status_display }}</span></td>
-          <td class="fw-medium">{% if project.estimated_budget %}&#8377;{{ project.estimated_budget|floatformat:2 }}{% else %}-{% endif %}</td>
-          <td>{{ project.deadline|date:"d M Y"|default:"-" }}</td>
           <td>
             <div class="table-actions">
-              <a href="{% url 'project_detail' project.pk %}" class="btn btn-sm btn-ghost btn-icon" title="View">
-                <i class="fas fa-eye"></i>
-              </a>
-              <a href="{% url 'project_update' project.pk %}" class="btn btn-sm btn-ghost btn-icon" title="Edit">
-                <i class="fas fa-edit"></i>
-              </a>
+              <a href="{% url 'project_detail' project.pk %}" class="btn btn-icon" title="View"><i class="fas fa-eye"></i></a>
+              <a href="{% url 'project_update' project.pk %}" class="btn btn-icon" title="Edit"><i class="fas fa-pen"></i></a>
             </div>
           </td>
         </tr>
         {% empty %}
         <tr>
-          <td colspan="7" class="text-center py-4 text-muted">
+          <td colspan="8" class="text-center py-4 text-muted">
             <i class="fas fa-folder-open mb-2" style="font-size: 2rem;"></i>
             <p class="mb-0">No projects found</p>
           </td>
@@ -121,5 +183,60 @@
       </tbody>
     </table>
   </div>
+</div>
+
+</div>
+
+<aside class="inv-rail">
+  {% include 'components/quick_actions.html' %}
+
+  <div class="card inv-panel">
+    <h2 class="inv-panel__title">Project Status</h2>
+    <div class="inv-donut-row">
+      <div class="inv-donut" style="background: {{ status_donut }};">
+        <div class="inv-donut__hole"><strong>{{ status_total }}</strong><span>Total</span></div>
+      </div>
+      <ul class="inv-legend">
+        {% for s in status_mix %}
+        <li><span class="inv-legend__dot" style="background: {{ s.colour }}"></span>{{ s.label }}<span class="inv-legend__n">{{ s.count }} ({{ s.pct }}%)</span></li>
+        {% endfor %}
+      </ul>
+    </div>
+  </div>
+
+  <div class="card inv-panel">
+    <h2 class="inv-panel__title">Upcoming Deadlines <a href="?quick=overdue" class="inv-panel__meta">Overdue</a></h2>
+    <ul class="inv-activity">
+      {% for p in upcoming_deadlines %}
+      <li>
+        <span class="inv-activity__icon {% if p.is_overdue %}is-deleted{% else %}is-updated{% endif %}"><i class="far fa-calendar"></i></span>
+        <div>
+          <a href="{% url 'project_detail' p.pk %}" class="inv-activity__text">{{ p.name }}</a>
+          <div class="inv-activity__when">{{ p.deadline|date:"d M Y" }} &middot; {% if p.days_left < 0 %}<span class="prj-overdue">overdue</span>{% elif p.days_left == 0 %}due today{% else %}in {{ p.days_left }} day{{ p.days_left|pluralize }}{% endif %}</div>
+        </div>
+      </li>
+      {% empty %}
+      <li class="inv-activity__empty">No open project has a deadline.</li>
+      {% endfor %}
+    </ul>
+  </div>
+
+  <div class="card inv-panel">
+    <h2 class="inv-panel__title">Recently Updated</h2>
+    <ul class="inv-activity">
+      {% for p in recent_projects %}
+      <li>
+        <span class="inv-activity__icon is-created"><i class="far fa-folder"></i></span>
+        <div>
+          <a href="{% url 'project_detail' p.pk %}" class="inv-activity__text">{{ p.name }}</a>
+          <div class="inv-activity__when">{{ p.client.name }} &middot; {{ p.updated_at|date:"d M Y" }}</div>
+        </div>
+      </li>
+      {% empty %}
+      <li class="inv-activity__empty">Nothing yet.</li>
+      {% endfor %}
+    </ul>
+  </div>
+</aside>
 </div>
 {% endblock %}

@@ -52,3 +52,37 @@ class InvoicePageTests(TestCase):
         self.assertEqual(r.context['stats']['total'], Decimal('118000'))
         self.assertContains(r, '1,18,000.00')
         self.assertNotContains(r, 'Hidden')
+
+
+class ProjectListPageTests(TestCase):
+    def setUp(self):
+        from datetime import timedelta
+        from django.utils import timezone
+        from .models import Project
+        self.user = User.objects.create_superuser('boss', 'b@x.com', 'pw')
+        self.client.force_login(self.user)
+        c = Client.objects.create(name='Acme')
+        today = timezone.now().date()
+        Project.objects.create(client=c, name='Late One', status='in_progress',
+                               deadline=today - timedelta(days=3))
+        Project.objects.create(client=c, name='On Time', status='in_progress',
+                               deadline=today + timedelta(days=10))
+        Project.objects.create(client=c, name='Shipped', status='completed',
+                               deadline=today - timedelta(days=30))
+        Project.objects.create(client=c, name='Maybe', status='lead')
+
+    def test_stat_cards_and_panels(self):
+        r = self.client.get(reverse('project_list'))
+        self.assertEqual(r.status_code, 200)
+        self.assertEqual(r.context['stats'],
+                         {'count': 4, 'active': 2, 'completed': 1, 'overdue': 1, 'pipeline': 1})
+        self.assertEqual([p.name for p in r.context['upcoming_deadlines']], ['Late One', 'On Time'])
+        self.assertContains(r, 'Project Status')
+
+    def test_overdue_quick_filter_skips_completed(self):
+        r = self.client.get(reverse('project_list'), {'quick': 'overdue'})
+        self.assertEqual([p.name for p in r.context['projects']], ['Late One'])
+
+    def test_pipeline_quick_filter(self):
+        r = self.client.get(reverse('project_list'), {'quick': 'pipeline'})
+        self.assertEqual([p.name for p in r.context['projects']], ['Maybe'])

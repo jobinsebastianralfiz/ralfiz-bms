@@ -893,15 +893,73 @@ def project_list(request):
     if project_type:
         projects = projects.filter(project_type=project_type)
 
+    # Quick filters
+    quick = request.GET.get('quick', '')
+    today = timezone.now().date()
+    if quick == 'active':
+        projects = projects.filter(status__in=PROJECT_ACTIVE_STATUSES)
+    elif quick == 'pipeline':
+        projects = projects.filter(status__in=PROJECT_PIPELINE_STATUSES)
+    elif quick == 'overdue':
+        projects = projects.filter(deadline__lt=today).exclude(status__in=['completed', 'cancelled'])
+    elif quick == 'completed':
+        projects = projects.filter(status='completed')
+
     context = {
-        'projects': projects,
+        'projects': projects.prefetch_related('team_members'),
+        'project_count': projects.count(),
         'search': search,
         'status': status,
         'project_type': project_type,
+        'quick': quick,
         'status_choices': Project.STATUS_CHOICES,
         'type_choices': Project.TYPE_CHOICES,
+        **_project_page_panels(projects, today),
     }
     return render(request, 'projects/list.html', context)
+
+
+PROJECT_ACTIVE_STATUSES = ['confirmed', 'in_progress', 'review']
+PROJECT_PIPELINE_STATUSES = ['lead', 'proposal', 'negotiation']
+
+
+def _project_page_panels(projects, today):
+    """Stat cards and side panels for the project list; every figure follows
+    the filters on `projects`."""
+    counts = {row['status']: row['n'] for row in projects.values('status').annotate(n=Count('id'))}
+    active = sum(counts.get(k, 0) for k in PROJECT_ACTIVE_STATUSES)
+    pipeline = sum(counts.get(k, 0) for k in PROJECT_PIPELINE_STATUSES)
+    open_projects = projects.exclude(status__in=['completed', 'cancelled'])
+    stats = {
+        'count': sum(counts.values()),
+        'active': active,
+        'completed': counts.get('completed', 0),
+        'overdue': open_projects.filter(deadline__lt=today).count(),
+        'pipeline': pipeline,
+    }
+
+    groups = [
+        ('Active', active, '#0ea5e9'),
+        ('Pipeline', pipeline, '#6366f1'),
+        ('Completed', counts.get('completed', 0), '#10b981'),
+        ('Inactive', counts.get('on_hold', 0) + counts.get('cancelled', 0), '#94a3b8'),
+    ]
+    shown = sum(n for _, n, _ in groups)
+    status_mix, stops, start = [], [], 0.0
+    for label, n, colour in groups:
+        pct = n * 100 / shown if shown else 0
+        status_mix.append({'label': label, 'count': n, 'pct': round(pct), 'colour': colour})
+        stops.append(f'{colour} {start:.2f}% {start + pct:.2f}%')
+        start += pct
+    donut = f"conic-gradient({', '.join(stops)})" if shown else 'conic-gradient(#e6ecf3 0 100%)'
+
+    upcoming = list(open_projects.filter(deadline__isnull=False)
+                    .select_related('client').order_by('deadline')[:5])
+    for p in upcoming:
+        p.days_left = (p.deadline - today).days
+    recent = projects.select_related('client').order_by('-updated_at')[:4]
+    return {'stats': stats, 'status_mix': status_mix, 'status_total': shown, 'status_donut': donut,
+            'upcoming_deadlines': upcoming, 'recent_projects': recent, 'today': today}
 
 
 @login_required
