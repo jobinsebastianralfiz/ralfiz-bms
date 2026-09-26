@@ -1,0 +1,395 @@
+{% extends 'agreements/_doc_base.html' %}
+{% load money %}
+
+{% block title %}AMC Agreement - {{ amc.reference }}{% endblock %}
+
+{% block body %}
+<style>
+  .amc-meta { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 18px; }
+  .amc-meta div { border: 1px solid var(--agr-line); border-radius: 8px; padding: 8px 10px; font-size: 12px; color: var(--agr-ink); }
+  .amc-meta span, .amc-party .lbl { display: block; font-size: 9px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--agr-muted); }
+  .amc-parties { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .amc-party { border: 1px solid var(--agr-line); border-radius: 10px; padding: 12px 14px; font-size: 12px; line-height: 1.55; }
+  .amc-party .name { display: block; color: var(--agr-ink); font-size: 13px; margin: 2px 0; }
+  .amc-party em { display: block; color: var(--agr-muted); font-size: 11px; margin-top: 4px; }
+  .clause { display: flex; gap: 8px; margin: 0 0 6px; }
+  .clause b { flex: none; min-width: 28px; color: var(--agr-ink); }
+  .agr-section h3 { font-size: 13px; color: var(--agr-ink); margin: 10px 0 4px; }
+  .amc-ol { margin: 0 0 8px; padding-left: 20px; }
+  .amc-ol li { margin-bottom: 3px; }
+  .amc-table { width: 100%; border-collapse: collapse; font-size: 11.5px; margin: 8px 0 10px; }
+  .amc-table th { background: var(--agr-dark); color: #fff; text-align: left; padding: 7px 8px; font-weight: 600; }
+  .amc-table td { border-bottom: 1px solid var(--agr-line); padding: 6px 8px; vertical-align: top; }
+  .amc-table .num { text-align: right; white-space: nowrap; }
+  .amc-table tr.total td { font-weight: 700; color: var(--agr-ink); background: var(--agr-blue-soft); }
+  .amc-table td.sel { background: var(--agr-blue-soft); font-weight: 600; color: var(--agr-ink); }
+  .amc-table th.sel { background: var(--agr-blue); }
+  .ticks { list-style: none; margin: 2px 0 8px; padding-left: 36px; }
+  .ticks li { margin-bottom: 3px; }
+  .box { display: inline-block; width: 13px; height: 13px; text-align: center; border: 1px solid #94a3b8; border-radius: 3px;
+         font-size: 10px; line-height: 12px; margin-right: 6px; color: var(--agr-blue); font-weight: 700; vertical-align: -2px; }
+  .blank { display: inline-block; min-width: 170px; border-bottom: 1px solid #94a3b8; height: 14px; }
+  .witness p { margin: 0 0 12px; font-size: 12px; }
+  .schedule { break-before: page; page-break-before: always; }
+  .schedule-title { font-size: 15px; color: var(--agr-ink); margin: 0 0 4px; font-weight: 700; letter-spacing: .03em; }
+  .schedule-note { font-size: 12px; margin: 4px 0; }
+  .schedule-block { margin-bottom: 16px; }
+  .schedule .amc-table td { padding: 4px 8px; }
+  .schedule .amc-table th { padding: 5px 8px; }
+  @media print { .amc-table, .keep { break-inside: avoid; page-break-inside: avoid; } }
+</style>
+
+<main class="doc-main">
+  {% if not for_pdf %}
+  <div class="copy-toolbar no-print">
+    <div>
+      <strong>AMC Agreement</strong>
+      <span class="text-sm">{{ amc.reference }} &middot; {% firstof client.company_name client.name %}</span>
+    </div>
+    <div class="copy-toolbar-actions">
+      <a href="{% url 'amc_detail' amc.pk %}" class="copy-btn">Back</a>
+      <button type="button" class="copy-btn" onclick="window.print()">Print</button>
+      <a href="?download=1" class="copy-btn primary">Download PDF</a>
+    </div>
+  </div>
+  {% endif %}
+
+  <p class="doc-eyebrow">SERVICE AGREEMENT</p>
+  <h1 class="doc-title">Annual Maintenance Contract (AMC) Agreement</h1>
+  <div class="doc-rule"></div>
+
+  <div class="amc-meta">
+    <div><span>Agreement No.</span>{{ amc.reference }}</div>
+    <div><span>Date of Execution</span>{{ amc.created_at|date:"d/m/Y" }}</div>
+    <div><span>Place of Execution</span>Perinthalmanna, Kerala</div>
+  </div>
+
+  <section class="agr-section">
+    <div class="agr-section-head"><span class="agr-no">&bull;</span><h2>Parties</h2></div>
+    <p>This Annual Maintenance Contract (&ldquo;<strong>Agreement</strong>&rdquo;) is entered into on the date above between:</p>
+    <div class="amc-parties">
+      <div class="amc-party">
+        <span class="lbl">Service Provider</span>
+        <strong class="name">{{ legal_name }}</strong>
+        KIMS Avenue, Perinthalmanna, Malappuram, Kerala, India<br>
+        Phone: +91 98956 63498 &middot; Website: www.ralfiz.com<br>
+        {% if company_info.gst_number %}GSTIN: {{ company_info.gst_number }}<br>{% endif %}
+        Represented by: {{ company.signatory_name }}, {{ company.signatory_designation }}
+        <em>(hereinafter &ldquo;Ralfiz&rdquo; or the &ldquo;Service Provider&rdquo;)</em>
+      </div>
+      <div class="amc-party">
+        <span class="lbl">Client</span>
+        <strong class="name">{% firstof client.company_name client.name %}</strong>
+        {% if client.address %}Address: {{ client.address|linebreaksbr }}<br>{% endif %}
+        {% if client.phone %}Phone: {{ client.phone }} &middot; {% endif %}Email: {{ client.email }}<br>
+        {% if client.gst_number %}GSTIN: {{ client.gst_number }}<br>{% endif %}
+        Represented by: {% if client.company_name %}{{ client.name }}{% else %}<span class="blank" style="min-width:120px"></span>{% endif %}
+        <em>(hereinafter the &ldquo;Client&rdquo;)</em>
+      </div>
+    </div>
+    <p style="margin-top:10px">Ralfiz and the Client are individually referred to as a &ldquo;<strong>Party</strong>&rdquo; and collectively as the &ldquo;<strong>Parties</strong>&rdquo;.</p>
+  </section>
+
+  <section class="agr-section">
+    <div class="agr-section-head"><span class="agr-no">1</span><h2>Background</h2></div>
+    <p class="clause"><b>1.1</b><span>Ralfiz has developed and/or deployed the software, application(s), website(s) and/or related systems described in <strong>Schedule A</strong> (the &ldquo;<strong>Covered System</strong>&rdquo;) for the Client.</span></p>
+    <p class="clause"><b>1.2</b><span>The Client wishes to engage Ralfiz to provide ongoing maintenance and technical support for the Covered System, and Ralfiz agrees to provide such services on the terms set out in this Agreement.</span></p>
+  </section>
+
+  <section class="agr-section">
+    <div class="agr-section-head"><span class="agr-no">2</span><h2>Definitions</h2></div>
+    <ul class="agr-list">
+      <li><strong>&ldquo;Covered System&rdquo;</strong> &ndash; the software, mobile app(s), website(s), web application(s), APIs, admin dashboards and servers listed in Schedule A.</li>
+      <li><strong>&ldquo;Bug / Defect&rdquo;</strong> &ndash; any failure of the Covered System to function as per its approved specification at the time of handover.</li>
+      <li><strong>&ldquo;Enhancement&rdquo;</strong> &ndash; any new feature, module, screen, report, workflow or change in business logic not part of the original approved scope.</li>
+      <li><strong>&ldquo;Support Hours&rdquo;</strong> &ndash; Monday to Saturday, 9:30 AM to 6:30 PM IST, excluding public holidays in Kerala.</li>
+      <li><strong>&ldquo;Response Time&rdquo;</strong> &ndash; time between the Client logging an issue through an approved channel and Ralfiz acknowledging it and starting work.</li>
+      <li><strong>&ldquo;Resolution Time&rdquo;</strong> &ndash; time taken to fix the issue or provide an acceptable workaround.</li>
+      <li><strong>&ldquo;Third-Party Services&rdquo;</strong> &ndash; services not owned by Ralfiz, including hosting, cloud servers, domains, SSL, SMS/WhatsApp/email gateways, payment gateways, maps, app stores, Firebase and similar.</li>
+    </ul>
+  </section>
+
+  <section class="agr-section">
+    <div class="agr-section-head"><span class="agr-no">3</span><h2>Term</h2></div>
+    <p class="clause"><b>3.1</b><span>This Agreement shall be valid for <strong>{{ months_words }} ({{ months }}) months</strong> from <strong>{{ amc.start_date|date:"d/m/Y" }}</strong> to <strong>{{ amc.end_date|date:"d/m/Y" }}</strong> (the &ldquo;<strong>AMC Period</strong>&rdquo;).</span></p>
+    <p class="clause"><b>3.2</b><span>The Agreement may be renewed for further periods of twelve (12) months by mutual written consent and payment of the applicable renewal fee. Ralfiz will send a renewal notice at least <strong>30 days</strong> before expiry.</span></p>
+    <p class="clause"><b>3.3</b><span>Renewal fees may be revised by up to <strong>10%</strong> annually, or as mutually agreed, to reflect changes in scope, technology or infrastructure costs.</span></p>
+  </section>
+
+  <section class="agr-section">
+    <div class="agr-section-head"><span class="agr-no">4</span><h2>Scope of Services</h2></div>
+    <p>Ralfiz shall provide the following services for the Covered System during the AMC Period:</p>
+    <h3>4.1 Corrective Maintenance</h3>
+    <ul class="agr-list">
+      <li>Identification and fixing of bugs and defects in the Covered System.</li>
+      <li>Fixing issues caused by errors in code delivered by Ralfiz.</li>
+    </ul>
+    <h3>4.2 Preventive Maintenance</h3>
+    <ul class="agr-list">
+      <li>Periodic health checks of application and server performance.</li>
+      <li>Monitoring of logs, errors and uptime (where monitoring access is available).</li>
+      <li>Database optimisation and clean-up as required.</li>
+    </ul>
+    <h3>4.3 Adaptive Maintenance</h3>
+    <ul class="agr-list">
+      <li>Updates required due to changes in OS versions (Android / iOS), browser updates, or mandatory third-party API changes, limited to keeping <strong>existing features</strong> working.</li>
+      <li>Updating framework and package dependencies for security and compatibility.</li>
+      <li>Resubmission of mobile app builds to Google Play Store / Apple App Store when required for compliance (client developer account required).</li>
+    </ul>
+    <h3>4.4 Security &amp; Backup</h3>
+    <ul class="agr-list">
+      <li>Application of security patches and SSL renewal support.</li>
+      <li>Periodic database backups as per <strong>Schedule B</strong> (where hosting is managed by Ralfiz).</li>
+      <li>Restoration support from available backups in case of data loss.</li>
+    </ul>
+    <h3>4.5 Technical Support</h3>
+    <ul class="agr-list">
+      <li>Support via {{ amc.plan_terms.channels }} during Support Hours.</li>
+      <li>Remote assistance for usage-related queries.</li>
+      <li>Minor content updates (text, images, banners) within the allowance in clause 4.6.</li>
+    </ul>
+    <h3>4.6 Minor Changes Allowance</h3>
+    <ul class="agr-list">
+      <li>Small modifications (e.g., label changes, minor UI tweaks, simple report field additions) up to <strong>{{ amc.plan_terms.hours }} hours per month</strong>. Unused hours <strong>do not</strong> carry forward.</li>
+    </ul>
+  </section>
+
+  <section class="agr-section">
+    <div class="agr-section-head"><span class="agr-no">5</span><h2>Exclusions</h2></div>
+    <p>The following are <strong>not</strong> covered under this AMC and shall be quoted and billed separately:</p>
+    <ol class="amc-ol">
+      <li>New features, modules, integrations, redesigns or Enhancements.</li>
+      <li>Issues caused by changes, modifications or access to the code/server by the Client or any third party.</li>
+      <li>Issues arising from Third-Party Services, including outages, pricing changes, policy changes or discontinuation.</li>
+      <li>Costs of hosting, servers, domains, SSL certificates, SMS/WhatsApp/email credits, payment gateway fees, app store developer accounts, paid APIs or licenses.</li>
+      <li>Data entry, data migration, bulk data correction or data recovery beyond available backups.</li>
+      <li>Hardware, networking, printers, POS devices, or client-side device/OS issues.</li>
+      <li>Damage due to virus attacks, hacking or misuse resulting from the Client&rsquo;s negligence (e.g., shared passwords, compromised admin accounts).</li>
+      <li>On-site visits, unless specified in Schedule B (on-site visits outside Perinthalmanna are chargeable with travel costs).</li>
+      <li>Training for new staff beyond {{ amc.plan_terms.training }} session{{ amc.plan_terms.training|pluralize }} per year.</li>
+      <li>Major version upgrades (e.g., framework migration, full platform rebuild).</li>
+    </ol>
+  </section>
+
+  <section class="agr-section">
+    <div class="agr-section-head"><span class="agr-no">6</span><h2>Service Levels (SLA)</h2></div>
+    <table class="amc-table">
+      <thead><tr><th>Priority</th><th>Description</th><th>Response Time</th><th>Target Resolution</th></tr></thead>
+      <tbody>
+        <tr><td><strong>P1 &ndash; Critical</strong></td><td>System down, payments failing, core business stopped</td><td>Within 2 working hours</td><td>Within 24 working hours</td></tr>
+        <tr><td><strong>P2 &ndash; High</strong></td><td>Major feature not working, workaround difficult</td><td>Within 4 working hours</td><td>Within 2 working days</td></tr>
+        <tr><td><strong>P3 &ndash; Medium</strong></td><td>Feature partially affected, workaround available</td><td>Within 1 working day</td><td>Within 5 working days</td></tr>
+        <tr><td><strong>P4 &ndash; Low</strong></td><td>Cosmetic issues, queries, minor content changes</td><td>Within 2 working days</td><td>Within 10 working days</td></tr>
+      </tbody>
+    </table>
+    <p class="clause"><b>6.1</b><span>Times are calculated within Support Hours only.</span></p>
+    <p class="clause"><b>6.2</b><span>Resolution times are targets and may extend where the issue depends on Third-Party Services, app store review, or information/access from the Client.</span></p>
+    <p class="clause"><b>6.3</b><span>Ralfiz will make reasonable efforts to address P1 issues outside Support Hours, but this is not guaranteed unless <strong>Priority Support</strong> is part of the plan selected in Schedule B.</span></p>
+  </section>
+
+  <section class="agr-section">
+    <div class="agr-section-head"><span class="agr-no">7</span><h2>Client Responsibilities</h2></div>
+    <p>The Client shall:</p>
+    <ol class="amc-ol">
+      <li>Report issues only through the approved support channels, with clear details, screenshots and steps to reproduce.</li>
+      <li>Nominate a single point of contact (SPOC) for coordination.</li>
+      <li>Provide necessary access (server, hosting panel, app store accounts, third-party dashboards) in a timely manner.</li>
+      <li>Ensure timely renewal and payment of Third-Party Services (hosting, domain, SSL, gateways, etc.).</li>
+      <li>Not modify the source code or server configuration without informing Ralfiz in writing.</li>
+      <li>Maintain secure credentials and restrict admin access to authorised personnel.</li>
+      <li>Test and approve fixes within <strong>5 working days</strong>; fixes are deemed accepted if no feedback is received within this period.</li>
+    </ol>
+  </section>
+
+  <section class="agr-section">
+    <div class="agr-section-head"><span class="agr-no">8</span><h2>Fees &amp; Payment Terms</h2></div>
+    <p class="clause"><b>8.1</b><span>The AMC fee for the AMC Period is <strong>&#8377;{{ amc.annual_amount|inr }}/-</strong>{% if fee_words %} ({{ fee_words }}){% endif %}{% if amc.include_gst %}, exclusive of GST{% endif %}, as detailed in <strong>Schedule C</strong>.</span></p>
+    {% if amc.include_gst %}
+    <p class="clause"><b>8.2</b><span>GST at the applicable rate (currently <strong>{{ tax_rate|floatformat:"-2" }}%</strong>) will be charged additionally.</span></p>
+    {% else %}
+    <p class="clause"><b>8.2</b><span>No GST is charged under this Agreement.</span></p>
+    {% endif %}
+    <p class="clause"><b>8.3</b><span><strong>Payment Terms:</strong></span></p>
+    <ul class="ticks">
+      {% for key, label in payment_options %}
+      {% if key != 'monthly' or amc.billing_cycle == 'monthly' %}
+      <li><span class="box">{% if amc.billing_cycle == key %}&#10003;{% endif %}</span>{{ label }}</li>
+      {% endif %}
+      {% endfor %}
+    </ul>
+    <p class="clause"><b>8.4</b><span>Payments are due within <strong>7 days</strong> of invoice date via bank transfer / UPI to the account details provided on the invoice.</span></p>
+    <p class="clause"><b>8.5</b><span>Work outside the scope of this AMC will be billed {% if amc.extra_hourly_rate %}at <strong>&#8377;{{ amc.extra_hourly_rate|inr }}/hour</strong> or {% endif %}on a fixed quotation approved by the Client.</span></p>
+    <p class="clause"><b>8.6</b><span>If payment is delayed by more than <strong>15 days</strong>, Ralfiz may suspend support services until dues are cleared. The SLA timelines shall not apply during the suspension period.</span></p>
+    <p class="clause"><b>8.7</b><span>Fees paid are non-refundable, except as stated in Clause 11.</span></p>
+  </section>
+
+  <section class="agr-section">
+    <div class="agr-section-head"><span class="agr-no">9</span><h2>Intellectual Property</h2></div>
+    <p class="clause"><b>9.1</b><span>Ownership of the Covered System remains as defined in the original development agreement between the Parties.</span></p>
+    <p class="clause"><b>9.2</b><span>Any bug fixes or minor updates made under this AMC shall form part of the Covered System and follow the same ownership terms.</span></p>
+    <p class="clause"><b>9.3</b><span>Ralfiz retains ownership of its pre-existing tools, libraries, frameworks, reusable components and know-how used in providing the services.</span></p>
+  </section>
+
+  <section class="agr-section">
+    <div class="agr-section-head"><span class="agr-no">10</span><h2>Confidentiality &amp; Data Protection</h2></div>
+    <p class="clause"><b>10.1</b><span>Each Party shall keep confidential all business, technical and customer information of the other Party received under this Agreement and shall not disclose it to any third party without prior written consent, except as required by law.</span></p>
+    <p class="clause"><b>10.2</b><span>Ralfiz shall access Client data only to the extent necessary to perform the services and shall take reasonable measures to protect it.</span></p>
+    <p class="clause"><b>10.3</b><span>The Client remains the owner and data controller of all data stored in the Covered System and is responsible for compliance with applicable data protection laws, including the <strong>Digital Personal Data Protection Act, 2023</strong>, in relation to its users&rsquo; data.</span></p>
+    <p class="clause"><b>10.4</b><span>This clause survives termination of the Agreement for a period of <strong>2 years</strong>.</span></p>
+  </section>
+
+  <section class="agr-section">
+    <div class="agr-section-head"><span class="agr-no">11</span><h2>Termination</h2></div>
+    <p class="clause"><b>11.1</b><span>Either Party may terminate this Agreement by giving <strong>30 days&rsquo; written notice</strong>.</span></p>
+    <p class="clause"><b>11.2</b><span>Either Party may terminate immediately by written notice if the other Party commits a material breach and fails to remedy it within <strong>15 days</strong> of notice.</span></p>
+    <p class="clause"><b>11.3</b><span>On termination by the Client without cause, no refund shall be due for the remaining period. On termination by Ralfiz without cause, Ralfiz shall refund the unused portion of the AMC fee on a pro-rata basis.</span></p>
+    <p class="clause"><b>11.4</b><span>On termination, Ralfiz shall hand over any Client credentials in its possession and provide a reasonable handover of the latest code (if in Ralfiz&rsquo;s custody and ownership belongs to the Client), subject to clearance of all outstanding dues.</span></p>
+  </section>
+
+  <section class="agr-section">
+    <div class="agr-section-head"><span class="agr-no">12</span><h2>Limitation of Liability</h2></div>
+    <p class="clause"><b>12.1</b><span>Ralfiz shall not be liable for any indirect, incidental, special or consequential damages, including loss of profit, revenue, business or data.</span></p>
+    <p class="clause"><b>12.2</b><span>Ralfiz&rsquo;s total aggregate liability under this Agreement shall not exceed the <strong>AMC fees paid by the Client for the current AMC Period</strong>.</span></p>
+    <p class="clause"><b>12.3</b><span>Ralfiz does not guarantee uninterrupted or error-free operation, particularly where the system depends on Third-Party Services.</span></p>
+  </section>
+
+  <section class="agr-section">
+    <div class="agr-section-head"><span class="agr-no">13</span><h2>Force Majeure</h2></div>
+    <p>Neither Party shall be liable for delay or failure in performance due to events beyond reasonable control, including natural disasters, floods, pandemics, government actions, internet or power outages, cyber attacks on third-party infrastructure, or failure of Third-Party Services.</p>
+  </section>
+
+  <section class="agr-section">
+    <div class="agr-section-head"><span class="agr-no">14</span><h2>Non-Solicitation</h2></div>
+    <p>During the term of this Agreement and for <strong>12 months</strong> thereafter, the Client shall not directly or indirectly hire or engage any employee of Ralfiz who worked on the Covered System, without Ralfiz&rsquo;s prior written consent.</p>
+  </section>
+
+  <section class="agr-section">
+    <div class="agr-section-head"><span class="agr-no">15</span><h2>Dispute Resolution &amp; Governing Law</h2></div>
+    <p class="clause"><b>15.1</b><span>This Agreement shall be governed by the laws of India.</span></p>
+    <p class="clause"><b>15.2</b><span>The Parties shall first attempt to resolve any dispute amicably through mutual discussion within <strong>30 days</strong>.</span></p>
+    <p class="clause"><b>15.3</b><span>Unresolved disputes shall be referred to arbitration by a sole arbitrator mutually appointed under the <strong>Arbitration and Conciliation Act, 1996</strong>. The seat of arbitration shall be <strong>Perinthalmanna, Kerala</strong>, and the language shall be English.</span></p>
+    <p class="clause"><b>15.4</b><span>Subject to the above, the courts at <strong>Perinthalmanna, Kerala</strong> shall have exclusive jurisdiction.</span></p>
+  </section>
+
+  <section class="agr-section">
+    <div class="agr-section-head"><span class="agr-no">16</span><h2>General</h2></div>
+    <p class="clause"><b>16.1</b><span><strong>Entire Agreement:</strong> This Agreement, together with its Schedules, constitutes the entire agreement regarding the AMC and supersedes prior discussions on the same subject.</span></p>
+    <p class="clause"><b>16.2</b><span><strong>Amendments:</strong> Any amendment must be in writing and signed by both Parties.</span></p>
+    <p class="clause"><b>16.3</b><span><strong>Assignment:</strong> The Client may not assign this Agreement without Ralfiz&rsquo;s written consent.</span></p>
+    <p class="clause"><b>16.4</b><span><strong>Independent Contractor:</strong> Ralfiz acts as an independent contractor. Nothing in this Agreement creates a partnership, employment or agency relationship.</span></p>
+    <p class="clause"><b>16.5</b><span><strong>Notices:</strong> Notices shall be sent to the addresses/emails mentioned above. Email communication shall be considered valid written notice.</span></p>
+    <p class="clause"><b>16.6</b><span><strong>Severability:</strong> If any clause is held invalid, the remaining clauses shall continue in full force.</span></p>
+  </section>
+
+  {% if amc.notes %}
+  <section class="agr-section">
+    <div class="agr-section-head"><span class="agr-no">17</span><h2>Additional Terms</h2></div>
+    <p>{{ amc.notes|linebreaksbr }}</p>
+  </section>
+  {% endif %}
+
+  <section class="agr-section keep">
+    <div class="agr-section-head"><span class="agr-no">&bull;</span><h2>Signatures</h2></div>
+    <p>IN WITNESS WHEREOF, the Parties have executed this Agreement on the date first written above.</p>
+    <div class="sign-blocks">
+      <div class="sign-block">
+        <div class="sign-area company-sign">
+          {% if company.signature_src %}<img class="sign-image" src="{{ company.signature_src }}" alt="Authorized signature">{% endif %}
+          {% if company.seal_src %}<img class="seal-image" src="{{ company.seal_src }}" alt="Company seal">{% endif %}
+        </div>
+        <div class="sign-line"></div>
+        <strong>For {{ legal_name }}</strong>
+        <span>Name: {{ company.signatory_name }}</span>
+        <span>Designation: {{ company.signatory_designation }}</span>
+        <span>Date: {{ amc.created_at|date:"d/m/Y" }}</span>
+      </div>
+      <div class="sign-block">
+        <div class="sign-area"></div>
+        <div class="sign-line"></div>
+        <strong>For {% firstof client.company_name client.name %}</strong>
+        <span>Name:</span>
+        <span>Designation:</span>
+        <span>Date:</span>
+        <span>Seal:</span>
+      </div>
+    </div>
+    <div class="witness">
+      <strong style="display:block;color:var(--agr-ink);font-size:13px;margin-bottom:10px">Witnesses</strong>
+      <p>1. Name: <span class="blank"></span> &nbsp; Signature: <span class="blank"></span></p>
+      <p>2. Name: <span class="blank"></span> &nbsp; Signature: <span class="blank"></span></p>
+    </div>
+  </section>
+
+  {# Schedules start on a fresh page. #}
+  <section class="schedule">
+    <div class="schedule-block keep">
+      <h2 class="schedule-title">SCHEDULE A &ndash; COVERED SYSTEM</h2>
+      <table class="amc-table">
+        <thead><tr><th>#</th><th>Component</th><th>Technology / Platform</th><th>Details / URL / Package ID</th></tr></thead>
+        <tbody>
+          {% for row in amc.covered_rows %}
+          <tr><td>{{ forloop.counter }}</td><td>{{ row.0 }}</td><td>{{ row.1|default:"&mdash;" }}</td><td>{{ row.2|default:"&mdash;" }}</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      <p class="schedule-note"><strong>Original Project Handover Date:</strong> {% if project.completed_date %}{{ project.completed_date|date:"d/m/Y" }}{% else %}&mdash;{% endif %}</p>
+      {% if project.warranty_period and project.completed_date %}
+      <p class="schedule-note"><strong>Free Warranty Period:</strong> {{ project.warranty_period }} month{{ project.warranty_period|pluralize }} from handover</p>
+      {% endif %}
+    </div>
+
+    <div class="schedule-block keep">
+      <h2 class="schedule-title">SCHEDULE B &ndash; SERVICE PLAN</h2>
+      <p class="schedule-note"><strong>Selected Plan:</strong>
+        {% for key, label in amc.PLAN_CHOICES %}<span class="box">{% if amc.plan == key %}&#10003;{% endif %}</span>{{ label }} &nbsp;&nbsp;{% endfor %}
+      </p>
+      <table class="amc-table">
+        <thead><tr><th>Feature</th>
+          {% for key, label in amc.PLAN_CHOICES %}<th{% if amc.plan == key %} class="sel"{% endif %}>{{ label }}</th>{% endfor %}
+        </tr></thead>
+        <tbody>
+          {% for row in amc.plan_rows %}
+          <tr><td>{{ row.feature }}</td>{% for cell in row.cells %}<td{% if cell.selected %} class="sel"{% endif %}>{{ cell.value }}</td>{% endfor %}</tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <div class="schedule-block">
+      <h2 class="schedule-title">SCHEDULE C &ndash; FEE DETAILS</h2>
+      <table class="amc-table">
+        <thead><tr><th>Description</th><th class="num">Amount (&#8377;)</th></tr></thead>
+        <tbody>
+          <tr><td>AMC Fee &ndash; {{ amc.get_plan_display }} Plan ({{ months }} months){% if amc.percentage and amc.project_value %}<br><small>{{ amc.percentage|floatformat:"-2" }}% of project value &#8377;{{ amc.project_value|inr }}</small>{% endif %}</td><td class="num">{{ amc.annual_amount|inr }}</td></tr>
+          <tr><td><strong>Sub-total</strong></td><td class="num"><strong>{{ amc.annual_amount|inr }}</strong></td></tr>
+          {% if amc.include_gst %}<tr><td>GST @ {{ tax_rate|floatformat:"-2" }}%</td><td class="num">{{ gst_amount|inr }}</td></tr>{% endif %}
+          <tr class="total"><td>Total Payable</td><td class="num">{{ total_payable|inr }}</td></tr>
+        </tbody>
+      </table>
+      <p class="schedule-note"><strong>Payment Schedule</strong> ({{ amc.get_billing_cycle_display|lower }}):</p>
+      <table class="amc-table">
+        <thead><tr><th>Instalment</th><th>Due Date</th><th class="num">Amount (&#8377;)</th></tr></thead>
+        <tbody>
+          {% for row in schedule %}<tr><td>{{ row.no }}</td><td>{{ row.due|date:"d/m/Y" }}</td><td class="num">{{ row.amount|inr }}</td></tr>{% endfor %}
+        </tbody>
+      </table>
+      <p class="schedule-note"><strong>Additional Work Rate:</strong> {% if amc.extra_hourly_rate %}&#8377;{{ amc.extra_hourly_rate|inr }} per hour{% if amc.include_gst %} (excluding GST){% endif %}{% else %}Quoted per job{% endif %}</p>
+      <p class="schedule-note"><strong>Bank Details:</strong> As mentioned on the tax invoice issued by {{ legal_name }}.</p>
+    </div>
+
+    <div class="schedule-block keep">
+      <h2 class="schedule-title">SCHEDULE D &ndash; SUPPORT CONTACTS</h2>
+      <table class="amc-table">
+        <thead><tr><th>Role</th><th>Ralfiz Technologies</th><th>Client</th></tr></thead>
+        <tbody>
+          <tr><td>Primary Contact (SPOC)</td><td>Ralfiz Support, +91 98956 63498, {% firstof company_info.email 'info@ralfiz.com' %}</td><td>{{ client.name }}{% if client.phone %}, {{ client.phone }}{% endif %}, {{ client.email }}</td></tr>
+          <tr><td>Escalation Contact</td><td>{{ company.signatory_name }}, +91 98956 63498</td><td></td></tr>
+          <tr><td>Support Email</td><td>{% firstof company_info.email 'info@ralfiz.com' %}</td><td>&mdash;</td></tr>
+          <tr><td>Support WhatsApp</td><td>+91 98956 63498</td><td>&mdash;</td></tr>
+        </tbody>
+      </table>
+      <p class="schedule-note"><strong>Escalation Matrix:</strong> If an issue is not acknowledged within the SLA Response Time, the Client may escalate to the Escalation Contact listed above.</p>
+    </div>
+  </section>
+</main>
+{% endblock %}

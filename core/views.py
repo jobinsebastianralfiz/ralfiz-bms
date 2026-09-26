@@ -1438,6 +1438,39 @@ def amc_detail(request, pk):
     })
 
 
+def _amc_amount_from_post(request, project):
+    """(annual_amount, percentage) from the AMC form.
+
+    In percentage mode the amount is recomputed here from the project value
+    rather than trusted from the browser; without a project value it falls
+    back to the typed amount.
+    """
+    from decimal import Decimal, InvalidOperation
+    amount = request.POST.get('annual_amount') or '0'
+    if request.POST.get('amount_mode') != 'percent':
+        return amount, None
+    try:
+        percentage = Decimal(request.POST.get('percentage') or '')
+    except InvalidOperation:
+        return amount, None
+    value = project.final_amount or project.estimated_budget
+    if value and percentage > 0:
+        amount = (value * percentage / 100).quantize(Decimal('0.01'))
+    return amount, percentage
+
+
+def _amc_agreement_fields(request):
+    """The AMC form fields that only feed the agreement document."""
+    rate = (request.POST.get('extra_hourly_rate') or '').strip()
+    plan = request.POST.get('plan')
+    return {
+        'plan': plan if plan in dict(AMCContract.PLAN_CHOICES) else 'standard',
+        'include_gst': request.POST.get('include_gst') == 'on',
+        'extra_hourly_rate': rate or None,
+        'covered_system': request.POST.get('covered_system', '').strip(),
+    }
+
+
 @login_required
 def amc_create(request):
     if request.method == 'POST':
@@ -1445,7 +1478,7 @@ def amc_create(request):
         project_id = request.POST.get('project')
         project = get_object_or_404(Project, pk=project_id)
         contract_type = request.POST.get('contract_type', 'amc')
-        annual_amount = request.POST.get('annual_amount')
+        annual_amount, percentage = _amc_amount_from_post(request, project)
         billing_cycle = request.POST.get('billing_cycle', 'yearly')
         start_date = request.POST.get('start_date')
         end_date = request.POST.get('end_date')
@@ -1468,14 +1501,17 @@ def amc_create(request):
             project=project,
             contract_type=contract_type,
             annual_amount=annual_amount,
+            percentage=percentage,
             billing_cycle=billing_cycle,
+            **_amc_agreement_fields(request),
             start_date=start,
             end_date=end,
             next_due_date=next_due,
             auto_renew=auto_renew,
             notes=notes,
         )
-        messages.success(request, f'{amc.get_contract_type_display()} contract created for "{project.name}".')
+        messages.success(request, f'{amc.get_contract_type_display()} contract created for "{project.name}". '
+                                  'Download the agreement to send to the client.')
         return redirect('amc_detail', pk=amc.pk)
 
     projects = Project.objects.select_related('client').all()
@@ -1484,6 +1520,7 @@ def amc_create(request):
         'projects': projects,
         'preselected_project': preselected_project,
         'form_title': 'Create Recurring Contract',
+        'plan_choices': AMCContract.PLAN_CHOICES,
         'billing_choices': AMCContract.BILLING_CYCLE_CHOICES,
         'type_choices': AMCContract.CONTRACT_TYPE_CHOICES,
     })
@@ -1494,7 +1531,9 @@ def amc_update(request, pk):
     amc = get_object_or_404(AMCContract.objects.select_related('project'), pk=pk)
     if request.method == 'POST':
         amc.contract_type = request.POST.get('contract_type', 'amc')
-        amc.annual_amount = request.POST.get('annual_amount')
+        amc.annual_amount, amc.percentage = _amc_amount_from_post(request, amc.project)
+        for field, value in _amc_agreement_fields(request).items():
+            setattr(amc, field, value)
         amc.billing_cycle = request.POST.get('billing_cycle', 'yearly')
         amc.start_date = request.POST.get('start_date')
         amc.end_date = request.POST.get('end_date')
@@ -1512,10 +1551,84 @@ def amc_update(request, pk):
         'projects': projects,
         'preselected_project': str(amc.project_id),
         'form_title': 'Edit Contract',
+        'plan_choices': AMCContract.PLAN_CHOICES,
         'billing_choices': AMCContract.BILLING_CYCLE_CHOICES,
         'status_choices': AMCContract.STATUS_CHOICES,
         'type_choices': AMCContract.CONTRACT_TYPE_CHOICES,
     })
+
+
+def _amc_agreement_context(amc, for_pdf=False):
+    from dateutil.relativedelta import relativedelta
+    from decimal import Decimal
+    from employees.agreement_models import _under_thousand, rupees_in_words
+    from employees.agreement_views import _agreement_css, company_countersignature
+
+    company = CompanySettings.get_settings()
+    tax_rate = (company.default_tax_rate or Decimal('0')) if amc.include_gst else Decimal('0')
+    gst = (amc.annual_amount * tax_rate / 100).quantize(Decimal('0.01'))
+    total = amc.annual_amount + gst
+
+    span = relativedelta(amc.end_date + timedelta(days=1), amc.start_date)
+    months = span.years * 12 + span.months
+    step = relativedelta(months=12 // amc.cycles_per_year)
+    per_instalment = (total / amc.cycles_per_year).quantize(Decimal('0.01'))
+    schedule = [{'no': i + 1, 'due': amc.start_date + step * i, 'amount': per_instalment}
+                for i in range(amc.cycles_per_year)]
+
+    signer = company_countersignature(for_pdf=for_pdf)
+    signer['signatory_name'] = signer['signatory_name'] or 'Jobin Sebastian'
+    if signer['signatory_designation'] in ('', 'Authorized Representative'):
+        signer['signatory_designation'] = 'Managing Director'
+
+    return {
+        'amc': amc,
+        'project': amc.project,
+        'client': amc.project.client,
+        'company_info': company,
+        'company': signer,
+        'legal_name': 'Ralfiz Technologies LLP',
+        'doc': {'heading': 'Annual Maintenance Contract (AMC) Agreement'},
+        'months': months,
+        'months_words': _under_thousand(months).lower() if 0 < months < 1000 else str(months),
+        'tax_rate': tax_rate,
+        'gst_amount': gst,
+        'total_payable': total,
+        'fee_words': rupees_in_words(amc.annual_amount),
+        'schedule': schedule,
+        'payment_options': [('yearly', '100% advance at the start of the AMC Period'),
+                            ('half_yearly', 'Half-yearly in advance'),
+                            ('quarterly', 'Quarterly in advance'),
+                            ('monthly', 'Monthly in advance')],
+        'for_pdf': for_pdf,
+        'inline_css': _agreement_css() if for_pdf else '',
+    }
+
+
+@login_required
+def amc_agreement(request, pk):
+    """Branded AMC agreement to send to the client, as a printable page or PDF."""
+    amc = get_object_or_404(AMCContract.objects.select_related('project__client'), pk=pk)
+    if not amc.agreement_no:  # contracts created before agreement numbers existed
+        amc.save(update_fields=['agreement_no'])
+    if request.GET.get('download') == '1':
+        from django.http import HttpResponse
+        from django.template.loader import render_to_string
+        from django.utils.text import slugify
+        import logging
+        try:
+            from weasyprint import HTML
+            html = render_to_string('amc/agreement.html', _amc_agreement_context(amc, for_pdf=True))
+            pdf = HTML(string=html, base_url=request.build_absolute_uri('/')).write_pdf()
+        except Exception:
+            logging.getLogger(__name__).exception('AMC agreement PDF failed for %s', amc.pk)
+            messages.warning(request, 'PDF generation is unavailable; showing the printable page instead.')
+        else:
+            filename = f'{amc.reference.replace("/", "-")}-{slugify(amc.project.name)}.pdf'
+            response = HttpResponse(pdf, content_type='application/pdf')
+            response['Content-Disposition'] = f'attachment; filename="{filename}"'
+            return response
+    return render(request, 'amc/agreement.html', _amc_agreement_context(amc))
 
 
 @login_required

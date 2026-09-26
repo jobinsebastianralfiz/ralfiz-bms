@@ -77,6 +77,7 @@ urlpatterns = [
     path('amc/create/', views.amc_create, name='amc_create'),
     path('amc/<uuid:pk>/', views.amc_detail, name='amc_detail'),
     path('amc/<uuid:pk>/edit/', views.amc_update, name='amc_update'),
+    path('amc/<uuid:pk>/agreement/', views.amc_agreement, name='amc_agreement'),
     path('amc/<uuid:pk>/delete/', views.amc_delete, name='amc_delete'),
     path('amc/<uuid:pk>/record-payment/', views.amc_record_payment, name='amc_record_payment'),
 

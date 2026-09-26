@@ -38,7 +38,7 @@
                 <select class="form-control" id="project" name="project" required {% if amc %}disabled{% endif %}>
                   <option value="">Select a project</option>
                   {% for project in projects %}
-                  <option value="{{ project.pk }}" {% if preselected_project == project.pk|slugify %}selected{% elif amc and amc.project_id == project.pk %}selected{% endif %}>
+                  <option value="{{ project.pk }}" data-value="{% firstof project.final_amount project.estimated_budget '' %}" {% if preselected_project == project.pk|slugify %}selected{% elif amc and amc.project_id == project.pk %}selected{% endif %}>
                     {{ project.name }} ({{ project.client.name }})
                   </option>
                   {% endfor %}
@@ -58,11 +58,34 @@
                 </select>
               </div>
             </div>
+            <div class="col-12" style="padding: 0.5rem;">
+              <div class="form-group mb-0">
+                <label class="form-label">Amount basis</label>
+                <div class="amc-mode" role="radiogroup">
+                  <label><input type="radio" name="amount_mode" value="fixed" {% if not amc.percentage %}checked{% endif %}> Fixed amount</label>
+                  <label><input type="radio" name="amount_mode" value="percent" {% if amc.percentage %}checked{% endif %}> % of project value</label>
+                </div>
+              </div>
+            </div>
+            <div class="col-6 col-sm-12" style="padding: 0.5rem;" id="percentField">
+              <div class="form-group">
+                <label class="form-label" for="percentage">Percentage of project value</label>
+                <div class="amc-pct">
+                  <input type="number" class="form-control" id="percentage" name="percentage" min="1" max="100" step="0.5"
+                         value="{% firstof amc.percentage|floatformat:'-2' '20' %}">
+                  <span>%</span>
+                  <button type="button" class="btn btn-sm btn-outline-secondary" data-pct="20">20%</button>
+                  <button type="button" class="btn btn-sm btn-outline-secondary" data-pct="22">22%</button>
+                  <button type="button" class="btn btn-sm btn-outline-secondary" data-pct="25">25%</button>
+                </div>
+                <small class="text-muted" id="projectValueHint">Industry norm is 20&ndash;25% of the project value per year.</small>
+              </div>
+            </div>
             <div class="col-6 col-sm-12" style="padding: 0.5rem;">
               <div class="form-group">
                 <label class="form-label" for="annual_amount">Annual Amount (&#8377;) <span class="required">*</span></label>
-                <input type="number" class="form-control" id="annual_amount" name="annual_amount" value="{{ amc.annual_amount|default:'' }}" required>
-                <small class="text-muted">Total annual value; payments will be spread per billing cycle.</small>
+                <input type="number" class="form-control" id="annual_amount" name="annual_amount" step="0.01" value="{{ amc.annual_amount|default:'' }}" required>
+                <small class="text-muted" id="annualHint">Total annual value; payments will be spread per billing cycle.</small>
               </div>
             </div>
             <div class="col-6 col-sm-12" style="padding: 0.5rem;">
@@ -115,6 +138,41 @@
                 </label>
               </div>
             </div>
+            <div class="col-12" style="padding: 0.5rem;"><hr class="my-2"><strong>Agreement details</strong></div>
+            <div class="col-6 col-sm-12" style="padding: 0.5rem;">
+              <div class="form-group">
+                <label class="form-label" for="plan">Service Plan</label>
+                <select class="form-control" id="plan" name="plan">
+                  {% for key, value in plan_choices %}
+                  <option value="{{ key }}" {% if amc.plan == key %}selected{% elif not amc and key == 'standard' %}selected{% endif %}>{{ value }}</option>
+                  {% endfor %}
+                </select>
+                <small class="text-muted">Basic 2 hrs / Standard 5 hrs / Premium 10 hrs of minor changes a month (Schedule B).</small>
+              </div>
+            </div>
+            <div class="col-6 col-sm-12" style="padding: 0.5rem;">
+              <div class="form-group">
+                <label class="form-label" for="extra_hourly_rate">Extra work rate (&#8377;/hour)</label>
+                <input type="number" class="form-control" id="extra_hourly_rate" name="extra_hourly_rate" step="0.01" min="0"
+                       value="{{ amc.extra_hourly_rate|default:'' }}" placeholder="Blank = quoted per job">
+              </div>
+            </div>
+            <div class="col-6 col-sm-12" style="padding: 0.5rem;">
+              <div class="form-group">
+                <label class="form-label d-flex align-items-center gap-2">
+                  <input type="checkbox" name="include_gst" {% if not amc or amc.include_gst %}checked{% endif %} style="width: 18px; height: 18px;">
+                  Charge GST on top of the fee
+                </label>
+              </div>
+            </div>
+            <div class="col-12" style="padding: 0.5rem;">
+              <div class="form-group">
+                <label class="form-label" for="covered_system">Covered system <small class="text-muted">(Schedule A &mdash; one per line: Component | Technology | URL / ID)</small></label>
+                <textarea class="form-control" id="covered_system" name="covered_system" rows="4"
+                          placeholder="Web Application | Django | https://example.com&#10;Android App | Flutter | com.example.app&#10;Server / Hosting | Railway | Managed by Ralfiz">{{ amc.covered_system|default:'' }}</textarea>
+                <small class="text-muted">Leave blank to use the project's type, tech stack and live URL.</small>
+              </div>
+            </div>
             <div class="col-12" style="padding: 0.5rem;">
               <div class="form-group mb-0">
                 <label class="form-label" for="notes">Notes</label>
@@ -136,7 +194,8 @@
             <li class="mb-2">The next due date is auto-calculated from start date and billing cycle</li>
             <li class="mb-2">Recording payments auto-advances the due date</li>
             <li class="mb-2">AMC is auto-created when completing a project with AMC amount set</li>
-            <li>Overdue contracts appear on the dashboard</li>
+            <li class="mb-2">Overdue contracts appear on the dashboard</li>
+            <li>After saving, download the branded agreement PDF from the contract page to send to the client</li>
           </ul>
         </div>
       </div>
@@ -155,4 +214,49 @@
     </div>
   </div>
 </form>
+
+<style>
+  .amc-mode { display: flex; gap: 18px; flex-wrap: wrap; }
+  .amc-mode label { display: flex; align-items: center; gap: 6px; cursor: pointer; font-weight: 500; }
+  .amc-pct { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+  .amc-pct input { max-width: 110px; }
+</style>
+<script>
+(function () {
+  const project = document.getElementById('project');
+  const pct = document.getElementById('percentage');
+  const amount = document.getElementById('annual_amount');
+  const pctField = document.getElementById('percentField');
+  const hint = document.getElementById('projectValueHint');
+  const annualHint = document.getElementById('annualHint');
+  const inr = n => '\u20b9' + Number(n).toLocaleString('en-IN', {maximumFractionDigits: 2});
+
+  function mode() { return document.querySelector('[name=amount_mode]:checked').value; }
+  function projectValue() {
+    const opt = project.options[project.selectedIndex];
+    return parseFloat(opt && opt.dataset.value) || 0;
+  }
+  function recalc() {
+    const percent = mode() === 'percent';
+    pctField.style.display = percent ? '' : 'none';
+    const value = projectValue();
+    amount.readOnly = percent && value > 0;
+    if (!percent) { annualHint.textContent = 'Total annual value; payments will be spread per billing cycle.'; return; }
+    if (!value) {
+      hint.textContent = 'This project has no budget or final amount set, so enter the annual amount yourself.';
+      return;
+    }
+    hint.textContent = 'Project value ' + inr(value) + '. Industry norm is 20\u201325% per year.';
+    const p = parseFloat(pct.value) || 0;
+    amount.value = (value * p / 100).toFixed(2);
+    annualHint.textContent = p + '% of ' + inr(value) + ' = ' + inr(amount.value) + ' per year.';
+  }
+  document.querySelectorAll('[name=amount_mode]').forEach(r => r.addEventListener('change', recalc));
+  document.querySelectorAll('[data-pct]').forEach(b => b.addEventListener('click', () => { pct.value = b.dataset.pct; recalc(); }));
+  pct.addEventListener('input', recalc);
+  project.addEventListener('change', recalc);
+
+  recalc();
+})();
+</script>
 {% endblock %}

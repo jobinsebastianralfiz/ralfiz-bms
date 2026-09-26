@@ -2,6 +2,7 @@ import uuid
 import base64
 import os
 import re
+from decimal import Decimal
 
 from django.utils.functional import cached_property
 from django.core.exceptions import ValidationError
@@ -263,7 +264,19 @@ class AMCContract(models.Model):
     project = models.ForeignKey(Project, on_delete=models.CASCADE, related_name='amc_contracts')
     contract_type = models.CharField(max_length=20, choices=CONTRACT_TYPE_CHOICES, default='amc')
     annual_amount = models.DecimalField(max_digits=12, decimal_places=2)
+    percentage = models.DecimalField(
+        max_digits=5, decimal_places=2, null=True, blank=True,
+        help_text='Annual amount as a % of the project value (typically 20-25); blank for a fixed amount')
     billing_cycle = models.CharField(max_length=20, choices=BILLING_CYCLE_CHOICES, default='yearly')
+    PLAN_CHOICES = [('basic', 'Basic'), ('standard', 'Standard'), ('premium', 'Premium')]
+    plan = models.CharField(max_length=10, choices=PLAN_CHOICES, default='standard')
+    include_gst = models.BooleanField(default=True, help_text='Charge GST on top of the fee')
+    extra_hourly_rate = models.DecimalField(
+        max_digits=10, decimal_places=2, null=True, blank=True,
+        help_text='Rate for work outside the AMC; blank means it is quoted per job')
+    covered_system = models.TextField(
+        blank=True, help_text='Schedule A, one component per line: Component | Technology | URL / ID')
+    agreement_no = models.CharField(max_length=30, blank=True, editable=False)
     start_date = models.DateField()
     end_date = models.DateField()
     next_due_date = models.DateField()
@@ -297,6 +310,76 @@ class AMCContract(models.Model):
     def total_paid(self):
         from django.db.models import Sum
         return self.payments.aggregate(total=Sum('amount'))['total'] or 0
+
+    # Schedule B of the agreement: (feature, basic, standard, premium)
+    PLAN_FEATURES = [
+        ('Bug fixing (Corrective)', '\u2714', '\u2714', '\u2714'),
+        ('Security & dependency updates', 'Quarterly', 'Monthly', 'Monthly'),
+        ('Server & uptime monitoring', '\u2014', '\u2714', '\u2714'),
+        ('Database backups', 'Monthly', 'Weekly', 'Daily'),
+        ('OS / App Store compliance updates', '\u2714', '\u2714', '\u2714'),
+        ('Minor changes allowance', '2 hrs/month', '5 hrs/month', '10 hrs/month'),
+        ('Support channel', 'Email / WhatsApp', 'Email / WhatsApp / Phone', 'Dedicated SPOC + Priority line'),
+        ('Priority (after-hours) support for P1', '\u2014', '\u2014', '\u2714'),
+        ('Monthly health report', '\u2014', '\u2714', '\u2714'),
+        ('Staff training sessions / year', '1', '2', '4'),
+        ('On-site visits / year', '\u2014', '\u2014', '2 (within Malappuram district)'),
+    ]
+    PLAN_TERMS = {
+        'basic': {'hours': 2, 'channels': 'Email / WhatsApp', 'training': 1},
+        'standard': {'hours': 5, 'channels': 'Email / WhatsApp / Phone', 'training': 2},
+        'premium': {'hours': 10, 'channels': 'Email / WhatsApp / Phone / dedicated priority line', 'training': 4},
+    }
+
+    @property
+    def plan_terms(self):
+        return self.PLAN_TERMS.get(self.plan, self.PLAN_TERMS['standard'])
+
+    @property
+    def plan_rows(self):
+        keys = [key for key, _ in self.PLAN_CHOICES]
+        return [{'feature': row[0],
+                 'cells': [{'value': value, 'selected': key == self.plan} for key, value in zip(keys, row[1:])]}
+                for row in self.PLAN_FEATURES]
+
+    @property
+    def covered_rows(self):
+        """Schedule A rows: typed lines split on "|", else one row built from the project."""
+        rows = []
+        for line in (self.covered_system or '').splitlines():
+            parts = [part.strip() for part in line.split('|')]
+            if any(parts):
+                rows.append((parts + ['', '', ''])[:3])
+        if rows:
+            return rows
+        project = self.project
+        return [[project.get_project_type_display() + ' \u2013 ' + project.name,
+                 project.tech_stack, project.live_url]]
+
+    def save(self, *args, **kwargs):
+        if not self.agreement_no and self.start_date:
+            year = str(self.start_date)[:4]
+            prefix = f'RT/AMC/{year}/'
+            used = AMCContract.objects.filter(agreement_no__startswith=prefix).values_list('agreement_no', flat=True)
+            numbers = [int(no[len(prefix):]) for no in used if no[len(prefix):].isdigit()]
+            self.agreement_no = f'{prefix}{max(numbers, default=0) + 1:03d}'
+        super().save(*args, **kwargs)
+
+    @property
+    def cycles_per_year(self):
+        return {'monthly': 12, 'quarterly': 4, 'half_yearly': 2, 'yearly': 1}.get(self.billing_cycle, 1)
+
+    @property
+    def instalment_amount(self):
+        return (self.annual_amount / self.cycles_per_year).quantize(Decimal('0.01'))
+
+    @property
+    def project_value(self):
+        return self.project.final_amount or self.project.estimated_budget
+
+    @property
+    def reference(self):
+        return self.agreement_no or f'AMC/{str(self.pk)[:6].upper()}'
 
     def advance_due_date(self):
         """Advance next_due_date based on billing cycle after payment"""

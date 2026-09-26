@@ -36,6 +36,12 @@
     </p>
   </div>
   <div class="page-actions">
+    <a href="{% url 'amc_agreement' amc.pk %}?download=1" class="btn btn-success">
+      <i class="fas fa-file-pdf"></i> Agreement PDF
+    </a>
+    <a href="{% url 'amc_agreement' amc.pk %}" class="btn btn-outline-secondary" target="_blank">
+      <i class="fas fa-eye"></i> Preview
+    </a>
     <a href="{% url 'amc_update' amc.pk %}" class="btn btn-primary">
       <i class="fas fa-edit"></i> Edit
     </a>

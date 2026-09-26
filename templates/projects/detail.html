@@ -239,6 +239,7 @@
       {% if amc.is_overdue %}<span class="status-badge overdue">Overdue</span>
       {% elif amc.is_due_soon %}<span class="status-badge pending">Due Soon</span>
       {% else %}<span class="status-badge {{ amc.status }}">{{ amc.get_status_display }}</span>{% endif %}
+      <a href="{% url 'amc_agreement' amc.pk %}?download=1" class="btn btn-sm btn-ghost btn-icon" title="Download AMC agreement"><i class="fas fa-file-pdf"></i></a>
     </div>
     {% empty %}
     <p class="pj-empty"><i class="far fa-calendar-xmark"></i> No AMC details added</p>
