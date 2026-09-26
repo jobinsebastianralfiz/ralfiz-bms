@@ -287,7 +287,15 @@
     <h2 class="stage-panel__kicker"><span class="sp-ico sp-ico--green"><i class="fas fa-file-lines"></i></span>Invoices</h2>
     <div class="pj-bar">
       <span>{{ invoices.count }} invoice{{ invoices.count|pluralize }}</span>
-      <a href="{% url 'invoice_create' %}?project={{ project.pk }}" class="btn btn-sm btn-primary"><i class="fas fa-plus"></i> Add Invoice</a>
+      <span class="pj-bar__actions">
+        {% if nogst_invoices %}
+        <button type="button" class="btn btn-sm btn-ghost btn-icon" id="nogstToggle" aria-pressed="false"
+                title="Show {{ nogst_invoices|length }} no-GST invoice{{ nogst_invoices|length|pluralize }}" onclick="toggleNoGst(this)">
+          <i class="fas fa-eye"></i>
+        </button>
+        {% endif %}
+        <a href="{% url 'invoice_create' %}?project={{ project.pk }}" class="btn btn-sm btn-primary"><i class="fas fa-plus"></i> Add Invoice</a>
+      </span>
     </div>
     {% for invoice in invoices %}
     <div class="pj-row">
@@ -302,7 +310,20 @@
       </div>
     </div>
     {% empty %}
-    <p class="pj-empty"><i class="far fa-file-lines"></i> No invoices yet</p>
+    <p class="pj-empty" data-nogst-empty><i class="far fa-file-lines"></i> No invoices yet</p>
+    {% endfor %}
+    {% for invoice in nogst_invoices %}
+    <div class="pj-row pj-row--nogst" data-nogst hidden>
+      <span class="pj-row__icon"><i class="far fa-file-lines"></i></span>
+      <div class="pj-row__main">
+        <a href="{% url 'invoice_detail' invoice.pk %}" class="pj-row__title">{{ invoice.invoice_number }} <span class="pj-nogst-tag">No GST</span></a>
+        <span class="pj-row__sub">{{ invoice.title|truncatewords:5 }}</span>
+      </div>
+      <div class="pj-row__end">
+        <span class="pj-amount">&#8377;{{ invoice.total_amount|inr }}</span>
+        <span class="status-badge {{ invoice.status }}">{{ invoice.get_status_display }}</span>
+      </div>
+    </div>
     {% endfor %}
   </section>
 
@@ -496,6 +517,16 @@ function switchTab(tabId) {
 
   document.getElementById(tabId).classList.remove('d-none');
   document.querySelector(`[data-tab="${tabId}"]`).classList.add('active');
+}
+
+function toggleNoGst(btn) {
+  const show = btn.getAttribute('aria-pressed') !== 'true';
+  btn.setAttribute('aria-pressed', show);
+  btn.querySelector('i').className = show ? 'fas fa-eye-slash' : 'fas fa-eye';
+  btn.title = btn.title.replace(show ? 'Show' : 'Hide', show ? 'Hide' : 'Show');
+  document.querySelectorAll('[data-nogst]').forEach(r => { r.hidden = !show; });
+  const empty = document.querySelector('[data-nogst-empty]');
+  if (empty) empty.hidden = show;
 }
 
 function copyPassword(credId) {

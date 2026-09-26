@@ -1012,6 +1012,9 @@ def project_detail(request, pk):
     credentials = project.credentials.all()
     invoices = project.invoices.all()
     quotes = project.quotes.all()
+    # No-GST invoices stay out of the list and totals; the owner can reveal them.
+    nogst_invoices = (Invoice.all_objects.filter(project=project).exclude(GST_INVOICE)
+                      if request.user.is_superuser else Invoice.all_objects.none())
 
     # Get all payments for invoices related to this project
     payments = Payment.objects.filter(invoice__project=project).select_related('invoice').order_by('-payment_date')
@@ -1049,6 +1052,7 @@ def project_detail(request, pk):
         'project': project,
         'credentials': credentials,
         'invoices': invoices,
+        'nogst_invoices': nogst_invoices,
         'quotes': quotes,
         'payments': payments,
         'total_project_cost': total_project_cost,
