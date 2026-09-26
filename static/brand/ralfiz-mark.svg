@@ -1,0 +1,17 @@
+<?xml version="1.0" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<svg xmlns="http://www.w3.org/2000/svg" width="1561" height="1019" viewBox="0 0 1561 1019" fill="none">
+<path d="M971 197.207C1127 14.7075 1636 -141.292 1550.5 210.207C1550.5 102.391 1361.5 -70.7925 971 197.207Z" fill="url(#paint0_linear_17_7)"/>
+<path d="M661 821.18H594C594 1024.18 688.5 1028.5 799 1013.5C909.5 998.5 1050 985.18 1337.5 673.18C1581 359.18 1512 185.18 1470 131.18C1429.5 87.1805 1327 92.5137 1276.5 100.18C1445.5 100.18 1496 350.68 1162 673.18C917.02 909.725 723 892.68 661 821.18Z" fill="url(#paint1_linear_17_7)"/>
+<path d="M182.5 792.184H1L52 500.184H567.5C700 469.184 650 381.684 576 381.684H80.5L213.5 235.184H576C653.2 221.584 753.167 273.184 793.5 300.684L864.5 235.184C1036.33 230.517 1382.3 223.984 1391.5 235.184C1400.7 246.384 1369.67 337.517 1353 381.684H1158.5L1098.5 695.684L966.5 792.184H908.5L984 381.684H830C838.8 528.484 713.667 594.517 650 609.184L797.5 792.184H567.5L463.5 643.184H205L182.5 792.184Z" fill="#393535" stroke="black"/>
+<defs>
+<linearGradient id="paint0_linear_17_7" x1="1265.55" y1="0" x2="1265.55" y2="210.207" gradientUnits="userSpaceOnUse">
+<stop stop-color="#591609"/>
+<stop offset="1" stop-color="#F90303"/>
+</linearGradient>
+<linearGradient id="paint1_linear_17_7" x1="1366.5" y1="95" x2="1053.1" y2="1018.75" gradientUnits="userSpaceOnUse">
+<stop offset="0.162682" stop-color="#591609"/>
+<stop offset="1" stop-color="#F90303"/>
+</linearGradient>
+</defs>
+</svg>

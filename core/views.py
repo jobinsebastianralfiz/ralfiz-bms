@@ -1562,7 +1562,8 @@ def _amc_agreement_context(amc, for_pdf=False):
     from dateutil.relativedelta import relativedelta
     from decimal import Decimal
     from employees.agreement_models import _under_thousand, rupees_in_words
-    from employees.agreement_views import _agreement_css, company_countersignature
+    from django.templatetags.static import static
+    from employees.agreement_views import _agreement_css, _static_data_uri, company_countersignature
 
     company = CompanySettings.get_settings()
     tax_rate = (company.default_tax_rate or Decimal('0')) if amc.include_gst else Decimal('0')
@@ -1588,6 +1589,7 @@ def _amc_agreement_context(amc, for_pdf=False):
         'company_info': company,
         'company': signer,
         'legal_name': 'Ralfiz Technologies LLP',
+        'brand_mark': _static_data_uri('brand/ralfiz-mark.svg') if for_pdf else static('brand/ralfiz-mark.svg'),
         'doc': {'heading': 'Annual Maintenance Contract (AMC) Agreement'},
         'months': months,
         'months_words': _under_thousand(months).lower() if 0 < months < 1000 else str(months),

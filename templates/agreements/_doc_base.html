@@ -22,6 +22,7 @@
 </head>
 <body>
   <div class="doc-shell">
+    {% block letterhead %}
     <header class="doc-letterhead">
       <div class="lh-brand">
         <span class="lh-mark">R</span>
@@ -32,13 +33,16 @@
         +91 98956 63498 &middot; www.ralfiz.com
       </div>
     </header>
+    {% endblock %}
 
     {% block body %}{% endblock %}
 
+    {% block footer %}
     <footer class="doc-footer">
       <strong>RALFIZ TECHNOLOGIES</strong>
       <span>{{ doc.heading|default:"Internship Agreement" }}</span>
     </footer>
+    {% endblock %}
   </div>
   {% block scripts %}{% endblock %}
 </body>

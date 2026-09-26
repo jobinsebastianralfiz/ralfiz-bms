@@ -3,8 +3,69 @@
 
 {% block title %}AMC Agreement - {{ amc.reference }}{% endblock %}
 
+{% block letterhead %}
+<header class="rt-head">
+  <div class="rt-brand">
+    <img src="{{ brand_mark }}" alt="Ralfiz Technologies" class="rt-mark">
+    <div>
+      <div class="rt-name">RALFIZ TECHNOLOGIES</div>
+      <div class="rt-tag">Rise to Next Level</div>
+    </div>
+  </div>
+  <div class="rt-contact">
+    KIMS Avenue, Perinthalmanna<br>Malappuram, Kerala, India<br>
+    +91 98956 63498 &middot; www.ralfiz.com
+  </div>
+</header>
+<div class="rt-bar"></div>
+{% endblock %}
+
+{% block footer %}
+<footer class="rt-foot">
+  <img src="{{ brand_mark }}" alt="" class="rt-foot-mark">
+  <span><strong>{{ legal_name }}</strong> &middot; KIMS Avenue, Perinthalmanna, Kerala &middot; www.ralfiz.com</span>
+</footer>
+{% endblock %}
+
 {% block body %}
 <style>
+  /* Ralfiz brand: maroon-to-red swoosh with charcoal type. Overrides the
+     shared agreement blue for this document only. */
+  :root {
+    --agr-blue: #b3120a;
+    --agr-blue-soft: #fdf2f1;
+    --agr-dark: #2b2626;
+    --rt-maroon: #591609;
+    --rt-red: #e0140b;
+    --rt-charcoal: #393535;
+  }
+  .rt-head { display: flex; justify-content: space-between; align-items: center; gap: 16px; padding: 18px 24px 14px; background: #fff; }
+  .rt-brand { display: flex; align-items: center; gap: 12px; }
+  .rt-mark { height: 46px; width: auto; }
+  .rt-name { white-space: nowrap; font-weight: 800; letter-spacing: .06em; font-size: 18px; color: var(--rt-charcoal); line-height: 1.1; }
+  .rt-tag { font-family: Georgia, 'Times New Roman', serif; font-style: italic; font-size: 11px; color: var(--rt-maroon); margin-top: 2px; }
+  .rt-contact { text-align: right; font-size: 10.5px; line-height: 1.55; color: #6b6262; }
+  .rt-bar { height: 4px; background: linear-gradient(90deg, var(--rt-maroon), var(--rt-red) 60%, var(--rt-charcoal)); }
+  .rt-foot { display: flex; align-items: center; gap: 8px; border-top: 1px solid var(--agr-line); padding: 12px 24px 20px; font-size: 10px; color: #6b6262; }
+  .rt-foot strong { color: var(--rt-charcoal); }
+  .rt-foot-mark { height: 14px; width: auto; }
+  .doc-title { color: var(--rt-charcoal); }
+  .doc-rule { background: linear-gradient(90deg, var(--rt-maroon), var(--rt-red)); width: 64px; }
+  .amc-table th { background: var(--rt-charcoal); }
+  .amc-table th.sel { background: linear-gradient(90deg, var(--rt-maroon), var(--rt-red)); }
+  /* Faint brand mark behind every page of the PDF. */
+  .rt-watermark { display: none; }
+  @media print {
+    .rt-watermark { display: block; position: fixed; top: 38%; left: 18%; width: 64%; opacity: .035; z-index: 10; }
+    .rt-head { padding: 4px 0 10px; }
+    .rt-foot { padding: 10px 0 0; }
+  }
+  @page {
+    @bottom-left {
+      content: "{{ legal_name }} \2022  AMC Agreement {{ amc.reference }}";
+      font-size: 8px; color: #94a3b8;
+    }
+  }
   .amc-meta { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 18px; }
   .amc-meta div { border: 1px solid var(--agr-line); border-radius: 8px; padding: 8px 10px; font-size: 12px; color: var(--agr-ink); }
   .amc-meta span, .amc-party .lbl { display: block; font-size: 9px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--agr-muted); }
@@ -39,6 +100,7 @@
   @media print { .amc-table, .keep { break-inside: avoid; page-break-inside: avoid; } }
 </style>
 
+<img src="{{ brand_mark }}" alt="" class="rt-watermark">
 <main class="doc-main">
   {% if not for_pdf %}
   <div class="copy-toolbar no-print">
