@@ -1,0 +1,66 @@
+{% extends 'base.html' %}
+
+{% block title %}Lesson Videos - Academy - Ralfiz BMS{% endblock %}
+
+{% block breadcrumb %}
+<a href="{% url 'dashboard' %}" class="breadcrumb-item">Dashboard</a>
+<span class="breadcrumb-separator">/</span>
+<a href="{% url 'academy:manage_home' %}" class="breadcrumb-item">Academy</a>
+<span class="breadcrumb-separator">/</span>
+<span class="breadcrumb-item active">Lesson Videos</span>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div class="page-header__lead">
+    <span class="page-header__icon"><i class="fas fa-circle-play"></i></span>
+    <div>
+      <h1 class="page-title">Lesson Videos</h1>
+      <p class="page-subtitle mb-0">Paste a video link for any lesson. It plays at the top of the lesson's Learn tab, and on the public page for free lessons.</p>
+    </div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header acct-head">
+    <div>
+      <h2 class="card-title mb-0">{{ track.code }} {{ track.name }}</h2>
+      <p class="inv-list-head__sub">{{ with_video }} of {{ rows|length }} lessons have a video</p>
+    </div>
+    <div class="card-actions">
+      <form method="get" class="acct-filters">
+        <select name="track" class="form-control" onchange="this.form.submit()">
+          {% for t in tracks %}<option value="{{ t.id }}" {% if t.id == track.id %}selected{% endif %}>{{ t.code }} {{ t.name }}</option>{% endfor %}
+        </select>
+      </form>
+    </div>
+  </div>
+  <form method="post">
+    {% csrf_token %}<input type="hidden" name="track" value="{{ track.id }}">
+    <div class="card-body p-0">
+      <div class="table-responsive">
+        <table class="table mb-0">
+          <thead><tr><th style="width:70px">Lesson</th><th>Title</th><th style="width:48%">Video link</th><th style="width:90px"></th></tr></thead>
+          <tbody>
+            {% for r in rows %}
+            <tr>
+              <td><code>{{ r.lesson.num }}</code></td>
+              <td>{{ r.lesson.title }}<br><small class="text-muted">{{ r.lesson.domain.name }}</small></td>
+              <td>
+                <input type="url" name="video_{{ r.lesson.id }}" value="{{ r.value }}" class="form-control" placeholder="https://youtu.be/… or https://…/lesson.mp4" {% if r.error %}style="border-color:#dc2626"{% endif %}>
+                {% if r.error %}<small class="text-danger">{{ r.error }}</small>{% endif %}
+              </td>
+              <td>{% if r.lesson.video_url %}<a href="{% url 'academy:lesson' r.lesson.id %}" target="_blank" class="btn btn-sm btn-secondary">View</a>{% endif %}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <div class="card-body" style="display:flex;gap:12px;align-items:center;flex-wrap:wrap">
+      <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> Save links</button>
+      <span class="text-muted" style="font-size:13px">YouTube (set it to Unlisted), Vimeo, or a direct https .mp4/.webm link. Clear a box to remove a video.</span>
+    </div>
+  </form>
+</div>
+{% endblock %}

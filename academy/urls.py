@@ -51,4 +51,5 @@ urlpatterns = [
     path('manage/students/<uuid:pk>/status/', m.manage_student_status,
          name='manage_student_status'),
     path('manage/progress/', m.manage_progress, name='manage_progress'),
+    path('manage/videos/', m.manage_videos, name='manage_videos'),
 ]

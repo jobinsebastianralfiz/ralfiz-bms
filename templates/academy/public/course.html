@@ -65,7 +65,7 @@
       <li>{% if x.free %}<a href="{% url 'academy:catalog_lesson' track.id x.lesson.id %}">
         <span class="tile"><i class="fa-solid fa-book-open-reader"></i></span>
         <span class="n">{{ x.lesson.num }}</span>
-        <span><b>{{ x.lesson.title }}</b><small>{{ x.lesson.minutes }} min · lesson, lab and quiz</small></span>
+        <span><b>{{ x.lesson.title }}</b><small>{{ x.lesson.minutes }} min · {% if x.lesson.video_url %}video, {% endif %}lesson, lab and quiz</small></span>
         <span><span class="pill ok">Free preview</span></span>
         <i class="fa-solid fa-chevron-right"></i>
       </a>{% else %}<div class="lrow-locked">

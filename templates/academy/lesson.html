@@ -18,6 +18,7 @@
       {% if lead %}<p class="sub">{{ lead }}</p>{% endif %}
       <div class="les-meta">
         <span><i class="fa-regular fa-clock"></i>About {{ lesson.minutes }} minutes</span>
+        {% if lesson.video %}<span><i class="fa-solid fa-circle-play"></i>Video</span>{% endif %}
         <span><i class="fa-solid fa-flask"></i>Lab <b id="subLab">{{ status.lab_ticked }}</b>/{{ status.lab_total }} steps</span>
         {% if files %}<span><i class="fa-regular fa-file-lines"></i>{{ files|length }} exercise file{{ files|length|pluralize }}</span>{% endif %}
         <span><i class="fa-regular fa-circle-question"></i>Quiz <b id="subQuiz">{{ status.quiz_right }}</b>/{{ status.quiz_total }} correct</span>
@@ -38,6 +39,7 @@
 </div>
 
 <section class="tabpanel" data-panel="learn" {% if tab != 'learn' %}hidden{% endif %}>
+  {% include 'academy/_video.html' %}
   <div class="card2 glance2">
     <div class="gh"><span class="tile sm"><i class="fa-solid fa-book-open"></i></span><h2>At a glance</h2><span class="rt">{{ read_minutes }} min read</span></div>
     <div class="prose">{{ lesson.summary_html|safe }}</div>
@@ -122,6 +124,7 @@
   <section class="card2">
     <h4><i class="fa-solid fa-list-ul" style="color:var(--accent)"></i> On this page</h4>
     <ol class="rtoc" data-rtoc="learn" {% if tab != 'learn' %}hidden{% endif %}>
+      {% if lesson.video %}<li><a href="#video">Video</a></li>{% endif %}
       {% for anchor, text in toc %}<li><a href="#{{ anchor }}">{{ text }}</a></li>{% endfor %}
       {% if lesson.terms %}<li><a href="#terms">Key terms</a></li>{% endif %}
     </ol>

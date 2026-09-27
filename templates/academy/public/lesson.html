@@ -22,11 +22,12 @@
         <span class="lpill" style="display:inline-block;font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;border-radius:8px;padding:5px 10px;background:color-mix(in srgb,var(--accent) 14%,var(--surface));color:var(--accent);margin-bottom:12px">Free lesson · {{ track.code }} {{ lesson.num }}</span>
         <h1 style="font-size:clamp(26px,2.8vw,40px)">{{ lesson.title }}</h1>
         {% if lead %}<p class="sub">{{ lead }}</p>{% endif %}
-        <div class="les-meta"><span><i class="fa-regular fa-clock"></i>About {{ lesson.minutes }} minutes</span><span><i class="fa-solid fa-signal"></i>{{ track.level }}</span><span><i class="fa-regular fa-bookmark"></i>{{ lesson.domain.name }}</span></div>
+        <div class="les-meta"><span><i class="fa-regular fa-clock"></i>About {{ lesson.minutes }} minutes</span>{% if lesson.video %}<span><i class="fa-solid fa-circle-play"></i>Video lesson</span>{% endif %}<span><i class="fa-solid fa-signal"></i>{{ track.level }}</span><span><i class="fa-regular fa-bookmark"></i>{{ lesson.domain.name }}</span></div>
       </div>
     </header>
 
-    <div class="card2 glance2" style="margin-top:22px">
+    <div style="margin-top:22px">{% include 'academy/_video.html' %}</div>
+    <div class="card2 glance2">
       <div class="gh"><span class="tile sm"><i class="fa-solid fa-book-open"></i></span><h2>At a glance</h2><span class="rt">{{ read_minutes }} min read</span></div>
       <div class="prose">{{ lesson.summary_html|safe }}</div>
     </div>

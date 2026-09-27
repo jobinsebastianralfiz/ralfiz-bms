@@ -82,9 +82,17 @@ class Lesson(models.Model):
     lab_steps = models.JSONField(default=list)
     lab_check = models.JSONField(default=list)
     sort_order = models.PositiveSmallIntegerField(default=0)
+    # Set from the admin, never by import_labs, so re-imports keep it.
+    # YouTube, Vimeo or a direct .mp4/.webm link.
+    video_url = models.URLField(max_length=500, blank=True)
 
     class Meta:
         ordering = ['track__sort_order', 'domain__sort_order', 'sort_order']
+
+    @property
+    def video(self):
+        from .video import embed
+        return embed(self.video_url)
 
     def __str__(self):
         return f'{self.num} {self.title}'

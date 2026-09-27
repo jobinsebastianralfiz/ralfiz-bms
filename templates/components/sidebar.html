@@ -177,6 +177,10 @@
         <i class="fas fa-table-cells"></i>
         <span>Course Progress</span>
       </a>
+      <a href="{% url 'academy:manage_videos' %}" class="nav-item {% if request.resolver_match.url_name == 'manage_videos' %}active{% endif %}">
+        <i class="fas fa-circle-play"></i>
+        <span>Lesson Videos</span>
+      </a>
     </div>
 
     <div class="nav-section">

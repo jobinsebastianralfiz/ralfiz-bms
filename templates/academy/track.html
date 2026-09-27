@@ -79,7 +79,7 @@
       </div>{% else %}<a href="{% url 'academy:lesson' x.lesson.id %}">
         <span class="tile {% if x.status == 'done' %}{% elif x.status == 'in_progress' %}amber{% else %}plain{% endif %}"><i class="fa-{% if x.status == 'done' %}solid fa-check{% else %}regular fa-file-lines{% endif %}"></i></span>
         <span class="n">{{ x.lesson.num }}</span>
-        <span><b>{{ x.lesson.title }}</b><small>{{ x.lesson.minutes }} min · Lab {{ x.lab_ticked }}/{{ x.lab_total }} · Quiz {{ x.quiz_right }}/{{ x.quiz_total }}{% if x.lesson.widget %} · simulator{% endif %}</small></span>
+        <span><b>{{ x.lesson.title }}</b><small>{{ x.lesson.minutes }} min{% if x.lesson.video_url %} · <i class="fa-solid fa-circle-play"></i> video{% endif %} · Lab {{ x.lab_ticked }}/{{ x.lab_total }} · Quiz {{ x.quiz_right }}/{{ x.quiz_total }}{% if x.lesson.widget %} · simulator{% endif %}</small></span>
         <span>{% if x.status == 'done' %}<span class="pill ok">Done</span>{% elif x.status == 'in_progress' %}<span class="pill lab">In progress</span>{% endif %}</span>
         <i class="fa-solid fa-chevron-right"></i>
       </a>{% endif %}</li>

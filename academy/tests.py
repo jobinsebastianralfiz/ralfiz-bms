@@ -388,3 +388,37 @@ class PublicCatalogTests(AcademyTestBase):
         self.login_student()
         r = self.client.get(reverse('academy:catalog'))
         self.assertContains(r, 'My dashboard')
+
+
+class VideoTests(AcademyTestBase):
+    def test_link_parsing(self):
+        from .video import embed
+        yt = embed('https://www.youtube.com/watch?v=dQw4w9WgXcQ&t=5')
+        self.assertEqual(yt['src'].split('?')[0], 'https://www.youtube-nocookie.com/embed/dQw4w9WgXcQ')
+        self.assertEqual(embed('https://youtu.be/dQw4w9WgXcQ')['kind'], 'iframe')
+        self.assertEqual(embed('https://vimeo.com/76979871')['src'], 'https://player.vimeo.com/video/76979871')
+        self.assertEqual(embed('https://cdn.example.com/l.mp4')['kind'], 'file')
+        self.assertIsNone(embed('http://cdn.example.com/l.mp4'))
+        self.assertIsNone(embed('https://example.com/page'))
+
+    def test_admin_saves_links_and_rejects_bad_ones(self):
+        self.client.login(username='owner', password='pw')
+        url = reverse('academy:manage_videos') + '?track=pl900'
+        self.assertEqual(self.client.get(url).status_code, 200)
+        r = self.client.post(reverse('academy:manage_videos'),
+                             {'track': 'pl900', 'video_l1-1': 'https://youtu.be/dQw4w9WgXcQ'})
+        self.assertEqual(r.status_code, 302)
+        self.assertEqual(Lesson.objects.get(pk='l1-1').video_url, 'https://youtu.be/dQw4w9WgXcQ')
+        r = self.client.post(reverse('academy:manage_videos'),
+                             {'track': 'pl900', 'video_l0-1': 'https://example.com/page'})
+        self.assertEqual(r.status_code, 200)
+        self.assertEqual(Lesson.objects.get(pk='l0-1').video_url, '')
+
+    def test_player_shows_and_reimport_keeps_link(self):
+        Lesson.objects.filter(pk='l0-1').update(video_url='https://youtu.be/dQw4w9WgXcQ')
+        self.assertContains(self.client.get(reverse('academy:catalog_lesson', args=['pl900', 'l0-1'])),
+                            'youtube-nocookie.com/embed/dQw4w9WgXcQ')
+        self.login_student()
+        self.assertContains(self.client.get(reverse('academy:lesson', args=['l0-1'])), 'Watch the lesson')
+        run_import(log=_quiet, force=True)
+        self.assertEqual(Lesson.objects.get(pk='l0-1').video_url, 'https://youtu.be/dQw4w9WgXcQ')

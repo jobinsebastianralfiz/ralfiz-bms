@@ -286,3 +286,37 @@ def manage_progress(request):
         'batches': Student.objects.exclude(batch='').values_list('batch', flat=True)
                    .distinct().order_by('batch'),
     })
+
+
+# --- Lesson videos ---------------------------------------------------------------
+
+@admin_required
+def manage_videos(request):
+    """Paste a YouTube, Vimeo or direct .mp4 link per lesson."""
+    from .video import is_supported
+    tracks = Track.objects.all()
+    track = tracks.filter(pk=request.GET.get('track') or request.POST.get('track') or 'pl900').first() \
+        or tracks.first()
+    lessons = list(Lesson.objects.filter(track=track).select_related('domain')) if track else []
+    errors = {}
+    if request.method == 'POST':
+        changed = 0
+        for lesson in lessons:
+            url = request.POST.get(f'video_{lesson.id}', '').strip()
+            if url and not is_supported(url):
+                errors[lesson.id] = 'Use a YouTube, Vimeo or https .mp4/.webm link.'
+                continue
+            if url != lesson.video_url:
+                lesson.video_url = url
+                lesson.save(update_fields=['video_url'])
+                changed += 1
+        if not errors:
+            messages.success(request, f'{changed} video link{"s" if changed != 1 else ""} updated.')
+            return redirect(f"{request.path}?track={track.pk}")
+        messages.error(request, 'Some links were not saved. Check the rows marked in red.')
+    rows = [{'lesson': l, 'value': request.POST.get(f'video_{l.id}', l.video_url) if errors else l.video_url,
+             'error': errors.get(l.id)} for l in lessons]
+    return render(request, 'academy/manage/videos.html', {
+        'tracks': tracks, 'track': track, 'rows': rows,
+        'with_video': sum(1 for l in lessons if l.video_url),
+    })
