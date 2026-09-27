@@ -367,6 +367,18 @@ class PublicCatalogTests(AcademyTestBase):
         self.assertIn('/academy/catalog/pl300/b1/', xml)
         self.assertNotIn('/academy/catalog/pl300/b7/', xml)
 
+    def test_try_a_sample_question(self):
+        from .public_views import sample_question
+        q = sample_question(Track.objects.get(pk='pl900'))
+        r = self.post_json(reverse('academy:catalog_try', args=[q.id]), {'choice': q.answer})
+        self.assertEqual(r.json()['correct'], True)
+        self.assertContains(self.client.get(reverse('academy:catalog')), q.question)
+        # Questions outside the free lessons are never graded publicly.
+        locked = Question.objects.filter(lesson_id='b7', source='lesson').first()
+        r = self.post_json(reverse('academy:catalog_try', args=[locked.id]), {'choice': 0})
+        self.assertEqual(r.status_code, 404)
+        self.assertEqual(self.client.get(reverse('academy:catalog_try', args=[q.id])).status_code, 405)
+
     def test_urls_use_https_behind_proxy(self):
         xml = self.client.get(reverse('academy:sitemap'), HTTP_X_FORWARDED_PROTO='https').content.decode()
         self.assertIn('<loc>https://', xml)

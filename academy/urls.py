@@ -10,6 +10,7 @@ app_name = 'academy'
 urlpatterns = [
     # Public: course catalogue and free sample lessons (no login)
     path('catalog/', pub.catalog, name='catalog'),
+    path('catalog/try/<int:question_id>/', pub.try_question, name='catalog_try'),
     path('catalog/<str:track_id>/', pub.course, name='catalog_course'),
     path('catalog/<str:track_id>/<str:lesson_id>/', pub.sample_lesson, name='catalog_lesson'),
     path('sitemap.xml', pub.sitemap, name='sitemap'),

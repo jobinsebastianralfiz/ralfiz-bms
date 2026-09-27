@@ -5,10 +5,14 @@ and answers stay behind sign-in.
 import re
 from html import unescape
 
-from django.http import Http404, HttpResponse
+import json
+
+from django.http import Http404, HttpResponse, HttpResponseBadRequest, JsonResponse
 from django.shortcuts import get_object_or_404, render
 from django.urls import reverse
 from django.views.decorators.cache import cache_control
+from django.views.decorators.csrf import csrf_exempt
+from django.views.decorators.http import require_POST
 
 from core.models import CompanySettings
 
@@ -65,6 +69,31 @@ def _common(request):
 PUBLIC_CACHE = cache_control(public=True, max_age=600)
 
 
+def sample_question(track):
+    """One real exam-style question per course, from its last free lesson."""
+    free = free_lesson_ids(track)
+    if not free:
+        return None
+    return (Question.objects.filter(lesson_id=free[-1], source='lesson', is_active=True)
+            .order_by('sort_order').first())
+
+
+@csrf_exempt  # grades public content only; stores nothing
+@require_POST
+def try_question(request, question_id):
+    q = get_object_or_404(Question, pk=question_id, is_active=True, source='lesson')
+    if q.lesson_id is None or q.lesson_id not in free_lesson_ids(q.track):
+        raise Http404
+    try:
+        choice = json.loads(request.body or b'{}').get('choice')
+    except ValueError:
+        choice = None
+    if not isinstance(choice, int) or not 0 <= choice < len(q.options):
+        return HttpResponseBadRequest('choice must be an option index')
+    return JsonResponse({'correct': choice == q.answer, 'answer': q.answer,
+                         'explanation': q.explanation})
+
+
 @PUBLIC_CACHE
 def catalog(request):
     tracks = list(Track.objects.filter(is_published=True))
@@ -74,7 +103,8 @@ def catalog(request):
         rows.append({'track': t, 'lessons': len(lessons),
                      'hours': round(sum(l.minutes for l in lessons) / 60),
                      'questions': Question.objects.filter(track=t, is_active=True).count(),
-                     'free': lessons[:FREE_LESSONS_PER_TRACK]})
+                     'free': lessons[:FREE_LESSONS_PER_TRACK],
+                     'sample': sample_question(t)})
     totals = {
         'tracks': len(tracks),
         'lessons': Lesson.objects.filter(track__in=tracks).count(),

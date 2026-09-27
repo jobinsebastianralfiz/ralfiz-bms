@@ -17,9 +17,10 @@
   <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700;12..96,800&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
   <script>
+    document.documentElement.classList.add('js');
     try { var t = localStorage.getItem('academy-theme'); if (t) document.documentElement.setAttribute('data-theme', t); } catch (e) {}
   </script>
-  <link rel="stylesheet" href="{% static 'academy/academy.css' %}?v=19">
+  <link rel="stylesheet" href="{% static 'academy/academy.css' %}?v=20">
   {% block jsonld %}{% endblock %}
 </head>
 <body data-track="{% block body_track %}home{% endblock %}" class="public">
@@ -68,6 +69,7 @@
     </div>
     <p class="pf-legal">Ralfiz Academy is an independent training provider and is not affiliated with or endorsed by Microsoft. Microsoft, Power Platform and Power BI are trademarks of the Microsoft group of companies. Practice test scores are a guide, not Microsoft's scaled score.</p>
   </footer>
+  {% block extra_js %}{% endblock %}
   <script>
     (function () {
       var ex = document.getElementById('expandAll');
