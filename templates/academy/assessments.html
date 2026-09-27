@@ -1,0 +1,56 @@
+{% extends 'academy/base.html' %}
+{% block title %}Assessments · Ralfiz Academy{% endblock %}
+{% block page %}
+<div class="sec-h" style="margin-top:6px">
+  <div><h2 style="font-size:30px">Assessments</h2><p>Practice tests for each course, scored out of 1000. The real exams need {{ pass_mark }} to pass. These scores are a guide, not Microsoft's scaled score.</p></div>
+</div>
+
+<div class="cgrid">
+  {% for r in rows %}
+  <article class="card2 ccard" data-t="{{ r.track.id }}">
+    <div class="h">
+      <div><span class="code">{{ r.track.code }}</span><h3>{{ r.track.name }}</h3></div>
+      <span class="glyph" aria-hidden="true"><i class="fa-solid fa-clipboard-check"></i></span>
+    </div>
+    <div class="cmeta">
+      <div><i class="fa-solid fa-medal"></i><span>{% if r.best_score is not None %}{{ r.best_score }}{% else %}–{% endif %}<small>Best score</small></span></div>
+      <div><i class="fa-solid fa-rotate"></i><span>{{ r.attempts }}<small>Tests taken</small></span></div>
+      <div><i class="fa-solid fa-circle-check"></i><span>{{ r.passes }}<small>Passed</small></span></div>
+    </div>
+    <p style="font-size:13.5px">Drawn from {{ r.pool }} questions.{% if r.last %} Last: {{ r.last.score }} on {{ r.last.submitted_at|date:"j M" }}.{% endif %}</p>
+    {% if r.open_attempt %}
+    <div class="cfoot"><a class="btn2" href="{% url 'academy:test_take' r.open_attempt.id %}"><i class="fa-solid fa-play"></i> Resume test ({{ r.open_attempt.answers|length }}/{{ r.open_attempt.size }})</a></div>
+    {% else %}
+    <form method="post" action="{% url 'academy:test_start' r.track.id %}" class="cfoot">
+      {% csrf_token %}
+      <button class="btn2" type="submit" name="size" value="30">Start 30-question test</button>
+      {% if r.pool >= 50 %}<button class="btn2 ghost" type="submit" name="size" value="50" title="Full 50-question mock">50</button>{% endif %}
+    </form>
+    {% endif %}
+  </article>
+  {% empty %}
+  <div class="card2" style="padding:24px"><p style="margin:0">Enrol in a course to take its practice tests.</p></div>
+  {% endfor %}
+</div>
+
+{% if history %}
+<div class="sec-h"><h2>History</h2></div>
+<section class="card2" style="overflow-x:auto">
+  <table class="hist">
+    <thead><tr><th>Date</th><th>Course</th><th>Questions</th><th>Correct</th><th>Score</th><th></th></tr></thead>
+    <tbody>
+      {% for t in history %}
+      <tr>
+        <td>{{ t.submitted_at|date:"j M Y, g:i A" }}</td>
+        <td>{{ t.track.code }}</td>
+        <td class="n">{{ t.size }}</td>
+        <td class="n">{{ t.correct_count }}</td>
+        <td class="n"><span class="badge {% if t.passed %}ok{% else %}no{% endif %}">{{ t.score }}</span></td>
+        <td><a href="{% url 'academy:test_result' t.id %}">Review</a></td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</section>
+{% endif %}
+{% endblock %}

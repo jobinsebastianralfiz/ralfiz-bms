@@ -1,0 +1,33 @@
+{% extends 'academy/base.html' %}
+{% block title %}Certificates · Ralfiz Academy{% endblock %}
+{% block page %}
+<div class="sec-h" style="margin-top:6px">
+  <div><h2 style="font-size:30px">Certificates</h2><p>Complete a course to earn a Ralfiz Academy certificate of completion. It is not a Microsoft certification; book the Microsoft exam separately.</p></div>
+</div>
+
+<div class="cgrid">
+  {% for s in summaries %}
+  <article class="card2 ccard" data-t="{{ s.track.id }}">
+    <div class="h">
+      <div><span class="code">{{ s.track.code }}</span><h3>{{ s.track.name }}</h3></div>
+      <span class="glyph" aria-hidden="true"><i class="fa-solid fa-award"></i></span>
+    </div>
+    <ul class="rchk" style="margin:0">
+      <li class="{% if s.lessons_ok %}on{% endif %}"><span class="c"><i class="fa-solid fa-check"></i></span><span>Finish every lesson ({{ s.done }}/{{ s.total }})</span></li>
+      <li class="{% if s.test_ok %}on{% endif %}"><span class="c"><i class="fa-solid fa-check"></i></span><span>Score {{ pass_mark }}+ on a practice test (best: {% if s.best_score is not None %}{{ s.best_score }}{% else %}none yet{% endif %})</span></li>
+    </ul>
+    <div class="cprog">
+      <div class="pbar"><i style="width:{{ s.percent }}%"></i></div>
+      <div class="t"><span>{{ s.done }} of {{ s.total }} lessons</span><span>{{ s.percent }}%</span></div>
+    </div>
+    {% if s.completed %}
+    <div class="pbanner done" style="margin:0;padding:12px 14px;border-radius:10px"><div><b style="font-size:14.5px">Eligible</b><p style="font-size:13px">Ask your trainer to issue your certificate.</p></div></div>
+    {% else %}
+    <div class="cfoot"><a class="btn2 ghost" href="{% url 'academy:track' s.track.id %}">Keep going <i class="fa-solid fa-arrow-right"></i></a></div>
+    {% endif %}
+  </article>
+  {% empty %}
+  <div class="card2" style="padding:24px"><p style="margin:0">Enrol in a course to work towards its certificate.</p></div>
+  {% endfor %}
+</div>
+{% endblock %}

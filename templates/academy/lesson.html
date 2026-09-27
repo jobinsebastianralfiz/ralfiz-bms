@@ -1,48 +1,64 @@
 {% extends 'academy/base.html' %}
 {% block title %}{{ lesson.num }} {{ lesson.title }} · {{ track.code }} · Ralfiz Academy{% endblock %}
 {% block body_track %}{{ track.id }}{% endblock %}
+{% block shell_class %}rail{% endblock %}
 {% block content %}
 <div id="lessonRoot" data-lesson="{{ lesson.id }}" data-lab-url="{% url 'academy:api_lab' lesson.id %}" data-steps="{{ lesson.lab_steps|length }}">
-<header class="lesson-head">
-  <div class="eyebrow">{{ track.code }} · {{ lesson.domain.name }}{% if lesson.domain.is_exam_weight %} · {{ lesson.domain.weight }} of the exam{% endif %}</div>
-  <h1>{{ lesson.num }} {{ lesson.title }}</h1>
-  <div class="sub">
-    <span>About {{ lesson.minutes }} minutes</span>
-    <span>Lab <b id="subLab">{{ status.lab_ticked }}</b>/{{ status.lab_total }} steps</span>
-    {% if files %}<span>{{ files|length }} exercise file{{ files|length|pluralize }}</span>{% endif %}
-    <span>Quiz <b id="subQuiz">{{ status.quiz_right }}</b>/{{ status.quiz_total }} correct</span>
-    <span id="subStatus" class="badge {% if status.status == 'done' %}ok{% elif status.status == 'in_progress' %}lab{% endif %}">{% if status.status == 'done' %}Complete{% elif status.status == 'in_progress' %}In progress{% else %}Not started{% endif %}</span>
+<nav class="crumbs" aria-label="Breadcrumb">
+  <a href="{% url 'academy:track' track.id %}">{{ track.code }}</a><i class="fa-solid fa-chevron-right"></i>
+  <span>{{ lesson.domain.name }}</span><i class="fa-solid fa-chevron-right"></i>
+  <span style="color:var(--ink)">{{ lesson.num }} {{ lesson.title }}</span>
+</nav>
+
+<header class="hero2">
+  <div class="les-hero hz">
+    <div>
+      <span class="lpill">Lesson {{ lesson.num }}</span>
+      <h1>{{ lesson.title }}</h1>
+      {% if lead %}<p class="sub">{{ lead }}</p>{% endif %}
+      <div class="les-meta">
+        <span><i class="fa-regular fa-clock"></i>About {{ lesson.minutes }} minutes</span>
+        <span><i class="fa-solid fa-flask"></i>Lab <b id="subLab">{{ status.lab_ticked }}</b>/{{ status.lab_total }} steps</span>
+        {% if files %}<span><i class="fa-regular fa-file-lines"></i>{{ files|length }} exercise file{{ files|length|pluralize }}</span>{% endif %}
+        <span><i class="fa-regular fa-circle-question"></i>Quiz <b id="subQuiz">{{ status.quiz_right }}</b>/{{ status.quiz_total }} correct</span>
+      </div>
+      <div style="margin-top:14px"><span id="subStatus" class="pill {% if status.status == 'done' %}ok{% elif status.status == 'in_progress' %}lab{% endif %}">{% if status.status == 'done' %}Complete{% elif status.status == 'in_progress' %}In progress{% else %}Not started{% endif %}</span></div>
+    </div>
+    <div class="les-art" aria-hidden="true">
+      <div class="screen"><span><i class="fa-solid fa-book-open"></i></span><span><i class="fa-solid fa-flask"></i></span><span><i class="fa-solid fa-trophy"></i></span><span><i class="fa-solid {{ track.icon }}"></i></span></div>
+      <div class="base"></div>
+    </div>
   </div>
 </header>
 
-<div class="tabs" role="tablist">
-  <button class="tab" role="tab" type="button" data-tab="learn" aria-selected="{% if tab == 'learn' %}true{% else %}false{% endif %}">Learn</button>
-  <button class="tab" role="tab" type="button" data-tab="lab" aria-selected="{% if tab == 'lab' %}true{% else %}false{% endif %}">Hands-on lab <span class="ck" id="ckLab" {% if not status.lab_done %}hidden{% endif %}>✓</span></button>
-  <button class="tab" role="tab" type="button" data-tab="quiz" aria-selected="{% if tab == 'quiz' %}true{% else %}false{% endif %}">Quiz <span class="ck" id="ckQuiz" {% if not status.quiz_done %}hidden{% endif %}>✓</span></button>
+<div class="tabs2" role="tablist">
+  <button role="tab" type="button" data-tab="learn" aria-selected="{% if tab == 'learn' %}true{% else %}false{% endif %}"><i class="fa-solid fa-book-open"></i> Learn</button>
+  <button role="tab" type="button" data-tab="lab" aria-selected="{% if tab == 'lab' %}true{% else %}false{% endif %}"><i class="fa-solid fa-flask"></i> Hands-on lab <span class="ck" id="ckLab" {% if not status.lab_done %}hidden{% endif %}>✓</span></button>
+  <button role="tab" type="button" data-tab="quiz" aria-selected="{% if tab == 'quiz' %}true{% else %}false{% endif %}"><i class="fa-regular fa-circle-question"></i> Quiz <span class="ck" id="ckQuiz" {% if not status.quiz_done %}hidden{% endif %}>✓</span></button>
 </div>
 
-{# ---- Learn ---- #}
 <section class="tabpanel" data-panel="learn" {% if tab != 'learn' %}hidden{% endif %}>
-  <div class="glance">
-    <div class="glance-h"><span class="eyebrow">At a glance</span><span class="rt">{{ read_minutes }} min read below</span></div>
+  <div class="card2 glance2">
+    <div class="gh"><span class="tile sm"><i class="fa-solid fa-book-open"></i></span><h2>At a glance</h2><span class="rt">{{ read_minutes }} min read</span></div>
     <div class="prose">{{ lesson.summary_html|safe }}</div>
   </div>
   {% if toc %}
-  <nav class="toc" aria-label="On this page"><span>On this page</span>
+  <nav class="toc" aria-label="On this page" id="inlineToc"><span>On this page</span>
     <ol>{% for anchor, text in toc %}<li><a href="#{{ anchor }}">{{ text }}</a></li>{% endfor %}</ol>
   </nav>
   {% endif %}
-  <article class="prose deep">{{ lesson.content_html|safe }}</article>
-  {% if lesson.terms %}
-  <div class="terms"><h3>Key terms</h3>
-    <dl>{% for t in lesson.terms %}<dt>{{ t.term }}</dt><dd>{{ t.definition }}</dd>{% endfor %}</dl>
+  <div class="card2 lesson-body">
+    <article class="prose deep">{{ lesson.content_html|safe }}</article>
+    {% if lesson.terms %}
+    <div class="terms" id="terms"><h3>Key terms</h3>
+      <dl>{% for t in lesson.terms %}<dt>{{ t.term }}</dt><dd>{{ t.definition }}</dd>{% endfor %}</dl>
+    </div>
+    {% endif %}
+    {% if lesson.exam_tip %}<div class="tip"><b>Exam tip</b><span>{{ lesson.exam_tip }}</span></div>{% endif %}
+    <div style="margin-top:24px"><button class="btn2" type="button" data-go-tab="lab"><i class="fa-solid fa-flask"></i> Start the hands-on lab <i class="fa-solid fa-arrow-right"></i></button></div>
   </div>
-  {% endif %}
-  {% if lesson.exam_tip %}<div class="tip"><b>Exam tip</b><span>{{ lesson.exam_tip }}</span></div>{% endif %}
-  <div style="margin-top:22px"><button class="btn primary" type="button" data-go-tab="lab">Start the hands-on lab</button></div>
 </section>
 
-{# ---- Lab ---- #}
 <section class="tabpanel" data-panel="lab" {% if tab != 'lab' %}hidden{% endif %}>
   {% if lesson.widget %}
   <div id="widget" data-widget="{{ lesson.widget }}"></div>
@@ -50,26 +66,32 @@
   {% endif %}
   {% if files %}
   {% url 'academy:lesson_zip' lesson.id as lesson_zip_url %}
-  {% include 'academy/_files.html' with files=files heading='Exercise files' zip_url=lesson_zip_url %}
+  {% include 'academy/_files.html' with files=files heading='Exercise files' zip_url=lesson_zip_url total_kb=files_kb note='keep them open while you work through the steps' anchor='lab-files' %}
   {% endif %}
-  <h3 class="lab-h">Steps</h3>
-  <p class="lab-intro">Work in {{ track.tool }} and tick each step off. Your ticks are saved to your account.</p>
-  <ol class="steps" id="steps">
-    {% for step in lesson.lab_steps %}
-    <li><label for="lab-{{ forloop.counter0 }}"><input type="checkbox" id="lab-{{ forloop.counter0 }}" data-k="{{ forloop.counter0 }}" {% if forloop.counter0 in ticks %}checked{% endif %}><span class="n">{{ forloop.counter }}</span><span class="t">{{ step }}</span></label></li>
+  <div class="steps-h" id="lab-steps">
+    <span class="tile sm"><i class="fa-solid fa-list-check"></i></span>
+    <div><h3>Steps</h3><p>Work in {{ track.tool }} and tick each step off. Your ticks are saved to your account.</p></div>
+    <span class="pill" id="stepsPill"><i class="fa-regular fa-circle-check"></i> <span id="stepsDone">{{ status.lab_ticked }}</span> / {{ status.lab_total }} completed</span>
+  </div>
+  <ol class="steps2" id="steps">
+    {% for s in steps %}
+    <li><label for="lab-{{ s.i }}">
+      <input type="checkbox" id="lab-{{ s.i }}" data-k="{{ s.i }}" {% if s.i in ticks %}checked{% endif %}>
+      <span class="box">{{ s.i|add:1 }}</span>
+      <span><b>{{ s.title }}</b>{% if s.detail %}<small>{{ s.detail }}</small>{% endif %}</span>
+    </label></li>
     {% endfor %}
   </ol>
   {% if lesson.lab_check %}
-  <section class="checkyw"><h3>Check your work</h3><ul>{% for c in lesson.lab_check %}<li>{{ c }}</li>{% endfor %}</ul></section>
+  <section class="checkyw" id="lab-check"><h3>Check your work</h3><ul>{% for c in lesson.lab_check %}<li>{{ c }}</li>{% endfor %}</ul></section>
   {% endif %}
   <div id="labMsg" aria-live="polite">{% if status.lab_done %}<div class="labdone">Lab complete. {% if status.quiz_done %}This lesson is finished.{% else %}Now take the quiz to finish the lesson.{% endif %}</div>{% endif %}</div>
-  <div style="margin-top:18px"><button class="btn primary" type="button" data-go-tab="quiz">Go to the quiz</button></div>
+  <div style="margin-top:18px"><button class="btn2" type="button" data-go-tab="quiz"><i class="fa-regular fa-circle-question"></i> Go to the quiz <i class="fa-solid fa-arrow-right"></i></button></div>
 </section>
 
-{# ---- Quiz ---- #}
 <section class="tabpanel" data-panel="quiz" {% if tab != 'quiz' %}hidden{% endif %}>
   {% for item in quiz %}
-  <div class="q" data-qid="{{ item.q.id }}" data-url="{% url 'academy:api_answer' item.q.id %}" {% if item.chosen is not None %}data-chosen="{{ item.chosen }}" data-answer="{{ item.correct_index }}"{% endif %}>
+  <div class="q" id="q-{{ forloop.counter }}" data-qid="{{ item.q.id }}" data-url="{% url 'academy:api_answer' item.q.id %}" {% if item.chosen is not None %}data-chosen="{{ item.chosen }}" data-answer="{{ item.correct_index }}"{% endif %}>
     <span class="qn">Question {{ forloop.counter }}</span>
     <p class="stem">{{ item.q.question }}</p>
     <div class="opts">
@@ -93,6 +115,58 @@
 </nav>
 </div>
 {% endblock %}
+
+{% block rail %}
+<aside class="rail2" aria-label="Lesson tools">
+  <section class="card2">
+    <h4><i class="fa-solid fa-list-ul" style="color:var(--accent)"></i> On this page</h4>
+    <ol class="rtoc" data-rtoc="learn" {% if tab != 'learn' %}hidden{% endif %}>
+      {% for anchor, text in toc %}<li><a href="#{{ anchor }}">{{ text }}</a></li>{% endfor %}
+      {% if lesson.terms %}<li><a href="#terms">Key terms</a></li>{% endif %}
+    </ol>
+    <ol class="rtoc" data-rtoc="lab" {% if tab != 'lab' %}hidden{% endif %}>
+      {% if lesson.widget %}<li><a href="#widget">Simulator</a></li>{% endif %}
+      {% if files %}<li><a href="#lab-files">Exercise files</a></li>{% endif %}
+      <li><a href="#lab-steps">Steps</a></li>
+      {% if lesson.lab_check %}<li><a href="#lab-check">Check your work</a></li>{% endif %}
+    </ol>
+    <ol class="rtoc" data-rtoc="quiz" {% if tab != 'quiz' %}hidden{% endif %}>
+      {% for item in quiz %}<li><a href="#q-{{ forloop.counter }}">Question {{ forloop.counter }}</a></li>{% endfor %}
+    </ol>
+  </section>
+
+  <section class="card2">
+    <h4>Lesson progress <span class="v" id="railPct">{{ lesson_pct }}%</span></h4>
+    <div class="pbar"><i id="railBar" style="width:{{ lesson_pct }}%"></i></div>
+    <ul class="rchk">
+      <li id="railLab" class="{% if status.lab_done %}on{% endif %}"><span class="c"><i class="fa-solid fa-check"></i></span><span>Complete hands-on lab (<span id="railLabN">{{ status.lab_ticked }}</span>/{{ status.lab_total }})</span></li>
+      <li id="railQuiz" class="{% if status.quiz_done %}on{% endif %}"><span class="c"><i class="fa-solid fa-check"></i></span><span>Pass quiz (<span id="railQuizN">{{ status.quiz_right }}</span>/{{ status.quiz_total }})</span></li>
+    </ul>
+    <p class="rnote"><i class="fa-solid fa-circle-info"></i> The lesson completes itself when the lab and the quiz are both done.</p>
+  </section>
+
+  {% if next_lesson %}
+  <section class="card2">
+    <h4>Next up <a href="{% url 'academy:lesson' next_lesson.id %}" style="margin-left:auto;color:var(--accent)" aria-label="Open next lesson"><i class="fa-solid fa-arrow-right"></i></a></h4>
+    <a class="rnext" href="{% url 'academy:lesson' next_lesson.id %}">
+      <span class="tile sm"><i class="fa-regular fa-file-lines"></i></span>
+      <span><b>{{ next_lesson.num }} {{ next_lesson.title }}</b><small>{{ next_lesson.minutes }} min · Lab {{ next_status.lab_ticked }}/{{ next_status.lab_total }} · Quiz {{ next_status.quiz_right }}/{{ next_status.quiz_total }}</small></span>
+    </a>
+  </section>
+  {% else %}
+  <section class="card2">
+    <h4>Last lesson</h4>
+    <a class="rnext" href="{% url 'academy:test_start' track.id %}"><span class="tile sm amber"><i class="fa-solid fa-trophy"></i></span><span><b>Take the {{ track.code }} practice test</b><small>Score 700+ to complete the course</small></span></a>
+  </section>
+  {% endif %}
+
+  <section class="card2 rhelp">
+    <h4><i class="fa-regular fa-circle-question" style="color:var(--tone-blue-i)"></i> Need help?</h4>
+    <p>Stuck on a step? Re-read the lesson and the "Check your work" list, then ask your trainer.</p>
+  </section>
+</aside>
+{% endblock %}
+
 {% block extra_js %}
 {% load static %}
 {% if lesson.widget %}<script src="{% static 'academy/sims.js' %}?v=1"></script>{% endif %}

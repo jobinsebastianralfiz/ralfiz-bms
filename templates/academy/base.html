@@ -8,90 +8,109 @@
   <link rel="icon" type="image/svg+xml" href="{% static 'favicon.svg' %}">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700;12..96,800&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700;12..96,800&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
   <script>
     try { var t = localStorage.getItem('academy-theme'); if (t) document.documentElement.setAttribute('data-theme', t); } catch (e) {}
   </script>
-  <link rel="stylesheet" href="{% static 'academy/academy.css' %}?v=2">
+  <link rel="stylesheet" href="{% static 'academy/academy.css' %}?v=8">
 </head>
 <body data-track="{% block body_track %}home{% endblock %}">
   {% if request.is_preview %}
   <div class="preview-bar">Owner preview: you see every track. Your ticks and answers are saved to your own login. <a href="{% url 'academy:manage_home' %}">Back to Academy admin</a></div>
   {% endif %}
-  <header class="top">
-    <div class="top-in">
-      {% if side_track %}
-      <button class="btn sm menu-btn" id="menuBtn" aria-expanded="false" aria-controls="side">Lessons</button>
-      {% endif %}
+  <header class="top2">
+    <div class="top2-in">
+      {% if side_track %}<button class="menu-btn2" id="menuBtn" type="button" aria-expanded="false" aria-controls="side" aria-label="Course outline"><i class="fa-solid fa-bars"></i></button>{% endif %}
       <a class="brand" href="{% url 'academy:home' %}">
         <span class="brand-mark" aria-hidden="true">R</span>
         <span class="word">Ralfiz <span class="labs">Academy</span></span>
       </a>
-      {% if side_track %}
-      <div class="prog" aria-label="Track progress">
-        <div class="bar"><i style="width:{{ side_percent }}%"></i></div>
-        <span id="progTxt">{{ side_track.code }} {{ side_done }}/{{ side_total }}</span>
-      </div>
-      {% endif %}
-      <nav class="top-nav" aria-label="Main">
-        <a class="nl {% if not side_track %}opt-hide{% endif %}" href="{% url 'academy:home' %}" {% if nav == 'home' %}aria-current="page"{% endif %}>Dashboard</a>
-        {% if side_track %}
-        <a class="nl opt-hide" href="{% url 'academy:test_start' side_track.id %}" {% if side_current == 'test' %}aria-current="page"{% endif %}>Practice test</a>
-        {% endif %}
-        <button class="theme-btn" id="themeBtn" type="button" aria-label="Switch light or dark theme" title="Theme">◐</button>
+      <nav class="mainnav" aria-label="Main">
+        <a href="{% url 'academy:home' %}" {% if nav == 'home' %}aria-current="page"{% endif %}><i class="fa-solid fa-house"></i><span>Dashboard</span></a>
+        <a href="{% url 'academy:courses' %}" {% if nav == 'courses' %}aria-current="page"{% endif %}><i class="fa-regular fa-map"></i><span>My Courses</span></a>
+        <a href="{% url 'academy:assessments' %}" {% if nav == 'assessments' %}aria-current="page"{% endif %}><i class="fa-regular fa-file-lines"></i><span>Assessments</span></a>
+        <a href="{% url 'academy:certificates' %}" {% if nav == 'certificates' %}aria-current="page"{% endif %}><i class="fa-solid fa-award"></i><span>Certificates</span></a>
+      </nav>
+      <div class="top2-right">
+        <div class="themeseg" role="group" aria-label="Theme">
+          <button type="button" data-theme-set="light" aria-label="Light theme"><i class="fa-regular fa-sun"></i></button>
+          <button type="button" data-theme-set="dark" aria-label="Dark theme"><i class="fa-regular fa-moon"></i></button>
+        </div>
         <details class="who">
-          <summary><span class="avatar">{{ request.user.first_name|default:request.user.username|slice:":1"|upper }}</span><span class="wn">{{ request.user.get_full_name|default:request.user.username }}</span></summary>
+          <summary><span class="avatar">{{ request.user.first_name|default:request.user.username|slice:":1"|upper }}</span><span class="wn">{{ request.user.get_full_name|default:request.user.username }}</span><i class="fa-solid fa-chevron-down chev"></i></summary>
           <div class="who-menu">
             <div class="wm-h"><b>{{ request.user.get_full_name|default:request.user.username }}</b>{% if request.student.batch %}{{ request.student.batch }}{% else %}{{ request.user.username }}{% endif %}</div>
-            <a href="{% url 'academy:home' %}">Dashboard</a>
             <a href="{% url 'academy:profile' %}">Profile and password</a>
             {% if request.is_preview %}<a href="{% url 'academy:manage_home' %}">Academy admin</a>{% endif %}
             <a href="{% url 'academy:logout' %}">Sign out</a>
           </div>
         </details>
-      </nav>
+      </div>
     </div>
   </header>
 
-  <div class="shell {% if not side_track %}solo{% endif %}">
-    {% if side_track %}
-    <nav class="side" id="side" aria-label="Lessons">
-      <a class="all-tracks" href="{% url 'academy:home' %}">← Dashboard</a>
-      {% if side_tracks|length > 1 %}
-      <label class="tsw" for="trackSel"><span>Track</span>
-        <select id="trackSel" data-base="{% url 'academy:track' 'TRACK' %}">
+  {% if side_track %}
+  <div class="shell2 {% block shell_class %}{% endblock %}">
+    <nav class="side2" id="side" aria-label="Course outline">
+      <a class="back" href="{% url 'academy:home' %}"><i class="fa-solid fa-arrow-left"></i> Back to Dashboard</a>
+      <div class="lbl">Current track</div>
+      <label class="tsel" data-t="{{ side_track.id }}">
+        <span class="tile"><i class="fa-solid {{ side_track.icon }}"></i></span>
+        <span><b>{{ side_track.code }}</b><small>{{ side_track.name }}</small></span>
+        <i class="fa-solid fa-chevron-down"></i>
+        <select id="trackSel" data-base="{% url 'academy:track' 'TRACK' %}" aria-label="Switch track">
           {% for t in side_tracks %}<option value="{{ t.id }}" {% if t.id == side_track.id %}selected{% endif %}>{{ t.code }} · {{ t.name }}</option>{% endfor %}
         </select>
       </label>
-      {% endif %}
-      <ul>
-        <li><a href="{% url 'academy:track' side_track.id %}" class="home-link" {% if side_current == 'overview' %}aria-current="page"{% endif %}>Track overview</a></li>
-        <li><a href="{% url 'academy:test_start' side_track.id %}" {% if side_current == 'test' %}aria-current="page"{% endif %}>Practice test</a></li>
+      <ul class="snav">
+        <li><a href="{% url 'academy:track' side_track.id %}" {% if side_current == 'overview' %}aria-current="page"{% endif %}><i class="fa-solid fa-house"></i> Track Overview</a></li>
+        <li><a href="{% url 'academy:test_start' side_track.id %}" {% if side_current == 'test' %}aria-current="page"{% endif %}><i class="fa-regular fa-clipboard"></i> Practice Test</a></li>
       </ul>
-      {% for d in side_domains %}
-      <h4><span>{{ d.domain.name }}</span><b>{{ d.domain.weight }}</b></h4>
-      <ul>
-        {% for item in d.lessons %}
-        <li><a href="{% url 'academy:lesson' item.lesson.id %}" {% if side_current == item.lesson.id %}aria-current="page"{% endif %}>
-          <span class="num">{{ item.lesson.num }}</span><span>{{ item.lesson.title }}</span>
-          <span class="dot {% if item.status == 'done' %}done{% elif item.status == 'in_progress' %}half{% endif %}" data-dot="{{ item.lesson.id }}" aria-label="{% if item.status == 'done' %}Complete{% elif item.status == 'in_progress' %}In progress{% else %}Not started{% endif %}"></span>
-        </a></li>
+      <div class="lbl">Course outline</div>
+      <div class="outline">
+        {% for d in side_domains %}
+        <details class="odom {% if d.done == d.lessons|length %}full{% endif %}" {% if d.open %}open{% endif %}>
+          <summary>
+            <span class="tile">{% if d.done == d.lessons|length %}<i class="fa-solid fa-check"></i>{% else %}{{ d.index }}{% endif %}</span>
+            <span><b>{{ d.index }}. {{ d.domain.name }}</b><small>{{ d.lessons|length }} lesson{{ d.lessons|length|pluralize }}{% if d.done %} · {{ d.done }} done{% endif %}</small></span>
+            <i class="fa-solid fa-chevron-down"></i>
+          </summary>
+          <ul class="olist">
+            {% for item in d.lessons %}
+            <li><a href="{% url 'academy:lesson' item.lesson.id %}" {% if side_current == item.lesson.id %}aria-current="page"{% endif %}>
+              <span class="n">{{ item.lesson.num }}</span><span>{{ item.lesson.title }}</span>
+              <span class="dot {% if item.status == 'done' %}done{% elif item.status == 'in_progress' %}half{% endif %}" data-dot="{{ item.lesson.id }}" aria-label="{% if item.status == 'done' %}Complete{% elif item.status == 'in_progress' %}In progress{% else %}Not started{% endif %}"></span>
+            </a></li>
+            {% endfor %}
+          </ul>
+        </details>
         {% endfor %}
-      </ul>
-      {% endfor %}
+      </div>
     </nav>
     <div class="scrim" id="scrim"></div>
-    {% endif %}
 
     <main id="main">
-      {% for message in messages %}
-      <div class="flash {% if message.tags == 'error' %}error{% endif %}">{{ message }}</div>
-      {% endfor %}
+      {% for message in messages %}<div class="flash {% if message.tags == 'error' %}error{% endif %}">{{ message }}</div>{% endfor %}
       {% block content %}{% endblock %}
     </main>
+    {% block rail %}{% endblock %}
   </div>
+  {% else %}
+  <main class="wrap2" id="main">
+    {% for message in messages %}<div class="flash {% if message.tags == 'error' %}error{% endif %}">{{ message }}</div>{% endfor %}
+    {% block page %}{% endblock %}
+  </main>
+  {% endif %}
 
-  <script src="{% static 'academy/academy.js' %}?v=1"></script>
+  <nav class="botnav" aria-label="Main">
+    <a href="{% url 'academy:home' %}" {% if nav == 'home' %}aria-current="page"{% endif %}><i class="fa-solid fa-house"></i>Dashboard</a>
+    <a href="{% url 'academy:courses' %}" {% if nav == 'courses' %}aria-current="page"{% endif %}><i class="fa-regular fa-map"></i>Courses</a>
+    <a href="{% url 'academy:assessments' %}" {% if nav == 'assessments' %}aria-current="page"{% endif %}><i class="fa-regular fa-file-lines"></i>Tests</a>
+    <a href="{% url 'academy:certificates' %}" {% if nav == 'certificates' %}aria-current="page"{% endif %}><i class="fa-solid fa-award"></i>Certificates</a>
+  </nav>
+
+  <script src="{% static 'academy/academy.js' %}?v=3"></script>
   {% block extra_js %}{% endblock %}
 </body>
 </html>

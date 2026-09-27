@@ -37,14 +37,42 @@
     location.href = trackSel.dataset.base.replace('TRACK', trackSel.value);
   };
 
-  var themeBtn = $('#themeBtn');
-  if (themeBtn) themeBtn.onclick = function () {
-    var root = document.documentElement;
-    var dark = root.getAttribute('data-theme') === 'dark' ||
-      (!root.getAttribute('data-theme') && matchMedia('(prefers-color-scheme: dark)').matches);
-    var next = dark ? 'light' : 'dark';
-    root.setAttribute('data-theme', next);
-    try { localStorage.setItem('academy-theme', next); } catch (e) {}
+  // Theme: light / dark buttons; no choice saved means follow the system.
+  var themeBtns = $$('[data-theme-set]');
+  var paintTheme = function () {
+    var root = document.documentElement, set = root.getAttribute('data-theme');
+    var dark = set ? set === 'dark' : matchMedia('(prefers-color-scheme: dark)').matches;
+    themeBtns.forEach(function (b) { b.setAttribute('aria-pressed', String((b.dataset.themeSet === 'dark') === dark)); });
+  };
+  themeBtns.forEach(function (b) {
+    b.onclick = function () {
+      document.documentElement.setAttribute('data-theme', b.dataset.themeSet);
+      try { localStorage.setItem('academy-theme', b.dataset.themeSet); } catch (e) {}
+      paintTheme();
+    };
+  });
+  paintTheme();
+
+  // Course filter chips (dashboard, My Courses).
+  $$('[data-filter-for]').forEach(function (group) {
+    var grid = document.getElementById(group.dataset.filterFor);
+    $$('button', group).forEach(function (b) {
+      b.onclick = function () {
+        $$('button', group).forEach(function (x) { x.setAttribute('aria-pressed', String(x === b)); });
+        $$('[data-state]', grid).forEach(function (card) {
+          card.hidden = b.dataset.f !== 'all' && card.dataset.state !== b.dataset.f;
+        });
+      };
+    });
+  });
+
+  // Track page: expand or collapse every skill area.
+  var expandAll = $('#expandAll');
+  if (expandAll) expandAll.onclick = function () {
+    var areas = $$('#skillAreas details');
+    var open = !areas.every(function (d) { return d.open; });
+    areas.forEach(function (d) { d.open = open; });
+    $('span', expandAll).textContent = open ? 'Collapse all' : 'Expand all';
   };
 
   document.addEventListener('click', function (e) {
@@ -74,10 +102,11 @@
   // --- Lesson ----------------------------------------------------------------
   var root = $('#lessonRoot');
   if (root) {
-    var tabs = $$('.tab', root), panels = $$('.tabpanel', root);
+    var tabs = $$('[role=tab]', root), panels = $$('.tabpanel', root);
     var showTab = function (name, scroll) {
       tabs.forEach(function (t) { t.setAttribute('aria-selected', String(t.dataset.tab === name)); });
       panels.forEach(function (p) { p.hidden = p.dataset.panel !== name; });
+      $$('[data-rtoc]').forEach(function (o) { o.hidden = o.dataset.rtoc !== name; });
       try { history.replaceState(null, '', location.pathname + (name === 'learn' ? '' : '?tab=' + name)); } catch (e) {}
       if (scroll) window.scrollTo({ top: 0 });
       if (name === 'lab') mountWidget();
@@ -88,11 +117,21 @@
     var applyStatus = function (st) {
       if (!st) return;
       $('#subLab').textContent = st.lab_ticked;
+      var set = function (sel, v) { var el = $(sel); if (el) el.textContent = v; };
+      set('#stepsDone', st.lab_ticked);
+      set('#railLabN', st.lab_ticked);
+      set('#railQuizN', st.quiz_right);
+      var total = st.lab_total + st.quiz_total;
+      var pct = total ? Math.round((st.lab_ticked + st.quiz_right) / total * 100) : 0;
+      set('#railPct', pct + '%');
+      if ($('#railBar')) $('#railBar').style.width = pct + '%';
+      if ($('#railLab')) $('#railLab').classList.toggle('on', st.lab_done);
+      if ($('#railQuiz')) $('#railQuiz').classList.toggle('on', st.quiz_done);
       $('#subQuiz').textContent = st.quiz_right;
       $('#ckLab').hidden = !st.lab_done;
       $('#ckQuiz').hidden = !st.quiz_done;
       var badge = $('#subStatus');
-      badge.className = 'badge ' + (st.status === 'done' ? 'ok' : st.status === 'in_progress' ? 'lab' : '');
+      badge.className = 'pill ' + (st.status === 'done' ? 'ok' : st.status === 'in_progress' ? 'lab' : '');
       badge.textContent = st.status === 'done' ? 'Complete' : st.status === 'in_progress' ? 'In progress' : 'Not started';
       var dot = $('[data-dot="' + root.dataset.lesson + '"]');
       if (dot) dot.className = 'dot ' + (st.status === 'done' ? 'done' : st.status === 'in_progress' ? 'half' : '');
@@ -150,6 +189,21 @@
       });
       $('.retry', q).onclick = function () { resetQuestion(q); };
     });
+
+    // Highlight the section being read in the right-hand "On this page".
+    if ('IntersectionObserver' in window) {
+      var links = $$('.rtoc a');
+      var io = new IntersectionObserver(function (entries) {
+        entries.forEach(function (en) {
+          if (!en.isIntersecting) return;
+          links.forEach(function (a) { a.classList.toggle('on', a.getAttribute('href') === '#' + en.target.id); });
+        });
+      }, { rootMargin: '-80px 0px -70% 0px' });
+      links.forEach(function (a) {
+        var t = document.getElementById(a.getAttribute('href').slice(1));
+        if (t) io.observe(t);
+      });
+    }
 
     // Simulators load only on lessons that have one.
     var mounted = false;

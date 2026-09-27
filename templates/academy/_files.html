@@ -1,7 +1,11 @@
-<section class="exfiles" aria-label="{{ heading }}">
-  <div class="exh">
-    <div><h3>{{ heading }}</h3><span>{{ files|length }} file{{ files|length|pluralize }}</span></div>
-    <a class="btn primary sm" href="{{ zip_url }}">Download all (.zip)</a>
+<section class="card2 exf2" id="{{ anchor|default:'files' }}" aria-label="{{ heading }}">
+  <div class="eh">
+    <span class="tile amber"><i class="fa-solid fa-folder-open"></i></span>
+    <div>
+      <h3>{{ heading }}</h3>
+      <p>{{ files|length }} file{{ files|length|pluralize }}{% if total_kb %} ({{ total_kb }} KB){% endif %}{% if note %} · {{ note }}{% endif %}</p>
+    </div>
+    <a class="btn2" href="{{ zip_url }}"><i class="fa-solid fa-download"></i> Download all (.zip)</a>
   </div>
   <ul class="flist">
     {% for row in files %}
@@ -10,9 +14,9 @@
         <span class="fext">{{ row.badge }}</span>
         <div class="fname"><strong class="mono">{{ row.file.zip_path }}</strong><span>{{ row.file.description }} · {{ row.size }}</span></div>
         <div class="fbtns">
-          <button class="btn sm" type="button" data-file-view aria-expanded="false">View</button>
-          <button class="btn sm" type="button" data-file-copy>Copy</button>
-          <a class="btn sm" href="{% url 'academy:file' row.file.id %}">Download</a>
+          <button class="btn sm" type="button" data-file-view aria-expanded="false"><i class="fa-regular fa-eye"></i> <span>View</span></button>
+          <button class="btn sm" type="button" data-file-copy><i class="fa-regular fa-copy"></i> <span>Copy</span></button>
+          <a class="btn sm" href="{% url 'academy:file' row.file.id %}"><i class="fa-solid fa-download"></i> Download</a>
         </div>
       </div>
       <pre class="fview" hidden><code>{{ row.file.content }}</code></pre>

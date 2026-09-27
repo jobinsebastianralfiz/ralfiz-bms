@@ -12,6 +12,9 @@ urlpatterns = [
 
     path('', v.home, name='home'),
     path('profile/', v.profile, name='profile'),
+    path('courses/', v.courses, name='courses'),
+    path('assessments/', v.assessments, name='assessments'),
+    path('certificates/', v.certificates, name='certificates'),
     path('tracks/<str:track_id>/', v.track_detail, name='track'),
     path('tracks/<str:track_id>/data.zip', v.track_data_zip, name='track_data_zip'),
     path('tracks/<str:track_id>/test/', v.test_start, name='test_start'),

@@ -1,6 +1,6 @@
 {% extends 'academy/base.html' %}
 {% block title %}Profile · Ralfiz Academy{% endblock %}
-{% block content %}
+{% block page %}
 <section class="hero">
   <div class="eyebrow">Your account</div>
   <h1>{{ request.user.get_full_name|default:request.user.username }}</h1>

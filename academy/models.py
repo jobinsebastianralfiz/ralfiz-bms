@@ -34,6 +34,15 @@ class Track(models.Model):
     class Meta:
         ordering = ['sort_order']
 
+    # Plain glyphs per track (Font Awesome). Deliberately not Microsoft's
+    # product logos: the portal says it is not affiliated with Microsoft.
+    ICONS = {'pl900': 'fa-cubes', 'ab410': 'fa-wand-magic-sparkles',
+             'pl300': 'fa-chart-column', 'ab400': 'fa-code'}
+
+    @property
+    def icon(self):
+        return self.ICONS.get(self.id, 'fa-graduation-cap')
+
     def __str__(self):
         return f'{self.code} {self.name}'
 

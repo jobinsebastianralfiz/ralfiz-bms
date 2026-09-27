@@ -12,41 +12,173 @@
     try { var t = localStorage.getItem('academy-theme'); if (t) document.documentElement.setAttribute('data-theme', t); } catch (e) {}
   </script>
   <link rel="stylesheet" href="{% static 'academy/academy.css' %}?v=2">
+  <style>
+    .lg{min-height:100vh;display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,1fr)}
+    .lg-art{position:relative;overflow:hidden;color:#EAF4F1;padding:clamp(28px,4.5vw,64px);display:flex;flex-direction:column;gap:clamp(28px,5vh,56px);
+      background:radial-gradient(120% 80% at 100% 100%,#0F5A4E 0%,transparent 60%),radial-gradient(90% 70% at 0% 100%,#0C3F38 0%,transparent 65%),linear-gradient(160deg,#0B1F1C 0%,#0E2B27 55%,#0F332D 100%)}
+    .lg-art::after{content:"";position:absolute;inset:auto -10% -30% 40%;height:70%;border-radius:50%;background:rgba(60,196,178,.08);filter:blur(10px);pointer-events:none}
+    .lg-top{display:flex;justify-content:space-between;align-items:center;gap:16px;position:relative;z-index:1}
+    .lg-top .brand{color:#fff}
+    .lg-top .brand-mark{background:#0B7A6E;color:#fff}
+    .lg-tag{font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:rgba(234,244,241,.72);font-weight:500;white-space:nowrap}
+    .lg-tag i{font-style:normal;margin:0 8px;opacity:.6}
+    .lg-copy{display:grid;gap:18px;position:relative;z-index:1}
+    .lg-copy h1{font-size:clamp(34px,4.2vw,58px);font-weight:700;line-height:1.05;letter-spacing:-.015em;max-width:19ch}
+    .lg-copy h1 span{background:linear-gradient(90deg,#3CC4B2,#7FE3B8);-webkit-background-clip:text;background-clip:text;color:transparent}
+    .lg-copy p{margin:0;color:rgba(234,244,241,.78);font-size:17px;line-height:1.6;max-width:46ch}
+    .lg-chips{display:flex;flex-wrap:wrap;gap:10px;margin-top:6px}
+    .lg-chip{display:inline-flex;align-items:center;gap:10px;padding:9px 16px 9px 12px;border-radius:99px;border:1px solid rgba(234,244,241,.16);background:rgba(255,255,255,.04);font-family:var(--mono);font-size:14px;font-weight:500;color:#fff}
+    .lg-chip svg{width:18px;height:18px;flex:none}
+    .lg-card{position:relative;z-index:1;align-self:center;width:min(420px,100%);background:rgba(14,32,29,.72);border:1px solid rgba(234,244,241,.12);border-radius:16px;padding:22px 24px;box-shadow:0 30px 60px rgba(0,0,0,.35);backdrop-filter:blur(6px);margin-top:auto}
+    .lg-card h3{font-size:19px;color:#fff;margin-bottom:14px;display:flex;justify-content:space-between;align-items:baseline;gap:10px}
+    .lg-card h3 small{font-family:var(--mono);font-size:12px;font-weight:500;color:#7FE3B8}
+    .lg-steps{list-style:none;margin:0 0 16px;padding:0;display:grid;gap:10px}
+    .lg-steps li{display:flex;align-items:center;gap:12px;font-size:14.5px;color:rgba(234,244,241,.9)}
+    .lg-steps .ck{width:22px;height:22px;border-radius:6px;display:grid;place-items:center;flex:none;background:#1FA58C;color:#fff}
+    .lg-steps .ck.todo{background:transparent;border:1.5px solid rgba(234,244,241,.3)}
+    .lg-steps li.todo{color:rgba(234,244,241,.55)}
+    .lg-steps small{margin-left:auto;font-family:var(--mono);font-size:11.5px;color:rgba(234,244,241,.5)}
+    .lg-bar{height:6px;border-radius:99px;background:rgba(234,244,241,.12);overflow:hidden}
+    .lg-bar i{display:block;height:100%;width:75%;border-radius:99px;background:linear-gradient(90deg,#1FA58C,#7FE3B8)}
+    .lg-foot{position:relative;z-index:1;font-size:12.5px;color:rgba(234,244,241,.6);margin:0}
+
+    .lg-side{display:grid;place-items:center;padding:32px 16px;background:var(--ground)}
+    .lg-form{width:min(460px,100%);background:var(--surface);border:1px solid var(--line);border-radius:20px;padding:clamp(24px,4vw,44px);box-shadow:0 20px 50px rgba(21,32,29,.07);display:grid;gap:18px}
+    .lg-form h2{font-size:clamp(28px,3vw,34px);font-weight:700;letter-spacing:-.01em}
+    .lg-form .lead{margin:4px 0 0;color:var(--muted);font-size:15px}
+    .lg-field{display:grid;gap:8px}
+    .lg-field label{font-size:14px;font-weight:600;color:var(--ink)}
+    .lg-input{display:flex;align-items:center;border:1.5px solid var(--line);border-radius:10px;background:var(--surface);transition:border-color .15s,box-shadow .15s}
+    .lg-input:focus-within{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+    .lg-input>svg{width:20px;height:20px;margin-left:14px;color:var(--muted);flex:none}
+    .lg-input input{flex:1;min-width:0;border:0;background:transparent;color:var(--ink);font:inherit;font-size:15.5px;padding:14px 12px}
+    .lg-input input:focus{outline:none}
+    .lg-eye{border:0;background:none;padding:0 14px;height:100%;cursor:pointer;color:var(--muted);display:grid;place-items:center}
+    .lg-eye:hover{color:var(--ink)}
+    .lg-eye svg{width:20px;height:20px}
+    .lg-row{display:flex;justify-content:space-between;align-items:center;gap:8px 12px;flex-wrap:wrap;font-size:13.5px}
+    .lg-row>*{white-space:nowrap}
+    .lg-row label{display:flex;align-items:center;gap:8px;color:var(--muted);cursor:pointer}
+    .lg-row input{width:17px;height:17px;accent-color:var(--accent)}
+    .lg-row .fp{color:var(--muted)}
+    .lg-row .fp b{color:var(--accent);font-weight:600}
+    .lg-btn{display:flex;align-items:center;justify-content:center;gap:10px;width:100%;border:0;border-radius:10px;background:var(--accent);color:var(--accent-ink);font:inherit;font-size:16.5px;font-weight:600;padding:15px;cursor:pointer;transition:filter .15s,transform .05s}
+    .lg-btn:hover{filter:brightness(1.08)} .lg-btn:active{transform:translateY(1px)}
+    .lg-btn svg{width:18px;height:18px}
+    .lg-or{display:flex;align-items:center;gap:14px;color:var(--muted);font-size:14px}
+    .lg-or::before,.lg-or::after{content:"";flex:1;height:1px;background:var(--line)}
+    .lg-note{display:flex;gap:16px;align-items:center;background:var(--accent-soft);border-radius:12px;padding:16px 18px}
+    .lg-note .ic{width:48px;height:48px;border-radius:50%;background:var(--surface);display:grid;place-items:center;flex:none;color:var(--accent)}
+    .lg-note .ic svg{width:24px;height:24px}
+    .lg-note b{display:block;font-size:15px;margin-bottom:2px}
+    .lg-note span{font-size:14px;color:var(--muted)}
+    .lg-err{margin:0;padding:10px 14px;border-radius:10px;background:var(--bad-soft);color:var(--bad);font-size:14px}
+    .lg-msg{margin:0;padding:10px 14px;border-radius:10px;background:var(--ok-soft);color:var(--ok);font-size:14px}
+    .lg-mbrand{display:none}
+    @media (max-width:960px){
+      .lg{grid-template-columns:minmax(0,1fr)}
+      .lg-art{display:none}
+      .lg-side{align-content:start;padding-top:28px}
+      .lg-mbrand{display:flex;margin-bottom:18px;width:min(460px,100%)}
+    }
+    @media (max-width:480px){.lg-form{border-radius:16px;box-shadow:none}}
+  </style>
 </head>
 <body>
-  <div class="login-wrap">
-    <section class="login-art">
-      <a class="brand" href="{% url 'academy:login' %}" style="color:inherit">
-        <span class="brand-mark" aria-hidden="true">R</span><span>Ralfiz Academy</span>
-      </a>
-      <div style="display:grid;gap:16px">
-        <h1>Hands-on labs for Microsoft certifications</h1>
-        <p>In-depth lessons, real exercise files, exam-style quizzes and full practice tests. Your progress is saved to your account, so you can pick up on any device.</p>
-        <div class="codes"><span>PL-900</span><span>AB-410</span><span>PL-300</span><span>AB-400</span></div>
+  <div class="lg">
+    <section class="lg-art" aria-hidden="false">
+      <div class="lg-top">
+        <a class="brand" href="{% url 'academy:login' %}"><span class="brand-mark" aria-hidden="true">R</span><span>Ralfiz Academy</span></a>
+        <span class="lg-tag">Learn<i>•</i>Practice<i>•</i>Certify</span>
       </div>
-      <p style="font-size:13px;margin:0">Ralfiz Academy course content. Not affiliated with Microsoft.</p>
+
+      <div class="lg-copy">
+        <h1>Hands-on labs for <span>Microsoft certifications</span></h1>
+        <p>In-depth lessons, real exercise files, exam-style quizzes and full practice tests. Your progress is saved to your account, so you can pick up on any device.</p>
+        <div class="lg-chips">
+          <span class="lg-chip"><svg viewBox="0 0 20 20" aria-hidden="true"><rect x="2" y="11" width="4" height="7" rx="1" fill="#3CC4B2"/><rect x="8" y="7" width="4" height="11" rx="1" fill="#3CC4B2" opacity=".8"/><rect x="14" y="3" width="4" height="15" rx="1" fill="#3CC4B2" opacity=".6"/></svg>PL-900</span>
+          <span class="lg-chip"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M10 2 18 6l-8 4-8-4z" fill="#A993F0"/><path d="m2 10 8 4 8-4M2 14l8 4 8-4" fill="none" stroke="#A993F0" stroke-width="1.8" stroke-linejoin="round"/></svg>AB-410</span>
+          <span class="lg-chip"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M3 17V9m5 8V5m5 12v-6m4 6V3" stroke="#EBC14A" stroke-width="2.4" stroke-linecap="round"/></svg>PL-300</span>
+          <span class="lg-chip"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M7 5 2 10l5 5M13 5l5 5-5 5" fill="none" stroke="#7FA6F2" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>AB-400</span>
+        </div>
+      </div>
+
+      <div class="lg-card" aria-label="How each lesson works">
+        <h3>Your learning path <small>3 of 4</small></h3>
+        <ul class="lg-steps">
+          <li><span class="ck"><svg width="13" height="13" viewBox="0 0 16 16" aria-hidden="true"><path d="m3 8.5 3 3 7-7" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg></span>Learn the lesson<small>Learn</small></li>
+          <li><span class="ck"><svg width="13" height="13" viewBox="0 0 16 16" aria-hidden="true"><path d="m3 8.5 3 3 7-7" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg></span>Hands-on lab<small>Lab</small></li>
+          <li><span class="ck"><svg width="13" height="13" viewBox="0 0 16 16" aria-hidden="true"><path d="m3 8.5 3 3 7-7" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg></span>Practice quiz<small>Quiz</small></li>
+          <li class="todo"><span class="ck todo"></span>Mock test<small>700 to pass</small></li>
+        </ul>
+        <div class="lg-bar"><i></i></div>
+      </div>
+
+      <p class="lg-foot">Ralfiz Academy course content. Not affiliated with Microsoft.</p>
     </section>
-    <section class="login-form">
-      <form method="post" novalidate>
+
+    <section class="lg-side">
+      <a class="brand lg-mbrand" href="{% url 'academy:login' %}"><span class="brand-mark" aria-hidden="true">R</span><span>Ralfiz Academy</span></a>
+      <form method="post" class="lg-form" novalidate>
         {% csrf_token %}
         <div>
           <div class="eyebrow">Student sign in</div>
           <h2>Welcome back</h2>
+          <p class="lead">Sign in to continue your learning journey.</p>
         </div>
-        {% if error %}<div class="flash error" style="margin:0">{{ error }}</div>{% endif %}
-        {% for message in messages %}<div class="flash {% if message.tags == 'error' %}error{% endif %}" style="margin:0">{{ message }}</div>{% endfor %}
-        <div class="field">
+        {% if error %}<p class="lg-err" role="alert">{{ error }}</p>{% endif %}
+        {% for message in messages %}<p class="{% if message.tags == 'error' %}lg-err{% else %}lg-msg{% endif %}">{{ message }}</p>{% endfor %}
+
+        <div class="lg-field">
           <label for="username">Username</label>
-          <input id="username" name="username" autocomplete="username" autocapitalize="none" required autofocus value="{{ request.POST.username|default:'' }}">
+          <div class="lg-input">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 20c1.5-3.5 4.5-5 8-5s6.5 1.5 8 5" stroke-linecap="round"/></svg>
+            <input id="username" name="username" placeholder="Enter your username" autocomplete="username" autocapitalize="none" spellcheck="false" required autofocus value="{{ request.POST.username|default:'' }}">
+          </div>
         </div>
-        <div class="field">
+
+        <div class="lg-field">
           <label for="password">Password</label>
-          <input id="password" name="password" type="password" autocomplete="current-password" required>
+          <div class="lg-input">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="5" y="10" width="14" height="10" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3" stroke-linecap="round"/></svg>
+            <input id="password" name="password" type="password" placeholder="Enter your password" autocomplete="current-password" required>
+            <button type="button" class="lg-eye" id="pwToggle" aria-label="Show password" aria-pressed="false">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/><path class="slash" d="M4 4l16 16" stroke-linecap="round"/></svg>
+            </button>
+          </div>
         </div>
-        <button class="btn primary block" type="submit">Sign in</button>
-        <p style="margin:0;font-size:13px;color:var(--muted)">No account yet? Your trainer creates it and gives you the username and password.</p>
+
+        <div class="lg-row">
+          <label><input type="checkbox" name="remember" value="1" {% if request.POST.remember %}checked{% endif %}> Keep me signed in</label>
+          <span class="fp">Forgot password? <b>Ask your trainer</b></span>
+        </div>
+
+        <button class="lg-btn" type="submit">Sign in
+          <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 10h12m-5-5 5 5-5 5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+
+        <div class="lg-or">or</div>
+
+        <div class="lg-note">
+          <span class="ic"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 3 1 8.5 12 14l9-4.5V16h2V8.5z"/><path d="M5.5 12.2V16c0 1.7 3 3.5 6.5 3.5s6.5-1.8 6.5-3.5v-3.8L12 15.5z"/></svg></span>
+          <div><b>No account yet?</b><span>Your trainer creates it and gives you the username and password.</span></div>
+        </div>
       </form>
     </section>
   </div>
+  <script>
+    (function () {
+      var btn = document.getElementById('pwToggle'), pw = document.getElementById('password');
+      var slash = btn.querySelector('.slash');
+      btn.onclick = function () {
+        var show = pw.type === 'password';
+        pw.type = show ? 'text' : 'password';
+        btn.setAttribute('aria-pressed', String(show));
+        btn.setAttribute('aria-label', show ? 'Hide password' : 'Show password');
+        slash.style.display = show ? 'none' : '';
+        pw.focus();
+      };
+    })();
+  </script>
 </body>
 </html>

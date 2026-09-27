@@ -1,0 +1,23 @@
+<article class="card2 ccard" data-t="{{ s.track.id }}" data-state="{{ s.state }}">
+  <div class="h">
+    <div>
+      <span class="code">{{ s.track.code }}</span><span class="lvl">{{ s.track.level }}</span>
+      <h3>{{ s.track.name }}</h3>
+    </div>
+    <span class="glyph" aria-hidden="true"><i class="fa-solid {{ s.track.icon }}"></i></span>
+  </div>
+  <p>{{ s.track.blurb }}</p>
+  <div class="cmeta">
+    <div><i class="fa-solid fa-book-open"></i><span>{{ s.total }}<small>Lessons</small></span></div>
+    <div><i class="fa-regular fa-clipboard"></i><span>{% if s.best_score is not None %}{{ s.best_score }}{% else %}Not taken{% endif %}<small>Best test</small></span></div>
+    <div>{% if s.completed %}<i class="fa-solid fa-award" style="color:var(--ok)"></i>{% else %}<span class="live"></span>{% endif %}<span>{% if s.completed %}Complete{% else %}{{ s.track.status|truncatechars:14 }}{% endif %}<small>Status</small></span></div>
+  </div>
+  <div class="cprog">
+    <div class="pbar"><i style="width:{{ s.percent }}%"></i></div>
+    <div class="t"><span>{{ s.done }} of {{ s.total }} done</span><span>{{ s.percent }}%</span></div>
+  </div>
+  <div class="cfoot">
+    <a class="btn2" href="{% if s.started and s.next_lesson %}{% url 'academy:lesson' s.next_lesson.id %}{% else %}{% url 'academy:track' s.track.id %}{% endif %}">{% if s.state == 'completed' %}Review Course{% elif s.started %}Continue Course{% else %}Start Course{% endif %} <i class="fa-solid fa-arrow-right"></i></a>
+    <a class="btn2 sq" href="{% url 'academy:test_start' s.track.id %}" title="Practice test" aria-label="{{ s.track.code }} practice test"><i class="fa-solid fa-chart-column"></i></a>
+  </div>
+</article>

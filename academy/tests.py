@@ -59,6 +59,14 @@ class AccessTests(AcademyTestBase):
         r = self.client.post(reverse('academy:login'), {'username': 'stu', 'password': 'pw'})
         self.assertRedirects(r, reverse('academy:home'))
 
+    def test_keep_me_signed_in(self):
+        self.client.post(reverse('academy:login'), {'username': 'stu', 'password': 'pw'})
+        self.assertTrue(self.client.session.get_expire_at_browser_close())
+        self.client.logout()
+        self.client.post(reverse('academy:login'), {'username': 'stu', 'password': 'pw', 'remember': '1'})
+        self.assertFalse(self.client.session.get_expire_at_browser_close())
+        self.assertEqual(self.client.session.get_expiry_age(), 30 * 24 * 60 * 60)
+
     def test_main_login_sends_students_to_academy(self):
         r = self.client.post(reverse('login'), {'username': 'stu', 'password': 'pw'})
         self.assertRedirects(r, reverse('academy:home'))
@@ -118,7 +126,8 @@ class LearningTests(AcademyTestBase):
     def test_dashboard_and_pages_render(self):
         for name, args in [('academy:home', []), ('academy:track', ['pl900']),
                            ('academy:lesson', [self.lesson.id]), ('academy:test_start', ['pl900']),
-                           ('academy:profile', [])]:
+                           ('academy:profile', []), ('academy:courses', []),
+                           ('academy:assessments', []), ('academy:certificates', [])]:
             self.assertEqual(self.client.get(reverse(name, args=args)).status_code, 200, name)
 
     def test_every_lesson_renders(self):

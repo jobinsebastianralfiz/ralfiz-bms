@@ -1,52 +1,81 @@
 {% extends 'academy/base.html' %}
 {% block title %}Dashboard · Ralfiz Academy{% endblock %}
-{% block content %}
-<section class="welcome">
-  <div class="hero">
-    <div class="eyebrow">Ralfiz Academy{% if request.student.batch %} · {{ request.student.batch }}{% endif %}</div>
-    <h1>{% if stats.done %}Welcome back, {{ request.user.first_name|default:request.user.username }}{% else %}Hello, {{ request.user.first_name|default:request.user.username }}{% endif %}</h1>
-    <p>{% if not summaries %}You are not enrolled in a course yet. Ask your trainer to add you to a track.{% elif stats.done == stats.total %}You have finished every lesson in your tracks. Keep your practice test scores above 700.{% else %}Each lesson has three parts: learn the concept, do the hands-on lab, then pass the quiz. A lesson is complete when the lab and quiz are both done.{% endif %}</p>
+{% block page %}
+<section class="dash-top">
+  <div class="hero2">
+    <div class="dash-hero">
+      <div class="hz">
+        <div class="eyebrow">Ralfiz Academy{% if request.student.batch %} · {{ request.student.batch }}{% endif %}</div>
+        <h1 style="margin-top:8px">{% if stats.done %}Welcome back, {% else %}Hello, {% endif %}{{ request.user.first_name|default:request.user.username }} 👋</h1>
+        <p class="sub">{% if not summaries %}You are not enrolled in a course yet. Ask your trainer to add you to a track.{% elif stats.done == stats.total %}You have finished every lesson in your courses. Keep your practice test scores above 700.{% else %}Keep learning, keep building. Complete lessons, do the hands-on labs and pass the quizzes to track your progress.{% endif %}</p>
+        {% if resume %}<a class="btn2" href="{% url 'academy:lesson' resume.id %}"><i class="fa-solid fa-circle-play"></i> {% if any_started %}Continue Learning{% else %}Start Learning{% endif %} <i class="fa-solid fa-arrow-right"></i></a>{% endif %}
+      </div>
+      <div class="deco-card" aria-hidden="true">
+        <span class="deco-badge"><i class="fa-solid fa-graduation-cap"></i></span>
+        <h4>Every lesson</h4>
+        <ul>
+          <li><i class="fa-solid fa-check"></i>Learn</li>
+          <li><i class="fa-solid fa-check"></i>Hands-on lab</li>
+          <li><i class="fa-solid fa-check"></i>Practice quiz</li>
+          <li class="todo"><i></i>Get certified</li>
+        </ul>
+        <div class="pbar"><i style="width:75%"></i></div>
+      </div>
+    </div>
   </div>
+
   {% if resume %}
-  <a class="resume" data-t="{{ resume.track_id }}" href="{% url 'academy:lesson' resume.id %}">
-    <span class="eyebrow">{% if resume_status == 'not_started' and not stats.done %}Start here{% else %}Continue where you left off{% endif %}</span>
+  <a class="card2 next2" href="{% url 'academy:lesson' resume.id %}" style="text-decoration:none;color:inherit">
+    <span class="eyebrow"><i class="fa-solid fa-rocket"></i> {% if not any_started %}Start here{% else %}Continue where you left off{% endif %}</span>
     <h3>{{ resume.num }} {{ resume.title }}</h3>
-    <span style="color:var(--muted);font-size:14px">{{ resume.track.code }} · {{ resume.domain.name }}</span>
-    <div class="rs"><span>About {{ resume.minutes }} minutes</span><span class="go">{% if resume_status == 'not_started' %}Start{% else %}Continue{% endif %} →</span></div>
+    <span style="color:var(--muted)">{{ resume.track.code }} · {{ resume.domain.name }}</span>
+    <div class="meta"><span><i class="fa-regular fa-clock"></i>About {{ resume.minutes }} minutes</span><span><i class="fa-solid fa-signal"></i>{{ resume.track.level }}</span></div>
+    <span class="btn2">{% if resume_status == 'not_started' %}Start Lesson{% else %}Continue Lesson{% endif %} <i class="fa-solid fa-arrow-right"></i></span>
   </a>
   {% endif %}
 </section>
 
 {% if summaries %}
-<div class="stats" role="list">
-  <div class="stat" role="listitem"><b>{{ stats.done }}<span style="font-size:15px;color:var(--muted)">/{{ stats.total }}</span></b><span>lessons complete</span></div>
-  <div class="stat" role="listitem"><b>{{ stats.right }}<span style="font-size:15px;color:var(--muted)">/{{ stats.answered }}</span></b><span>quiz questions right</span></div>
-  <div class="stat" role="listitem"><b>{% if stats.best is not None %}{{ stats.best }}{% else %}–{% endif %}</b><span>best practice test (pass 700)</span></div>
-  <div class="stat" role="listitem"><b>{% widthratio stats.minutes_left 60 1 %}h</b><span>of lessons left</span></div>
-</div>
+<section class="stats2" aria-label="Your progress">
+  <div class="card2 stat2">
+    <span class="tile"><i class="fa-solid fa-book-open"></i></span>
+    <b>{{ stats.done }} <small>/ {{ stats.total }}</small></b><span class="l">Lessons complete</span>
+    <div class="row"><div class="pbar"><i style="width:{{ stats.done_pct }}%"></i></div>{{ stats.done_pct }}%</div>
+  </div>
+  <div class="card2 stat2">
+    <span class="tile violet"><i class="fa-regular fa-circle-question"></i></span>
+    <b>{{ stats.right }} <small>/ {{ stats.answered }}</small></b><span class="l">Quiz questions right</span>
+    <div class="row"><div class="pbar" style="--c:var(--tone-violet-i)"><i style="width:{{ stats.right_pct }}%"></i></div>{{ stats.right_pct }}%</div>
+  </div>
+  <div class="card2 stat2">
+    <span class="tile amber"><i class="fa-solid fa-medal"></i></span>
+    <b>{% if stats.best is not None %}{{ stats.best }}{% else %}–{% endif %}</b><span class="l">Best practice test (pass 700)</span>
+    <div class="row"><div class="pbar" style="--c:var(--tone-amber-i)"><i style="width:{{ stats.best_pct }}%"></i></div>{% if stats.best is not None %}{{ stats.best_pct }}%{% else %}–{% endif %}</div>
+  </div>
+  <div class="card2 stat2">
+    <span class="tile blue"><i class="fa-regular fa-clock"></i></span>
+    <b>{{ stats.hours_left }}h</b><span class="l">of lessons left</span>
+    <div class="row"><div class="pbar" style="--c:var(--tone-blue-i)"><i style="width:{{ stats.left_pct }}%"></i></div>{{ stats.left_pct }}% to go</div>
+  </div>
+</section>
 
-<h2 class="section-title">My courses</h2>
-<div class="tracks">
-  {% for s in summaries %}
-  <a class="tcard" data-t="{{ s.track.id }}" href="{% url 'academy:track' s.track.id %}">
-    <div class="tc-top"><span class="tc-code">{{ s.track.code }}</span><span class="tc-lvl">{{ s.track.level }}</span></div>
-    <h3>{{ s.track.name }}</h3>
-    <p>{{ s.track.blurb }}</p>
-    <dl class="tc-meta">
-      <div><dt>Lessons</dt><dd>{{ s.total }}</dd></div>
-      <div><dt>Best test</dt><dd>{% if s.best_score is not None %}{{ s.best_score }}{% if s.best_score >= 700 %} ✓{% endif %}{% else %}Not taken{% endif %}</dd></div>
-      <div><dt>Status</dt><dd>{{ s.track.status }}</dd></div>
-    </dl>
-    <div class="mini"><i style="width:{{ s.percent }}%"></i></div>
-    <div class="tc-foot"><span>{{ s.done }} of {{ s.total }} done{% if s.completed %} · <b style="color:var(--ok)">Course complete</b>{% endif %}</span><span class="tc-go">{% if s.started %}Continue{% else %}Start{% endif %} →</span></div>
-  </a>
-  {% endfor %}
+<div class="sec-h">
+  <div><h2>My courses</h2><p>Continue your learning journey with hands-on labs and real-world projects.</p></div>
+  <div class="fchips" role="group" aria-label="Filter courses" data-filter-for="courseGrid">
+    <button type="button" data-f="all" aria-pressed="true">All Courses ({{ summaries|length }})</button>
+    <button type="button" data-f="in_progress" aria-pressed="false">In Progress ({{ counts.in_progress }})</button>
+    <button type="button" data-f="not_started" aria-pressed="false">Not Started ({{ counts.not_started }})</button>
+    <button type="button" data-f="completed" aria-pressed="false">Completed ({{ counts.completed }})</button>
+  </div>
+</div>
+<div class="cgrid" id="courseGrid">
+  {% for s in summaries %}{% include 'academy/_course_card.html' %}{% endfor %}
 </div>
 {% endif %}
 
 <div class="grid2" style="margin-top:30px">
-  <section class="panel">
-    <h3>Recent practice tests <small>score out of 1000 · pass 700</small></h3>
+  <section class="card2" style="overflow:hidden">
+    <div class="sec-h" style="margin:0;padding:16px 20px;border-bottom:1px solid var(--line)"><h2 style="font-size:17px">Recent practice tests</h2><span style="font-size:13px;color:var(--muted)">score out of 1000 · pass 700</span></div>
     {% if tests %}
     <ul class="rows">
       {% for t in tests %}
@@ -58,13 +87,13 @@
       {% endfor %}
     </ul>
     {% else %}
-    <p class="empty-p">No practice tests yet. Each track has one: 30 random questions, or a 50-question full mock.</p>
+    <p class="empty-p">No practice tests yet. Each course has one: 30 random questions, or a 50-question full mock.</p>
     {% endif %}
   </section>
 
-  <section class="panel">
-    <h3>Suggested path</h3>
-    <div style="padding:14px 16px">
+  <section class="card2" style="overflow:hidden">
+    <div class="sec-h" style="margin:0;padding:16px 20px;border-bottom:1px solid var(--line)"><h2 style="font-size:17px">Suggested path</h2></div>
+    <div style="padding:16px 20px">
       <ol class="path">
         {% for step in path %}
         <li {% if step|length > 1 %}class="fork"{% endif %}>
@@ -84,15 +113,17 @@
 </div>
 
 {% if locked %}
-<h2 class="section-title">More courses</h2>
-<div class="tracks">
+<div class="sec-h"><div><h2>More courses</h2><p>Ask your trainer to enrol you in these.</p></div></div>
+<div class="cgrid">
   {% for t in locked %}
-  <div class="tcard locked" data-t="{{ t.id }}">
-    <div class="tc-top"><span class="tc-code">{{ t.code }}</span><span class="tc-lvl">{{ t.level }}</span></div>
-    <h3>{{ t.name }}</h3>
+  <article class="card2 ccard locked" data-t="{{ t.id }}">
+    <div class="h">
+      <div><span class="code">{{ t.code }}</span><span class="lvl">{{ t.level }}</span><h3>{{ t.name }}</h3></div>
+      <span class="glyph" aria-hidden="true"><i class="fa-solid {{ t.icon }}"></i></span>
+    </div>
     <p>{{ t.blurb }}</p>
-    <div class="lock-note">🔒 Ask your trainer to enrol you in this track.</div>
-  </div>
+    <div class="lock-note" style="margin-top:auto"><i class="fa-solid fa-lock"></i> Not enrolled yet</div>
+  </article>
   {% endfor %}
 </div>
 {% endif %}

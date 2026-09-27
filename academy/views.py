@@ -2,7 +2,9 @@
 import io
 import json
 import random
+import re
 import zipfile
+from html import unescape
 
 from django.contrib import messages
 from django.contrib.auth import authenticate, login, logout, update_session_auth_hash
@@ -20,6 +22,7 @@ from .models import (
 from .progress import DONE, lesson_statuses, track_summary
 from .sanitize import headings
 
+REMEMBER_ME_SECONDS = 30 * 24 * 60 * 60
 FILE_BADGES = {'csv': 'CSV', 'json': 'JSON', 'md': 'DOC', 'txt': 'TXT', 'cs': 'C#', 'ts': 'TS',
                'tsx': 'TSX', 'js': 'JS', 'py': 'PY', 'yml': 'YAML', 'xml': 'XML',
                'csproj': 'PROJ', 'css': 'CSS'}
@@ -44,6 +47,8 @@ def academy_login(request):
             error = 'This account has no active Academy access. Ask your trainer.'
         else:
             login(request, user)
+            # Unticked: the session ends when the browser closes.
+            request.session.set_expiry(REMEMBER_ME_SECONDS if request.POST.get('remember') else 0)
             nxt = request.GET.get('next', '')
             return redirect(nxt if nxt.startswith('/academy/') else 'academy:home')
     return render(request, 'academy/login.html', {'error': error})
@@ -77,19 +82,57 @@ def _file_rows(files):
 
 
 def _sidebar(request, track, current=None):
-    """Domains with their lessons and status dots for the lesson sidebar."""
+    """The course outline: domains (collapsible) with lessons and status dots."""
     lessons = list(Lesson.objects.filter(track=track).select_related('domain'))
     statuses = lesson_statuses(request.user, lessons)
     domains = []
     for lesson in lessons:
         if not domains or domains[-1]['domain'].pk != lesson.domain_id:
-            domains.append({'domain': lesson.domain, 'lessons': []})
-        domains[-1]['lessons'].append({'lesson': lesson, 'status': statuses[lesson.id]['status']})
+            domains.append({'domain': lesson.domain, 'index': len(domains), 'lessons': [],
+                            'done': 0, 'open': False})
+        st = statuses[lesson.id]['status']
+        domains[-1]['lessons'].append({'lesson': lesson, 'status': st})
+        domains[-1]['done'] += st == DONE
+        if lesson.id == current:
+            domains[-1]['open'] = True
+    if not any(d['open'] for d in domains):
+        # Off a lesson page: open the first skill area that still has work.
+        first = next((d for d in domains if d['done'] < len(d['lessons'])), None)
+        if first:
+            first['open'] = True
     done = sum(1 for s in statuses.values() if s['status'] == DONE)
     return {'side_domains': domains, 'side_track': track, 'side_current': current,
             'side_done': done, 'side_total': len(lessons),
             'side_percent': round(done / len(lessons) * 100) if lessons else 0,
-            'side_tracks': visible_tracks(request)}
+            'side_tracks': visible_tracks(request),
+            'nav': 'assessments' if current == 'test' else 'courses'}
+
+
+def _lead(summary_html, limit=190):
+    """A one- or two-sentence plain-text intro from a lesson summary."""
+    text = re.sub(r'\s+', ' ', unescape(re.sub(r'<[^>]+>', ' ', summary_html))).strip()
+    text = re.sub(r'\s+([.,;:!?])', r'\1', text)
+    sentences = re.split(r'(?<=[.!?])\s+', text)
+    out = ''
+    for sentence in sentences:
+        if out and len(out) + len(sentence) + 1 > limit:
+            break
+        out = f'{out} {sentence}'.strip()
+    return out if len(out) <= limit + 60 else out[:limit].rsplit(' ', 1)[0] + '…'
+
+
+def _split_step(step):
+    """Split "Do this. More detail." into a bold title and a detail line."""
+    m = re.match(r'^(.{8,}?[a-z0-9)\]"\u2019])[.:]\s+([A-Z].+)$', step)
+    if m:
+        return m.group(1), m.group(2)
+    return step.rstrip('.'), ''
+
+
+def _lesson_pct(st):
+    """Share of a lesson's work done: lab steps and quiz questions together."""
+    total = st['lab_total'] + st['quiz_total']
+    return round((st['lab_ticked'] + st['quiz_right']) / total * 100) if total else 0
 
 
 def _json_body(request):
@@ -133,20 +176,86 @@ def home(request):
              for tid in step if tid in by_id]
             for step in (['pl900'], ['ab410', 'pl300'], ['ab400'])]
 
+    for s in summaries:
+        s['state'] = ('completed' if s['total'] and s['done'] == s['total'] else
+                      'in_progress' if s['started'] else 'not_started')
+    counts = {k: sum(1 for s in summaries if s['state'] == k)
+              for k in ('in_progress', 'not_started', 'completed')}
+    minutes_total = sum(l.minutes for s in summaries for l in s['lessons'])
+    minutes_left = sum(l.minutes for s in summaries for l in s['lessons']
+                       if s['statuses'][l.id]['status'] != DONE)
+    best = max((s['best_score'] for s in summaries if s['best_score'] is not None), default=None)
+
     return render(request, 'academy/home.html', {
+        'counts': counts, 'any_started': any(s['started'] for s in summaries),
         'path': [step for step in path if step],
         'summaries': summaries, 'locked': locked, 'resume': resume,
         'resume_status': (lesson_statuses(request.user, [resume])[resume.id]['status']
                           if resume else None),
         'stats': {'done': done, 'total': total, 'answered': answered, 'right': right,
-                  'minutes_left': sum(l.minutes for s in summaries for l in s['lessons']
-                                      if s['statuses'][l.id]['status'] != DONE),
-                  'tracks': len(tracks),
-                  'best': max((s['best_score'] for s in summaries if s['best_score'] is not None),
-                              default=None)},
+                  'done_pct': round(done / total * 100) if total else 0,
+                  'right_pct': round(right / answered * 100) if answered else 0,
+                  'hours_left': round(minutes_left / 60),
+                  'left_pct': round(minutes_left / minutes_total * 100) if minutes_total else 0,
+                  'tracks': len(tracks), 'best': best,
+                  'best_pct': round(best / 10) if best is not None else 0},
         'tests': tests,
         'enrolled_ids': enrolled_ids,
         'nav': 'home',
+    })
+
+
+def _summaries(request):
+    tracks = list(visible_tracks(request))
+    summaries = [track_summary(request.user, t) for t in tracks]
+    for s in summaries:
+        s['state'] = ('completed' if s['total'] and s['done'] == s['total'] else
+                      'in_progress' if s['started'] else 'not_started')
+    return tracks, summaries
+
+
+@learner_required
+@never_cache
+def courses(request):
+    tracks, summaries = _summaries(request)
+    counts = {k: sum(1 for s in summaries if s['state'] == k)
+              for k in ('in_progress', 'not_started', 'completed')}
+    locked = Track.objects.filter(is_published=True).exclude(pk__in=[t.id for t in tracks])
+    return render(request, 'academy/courses.html', {
+        'summaries': summaries, 'counts': counts, 'locked': locked, 'nav': 'courses',
+    })
+
+
+@learner_required
+@never_cache
+def assessments(request):
+    tracks, summaries = _summaries(request)
+    attempts = (TestAttempt.objects.filter(user=request.user, track__in=tracks)
+                .select_related('track'))
+    rows = []
+    for s in summaries:
+        mine = [a for a in attempts if a.track_id == s['track'].id]
+        done = [a for a in mine if a.submitted_at]
+        rows.append({**s, 'attempts': len(done),
+                     'open_attempt': next((a for a in mine if not a.submitted_at), None),
+                     'last': done[0] if done else None,
+                     'passes': sum(1 for a in done if a.passed),
+                     'pool': Question.objects.filter(track=s['track'], is_active=True).count()})
+    return render(request, 'academy/assessments.html', {
+        'rows': rows, 'history': [a for a in attempts if a.submitted_at][:30],
+        'pass_mark': TestAttempt.PASS_MARK, 'nav': 'assessments',
+    })
+
+
+@learner_required
+@never_cache
+def certificates(request):
+    tracks, summaries = _summaries(request)
+    for s in summaries:
+        s['test_ok'] = s['best_score'] is not None and s['best_score'] >= TestAttempt.PASS_MARK
+        s['lessons_ok'] = s['total'] > 0 and s['done'] == s['total']
+    return render(request, 'academy/certificates.html', {
+        'summaries': summaries, 'pass_mark': TestAttempt.PASS_MARK, 'nav': 'certificates',
     })
 
 
@@ -164,9 +273,18 @@ def track_detail(request, track_id):
         domains[-1]['lessons'].append({'lesson': lesson, **summary['statuses'][lesson.id]})
         if summary['statuses'][lesson.id]['status'] == DONE:
             domains[-1]['done'] += 1
-    for d in domains:
+    open_left = 2
+    for i, d in enumerate(domains):
+        d['index'] = i
         d['percent'] = round(d['done'] / len(d['lessons']) * 100)
         d['minutes'] = sum(x['lesson'].minutes for x in d['lessons'])
+        # Open the first two skill areas that still have work in them.
+        d['open'] = d['done'] < len(d['lessons']) and open_left > 0
+        open_left -= d['open']
+    fact_icons = [('fa-trophy', 'amber'), ('fa-layer-group', 'violet'),
+                  ('fa-calendar-days', 'blue'), ('fa-clock', 'teal')]
+    facts = [{'value': f[0], 'label': f[1], 'icon': fact_icons[i % 4][0], 'tone': fact_icons[i % 4][1]}
+             for i, f in enumerate(track.facts)]
 
     resume = summary['next_lesson']
     student = request.student
@@ -177,6 +295,7 @@ def track_detail(request, track_id):
 
     return render(request, 'academy/track.html', {
         'track': track, 'summary': summary, 'domains': domains, 'resume': resume,
+        'facts': facts,
         'data_files': _file_rows(data_files),
         'tests': TestAttempt.objects.filter(user=request.user, track=track,
                                             submitted_at__isnull=False)[:5],
@@ -217,12 +336,23 @@ def lesson_detail(request, lesson_id):
 
     files = [lf.file for lf in lesson.lesson_files.select_related('file')]
     words = len(lesson.content_html.replace('<', ' <').split())
+    next_status = (lesson_statuses(request.user, [Lesson.objects.get(pk=next_lesson.pk)])[next_lesson.pk]
+                   if next_lesson else None)
+    if next_lesson:
+        next_lesson = Lesson.objects.get(pk=next_lesson.pk)
     tab = request.GET.get('tab', 'learn')
     return render(request, 'academy/lesson.html', {
         'lesson': lesson, 'track': track, 'status': status,
         'toc': headings(lesson.content_html),
         'read_minutes': max(1, round(words / 200)),
         'ticks': [i for i in ticks if isinstance(i, int)],
+        'steps': [{'i': i, 'title': t, 'detail': d}
+                  for i, (t, d) in enumerate(_split_step(x) for x in lesson.lab_steps)],
+        'lead': _lead(lesson.summary_html),
+        'files_kb': round(sum(f.size_bytes for f in files) / 1024, 1),
+        'next_status': next_status,
+        'lab_pct': round(status['lab_ticked'] / status['lab_total'] * 100) if status['lab_total'] else 100,
+        'lesson_pct': _lesson_pct(status),
         'quiz': quiz, 'files': _file_rows(files),
         'prev_lesson': prev_lesson, 'next_lesson': next_lesson,
         'tab': tab if tab in ('learn', 'lab', 'quiz') else 'learn',
