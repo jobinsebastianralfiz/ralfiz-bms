@@ -339,3 +339,35 @@ class LockAndPerkTests(AcademyTestBase):
         r = self.post_json(reverse('academy:api_answer', args=[q.id]), {'choice': q.answer}).json()
         self.assertEqual(r['perks']['xp_gain'], 10)
         self.assertContains(self.client.get(reverse('academy:profile')), 'Achievements')
+
+
+class PublicCatalogTests(AcademyTestBase):
+    def test_pages_are_public(self):
+        for url in [reverse('academy:catalog'), reverse('academy:catalog_course', args=['pl300']),
+                    reverse('academy:catalog_lesson', args=['pl300', 'b1']), '/robots.txt',
+                    reverse('academy:sitemap')]:
+            self.assertEqual(self.client.get(url).status_code, 200, url)
+
+    def test_only_free_lessons_are_public(self):
+        self.assertEqual(self.client.get(reverse('academy:catalog_lesson', args=['pl300', 'b7'])).status_code, 404)
+        self.assertEqual(self.client.get(reverse('academy:catalog_lesson', args=['pl900', 'b1'])).status_code, 404)
+
+    def test_no_quiz_answers_or_files_leak(self):
+        lesson = Lesson.objects.get(pk='b1')
+        html = self.client.get(reverse('academy:catalog_lesson', args=['pl300', 'b1'])).content.decode()
+        for q in Question.objects.filter(lesson=lesson):
+            self.assertNotIn(q.explanation, html)
+        for lf in lesson.lesson_files.select_related('file'):
+            if len(lf.file.content) > 40:
+                self.assertNotIn(lf.file.content[:40], html)
+        self.assertNotIn('/academy/files/', html)
+
+    def test_sitemap_lists_free_lessons(self):
+        xml = self.client.get(reverse('academy:sitemap')).content.decode()
+        self.assertIn('/academy/catalog/pl300/b1/', xml)
+        self.assertNotIn('/academy/catalog/pl300/b7/', xml)
+
+    def test_student_can_browse_catalog(self):
+        self.login_student()
+        r = self.client.get(reverse('academy:catalog'))
+        self.assertContains(r, 'My dashboard')

@@ -1,0 +1,107 @@
+{% extends 'academy/public/base.html' %}
+{% block title %}{{ track.code }} {{ track.name }} course: lessons, labs and practice tests · Ralfiz Academy{% endblock %}
+{% block description %}{{ track.code }} {{ track.name }}: {{ lesson_count }} lessons, {{ steps }} hands-on lab steps, {{ questions }} exam-style questions and practice tests. {{ track.blurb|truncatechars:90 }}{% endblock %}
+{% block og_title %}{{ track.code }} {{ track.name }} · Ralfiz Academy{% endblock %}
+{% block og_description %}{{ track.blurb }}{% endblock %}
+{% block body_track %}{{ track.id }}{% endblock %}
+{% block jsonld %}
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"Course","name":"{{ track.code|escapejs }} {{ track.name|escapejs }}","description":"{{ track.blurb|escapejs }}","url":"{{ site }}{{ request.path }}","educationalLevel":"{{ track.level|escapejs }}","provider":{"@type":"Organization","name":"Ralfiz Academy","sameAs":"{{ site }}{% url 'academy:catalog' %}"},"hasCourseInstance":{"@type":"CourseInstance","courseMode":"online","courseWorkload":"PT{{ hours }}H"}}
+</script>
+{% endblock %}
+{% block page %}
+<nav class="crumbs" aria-label="Breadcrumb"><a href="{% url 'academy:catalog' %}">Courses</a><i class="fa-solid fa-chevron-right"></i><span style="color:var(--ink)">{{ track.code }} {{ track.name }}</span></nav>
+
+<section class="trk-top">
+  <div class="hero2">
+    <div class="trk-hero hz">
+      <div>
+        <span class="code-pill">{{ track.code }} · {{ track.level }}</span>
+        <h1>{{ track.name }}</h1>
+        <p class="sub">{{ track.blurb }}</p>
+        <div class="pub-cta">
+          <a class="btn2" href="#enrol"><i class="fa-regular fa-comments"></i> Enrol in this course</a>
+          {% if free_lessons %}<a class="btn2 ghost" href="{% url 'academy:catalog_lesson' track.id free_lessons.0.lesson.id %}"><i class="fa-solid fa-book-open-reader"></i> Read a free lesson</a>{% endif %}
+        </div>
+      </div>
+      <div class="orbit" aria-hidden="true">
+        <span class="sat s1"><i class="fa-solid fa-book-open"></i></span>
+        <span class="sat s2"><i class="fa-solid fa-flask"></i></span>
+        <span class="sat s3"><i class="fa-solid fa-trophy"></i></span>
+        <span class="sat s4"><i class="fa-regular fa-circle-question"></i></span>
+        <span class="core"><i class="fa-solid {{ track.icon }}"></i></span>
+      </div>
+    </div>
+  </div>
+  <div class="card2 facts2">
+    {% for f in facts %}
+    <div><span class="tile {{ f.tone }}"><i class="fa-solid {{ f.icon }}"></i></span><span><b>{{ f.value }}</b><span>{{ f.label|capfirst }}</span></span></div>
+    {% endfor %}
+  </div>
+</section>
+
+<section class="stats2 pub-stats" aria-label="What is included">
+  <div class="card2 stat2"><span class="tile"><i class="fa-solid fa-book-open"></i></span><b>{{ lesson_count }}</b><span class="l">lessons · about {{ hours }} hours</span></div>
+  <div class="card2 stat2"><span class="tile violet"><i class="fa-solid fa-flask"></i></span><b>{{ steps }}</b><span class="l">hands-on lab steps{% if simulators %} · {{ simulators }} simulators{% endif %}</span></div>
+  <div class="card2 stat2"><span class="tile amber"><i class="fa-solid fa-folder-open"></i></span><b>{{ files }}</b><span class="l">exercise files and datasets</span></div>
+  <div class="card2 stat2"><span class="tile blue"><i class="fa-regular fa-circle-question"></i></span><b>{{ questions }}</b><span class="l">exam-style questions and practice tests</span></div>
+</section>
+
+<div class="sec-h">
+  <div><h2>Syllabus</h2><p>{{ domains|length }} skill areas following the official outline dated {{ track.outline_date }}. Free lessons are open to read now.</p></div>
+  <button class="btn2 ghost" type="button" id="expandAll" style="padding:9px 14px;font-size:14px"><i class="fa-solid fa-up-right-and-down-left-from-center"></i> <span>Expand all</span></button>
+</div>
+<div class="acc" id="skillAreas">
+  {% for d in domains %}
+  <details class="card2 accd" {% if forloop.counter <= 2 %}open{% endif %}>
+    <summary>
+      <span class="num">{{ d.index }}</span>
+      <div><h3>{{ d.domain.name }}</h3>{% if d.domain.blurb %}<p>{{ d.domain.blurb }}</p>{% endif %}</div>
+      <span class="m">{{ d.lessons|length }} lesson{{ d.lessons|length|pluralize }} · {% if d.minutes >= 60 %}{% widthratio d.minutes 60 1 %} hr{% else %}{{ d.minutes }} min{% endif %}<span class="w">{{ d.domain.weight }}{% if d.domain.is_exam_weight %} of exam{% endif %}</span></span>
+      <i class="fa-solid fa-chevron-down"></i>
+    </summary>
+    <ul class="lrows">
+      {% for x in d.lessons %}
+      <li>{% if x.free %}<a href="{% url 'academy:catalog_lesson' track.id x.lesson.id %}">
+        <span class="tile"><i class="fa-solid fa-book-open-reader"></i></span>
+        <span class="n">{{ x.lesson.num }}</span>
+        <span><b>{{ x.lesson.title }}</b><small>{{ x.lesson.minutes }} min · lesson, lab and quiz</small></span>
+        <span><span class="pill ok">Free preview</span></span>
+        <i class="fa-solid fa-chevron-right"></i>
+      </a>{% else %}<div class="lrow-locked">
+        <span class="tile plain"><i class="fa-solid fa-lock"></i></span>
+        <span class="n">{{ x.lesson.num }}</span>
+        <span><b>{{ x.lesson.title }}</b><small>{{ x.lesson.minutes }} min · lesson, lab and quiz</small></span>
+        <span class="pill">Enrolled students</span><span></span>
+      </div>{% endif %}</li>
+      {% endfor %}
+    </ul>
+  </details>
+  {% endfor %}
+</div>
+
+<section class="card2 enrol" id="enrol">
+  <div>
+    <h2>Enrol in {{ track.code }}</h2>
+    <p>Get in touch and your trainer will set up your student login. {{ track.order_hint }}.</p>
+  </div>
+  <div class="enrol-btns">
+    {% if contact.whatsapp %}<a class="btn2" href="{{ contact.whatsapp }}?text={{ 'Hi, I would like to enrol in the '|add:track.code|add:' course at Ralfiz Academy.'|urlencode }}" target="_blank" rel="noopener"><i class="fa-brands fa-whatsapp"></i> WhatsApp us</a>{% endif %}
+    {% if contact.phone %}<a class="btn2 ghost" href="tel:{{ contact.phone }}"><i class="fa-solid fa-phone"></i> {{ contact.phone }}</a>{% endif %}
+    {% if contact.email %}<a class="btn2 ghost" href="mailto:{{ contact.email }}?subject={{ 'Enrolment: '|add:track.code|urlencode }}"><i class="fa-regular fa-envelope"></i> Email us</a>{% endif %}
+  </div>
+</section>
+
+<div class="sec-h"><div><h2>Other courses</h2></div></div>
+<div class="free-grid">
+  {% for t in others %}
+  <a class="card2 free-card" data-t="{{ t.id }}" href="{% url 'academy:catalog_course' t.id %}">
+    <span class="glyph" aria-hidden="true"><i class="fa-solid {{ t.icon }}"></i></span>
+    <span><small>{{ t.code }} · {{ t.level }}</small><b>{{ t.name }}</b><em>{{ t.order_hint }}</em></span>
+    <i class="fa-solid fa-arrow-right"></i>
+  </a>
+  {% endfor %}
+</div>
+
+<p class="note">{{ track.note }} Check the <a href="{{ track.guide_url }}" target="_blank" rel="noopener">official study guide</a> before you book the exam.</p>
+{% endblock %}

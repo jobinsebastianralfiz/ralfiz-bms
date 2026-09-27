@@ -11,7 +11,7 @@
   <script>
     try { var t = localStorage.getItem('academy-theme'); if (t) document.documentElement.setAttribute('data-theme', t); } catch (e) {}
   </script>
-  <link rel="stylesheet" href="{% static 'academy/academy.css' %}?v=15">
+  <link rel="stylesheet" href="{% static 'academy/academy.css' %}?v=19">
   <style>
     .lg{min-height:100vh;display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,1fr)}
     .lg-art{position:relative;overflow:hidden;color:#EAF4F1;padding:clamp(28px,4.5vw,64px);display:flex;flex-direction:column;gap:clamp(28px,5vh,56px);
@@ -151,7 +151,7 @@
 
         <div class="lg-note">
           <span class="ic"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 3 1 8.5 12 14l9-4.5V16h2V8.5z"/><path d="M5.5 12.2V16c0 1.7 3 3.5 6.5 3.5s6.5-1.8 6.5-3.5v-3.8L12 15.5z"/></svg></span>
-          <div><b>No account yet?</b><span>Your trainer creates it and gives you the username and password.</span></div>
+          <div><b>No account yet?</b><span>Your trainer creates it and gives you the username and password. <a href="{% url 'academy:catalog' %}" style="color:var(--accent);font-weight:600;white-space:nowrap">Browse the courses →</a></span></div>
         </div>
       </form>
     </section>

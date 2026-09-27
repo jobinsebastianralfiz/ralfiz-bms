@@ -6,9 +6,11 @@ from django.views.static import serve
 from django.urls import re_path
 from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView, SpectacularRedocView
 
+from academy.public_views import robots as academy_robots
 from employees.views import CertificateVerifyView
 
 urlpatterns = [
+    path('robots.txt', academy_robots),
     path('admin/', admin.site.urls),
     path('api/license/', include('licensing.urls')),
     path('api/gympro/', include('gympro_licensing.urls')),

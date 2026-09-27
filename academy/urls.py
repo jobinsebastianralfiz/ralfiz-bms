@@ -2,11 +2,18 @@
 from django.urls import path
 
 from . import manage_views as m
+from . import public_views as pub
 from . import views as v
 
 app_name = 'academy'
 
 urlpatterns = [
+    # Public: course catalogue and free sample lessons (no login)
+    path('catalog/', pub.catalog, name='catalog'),
+    path('catalog/<str:track_id>/', pub.course, name='catalog_course'),
+    path('catalog/<str:track_id>/<str:lesson_id>/', pub.sample_lesson, name='catalog_lesson'),
+    path('sitemap.xml', pub.sitemap, name='sitemap'),
+
     path('login/', v.academy_login, name='login'),
     path('logout/', v.academy_logout, name='logout'),
 

@@ -1,0 +1,83 @@
+{% load static %}<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>{% block title %}Ralfiz Academy{% endblock %}</title>
+  <meta name="description" content="{% block description %}Hands-on labs, in-depth lessons, exam-style quizzes and practice tests for Microsoft Power Platform and Power BI certifications.{% endblock %}">
+  <link rel="canonical" href="{{ site }}{{ request.path }}">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Ralfiz Academy">
+  <meta property="og:title" content="{% block og_title %}Ralfiz Academy{% endblock %}">
+  <meta property="og:description" content="{% block og_description %}Hands-on labs for Microsoft certifications.{% endblock %}">
+  <meta property="og:url" content="{{ site }}{{ request.path }}">
+  <link rel="icon" type="image/svg+xml" href="{% static 'favicon.svg' %}">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700;12..96,800&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <script>
+    try { var t = localStorage.getItem('academy-theme'); if (t) document.documentElement.setAttribute('data-theme', t); } catch (e) {}
+  </script>
+  <link rel="stylesheet" href="{% static 'academy/academy.css' %}?v=19">
+  {% block jsonld %}{% endblock %}
+</head>
+<body data-track="{% block body_track %}home{% endblock %}" class="public">
+  <header class="top2">
+    <div class="top2-in">
+      <a class="brand" href="{% url 'academy:catalog' %}">
+        <span class="brand-mark" aria-hidden="true">R</span>
+        <span class="word">Ralfiz <span class="labs">Academy</span></span>
+      </a>
+      <nav class="mainnav pubnav" aria-label="Main">
+        <a href="{% url 'academy:catalog' %}" {% if request.resolver_match.url_name == 'catalog' %}aria-current="page"{% endif %}><i class="fa-solid fa-table-cells-large"></i><span>Courses</span></a>
+        <a href="{% url 'academy:catalog' %}#free"><i class="fa-solid fa-book-open-reader"></i><span>Free lessons</span></a>
+        <a href="{% url 'academy:catalog' %}#enrol"><i class="fa-regular fa-comments"></i><span>Enrol</span></a>
+      </nav>
+      <div class="top2-right">
+        {% if viewer.signed_in %}
+        <a class="btn2" href="{{ viewer.url }}"><i class="fa-solid fa-house"></i> My dashboard</a>
+        {% else %}
+        <a class="btn2 ghost" href="{{ viewer.url }}"><i class="fa-solid fa-right-to-bracket"></i> Student sign in</a>
+        {% endif %}
+      </div>
+    </div>
+  </header>
+
+  <main class="wrap2" id="main">
+    {% block page %}{% endblock %}
+  </main>
+
+  <footer class="pubfoot">
+    <div class="pf-in">
+      <div>
+        <a class="brand" href="{% url 'academy:catalog' %}"><span class="brand-mark" aria-hidden="true">R</span><span>Ralfiz Academy</span></a>
+        <p>Hands-on training for Microsoft Power Platform and Power BI certifications, by {{ contact.name }}.</p>
+      </div>
+      <div>
+        <b>Contact</b>
+        {% if contact.phone %}<a href="tel:{{ contact.phone }}"><i class="fa-solid fa-phone"></i> {{ contact.phone }}</a>{% endif %}
+        {% if contact.whatsapp %}<a href="{{ contact.whatsapp }}" target="_blank" rel="noopener"><i class="fa-brands fa-whatsapp"></i> WhatsApp</a>{% endif %}
+        {% if contact.email %}<a href="mailto:{{ contact.email }}"><i class="fa-regular fa-envelope"></i> {{ contact.email }}</a>{% endif %}
+      </div>
+      <div>
+        <b>Academy</b>
+        <a href="{% url 'academy:catalog' %}">All courses</a>
+        <a href="{% url 'academy:login' %}">Student sign in</a>
+      </div>
+    </div>
+    <p class="pf-legal">Ralfiz Academy is an independent training provider and is not affiliated with or endorsed by Microsoft. Microsoft, Power Platform and Power BI are trademarks of the Microsoft group of companies. Practice test scores are a guide, not Microsoft's scaled score.</p>
+  </footer>
+  <script>
+    (function () {
+      var ex = document.getElementById('expandAll');
+      if (ex) ex.onclick = function () {
+        var d = document.querySelectorAll('#skillAreas details');
+        var open = !Array.prototype.every.call(d, function (x) { return x.open; });
+        d.forEach(function (x) { x.open = open; });
+        ex.querySelector('span').textContent = open ? 'Collapse all' : 'Expand all';
+      };
+    })();
+  </script>
+</body>
+</html>

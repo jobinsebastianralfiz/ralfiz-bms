@@ -1,0 +1,97 @@
+{% extends 'academy/public/base.html' %}
+{% block title %}Microsoft Power Platform & Power BI certification courses · Ralfiz Academy{% endblock %}
+{% block description %}Prepare for PL-900, AB-410, PL-300 and AB-400 with {{ totals.lessons }} in-depth lessons, hands-on labs with real exercise files, exam-style quizzes and full practice tests. Free sample lessons.{% endblock %}
+{% block og_title %}Certification courses · Ralfiz Academy{% endblock %}
+{% block og_description %}{{ totals.lessons }} lessons, hands-on labs and practice tests for PL-900, AB-410, PL-300 and AB-400.{% endblock %}
+{% block jsonld %}
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"ItemList","itemListElement":[{% for r in rows %}{"@type":"ListItem","position":{{ forloop.counter }},"item":{"@type":"Course","name":"{{ r.track.code|escapejs }} {{ r.track.name|escapejs }}","description":"{{ r.track.blurb|escapejs }}","url":"{{ site }}{% url 'academy:catalog_course' r.track.id %}","provider":{"@type":"Organization","name":"Ralfiz Academy"}}}{% if not forloop.last %},{% endif %}{% endfor %}]}
+</script>
+{% endblock %}
+{% block page %}
+<section class="hero2 pub-hero">
+  <div class="hz pub-hero-in">
+    <div>
+      <div class="eyebrow">Ralfiz Academy</div>
+      <h1>Hands-on labs for <span class="grad">Microsoft certifications</span></h1>
+      <p class="sub">Every course follows an official Microsoft exam outline. Each lesson teaches the concept in depth, gives you real exercise files for a hands-on lab, and checks you with exam-style questions.</p>
+      <div class="pub-cta">
+        <a class="btn2" href="#courses"><i class="fa-solid fa-table-cells-large"></i> Browse courses</a>
+        <a class="btn2 ghost" href="#free"><i class="fa-solid fa-book-open-reader"></i> Read a free lesson</a>
+      </div>
+    </div>
+    <div class="deco-card" aria-hidden="true">
+      <span class="deco-badge"><i class="fa-solid fa-graduation-cap"></i></span>
+      <h4>Every lesson</h4>
+      <ul><li><i class="fa-solid fa-check"></i>Learn</li><li><i class="fa-solid fa-check"></i>Hands-on lab</li><li><i class="fa-solid fa-check"></i>Practice quiz</li><li class="todo"><i></i>Get certified</li></ul>
+      <div class="pbar"><i style="width:75%"></i></div>
+    </div>
+  </div>
+</section>
+
+<section class="stats2 pub-stats" aria-label="Academy in numbers">
+  <div class="card2 stat2"><span class="tile"><i class="fa-solid fa-certificate"></i></span><b>{{ totals.tracks }}</b><span class="l">certification courses</span></div>
+  <div class="card2 stat2"><span class="tile violet"><i class="fa-solid fa-book-open"></i></span><b>{{ totals.lessons }}</b><span class="l">in-depth lessons</span></div>
+  <div class="card2 stat2"><span class="tile amber"><i class="fa-solid fa-folder-open"></i></span><b>{{ totals.files }}</b><span class="l">exercise files and datasets</span></div>
+  <div class="card2 stat2"><span class="tile blue"><i class="fa-regular fa-circle-question"></i></span><b>{{ totals.questions }}</b><span class="l">exam-style questions</span></div>
+</section>
+
+<div class="sec-h" id="courses"><div><h2>Courses</h2><p>Start with PL-900, then choose apps (AB-410) or data (PL-300). AB-400 is for developers, after AB-410.</p></div></div>
+<div class="cgrid">
+  {% for r in rows %}
+  <article class="card2 ccard" data-t="{{ r.track.id }}">
+    <div class="h">
+      <div><span class="code">{{ r.track.code }}</span><span class="lvl">{{ r.track.level }}</span><h3>{{ r.track.name }}</h3></div>
+      <span class="glyph" aria-hidden="true"><i class="fa-solid {{ r.track.icon }}"></i></span>
+    </div>
+    <p>{{ r.track.blurb }}</p>
+    <div class="cmeta">
+      <div><i class="fa-solid fa-book-open"></i><span>{{ r.lessons }}<small>Lessons</small></span></div>
+      <div><i class="fa-regular fa-clock"></i><span>{{ r.hours }}h<small>Of study</small></span></div>
+      <div><i class="fa-regular fa-circle-question"></i><span>{{ r.questions }}<small>Questions</small></span></div>
+    </div>
+    <p class="pub-when"><i class="fa-solid fa-signs-post"></i> {{ r.track.order_hint }} · {{ r.track.status }}</p>
+    <div class="cfoot"><a class="btn2" href="{% url 'academy:catalog_course' r.track.id %}">View course <i class="fa-solid fa-arrow-right"></i></a></div>
+  </article>
+  {% endfor %}
+</div>
+
+<div class="sec-h"><div><h2>How every lesson works</h2></div></div>
+<div class="how2" style="margin-top:0">
+  <div class="card2 l"><span class="tile"><i class="fa-solid fa-book-open"></i></span><div><h3>Learn</h3><p>Plain-language explanations, comparison tables, worked examples, common mistakes, and how the exam asks about each concept.</p></div></div>
+  <div class="card2 b"><span class="tile violet"><i class="fa-solid fa-flask"></i></span><div><h3>Hands-on lab</h3><p>Real exercise files, numbered steps in your own free environment, and a "check your work" list. Some labs have in-browser simulators.</p></div></div>
+  <div class="card2 q"><span class="tile blue"><i class="fa-regular fa-circle-question"></i></span><div><h3>Quiz and practice tests</h3><p>Exam-style questions with explanations after every lesson, plus 30-question practice tests and 50-question full mocks scored out of 1000.</p></div></div>
+</div>
+
+<div class="sec-h" id="free"><div><h2>Free sample lessons</h2><p>Read the first lessons of every course in full, no sign-up needed.</p></div></div>
+<div class="free-grid">
+  {% for r in rows %}{% for l in r.free %}
+  <a class="card2 free-card" data-t="{{ r.track.id }}" href="{% url 'academy:catalog_lesson' r.track.id l.id %}">
+    <span class="glyph" aria-hidden="true"><i class="fa-solid {{ r.track.icon }}"></i></span>
+    <span><small>{{ r.track.code }} · Lesson {{ l.num }}</small><b>{{ l.title }}</b><em>{{ l.minutes }} min · Free</em></span>
+    <i class="fa-solid fa-arrow-right"></i>
+  </a>
+  {% endfor %}{% endfor %}
+</div>
+
+<div class="sec-h"><div><h2>Questions</h2></div></div>
+<div class="faq">
+  <details class="card2"><summary>Is this a Microsoft certification? <i class="fa-solid fa-chevron-down"></i></summary><p>No. Ralfiz Academy prepares you for the Microsoft exams, which you book and take with Microsoft. When you finish a course you receive a Ralfiz Academy certificate of completion.</p></details>
+  <details class="card2"><summary>What do I need for the labs? <i class="fa-solid fa-chevron-down"></i></summary><p>Most labs run in a free Microsoft developer environment; the first lesson of each course shows you how to set it up. PL-300 labs use Power BI Desktop, which runs on Windows.</p></details>
+  <details class="card2"><summary>How is my progress tracked? <i class="fa-solid fa-chevron-down"></i></summary><p>You get your own student login. Lab steps, quiz answers and practice test scores are saved to your account, so you can continue on any device. Courses unlock one after another as you complete them.</p></details>
+  <details class="card2"><summary>Which course should I start with? <i class="fa-solid fa-chevron-down"></i></summary><p>Start with PL-900 Power Platform Fundamentals. Then take AB-410 to build apps or PL-300 to analyse data. AB-400 is for developers and comes after AB-410.</p></details>
+</div>
+
+<section class="card2 enrol" id="enrol">
+  <div>
+    <h2>Ready to start?</h2>
+    <p>Get in touch to enrol. Your trainer sets up your student login and the courses you need.</p>
+  </div>
+  <div class="enrol-btns">
+    {% if contact.whatsapp %}<a class="btn2" href="{{ contact.whatsapp }}?text={{ 'Hi, I would like to enrol in Ralfiz Academy.'|urlencode }}" target="_blank" rel="noopener"><i class="fa-brands fa-whatsapp"></i> WhatsApp us</a>{% endif %}
+    {% if contact.phone %}<a class="btn2 ghost" href="tel:{{ contact.phone }}"><i class="fa-solid fa-phone"></i> {{ contact.phone }}</a>{% endif %}
+    {% if contact.email %}<a class="btn2 ghost" href="mailto:{{ contact.email }}?subject={{ 'Ralfiz Academy enrolment'|urlencode }}"><i class="fa-regular fa-envelope"></i> Email us</a>{% endif %}
+    <a class="btn2 ghost" href="{% url 'academy:login' %}"><i class="fa-solid fa-right-to-bracket"></i> Already enrolled? Sign in</a>
+  </div>
+</section>
+{% endblock %}
