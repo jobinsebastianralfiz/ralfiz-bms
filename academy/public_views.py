@@ -50,9 +50,16 @@ def _viewer(request):
     return {'signed_in': False, 'url': reverse('academy:login')}
 
 
+def _base_url(request):
+    """Absolute site root. Railway terminates HTTPS at its proxy, so Django
+    sees plain HTTP; trust the proxy's header here rather than site-wide."""
+    scheme = 'https' if (request.is_secure() or
+                         request.META.get('HTTP_X_FORWARDED_PROTO') == 'https') else 'http'
+    return f'{scheme}://{request.get_host()}'
+
+
 def _common(request):
-    return {'contact': _contact(), 'viewer': _viewer(request),
-            'site': request.build_absolute_uri('/').rstrip('/')}
+    return {'contact': _contact(), 'viewer': _viewer(request), 'site': _base_url(request)}
 
 
 PUBLIC_CACHE = cache_control(public=True, max_age=600)
@@ -131,7 +138,7 @@ def sample_lesson(request, track_id, lesson_id):
 
 
 def sitemap(request):
-    base = request.build_absolute_uri('/').rstrip('/')
+    base = _base_url(request)
     urls = [reverse('academy:catalog')]
     for t in Track.objects.filter(is_published=True):
         urls.append(reverse('academy:catalog_course', args=[t.id]))
@@ -143,7 +150,7 @@ def sitemap(request):
 
 
 def robots(request):
-    base = request.build_absolute_uri('/').rstrip('/')
+    base = _base_url(request)
     return HttpResponse(
         'User-agent: *\n'
         'Allow: /academy/catalog/\n'

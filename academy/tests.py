@@ -367,6 +367,11 @@ class PublicCatalogTests(AcademyTestBase):
         self.assertIn('/academy/catalog/pl300/b1/', xml)
         self.assertNotIn('/academy/catalog/pl300/b7/', xml)
 
+    def test_urls_use_https_behind_proxy(self):
+        xml = self.client.get(reverse('academy:sitemap'), HTTP_X_FORWARDED_PROTO='https').content.decode()
+        self.assertIn('<loc>https://', xml)
+        self.assertIn('Sitemap: https://', self.client.get('/robots.txt', HTTP_X_FORWARDED_PROTO='https').content.decode())
+
     def test_student_can_browse_catalog(self):
         self.login_student()
         r = self.client.get(reverse('academy:catalog'))
