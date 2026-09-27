@@ -1,0 +1,41 @@
+// ===== 1. DataFolder parameter =====
+// Home > Manage parameters > New parameter
+//   Name: DataFolder   Type: Text   Current value: your folder, ending with a backslash
+// The Advanced Editor view of the parameter looks like this:
+"C:\Users\you\Documents\HelpDesk\" meta [IsParameterQuery = true, Type = "Text", IsParameterQueryRequired = true]
+
+// ===== 2. tickets query using the parameter =====
+// Select tickets > Advanced Editor. Replace only the Source line so it uses DataFolder.
+let
+    Source = Csv.Document(
+        File.Contents(DataFolder & "tickets.csv"),
+        [Delimiter = ",", Columns = 9, Encoding = 65001, QuoteStyle = QuoteStyle.None]
+    ),
+    #"Promoted Headers" = Table.PromoteHeaders(Source, [PromoteAllScalars = true]),
+    #"Changed Type" = Table.TransformColumnTypes(
+        #"Promoted Headers",
+        {
+            {"TicketID", Int64.Type}, {"CreatedDate", type date}, {"ClosedDate", type date},
+            {"CategoryID", Int64.Type}, {"Priority", type text}, {"Status", type text},
+            {"HoursToResolve", type number}, {"Campus", type text}, {"AssignedTo", type text}
+        }
+    )
+in
+    #"Changed Type"
+
+// ===== 3. categories query using the parameter =====
+let
+    Source = Csv.Document(
+        File.Contents(DataFolder & "categories.csv"),
+        [Delimiter = ",", Columns = 3, Encoding = 65001, QuoteStyle = QuoteStyle.None]
+    ),
+    #"Promoted Headers" = Table.PromoteHeaders(Source, [PromoteAllScalars = true]),
+    #"Changed Type" = Table.TransformColumnTypes(
+        #"Promoted Headers",
+        {{"CategoryID", Int64.Type}, {"Name", type text}, {"Team", type text}}
+    )
+in
+    #"Changed Type"
+
+// Tip: if your date columns load as text, your Windows regional format may not read
+// yyyy-mm-dd. Use Change Type > Using Locale and pick English (United States).

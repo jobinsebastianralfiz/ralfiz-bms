@@ -1,0 +1,42 @@
+// Campus Help Desk canvas app: formulas for Lesson 3.1
+// Paste each formula into the property named above it.
+// Table name: if your Ticket table shows as "Tickets" in the Data pane, keep it as written.
+
+// 1. Search box: insert a Text input above the gallery and rename it txtSearch.
+//    Gallery (BrowseGallery1) > Items
+Filter(Tickets, StartsWith(Title, txtSearch.Text))
+
+// 2. Sort the results so the newest tickets come first.
+//    Gallery > Items (replaces formula 1)
+Sort(
+    Filter(Tickets, StartsWith(Title, txtSearch.Text)),
+    'Created On',
+    SortOrder.Descending
+)
+
+// 3. Optional: Status filter. Insert a Dropdown named ddStatus next to the search box.
+//    ddStatus > Items
+["All", "Open", "In progress", "Closed"]
+
+//    Gallery > Items (replaces formula 2)
+Sort(
+    Filter(
+        Tickets,
+        StartsWith(Title, txtSearch.Text),
+        ddStatus.Selected.Value = "All" || Text(Status) = ddStatus.Selected.Value
+    ),
+    'Created On',
+    SortOrder.Descending
+)
+// Note: the Status test with Text() may show a delegation warning (blue underline).
+// With 28 to 40 rows that is fine for this lab; the warning matters above 500 rows.
+
+// 4. Optional: colour the priority label in the gallery template.
+//    Label that shows Priority > Color
+If(Text(ThisItem.Priority) = "High", Color.Red, Text(ThisItem.Priority) = "Medium", Color.DarkOrange, Color.Gray)
+
+// 5. Accessibility fix for App checker: give the search box a label for screen readers.
+//    txtSearch > AccessibleLabel
+"Search tickets by title"
+//    txtSearch > HintText
+"Type the start of a ticket title"

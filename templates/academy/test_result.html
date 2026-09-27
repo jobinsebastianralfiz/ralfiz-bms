@@ -1,0 +1,49 @@
+{% extends 'academy/base.html' %}
+{% block title %}{{ track.code }} test result · Ralfiz Academy{% endblock %}
+{% block body_track %}{{ track.id }}{% endblock %}
+{% block content %}
+<div class="test-head">
+  <div>
+    <div class="eyebrow">{{ track.code }} practice test · {{ attempt.submitted_at|date:"j M Y, g:i A" }}</div>
+    <h1 style="font-size:clamp(26px,4vw,36px)">Your result</h1>
+  </div>
+  <form method="post" action="{% url 'academy:test_start' track.id %}">
+    {% csrf_token %}
+    <button class="btn" type="submit" name="size" value="{{ attempt.size }}">New {{ attempt.size }}-question test</button>
+  </form>
+</div>
+
+<div class="score {% if attempt.passed %}pass{% else %}fail{% endif %}">
+  <b>{{ attempt.score }}</b>
+  <div>
+    <strong>{{ attempt.correct_count }} of {{ attempt.size }} correct · {% if attempt.passed %}passing range{% else %}below {{ pass_mark }}{% endif %}</strong>
+    <p>{% if attempt.passed %}Good work. Take Microsoft's free practice assessment next, where one exists.{% else %}Review the lessons linked under each missed question, then try a new test.{% endif %}</p>
+  </div>
+</div>
+
+{% if missed_lessons %}
+<section class="panel" style="max-width:760px;margin-bottom:22px">
+  <h3>Lessons to review <small>by missed questions</small></h3>
+  <ul class="rows">
+    {% for m in missed_lessons %}
+    <li><a href="{% url 'academy:lesson' m.lesson.id %}"><span class="num mono" style="color:var(--muted);min-width:44px">{{ m.lesson.num }}</span><span class="grow">{{ m.lesson.title }}</span><span class="badge no">{{ m.n }} missed</span></a></li>
+    {% endfor %}
+  </ul>
+</section>
+{% endif %}
+
+{% for it in items %}
+<div class="q review">
+  <span class="qn">Question {{ forloop.counter }} of {{ items|length }}</span>
+  <p class="stem">{{ it.q.question }}</p>
+  <div class="opts">
+    {% for j, opt in it.options %}
+    <button class="opt {% if j == it.q.answer %}right{% elif j == it.chosen %}wrong{% endif %}" type="button" disabled><span class="k">{% cycle 'A' 'B' 'C' 'D' %}</span><span>{{ opt }}</span></button>
+    {% endfor %}
+    {% resetcycle %}
+  </div>
+  <div class="why"><b class="{% if it.correct %}ok{% else %}no{% endif %}">{% if it.correct %}Correct.{% elif it.chosen is None %}Not answered.{% else %}Incorrect.{% endif %}</b> {{ it.q.explanation }}</div>
+  {% if it.q.lesson %}<div class="src">From lesson <a href="{% url 'academy:lesson' it.q.lesson.id %}">{{ it.q.lesson.num }} {{ it.q.lesson.title }}</a></div>{% endif %}
+</div>
+{% endfor %}
+{% endblock %}

@@ -1,0 +1,107 @@
+# azure-pipelines.yml - Campus Help Desk CI/CD (Power Platform Build Tools)
+# Needs two Power Platform service connections that use a service principal:
+#   chd-dev-connection  -> development environment
+#   chd-test-connection -> test environment (a managed environment)
+trigger: none
+schedules:
+- cron: '0 1 * * *'
+  displayName: Nightly export
+  branches:
+    include:
+    - main
+  always: true
+
+pool:
+  vmImage: 'windows-latest'
+
+variables:
+  SolutionName: 'CampusHelpDesk'
+
+stages:
+- stage: Build
+  jobs:
+  - job: ExportUnpackCheck
+    steps:
+    - checkout: self
+      persistCredentials: true
+
+    - task: PowerPlatformToolInstaller@2
+      inputs:
+        DefaultVersion: true
+
+    - task: PowerPlatformExportSolution@2
+      displayName: Export unmanaged
+      inputs:
+        authenticationType: PowerPlatformSPN
+        PowerPlatformSPN: 'chd-dev-connection'
+        SolutionName: '$(SolutionName)'
+        SolutionOutputFile: '$(Build.ArtifactStagingDirectory)/chd.zip'
+        Managed: false
+        AsyncOperation: true
+        MaxAsyncWaitTime: '60'
+
+    - task: PowerPlatformExportSolution@2
+      displayName: Export managed
+      inputs:
+        authenticationType: PowerPlatformSPN
+        PowerPlatformSPN: 'chd-dev-connection'
+        SolutionName: '$(SolutionName)'
+        SolutionOutputFile: '$(Build.ArtifactStagingDirectory)/chd_managed.zip'
+        Managed: true
+        AsyncOperation: true
+        MaxAsyncWaitTime: '60'
+
+    - task: PowerPlatformUnpackSolution@2
+      displayName: Unpack into source control folder
+      inputs:
+        SolutionInputFile: '$(Build.ArtifactStagingDirectory)/chd.zip'
+        SolutionTargetFolder: 'src/CampusHelpDesk'
+        SolutionType: 'Both'
+
+    - task: PowerPlatformChecker@2
+      displayName: Run solution checker
+      inputs:
+        authenticationType: PowerPlatformSPN
+        PowerPlatformSPN: 'chd-dev-connection'
+        FilesToAnalyze: '$(Build.ArtifactStagingDirectory)/chd.zip'
+        RuleSet: '0ad12346-e108-40b8-a956-9a8f95ea18c9'
+
+    - task: PowerPlatformPackSolution@2
+      displayName: Pack managed from source
+      inputs:
+        SolutionSourceFolder: 'src/CampusHelpDesk'
+        SolutionOutputFile: '$(Build.ArtifactStagingDirectory)/release/chd_managed.zip'
+        SolutionType: 'Managed'
+
+    - script: |
+        git config user.email "build@example.edu"
+        git config user.name "CHD build"
+        git add src/CampusHelpDesk
+        git commit -m "Nightly export of CampusHelpDesk" || echo "No changes to commit"
+        git push origin HEAD:$(Build.SourceBranchName)
+      displayName: Commit unpacked files
+
+    - publish: '$(Build.ArtifactStagingDirectory)/release'
+      artifact: solution
+
+- stage: DeployTest
+  dependsOn: Build
+  jobs:
+  - job: ImportToTest
+    steps:
+    - checkout: self
+    - download: current
+      artifact: solution
+    - task: PowerPlatformToolInstaller@2
+      inputs:
+        DefaultVersion: true
+    - task: PowerPlatformImportSolution@2
+      displayName: Import managed into Test
+      inputs:
+        authenticationType: PowerPlatformSPN
+        PowerPlatformSPN: 'chd-test-connection'
+        SolutionInputFile: '$(Pipeline.Workspace)/solution/chd_managed.zip'
+        UseDeploymentSettingsFile: true
+        DeploymentSettingsFile: 'deploymentSettings.test.json'
+        AsyncOperation: true
+        MaxAsyncWaitTime: '60'

@@ -1,0 +1,7 @@
+Ticket Number,Description,Expected Category,Expected Priority
+CHD-1002,My account is locked after too many sign-in attempts. It is urgent because my online test starts at 2 pm.,Accounts,High
+CHD-1009,The VPN client shows an authentication error when I try to connect from home. I need it to reach the lab servers for my project due Friday.,Network,High
+CHD-1017,My college laptop stopped charging yesterday. The charger light is on but the battery stays at 3 percent. I have an exam on Monday.,Hardware,High
+CHD-1021,The speakers in room 305 give no sound from the lecturer PC.,Classroom AV,Medium
+CHD-1013,I need Python 3 for my data science assignment but the installer says I do not have permission.,Software,Low
+CHD-1027,I paid for 100 print credits yesterday but my balance still shows 0.,Printing,Low

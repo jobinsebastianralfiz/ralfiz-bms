@@ -1,0 +1,20 @@
+{
+  "EnvironmentVariables": [
+    {
+      "SchemaName": "chd_SupportEmail",
+      "Value": "helpdesk-test@staff.example.edu"
+    }
+  ],
+  "ConnectionReferences": [
+    {
+      "LogicalName": "chd_chddataverse",
+      "ConnectionId": "PASTE-DATAVERSE-CONNECTION-ID-FROM-CHD-TEST",
+      "ConnectorId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps"
+    },
+    {
+      "LogicalName": "chd_chdoutlook",
+      "ConnectionId": "PASTE-OUTLOOK-CONNECTION-ID-FROM-CHD-TEST",
+      "ConnectorId": "/providers/Microsoft.PowerApps/apis/shared_office365"
+    }
+  ]
+}

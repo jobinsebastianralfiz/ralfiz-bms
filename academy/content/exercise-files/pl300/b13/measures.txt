@@ -1,0 +1,13 @@
+// B.13 measures. Create them on the Tickets table before you start.
+
+Ticket Count = COUNTROWS ( Tickets )          // skip if you already have it
+
+Total Hours = SUM ( Tickets[HoursToResolve] )
+
+Average Hours = AVERAGE ( Tickets[HoursToResolve] )
+// Format both hours measures with 1 decimal place.
+
+// Optional: a numeric column for Key influencers.
+// Key influencers can also analyze a text column such as Priority directly,
+// then you choose the value to explain (High) in the visual.
+Is High = IF ( Tickets[Priority] = "High", 1, 0 )    // New column, not a measure

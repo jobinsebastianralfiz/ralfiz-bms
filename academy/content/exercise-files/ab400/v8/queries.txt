@@ -1,0 +1,21 @@
+// 1. Look at the raw events first and note the property names inside customDimensions
+customEvents
+| where name in ("sessionLoadSummary", "networkRequest")
+| order by timestamp desc
+| take 20
+| project timestamp, name, customDimensions
+
+// 2. 75th percentile time to interactive per day (adjust the property name to what query 1 shows)
+customEvents
+| where name == "sessionLoadSummary"
+| extend tti = todouble(customDimensions.timeToInteractive)
+| summarize p75_tti_ms = percentile(tti, 75), sessions = count() by bin(timestamp, 1d)
+| render timechart
+
+// 3. Slowest network calls in the last 24 hours
+customEvents
+| where timestamp > ago(24h) and name == "networkRequest"
+| extend url = tostring(customDimensions.url), duration = todouble(customDimensions.duration), status = tostring(customDimensions.status)
+| summarize calls = count(), avg_ms = avg(duration), max_ms = max(duration) by url, status
+| order by avg_ms desc
+| take 10

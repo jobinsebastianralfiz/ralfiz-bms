@@ -1,0 +1,58 @@
+// ===== A.10 Canvas apps: data, variables and collections (STARTER) =====
+// Paste each formula into the property named in the comment above it.
+// Replace every TODO with a working formula. Data sources: Tickets, Categories.
+
+// --- App.OnStart ---
+// TODO: store the signed-in user in a GLOBAL variable called varMe
+
+// --- scrHome / lblHello.Text ---
+"Hello " & "TODO: the user's full name from varMe"
+
+// --- scrHome / galTickets.Items ---
+// TODO: only High priority tickets, newest due date first.
+// Sort by the Due Date column (logical name chd_duedate). Do not sort by createdon:
+// imported rows all share the import time.
+Tickets
+
+// --- scrHome / lblCount.Text ---
+// TODO: number of rows the gallery shows
+"0 tickets"
+
+// --- scrHome / galTickets.OnSelect ---
+// TODO: go to scrDetail and pass the selected row as context variable locTicket
+
+// --- scrHome / galTickets / icoSave.OnSelect ---
+// TODO: add this ticket to collection colSaved, but only if it is not there already
+
+// --- scrNew / drpCategory.Items ---
+Categories
+
+// --- scrNew / btnSubmit.OnSelect ---
+// TODO: create a new ticket from txtTitle, txtDesc and drpCategory
+// with Priority Medium and Status Open, then go back to scrHome
+
+// --- scrDetail / lblTitle.Text ---
+// TODO: title of locTicket
+""
+
+// --- scrDetail / tglEdit.OnChange ---
+// TODO: set CONTEXT variable locEdit to the toggle value
+
+// --- scrDetail / txtDetailDesc.Default ---
+locTicket.Description
+
+// --- scrDetail / txtDetailDesc.DisplayMode ---
+// TODO: Edit when locEdit is true, otherwise View
+DisplayMode.View
+
+// --- scrDetail / btnSave.OnSelect ---
+// TODO: update ONLY the Description of locTicket, then switch edit mode off
+
+// --- scrSaved / galSaved.Items ---
+// TODO: the saved collection
+
+// --- scrSaved / galSaved / icoRemove.OnSelect ---
+// TODO: remove this row from colSaved
+
+// --- Delegation experiment (galTickets.Items, then undo) ---
+// Filter(Tickets, Len(Title) > 20)

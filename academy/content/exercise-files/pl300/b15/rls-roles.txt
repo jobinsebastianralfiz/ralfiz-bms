@@ -1,0 +1,28 @@
+// B.15 row-level security filters (DAX). Modeling > Manage roles.
+// In the role editor switch to the DAX editor (or use the table filter boxes) and paste one filter per role.
+
+// ===== Static roles: table Tickets =====
+// Role North
+[Campus] = "North"
+// Role South
+[Campus] = "South"
+// Role City
+[Campus] = "City"
+
+// ===== Dynamic role 1: Own Tickets, table Staff =====
+// Needs Staff (from staff.csv) related Staff[AssignedTo] 1 -> * Tickets[AssignedTo], single direction.
+[Email] = USERPRINCIPALNAME ()
+
+// ===== Dynamic role 2: Campus Lead, table Tickets =====
+// Needs StaffCampus (from staff-campus.csv) loaded with NO relationship to other tables.
+// One person can map to several campuses (Suresh maps to all three).
+[Campus]
+    IN CALCULATETABLE (
+        VALUES ( StaffCampus[Campus] ),
+        StaffCampus[Email] = USERPRINCIPALNAME ()
+    )
+
+// ===== Testing in Desktop =====
+// Modeling > View as > tick "Other user" and type an email from staff.csv,
+// then tick the role to test (Own Tickets or Campus Lead). Stop viewing when done.
+// Important: if a person is in several roles, they see the UNION of the rows of those roles.

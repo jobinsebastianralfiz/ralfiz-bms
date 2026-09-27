@@ -1,0 +1,27 @@
+=== PROMPT COLUMN: AI summary (Ticket) ===
+Inputs to insert with +Add content: Title, Description
+Filter on the table input: Description Contains data
+
+Prompt text (insert the columns where the brackets are):
+
+You are helping a campus IT help desk agent.
+Ticket title: [Title]
+Ticket description: [Description]
+
+1. Summarize the ticket in one sentence of no more than 25 words, written for a support agent.
+2. On a new line, write "Suggested category:" followed by exactly one of:
+   Network, Hardware, Accounts, Software, Printing, Classroom AV.
+Do not invent details that are not in the ticket.
+
+
+=== ROW SUMMARY (Ticket > Customizations > Row summary) ===
+Columns to insert: Title, Priority, Status, Due Date, Category
+
+Summarize this help desk ticket for an agent as five short bullet points:
+- Title: [Title]
+- Priority: [Priority]
+- Status: [Status]
+- Due: [Due Date]
+- Category: [Category]
+Add one final sentence saying whether the ticket looks urgent.
+Respond in the language with code [LanguageCode].

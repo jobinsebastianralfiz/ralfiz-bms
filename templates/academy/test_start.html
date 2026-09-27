@@ -1,0 +1,50 @@
+{% extends 'academy/base.html' %}
+{% block title %}{{ track.code }} practice test · Ralfiz Academy{% endblock %}
+{% block body_track %}{{ track.id }}{% endblock %}
+{% block content %}
+<div class="test-head">
+  <div>
+    <div class="eyebrow">{{ track.code }} practice test</div>
+    <h1 style="font-size:clamp(26px,4vw,36px)">Test yourself</h1>
+    <p style="margin:6px 0 0;color:var(--muted);max-width:60ch">Random questions from a bank of {{ pool_size }} {{ track.code }} questions, graded out of 1000. The real exam needs 700 to pass. This score is a guide, not Microsoft's scaled score.</p>
+  </div>
+</div>
+
+{% if open_attempt %}
+<div class="cert" style="max-width:760px">
+  <span class="ci" aria-hidden="true">⏳</span>
+  <div style="flex:1"><strong>You have a test in progress</strong><p>{{ open_attempt.answers|length }} of {{ open_attempt.size }} answered, started {{ open_attempt.started_at|date:"j M, g:i A" }}.</p></div>
+  <a class="btn primary" href="{% url 'academy:test_take' open_attempt.id %}">Resume</a>
+</div>
+{% endif %}
+
+<form method="post" class="choose">
+  {% csrf_token %}
+  <button type="submit" name="size" value="30"><b>30</b><span>Quick test · about 40 minutes</span></button>
+  {% if pool_size >= 50 %}<button type="submit" name="size" value="50"><b>50</b><span>Full mock · about 65 minutes</span></button>{% endif %}
+</form>
+
+<section class="panel" style="max-width:760px">
+  <h3>Your attempts</h3>
+  {% if history %}
+  <div style="overflow-x:auto">
+  <table class="hist">
+    <thead><tr><th>Date</th><th>Questions</th><th>Correct</th><th>Score</th><th></th></tr></thead>
+    <tbody>
+      {% for t in history %}
+      <tr>
+        <td>{{ t.started_at|date:"j M Y, g:i A" }}</td>
+        <td class="n">{{ t.size }}</td>
+        <td class="n">{% if t.submitted_at %}{{ t.correct_count }}{% else %}–{% endif %}</td>
+        <td class="n">{% if t.submitted_at %}<span class="badge {% if t.passed %}ok{% else %}no{% endif %}">{{ t.score }}</span>{% else %}<span class="badge lab">In progress</span>{% endif %}</td>
+        <td>{% if t.submitted_at %}<a href="{% url 'academy:test_result' t.id %}">Review</a>{% else %}<a href="{% url 'academy:test_take' t.id %}">Resume</a>{% endif %}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  </div>
+  {% else %}
+  <p class="empty-p">No attempts yet.</p>
+  {% endif %}
+</section>
+{% endblock %}

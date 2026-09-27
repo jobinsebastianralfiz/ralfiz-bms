@@ -1,0 +1,22 @@
+// Summary formula column on the Ticket table (Lesson 2.4)
+// New column > Data type: Formula > paste the formula below.
+
+Title & " - " & Description
+
+// Expected value for CHD-1001:
+// Printer out of toner in library - The black and white printer on the ground floor of the library prints faded pages. It probably needs toner.
+
+// ---------------------------------------------------------------
+// Optional variation 1: a short label (first 25 characters, upper case)
+// Create a second formula column named Short label.
+
+Upper(Left(Title, 25))
+
+// Expected value for CHD-1001: PRINTER OUT OF TONER IN L
+
+// ---------------------------------------------------------------
+// Optional variation 2: put the ticket number first
+
+'Ticket Number' & ": " & Title
+
+// Expected value for CHD-1001: CHD-1001: Printer out of toner in library

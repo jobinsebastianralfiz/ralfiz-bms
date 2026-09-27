@@ -1,0 +1,61 @@
+TicketID,CreatedDate,ClosedDate,CategoryID,Priority,Status,HoursToResolve,Campus,AssignedTo
+1001,2026-01-25,2026-01-25,1,Medium,Closed,14.8,North,Anu
+1002,2026-01-21,2026-01-21,2,Medium,Closed,11.8,North,Rahul
+1003,2026-01-02,2026-01-04,2,Low,Closed,51.6,South,Joseph
+1004,2026-01-04,2026-01-04,1,Medium,Closed,4.8,South,Joseph
+1005,2026-01-23,2026-01-23,3,Medium,Closed,18.9,north,Rahul
+1006,2026-01-08,2026-01-08,3,Medium,Closed,12.1,North,Joseph
+1007,2026-01-07,2026-01-07,1,High,Closed,7.5,North,Meera
+1008,2026-01-16,2026-01-17,2,Medium,Closed,26.3,South,Joseph
+1009,2026-01-27,2026-01-29,4,Low,Closed,48.1,South,Joseph
+1010,2026-01-24,,4,Medium,Open,,North,Rahul
+1011,2026-02-24,2026-02-24,4,Medium,Closed,8.6,North,Joseph
+1012,2026-02-08,,4,High,In progress,,South,Rahul
+1013,2026-02-12,2026-02-12,4,Medium,Closed,13.9,City,Rahul
+1014,2026-02-04,,1,Low,Open,,South,Anu
+1015,2026-02-23,2026-02-23,4,Medium,Closed,4.4,City,Meera
+1016,2026-02-21,2026-02-21,3,Medium,Closed,11.8,City,Joseph
+1017,2026-02-24,2026-02-24,1,Medium,Closed,12.3,South,Anu
+1018,2026-02-17,2026-02-17,3,High,Closed,11.6, South ,Anu
+1019,2026-02-24,2026-02-24,2,High,Closed,6.4,South,Rahul
+1020,2026-02-18,2026-02-19,3,Medium,Closed,18.4,City,Joseph
+1021,2026-03-14,2026-03-15,1,Medium,Closed,21.6,North,Meera
+1022,2026-03-18,2026-03-18,2,High,Closed,14.5,North,Meera
+1023,2026-03-13,2026-03-13,4,High,Closed,11.8,City,Joseph
+1024,2026-03-04,2026-03-05,3,Low,Closed,25,North,Rahul
+1025,2026-03-27,2026-03-27,2,Medium,Closed,4.1,South,Rahul
+1026,2026-03-11,2026-03-13,1,Low,Closed,42.1,North,Anu
+1027,2026-03-27,2026-03-28,1,Low,Closed,22.1,South,Meera
+1028,2026-03-05,2026-03-05,1,High,Closed,11.9,North,Rahul
+1029,2026-03-07,2026-03-07,2,High,Closed,9.6,South,Joseph
+1030,2026-03-06,,2,Medium,In progress,,City,Rahul
+1031,2026-04-17,2026-04-17,2,High,Closed,3.8,City,Rahul
+1032,2026-04-03,,3,Medium,Open,,South,Rahul
+1033,2026-04-17,2026-04-18,4,Low,Closed,40.8,North,Joseph
+1034,2026-04-12,2026-04-13,2,Medium,Closed,16.1,city ,Joseph
+1035,2026-04-15,2026-04-16,1,High,Closed,14.8,City,Rahul
+1036,2026-04-09,2026-04-09,3,High,Closed,15.2,South,Meera
+1037,2026-04-04,2026-04-04,2,Low,Closed,8.2,South,Joseph
+1038,2026-04-03,2026-04-03,1,Medium,Closed,7.4,North,Anu
+1039,2026-04-03,2026-04-04,3,Low,Closed,21.3,North,Rahul
+1040,2026-04-13,2026-04-13,3,Medium,Closed,19,North,Meera
+1041,2026-05-20,,1,Medium,Open,,North,Rahul
+1042,2026-05-14,2026-05-14,4,High,Closed,12,South,Meera
+1043,2026-05-21,2026-05-21,2,Medium,Closed,12.5,North,Joseph
+1044,2026-05-27,2026-05-28,1,Medium,Closed,20.3,City,Anu
+1045,2026-05-14,,4,Low,Open,,City,Anu
+1046,2026-05-06,2026-05-07,2,Medium,Closed,28.5,South,Rahul
+1047,2026-05-03,,2,High,Open,,South,Rahul
+1048,2026-05-21,,2,Low,Open,,South,Meera
+1049,2026-05-19,,2,medium,Open,,North,Joseph
+1050,2026-05-09,2026-05-09,4,Medium,Closed,14.4,City,Joseph
+1051,2026-06-01,,2,Medium,Open,,City,Anu
+1052,2026-06-03,2026-06-04,2,Medium,Closed,33.2,South,Rahul
+1053,2026-06-12,2026-06-12,2,Low,Closed,10.5,City,Anu
+1054,2026-06-01,,1,High,In progress,,South,Anu
+1055,2026-06-03,2026-06-04,2,Medium,Closed,21.5,South,Meera
+1056,2026-06-02,2026-06-02,2,Medium,Closed,8.2,South,Anu
+1057,2026-06-23,,4,Low,Open,,South,Anu
+1058,2026-06-01,2026-06-01,1,High,Closed,13.4,North,Joseph
+1059,2026-06-06,,1,Low,In progress,,South,Meera
+1060,2026-06-01,2026-06-02,2,Low,Closed,28.7,North,Meera

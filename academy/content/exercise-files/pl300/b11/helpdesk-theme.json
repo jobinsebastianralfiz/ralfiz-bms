@@ -1,0 +1,22 @@
+{
+  "name": "Campus Help Desk",
+  "dataColors": [
+    "#1F6FB2",
+    "#E07A1F",
+    "#2E9E6A",
+    "#C8414B",
+    "#7A5CC2",
+    "#8C8C8C",
+    "#0E9AA7",
+    "#B8860B"
+  ],
+  "background": "#FFFFFF",
+  "foreground": "#1E2A38",
+  "tableAccent": "#1F6FB2",
+  "good": "#2E9E6A",
+  "neutral": "#E0A800",
+  "bad": "#C8414B",
+  "maximum": "#1F6FB2",
+  "center": "#9CC3E6",
+  "minimum": "#EAF2FA"
+}

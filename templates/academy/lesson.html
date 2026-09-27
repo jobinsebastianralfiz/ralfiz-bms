@@ -1,0 +1,99 @@
+{% extends 'academy/base.html' %}
+{% block title %}{{ lesson.num }} {{ lesson.title }} · {{ track.code }} · Ralfiz Academy{% endblock %}
+{% block body_track %}{{ track.id }}{% endblock %}
+{% block content %}
+<div id="lessonRoot" data-lesson="{{ lesson.id }}" data-lab-url="{% url 'academy:api_lab' lesson.id %}" data-steps="{{ lesson.lab_steps|length }}">
+<header class="lesson-head">
+  <div class="eyebrow">{{ track.code }} · {{ lesson.domain.name }}{% if lesson.domain.is_exam_weight %} · {{ lesson.domain.weight }} of the exam{% endif %}</div>
+  <h1>{{ lesson.num }} {{ lesson.title }}</h1>
+  <div class="sub">
+    <span>About {{ lesson.minutes }} minutes</span>
+    <span>Lab <b id="subLab">{{ status.lab_ticked }}</b>/{{ status.lab_total }} steps</span>
+    {% if files %}<span>{{ files|length }} exercise file{{ files|length|pluralize }}</span>{% endif %}
+    <span>Quiz <b id="subQuiz">{{ status.quiz_right }}</b>/{{ status.quiz_total }} correct</span>
+    <span id="subStatus" class="badge {% if status.status == 'done' %}ok{% elif status.status == 'in_progress' %}lab{% endif %}">{% if status.status == 'done' %}Complete{% elif status.status == 'in_progress' %}In progress{% else %}Not started{% endif %}</span>
+  </div>
+</header>
+
+<div class="tabs" role="tablist">
+  <button class="tab" role="tab" type="button" data-tab="learn" aria-selected="{% if tab == 'learn' %}true{% else %}false{% endif %}">Learn</button>
+  <button class="tab" role="tab" type="button" data-tab="lab" aria-selected="{% if tab == 'lab' %}true{% else %}false{% endif %}">Hands-on lab <span class="ck" id="ckLab" {% if not status.lab_done %}hidden{% endif %}>✓</span></button>
+  <button class="tab" role="tab" type="button" data-tab="quiz" aria-selected="{% if tab == 'quiz' %}true{% else %}false{% endif %}">Quiz <span class="ck" id="ckQuiz" {% if not status.quiz_done %}hidden{% endif %}>✓</span></button>
+</div>
+
+{# ---- Learn ---- #}
+<section class="tabpanel" data-panel="learn" {% if tab != 'learn' %}hidden{% endif %}>
+  <div class="glance">
+    <div class="glance-h"><span class="eyebrow">At a glance</span><span class="rt">{{ read_minutes }} min read below</span></div>
+    <div class="prose">{{ lesson.summary_html|safe }}</div>
+  </div>
+  {% if toc %}
+  <nav class="toc" aria-label="On this page"><span>On this page</span>
+    <ol>{% for anchor, text in toc %}<li><a href="#{{ anchor }}">{{ text }}</a></li>{% endfor %}</ol>
+  </nav>
+  {% endif %}
+  <article class="prose deep">{{ lesson.content_html|safe }}</article>
+  {% if lesson.terms %}
+  <div class="terms"><h3>Key terms</h3>
+    <dl>{% for t in lesson.terms %}<dt>{{ t.term }}</dt><dd>{{ t.definition }}</dd>{% endfor %}</dl>
+  </div>
+  {% endif %}
+  {% if lesson.exam_tip %}<div class="tip"><b>Exam tip</b><span>{{ lesson.exam_tip }}</span></div>{% endif %}
+  <div style="margin-top:22px"><button class="btn primary" type="button" data-go-tab="lab">Start the hands-on lab</button></div>
+</section>
+
+{# ---- Lab ---- #}
+<section class="tabpanel" data-panel="lab" {% if tab != 'lab' %}hidden{% endif %}>
+  {% if lesson.widget %}
+  <div id="widget" data-widget="{{ lesson.widget }}"></div>
+  {{ lesson.sorter|json_script:"sorterData" }}
+  {% endif %}
+  {% if files %}
+  {% url 'academy:lesson_zip' lesson.id as lesson_zip_url %}
+  {% include 'academy/_files.html' with files=files heading='Exercise files' zip_url=lesson_zip_url %}
+  {% endif %}
+  <h3 class="lab-h">Steps</h3>
+  <p class="lab-intro">Work in {{ track.tool }} and tick each step off. Your ticks are saved to your account.</p>
+  <ol class="steps" id="steps">
+    {% for step in lesson.lab_steps %}
+    <li><label for="lab-{{ forloop.counter0 }}"><input type="checkbox" id="lab-{{ forloop.counter0 }}" data-k="{{ forloop.counter0 }}" {% if forloop.counter0 in ticks %}checked{% endif %}><span class="n">{{ forloop.counter }}</span><span class="t">{{ step }}</span></label></li>
+    {% endfor %}
+  </ol>
+  {% if lesson.lab_check %}
+  <section class="checkyw"><h3>Check your work</h3><ul>{% for c in lesson.lab_check %}<li>{{ c }}</li>{% endfor %}</ul></section>
+  {% endif %}
+  <div id="labMsg" aria-live="polite">{% if status.lab_done %}<div class="labdone">Lab complete. {% if status.quiz_done %}This lesson is finished.{% else %}Now take the quiz to finish the lesson.{% endif %}</div>{% endif %}</div>
+  <div style="margin-top:18px"><button class="btn primary" type="button" data-go-tab="quiz">Go to the quiz</button></div>
+</section>
+
+{# ---- Quiz ---- #}
+<section class="tabpanel" data-panel="quiz" {% if tab != 'quiz' %}hidden{% endif %}>
+  {% for item in quiz %}
+  <div class="q" data-qid="{{ item.q.id }}" data-url="{% url 'academy:api_answer' item.q.id %}" {% if item.chosen is not None %}data-chosen="{{ item.chosen }}" data-answer="{{ item.correct_index }}"{% endif %}>
+    <span class="qn">Question {{ forloop.counter }}</span>
+    <p class="stem">{{ item.q.question }}</p>
+    <div class="opts">
+      {% for j, opt in item.options %}
+      <button class="opt" type="button" data-j="{{ j }}"><span class="k">{% cycle 'A' 'B' 'C' 'D' %}</span><span>{{ opt }}</span></button>
+      {% endfor %}
+      {% resetcycle %}
+    </div>
+    <div class="why" {% if item.chosen is None %}hidden{% endif %}><b></b> <span class="exp">{{ item.explanation }}</span> <button class="btn sm ghost retry" type="button" style="margin-left:6px" hidden>Try again</button></div>
+  </div>
+  {% empty %}
+  <p class="lab-intro">This lesson has no quiz questions.</p>
+  {% endfor %}
+  <div id="quizMsg" aria-live="polite">{% if status.quiz_done and quiz %}<div class="labdone">{% if status.lab_done %}Quiz passed. This lesson is finished.{% else %}Quiz passed. Finish the lab steps to complete the lesson.{% endif %}</div>{% endif %}</div>
+</section>
+
+<nav class="pager">
+  {% if prev_lesson %}<a class="btn" href="{% url 'academy:lesson' prev_lesson.id %}"><span>← {{ prev_lesson.num }} {{ prev_lesson.title }}</span></a>{% else %}<span></span>{% endif %}
+  {% if next_lesson %}<a class="btn primary" href="{% url 'academy:lesson' next_lesson.id %}"><span>{{ next_lesson.num }} {{ next_lesson.title }} →</span></a>
+  {% else %}<a class="btn primary" href="{% url 'academy:test_start' track.id %}"><span>Take the {{ track.code }} practice test →</span></a>{% endif %}
+</nav>
+</div>
+{% endblock %}
+{% block extra_js %}
+{% load static %}
+{% if lesson.widget %}<script src="{% static 'academy/sims.js' %}?v=1"></script>{% endif %}
+{% endblock %}

@@ -1,0 +1,9 @@
+{
+  "EnvironmentVariables": [
+    {
+      "SchemaName": "chd_DirectoryApiUrl",
+      "Value": "https://directory-test.example.edu/api"
+    }
+  ],
+  "ConnectionReferences": []
+}

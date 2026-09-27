@@ -1,0 +1,26 @@
+// B.9 solution
+
+Ticket Count = COUNTROWS ( Tickets )
+
+Tickets YTD =
+TOTALYTD ( [Ticket Count], 'Date'[Date] )
+
+Tickets prev month =
+CALCULATE ( [Ticket Count], DATEADD ( 'Date'[Date], -1, MONTH ) )
+
+Tickets closed =
+CALCULATE (
+    [Ticket Count],
+    USERELATIONSHIP ( Tickets[ClosedDate], 'Date'[Date] )
+)
+// Open and In progress tickets have no ClosedDate, so they never appear here.
+
+Median hours = MEDIAN ( Tickets[HoursToResolve] )
+// Blank hours are ignored.
+
+// Equivalent YTD written with DATESYTD:
+Tickets YTD 2 =
+CALCULATE ( [Ticket Count], DATESYTD ( 'Date'[Date] ) )
+
+// Visual calculation (select the matrix > New calculation):
+// Running tickets = RUNNINGSUM ( [Ticket Count] )

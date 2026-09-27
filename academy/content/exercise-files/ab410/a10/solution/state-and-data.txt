@@ -1,0 +1,76 @@
+// ===== A.10 Canvas apps: data, variables and collections (SOLUTION) =====
+
+// --- App.OnStart ---
+Set(varMe, User())
+
+// --- scrHome / lblHello.Text ---
+"Hello " & varMe.FullName
+
+// --- scrHome / galTickets.Items ---  (delegable: choice comparison + sort on a column)
+SortByColumns(
+    Filter(Tickets, Priority = 'Priority (Tickets)'.High),
+    "chd_duedate",
+    SortOrder.Descending
+)
+
+// --- scrHome / lblCount.Text ---
+CountRows(galTickets.AllItems) & " tickets"
+
+// --- scrHome / galTickets.OnSelect ---
+Navigate(scrDetail, ScreenTransition.Cover, {locTicket: ThisItem})
+
+// --- scrHome / galTickets / icoSave.OnSelect ---
+If(
+    IsBlank(LookUp(colSaved, Ticket = ThisItem.Ticket)),
+    Collect(colSaved, ThisItem);
+    Notify("Saved for later", NotificationType.Success, 2000)
+)
+
+// --- scrNew / drpCategory.Items ---
+Sort(Categories, Name)
+
+// --- scrNew / btnSubmit.OnSelect ---
+Patch(
+    Tickets,
+    Defaults(Tickets),
+    {
+        Title: txtTitle.Text,
+        Description: txtDesc.Text,
+        Category: drpCategory.Selected,
+        Priority: 'Priority (Tickets)'.Medium,
+        Status: 'Status (Tickets)'.Open
+    }
+);
+Reset(txtTitle);
+Reset(txtDesc);
+Navigate(scrHome, ScreenTransition.UnCover)
+
+// --- scrDetail / lblTitle.Text ---
+locTicket.Title
+
+// --- scrDetail / tglEdit.OnChange ---
+UpdateContext({locEdit: Self.Value})
+
+// --- scrDetail / txtDetailDesc.Default ---
+locTicket.Description
+
+// --- scrDetail / txtDetailDesc.DisplayMode ---
+If(locEdit, DisplayMode.Edit, DisplayMode.View)
+
+// --- scrDetail / btnSave.OnSelect ---
+// Passing an existing record as the 2nd argument UPDATES it (Defaults would create a copy).
+Patch(Tickets, locTicket, {Description: txtDetailDesc.Text});
+UpdateContext({locEdit: false});
+Reset(tglEdit)
+
+// --- scrSaved / galSaved.Items ---
+colSaved
+
+// --- scrSaved / galSaved / icoRemove.OnSelect ---
+Remove(colSaved, ThisItem)
+
+// --- Delegation experiment ---
+// Filter(Tickets, Len(Title) > 20)
+// Shows a delegation warning: Len runs locally, so only the first 500 rows
+// (data row limit) would be checked. With 28 rows you still get 26 results,
+// which is exactly why small test data hides the problem. Undo the change.

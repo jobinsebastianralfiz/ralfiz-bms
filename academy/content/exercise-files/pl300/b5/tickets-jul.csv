@@ -1,0 +1,13 @@
+TicketID,CreatedDate,ClosedDate,CategoryID,Priority,Status,HoursToResolve,Campus,AssignedTo
+1061,2026-07-01,2026-07-01,1,High,Closed,6.5,North,Anu
+1062,2026-07-02,2026-07-03,2,Medium,Closed,19.2,South,Rahul
+1063,2026-07-06,2026-07-06,3,High,Closed,3.9,City,Meera
+1064,2026-07-08,2026-07-09,4,Low,Closed,27.4,South,Joseph
+1065,2026-07-09,2026-07-09,2,Medium,Closed,10.8,North,Joseph
+1066,2026-07-13,2026-07-14,1,Medium,Closed,22.6,City,Rahul
+1067,2026-07-15,,2,High,In progress,,South,Meera
+1068,2026-07-16,2026-07-16,3,Low,Closed,8.1,North,Anu
+1069,2026-07-20,2026-07-21,4,Medium,Closed,15.7,South,Rahul
+1070,2026-07-22,,1,Low,Open,,North,Joseph
+1071,2026-07-27,2026-07-27,2,Medium,Closed,12.4,City,Anu
+1072,2026-07-29,,4,Medium,Open,,South,Meera

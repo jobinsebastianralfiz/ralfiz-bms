@@ -22,6 +22,7 @@ urlpatterns = [
     path('portal/', include('client_portal.urls')),
     path('staff/', include('employees.portal_urls')),
     path('agreement/', include('employees.agreement_urls')),
+    path('academy/', include('academy.urls')),
 
     # Short verification link. It is what the certificate QR encodes: the API
     # path is 96 characters, which pushes the code to 49 modules and leaves

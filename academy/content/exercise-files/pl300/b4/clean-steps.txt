@@ -1,0 +1,27 @@
+// Solution: the cleaning steps for the tickets query (Power Query M).
+// Build them with the ribbon first. Compare your Advanced Editor code with this afterwards.
+// Paste after your existing Changed Type step and change the "in" line to the last step name.
+
+    #"Trimmed Campus" = Table.TransformColumns(
+        #"Changed Type",
+        {{"Campus", Text.Trim, type text}}
+    ),
+    #"Capitalized Campus" = Table.TransformColumns(
+        #"Trimmed Campus",
+        {{"Campus", Text.Proper, type text}}
+    ),
+    #"Capitalized Priority" = Table.TransformColumns(
+        #"Capitalized Campus",
+        {{"Priority", Text.Proper, type text}}
+    )
+in
+    #"Capitalized Priority"
+
+// Why two steps for Campus?
+//   Text.Trim removes spaces at the start and end: " South " -> "South", "city " -> "city"
+//   Text.Proper capitalizes each word:             "north" -> "North", "city" -> "City"
+// Order does not matter here, but trimming first keeps each step easy to read.
+
+// Optional checks you can add as a temporary step and then delete:
+//   = List.Distinct(#"Capitalized Priority"[Campus])
+//   = Table.RowCount(Table.SelectRows(#"Capitalized Priority", each [ClosedDate] = null and [Status] = "Closed"))

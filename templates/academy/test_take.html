@@ -1,0 +1,38 @@
+{% extends 'academy/base.html' %}
+{% block title %}{{ track.code }} practice test · Ralfiz Academy{% endblock %}
+{% block body_track %}{{ track.id }}{% endblock %}
+{% block content %}
+<div class="test-head">
+  <div>
+    <div class="eyebrow">{{ track.code }} practice test</div>
+    <h1 style="font-size:clamp(26px,4vw,36px)">{{ items|length }} random questions</h1>
+    <p style="margin:6px 0 0;color:var(--muted);max-width:60ch">Answers save as you go, so you can leave and resume. Nothing is marked until you submit.</p>
+  </div>
+</div>
+
+<nav class="qnav" aria-label="Questions">
+  {% for it in items %}<a href="#q{{ it.i }}" data-qnav="{{ it.i }}" {% if it.chosen is not None %}class="on"{% endif %}>{{ forloop.counter }}</a>{% endfor %}
+</nav>
+
+<form method="post" action="{% url 'academy:test_submit' attempt.id %}" id="testForm" data-save-url="{% url 'academy:api_test_save' attempt.id %}" data-total="{{ items|length }}">
+  {% csrf_token %}
+  {% for it in items %}
+  <div class="q" id="q{{ it.i }}" data-i="{{ it.i }}">
+    <span class="qn">Question {{ forloop.counter }} of {{ items|length }}</span>
+    <p class="stem">{{ it.q.question }}</p>
+    <div class="opts" role="radiogroup">
+      {% for j, opt in it.options %}
+      <button class="opt {% if it.chosen == j %}sel{% endif %}" type="button" role="radio" data-j="{{ j }}" aria-checked="{% if it.chosen == j %}true{% else %}false{% endif %}"><span class="k">{% cycle 'A' 'B' 'C' 'D' %}</span><span>{{ opt }}</span></button>
+      {% endfor %}
+      {% resetcycle %}
+    </div>
+    <input type="hidden" name="q{{ it.i }}" value="{% if it.chosen is not None %}{{ it.chosen }}{% endif %}">
+  </div>
+  {% endfor %}
+  <div class="submit-bar">
+    <button class="btn primary" type="submit" id="submitT">Submit answers</button>
+    <span id="tCount" style="color:var(--muted);font-size:14px">{{ answered }} of {{ items|length }} answered</span>
+    <span id="tSaved" style="color:var(--muted);font-size:13px;margin-left:auto"></span>
+  </div>
+</form>
+{% endblock %}

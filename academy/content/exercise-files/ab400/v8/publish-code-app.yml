@@ -1,0 +1,37 @@
+# .github/workflows/publish-code-app.yml - publish chd-staff-dashboard with a service principal
+# One-time setup: a maker runs  pa app share --principal <enterprise app object ID> --access edit
+# Secrets: SP_CLIENT_ID, SP_CLIENT_SECRET, SP_TENANT_ID. Variable: CHD_SOLUTION_ID (the solution GUID).
+name: publish-code-app
+on:
+  workflow_dispatch:
+  push:
+    branches: [ main ]
+    paths: [ 'src/**', 'package.json' ]
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    env:
+      PA_CLI_USE_SP_AUTH: 'true'
+      SP_CLIENT_ID: ${{ secrets.SP_CLIENT_ID }}
+      SP_CLIENT_SECRET: ${{ secrets.SP_CLIENT_SECRET }}
+      SP_TENANT_ID: ${{ secrets.SP_TENANT_ID }}
+      PA_CLI_SOLUTION_ID: ${{ vars.CHD_SOLUTION_ID }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Install dependencies and the Power Apps CLI
+        run: |
+          npm ci
+          npm install --global @microsoft/power-apps-cli
+
+      - name: Build
+        run: npm run build
+
+      - name: Publish
+        run: pa app push --non-interactive

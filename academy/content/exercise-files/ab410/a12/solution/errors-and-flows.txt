@@ -1,0 +1,55 @@
+// ===== A.12 Errors, testing, flows (SOLUTION) =====
+
+// --- scrNew / btnSubmit.OnSelect ---
+IfError(
+    Patch(
+        Tickets,
+        Defaults(Tickets),
+        {Title: txtTitle.Text, Description: txtDesc.Text, Category: drpCategory.Selected}
+    ),
+    Notify("Could not save: " & FirstError.Message, NotificationType.Error),
+    Notify("Ticket saved", NotificationType.Success, 3000);
+    Reset(txtTitle);
+    Reset(txtDesc);
+    Navigate(scrHome)
+)
+
+// --- scrNew / btnQuickSave.OnSelect (unguarded, so App.OnError handles it) ---
+Patch(Tickets, Defaults(Tickets), {Title: txtTitle.Text})
+
+// --- App.OnError ---
+Trace(
+    "Error: " & FirstError.Message,
+    TraceSeverity.Error,
+    {Source: FirstError.Source, User: User().Email}
+);
+Error(FirstError)
+
+// --- scrNew / lblErrors.Text ---
+If(IsEmpty(Errors(Tickets)), "", First(Errors(Tickets)).Message)
+
+// --- Test Studio: case "Valid ticket saves" ---
+SetProperty(txtTitle.Text, "Wi-Fi down in library reading room");
+SetProperty(txtDesc.Text, "Created by Test Studio. Safe to delete.");
+Select(btnSubmit);
+Assert(IsEmpty(Errors(Tickets)), "No save errors")
+
+// --- Test Studio: case "Blank title is rejected" ---
+SetProperty(txtTitle.Text, "");
+SetProperty(txtDesc.Text, "Title intentionally blank");
+Select(btnSubmit);
+Assert(!IsEmpty(Errors(Tickets)), "Blank title must fail")
+
+// --- Cloud flow EscalateTicket (in the Campus Help Desk solution) ---
+// Trigger:  Power Apps (V2), text input TicketId
+// Action:   Microsoft Dataverse - Update a row
+//             Table name: Tickets
+//             Row ID:     TicketId
+//             Priority:   High
+// Action:   Respond to a Power App or flow
+//             Text output "message" =
+//             concat('Escalated ', outputs('Update_a_row')?['body/chd_ticketnumber'])
+
+// --- scrDetail / btnEscalate.OnSelect ---
+Set(varEsc, EscalateTicket.Run(Text(locTicket.Ticket)));
+Notify(varEsc.message, NotificationType.Information)

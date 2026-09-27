@@ -1,0 +1,58 @@
+// ===== A.11 Reusable logic and performance (SOLUTION) =====
+
+// --- App.Formulas ---
+ThemeBlue = ColorValue("#1F4E9A");
+
+MeUser = LookUp(Users, 'Primary Email' = User().Email);
+
+MyOpenTickets = Filter(
+    Tickets,
+    'Created By'.User = MeUser.User && Status <> 'Status (Tickets)'.Closed
+);
+
+OpenTicketCount = CountRows(Filter(Tickets, Status = 'Status (Tickets)'.Open));
+
+DueLabel(d: Date): Text =
+    If(d < Today(), "Overdue", "Due " & Text(d, "dd mmm"));
+
+PriorityColour(p: Text): Color =
+    Switch(p,
+        "High", ColorValue("#B42318"),
+        "Medium", ColorValue("#B54708"),
+        ColorValue("#475467"));
+
+// --- App.OnStart (AFTER) ---
+// Constants and derived values moved to App.Formulas. What must stay runs in parallel.
+Concurrent(
+    ClearCollect(colCategories, Categories),
+    Set(varMe, User())
+)
+
+// --- galTickets.Items ---
+SortByColumns(MyOpenTickets, "chd_duedate", SortOrder.Ascending)
+
+// --- galTickets / lblDue.Text ---
+DueLabel(ThisItem.'Due Date')
+
+// --- galTickets / lblPriority.Text ---
+Text(ThisItem.Priority)
+// --- galTickets / lblPriority.Color ---
+PriorityColour(Text(ThisItem.Priority))
+
+// --- lblOpen.Text ---
+OpenTicketCount & " open tickets across all campuses"
+
+// --- Test label (delete after checking) ---
+// DueLabel(Date(2030, 1, 15))   ->  "Due 15 Jan"
+
+// --- Responsive home screen (Settings > Display: Scale to fit OFF) ---
+// conMain.Width      = Parent.Width
+// conMain.Height     = Parent.Height
+// conFilters.Width   = Parent.Width      (LayoutWrap = true so buttons wrap on phones)
+// galTickets.Width   = Parent.Width - 32
+// galTickets.TemplateSize = If(App.Width < 600, 120, 80)
+
+// --- Accessibility ---
+// icoEscalate.AccessibleLabel = "Escalate this ticket"
+// icoSave.AccessibleLabel     = "Save " & ThisItem.Title & " for later"
+// imgLogo.AccessibleLabel     = "Campus Help Desk logo"

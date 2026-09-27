@@ -1,0 +1,64 @@
+{% extends 'academy/base.html' %}
+{% block title %}{{ track.code }} {{ track.name }} · Ralfiz Academy{% endblock %}
+{% block body_track %}{{ track.id }}{% endblock %}
+{% block content %}
+<section class="hero">
+  <div class="eyebrow">Track · {{ track.code }} · {{ track.level }}</div>
+  <h1>{{ track.name }}</h1>
+  <p>{{ track.blurb }}</p>
+  <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:6px">
+    {% if resume %}<a class="btn primary" href="{% url 'academy:lesson' resume.id %}">{% if summary.started %}Continue{% else %}Start{% endif %}: {{ resume.num }} {{ resume.title }}</a>{% endif %}
+    <a class="btn" href="{% url 'academy:test_start' track.id %}">Take a practice test</a>
+  </div>
+</section>
+
+<div class="facts">
+  {% for f in track.facts %}<div class="fact"><b>{{ f.0 }}</b><span>{{ f.1 }}</span></div>{% endfor %}
+</div>
+
+<div class="cert {% if summary.completed %}ok{% endif %}">
+  <span class="ci" aria-hidden="true">{% if summary.completed %}🎓{% else %}🏁{% endif %}</span>
+  <div>
+    <strong>{% if summary.completed %}Course complete{% else %}Your progress: {{ summary.done }} of {{ summary.total }} lessons{% endif %}</strong>
+    <p>{% if summary.completed %}Every lesson is done and you have a practice test at 700 or above. Tell your trainer to issue your Ralfiz Academy completion certificate.{% else %}Finish every lesson and score 700+ on a practice test to complete the course. Best test so far: {% if summary.best_score is not None %}{{ summary.best_score }}{% else %}none yet{% endif %}.{% endif %}</p>
+  </div>
+</div>
+
+<div class="how">
+  <div class="l"><h3>Learn</h3><p>In-depth explanations, comparison tables, worked examples, common mistakes and how the exam asks about each concept.</p></div>
+  <div class="b"><h3>Lab</h3><p>Exercise files to download, step-by-step tasks in {{ track.tool }}, and a checklist to confirm your result.</p></div>
+  <div class="q"><h3>Quiz</h3><p>Exam-style questions with explanations, plus a practice test drawn from {{ pool_size }} questions.</p></div>
+</div>
+
+<h2 class="section-title">Skill areas</h2>
+{% for d in domains %}
+<section class="dblock">
+  <div class="dblock-h">
+    <div><h3>{{ d.domain.name }}</h3>{% if d.domain.blurb %}<p>{{ d.domain.blurb }}</p>{% endif %}</div>
+    <div style="text-align:right;display:grid;gap:2px">
+      <span class="w">{{ d.domain.weight }}{% if d.domain.is_exam_weight %} of the exam{% endif %}</span>
+      <span style="font-size:12.5px;color:var(--muted)">{{ d.done }}/{{ d.lessons|length }} done · {{ d.minutes }} min</span>
+    </div>
+  </div>
+  <div class="mini"><i style="width:{{ d.percent }}%"></i></div>
+  <ul class="llist">
+    {% for x in d.lessons %}
+    <li><a href="{% url 'academy:lesson' x.lesson.id %}">
+      <span class="num">{{ x.lesson.num }}</span>
+      <span class="lt">{{ x.lesson.title }}<small>{{ x.lesson.minutes }} min · Lab {{ x.lab_ticked }}/{{ x.lab_total }} · Quiz {{ x.quiz_right }}/{{ x.quiz_total }}{% if x.lesson.widget %} · simulator{% endif %}</small></span>
+      <span class="dot {% if x.status == 'done' %}done{% elif x.status == 'in_progress' %}half{% endif %}" aria-label="{% if x.status == 'done' %}Complete{% elif x.status == 'in_progress' %}In progress{% else %}Not started{% endif %}"></span>
+    </a></li>
+    {% endfor %}
+  </ul>
+</section>
+{% endfor %}
+
+{% if data_files %}
+<h2 class="section-title">Course data</h2>
+<p class="lab-intro">The datasets every lab in this track builds on. Each lab also lists these together with its own files.</p>
+{% url 'academy:track_data_zip' track.id as track_zip_url %}
+{% include 'academy/_files.html' with files=data_files heading='Datasets' zip_url=track_zip_url %}
+{% endif %}
+
+<p class="note">{{ track.note }} Content follows the outline dated {{ track.outline_date }}. Check the <a href="{{ track.guide_url }}" target="_blank" rel="noopener">official study guide</a> before you book.</p>
+{% endblock %}

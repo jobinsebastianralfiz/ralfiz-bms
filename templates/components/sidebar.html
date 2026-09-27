@@ -164,6 +164,22 @@
     </div>
 
     <div class="nav-section">
+      <div class="nav-section-title">Academy</div>
+      <a href="{% url 'academy:manage_home' %}" class="nav-item {% if request.resolver_match.url_name == 'manage_home' %}active{% endif %}">
+        <i class="fas fa-graduation-cap"></i>
+        <span>Courses</span>
+      </a>
+      <a href="{% url 'academy:manage_students' %}" class="nav-item {% if request.resolver_match.namespace == 'academy' and 'manage_student' in request.resolver_match.url_name %}active{% endif %}">
+        <i class="fas fa-user-graduate"></i>
+        <span>Students</span>
+      </a>
+      <a href="{% url 'academy:manage_progress' %}" class="nav-item {% if request.resolver_match.url_name == 'manage_progress' %}active{% endif %}">
+        <i class="fas fa-table-cells"></i>
+        <span>Course Progress</span>
+      </a>
+    </div>
+
+    <div class="nav-section">
       <div class="nav-section-title">HR & Admin</div>
       <a href="{% url 'emp_employee_list' %}" class="nav-item {% if 'emp_employee' in request.resolver_match.url_name %}active{% endif %}">
         <i class="fas fa-id-badge"></i>

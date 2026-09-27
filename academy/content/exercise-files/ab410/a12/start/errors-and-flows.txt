@@ -1,0 +1,34 @@
+// ===== A.12 Errors, testing, flows (STARTER) =====
+// Before you start: open the Ticket table and make sure the Title column is
+// Business required, so a blank title makes the save fail.
+
+// --- scrNew / btnSubmit.OnSelect (currently no error handling) ---
+Patch(
+    Tickets,
+    Defaults(Tickets),
+    {Title: txtTitle.Text, Description: txtDesc.Text, Category: drpCategory.Selected}
+);
+Navigate(scrHome)
+// TODO: wrap the Patch in IfError.
+//   On error: Notify "Could not save: " + the first error's message, type Error.
+//   On success: Notify "Ticket saved" (Success, 3 seconds), reset inputs, go home.
+
+// --- scrNew / btnQuickSave.OnSelect (deliberately NOT wrapped) ---
+Patch(Tickets, Defaults(Tickets), {Title: txtTitle.Text})
+
+// --- App.OnError ---
+// TODO: Trace the error message with severity Error, plus the source and user email,
+//       then re-raise the error so the user still sees the standard banner.
+
+// --- scrNew / lblErrors.Text ---
+// TODO: show the message of the first row of Errors(Tickets), or "" when empty
+
+// --- Test Studio: suite "Submit ticket", case "Valid ticket saves" ---
+// TODO: set txtTitle and txtDesc, select btnSubmit, assert no errors on Tickets
+
+// --- Test Studio: case "Blank title is rejected" ---
+// TODO: clear txtTitle, select btnSubmit, assert Errors(Tickets) is NOT empty
+
+// --- scrDetail / btnEscalate.OnSelect ---
+// TODO: run the EscalateTicket flow with the ticket id as text,
+//       store the response in varEsc and show varEsc.message

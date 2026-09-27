@@ -1,0 +1,36 @@
+// ===== A.11 Reusable logic and performance (STARTER) =====
+
+// --- App.OnStart (BEFORE: slow, one load after another) ---
+ClearCollect(colCategories, Categories);
+Set(varMe, User());
+Set(varBlue, ColorValue("#1F4E9A"));
+Set(varOpenCount, CountRows(Filter(Tickets, Status = 'Status (Tickets)'.Open)))
+
+// --- App.Formulas ---
+// TODO 1: named formula ThemeBlue for the colour #1F4E9A
+// TODO 2: named formula MeUser = the Users row for the signed-in user
+// TODO 3: named formula MyOpenTickets = tickets created by MeUser that are not Closed
+// TODO 4: named formula OpenTicketCount = number of tickets with Status Open
+// TODO 5: user-defined function DueLabel(d: Date): Text
+//         returns "Overdue" if d is before today, otherwise "Due " + day and short month
+// TODO 6: user-defined function PriorityColour(p: Text): Color
+//         High = #B42318, Medium = #B54708, anything else = #475467
+
+// --- galTickets.Items ---
+// TODO: use MyOpenTickets
+
+// --- galTickets / lblDue.Text ---
+// TODO: use DueLabel on the Due Date column
+
+// --- galTickets / lblPriority.Text and .Color ---
+// TODO: show the priority as TEXT, and colour it with PriorityColour
+
+// --- lblOpen.Text ---
+// TODO: use OpenTicketCount
+
+// --- Replace every varBlue with ThemeBlue, then delete varBlue from OnStart ---
+
+// --- Responsive home screen (Scale to fit OFF) ---
+// conMain  (vertical container)   Width: TODO  Height: TODO
+// conFilters (horizontal container inside conMain)  Width: TODO
+// galTickets (inside conMain)  Width: TODO

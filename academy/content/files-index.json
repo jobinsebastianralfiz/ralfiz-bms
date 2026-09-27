@@ -1,0 +1,634 @@
+{
+ "hd/tickets.csv": {
+  "path": "data/tickets.csv",
+  "description": "28 Campus Help Desk tickets (CHD-1001 to CHD-1028) to import into Dataverse."
+ },
+ "hd/categories.csv": {
+  "path": "data/categories.csv",
+  "description": "6 ticket categories with the support team for each."
+ },
+ "hd/students.csv": {
+  "path": "data/students.csv",
+  "description": "20 students with emails, programmes and campuses."
+ },
+ "hd/staff.csv": {
+  "path": "data/staff.csv",
+  "description": "6 help desk staff with emails, roles, campuses and teams."
+ },
+ "hd/feedback.csv": {
+  "path": "data/feedback.csv",
+  "description": "12 feedback ratings and comments for closed tickets."
+ },
+ "pbi/tickets.csv": {
+  "path": "data/tickets.csv",
+  "description": "60 tickets for Power BI (January to June 2026), with a few messy values to clean."
+ },
+ "pbi/categories.csv": {
+  "path": "data/categories.csv",
+  "description": "4 categories for the Power BI model."
+ },
+ "pl900/l0-1/setup-checklist.md": {
+  "path": "setup-checklist.md",
+  "description": "A tick-list for setting up your accounts and developer environment, with space to record the details you will need later."
+ },
+ "pl900/l1-1/help-desk-requirements.md": {
+  "path": "help-desk-requirements.md",
+  "description": "Ten Campus Help Desk requirements to match to the right Power Platform product, with an answer key at the end."
+ },
+ "pl900/l1-2/copilot-prompts.md": {
+  "path": "copilot-prompts.md",
+  "description": "The exact prompts to paste into Copilot in Power Apps and Power Automate, plus a review sheet for what the AI produced."
+ },
+ "pl900/l2-1/excel-vs-dataverse.md": {
+  "path": "excel-vs-dataverse.md",
+  "description": "A worksheet for comparing the tickets.csv spreadsheet with the Dataverse Account table."
+ },
+ "pl900/l2-2/table-design.md": {
+  "path": "table-design.md",
+  "description": "The exact design of the Category and Ticket tables, plus how the CSV columns map onto them for import."
+ },
+ "pl900/l2-3/forms-and-views-spec.md": {
+  "path": "forms-and-views-spec.md",
+  "description": "The layout for the Ticket main form and quick create form, the view definition, and a ticket to add as a test."
+ },
+ "pl900/l2-4/business-rule-spec.md": {
+  "path": "business-rule-spec.md",
+  "description": "What the business rule must do on the Ticket table, with test cases to run on the main form."
+ },
+ "pl900/l2-4/summary-formula.txt": {
+  "path": "summary-formula.txt",
+  "description": "The Power Fx formula for the Summary formula column, plus two optional variations to try."
+ },
+ "pl900/l2-5/feedback-table-brief.md": {
+  "path": "feedback-table-brief.md",
+  "description": "The brief and the Copilot prompt for the Ticket Feedback table, with the columns and types it must end up with."
+ },
+ "pl900/l2-6/environment-plan.md": {
+  "path": "environment-plan.md",
+  "description": "A worksheet to record your environments and plan which one is used for development, test and production."
+ },
+ "pl900/l2-7/security-matrix.md": {
+  "path": "security-matrix.md",
+  "description": "The security matrix for the Help Desk Student role that you implement in the security role editor."
+ },
+ "pl900/l2-8/dlp-policy-spec.md": {
+  "path": "dlp-policy-spec.md",
+  "description": "The data policy to create, the tests that prove it works, and an accessibility checklist for later."
+ },
+ "pl900/l2-9/monitoring-worksheet.md": {
+  "path": "monitoring-worksheet.md",
+  "description": "A worksheet for recording capacity, Monitor events and flow run details."
+ },
+ "pl900/l2-10/solution-checklist.md": {
+  "path": "solution-checklist.md",
+  "description": "The exact solution, publisher and environment variable to create, and the export/import checklist."
+ },
+ "pl900/l2-10/deployment-settings.json": {
+  "path": "deployment-settings.json",
+  "description": "An optional deployment settings file that sets HelpDeskEmail when importing with the Power Platform CLI."
+ },
+ "pl900/l3-1/canvas-formulas.txt": {
+  "path": "canvas-formulas.txt",
+  "description": "Power Fx formulas to paste into the canvas app gallery, search box and status filter."
+ },
+ "pl900/l3-1/app-test-script.md": {
+  "path": "app-test-script.md",
+  "description": "Test script with the exact values to type and the results the canvas app should show."
+ },
+ "pl900/l3-2/app-spec.md": {
+  "path": "app-spec.md",
+  "description": "Specification of the Help Desk Staff model-driven app: navigation, forms, views and chart."
+ },
+ "pl900/l3-3/business-problem.md": {
+  "path": "business-problem.md",
+  "description": "Business problem brief to give Plan designer, plus a review checklist for the generated plan."
+ },
+ "pl900/l3-4/app-type-comparison.md": {
+  "path": "app-type-comparison.md",
+  "description": "Starter comparison table and eight scenarios to classify, with an answer key at the end."
+ },
+ "pl900/l3-5/booking-app-brief.md": {
+  "path": "booking-app-brief.md",
+  "description": "Prompts to give Copilot for the booking app, the expected table columns and a review checklist."
+ },
+ "pl900/l3-5/bookings-sample.csv": {
+  "path": "bookings-sample.csv",
+  "description": "Sample bookings to enter through the new app when testing the Tomorrow screen."
+ },
+ "pl900/l4-1/flow-types.md": {
+  "path": "flow-types.md",
+  "description": "Build specs for the three cloud flows and the desktop flow, plus scenarios to classify with answers."
+ },
+ "pl900/l4-2/form-and-flows-spec.md": {
+  "path": "form-and-flows-spec.md",
+  "description": "Design of the Microsoft Form and the two flows (form to Dataverse, High priority approval)."
+ },
+ "pl900/l4-2/test-responses.csv": {
+  "path": "test-responses.csv",
+  "description": "Five form responses to submit, used to test both flows."
+ },
+ "pl900/l4-3/flow-spec.md": {
+  "path": "flow-spec.md",
+  "description": "Step-by-step spec of the High priority email flow with the expressions to use."
+ },
+ "pl900/l4-3/test-tickets.csv": {
+  "path": "test-tickets.csv",
+  "description": "Three test tickets (two High, one Low) that exercise both branches of the condition."
+ },
+ "pl900/l4-4/copilot-prompts.md": {
+  "path": "copilot-prompts.md",
+  "description": "The exact Copilot prompts to use, in order, and what each one should produce."
+ },
+ "pl900/l4-4/expected-results.md": {
+  "path": "expected-results.md",
+  "description": "What the List rows action and email should return with the shared ticket data."
+ },
+ "pl900/l5-1/agent-brief.md": {
+  "path": "agent-brief.md",
+  "description": "Description and instructions to paste into Copilot Studio, test questions and a use-case sorting exercise."
+ },
+ "pl900/l5-2/log-ticket-topic.md": {
+  "path": "log-ticket-topic.md",
+  "description": "Node-by-node spec of the Log a ticket topic, the Greeting text and test conversations."
+ },
+ "pl900/l5-3/it-faq.md": {
+  "path": "it-faq.md",
+  "description": "Campus IT FAQ knowledge document to upload to the agent as a knowledge source."
+ },
+ "pl900/l5-3/knowledge-test-questions.md": {
+  "path": "knowledge-test-questions.md",
+  "description": "Questions to test the knowledge sources, with the answer each should give from it-faq.md."
+ },
+ "pl900/l5-4/create-ticket-tool.md": {
+  "path": "create-ticket-tool.md",
+  "description": "Spec for the Create ticket agent flow: inputs, steps, output, tool description and tests."
+ },
+ "pl900/l5-5/publish-checklist.md": {
+  "path": "publish-checklist.md",
+  "description": "Checklist for publishing, channel setup and the republish test with the exact text to change."
+ },
+ "pl900/l5-6/test-conversations.md": {
+  "path": "test-conversations.md",
+  "description": "Ten test conversations to generate analytics data, including three the agent cannot answer."
+ },
+ "pl900/l5-6/evaluation-set.csv": {
+  "path": "evaluation-set.csv",
+  "description": "Five evaluation questions with expected answers from the IT FAQ; question 5 is not in the FAQ yet."
+ },
+ "pl900/l5-6/it-faq-addition.md": {
+  "path": "it-faq-addition.md",
+  "description": "Text to add to it-faq.md to fix the weak answer found by the evaluation."
+ },
+ "pl300/b1/data-dictionary.md": {
+  "path": "data-dictionary.md",
+  "description": "Column-by-column guide to tickets.csv and categories.csv, with the agent list."
+ },
+ "pl300/b2/integration-scenario.md": {
+  "path": "integration-scenario.md",
+  "description": "Business scenario for the report-to-action loop across Power BI, Power Automate, Power Apps and Teams."
+ },
+ "pl300/b3/parameter-queries.txt": {
+  "path": "parameter-queries.txt",
+  "description": "M code for the DataFolder parameter and the two queries that use it."
+ },
+ "pl300/b4/clean-steps.txt": {
+  "path": "clean-steps.txt",
+  "description": "Solution M steps that trim and capitalize Campus and Priority; compare after you build them."
+ },
+ "pl300/b5/tickets-jul.csv": {
+  "path": "tickets-jul.csv",
+  "description": "12 July 2026 tickets (1061 to 1072) with the same columns as tickets.csv, for Append."
+ },
+ "pl300/b5/campus-targets.json": {
+  "path": "campus-targets.json",
+  "description": "Semi-structured JSON of campus service targets with nested lead records, to flatten in Power Query."
+ },
+ "pl300/b5/survey-wide.csv": {
+  "path": "survey-wide.csv",
+  "description": "Wide survey export with one column per campus, to unpivot into Month, Campus, Responses."
+ },
+ "pl300/b6/date-table.txt": {
+  "path": "date-table.txt",
+  "description": "DAX script for the Date calculated table plus the relationships to create."
+ },
+ "pl300/b7/measures-start.txt": {
+  "path": "measures-start.txt",
+  "description": "Starter DAX with TODO gaps for the four B.7 measures and the Team column."
+ },
+ "pl300/b7/measures-solution.txt": {
+  "path": "measures-solution.txt",
+  "description": "Solution DAX for the B.7 measures and calculated column."
+ },
+ "pl300/b8/measures-start.txt": {
+  "path": "measures-start.txt",
+  "description": "Starter DAX with TODO gaps for the CALCULATE, ALL and KEEPFILTERS measures."
+ },
+ "pl300/b8/measures-solution.txt": {
+  "path": "measures-solution.txt",
+  "description": "Solution DAX for B.8, with notes on context transition."
+ },
+ "pl300/b9/measures-start.txt": {
+  "path": "measures-start.txt",
+  "description": "Starter DAX with TODO gaps for YTD, previous month, closed-date and median measures."
+ },
+ "pl300/b9/measures-solution.txt": {
+  "path": "measures-solution.txt",
+  "description": "Solution DAX for the B.9 time intelligence measures."
+ },
+ "pl300/b10/performance-scenario.md": {
+  "path": "performance-scenario.md",
+  "description": "A slow-report complaint with the model’s design problems and a before/after results table."
+ },
+ "pl300/b10/dax-queries.txt": {
+  "path": "dax-queries.txt",
+  "description": "DAX queries to run in DAX query view, including a slow and a fast version of the same measure."
+ },
+ "pl300/b11/report-brief.md": {
+  "path": "report-brief.md",
+  "description": "The manager’s brief for the Overview page: questions, required visuals and rules."
+ },
+ "pl300/b11/helpdesk-theme.json": {
+  "path": "helpdesk-theme.json",
+  "description": "Report theme file with the Help Desk colours, to import with Browse for themes."
+ },
+ "pl300/b12/navigation-spec.md": {
+  "path": "navigation-spec.md",
+  "description": "Spec for drillthrough, tooltip page, interactions, bookmarks, alt text and mobile layout."
+ },
+ "pl300/b13/measures.txt": {
+  "path": "measures.txt",
+  "description": "DAX for Ticket Count, Total Hours and Average Hours used by the AI and analytics visuals."
+ },
+ "pl300/b13/analysis-worksheet.md": {
+  "path": "analysis-worksheet.md",
+  "description": "Seven analysis questions to answer with the visuals you build."
+ },
+ "pl300/b14/publishing-checklist.md": {
+  "path": "publishing-checklist.md",
+  "description": "Checklist for publishing, the dashboard alert, the refresh plan and the app."
+ },
+ "pl300/b15/staff.csv": {
+  "path": "staff.csv",
+  "description": "Staff table mapping AssignedTo names to sign-in emails, for the Own Tickets dynamic role."
+ },
+ "pl300/b15/staff-campus.csv": {
+  "path": "staff-campus.csv",
+  "description": "Email-to-campus mapping (one person can have several campuses) for the Campus Lead dynamic role."
+ },
+ "pl300/b15/rls-roles.txt": {
+  "path": "rls-roles.txt",
+  "description": "DAX filters for the static and dynamic RLS roles, with testing notes."
+ },
+ "pl300/b15/security-matrix.md": {
+  "path": "security-matrix.md",
+  "description": "Who gets which workspace role, RLS role and item permission."
+ },
+ "ab410/a1/setup-checklist.md": {
+  "path": "setup-checklist.md",
+  "description": "Checklist for the two environments, the chd publisher, the solution and the AB-410 skill areas."
+ },
+ "ab410/a2/requirements-brief.md": {
+  "path": "requirements-brief.md",
+  "description": "The Campus Help Desk business brief with ten numbered requirements to design from."
+ },
+ "ab410/a2/decision-table-template.md": {
+  "path": "decision-table-template.md",
+  "description": "The decision table to fill in, with a model answer at the bottom to compare after you finish."
+ },
+ "ab410/a3/environment-values.md": {
+  "path": "environment-values.md",
+  "description": "The values that must change between CHD Dev and CHD Test for the environment variable and connection references."
+ },
+ "ab410/a3/deploy-settings.json": {
+  "path": "deploy-settings.json",
+  "description": "A sample deployment settings file for pac solution import; compare it with the one pac generates for your solution."
+ },
+ "ab410/a3/pac-commands.txt": {
+  "path": "pac-commands.txt",
+  "description": "Optional pac CLI commands to export, generate settings, check and import the solution."
+ },
+ "ab410/a4/column-spec.md": {
+  "path": "column-spec.md",
+  "description": "The exact columns and table properties to add to Ticket and Contact in this lab."
+ },
+ "ab410/a4/contacts-import.csv": {
+  "path": "contacts-import.csv",
+  "description": "The 20 students from students.csv split into First Name and Last Name, ready to import into the Contact table."
+ },
+ "ab410/a5/ticket-comments.csv": {
+  "path": "ticket-comments.csv",
+  "description": "Twelve agent comments on six open or in-progress tickets, to import into Ticket Comment."
+ },
+ "ab410/a5/view-and-form-spec.md": {
+  "path": "view-and-form-spec.md",
+  "description": "The relationship behaviours, the public view and the main form changes to build, with expected results."
+ },
+ "ab410/a6/prompts.txt": {
+  "path": "prompts.txt",
+  "description": "The prompt column prompt and the row summary prompt to paste into the prompt editors."
+ },
+ "ab410/a6/test-tickets.csv": {
+  "path": "test-tickets.csv",
+  "description": "Four new tickets to create in Help Desk Staff, with the category the AI should suggest for each."
+ },
+ "ab410/a7/security-matrix.md": {
+  "path": "security-matrix.md",
+  "description": "The business units, roles, team, column security and sharing to implement, with the tickets to assign."
+ },
+ "ab410/a7/access-test-script.md": {
+  "path": "access-test-script.md",
+  "description": "Test cases to run while signed in as the test user, with the expected result for each."
+ },
+ "ab410/a8/app-map.md": {
+  "path": "app-map.md",
+  "description": "The target navigation, forms, views and role access for the Help Desk Staff app."
+ },
+ "ab410/a8/acceptance-tests.md": {
+  "path": "acceptance-tests.md",
+  "description": "Acceptance tests for the composed app, run as yourself and then as the test user."
+ },
+ "ab410/a9/triage-page-brief.md": {
+  "path": "triage-page-brief.md",
+  "description": "The request from the staff lead that you paste into the generative page agent, with acceptance tests."
+ },
+ "ab410/a9/dashboard-spec.md": {
+  "path": "dashboard-spec.md",
+  "description": "The chart, view and dashboard you must build, with the numbers each one should show."
+ },
+ "ab410/a10/start/state-and-data.txt": {
+  "path": "start/state-and-data.txt",
+  "description": "Starter Power Fx for the student app with TODO gaps for each control property."
+ },
+ "ab410/a10/solution/state-and-data.txt": {
+  "path": "solution/state-and-data.txt",
+  "description": "Completed Power Fx for every property in the starter file."
+ },
+ "ab410/a11/start/app-formulas.txt": {
+  "path": "start/app-formulas.txt",
+  "description": "Starter App.Formulas and OnStart for the student app, with TODO gaps for named formulas and functions."
+ },
+ "ab410/a11/solution/app-formulas.txt": {
+  "path": "solution/app-formulas.txt",
+  "description": "Completed named formulas, user-defined functions, responsive sizes and the trimmed OnStart."
+ },
+ "ab410/a11/cmpHeader-spec.md": {
+  "path": "cmpHeader-spec.md",
+  "description": "Specification for the cmpHeader component in the Campus UI library, plus the design-quality checklist."
+ },
+ "ab410/a12/start/errors-and-flows.txt": {
+  "path": "start/errors-and-flows.txt",
+  "description": "Starter Power Fx for error handling, the unguarded test button, the Test Studio case and the flow call."
+ },
+ "ab410/a12/solution/errors-and-flows.txt": {
+  "path": "solution/errors-and-flows.txt",
+  "description": "Completed error handling, OnError logging, Test Studio steps, EscalateTicket flow design and the app call."
+ },
+ "ab410/a12/test-plan.md": {
+  "path": "test-plan.md",
+  "description": "Manual and automated test plan for the student app, including the Monitor and flow checks."
+ },
+ "ab410/a13/flow-test-cases.md": {
+  "path": "flow-test-cases.md",
+  "description": "Test-case sheet for the Notify on high priority ticket flow, with the expected run count and email content."
+ },
+ "ab410/a13/email-expressions.txt": {
+  "path": "email-expressions.txt",
+  "description": "Expressions to paste into the Get a row by ID and Send an email (V2) actions."
+ },
+ "ab410/a14/approval-test-cases.md": {
+  "path": "approval-test-cases.md",
+  "description": "Test-case sheet for the Approve equipment ticket flow covering each Switch case, both approval outcomes and the Catch path."
+ },
+ "ab410/a14/try-catch-expressions.txt": {
+  "path": "try-catch-expressions.txt",
+  "description": "Expressions for the Switch, approval outcome, rejection comment and Catch email."
+ },
+ "ab410/a15/classify-ticket-prompt.md": {
+  "path": "classify-ticket-prompt.md",
+  "description": "Instruction text, input, knowledge and settings for the Classify ticket prompt, ready to paste into prompt builder."
+ },
+ "ab410/a15/expected-output.json": {
+  "path": "expected-output.json",
+  "description": "The JSON format the Classify ticket prompt must return, filled with the expected answer for the lab sample."
+ },
+ "ab410/a15/classify-samples.csv": {
+  "path": "classify-samples.csv",
+  "description": "Ticket descriptions from tickets.csv with the category and priority the prompt should return; use them as test values."
+ },
+ "ab410/a16/sentiment-test-sheet.md": {
+  "path": "sentiment-test-sheet.md",
+  "description": "Feedback texts from feedback.csv to run through the sentiment flow, with the outcome to expect for each."
+ },
+ "ab410/a16/ai-model-formulas.txt": {
+  "path": "ai-model-formulas.txt",
+  "description": "Flow condition expressions and canvas app Power Fx for the sentiment and key phrase models."
+ },
+ "ab410/a17/logic-placement-brief.md": {
+  "path": "logic-placement-brief.md",
+  "description": "Requirement list from the help desk manager; decide where each rule lives, then build the four marked items."
+ },
+ "ab410/a17/formula-column.txt": {
+  "path": "formula-column.txt",
+  "description": "Power Fx for the chd_daysopen formula column and the quick test flow for the business rule."
+ },
+ "ab400/v1/setup-checklist.md": {
+  "path": "setup-checklist.md",
+  "description": "Checklist of every tool, version and pac command you need before the developer labs, with a tick box for each."
+ },
+ "ab400/v1/verify-toolkit.js": {
+  "path": "verify-toolkit.js",
+  "description": "Node.js script that checks dotnet, node, pac, your auth profile and the Campus Help Desk solution, then prints a pass count."
+ },
+ "ab400/v2/help-desk-requirements.md": {
+  "path": "help-desk-requirements.md",
+  "description": "Eight Campus Help Desk requirements you must place in the right component, plus the environment facts to record."
+ },
+ "ab400/v2/architecture-decision-brief.md": {
+  "path": "architecture-decision-brief.md",
+  "description": "Template for your architecture decision brief: one row per requirement, the three-layer diagram and the environment findings."
+ },
+ "ab400/v2/solution/architecture-decisions.md": {
+  "path": "solution/architecture-decisions.md",
+  "description": "Model answers for the decision brief, to compare after you finish yours."
+ },
+ "ab400/v3/component-design-worksheet.md": {
+  "path": "component-design-worksheet.md",
+  "description": "Worksheet with the six components planned for the next release and a design table to complete."
+ },
+ "ab400/v3/escalate-ticket-api-spec.md": {
+  "path": "escalate-ticket-api-spec.md",
+  "description": "Specification for the chd_EscalateTicket custom API with the exact field values to enter when you inspect the Custom API form."
+ },
+ "ab400/v4/azure-pipelines.yml": {
+  "path": "azure-pipelines.yml",
+  "description": "Azure DevOps pipeline that exports, unpacks, checks, packs and imports the Campus Help Desk solution with Power Platform Build Tools."
+ },
+ "ab400/v4/export-solution.yml": {
+  "path": "export-solution.yml",
+  "description": "GitHub Actions workflow (save as .github/workflows/export-solution.yml) doing the same export, unpack, pack and import with GitHub Actions for Power Platform."
+ },
+ "ab400/v4/deploymentSettings.test.json": {
+  "path": "deploymentSettings.test.json",
+  "description": "Deployment settings for the Test stage: compare it with the file pac solution create-settings generates, then fill your own values."
+ },
+ "ab400/v5/start/ticket.js": {
+  "path": "start/ticket.js",
+  "description": "Starter client script for the Ticket form with the namespace and handlers in place and TODO gaps to fill."
+ },
+ "ab400/v5/solution/ticket.js": {
+  "path": "solution/ticket.js",
+  "description": "Finished client script: registers the change handler in code, sets the requirement level, shows the notification and counts open tickets with Xrm.WebApi."
+ },
+ "ab400/v5/test-script.md": {
+  "path": "test-script.md",
+  "description": "Test script for the Ticket form script: data preparation and the exact counts each test should show."
+ },
+ "ab400/v6/ControlManifest.Input.xml": {
+  "path": "ControlManifest.Input.xml",
+  "description": "Finished manifest for the Chd.StarRating field component: bound rating property, maxStars input and resources."
+ },
+ "ab400/v6/start/index.ts": {
+  "path": "start/index.ts",
+  "description": "Starter index.ts for the star-rating control: compiles as is, with TODO gaps in the lifecycle methods."
+ },
+ "ab400/v6/solution/index.ts": {
+  "path": "solution/index.ts",
+  "description": "Finished index.ts: draws the stars, stores the clicked value, calls notifyOutputChanged, returns it from getOutputs and cleans up in destroy."
+ },
+ "ab400/v6/StarRating.css": {
+  "path": "StarRating.css",
+  "description": "Styles for the stars; save as css/StarRating.css inside the StarRating component folder."
+ },
+ "ab400/v7/package.json": {
+  "path": "package.json",
+  "description": "Reference package.json for the chd-staff-dashboard code app (Vite + React + TypeScript); compare it with the one the template created."
+ },
+ "ab400/v7/start/OpenTickets.tsx": {
+  "path": "start/OpenTickets.tsx",
+  "description": "Starter React component (save in src/) that will list open tickets and greet the signed-in user; TODOs mark the service calls."
+ },
+ "ab400/v7/solution/OpenTickets.tsx": {
+  "path": "solution/OpenTickets.tsx",
+  "description": "Finished React component using the generated Dataverse service getAll and Office365UsersService.MyProfile_V2."
+ },
+ "ab400/v8/telemetry.ts": {
+  "path": "telemetry.ts",
+  "description": "Save as src/telemetry.ts: creates the Application Insights client and forwards platform metrics through setConfig and logMetric."
+ },
+ "ab400/v8/publish-code-app.yml": {
+  "path": "publish-code-app.yml",
+  "description": "GitHub Actions workflow that builds the code app and publishes it with pa app push --non-interactive as a service principal."
+ },
+ "ab400/v8/queries.txt": {
+  "path": "queries.txt",
+  "description": "KQL queries to paste into Application Insights Logs for sessionLoadSummary and networkRequest events."
+ },
+ "ab400/v8/release-checklist.md": {
+  "path": "release-checklist.md",
+  "description": "Release checklist for the staff dashboard: publish into the solution, share, fix CSP and verify telemetry."
+ },
+ "ab400/v9/start/ChdPlugins.csproj": {
+  "path": "start/ChdPlugins.csproj",
+  "description": "Plug-in project file (.NET Framework 4.6.2, signed, Dataverse SDK) that replaces the one pac plugin init creates."
+ },
+ "ab400/v9/start/SetPriorityFromKeywords.cs": {
+  "path": "start/SetPriorityFromKeywords.cs",
+  "description": "Starter plug-in class that compiles but does nothing yet; fill TODO 1 to 4."
+ },
+ "ab400/v9/solution/SetPriorityFromKeywords.cs": {
+  "path": "solution/SetPriorityFromKeywords.cs",
+  "description": "Finished keyword plug-in with pre-image fallback, depth guard and tracing."
+ },
+ "ab400/v9/test-cases.md": {
+  "path": "test-cases.md",
+  "description": "Keyword rule, assumed choice values, the two step registrations and test cases T1 to T6."
+ },
+ "ab400/v10/start/EscalateTicket.cs": {
+  "path": "start/EscalateTicket.cs",
+  "description": "Starter main plug-in for the chd_EscalateTicket custom API; fill TODO 1 to 5."
+ },
+ "ab400/v10/solution/EscalateTicket.cs": {
+  "path": "solution/EscalateTicket.cs",
+  "description": "Finished custom API plug-in: validates the reason, refuses closed tickets, escalates and returns chd_NewPriority."
+ },
+ "ab400/v10/custom-api-spec.md": {
+  "path": "custom-api-spec.md",
+  "description": "Definitions of chd_EscalateTicket and the chd_TicketResolved business event, with test requests and acceptance criteria."
+ },
+ "ab400/v11/webapi-requests.md": {
+  "path": "webapi-requests.md",
+  "description": "Web API requests to send from Postman or REST Client (token, filters, formatted values, $apply, If-Match) with expected results."
+ },
+ "ab400/v11/Program.cs": {
+  "path": "Program.cs",
+  "description": "BulkLoad console app: times CreateMultiple against 200 single creates, proves ExecuteTransaction rollback, then cleans up."
+ },
+ "ab400/v11/create_ticket.py": {
+  "path": "create_ticket.py",
+  "description": "Python script that creates, reads and queries tickets with the Dataverse SDK for Python."
+ },
+ "ab400/v12/NightlySlaCheck.csproj": {
+  "path": "NightlySlaCheck.csproj",
+  "description": "Azure Functions project file (.NET 8 isolated worker) with the Timer, HTTP, Dataverse and Azure.Identity packages."
+ },
+ "ab400/v12/NightlySlaCheck.cs": {
+  "path": "NightlySlaCheck.cs",
+  "description": "Host startup plus the Timer-triggered NightlySlaCheck function that escalates overdue tickets with UpdateMultiple."
+ },
+ "ab400/v12/host.json": {
+  "path": "host.json",
+  "description": "Functions host settings with Application Insights sampling."
+ },
+ "ab400/v12/local.settings.sample.json": {
+  "path": "local.settings.sample.json",
+  "description": "Sample local settings; copy to local.settings.json and set DataverseUrl (DryRun is on)."
+ },
+ "ab400/v13/start/flow-expressions.txt": {
+  "path": "start/flow-expressions.txt",
+  "description": "Ten expression exercises (trigger conditions, SLA date, try/catch, run link, retry) to answer before building the flow."
+ },
+ "ab400/v13/solution/flow-expressions.txt": {
+  "path": "solution/flow-expressions.txt",
+  "description": "Answers to the ten expression exercises with the value each returns for the sample data."
+ },
+ "ab400/v13/sample-flow-data.json": {
+  "path": "sample-flow-data.json",
+  "description": "Sample trigger body for CHD-1025, a Get a row by ID output, a result('Try') array and a workflow() object."
+ },
+ "ab400/v14/agent-integration-walkthrough.md": {
+  "path": "agent-integration-walkthrough.md",
+  "description": "Step-by-step walkthrough of the Dataverse MCP server, VS Code, Foundry, connected agents and the Copilot Studio client library."
+ },
+ "ab400/v14/ticket-analyst-instructions.md": {
+  "path": "ticket-analyst-instructions.md",
+  "description": "Instructions and routing description for Ticket Analyst, with six test questions and expected answers from tickets.csv."
+ },
+ "ab400/v15/sis-tickets.csv": {
+  "path": "sis-tickets.csv",
+  "description": "Six rows from the student information system keyed by External Ref (SIS-1042 appears twice)."
+ },
+ "ab400/v15/Program.cs": {
+  "path": "Program.cs",
+  "description": "SisSync console app: upserts sis-tickets.csv by alternate key and lists changes with RetrieveEntityChanges."
+ },
+ "ab400/v15/TicketWebhook.cs": {
+  "path": "TicketWebhook.cs",
+  "description": "HTTP-triggered function that receives Dataverse webhook posts and logs the changed columns."
+ },
+ "ab400/v15/sample-remote-context.json": {
+  "path": "sample-remote-context.json",
+  "description": "Sample execution context JSON (Update of CHD-1025 to Closed) to compare with the queue message and to post to the webhook."
+ },
+ "ab400/v16/DirectoryFunctions.cs": {
+  "path": "DirectoryFunctions.cs",
+  "description": "Campus Directory API functions GetStaff, ListDepartments and SearchStaff, using the six people in staff.csv."
+ },
+ "ab400/v16/campus-directory-api.swagger.json": {
+  "path": "campus-directory-api.swagger.json",
+  "description": "OpenAPI 2.0 definition for the custom connector with API key security and x-ms extensions."
+ },
+ "ab400/v16/script.cs": {
+  "path": "script.cs",
+  "description": "Custom code Script class that adds fullName to GetStaff and SearchStaff responses."
+ }
+}

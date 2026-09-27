@@ -1,0 +1,66 @@
+{% extends 'base.html' %}
+
+{% block title %}{% if is_new %}Add student{% else %}Edit {{ student.name }}{% endif %} - Ralfiz BMS{% endblock %}
+
+{% block breadcrumb %}
+<a href="{% url 'dashboard' %}" class="breadcrumb-item">Dashboard</a>
+<span class="breadcrumb-separator">/</span>
+<a href="{% url 'academy:manage_students' %}" class="breadcrumb-item">Students</a>
+<span class="breadcrumb-separator">/</span>
+<span class="breadcrumb-item active">{% if is_new %}Add student{% else %}Edit{% endif %}</span>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div class="page-header__lead">
+    <span class="page-header__icon"><i class="fas fa-user-plus"></i></span>
+    <div>
+      <h1 class="page-title">{% if is_new %}Add student{% else %}Edit {{ student.name }}{% endif %}</h1>
+      <p class="page-subtitle mb-0">{% if is_new %}Creates a login that only opens the Academy portal.{% else %}Unticking a track removes access to it; their progress is kept.{% endif %}</p>
+    </div>
+  </div>
+</div>
+
+<div class="card" style="max-width:760px">
+  <div class="card-body">
+    <form method="post" novalidate>
+      {% csrf_token %}
+      {% if form.non_field_errors %}<div class="alert alert-error">{{ form.non_field_errors }}</div>{% endif %}
+      <div class="form-row" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px">
+        {% for field in form %}
+        {% if field.name != 'tracks' and field.name != 'notes' %}
+        <div class="form-group">
+          <label class="form-label" for="{{ field.id_for_label }}">{{ field.label }}{% if field.field.required %} *{% endif %}</label>
+          <input class="form-control" type="{% if field.name == 'email' %}email{% else %}text{% endif %}" name="{{ field.html_name }}" id="{{ field.id_for_label }}" value="{{ field.value|default:'' }}" {% if field.name == 'username' %}autocapitalize="none" autocomplete="off"{% endif %}>
+          {% if field.help_text %}<small class="text-muted">{{ field.help_text }}</small>{% endif %}
+          {% for e in field.errors %}<small class="text-danger d-block">{{ e }}</small>{% endfor %}
+        </div>
+        {% endif %}
+        {% endfor %}
+      </div>
+
+      <div class="form-group" style="margin-top:14px">
+        <label class="form-label">Tracks</label>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:8px">
+          {% for choice in form.tracks %}
+          <label style="display:flex;gap:8px;align-items:center;border:1px solid var(--border-color,#e2e8f0);border-radius:8px;padding:8px 10px;cursor:pointer">
+            {{ choice.tag }} <span>{{ choice.choice_label }}</span>
+          </label>
+          {% endfor %}
+        </div>
+        <small class="text-muted">Suggested order: PL-900 first, then AB-410 or PL-300, then AB-400.</small>
+      </div>
+
+      <div class="form-group" style="margin-top:14px">
+        <label class="form-label" for="{{ form.notes.id_for_label }}">Notes</label>
+        <textarea class="form-control" name="notes" id="{{ form.notes.id_for_label }}" rows="2">{{ form.notes.value|default:'' }}</textarea>
+      </div>
+
+      <div class="d-flex gap-2" style="margin-top:18px">
+        <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> {% if is_new %}Create student{% else %}Save{% endif %}</button>
+        <a href="{% if is_new %}{% url 'academy:manage_students' %}{% else %}{% url 'academy:manage_student_detail' student.pk %}{% endif %}" class="btn btn-secondary">Cancel</a>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

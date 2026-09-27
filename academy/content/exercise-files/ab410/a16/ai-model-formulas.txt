@@ -1,0 +1,35 @@
+// ===== A.16 AI models in apps and flows =====
+
+// --- FLOW: Analyze positive or negative sentiment ---
+// Language: en
+// Text:     Feedback column from the trigger (dynamic content)
+
+// --- FLOW: Condition (left side) ---
+// Use the dynamic content "Probability overall text is negative"
+// Operator: is greater than     Right side: 0.7
+
+// --- FLOW: If yes -> Update a row (Tickets, Row ID = trigger's Ticket id) ---
+// Feedback sentiment = Negative
+// then Send an email (V2) to the team lead:
+concat('Negative feedback on ', triggerOutputs()?['body/chd_ticketnumber'], ': ', triggerOutputs()?['body/chd_feedback'])
+// (replace chd_feedback with the logical name of your Feedback column)
+
+// --- FLOW: If no -> Update a row ---
+// Feedback sentiment = dynamic content "Overall text sentiment"
+
+// --- CANVAS APP (Add data > AI models > Key phrase extraction) ---
+
+// btnPhrases.OnSelect  (call the model from ONE action, never from OnChange)
+Set(varKeys, 'Key phrase extraction'.Predict(txtDescription.Text))
+
+// galPhrases.Items
+// Type varKeys. and let IntelliSense show the result's table of phrases,
+// for example varKeys.Phrases, then show the phrase column in the gallery label.
+
+// btnPhrases.DisplayMode  (do not call the model with an empty text)
+If(Len(Trim(txtDescription.Text)) < 10, DisplayMode.Disabled, DisplayMode.Edit)
+
+// --- Optional: sentiment in the app, stored once ---
+// btnCheck.OnSelect
+// Set(varSent, 'Sentiment analysis'.Predict(txtFeedback.Text))
+// lblSent.Text: check the result's properties with IntelliSense after typing varSent.

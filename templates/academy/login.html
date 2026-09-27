@@ -1,0 +1,52 @@
+{% load static %}<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>Sign in · Ralfiz Academy</title>
+  <link rel="icon" type="image/svg+xml" href="{% static 'favicon.svg' %}">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700;12..96,800&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+  <script>
+    try { var t = localStorage.getItem('academy-theme'); if (t) document.documentElement.setAttribute('data-theme', t); } catch (e) {}
+  </script>
+  <link rel="stylesheet" href="{% static 'academy/academy.css' %}?v=2">
+</head>
+<body>
+  <div class="login-wrap">
+    <section class="login-art">
+      <a class="brand" href="{% url 'academy:login' %}" style="color:inherit">
+        <span class="brand-mark" aria-hidden="true">R</span><span>Ralfiz Academy</span>
+      </a>
+      <div style="display:grid;gap:16px">
+        <h1>Hands-on labs for Microsoft certifications</h1>
+        <p>In-depth lessons, real exercise files, exam-style quizzes and full practice tests. Your progress is saved to your account, so you can pick up on any device.</p>
+        <div class="codes"><span>PL-900</span><span>AB-410</span><span>PL-300</span><span>AB-400</span></div>
+      </div>
+      <p style="font-size:13px;margin:0">Ralfiz Academy course content. Not affiliated with Microsoft.</p>
+    </section>
+    <section class="login-form">
+      <form method="post" novalidate>
+        {% csrf_token %}
+        <div>
+          <div class="eyebrow">Student sign in</div>
+          <h2>Welcome back</h2>
+        </div>
+        {% if error %}<div class="flash error" style="margin:0">{{ error }}</div>{% endif %}
+        {% for message in messages %}<div class="flash {% if message.tags == 'error' %}error{% endif %}" style="margin:0">{{ message }}</div>{% endfor %}
+        <div class="field">
+          <label for="username">Username</label>
+          <input id="username" name="username" autocomplete="username" autocapitalize="none" required autofocus value="{{ request.POST.username|default:'' }}">
+        </div>
+        <div class="field">
+          <label for="password">Password</label>
+          <input id="password" name="password" type="password" autocomplete="current-password" required>
+        </div>
+        <button class="btn primary block" type="submit">Sign in</button>
+        <p style="margin:0;font-size:13px;color:var(--muted)">No account yet? Your trainer creates it and gives you the username and password.</p>
+      </form>
+    </section>
+  </div>
+</body>
+</html>

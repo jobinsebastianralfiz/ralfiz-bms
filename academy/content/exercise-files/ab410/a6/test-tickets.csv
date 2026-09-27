@@ -1,0 +1,5 @@
+Title,Description,Priority,Campus,Student Email,Expected suggested category
+Teams opens a blank window,Microsoft Teams shows a blank white window on the lab 3 PCs and never loads my classes.,Medium,South,nandana.krishnan@students.example.edu,Software
+Projector lamp warning in room 204,The projector in room 204 shows a lamp warning light and the picture is very dim during lectures.,Medium,North,sneha.george@students.example.edu,Classroom AV
+Password reset link expired,The password reset link in my email says it has expired every time I click it even when I open it straight away.,High,City,anjali.das@students.example.edu,Accounts
+Printer offline in admin block,,Low,City,sara.paul@students.example.edu,(none: Description is empty so the prompt does not run)

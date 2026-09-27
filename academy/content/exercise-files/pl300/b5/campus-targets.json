@@ -1,0 +1,28 @@
+{
+  "source": "Campus Help Desk service targets",
+  "version": 3,
+  "effectiveFrom": "2026-01-01",
+  "targets": [
+    {
+      "campus": "North",
+      "targetHours": 16,
+      "monthlyTicketCap": 12,
+      "lead": { "name": "Anu Sebastian", "email": "anu.sebastian@staff.example.edu" },
+      "supportHours": { "open": "08:00", "close": "18:00" }
+    },
+    {
+      "campus": "South",
+      "targetHours": 18,
+      "monthlyTicketCap": 14,
+      "lead": { "name": "Rahul Varma", "email": "rahul.varma@staff.example.edu" },
+      "supportHours": { "open": "08:00", "close": "17:00" }
+    },
+    {
+      "campus": "City",
+      "targetHours": 12,
+      "monthlyTicketCap": 8,
+      "lead": { "name": "Meera Iyer", "email": "meera.iyer@staff.example.edu" },
+      "supportHours": { "open": "09:00", "close": "20:00" }
+    }
+  ]
+}

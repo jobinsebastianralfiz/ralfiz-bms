@@ -1,0 +1,29 @@
+// ===== A.17 Formula column and business rule test =====
+
+// --- Ticket table > New column ---
+// Display name: Days open    Schema name: chd_daysopen
+// Data type: Formula         Result type: Whole number (set it after entering the formula)
+If(
+    Status = 'Status (Tickets)'.Closed,
+    Blank(),
+    DateDiff('Created On', UTCNow(), TimeUnit.Days)
+)
+// If the Status choice cannot be used in your formula column, use the version below
+// with the formatted text of the choice.
+// If(Text(Status) = "Closed", Blank(), DateDiff('Created On', UTCNow(), TimeUnit.Days))
+
+// Note: 'Created On' is the time the row was created in Dataverse. Rows you imported
+// from tickets.csv all have the import time, so they share the same Days open value.
+
+// --- Quick flow to prove the Entity-scope business rule runs on the server ---
+// Instant cloud flow "Test due date rule" in the Campus Help Desk solution
+// Trigger: Manually trigger a flow
+// Action:  Microsoft Dataverse - Add a new row
+//            Table name: Tickets
+//            Title:      Rule test - no due date
+//            Priority:   High
+//            Due Date:   (leave empty)
+// Expected: the action fails and its error contains
+//           "High priority tickets need a due date."
+// Then set Due Date to addDays(utcNow(), 2, 'yyyy-MM-dd') and run again: it succeeds.
+// Delete the test ticket afterwards.

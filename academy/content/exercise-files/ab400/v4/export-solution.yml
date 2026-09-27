@@ -1,0 +1,95 @@
+# .github/workflows/export-solution.yml - Campus Help Desk with GitHub Actions for Power Platform
+# Repository secrets: PP_APP_ID, PP_CLIENT_SECRET, PP_TENANT_ID (service principal)
+# Repository variables: DEV_URL (https://yourdevenv.crm.dynamics.com), TEST_URL
+name: export-and-deploy-chd
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '0 1 * * *'
+
+permissions:
+  contents: write
+
+env:
+  SOLUTION_NAME: CampusHelpDesk
+
+jobs:
+  export-unpack:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Power Platform tools
+        uses: microsoft/powerplatform-actions/actions-install@v1
+
+      - name: Export unmanaged
+        uses: microsoft/powerplatform-actions/export-solution@v1
+        with:
+          environment-url: ${{ vars.DEV_URL }}
+          app-id: ${{ secrets.PP_APP_ID }}
+          client-secret: ${{ secrets.PP_CLIENT_SECRET }}
+          tenant-id: ${{ secrets.PP_TENANT_ID }}
+          solution-name: ${{ env.SOLUTION_NAME }}
+          solution-output-file: out/chd.zip
+
+      - name: Export managed
+        uses: microsoft/powerplatform-actions/export-solution@v1
+        with:
+          environment-url: ${{ vars.DEV_URL }}
+          app-id: ${{ secrets.PP_APP_ID }}
+          client-secret: ${{ secrets.PP_CLIENT_SECRET }}
+          tenant-id: ${{ secrets.PP_TENANT_ID }}
+          solution-name: ${{ env.SOLUTION_NAME }}
+          managed: true
+          solution-output-file: out/chd_managed.zip
+
+      - name: Unpack both into src
+        uses: microsoft/powerplatform-actions/unpack-solution@v1
+        with:
+          solution-file: out/chd.zip
+          solution-folder: src/CampusHelpDesk
+          solution-type: Both
+          overwrite-files: true
+
+      - name: Commit unpacked files
+        run: |
+          git config user.email "build@example.edu"
+          git config user.name "CHD build"
+          git add src/CampusHelpDesk
+          git diff --cached --quiet || git commit -m "Nightly export of CampusHelpDesk"
+          git push
+
+      - name: Pack managed from source
+        uses: microsoft/powerplatform-actions/pack-solution@v1
+        with:
+          solution-folder: src/CampusHelpDesk
+          solution-file: release/chd_managed.zip
+          solution-type: Managed
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: solution
+          path: release/chd_managed.zip
+
+  deploy-test:
+    needs: export-unpack
+    runs-on: windows-latest
+    environment: test
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: solution
+          path: release
+      - uses: microsoft/powerplatform-actions/actions-install@v1
+      - name: Import managed into Test
+        uses: microsoft/powerplatform-actions/import-solution@v1
+        with:
+          environment-url: ${{ vars.TEST_URL }}
+          app-id: ${{ secrets.PP_APP_ID }}
+          client-secret: ${{ secrets.PP_CLIENT_SECRET }}
+          tenant-id: ${{ secrets.PP_TENANT_ID }}
+          solution-file: release/chd_managed.zip
+          use-deployment-settings-file: true
+          deployment-settings-file: deploymentSettings.test.json
+          run-asynchronously: true

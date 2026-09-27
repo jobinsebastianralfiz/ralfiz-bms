@@ -1,0 +1,23 @@
+# Replace the URLs with your own environment URLs.
+
+# 1. Sign in to both environments
+pac auth create --name CHDDev --environment https://yourdev.crm.dynamics.com
+pac auth create --name CHDTest --environment https://yourtest.crm.dynamics.com
+pac auth list
+
+# 2. Export from Dev (managed)
+pac auth select --name CHDDev
+pac solution export --name CampusHelpDesk --path ./CampusHelpDesk_managed.zip --managed
+
+# 3. Generate a deployment settings file from the zip, then edit the values
+pac solution create-settings --solution-zip ./CampusHelpDesk_managed.zip --settings-file ./deploy-settings.json
+
+# 4. Run solution checker from the CLI (optional)
+pac solution check --path ./CampusHelpDesk_managed.zip --outputDirectory ./checker
+
+# 5. Import into Test with the settings file
+pac auth select --name CHDTest
+pac solution import --path ./CampusHelpDesk_managed.zip --settings-file ./deploy-settings.json
+
+# 6. Confirm
+pac solution list

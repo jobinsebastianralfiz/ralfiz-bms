@@ -24,6 +24,7 @@ from .models import (
 )
 from django.contrib.contenttypes.models import ContentType
 from licensing.models import License, LicenseKey, LicenseActivation
+from academy.access import student_only
 
 
 # ============== Public Pages ==============
@@ -56,6 +57,8 @@ def login_view(request):
             return redirect('team_dashboard')
         if _staff_portal_user(request.user):
             return redirect('staff:dashboard')
+        if student_only(request.user):
+            return redirect('academy:home')
         return redirect('dashboard')
 
     if request.method == 'POST':
@@ -71,6 +74,9 @@ def login_view(request):
             # Interns/employees belong in the staff portal
             if _staff_portal_user(user) and not request.GET.get('next'):
                 return redirect('staff:dashboard')
+            # Academy students have their own portal
+            if student_only(user):
+                return redirect('academy:home')
             next_url = request.GET.get('next', 'dashboard')
             return redirect(next_url)
         else:
@@ -9328,6 +9334,7 @@ ACCOUNT_PROFILES = (
     ('team_profile', 'Team member'),
     ('intern_profile', 'Intern'),
     ('client_profile', 'Client'),
+    ('student_profile', 'Student'),
 )
 
 

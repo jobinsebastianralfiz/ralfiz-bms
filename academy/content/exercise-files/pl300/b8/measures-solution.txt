@@ -1,0 +1,23 @@
+// B.8 solution
+
+High Tickets =
+CALCULATE ( [Total Tickets], Tickets[Priority] = "High" )
+// The simple filter replaces any Priority filter from the visual.
+
+All Tickets =
+CALCULATE ( [Total Tickets], ALL ( Tickets ) )
+
+Share of Total =
+DIVIDE ( [Total Tickets], [All Tickets] )
+
+High Tickets Keep =
+CALCULATE ( [Total Tickets], KEEPFILTERS ( Tickets[Priority] = "High" ) )
+// Intersects: on the Low and Medium rows nothing is left, so the result is blank.
+
+// Calculated columns on Categories
+Rows Plain = COUNTROWS ( Tickets )
+// No filter context in a calculated column, so every row counts the whole table.
+
+Rows Per Category = CALCULATE ( COUNTROWS ( Tickets ) )
+// CALCULATE turns the current Categories row into a filter (context transition),
+// and the filter flows through the relationship to Tickets.

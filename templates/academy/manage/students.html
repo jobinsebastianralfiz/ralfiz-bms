@@ -1,0 +1,75 @@
+{% extends 'base.html' %}
+
+{% block title %}Academy Students - Ralfiz BMS{% endblock %}
+
+{% block breadcrumb %}
+<a href="{% url 'dashboard' %}" class="breadcrumb-item">Dashboard</a>
+<span class="breadcrumb-separator">/</span>
+<a href="{% url 'academy:manage_home' %}" class="breadcrumb-item">Academy</a>
+<span class="breadcrumb-separator">/</span>
+<span class="breadcrumb-item active">Students</span>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div class="page-header__lead">
+    <span class="page-header__icon"><i class="fas fa-user-graduate"></i></span>
+    <div>
+      <h1 class="page-title">Students</h1>
+      <p class="page-subtitle mb-0">Academy logins. Students only see the course portal, never the BMS.</p>
+    </div>
+  </div>
+  <div class="page-actions">
+    <a href="{% url 'academy:manage_student_new' %}" class="btn btn-primary"><i class="fas fa-user-plus"></i> Add student</a>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header acct-head">
+    <div>
+      <h2 class="card-title mb-0">All students</h2>
+      <p class="inv-list-head__sub">{{ rows|length }} shown</p>
+    </div>
+    <div class="card-actions">
+      <form method="get" class="acct-filters">
+        <select name="track" class="form-control" onchange="this.form.submit()">
+          <option value="">All tracks</option>
+          {% for t in tracks %}<option value="{{ t.id }}" {% if track == t.id %}selected{% endif %}>{{ t.code }}</option>{% endfor %}
+        </select>
+        <select name="batch" class="form-control" onchange="this.form.submit()">
+          <option value="">All batches</option>
+          {% for b in batches %}<option value="{{ b }}" {% if batch == b %}selected{% endif %}>{{ b }}</option>{% endfor %}
+        </select>
+        <div class="inv-input-icon">
+          <i class="fas fa-search"></i>
+          <input type="text" name="search" class="form-control" placeholder="Search name, username, phone" value="{{ search }}">
+        </div>
+        <button type="submit" class="btn btn-primary"><i class="fas fa-filter"></i> Filter</button>
+      </form>
+    </div>
+  </div>
+  <div class="card-body p-0">
+    {% if rows %}
+    <div class="table-responsive">
+      <table class="table mb-0">
+        <thead><tr><th>Name</th><th>Username</th><th>Batch</th><th>Tracks</th><th>Last active</th><th>Status</th></tr></thead>
+        <tbody>
+          {% for row in rows %}
+          <tr>
+            <td><a class="fw-medium" href="{% url 'academy:manage_student_detail' row.student.pk %}">{{ row.student.name }}</a>{% if row.student.phone %}<br><small class="text-muted">{{ row.student.phone }}</small>{% endif %}</td>
+            <td><code>{{ row.student.user.username }}</code></td>
+            <td>{{ row.student.batch|default:"-" }}</td>
+            <td>{% for t in row.tracks %}<span class="badge badge-primary">{{ t.code }}</span> {% empty %}<span class="text-muted">None</span>{% endfor %}</td>
+            <td>{{ row.last_active|date:"d M Y"|default:"Never" }}</td>
+            <td>{% if row.student.is_active %}<span class="status-badge paid">Active</span>{% else %}<span class="status-badge cancelled">Inactive</span>{% endif %}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <p class="p-3 mb-0 text-muted">No students yet. <a href="{% url 'academy:manage_student_new' %}">Add the first one</a>.</p>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

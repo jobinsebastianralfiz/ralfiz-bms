@@ -1,0 +1,113 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ student.name }} - Academy - Ralfiz BMS{% endblock %}
+
+{% block breadcrumb %}
+<a href="{% url 'dashboard' %}" class="breadcrumb-item">Dashboard</a>
+<span class="breadcrumb-separator">/</span>
+<a href="{% url 'academy:manage_students' %}" class="breadcrumb-item">Students</a>
+<span class="breadcrumb-separator">/</span>
+<span class="breadcrumb-item active">{{ student.name }}</span>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div class="page-header__lead">
+    <span class="page-header__icon"><i class="fas fa-user-graduate"></i></span>
+    <div>
+      <h1 class="page-title">{{ student.name }}</h1>
+      <p class="page-subtitle mb-0">
+        <code>{{ student.user.username }}</code>
+        {% if student.batch %} · Batch {{ student.batch }}{% endif %}
+        {% if student.phone %} · {{ student.phone }}{% endif %}
+        {% if student.user.email %} · {{ student.user.email }}{% endif %}
+        · {% if student.is_active %}<span class="status-badge paid">Active</span>{% else %}<span class="status-badge cancelled">Inactive</span>{% endif %}
+      </p>
+    </div>
+  </div>
+  <div class="page-actions d-flex gap-2" style="flex-wrap:wrap">
+    <a href="{% url 'academy:manage_student_edit' student.pk %}" class="btn btn-secondary"><i class="fas fa-pen"></i> Edit and enrol</a>
+    <form method="post" action="{% url 'academy:manage_student_password' student.pk %}" onsubmit="return confirm('Set a new password for {{ student.name|escapejs }}? The old one stops working.')">
+      {% csrf_token %}<button class="btn btn-secondary" type="submit"><i class="fas fa-key"></i> New password</button>
+    </form>
+    <form method="post" action="{% url 'academy:manage_student_status' student.pk %}">
+      {% csrf_token %}<button class="btn btn-secondary" type="submit">{% if student.status == 'active' %}<i class="fas fa-ban"></i> Deactivate{% else %}<i class="fas fa-check"></i> Reactivate{% endif %}</button>
+    </form>
+  </div>
+</div>
+
+{% if new_password %}
+<div class="card" style="border-left:4px solid #16a34a">
+  <div class="card-body">
+    <strong>Login details (shown once)</strong>
+    <p class="mb-1" style="margin-top:6px">Sign-in page: <a href="{{ login_url }}" target="_blank">{{ login_url }}</a></p>
+    <p class="mb-1">Username: <code>{{ student.user.username }}</code> &nbsp; Password: <code id="newPw">{{ new_password }}</code></p>
+    <button type="button" class="btn btn-sm btn-secondary" onclick="navigator.clipboard.writeText('Ralfiz Academy\nSign in: {{ login_url|escapejs }}\nUsername: {{ student.user.username|escapejs }}\nPassword: {{ new_password|escapejs }}');this.textContent='Copied'"><i class="fas fa-copy"></i> Copy message for the student</button>
+  </div>
+</div>
+{% endif %}
+
+{% if not summaries %}
+<div class="card"><div class="card-body"><p class="mb-0">Not enrolled in any track. <a href="{% url 'academy:manage_student_edit' student.pk %}">Enrol them</a>.</p></div></div>
+{% endif %}
+
+{% for s in summaries %}
+<div class="card">
+  <div class="card-header" style="display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;align-items:center">
+    <div>
+      <h2 class="card-title mb-0">{{ s.track.code }} {{ s.track.name }}</h2>
+      <p class="inv-list-head__sub mb-0">Enrolled {{ s.enrolled_at|date:"d M Y" }} · {{ s.done }}/{{ s.total }} lessons done · {{ s.in_progress }} in progress · best test {% if s.best_score is not None %}{{ s.best_score }}{% else %}-{% endif %} ({{ s.tests_taken }} taken)</p>
+    </div>
+    {% if s.completed %}<span class="status-badge paid"><i class="fas fa-award"></i> Course complete</span>{% else %}<span class="status-badge pending">{{ s.percent }}%</span>{% endif %}
+  </div>
+  <div class="card-body">
+    <div style="height:8px;border-radius:99px;background:#e2e8f0;overflow:hidden;margin-bottom:12px"><div style="height:100%;width:{{ s.percent }}%;background:#16a34a"></div></div>
+    <div class="acad-cells">
+      {% for c in s.cells %}
+      <span class="acad-cell {{ c.status }}" title="{{ c.lesson.num }} {{ c.lesson.title }} · lab {{ c.lab_ticked }}/{{ c.lab_total }} · quiz {{ c.quiz_right }}/{{ c.quiz_total }}">{{ c.lesson.num }}</span>
+      {% endfor %}
+    </div>
+    <p class="text-muted mb-0" style="font-size:12.5px;margin-top:8px"><span class="acad-cell done" style="padding:0 6px">done</span> <span class="acad-cell in_progress" style="padding:0 6px">in progress</span> <span class="acad-cell not_started" style="padding:0 6px">not started</span> · hover a lesson for lab and quiz counts</p>
+  </div>
+</div>
+{% endfor %}
+
+<div class="card">
+  <div class="card-header"><h2 class="card-title mb-0">Practice tests</h2></div>
+  <div class="card-body p-0">
+    {% if tests %}
+    <div class="table-responsive">
+      <table class="table mb-0">
+        <thead><tr><th>Started</th><th>Track</th><th class="text-end">Questions</th><th class="text-end">Correct</th><th class="text-end">Score</th></tr></thead>
+        <tbody>
+          {% for t in tests %}
+          <tr>
+            <td>{{ t.started_at|date:"d M Y, g:i A" }}</td>
+            <td>{{ t.track.code }}</td>
+            <td class="text-end">{{ t.size }}</td>
+            <td class="text-end">{% if t.submitted_at %}{{ t.correct_count }}{% else %}-{% endif %}</td>
+            <td class="text-end">{% if t.submitted_at %}<span class="status-badge {% if t.passed %}paid{% else %}cancelled{% endif %}">{{ t.score }}</span>{% else %}<span class="status-badge pending">In progress</span>{% endif %}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <p class="p-3 mb-0 text-muted">No practice tests yet.</p>
+    {% endif %}
+  </div>
+</div>
+
+{% if student.notes %}
+<div class="card"><div class="card-body"><strong>Notes</strong><p class="mb-0" style="white-space:pre-line">{{ student.notes }}</p></div></div>
+{% endif %}
+{% endblock %}
+
+{% block extra_css %}
+<style>
+  .acad-cells{display:flex;flex-wrap:wrap;gap:4px}
+  .acad-cell{display:inline-grid;place-items:center;min-width:44px;height:26px;border-radius:6px;font-size:12px;font-family:ui-monospace,Menlo,monospace;background:#f1f5f9;color:#64748b;border:1px solid #e2e8f0}
+  .acad-cell.done{background:#dcfce7;color:#166534;border-color:#86efac}
+  .acad-cell.in_progress{background:#fef3c7;color:#92400e;border-color:#fcd34d}
+</style>
+{% endblock %}

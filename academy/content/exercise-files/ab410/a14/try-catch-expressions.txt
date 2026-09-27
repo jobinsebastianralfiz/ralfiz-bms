@@ -1,0 +1,47 @@
+// ===== A.14 Expressions for "Approve equipment ticket" =====
+// Action names below match the default names. If you renamed an action,
+// use its new name with spaces replaced by underscores.
+
+// --- Switch / On (Category display name from the lookup) ---
+outputs('Get_a_row_by_ID')?['body/_chd_category_value@OData.Community.Display.V1.FormattedValue']
+
+// --- Start and wait for an approval / Title ---
+concat('Equipment request: ', outputs('Get_a_row_by_ID')?['body/chd_title'])
+
+// --- Start and wait for an approval / Details ---
+outputs('Get_a_row_by_ID')?['body/chd_description']
+
+// --- Condition (left side), operator "is equal to", right side: Approve ---
+outputs('Start_and_wait_for_an_approval')?['body/outcome']
+
+// --- Update a row (no branch) / Description ---
+concat(
+  outputs('Get_a_row_by_ID')?['body/chd_description'],
+  ' | Rejected: ',
+  first(outputs('Start_and_wait_for_an_approval')?['body/responses'])?['comments']
+)
+
+// --- Catch scope: Configure run after on Try = has failed + has timed out ---
+
+// --- Send an email (V2) / Subject ---
+concat('Approve equipment ticket failed for ', triggerBody()?['text'])
+// (triggerBody()?['text'] is the first text input of the Power Apps (V2) trigger.
+//  Check the input's key in the trigger's outputs if yours differs.)
+
+// --- Send an email (V2) / Body: link to this run ---
+concat(
+  'https://make.powerautomate.com/environments/',
+  workflow()?['tags']?['environmentName'],
+  '/flows/', workflow()?['name'],
+  '/runs/', workflow()?['run']?['name']
+)
+
+// --- Send an email (V2) / Body: what happened inside Try ---
+string(result('Try'))
+
+// --- Optional: Filter array to keep only failed actions ---
+// From:      result('Try')
+// Condition: item()?['status']  is equal to  Failed
+
+// --- Terminate ---
+// Status: Failed   Code: TRY_FAILED   Message: See the email sent by Catch

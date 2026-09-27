@@ -1,0 +1,27 @@
+// ===== A.13 Expressions for "Notify on high priority ticket" =====
+// Paste each expression into the Expression tab (fx) of the field named above it.
+// If your Title column's logical name is not chd_title, replace it (check the column's
+// properties in the Ticket table). The Category primary column is assumed to be chd_name.
+
+// --- Get a row by ID (Table name: Categories) / Row ID ---
+triggerOutputs()?['body/_chd_category_value']
+
+// --- Send an email (V2) / To ---
+// Your own address, or the Support Email environment variable from A.3
+
+// --- Send an email (V2) / Subject ---
+concat('High priority: ', triggerOutputs()?['body/chd_title'])
+
+// --- Send an email (V2) / Body (switch the body to code view or paste as text) ---
+// Line 1
+concat('Ticket: ', triggerOutputs()?['body/chd_ticketnumber'])
+// Line 2
+concat('Category: ', outputs('Get_a_row_by_ID')?['body/chd_name'])
+// Line 3
+concat('Due: ', formatDateTime(triggerOutputs()?['body/chd_duedate'], 'dd MMM yyyy'))
+// Line 4 (owner may be empty on new tickets)
+concat('Assigned to: ', coalesce(triggerOutputs()?['body/_ownerid_value@OData.Community.Display.V1.FormattedValue'], 'Unassigned'))
+
+// --- Optional trigger condition (Settings > Trigger conditions) ---
+// Stops the run if the ticket has no Category, so Get a row by ID never fails:
+@not(equals(triggerOutputs()?['body/_chd_category_value'], null))

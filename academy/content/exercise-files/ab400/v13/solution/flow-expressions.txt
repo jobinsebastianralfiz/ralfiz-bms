@@ -1,0 +1,42 @@
+D.13 FLOW EXPRESSION EXERCISES - SOLUTION
+=========================================
+Values come from sample-flow-data.json. Check your choice values: if High is not
+100000002 in your environment, use your own number in E1 to E3.
+
+E1  @equals(triggerOutputs()?['body/chd_priority'], 100000002)
+    Expected value: true
+
+E2  @and(equals(triggerOutputs()?['body/chd_priority'], 100000002), not(equals(triggerOutputs()?['body/chd_status'], 100000002)))
+    Expected value: true   (Status is 100000000, Open)
+
+E3  if(equals(triggerOutputs()?['body/chd_priority'], 100000002), 1, if(equals(triggerOutputs()?['body/chd_priority'], 100000001), 3, 5))
+    Expected value: 1
+
+E4  formatDateTime(addDays(triggerOutputs()?['body/createdon'], if(equals(triggerOutputs()?['body/chd_priority'], 100000002), 1, if(equals(triggerOutputs()?['body/chd_priority'], 100000001), 3, 5))), 'yyyy-MM-dd')
+    Expected value: 2026-08-29   (created 2026-08-28 + 1 day)
+    In the child flow, put E3 in a Compose named SLA_days and use outputs('SLA_days')
+    instead of repeating the if() calls.
+
+E5  coalesce(triggerOutputs()?['body/chd_description'], 'No description')
+    Expected value for the sample: Since this morning my laptop drops the CampusNet Wi-Fi
+    every few minutes on the second floor of the library. Other students near me have the
+    same problem.
+    Expected value if chd_description were null: No description
+
+E6  concat('High priority ticket ', triggerOutputs()?['body/chd_ticketnumber'], ': ', triggerOutputs()?['body/chd_title'], ' (', outputs('Get_category')?['body/chd_name'], ')')
+
+E7  Condition: @equals(item()?['status'], 'Failed')
+    Items returned: 1
+    Action returned: Get_a_row_by_ID   (the Teams post was Skipped, not Failed)
+
+E8  first(body('Filter_array'))?['outputs']?['body']?['error']?['message']
+    Expected value: chd_category With Id = 00000000-0000-0000-0000-000000000000 Does Not Exist
+
+E9  concat('https://make.powerautomate.com/environments/', workflow()?['tags']?['environmentName'], '/flows/', workflow()?['name'], '/runs/', workflow()?['run']?['name'])
+    Expected value:
+    https://make.powerautomate.com/environments/Default-1a2b3c4d-0000-4e5f-9a8b-7c6d5e4f3a2b/flows/3f9a1c52-7d4e-4b8a-9c11-2e5f6a7b8c9d/runs/08584712345678901234567890123CU01
+
+E10 Policy type: Exponential interval, Count 4
+    Interval: PT30S
+    Retries only help with temporary faults such as throttling (429) or timeouts. They do
+    not fix a wrong row ID, so the E8 error still reaches the Catch scope.

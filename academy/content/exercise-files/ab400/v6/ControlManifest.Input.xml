@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<manifest>
+  <control namespace="Chd" constructor="StarRating" version="1.0.0"
+    display-name-key="Star rating" description-key="Rate 1 to 5 with clickable stars"
+    control-type="standard">
+    <external-service-usage enabled="false">
+    </external-service-usage>
+    <!-- Bound to a whole number column such as chd_satisfaction (1 to 5) -->
+    <property name="rating" display-name-key="Rating" description-key="The rating value"
+      of-type="Whole.None" usage="bound" required="true" />
+    <!-- Setting the maker types in; defaults to 5 -->
+    <property name="maxStars" display-name-key="Max stars" description-key="How many stars to show"
+      of-type="Whole.None" usage="input" required="false" default-value="5" />
+    <resources>
+      <code path="index.ts" order="1" />
+      <css path="css/StarRating.css" order="1" />
+    </resources>
+  </control>
+</manifest>

@@ -1,0 +1,90 @@
+{% extends 'base.html' %}
+
+{% block title %}Course Progress - Academy - Ralfiz BMS{% endblock %}
+
+{% block breadcrumb %}
+<a href="{% url 'dashboard' %}" class="breadcrumb-item">Dashboard</a>
+<span class="breadcrumb-separator">/</span>
+<a href="{% url 'academy:manage_home' %}" class="breadcrumb-item">Academy</a>
+<span class="breadcrumb-separator">/</span>
+<span class="breadcrumb-item active">Course Progress</span>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div class="page-header__lead">
+    <span class="page-header__icon"><i class="fas fa-table-cells"></i></span>
+    <div>
+      <h1 class="page-title">Course Progress</h1>
+      <p class="page-subtitle mb-0">{{ track.code }} {{ track.name }}{% if batch %} · batch {{ batch }}{% endif %} · {{ rows|length }} student{{ rows|length|pluralize }}</p>
+    </div>
+  </div>
+  <div class="page-actions">
+    <a href="?track={{ track.id }}&batch={{ batch|urlencode }}&export=csv" class="btn btn-secondary"><i class="fas fa-file-csv"></i> Export CSV</a>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header acct-head">
+    <div>
+      <h2 class="card-title mb-0">Students × lessons</h2>
+      <p class="inv-list-head__sub">Green done · amber in progress · grey not started. The bottom row is quiz accuracy per lesson.</p>
+    </div>
+    <div class="card-actions">
+      <form method="get" class="acct-filters">
+        <select name="track" class="form-control" onchange="this.form.submit()">
+          {% for t in tracks %}<option value="{{ t.id }}" {% if t.id == track.id %}selected{% endif %}>{{ t.code }} {{ t.name }}</option>{% endfor %}
+        </select>
+        <select name="batch" class="form-control" onchange="this.form.submit()">
+          <option value="">All batches</option>
+          {% for b in batches %}<option value="{{ b }}" {% if batch == b %}selected{% endif %}>{{ b }}</option>{% endfor %}
+        </select>
+      </form>
+    </div>
+  </div>
+  <div class="card-body p-0">
+    {% if rows %}
+    <div class="table-responsive">
+      <table class="table mb-0 acad-matrix">
+        <thead>
+          <tr>
+            <th class="sticky-col">Student</th>
+            <th class="text-end">Done</th>
+            <th class="text-end">Best test</th>
+            {% for c in lesson_cols %}<th class="lc" title="{{ c.lesson.num }} {{ c.lesson.title }}">{{ c.lesson.num }}</th>{% endfor %}
+          </tr>
+        </thead>
+        <tbody>
+          {% for r in rows %}
+          <tr>
+            <td class="sticky-col"><a href="{% url 'academy:manage_student_detail' r.student.pk %}">{{ r.student.name }}</a>{% if r.student.batch %}<br><small class="text-muted">{{ r.student.batch }}</small>{% endif %}</td>
+            <td class="text-end">{{ r.done }}/{{ lesson_cols|length }}<br><small class="text-muted">{{ r.percent }}%</small></td>
+            <td class="text-end">{% if r.best is not None %}<span class="status-badge {% if r.best >= 700 %}paid{% else %}cancelled{% endif %}">{{ r.best }}</span>{% else %}-{% endif %}<br><small class="text-muted">{{ r.tests }} taken</small></td>
+            {% for cell in r.cells %}<td class="lc"><span class="mx {{ cell }}"></span></td>{% endfor %}
+          </tr>
+          {% endfor %}
+          <tr class="acc-row">
+            <td class="sticky-col"><strong>Quiz accuracy</strong><br><small class="text-muted">right ÷ answered</small></td>
+            <td></td><td></td>
+            {% for c in lesson_cols %}<td class="lc">{% if c.accuracy is not None %}{{ c.accuracy }}%{% else %}-{% endif %}</td>{% endfor %}
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <p class="p-3 mb-0 text-muted">Nobody is enrolled in {{ track.code }}{% if batch %} in this batch{% endif %} yet.</p>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+  .acad-matrix th.lc,.acad-matrix td.lc{text-align:center;padding-left:4px;padding-right:4px;font-size:11.5px;font-family:ui-monospace,Menlo,monospace;white-space:nowrap}
+  .acad-matrix .sticky-col{position:sticky;left:0;background:#fff;z-index:1;min-width:160px}
+  .acad-matrix .mx{display:inline-block;width:14px;height:14px;border-radius:4px;background:#e2e8f0}
+  .acad-matrix .mx.done{background:#16a34a}
+  .acad-matrix .mx.in_progress{background:#f59e0b}
+  .acad-matrix .acc-row td{background:#f8fafc}
+</style>
+{% endblock %}

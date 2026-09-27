@@ -1,0 +1,17 @@
+// B.8 starter. Needs [Total Tickets] from B.7. Replace each TODO.
+
+// 1. Always count High tickets, whatever Priority filter comes from the visual.
+High Tickets = CALCULATE ( [Total Tickets], TODO )
+
+// 2. Remove every filter on the Tickets table.
+All Tickets = CALCULATE ( [Total Tickets], TODO )
+
+// 3. This row as a share of all tickets. Format as Percentage.
+Share of Total = TODO
+
+// 4. Same as High Tickets, but intersect with the existing Priority filter.
+High Tickets Keep = CALCULATE ( [Total Tickets], TODO )
+
+// 5. Two calculated columns on the Categories table (New column):
+Rows Plain = TODO            // COUNTROWS of Tickets, no CALCULATE
+Rows Per Category = TODO     // the same, wrapped in CALCULATE

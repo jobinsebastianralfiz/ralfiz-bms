@@ -1,0 +1,43 @@
+// Paste each block into a new tab in DAX query view (the fourth icon on the left) and choose Run.
+
+// ===== Query 1: tickets per category (compare with your bar chart) =====
+EVALUATE
+SUMMARIZECOLUMNS (
+    Categories[Name],
+    "Tickets", COUNTROWS ( Tickets )
+)
+ORDER BY Categories[Name]
+
+// ===== Query 2: slow versus fast measure =====
+// Both count unresolved High tickets (Priority = High, Status not Closed).
+// The slow one iterates every column of every Tickets row.
+// The fast one filters only the two columns it needs.
+DEFINE
+    MEASURE Tickets[Unresolved High Slow] =
+        COUNTROWS (
+            FILTER ( Tickets, Tickets[Priority] = "High" && Tickets[Status] <> "Closed" )
+        )
+    MEASURE Tickets[Unresolved High] =
+        CALCULATE (
+            COUNTROWS ( Tickets ),
+            Tickets[Priority] = "High",
+            Tickets[Status] <> "Closed"
+        )
+EVALUATE
+SUMMARIZECOLUMNS (
+    Tickets[Campus],
+    "Slow", [Unresolved High Slow],
+    "Fast", [Unresolved High]
+)
+
+// ===== Query 3: model size check =====
+// Number of distinct values per column: high numbers compress badly.
+EVALUATE
+ROW (
+    "TicketID", DISTINCTCOUNT ( Tickets[TicketID] ),
+    "CreatedDate", DISTINCTCOUNT ( Tickets[CreatedDate] ),
+    "Campus", DISTINCTCOUNT ( Tickets[Campus] ),
+    "Priority", DISTINCTCOUNT ( Tickets[Priority] )
+)
+// When you are happy with the fast measure, add it to the model with
+// "Update model: Add new measure" above the DEFINE line.

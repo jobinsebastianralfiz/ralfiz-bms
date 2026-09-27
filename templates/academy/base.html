@@ -1,0 +1,97 @@
+{% load static %}<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="csrf-token" content="{{ csrf_token }}">
+  <title>{% block title %}Ralfiz Academy{% endblock %}</title>
+  <link rel="icon" type="image/svg+xml" href="{% static 'favicon.svg' %}">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700;12..96,800&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+  <script>
+    try { var t = localStorage.getItem('academy-theme'); if (t) document.documentElement.setAttribute('data-theme', t); } catch (e) {}
+  </script>
+  <link rel="stylesheet" href="{% static 'academy/academy.css' %}?v=2">
+</head>
+<body data-track="{% block body_track %}home{% endblock %}">
+  {% if request.is_preview %}
+  <div class="preview-bar">Owner preview: you see every track. Your ticks and answers are saved to your own login. <a href="{% url 'academy:manage_home' %}">Back to Academy admin</a></div>
+  {% endif %}
+  <header class="top">
+    <div class="top-in">
+      {% if side_track %}
+      <button class="btn sm menu-btn" id="menuBtn" aria-expanded="false" aria-controls="side">Lessons</button>
+      {% endif %}
+      <a class="brand" href="{% url 'academy:home' %}">
+        <span class="brand-mark" aria-hidden="true">R</span>
+        <span class="word">Ralfiz <span class="labs">Academy</span></span>
+      </a>
+      {% if side_track %}
+      <div class="prog" aria-label="Track progress">
+        <div class="bar"><i style="width:{{ side_percent }}%"></i></div>
+        <span id="progTxt">{{ side_track.code }} {{ side_done }}/{{ side_total }}</span>
+      </div>
+      {% endif %}
+      <nav class="top-nav" aria-label="Main">
+        <a class="nl {% if not side_track %}opt-hide{% endif %}" href="{% url 'academy:home' %}" {% if nav == 'home' %}aria-current="page"{% endif %}>Dashboard</a>
+        {% if side_track %}
+        <a class="nl opt-hide" href="{% url 'academy:test_start' side_track.id %}" {% if side_current == 'test' %}aria-current="page"{% endif %}>Practice test</a>
+        {% endif %}
+        <button class="theme-btn" id="themeBtn" type="button" aria-label="Switch light or dark theme" title="Theme">◐</button>
+        <details class="who">
+          <summary><span class="avatar">{{ request.user.first_name|default:request.user.username|slice:":1"|upper }}</span><span class="wn">{{ request.user.get_full_name|default:request.user.username }}</span></summary>
+          <div class="who-menu">
+            <div class="wm-h"><b>{{ request.user.get_full_name|default:request.user.username }}</b>{% if request.student.batch %}{{ request.student.batch }}{% else %}{{ request.user.username }}{% endif %}</div>
+            <a href="{% url 'academy:home' %}">Dashboard</a>
+            <a href="{% url 'academy:profile' %}">Profile and password</a>
+            {% if request.is_preview %}<a href="{% url 'academy:manage_home' %}">Academy admin</a>{% endif %}
+            <a href="{% url 'academy:logout' %}">Sign out</a>
+          </div>
+        </details>
+      </nav>
+    </div>
+  </header>
+
+  <div class="shell {% if not side_track %}solo{% endif %}">
+    {% if side_track %}
+    <nav class="side" id="side" aria-label="Lessons">
+      <a class="all-tracks" href="{% url 'academy:home' %}">← Dashboard</a>
+      {% if side_tracks|length > 1 %}
+      <label class="tsw" for="trackSel"><span>Track</span>
+        <select id="trackSel" data-base="{% url 'academy:track' 'TRACK' %}">
+          {% for t in side_tracks %}<option value="{{ t.id }}" {% if t.id == side_track.id %}selected{% endif %}>{{ t.code }} · {{ t.name }}</option>{% endfor %}
+        </select>
+      </label>
+      {% endif %}
+      <ul>
+        <li><a href="{% url 'academy:track' side_track.id %}" class="home-link" {% if side_current == 'overview' %}aria-current="page"{% endif %}>Track overview</a></li>
+        <li><a href="{% url 'academy:test_start' side_track.id %}" {% if side_current == 'test' %}aria-current="page"{% endif %}>Practice test</a></li>
+      </ul>
+      {% for d in side_domains %}
+      <h4><span>{{ d.domain.name }}</span><b>{{ d.domain.weight }}</b></h4>
+      <ul>
+        {% for item in d.lessons %}
+        <li><a href="{% url 'academy:lesson' item.lesson.id %}" {% if side_current == item.lesson.id %}aria-current="page"{% endif %}>
+          <span class="num">{{ item.lesson.num }}</span><span>{{ item.lesson.title }}</span>
+          <span class="dot {% if item.status == 'done' %}done{% elif item.status == 'in_progress' %}half{% endif %}" data-dot="{{ item.lesson.id }}" aria-label="{% if item.status == 'done' %}Complete{% elif item.status == 'in_progress' %}In progress{% else %}Not started{% endif %}"></span>
+        </a></li>
+        {% endfor %}
+      </ul>
+      {% endfor %}
+    </nav>
+    <div class="scrim" id="scrim"></div>
+    {% endif %}
+
+    <main id="main">
+      {% for message in messages %}
+      <div class="flash {% if message.tags == 'error' %}error{% endif %}">{{ message }}</div>
+      {% endfor %}
+      {% block content %}{% endblock %}
+    </main>
+  </div>
+
+  <script src="{% static 'academy/academy.js' %}?v=1"></script>
+  {% block extra_js %}{% endblock %}
+</body>
+</html>

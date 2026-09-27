@@ -1,0 +1,19 @@
+// B.7 solution. Measures live on the Tickets table.
+
+Total Tickets = COUNTROWS ( Tickets )
+
+Avg Hours = AVERAGE ( Tickets[HoursToResolve] )
+
+Closed Tickets =
+COUNTROWS ( FILTER ( Tickets, Tickets[Status] = "Closed" ) )
+
+Close Rate = DIVIDE ( [Closed Tickets], [Total Tickets] )
+// Format as Percentage with 1 decimal place.
+
+// Calculated column on Tickets (New column):
+Team = RELATED ( Categories[Team] )
+// RELATED works because Categories (one side) filters Tickets (many side).
+
+// Why not a column for Close Rate?
+// A calculated column is fixed per row at refresh. A ratio must be recalculated
+// for every slicer selection, so it has to be a measure.

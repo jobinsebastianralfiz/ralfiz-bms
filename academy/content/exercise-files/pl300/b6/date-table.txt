@@ -1,0 +1,23 @@
+// Date table for the Help Desk model (DAX calculated table).
+// Modeling > New table, paste everything below this comment block, press Enter.
+// Then: Table tools > Mark as date table > choose the Date column.
+//       Select Month > Column tools > Sort by column > MonthNo.
+//       Hide MonthNo from report view.
+
+Date =
+ADDCOLUMNS (
+    CALENDAR ( DATE ( 2026, 1, 1 ), DATE ( 2026, 12, 31 ) ),
+    "Year", YEAR ( [Date] ),
+    "Month", FORMAT ( [Date], "MMM" ),
+    "MonthNo", MONTH ( [Date] ),
+    "Quarter", "Q" & QUARTER ( [Date] ),
+    "Weekday", FORMAT ( [Date], "ddd" ),
+    "WeekdayNo", WEEKDAY ( [Date], 2 )
+)
+
+// Relationships to create in Model view:
+//   'Date'[Date] 1 -> * Tickets[CreatedDate]   active   (solid line)
+//   'Date'[Date] 1 -> * Tickets[ClosedDate]    inactive (dashed line, used with USERELATIONSHIP)
+//   Categories[CategoryID] 1 -> * Tickets[CategoryID]  single direction
+//
+// Also set Weekday to sort by WeekdayNo if you use it in visuals.

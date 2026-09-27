@@ -1,0 +1,19 @@
+// B.7 starter: complete each TODO, then create it with Table tools > New measure
+// (or New column for the calculated column). Create everything on the Tickets table.
+
+// 1. Count every ticket row.
+Total Tickets = TODO
+
+// 2. Average of HoursToResolve. Blank hours (open tickets) are ignored automatically.
+Avg Hours = TODO
+
+// 3. Count only rows whose Status is "Closed". Use COUNTROWS around FILTER.
+Closed Tickets = TODO
+
+// 4. Closed tickets divided by all tickets. Use DIVIDE, not the / operator.
+//    Format: Measure tools > Format > Percentage, 1 decimal place.
+Close Rate = TODO
+
+// 5. Calculated column (Table tools > New column), not a measure:
+//    bring the Team from Categories onto every ticket row.
+Team = TODO

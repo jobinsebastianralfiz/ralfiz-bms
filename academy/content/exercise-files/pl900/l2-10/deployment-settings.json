@@ -1,0 +1,9 @@
+{
+  "EnvironmentVariables": [
+    {
+      "SchemaName": "chd_HelpDeskEmail",
+      "Value": "helpdesk-test@example.edu"
+    }
+  ],
+  "ConnectionReferences": []
+}

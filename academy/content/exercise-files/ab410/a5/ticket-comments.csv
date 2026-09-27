@@ -1,0 +1,13 @@
+Name,Comment,Ticket,Ticket Number
+Update 1,Checked the charger with a spare laptop and the charger works. Battery or charging port is the likely fault.,Laptop will not charge,CHD-1017
+Update 2,Ordered a replacement battery from the supplier. Expected in two days.,Laptop will not charge,CHD-1017
+Update 3,Offered the student a loan laptop for the Monday exam.,Laptop will not charge,CHD-1017
+Update 1,Keys E and R confirmed dead. Swapped keyboard with the spare from lab 3.,Keyboard keys not working,CHD-1019
+Update 2,Waiting for the student to confirm the new keyboard works.,Keyboard keys not working,CHD-1019
+Update 1,Username missing from the directory sync. Raised with the identity team.,New student cannot sign in,CHD-1020
+Update 2,Account now appears in the directory. Sent a temporary password to the personal email on file.,New student cannot sign in,CHD-1020
+Update 1,Lecturer PC audio output was set to HDMI. Changed to the room amplifier and testing next class.,No sound from classroom speakers,CHD-1021
+Update 1,Port 214-B shows no link on the switch. Needs a technician visit.,No network in hostel block C,CHD-1022
+Update 2,Technician booked for Thursday morning.,No network in hostel block C,CHD-1022
+Update 1,Three other students on library floor 2 report the same drops. Checking the access point.,Wi-Fi keeps disconnecting in the library,CHD-1025
+Update 2,Access point LIB-2-03 rebooted. Monitoring for one day before closing.,Wi-Fi keeps disconnecting in the library,CHD-1025

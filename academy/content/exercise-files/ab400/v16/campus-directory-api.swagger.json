@@ -1,0 +1,109 @@
+{
+  "swagger": "2.0",
+  "info": {
+    "title": "Campus Directory API",
+    "description": "Look up Campus Help Desk staff and their departments.",
+    "version": "1.0"
+  },
+  "host": "chd-directory.azurewebsites.net",
+  "basePath": "/api",
+  "schemes": ["https"],
+  "consumes": [],
+  "produces": ["application/json"],
+  "securityDefinitions": {
+    "api_key": {
+      "type": "apiKey",
+      "in": "header",
+      "name": "x-functions-key"
+    }
+  },
+  "security": [{ "api_key": [] }],
+  "paths": {
+    "/staff": {
+      "get": {
+        "operationId": "GetStaff",
+        "summary": "Get staff member",
+        "description": "Returns one staff member by email address.",
+        "parameters": [
+          {
+            "name": "email",
+            "in": "query",
+            "required": true,
+            "type": "string",
+            "x-ms-summary": "Staff email",
+            "description": "For example anu.sebastian@staff.example.edu",
+            "x-ms-visibility": "important"
+          }
+        ],
+        "responses": {
+          "200": { "description": "Staff member", "schema": { "$ref": "#/definitions/StaffMember" } },
+          "404": { "description": "No staff member with that email" }
+        }
+      }
+    },
+    "/departments": {
+      "get": {
+        "operationId": "ListDepartments",
+        "summary": "List departments",
+        "description": "Returns the departments that have staff.",
+        "x-ms-visibility": "internal",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Departments",
+            "schema": { "type": "array", "items": { "$ref": "#/definitions/Department" } }
+          }
+        }
+      }
+    },
+    "/staff/search": {
+      "get": {
+        "operationId": "SearchStaff",
+        "summary": "Search staff by department",
+        "description": "Returns every staff member in a department.",
+        "parameters": [
+          {
+            "name": "department",
+            "in": "query",
+            "required": true,
+            "type": "string",
+            "x-ms-summary": "Department",
+            "x-ms-visibility": "important",
+            "x-ms-dynamic-values": {
+              "operationId": "ListDepartments",
+              "value-path": "code",
+              "value-title": "name"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Staff members",
+            "schema": { "type": "array", "items": { "$ref": "#/definitions/StaffMember" } }
+          }
+        }
+      }
+    }
+  },
+  "definitions": {
+    "StaffMember": {
+      "type": "object",
+      "properties": {
+        "email": { "type": "string", "x-ms-summary": "Email" },
+        "firstName": { "type": "string", "x-ms-summary": "First name" },
+        "lastName": { "type": "string", "x-ms-summary": "Last name" },
+        "fullName": { "type": "string", "x-ms-summary": "Full name", "description": "Added by the connector's custom code" },
+        "role": { "type": "string", "x-ms-summary": "Role" },
+        "campus": { "type": "string", "x-ms-summary": "Campus" },
+        "department": { "type": "string", "x-ms-summary": "Department" }
+      }
+    },
+    "Department": {
+      "type": "object",
+      "properties": {
+        "code": { "type": "string", "x-ms-summary": "Code" },
+        "name": { "type": "string", "x-ms-summary": "Name" }
+      }
+    }
+  }
+}

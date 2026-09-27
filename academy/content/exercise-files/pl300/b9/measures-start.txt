@@ -1,0 +1,17 @@
+// B.9 starter. Needs the Date table from pl300/b6/date-table.txt, marked as a date table,
+// with 'Date'[Date] -> Tickets[CreatedDate] active and -> Tickets[ClosedDate] inactive.
+
+// 0. If your model does not have it yet:
+Ticket Count = COUNTROWS ( Tickets )
+
+// 1. Tickets from 1 January up to the last date in the current filter.
+Tickets YTD = TOTALYTD ( TODO, TODO )
+
+// 2. The same measure shifted back one month.
+Tickets prev month = CALCULATE ( [Ticket Count], TODO )
+
+// 3. Count tickets by the day they were CLOSED, using the inactive relationship.
+Tickets closed = CALCULATE ( [Ticket Count], TODO )
+
+// 4. Middle value of HoursToResolve.
+Median hours = TODO

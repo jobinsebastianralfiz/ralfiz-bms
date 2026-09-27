@@ -1,0 +1,37 @@
+{% extends 'academy/base.html' %}
+{% block title %}Profile · Ralfiz Academy{% endblock %}
+{% block content %}
+<section class="hero">
+  <div class="eyebrow">Your account</div>
+  <h1>{{ request.user.get_full_name|default:request.user.username }}</h1>
+  <p>Username <span class="mono">{{ request.user.username }}</span>{% if request.user.email %} · {{ request.user.email }}{% endif %}{% if request.student.batch %} · Batch {{ request.student.batch }}{% endif %}</p>
+</section>
+
+<div class="grid2">
+  <section class="panel">
+    <h3>Enrolled courses</h3>
+    {% if enrollments %}
+    <ul class="rows">
+      {% for e in enrollments %}
+      <li><a href="{% url 'academy:track' e.track.id %}"><b class="mono" style="min-width:60px">{{ e.track.code }}</b><span class="grow">{{ e.track.name }}</span><span class="meta">since {{ e.enrolled_at|date:"j M Y" }}</span></a></li>
+      {% endfor %}
+    </ul>
+    {% else %}
+    <p class="empty-p">{% if request.is_preview %}Owner preview: you can open every track.{% else %}No courses yet. Ask your trainer to enrol you.{% endif %}</p>
+    {% endif %}
+  </section>
+
+  <form method="post" class="form-card">
+    {% csrf_token %}
+    <h3 style="font-size:18px">Change password</h3>
+    {% for field in form %}
+    <div class="field">
+      <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+      {{ field }}
+      {% for e in field.errors %}<span class="err">{{ e }}</span>{% endfor %}
+    </div>
+    {% endfor %}
+    <button class="btn primary block" type="submit">Update password</button>
+  </form>
+</div>
+{% endblock %}

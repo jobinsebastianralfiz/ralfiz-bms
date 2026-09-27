@@ -1,0 +1,7 @@
+External Ref,Title,Description,Priority,Student Email,Created On
+SIS-1040,Projector remote missing in room 110,The remote control for the projector in room 110 is missing from the lecturer desk.,Low,vishnu.joseph@students.example.edu,2026-09-01
+SIS-1041,Lab 3 PC will not start,PC 14 in lab 3 shows a black screen and a long beep when it is switched on.,Medium,nandana.krishnan@students.example.edu,2026-09-01
+SIS-1042,Projector not working,The ceiling projector in room 204 shows no picture.,Medium,aditya.abraham@students.example.edu,2026-09-02
+SIS-1043,Card reader offline at library door,The ID card reader at the library side door does not respond and students cannot enter with their cards.,Medium,riya.mathew@students.example.edu,2026-09-02
+SIS-1044,Broken chair in lab 4,The chair at lab 4 seat 3 has a broken wheel and tips over.,Low,hari.ali@students.example.edu,2026-09-03
+SIS-1042,Projector not working in room 204,The ceiling projector in room 204 shows no picture. The lamp light on the projector is red.,High,aditya.abraham@students.example.edu,2026-09-02
