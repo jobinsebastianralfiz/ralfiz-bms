@@ -156,6 +156,26 @@
 
   SF.cameraErrorText = cameraErrorText;
 
+  function wait(ms) {
+    return new Promise(function (r) { setTimeout(r, ms); });
+  }
+
+  /* Many Android phones (Xiaomi/Redmi especially) release the camera a few
+     hundred ms AFTER the previous stream's tracks are stopped. Opening the
+     front camera straight after the QR scanner then fails with
+     NotReadableError ("used by another app"), so retry that case with backoff. */
+  function openCamera(constraints) {
+    var delays = [300, 700, 1200, 2000];
+    function attempt(i) {
+      return navigator.mediaDevices.getUserMedia(constraints).catch(function (err) {
+        var busy = err && (err.name === 'NotReadableError' || err.name === 'AbortError' || err.name === 'TrackStartError');
+        if (!busy || i >= delays.length) throw err;
+        return wait(delays[i]).then(function () { return attempt(i + 1); });
+      });
+    }
+    return attempt(0);
+  }
+
   /* Capture a selfie. Resolves with a JPEG Blob, or rejects if cancelled. */
   SF.captureSelfie = function (modal, prompt) {
     return new Promise(function (resolve, reject) {
@@ -166,11 +186,14 @@
 
       var video = modal.body.querySelector('video');
       var stream = null;
+      var closed = false;
 
-      navigator.mediaDevices.getUserMedia({
+      openCamera({
         video: { facingMode: 'user', width: { ideal: 1280 }, height: { ideal: 1280 } },
         audio: false
       }).then(function (s) {
+        // Modal closed while we were still retrying: don't keep the camera on.
+        if (closed) { stopStream(s); return; }
         stream = s;
         video.srcObject = s;
         video.setAttribute('playsinline', '');   // iOS: play inline, not fullscreen
@@ -203,7 +226,7 @@
         }, 'image/jpeg', 0.9);
       });
 
-      modal.onClose = function () { stopStream(stream); };
+      modal.onClose = function () { closed = true; stopStream(stream); };
     });
   };
 
@@ -220,13 +243,26 @@
         '<button type="button" class="sf-btn sf-btn-ghost" id="sfQrManualGo">Use this code</button>';
 
       var scanner = null;
+      var starting = Promise.resolve();
       var settled = false;
+
+      /* Wait for start() to settle before stopping: if the code is typed in
+         while the camera is still opening, stop() would reject ("not
+         running") and the stream would stay live, blocking the selfie. */
+      function release() {
+        if (!scanner) return Promise.resolve();
+        var s = scanner;
+        return starting
+          .catch(function () {})
+          .then(function () { return s.isScanning ? s.stop() : null; })
+          .catch(function () {})
+          .then(function () { try { s.clear(); } catch (e) { /* already cleared */ } });
+      }
 
       function finish(value) {
         if (settled) return;
         settled = true;
-        var done = scanner ? scanner.stop().catch(function () {}) : Promise.resolve();
-        done.then(function () { resolve(value); });
+        release().then(function () { resolve(value); });
       }
 
       modal.body.querySelector('#sfQrManualGo').addEventListener('click', function () {
@@ -245,19 +281,22 @@
       }
 
       scanner = new window.Html5Qrcode('sfQrReader', { verbose: false });
-      scanner.start(
+      starting = scanner.start(
         { facingMode: 'environment' },
         { fps: 10, qrbox: { width: 230, height: 230 } },
         function (decoded) { finish(decoded); },
         function () { /* per-frame decode misses are normal */ }
-      ).catch(function (err) {
-        modal.body.querySelector('#sfQrReader').innerHTML =
+      );
+      starting.catch(function (err) {
+        if (settled) return;
+        var reader = modal.body.querySelector('#sfQrReader');
+        if (reader) reader.innerHTML =
           '<div class="sf-alert sf-alert-warning">' + cameraErrorText(err) + '</div>';
       });
 
       modal.onClose = function () {
         settled = true;
-        if (scanner) scanner.stop().catch(function () {});
+        release();
         reject(new Error('cancelled'));
       };
     });

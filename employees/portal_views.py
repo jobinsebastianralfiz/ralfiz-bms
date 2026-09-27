@@ -31,7 +31,7 @@ from .models import (
 # changes. Whitenoise serves these unhashed, and the service worker is
 # cache-first for static assets, so an unversioned URL is served from the old
 # cache forever -- which is exactly how the app icon got stuck.
-ASSET_V = '8'
+ASSET_V = '9'
 
 MONTHS = [
     '', 'January', 'February', 'March', 'April', 'May', 'June',
