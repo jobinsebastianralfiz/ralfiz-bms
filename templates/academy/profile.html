@@ -25,6 +25,31 @@
 </section>
 
 <div class="pf-grid">
+  <div style="display:grid;gap:20px;min-width:0">
+  <section class="card2 pf-perks" id="badges">
+    <div class="pf-h"><h2>Achievements</h2><span class="pill">{{ perks.earned|length }} / {{ perks.badges|length }} badges</span></div>
+    <div class="pf-pk">
+      <div class="pk-level"><span class="medal"><b>{{ perks.level.number }}</b></span>
+        <div><span class="eyebrow">Level {{ perks.level.number }}</span><b class="pk-name">{{ perks.level.name }}</b>
+          <span class="pk-sub">{{ perks.xp }} XP{% if perks.level.next_name %} · {{ perks.level.to_next }} XP to {{ perks.level.next_name }}{% endif %}</span>
+          <div class="pbar"><i style="width:{{ perks.level.percent }}%"></i></div></div>
+      </div>
+      <div class="pk-streak {% if perks.streak.current %}on{% endif %}"><span class="flame"><i class="fa-solid fa-fire"></i></span>
+        <div><b>{{ perks.streak.current }} day streak</b><span class="pk-sub">Best: {{ perks.streak.longest }} day{{ perks.streak.longest|pluralize }}</span></div>
+      </div>
+    </div>
+    <div class="bgrid">
+      {% for b in perks.badges %}
+      <div class="bdg {% if b.earned %}on{% endif %}" title="{{ b.how }}">
+        <span class="bi"><i class="fa-solid {% if b.earned %}{{ b.icon }}{% else %}fa-lock{% endif %}"></i></span>
+        <b>{{ b.name }}</b><small>{{ b.how }}</small>
+      </div>
+      {% endfor %}
+    </div>
+    <details class="xp-how"><summary>How to earn XP</summary>
+      <ul><li>Lab step ticked: 5 XP</li><li>Quiz question right: 10 XP</li><li>Lesson complete: 50 XP</li><li>Section complete: 100 XP</li><li>Practice test at 700+ (per course): 200 XP</li><li>Course complete: 500 XP</li></ul>
+    </details>
+  </section>
   <section class="card2 pf-courses">
     <div class="pf-h"><h2>Enrolled courses</h2><span class="pill">{{ courses|length }} course{{ courses|length|pluralize }}</span></div>
     {% for s in courses %}
@@ -45,6 +70,7 @@
     <p class="empty-p" style="padding:0">No courses yet. Ask your trainer to enrol you.</p>
     {% endfor %}
   </section>
+  </div>
 
   <div class="pf-side">
     <form method="post" class="card2 pf-card" id="pwForm" novalidate>

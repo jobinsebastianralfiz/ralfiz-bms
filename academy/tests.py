@@ -265,3 +265,77 @@ class ManageTests(AcademyTestBase):
     def test_accounts_page_shows_student_role(self):
         r = self.client.get(reverse('account_list') + '?role=Student')
         self.assertContains(r, 'stu')
+
+
+class LockAndPerkTests(AcademyTestBase):
+    def setUp(self):
+        self.login_student()
+        self.lessons = list(Lesson.objects.filter(track_id='pl900'))
+
+    def finish(self, lesson):
+        LabProgress.objects.update_or_create(
+            user=self.user, lesson=lesson,
+            defaults={'ticked_steps': list(range(len(lesson.lab_steps)))})
+        for q in Question.objects.filter(lesson=lesson, source='lesson'):
+            QuizAnswer.objects.update_or_create(user=self.user, question=q,
+                                                defaults={'last_choice': q.answer, 'ever_correct': True,
+                                                          'attempts': 1})
+
+    def test_lessons_unlock_in_order(self):
+        first, second = self.lessons[0], self.lessons[1]
+        r = self.client.get(reverse('academy:lesson', args=[second.id]))
+        self.assertRedirects(r, reverse('academy:track', args=['pl900']))
+        r = self.post_json(reverse('academy:api_lab', args=[second.id]), {'ticked_steps': [0]})
+        self.assertEqual(r.status_code, 403)
+        self.finish(first)
+        self.assertEqual(self.client.get(reverse('academy:lesson', args=[second.id])).status_code, 200)
+
+    def test_started_lesson_stays_open(self):
+        third = self.lessons[2]
+        LabProgress.objects.create(user=self.user, lesson=third, ticked_steps=[0])
+        self.assertEqual(self.client.get(reverse('academy:lesson', args=[third.id])).status_code, 200)
+
+    def test_course_waits_for_prerequisite(self):
+        Enrollment.objects.create(student=self.student, track_id='ab410')
+        first = Lesson.objects.filter(track_id='ab410').first()
+        r = self.client.get(reverse('academy:lesson', args=[first.id]))
+        self.assertRedirects(r, reverse('academy:track', args=['ab410']))
+        r = self.client.post(reverse('academy:test_start', args=['ab410']), {'size': '30'})
+        self.assertRedirects(r, reverse('academy:track', args=['ab410']))
+        self.assertContains(self.client.get(reverse('academy:track', args=['ab410'])), 'This course is locked')
+        # Finish PL-900: every lesson plus a passing practice test.
+        for lesson in self.lessons:
+            self.finish(lesson)
+        TestAttempt.objects.create(user=self.user, track_id='pl900', question_ids=[1], score=800,
+                                   correct_count=1, submitted_at='2026-09-27T10:00:00Z')
+        self.assertEqual(self.client.get(reverse('academy:lesson', args=[first.id])).status_code, 200)
+
+    def test_started_course_stays_open(self):
+        Enrollment.objects.create(student=self.student, track_id='pl300')
+        TestAttempt.objects.create(user=self.user, track_id='pl300', question_ids=[])
+        first = Lesson.objects.filter(track_id='pl300').first()
+        self.assertEqual(self.client.get(reverse('academy:lesson', args=[first.id])).status_code, 200)
+
+    def test_prerequisite_not_enrolled_does_not_block(self):
+        Enrollment.objects.filter(student=self.student).delete()
+        Enrollment.objects.create(student=self.student, track_id='ab410')
+        first = Lesson.objects.filter(track_id='ab410').first()
+        self.assertEqual(self.client.get(reverse('academy:lesson', args=[first.id])).status_code, 200)
+
+    def test_trainer_unlock_all(self):
+        Student.objects.filter(pk=self.student.pk).update(unlock_all=True)
+        self.assertEqual(self.client.get(reverse('academy:lesson', args=[self.lessons[5].id])).status_code, 200)
+
+    def test_xp_badge_and_streak(self):
+        first = self.lessons[0]
+        r = self.post_json(reverse('academy:api_lab', args=[first.id]), {'ticked_steps': [0]}).json()
+        self.assertEqual(r['perks']['xp_gain'], 5)
+        self.assertEqual(r['perks']['streak'], 1)
+        self.assertEqual([b['name'] for b in r['perks']['new_badges']], ['First step'])
+        # Announced once only.
+        r = self.post_json(reverse('academy:api_lab', args=[first.id]), {'ticked_steps': [0, 1]}).json()
+        self.assertEqual(r['perks']['new_badges'], [])
+        q = Question.objects.filter(lesson=first, source='lesson').first()
+        r = self.post_json(reverse('academy:api_answer', args=[q.id]), {'choice': q.answer}).json()
+        self.assertEqual(r['perks']['xp_gain'], 10)
+        self.assertContains(self.client.get(reverse('academy:profile')), 'Achievements')

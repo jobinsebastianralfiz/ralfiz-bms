@@ -18,7 +18,10 @@
       <div><i class="fa-solid fa-circle-check"></i><span>{{ r.passes }}<small>Passed</small></span></div>
     </div>
     <p style="font-size:13.5px">Drawn from {{ r.pool }} questions.{% if r.last %} Last: {{ r.last.score }} on {{ r.last.submitted_at|date:"j M" }}.{% endif %}</p>
-    {% if r.open_attempt %}
+    {% if r.lock %}
+    <div class="cfoot"><span class="btn2 ghost is-locked"><i class="fa-solid fa-lock"></i> Locked</span></div>
+    <p class="lock-why"><i class="fa-solid fa-circle-info"></i> {{ r.lock }}</p>
+    {% elif r.open_attempt %}
     <div class="cfoot"><a class="btn2" href="{% url 'academy:test_take' r.open_attempt.id %}"><i class="fa-solid fa-play"></i> Resume test ({{ r.open_attempt.answers|length }}/{{ r.open_attempt.size }})</a></div>
     {% else %}
     <form method="post" action="{% url 'academy:test_start' r.track.id %}" class="cfoot">

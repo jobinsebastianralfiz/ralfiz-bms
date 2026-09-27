@@ -30,6 +30,9 @@
     <form method="post" action="{% url 'academy:manage_student_password' student.pk %}" onsubmit="return confirm('Set a new password for {{ student.name|escapejs }}? The old one stops working.')">
       {% csrf_token %}<button class="btn btn-secondary" type="submit"><i class="fas fa-key"></i> New password</button>
     </form>
+    <form method="post" action="{% url 'academy:manage_student_unlock' student.pk %}" onsubmit="return confirm('{% if student.unlock_all %}Put {{ student.name|escapejs }} back on the normal order (courses and lessons unlock one after another)?{% else %}Open every course and lesson for {{ student.name|escapejs }}, skipping the locks?{% endif %}')">
+      {% csrf_token %}<button class="btn btn-secondary" type="submit">{% if student.unlock_all %}<i class="fa-solid fa-lock"></i> Restore locks{% else %}<i class="fa-solid fa-lock-open"></i> Unlock all{% endif %}</button>
+    </form>
     <form method="post" action="{% url 'academy:manage_student_status' student.pk %}">
       {% csrf_token %}<button class="btn btn-secondary" type="submit">{% if student.status == 'active' %}<i class="fas fa-ban"></i> Deactivate{% else %}<i class="fas fa-check"></i> Reactivate{% endif %}</button>
     </form>
@@ -46,6 +49,24 @@
   </div>
 </div>
 {% endif %}
+
+<div class="inv-stats inv-stats--3">
+  <div class="inv-stat">
+    <span class="inv-stat__icon is-amber"><i class="fas fa-star"></i></span>
+    <div><div class="inv-stat__label">Level {{ perks.level.number }} · {{ perks.level.name }}</div><div class="inv-stat__value">{{ perks.xp }} XP</div>
+      <div class="inv-stat__note">{% if perks.level.next_name %}{{ perks.level.to_next }} XP to {{ perks.level.next_name }}{% else %}top level{% endif %}</div></div>
+  </div>
+  <div class="inv-stat">
+    <span class="inv-stat__icon is-warning"><i class="fas fa-fire"></i></span>
+    <div><div class="inv-stat__label">Streak</div><div class="inv-stat__value">{{ perks.streak.current }} day{{ perks.streak.current|pluralize }}</div>
+      <div class="inv-stat__note">longest {{ perks.streak.longest }} · {% if student.unlock_all %}<b>locks off</b>{% else %}locks on{% endif %}</div></div>
+  </div>
+  <div class="inv-stat">
+    <span class="inv-stat__icon is-primary"><i class="fas fa-award"></i></span>
+    <div><div class="inv-stat__label">Badges</div><div class="inv-stat__value">{{ perks.earned|length }} / {{ perks.badges|length }}</div>
+      <div class="inv-stat__note">{% for b in perks.earned %}{{ b.name }}{% if not forloop.last %}, {% endif %}{% empty %}none yet{% endfor %}</div></div>
+  </div>
+</div>
 
 {% if not summaries %}
 <div class="card"><div class="card-body"><p class="mb-0">Not enrolled in any track. <a href="{% url 'academy:manage_student_edit' student.pk %}">Enrol them</a>.</p></div></div>

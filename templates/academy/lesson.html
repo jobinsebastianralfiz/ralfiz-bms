@@ -110,7 +110,8 @@
 
 <nav class="pager">
   {% if prev_lesson %}<a class="btn" href="{% url 'academy:lesson' prev_lesson.id %}"><span>← {{ prev_lesson.num }} {{ prev_lesson.title }}</span></a>{% else %}<span></span>{% endif %}
-  {% if next_lesson %}<a class="btn primary" href="{% url 'academy:lesson' next_lesson.id %}"><span>{{ next_lesson.num }} {{ next_lesson.title }} →</span></a>
+  {% if next_lesson and next_locked %}<span class="btn" style="cursor:not-allowed;color:var(--muted)" title="Finish this lesson to unlock"><span><i class="fa-solid fa-lock"></i> {{ next_lesson.num }} {{ next_lesson.title }}</span></span>
+  {% elif next_lesson %}<a class="btn primary" href="{% url 'academy:lesson' next_lesson.id %}"><span>{{ next_lesson.num }} {{ next_lesson.title }} →</span></a>
   {% else %}<a class="btn primary" href="{% url 'academy:test_start' track.id %}"><span>Take the {{ track.code }} practice test →</span></a>{% endif %}
 </nav>
 </div>
@@ -148,10 +149,17 @@
   {% if next_lesson %}
   <section class="card2">
     <h4>Next up <a href="{% url 'academy:lesson' next_lesson.id %}" style="margin-left:auto;color:var(--accent)" aria-label="Open next lesson"><i class="fa-solid fa-arrow-right"></i></a></h4>
+    {% if next_locked %}
+    <div class="rnext" style="cursor:not-allowed">
+      <span class="tile sm plain"><i class="fa-solid fa-lock"></i></span>
+      <span><b>{{ next_lesson.num }} {{ next_lesson.title }}</b><small>Unlocks when this lesson's lab and quiz are done</small></span>
+    </div>
+    {% else %}
     <a class="rnext" href="{% url 'academy:lesson' next_lesson.id %}">
       <span class="tile sm"><i class="fa-regular fa-file-lines"></i></span>
       <span><b>{{ next_lesson.num }} {{ next_lesson.title }}</b><small>{{ next_lesson.minutes }} min · Lab {{ next_status.lab_ticked }}/{{ next_status.lab_total }} · Quiz {{ next_status.quiz_right }}/{{ next_status.quiz_total }}</small></span>
     </a>
+    {% endif %}
   </section>
   {% else %}
   <section class="card2">

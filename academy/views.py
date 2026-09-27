@@ -10,6 +10,7 @@ from django import forms
 from django.contrib import messages
 from django.contrib.auth import authenticate, login, logout, update_session_auth_hash
 from django.contrib.auth.forms import PasswordChangeForm
+from django.db.models import Count
 from django.http import Http404, HttpResponse, HttpResponseBadRequest, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
@@ -20,10 +21,19 @@ from .access import is_admin, learner_required, visible_tracks
 from .models import (
     ExerciseFile, LabProgress, Lesson, Question, QuizAnswer, Student, TestAttempt, Track,
 )
+from . import perks as perks_mod
+from .locks import course_lock, course_locks, lesson_lock, locked_lessons, locks_apply
 from .progress import DONE, lesson_statuses, track_summary
 from .sanitize import headings
 
 REMEMBER_ME_SECONDS = 30 * 24 * 60 * 60
+PATH_ORDER = ['pl900', 'ab410', 'pl300', 'ab400']
+PATH_LINES = {
+    'pl900': 'Start with the basics and understand the core services.',
+    'ab410': 'Build real business apps with AI and Dataverse.',
+    'pl300': 'Analyse data and build interactive reports.',
+    'ab400': 'Extend the platform with custom code and integrations.',
+}
 FILE_BADGES = {'csv': 'CSV', 'json': 'JSON', 'md': 'DOC', 'txt': 'TXT', 'cs': 'C#', 'ts': 'TS',
                'tsx': 'TSX', 'js': 'JS', 'py': 'PY', 'yml': 'YAML', 'xml': 'XML',
                'csproj': 'PROJ', 'css': 'CSS'}
@@ -86,13 +96,15 @@ def _sidebar(request, track, current=None):
     """The course outline: domains (collapsible) with lessons and status dots."""
     lessons = list(Lesson.objects.filter(track=track).select_related('domain'))
     statuses = lesson_statuses(request.user, lessons)
+    locked = locked_lessons(request, lessons, statuses, course_lock(request, track))
     domains = []
     for lesson in lessons:
         if not domains or domains[-1]['domain'].pk != lesson.domain_id:
             domains.append({'domain': lesson.domain, 'index': len(domains), 'lessons': [],
                             'done': 0, 'open': False})
         st = statuses[lesson.id]['status']
-        domains[-1]['lessons'].append({'lesson': lesson, 'status': st})
+        domains[-1]['lessons'].append({'lesson': lesson, 'status': st,
+                                       'locked': locked.get(lesson.id)})
         domains[-1]['done'] += st == DONE
         if lesson.id == current:
             domains[-1]['open'] = True
@@ -170,16 +182,50 @@ def home(request):
         resume = next((s['next_lesson'] for s in summaries if s['started'] and s['done'] < s['total']),
                       summaries[0]['next_lesson'] if summaries else None)
 
-    # Suggested path: PL-900, then AB-410 or PL-300, then AB-400.
+    # Suggested learning path, one step per track in the recommended order.
     by_id = {t.id: t for t in Track.objects.filter(is_published=True)}
-    pct = {s['track'].id: s['percent'] for s in summaries}
-    path = [[{'track': by_id[tid], 'enrolled': tid in enrolled_ids, 'percent': pct.get(tid, 0)}
-             for tid in step if tid in by_id]
-            for step in (['pl900'], ['ab410', 'pl300'], ['ab400'])]
+    by_summary = {s['track'].id: s for s in summaries}
+    path = []
+    for tid in PATH_ORDER:
+        if tid not in by_id:
+            continue
+        s = by_summary.get(tid)
+        state = ('locked' if s is None else 'completed' if s['completed'] else
+                 'in_progress' if s['started'] else 'not_started')
+        path.append({'track': by_id[tid], 'state': state, 'line': PATH_LINES.get(tid, by_id[tid].blurb),
+                     'percent': s['percent'] if s else 0})
+
+    # Practice tests table: a 30-question test and, where the pool allows, a
+    # 50-question mock for every enrolled course.
+    attempts = list(TestAttempt.objects.filter(user=request.user, track_id__in=enrolled_ids))
+    pools = dict(Question.objects.filter(track_id__in=enrolled_ids, is_active=True)
+                 .values_list('track').annotate(n=Count('id')))
+    test_rows = []
+    for s in summaries:
+        tid = s['track'].id
+        for size, label in ((30, 'Practice test'), (50, 'Full mock test')):
+            if size == 50 and pools.get(tid, 0) < 50:
+                continue
+            mine = [a for a in attempts if a.track_id == tid and a.size == size]
+            finished = [a for a in mine if a.submitted_at]
+            test_rows.append({
+                'track': s['track'], 'size': size, 'label': label,
+                'best': max((a.score for a in finished), default=None),
+                'last': max(finished, key=lambda a: a.submitted_at) if finished else None,
+                'open': next((a for a in mine if not a.submitted_at), None),
+            })
 
     for s in summaries:
         s['state'] = ('completed' if s['total'] and s['done'] == s['total'] else
                       'in_progress' if s['started'] else 'not_started')
+    locks = course_locks(request, summaries)
+    for s in summaries:
+        s['lock'] = locks[s['track'].id]
+    for p in path:
+        p['lock'] = locks.get(p['track'].id)
+    for r in test_rows:
+        r['lock'] = locks.get(r['track'].id)
+    perks = perks_mod.for_request(request)
     counts = {k: sum(1 for s in summaries if s['state'] == k)
               for k in ('in_progress', 'not_started', 'completed')}
     minutes_total = sum(l.minutes for s in summaries for l in s['lessons'])
@@ -189,7 +235,7 @@ def home(request):
 
     return render(request, 'academy/home.html', {
         'counts': counts, 'any_started': any(s['started'] for s in summaries),
-        'path': [step for step in path if step],
+        'path': path, 'test_rows': test_rows,
         'summaries': summaries, 'locked': locked, 'resume': resume,
         'resume_status': (lesson_statuses(request.user, [resume])[resume.id]['status']
                           if resume else None),
@@ -200,7 +246,8 @@ def home(request):
                   'left_pct': round(minutes_left / minutes_total * 100) if minutes_total else 0,
                   'tracks': len(tracks), 'best': best,
                   'best_pct': round(best / 10) if best is not None else 0},
-        'tests': tests,
+        'tests': tests, 'perks': perks,
+        'new_badges': perks_mod.announce_new(request, perks),
         'enrolled_ids': enrolled_ids,
         'nav': 'home',
     })
@@ -222,6 +269,9 @@ def courses(request):
     counts = {k: sum(1 for s in summaries if s['state'] == k)
               for k in ('in_progress', 'not_started', 'completed')}
     locked = Track.objects.filter(is_published=True).exclude(pk__in=[t.id for t in tracks])
+    locks = course_locks(request, summaries)
+    for s in summaries:
+        s['lock'] = locks[s['track'].id]
     return render(request, 'academy/courses.html', {
         'summaries': summaries, 'counts': counts, 'locked': locked, 'nav': 'courses',
     })
@@ -234,7 +284,9 @@ def assessments(request):
     attempts = (TestAttempt.objects.filter(user=request.user, track__in=tracks)
                 .select_related('track'))
     rows = []
+    locks = course_locks(request, summaries)
     for s in summaries:
+        s['lock'] = locks[s['track'].id]
         mine = [a for a in attempts if a.track_id == s['track'].id]
         done = [a for a in mine if a.submitted_at]
         rows.append({**s, 'attempts': len(done),
@@ -267,11 +319,14 @@ def certificates(request):
 def track_detail(request, track_id):
     track = _track_or_404(request, track_id)
     summary = track_summary(request.user, track)
+    lock = course_lock(request, track)
+    locked = locked_lessons(request, summary['lessons'], summary['statuses'], lock)
     domains = []
     for lesson in summary['lessons']:
         if not domains or domains[-1]['domain'].pk != lesson.domain_id:
             domains.append({'domain': lesson.domain, 'lessons': [], 'done': 0})
-        domains[-1]['lessons'].append({'lesson': lesson, **summary['statuses'][lesson.id]})
+        domains[-1]['lessons'].append({'lesson': lesson, 'locked': locked.get(lesson.id),
+                                       **summary['statuses'][lesson.id]})
         if summary['statuses'][lesson.id]['status'] == DONE:
             domains[-1]['done'] += 1
     open_left = 2
@@ -295,7 +350,8 @@ def track_detail(request, track_id):
     data_files = sorted(data_files, key=lambda f: track.data_file_ids.index(f.pk))
 
     return render(request, 'academy/track.html', {
-        'track': track, 'summary': summary, 'domains': domains, 'resume': resume,
+        'track': track, 'summary': summary, 'domains': domains,
+        'resume': None if lock else resume, 'course_lock': lock,
         'facts': facts,
         'data_files': _file_rows(data_files),
         'tests': TestAttempt.objects.filter(user=request.user, track=track,
@@ -312,6 +368,10 @@ def track_detail(request, track_id):
 def lesson_detail(request, lesson_id):
     lesson = _lesson_or_404(request, lesson_id)
     track = lesson.track
+    reason = lesson_lock(request, lesson)
+    if reason:
+        messages.info(request, f'{lesson.num} {lesson.title} is locked. {reason}')
+        return redirect('academy:track', track_id=track.id)
     if request.student and not request.is_preview and request.student.last_lesson_id != lesson.id:
         Student.objects.filter(pk=request.student.pk).update(last_lesson=lesson)
 
@@ -352,11 +412,14 @@ def lesson_detail(request, lesson_id):
         'lead': _lead(lesson.summary_html),
         'files_kb': round(sum(f.size_bytes for f in files) / 1024, 1),
         'next_status': next_status,
+        'next_locked': bool(next_lesson and locks_apply(request) and status['status'] != DONE
+                            and next_status['status'] == 'not_started'),
         'lab_pct': round(status['lab_ticked'] / status['lab_total'] * 100) if status['lab_total'] else 100,
         'lesson_pct': _lesson_pct(status),
         'quiz': quiz, 'files': _file_rows(files),
         'prev_lesson': prev_lesson, 'next_lesson': next_lesson,
         'tab': tab if tab in ('learn', 'lab', 'quiz') else 'learn',
+        'new_badges': perks_mod.announce_new(request, perks_mod.for_request(request)),
         **_sidebar(request, track, current=lesson.id),
     })
 
@@ -365,15 +428,20 @@ def lesson_detail(request, lesson_id):
 @learner_required
 def api_lab(request, lesson_id):
     lesson = _lesson_or_404(request, lesson_id)
+    reason = lesson_lock(request, lesson)
+    if reason:
+        return JsonResponse({'detail': reason}, status=403)
     data = _json_body(request)
     if data is None or not isinstance(data.get('ticked_steps'), list):
         return HttpResponseBadRequest('ticked_steps must be a list')
     steps = sorted({i for i in data['ticked_steps']
                     if isinstance(i, int) and 0 <= i < len(lesson.lab_steps)})
+    before = perks_mod.for_request(request)['xp']
     LabProgress.objects.update_or_create(user=request.user, lesson=lesson,
                                          defaults={'ticked_steps': steps})
     return JsonResponse({'ticked_steps': steps,
-                         'status': lesson_statuses(request.user, [lesson])[lesson.id]})
+                         'status': lesson_statuses(request.user, [lesson])[lesson.id],
+                         'perks': perks_mod.event_payload(request, before)})
 
 
 @require_POST
@@ -381,11 +449,16 @@ def api_lab(request, lesson_id):
 def api_answer(request, question_id):
     question = get_object_or_404(Question, pk=question_id, is_active=True)
     _track_or_404(request, question.track_id)
+    if question.lesson_id:
+        reason = lesson_lock(request, Lesson.objects.select_related('track').get(pk=question.lesson_id))
+        if reason:
+            return JsonResponse({'detail': reason}, status=403)
     data = _json_body(request)
     choice = data.get('choice') if data else None
     if not isinstance(choice, int) or not 0 <= choice < len(question.options):
         return HttpResponseBadRequest('choice must be an option index')
     correct = choice == question.answer
+    before = perks_mod.for_request(request)['xp']
     ans, _ = QuizAnswer.objects.get_or_create(user=request.user, question=question,
                                               defaults={'last_choice': choice})
     ans.last_choice = choice
@@ -396,6 +469,7 @@ def api_answer(request, question_id):
     if question.lesson_id:
         lesson = Lesson.objects.get(pk=question.lesson_id)
         payload['status'] = lesson_statuses(request.user, [lesson])[lesson.id]
+    payload['perks'] = perks_mod.event_payload(request, before)
     return JsonResponse(payload)
 
 
@@ -440,6 +514,8 @@ def _lab_md(lesson):
 @learner_required
 def lesson_zip(request, lesson_id):
     lesson = _lesson_or_404(request, lesson_id)
+    if lesson_lock(request, lesson):
+        raise Http404
     files = [lf.file for lf in lesson.lesson_files.select_related('file')]
     data = _zip([(f.zip_path, f.content) for f in files] + [('LAB.md', _lab_md(lesson))])
     name = f'{lesson.track.code.lower()}-{lesson.num.lower().replace(".", "-")}-exercise-files.zip'
@@ -471,6 +547,10 @@ def _attempt_questions(attempt):
 @never_cache
 def test_start(request, track_id):
     track = _track_or_404(request, track_id)
+    reason = course_lock(request, track)
+    if reason:
+        messages.info(request, f'The {track.code} practice test is locked. {reason}')
+        return redirect('academy:track', track_id=track.id)
     pool = list(Question.objects.filter(track=track, is_active=True).values_list('id', flat=True))
     if request.method == 'POST':
         size = 50 if request.POST.get('size') == '50' and len(pool) >= 50 else 30
@@ -541,6 +621,7 @@ def test_submit(request, attempt_id):
         attempt.correct_count, attempt.score = _grade(attempt, _attempt_questions(attempt))
         attempt.submitted_at = timezone.now()
         attempt.save()
+        perks_mod.record_activity(request.user)
     return redirect('academy:test_result', attempt_id=attempt.id)
 
 
@@ -566,6 +647,7 @@ def test_result(request, attempt_id):
         'attempt': attempt, 'track': attempt.track, 'items': items,
         'missed_lessons': sorted(missed_lessons.values(), key=lambda m: -m['n'])[:6],
         'pass_mark': TestAttempt.PASS_MARK,
+        'new_badges': perks_mod.announce_new(request, perks_mod.for_request(request)),
         **_sidebar(request, attempt.track, current='test'),
     })
 
@@ -610,5 +692,6 @@ def profile(request):
         courses.append(s)
     return render(request, 'academy/profile.html', {
         'pw_form': pw_form, 'info_form': info_form, 'courses': courses,
+        'perks': perks_mod.for_request(request),
         'edit_open': action == 'info', 'nav': 'profile',
     })

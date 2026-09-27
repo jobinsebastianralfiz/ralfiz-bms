@@ -30,6 +30,13 @@
   </div>
 </section>
 
+{% if course_lock %}
+<div class="card2 pbanner locked">
+  <span class="tile plain" style="border-radius:50%"><i class="fa-solid fa-lock"></i></span>
+  <div><b>This course is locked</b><p>{{ course_lock }} You can look around, and the lessons open once it is unlocked.</p></div>
+  <a class="btn2 ghost" href="{% url 'academy:home' %}">Back to Dashboard</a>
+</div>
+{% else %}
 <div class="card2 pbanner {% if summary.completed %}done{% endif %}">
   <span class="tile {% if summary.completed %}{% else %}plain{% endif %}" style="border-radius:50%"><i class="fa-solid {% if summary.completed %}fa-award{% else %}fa-bullseye{% endif %}"></i></span>
   <div>
@@ -38,6 +45,7 @@
   </div>
   {% if resume %}<a class="btn2" href="{% url 'academy:lesson' resume.id %}"><i class="fa-solid fa-circle-play"></i> {% if summary.started %}Continue Learning{% else %}Start Learning{% endif %}</a>{% endif %}
 </div>
+{% endif %}
 
 <div class="how2">
   <div class="card2 l"><span class="tile"><i class="fa-solid fa-book-open"></i></span><div><h3>Learn</h3><p>In-depth explanations, comparison tables, worked examples and common mistakes.</p></div></div>
@@ -63,13 +71,18 @@
     </summary>
     <ul class="lrows">
       {% for x in d.lessons %}
-      <li><a href="{% url 'academy:lesson' x.lesson.id %}">
+      <li>{% if x.locked %}<div class="lrow-locked" title="{{ x.locked }}">
+        <span class="tile plain"><i class="fa-solid fa-lock"></i></span>
+        <span class="n">{{ x.lesson.num }}</span>
+        <span><b>{{ x.lesson.title }}</b><small>{{ x.lesson.minutes }} min · {{ x.locked }}</small></span>
+        <span></span><span></span>
+      </div>{% else %}<a href="{% url 'academy:lesson' x.lesson.id %}">
         <span class="tile {% if x.status == 'done' %}{% elif x.status == 'in_progress' %}amber{% else %}plain{% endif %}"><i class="fa-{% if x.status == 'done' %}solid fa-check{% else %}regular fa-file-lines{% endif %}"></i></span>
         <span class="n">{{ x.lesson.num }}</span>
         <span><b>{{ x.lesson.title }}</b><small>{{ x.lesson.minutes }} min · Lab {{ x.lab_ticked }}/{{ x.lab_total }} · Quiz {{ x.quiz_right }}/{{ x.quiz_total }}{% if x.lesson.widget %} · simulator{% endif %}</small></span>
         <span>{% if x.status == 'done' %}<span class="pill ok">Done</span>{% elif x.status == 'in_progress' %}<span class="pill lab">In progress</span>{% endif %}</span>
         <i class="fa-solid fa-chevron-right"></i>
-      </a></li>
+      </a>{% endif %}</li>
       {% endfor %}
     </ul>
   </details>

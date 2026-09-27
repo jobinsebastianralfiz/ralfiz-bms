@@ -38,6 +38,8 @@ urlpatterns = [
     path('manage/students/<uuid:pk>/edit/', m.manage_student_edit, name='manage_student_edit'),
     path('manage/students/<uuid:pk>/password/', m.manage_student_password,
          name='manage_student_password'),
+    path('manage/students/<uuid:pk>/unlock/', m.manage_student_unlock,
+         name='manage_student_unlock'),
     path('manage/students/<uuid:pk>/status/', m.manage_student_status,
          name='manage_student_status'),
     path('manage/progress/', m.manage_progress, name='manage_progress'),

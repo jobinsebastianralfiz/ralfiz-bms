@@ -1,4 +1,4 @@
-<article class="card2 ccard" data-t="{{ s.track.id }}" data-state="{{ s.state }}">
+<article class="card2 ccard {% if s.lock %}prereq{% endif %}" data-t="{{ s.track.id }}" data-state="{{ s.state }}">
   <div class="h">
     <div>
       <span class="code">{{ s.track.code }}</span><span class="lvl">{{ s.track.level }}</span>
@@ -16,8 +16,13 @@
     <div class="pbar"><i style="width:{{ s.percent }}%"></i></div>
     <div class="t"><span>{{ s.done }} of {{ s.total }} done</span><span>{{ s.percent }}%</span></div>
   </div>
+  {% if s.lock %}
+  <div class="cfoot"><span class="btn2 ghost is-locked" title="{{ s.lock }}"><i class="fa-solid fa-lock"></i> Locked</span></div>
+  <p class="lock-why"><i class="fa-solid fa-circle-info"></i> {{ s.lock }}</p>
+  {% else %}
   <div class="cfoot">
     <a class="btn2" href="{% if s.started and s.next_lesson %}{% url 'academy:lesson' s.next_lesson.id %}{% else %}{% url 'academy:track' s.track.id %}{% endif %}">{% if s.state == 'completed' %}Review Course{% elif s.started %}Continue Course{% else %}Start Course{% endif %} <i class="fa-solid fa-arrow-right"></i></a>
     <a class="btn2 sq" href="{% url 'academy:test_start' s.track.id %}" title="Practice test" aria-label="{{ s.track.code }} practice test"><i class="fa-solid fa-chart-column"></i></a>
   </div>
+  {% endif %}
 </article>

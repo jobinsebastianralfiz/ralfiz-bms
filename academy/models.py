@@ -171,6 +171,10 @@ class Student(models.Model):
     notes = models.TextField(blank=True)
     last_lesson = models.ForeignKey(Lesson, null=True, blank=True, on_delete=models.SET_NULL,
                                     related_name='+')
+    # Trainer override: skip course and lesson locks for this student.
+    unlock_all = models.BooleanField(default=False)
+    # Badge keys already announced, so each "new badge" pop-up shows once.
+    seen_badges = models.JSONField(default=list, blank=True)
     created_by = models.ForeignKey(User, null=True, blank=True, on_delete=models.SET_NULL,
                                    related_name='+')
     created_at = models.DateTimeField(auto_now_add=True)
@@ -248,3 +252,13 @@ class TestAttempt(models.Model):
     @property
     def size(self):
         return len(self.question_ids)
+
+
+class LearningDay(models.Model):
+    """One row per user per day with learning activity, for streaks."""
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='academy_days')
+    date = models.DateField()
+
+    class Meta:
+        unique_together = ('user', 'date')
+        ordering = ['-date']

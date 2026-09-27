@@ -59,6 +59,28 @@
   </div>
 </section>
 
+<section class="card2 perkbar" aria-label="Your perks">
+  <div class="pk-level">
+    <span class="medal"><b>{{ perks.level.number }}</b></span>
+    <div>
+      <span class="eyebrow">Level {{ perks.level.number }}</span>
+      <b class="pk-name">{{ perks.level.name }}</b>
+      <span class="pk-sub">{{ perks.xp }} XP{% if perks.level.next_name %} · {{ perks.level.to_next }} XP to {{ perks.level.next_name }}{% endif %}</span>
+      <div class="pbar"><i style="width:{{ perks.level.percent }}%"></i></div>
+    </div>
+  </div>
+  <div class="pk-streak {% if perks.streak.current %}on{% endif %}">
+    <span class="flame"><i class="fa-solid fa-fire"></i></span>
+    <div><b>{{ perks.streak.current }} day{{ perks.streak.current|pluralize }}</b><span class="pk-sub">{% if perks.streak.today %}Streak kept today{% elif perks.streak.current %}Learn today to keep it{% else %}Learn today to start a streak{% endif %} · best {{ perks.streak.longest }}</span></div>
+  </div>
+  <a class="pk-badges" href="{% url 'academy:profile' %}#badges">
+    <div class="icons">
+      {% for b in perks.earned|slice:":5" %}<span title="{{ b.name }}"><i class="fa-solid {{ b.icon }}"></i></span>{% empty %}<span class="none"><i class="fa-solid fa-award"></i></span>{% endfor %}
+    </div>
+    <div><b>{{ perks.earned|length }} / {{ perks.badges|length }} badges</b><span class="pk-sub">See all badges <i class="fa-solid fa-arrow-right"></i></span></div>
+  </a>
+</section>
+
 <div class="sec-h">
   <div><h2>My courses</h2><p>Continue your learning journey with hands-on labs and real-world projects.</p></div>
   <div class="fchips" role="group" aria-label="Filter courses" data-filter-for="courseGrid">
@@ -73,42 +95,64 @@
 </div>
 {% endif %}
 
-<div class="grid2" style="margin-top:30px">
-  <section class="card2" style="overflow:hidden">
-    <div class="sec-h" style="margin:0;padding:16px 20px;border-bottom:1px solid var(--line)"><h2 style="font-size:17px">Recent practice tests</h2><span style="font-size:13px;color:var(--muted)">score out of 1000 · pass 700</span></div>
-    {% if tests %}
-    <ul class="rows">
-      {% for t in tests %}
-      <li><a href="{% url 'academy:test_result' t.id %}">
-        <span class="sc {% if t.passed %}ok{% else %}no{% endif %}">{{ t.score }}</span>
-        <span class="grow">{{ t.track.code }} · {{ t.correct_count }} of {{ t.size }} correct<small>{{ t.submitted_at|date:"j M Y, g:i A" }}</small></span>
-        <span class="badge {% if t.passed %}ok{% else %}no{% endif %}">{% if t.passed %}Pass{% else %}Below 700{% endif %}</span>
-      </a></li>
-      {% endfor %}
-    </ul>
+<div class="dash-low">
+  <section class="card2 dpanel">
+    <div class="dp-h">
+      <span class="tile"><i class="fa-solid fa-bullseye"></i></span>
+      <div><h2>Recent practice tests</h2><p>Each course has a 30-question practice test and a 50-question full mock test.</p></div>
+      <a class="btn2 soft" href="{% url 'academy:assessments' %}">View all tests <i class="fa-solid fa-arrow-right"></i></a>
+    </div>
+    {% if test_rows %}
+    <div class="dp-table">
+      <table>
+        <thead><tr><th>Test</th><th>Course</th><th>Questions</th><th>Best score</th><th>Last attempt</th><th>Action</th></tr></thead>
+        <tbody>
+          {% for r in test_rows %}
+          <tr data-t="{{ r.track.id }}">
+            <td><span class="tn"><i class="fa-regular fa-file-lines"></i>{{ r.label }}</span></td>
+            <td>{{ r.track.code }}</td>
+            <td>{{ r.size }}</td>
+            <td>{% if r.best is not None %}<span class="badge {% if r.best >= 700 %}ok{% else %}no{% endif %}">{{ r.best }}</span>{% else %}–{% endif %}</td>
+            <td class="mut">{% if r.last %}<a href="{% url 'academy:test_result' r.last.id %}">{{ r.last.submitted_at|date:"j M Y" }}</a>{% else %}Not attempted{% endif %}</td>
+            <td>
+              {% if r.lock %}
+              <span class="btn2 out is-locked" title="{{ r.lock }}"><i class="fa-solid fa-lock"></i> Locked</span>
+            {% elif r.open %}
+              <a class="btn2 out" href="{% url 'academy:test_take' r.open.id %}">Resume</a>
+              {% else %}
+              <form method="post" action="{% url 'academy:test_start' r.track.id %}">{% csrf_token %}<button class="btn2 out" type="submit" name="size" value="{{ r.size }}">{% if r.last %}Retake{% else %}Start Test{% endif %}</button></form>
+              {% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
     {% else %}
-    <p class="empty-p">No practice tests yet. Each course has one: 30 random questions, or a 50-question full mock.</p>
+    <p class="empty-p" style="padding:0 0 12px">Enrol in a course to take its practice tests.</p>
     {% endif %}
+    <p class="dp-note"><i class="fa-solid fa-chart-column"></i> Practice tests help you track your preparation. Scores here are a guide, not Microsoft's scaled score.</p>
   </section>
 
-  <section class="card2" style="overflow:hidden">
-    <div class="sec-h" style="margin:0;padding:16px 20px;border-bottom:1px solid var(--line)"><h2 style="font-size:17px">Suggested path</h2></div>
-    <div style="padding:16px 20px">
-      <ol class="path">
-        {% for step in path %}
-        <li {% if step|length > 1 %}class="fork"{% endif %}>
-          {% for p in step %}
-          {% if p.enrolled %}
-          <a data-t="{{ p.track.id }}" href="{% url 'academy:track' p.track.id %}"><b>{{ p.track.code }}</b><span>{{ p.percent }}% done</span></a>
-          {% else %}
-          <a data-t="{{ p.track.id }}" aria-disabled="true" style="opacity:.6;cursor:default" title="Not enrolled"><b>{{ p.track.code }}</b><span>Locked</span></a>
-          {% endif %}
-          {% endfor %}
-        </li>
-        {% endfor %}
-      </ol>
-      <p style="margin:12px 0 0;font-size:13.5px;color:var(--muted)">Start with PL-900. Then AB-410 to build apps or PL-300 to analyse data. AB-400 (developer) comes after AB-410.</p>
+  <section class="card2 dpanel">
+    <div class="dp-h">
+      <span class="tile"><i class="fa-solid fa-route"></i></span>
+      <div><h2>Suggested learning path</h2><p>Follow this path to build complete Power Platform skills.</p></div>
     </div>
+    <ol class="lpath">
+      {% for p in path %}
+      <li data-t="{{ p.track.id }}" class="{{ p.state }}{% if p.lock %} prereq{% endif %}">
+        <span class="step">{% if p.state == 'completed' %}<i class="fa-solid fa-check"></i>{% else %}{{ forloop.counter }}{% endif %}</span>
+        {% if p.state == 'locked' %}<div class="lp-row">{% else %}<a class="lp-row" href="{% url 'academy:track' p.track.id %}">{% endif %}
+          <span class="glyph" aria-hidden="true"><i class="fa-solid {{ p.track.icon }}"></i></span>
+          <span class="lp-t"><b><span class="c">{{ p.track.code }}</span> {{ p.track.name }}</b><small>{{ p.line }}</small></span>
+          <span class="lp-s {{ p.state }}" {% if p.lock %}title="{{ p.lock }}"{% endif %}>{% if p.lock %}<i class="fa-solid fa-lock"></i> Unlocks next{% elif p.state == 'completed' %}Completed{% elif p.state == 'in_progress' %}In progress · {{ p.percent }}%{% elif p.state == 'not_started' %}Not started{% else %}<i class="fa-solid fa-lock"></i> Locked{% endif %}</span>
+          <i class="fa-solid fa-chevron-right chev"></i>
+        {% if p.state == 'locked' %}</div>{% else %}</a>{% endif %}
+      </li>
+      {% endfor %}
+    </ol>
+    <p class="dp-note"><i class="fa-solid fa-circle-info"></i> After PL-900, take AB-410 to build apps or PL-300 to analyse data. AB-400 comes after AB-410.</p>
   </section>
 </div>
 

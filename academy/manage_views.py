@@ -16,6 +16,7 @@ from .models import (
     ContentImport, Enrollment, LabProgress, Lesson, Question, QuizAnswer, Student,
     TestAttempt, Track,
 )
+from . import perks as perks_mod
 from .progress import DONE, IN_PROGRESS, lesson_statuses, track_summary
 
 
@@ -182,6 +183,7 @@ def manage_student_detail(request, pk):
         new_password = None
     return render(request, 'academy/manage/student_detail.html', {
         'student': student, 'summaries': summaries,
+        'perks': perks_mod.compute(student.user, [e.track for e in student.enrollments.select_related('track')]),
         'tests': TestAttempt.objects.filter(user=student.user).select_related('track')[:20],
         'new_password': new_password['password'] if new_password else None,
         'login_url': request.build_absolute_uri('/academy/login/'),
@@ -197,6 +199,18 @@ def manage_student_password(request, pk):
     student.user.save(update_fields=['password'])
     request.session['academy_new_password'] = {'student': str(student.pk), 'password': password}
     messages.success(request, 'New password set. Share it with the student.')
+    return redirect('academy:manage_student_detail', pk=student.pk)
+
+
+@require_POST
+@admin_required
+def manage_student_unlock(request, pk):
+    student = get_object_or_404(Student, pk=pk)
+    student.unlock_all = not student.unlock_all
+    student.save(update_fields=['unlock_all'])
+    messages.success(request, f'{student.name}: ' + (
+        'every course and lesson is now open.' if student.unlock_all
+        else 'courses and lessons unlock in order again.'))
     return redirect('academy:manage_student_detail', pk=student.pk)
 
 

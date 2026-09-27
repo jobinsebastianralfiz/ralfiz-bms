@@ -13,7 +13,7 @@
   <script>
     try { var t = localStorage.getItem('academy-theme'); if (t) document.documentElement.setAttribute('data-theme', t); } catch (e) {}
   </script>
-  <link rel="stylesheet" href="{% static 'academy/academy.css' %}?v=12">
+  <link rel="stylesheet" href="{% static 'academy/academy.css' %}?v=15">
 </head>
 <body data-track="{% block body_track %}home{% endblock %}">
   {% if request.is_preview %}
@@ -78,10 +78,17 @@
           </summary>
           <ul class="olist">
             {% for item in d.lessons %}
+            {% if item.locked %}
+            <li><span class="olock" title="{{ item.locked }}">
+              <span class="n">{{ item.lesson.num }}</span><span>{{ item.lesson.title }}</span>
+              <i class="fa-solid fa-lock" aria-label="Locked"></i>
+            </span></li>
+            {% else %}
             <li><a href="{% url 'academy:lesson' item.lesson.id %}" {% if side_current == item.lesson.id %}aria-current="page"{% endif %}>
               <span class="n">{{ item.lesson.num }}</span><span>{{ item.lesson.title }}</span>
               <span class="dot {% if item.status == 'done' %}done{% elif item.status == 'in_progress' %}half{% endif %}" data-dot="{{ item.lesson.id }}" aria-label="{% if item.status == 'done' %}Complete{% elif item.status == 'in_progress' %}In progress{% else %}Not started{% endif %}"></span>
             </a></li>
+            {% endif %}
             {% endfor %}
           </ul>
         </details>
@@ -110,7 +117,9 @@
     <a href="{% url 'academy:certificates' %}" {% if nav == 'certificates' %}aria-current="page"{% endif %}><i class="fa-solid fa-award"></i>Certificates</a>
   </nav>
 
-  <script src="{% static 'academy/academy.js' %}?v=3"></script>
+  <div class="toasts" id="toasts" aria-live="polite"></div>
+  {% if new_badges %}{{ new_badges|json_script:"newBadges" }}{% endif %}
+  <script src="{% static 'academy/academy.js' %}?v=4"></script>
   {% block extra_js %}{% endblock %}
 </body>
 </html>

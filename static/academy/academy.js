@@ -15,6 +15,43 @@
     }).then(function (r) { if (!r.ok) throw new Error(r.status); return r.json(); });
   }
 
+  // --- Perks: toasts for XP, level-ups and new badges ------------------------
+  var toastBox = $('#toasts'), xpToast = null, xpTimer = null, xpTotal = 0;
+  var esc = function (t) { var d = document.createElement('div'); d.textContent = t; return d.innerHTML; };
+  function toast(kind, icon, title, sub, ms) {
+    if (!toastBox) return null;
+    var el = document.createElement('div');
+    el.className = 'toast ' + kind;
+    el.innerHTML = '<span class="ti">' + icon + '</span><div><b>' + esc(title) + '</b>' +
+      (sub ? '<span class="s">' + esc(sub) + '</span>' : '') + '</div>';
+    toastBox.appendChild(el);
+    el._close = function () { el.classList.add('out'); setTimeout(function () { el.remove(); }, 300); };
+    el._timer = setTimeout(el._close, ms || 4000);
+    return el;
+  }
+  function badgeToasts(list) {
+    (list || []).forEach(function (b, i) {
+      setTimeout(function () {
+        toast('badge', '<i class="fa-solid ' + esc(b.icon) + '"></i>', 'Badge earned: ' + b.name, 'See it on your profile', 6000);
+      }, i * 400);
+    });
+  }
+  window.academyPerks = function (p) {
+    if (!p) return;
+    if (p.xp_gain > 0) {
+      // Rapid ticks add up in one toast instead of stacking.
+      if (xpToast && xpToast.isConnected) { xpTotal += p.xp_gain; clearTimeout(xpToast._timer); }
+      else { xpTotal = p.xp_gain; xpToast = toast('xp', '', '', '', 2500); }
+      xpToast.querySelector('.ti').textContent = '+' + xpTotal;
+      xpToast.querySelector('div').innerHTML = '<b>+' + xpTotal + ' XP</b><span class="s">' + p.xp + ' XP total · ' + esc(p.level) + '</span>';
+      xpToast._timer = setTimeout(xpToast._close, 2500);
+    }
+    if (p.level_up) toast('lvl', '<i class="fa-solid fa-star"></i>', 'Level up: ' + p.level, 'Keep going!', 6000);
+    badgeToasts(p.new_badges);
+  };
+  var nb = $('#newBadges');
+  if (nb) { try { badgeToasts(JSON.parse(nb.textContent)); } catch (e) {} }
+
   // --- Shell: sidebar drawer, track switcher, theme -------------------------
   var side = $('#side'), scrim = $('#scrim'), menuBtn = $('#menuBtn');
   function closeMenu() {
@@ -146,7 +183,7 @@
     var saveTicks = function () {
       var ticked = boxes.filter(function (b) { return b.checked; }).map(function (b) { return +b.dataset.k; });
       post(root.dataset.labUrl, { ticked_steps: ticked })
-        .then(function (r) { applyStatus(r.status); })
+        .then(function (r) { applyStatus(r.status); window.academyPerks(r.perks); })
         .catch(function () { $('#labMsg').innerHTML = '<div class="flash error">Could not save. Check your connection and tick again.</div>'; });
     };
     boxes.forEach(function (b) { b.onchange = saveTicks; });
@@ -183,7 +220,7 @@
           if (o.disabled) return;
           $$('.opt', q).forEach(function (x) { x.disabled = true; });
           post(q.dataset.url, { choice: +o.dataset.j })
-            .then(function (r) { paintQuestion(q, +o.dataset.j, r.answer, r.explanation); applyStatus(r.status); })
+            .then(function (r) { paintQuestion(q, +o.dataset.j, r.answer, r.explanation); applyStatus(r.status); window.academyPerks(r.perks); })
             .catch(function () { resetQuestion(q); alertBox(q, 'Could not check that answer. Try again.'); });
         };
       });
