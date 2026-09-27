@@ -137,6 +137,26 @@ class LearningTests(AcademyTestBase):
             r = self.client.get(reverse('academy:lesson', args=[lesson.id]))
             self.assertEqual(r.status_code, 200, lesson.id)
 
+    def test_profile_edit_and_password_change(self):
+        url = reverse('academy:profile')
+        r = self.client.post(url, {'action': 'info', 'first_name': 'Asha', 'last_name': 'Menon',
+                                   'email': 'asha@example.com', 'phone': '98470'})
+        self.assertRedirects(r, url)
+        self.user.refresh_from_db()
+        self.student.refresh_from_db()
+        self.assertEqual((self.user.last_name, self.user.email, self.student.phone),
+                         ('Menon', 'asha@example.com', '98470'))
+        # A weak password is refused and the old one keeps working.
+        r = self.client.post(url, {'action': 'password', 'old_password': 'pw',
+                                   'new_password1': '12345678', 'new_password2': '12345678'})
+        self.assertEqual(r.status_code, 200)
+        self.assertTrue(r.context['pw_form'].errors)
+        r = self.client.post(url, {'action': 'password', 'old_password': 'pw',
+                                   'new_password1': 'Lab-Steps-2026', 'new_password2': 'Lab-Steps-2026'})
+        self.assertRedirects(r, url)
+        self.client.logout()
+        self.assertTrue(self.client.login(username='stu', password='Lab-Steps-2026'))
+
     def test_answer_key_is_not_on_the_page_before_answering(self):
         r = self.client.get(reverse('academy:lesson', args=[self.lesson.id]))
         html = r.content.decode()

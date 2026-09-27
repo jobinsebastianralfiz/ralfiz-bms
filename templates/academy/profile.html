@@ -1,37 +1,123 @@
 {% extends 'academy/base.html' %}
 {% block title %}Profile · Ralfiz Academy{% endblock %}
 {% block page %}
-<section class="hero">
-  <div class="eyebrow">Your account</div>
-  <h1>{{ request.user.get_full_name|default:request.user.username }}</h1>
-  <p>Username <span class="mono">{{ request.user.username }}</span>{% if request.user.email %} · {{ request.user.email }}{% endif %}{% if request.student.batch %} · Batch {{ request.student.batch }}{% endif %}</p>
+<section class="pf-top">
+  <div class="hero2 pf-hero">
+    <div class="pf-id hz">
+      <span class="pf-av" aria-hidden="true">{{ request.user.first_name|default:request.user.username|slice:":1"|upper }}</span>
+      <div>
+        <div class="eyebrow">Your account</div>
+        <h1>{{ request.user.get_full_name|default:request.user.username }}</h1>
+        <p class="pf-mail"><i class="fa-regular fa-envelope"></i> {% if request.user.email %}{{ request.user.email }}{% else %}No email added{% endif %}</p>
+        <p class="pf-mail"><i class="fa-regular fa-user"></i> <span class="mono">{{ request.user.username }}</span>{% if request.student.batch %} · Batch {{ request.student.batch }}{% endif %}</p>
+        <span class="pill teal" style="margin-top:10px">{{ courses|length }} {% if request.is_preview %}courses (owner preview){% else %}enrolled course{{ courses|length|pluralize }}{% endif %}</span>
+      </div>
+    </div>
+    <div class="pf-art" aria-hidden="true">
+      <span class="c1"></span><span class="c2"></span>
+      <span class="cap"><i class="fa-solid fa-graduation-cap"></i></span>
+    </div>
+  </div>
+  <div class="card2 pf-motto">
+    <span class="tile lg"><i class="fa-solid fa-graduation-cap"></i></span>
+    <div><b>Keep learning</b><b class="g">Keep growing</b><p>Build your skills with hands-on labs and real projects.</p></div>
+  </div>
 </section>
 
-<div class="grid2">
-  <section class="panel">
-    <h3>Enrolled courses</h3>
-    {% if enrollments %}
-    <ul class="rows">
-      {% for e in enrollments %}
-      <li><a href="{% url 'academy:track' e.track.id %}"><b class="mono" style="min-width:60px">{{ e.track.code }}</b><span class="grow">{{ e.track.name }}</span><span class="meta">since {{ e.enrolled_at|date:"j M Y" }}</span></a></li>
-      {% endfor %}
-    </ul>
-    {% else %}
-    <p class="empty-p">{% if request.is_preview %}Owner preview: you can open every track.{% else %}No courses yet. Ask your trainer to enrol you.{% endif %}</p>
-    {% endif %}
+<div class="pf-grid">
+  <section class="card2 pf-courses">
+    <div class="pf-h"><h2>Enrolled courses</h2><span class="pill">{{ courses|length }} course{{ courses|length|pluralize }}</span></div>
+    {% for s in courses %}
+    <article class="pf-row" data-t="{{ s.track.id }}">
+      <span class="glyph" aria-hidden="true"><i class="fa-solid {{ s.track.icon }}"></i></span>
+      <div class="pf-name">
+        <span class="mono">{{ s.track.code }}</span>
+        <b>{{ s.track.name }}</b>
+        <small>{{ s.track.blurb }}</small>
+      </div>
+      <div class="pf-prog">
+        <div class="t"><div class="pbar"><i style="width:{{ s.percent }}%"></i></div><b>{{ s.percent }}%</b></div>
+        <small><i class="fa-regular fa-calendar"></i> {% if s.enrolled_at %}Enrolled {{ s.enrolled_at|date:"j M Y" }}{% else %}Owner preview{% endif %} · {{ s.done }}/{{ s.total }} lessons</small>
+      </div>
+      <a class="btn2 pf-go" href="{% if s.started and s.next_lesson %}{% url 'academy:lesson' s.next_lesson.id %}{% else %}{% url 'academy:track' s.track.id %}{% endif %}">{% if s.completed %}Review{% elif s.started %}Continue{% else %}Start{% endif %} <i class="fa-solid fa-arrow-right"></i></a>
+    </article>
+    {% empty %}
+    <p class="empty-p" style="padding:0">No courses yet. Ask your trainer to enrol you.</p>
+    {% endfor %}
   </section>
 
-  <form method="post" class="form-card">
-    {% csrf_token %}
-    <h3 style="font-size:18px">Change password</h3>
-    {% for field in form %}
-    <div class="field">
-      <label for="{{ field.id_for_label }}">{{ field.label }}</label>
-      {{ field }}
-      {% for e in field.errors %}<span class="err">{{ e }}</span>{% endfor %}
-    </div>
-    {% endfor %}
-    <button class="btn primary block" type="submit">Update password</button>
-  </form>
+  <div class="pf-side">
+    <form method="post" class="card2 pf-card" id="pwForm" novalidate>
+      {% csrf_token %}<input type="hidden" name="action" value="password">
+      <div class="pf-ch"><span class="tile sm"><i class="fa-solid fa-key"></i></span><div><b>Change password</b><small>Keep your account secure with a strong password.</small></div></div>
+      {% for field in pw_form %}
+      <div class="lg-field">
+        <label for="{{ field.id_for_label }}">{% if field.name == 'old_password' %}Old password{% elif field.name == 'new_password1' %}New password{% else %}Confirm new password{% endif %}</label>
+        <div class="lg-input">
+          <i class="fa-solid fa-lock"></i>
+          <input type="password" name="{{ field.html_name }}" id="{{ field.id_for_label }}" autocomplete="{% if field.name == 'old_password' %}current-password{% else %}new-password{% endif %}" placeholder="{% if field.name == 'old_password' %}Enter your old password{% elif field.name == 'new_password1' %}Enter your new password{% else %}Confirm your new password{% endif %}">
+          <button type="button" class="lg-eye" data-reveal aria-label="Show password" aria-pressed="false"><i class="fa-regular fa-eye"></i></button>
+        </div>
+        {% for e in field.errors %}<span class="pf-err">{{ e }}</span>{% endfor %}
+      </div>
+      {% endfor %}
+      <ul class="pf-rules" aria-live="polite">
+        <li data-rule="len"><i class="fa-solid fa-check"></i> At least 8 characters</li>
+        <li data-rule="num"><i class="fa-solid fa-check"></i> Not only numbers</li>
+        <li data-rule="match"><i class="fa-solid fa-check"></i> Both new passwords match</li>
+        <li class="info"><i class="fa-solid fa-circle-info"></i> Common passwords, or ones too close to your name, are rejected when you save.</li>
+      </ul>
+      <button class="btn2" type="submit" style="width:100%">Update password <i class="fa-solid fa-arrow-right"></i></button>
+    </form>
+
+    <section class="card2 pf-card">
+      <div class="pf-ch"><span class="tile sm"><i class="fa-solid fa-gear"></i></span><div><b>Account actions</b><small>Manage your account details.</small></div></div>
+      <details class="pf-act" {% if edit_open %}open{% endif %}>
+        <summary><i class="fa-regular fa-user"></i> Edit profile information <i class="fa-solid fa-chevron-right chev"></i></summary>
+        <form method="post" class="pf-edit" novalidate>
+          {% csrf_token %}<input type="hidden" name="action" value="info">
+          {% for field in info_form %}
+          <div class="lg-field">
+            <label for="{{ field.id_for_label }}">{{ field.label }}{% if field.field.required %} *{% endif %}</label>
+            <div class="lg-input"><input type="{% if field.name == 'email' %}email{% elif field.name == 'phone' %}tel{% else %}text{% endif %}" name="{{ field.html_name }}" id="{{ field.id_for_label }}" value="{{ field.value|default:'' }}" style="padding-left:14px"></div>
+            {% for e in field.errors %}<span class="pf-err">{{ e }}</span>{% endfor %}
+          </div>
+          {% endfor %}
+          <button class="btn2" type="submit">Save changes</button>
+        </form>
+      </details>
+      <a class="pf-act-link" href="{% url 'academy:logout' %}"><i class="fa-solid fa-arrow-right-from-bracket"></i> Log out <i class="fa-solid fa-chevron-right chev"></i></a>
+    </section>
+  </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  (function () {
+    document.querySelectorAll('[data-reveal]').forEach(function (b) {
+      var input = b.parentNode.querySelector('input');
+      b.onclick = function () {
+        var show = input.type === 'password';
+        input.type = show ? 'text' : 'password';
+        b.setAttribute('aria-pressed', String(show));
+        b.setAttribute('aria-label', show ? 'Hide password' : 'Show password');
+        b.innerHTML = show ? '<i class="fa-regular fa-eye-slash"></i>' : '<i class="fa-regular fa-eye"></i>';
+      };
+    });
+    var p1 = document.getElementById('id_new_password1'), p2 = document.getElementById('id_new_password2');
+    if (!p1 || !p2) return;
+    var rules = {
+      len: function () { return p1.value.length >= 8; },
+      num: function () { return p1.value !== '' && !/^\d+$/.test(p1.value); },
+      match: function () { return p1.value !== '' && p1.value === p2.value; }
+    };
+    var paint = function () {
+      Object.keys(rules).forEach(function (k) {
+        document.querySelector('[data-rule="' + k + '"]').classList.toggle('ok', rules[k]());
+      });
+    };
+    p1.addEventListener('input', paint); p2.addEventListener('input', paint); paint();
+  })();
+</script>
 {% endblock %}

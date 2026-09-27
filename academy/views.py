@@ -6,6 +6,7 @@ import re
 import zipfile
 from html import unescape
 
+from django import forms
 from django.contrib import messages
 from django.contrib.auth import authenticate, login, logout, update_session_auth_hash
 from django.contrib.auth.forms import PasswordChangeForm
@@ -571,16 +572,43 @@ def test_result(request, attempt_id):
 
 # --- Account ---------------------------------------------------------------------
 
+class ProfileForm(forms.Form):
+    first_name = forms.CharField(max_length=150)
+    last_name = forms.CharField(max_length=150, required=False)
+    email = forms.EmailField(required=False)
+    phone = forms.CharField(max_length=20, required=False)
+
+
 @learner_required
 def profile(request):
-    form = PasswordChangeForm(request.user, request.POST or None)
-    if request.method == 'POST' and form.is_valid():
-        user = form.save()
-        update_session_auth_hash(request, user)
+    user, student = request.user, request.student
+    action = request.POST.get('action') if request.method == 'POST' else None
+    pw_form = PasswordChangeForm(user, request.POST if action == 'password' else None)
+    info_form = ProfileForm(request.POST if action == 'info' else None, initial={
+        'first_name': user.first_name, 'last_name': user.last_name, 'email': user.email,
+        'phone': student.phone if student else '',
+    })
+    if action == 'password' and pw_form.is_valid():
+        update_session_auth_hash(request, pw_form.save())
         messages.success(request, 'Password changed.')
         return redirect('academy:profile')
-    enrollments = (request.student.enrollments.select_related('track')
-                   if request.student else [])
+    if action == 'info' and info_form.is_valid():
+        d = info_form.cleaned_data
+        user.first_name, user.last_name, user.email = d['first_name'], d['last_name'], d['email']
+        user.save(update_fields=['first_name', 'last_name', 'email'])
+        if student:
+            student.phone = d['phone']
+            student.save(update_fields=['phone'])
+        messages.success(request, 'Profile updated.')
+        return redirect('academy:profile')
+
+    enrolled = {e.track_id: e.enrolled_at for e in student.enrollments.all()} if student else {}
+    courses = []
+    for t in visible_tracks(request):
+        s = track_summary(user, t)
+        s['enrolled_at'] = enrolled.get(t.id)
+        courses.append(s)
     return render(request, 'academy/profile.html', {
-        'form': form, 'enrollments': enrollments, 'nav': 'profile',
+        'pw_form': pw_form, 'info_form': info_form, 'courses': courses,
+        'edit_open': action == 'info', 'nav': 'profile',
     })

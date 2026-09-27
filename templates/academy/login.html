@@ -11,7 +11,7 @@
   <script>
     try { var t = localStorage.getItem('academy-theme'); if (t) document.documentElement.setAttribute('data-theme', t); } catch (e) {}
   </script>
-  <link rel="stylesheet" href="{% static 'academy/academy.css' %}?v=2">
+  <link rel="stylesheet" href="{% static 'academy/academy.css' %}?v=12">
   <style>
     .lg{min-height:100vh;display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,1fr)}
     .lg-art{position:relative;overflow:hidden;color:#EAF4F1;padding:clamp(28px,4.5vw,64px);display:flex;flex-direction:column;gap:clamp(28px,5vh,56px);
@@ -46,16 +46,6 @@
     .lg-form{width:min(460px,100%);background:var(--surface);border:1px solid var(--line);border-radius:20px;padding:clamp(24px,4vw,44px);box-shadow:0 20px 50px rgba(21,32,29,.07);display:grid;gap:18px}
     .lg-form h2{font-size:clamp(28px,3vw,34px);font-weight:700;letter-spacing:-.01em}
     .lg-form .lead{margin:4px 0 0;color:var(--muted);font-size:15px}
-    .lg-field{display:grid;gap:8px}
-    .lg-field label{font-size:14px;font-weight:600;color:var(--ink)}
-    .lg-input{display:flex;align-items:center;border:1.5px solid var(--line);border-radius:10px;background:var(--surface);transition:border-color .15s,box-shadow .15s}
-    .lg-input:focus-within{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
-    .lg-input>svg{width:20px;height:20px;margin-left:14px;color:var(--muted);flex:none}
-    .lg-input input{flex:1;min-width:0;border:0;background:transparent;color:var(--ink);font:inherit;font-size:15.5px;padding:14px 12px}
-    .lg-input input:focus{outline:none}
-    .lg-eye{border:0;background:none;padding:0 14px;height:100%;cursor:pointer;color:var(--muted);display:grid;place-items:center}
-    .lg-eye:hover{color:var(--ink)}
-    .lg-eye svg{width:20px;height:20px}
     .lg-row{display:flex;justify-content:space-between;align-items:center;gap:8px 12px;flex-wrap:wrap;font-size:13.5px}
     .lg-row>*{white-space:nowrap}
     .lg-row label{display:flex;align-items:center;gap:8px;color:var(--muted);cursor:pointer}
