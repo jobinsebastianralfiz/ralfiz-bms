@@ -46,7 +46,7 @@
         document.getElementById('video-sync-status').style.display = 'block';
       });
     </script>
-    <p class="text-muted mb-0" style="font-size:13px;margin-top:8px">Each video's title must start with the course code and lesson number, like "{{ track.code }} 2.1 …". The titles YouTube makes from our video file names already do. Matching videos replace the lesson's link. Set the videos to Unlisted: private ones cannot play.</p>
+    <p class="text-muted mb-0" style="font-size:13px;margin-top:8px">Each video's title must start with the course code and lesson number, like "{{ track.code }} {{ rows.0.lesson.num|default:"1.1" }} …". The titles YouTube makes from our video file names already do. Matching videos replace the lesson's link. Set the videos to Unlisted: private ones cannot play.</p>
     {% else %}
     <p class="text-muted mb-0">Add a <code>YOUTUBE_API_KEY</code> variable on the server to sync links from a playlist.</p>
     {% endif %}

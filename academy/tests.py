@@ -435,6 +435,10 @@ class PlaylistSyncTests(AcademyTestBase):
         self.assertEqual(lesson_num('pl900 1.1 The Power Platform family', 'PL-900'), '1.1')
         self.assertIsNone(lesson_num('PL-300 1.1 Get data', 'PL-900'))
         self.assertIsNone(lesson_num('Channel trailer', 'PL-900'))
+        self.assertEqual(lesson_num('AB 410 A 3 Solutions and ALM strategy', 'AB-410'), 'A.3')
+        self.assertEqual(lesson_num('AB-400 D.10 · Custom APIs', 'AB-400'), 'D.10')
+        self.assertEqual(lesson_num('PL 300 B 12 Storytelling and usability', 'PL-300'), 'B.12')
+        self.assertIsNone(lesson_num('AB 410 A 1 From PL 900 to AB 410', 'PL-900'))
         self.assertEqual(playlist_id('https://www.youtube.com/playlist?list=PLabc123XYZ_-q'), 'PLabc123XYZ_-q')
         self.assertEqual(playlist_id('https://www.youtube.com/watch?v=dQw4w9WgXcQ&list=PLabc123XYZ_-q'),
                          'PLabc123XYZ_-q')

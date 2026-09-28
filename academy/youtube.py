@@ -70,14 +70,18 @@ def playlist_videos(pid):
 
 
 def lesson_num(title, track_code):
-    """'2.10' from titles like 'PL-900 2.10 · ALM …' or YouTube's 'PL 900 2 10 ALM …'.
+    """'2.10' or 'A.3' from titles like 'PL-900 2.10 · ALM …', YouTube's 'PL 900 2 10 ALM …'
+    or 'AB 410 A 3 Solutions …'.
 
     The course code must lead the title, so a PL-300 video never lands in PL-900.
     """
     letters, _, digits = track_code.partition('-')
     code = rf'{re.escape(letters)}[\s._-]*{re.escape(digits)}' if digits else re.escape(letters)
-    m = re.match(rf'\s*{code}[\s._·:-]+(\d+)[\s._-]+(\d+)\b', title, re.IGNORECASE)
-    return f'{int(m[1])}.{int(m[2])}' if m else None
+    m = re.match(rf'\s*{code}[\s._·:-]+(\d+|[A-Za-z])[\s._-]+(\d+)\b', title, re.IGNORECASE)
+    if not m:
+        return None
+    part = m[1].upper() if m[1].isalpha() else str(int(m[1]))
+    return f'{part}.{int(m[2])}'
 
 
 def match(videos, lessons, track_code):
