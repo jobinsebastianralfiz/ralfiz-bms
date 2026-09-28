@@ -439,6 +439,7 @@ class PlaylistSyncTests(AcademyTestBase):
         self.assertEqual(playlist_id('https://www.youtube.com/watch?v=dQw4w9WgXcQ&list=PLabc123XYZ_-q'),
                          'PLabc123XYZ_-q')
         self.assertIsNone(playlist_id('https://youtu.be/dQw4w9WgXcQ'))
+        self.assertEqual(playlist_id('https://studio.youtube.com/playlist/PLabc123XYZ_-q/edit'), 'PLabc123XYZ_-q')
 
     def test_sync_fills_links_and_reports(self):
         from unittest import mock
@@ -471,6 +472,6 @@ class PlaylistSyncTests(AcademyTestBase):
         with self.settings(YOUTUBE_API_KEY='k'):
             r = self.client.post(url, {'track': 'pl900', 'action': 'sync', 'playlist': 'https://youtu.be/x'},
                                  follow=True)
-        self.assertContains(r, 'Paste the playlist link')
+        self.assertContains(r, 'That is not a playlist link')
         with self.settings(YOUTUBE_API_KEY=''):
             self.assertContains(self.client.get(url), 'Add a <code>YOUTUBE_API_KEY</code>')

@@ -18,11 +18,15 @@ class YouTubeError(Exception):
 
 
 def playlist_id(text):
-    """The playlist ID from a playlist or watch link, or a bare ID. None if there is none."""
+    """The playlist ID from a playlist, watch or Studio link, or a bare ID. None if there is none."""
     text = (text or '').strip()
     if _LIST_ID.match(text):
         return text
-    pid = parse_qs(urlparse(text).query).get('list', [''])[0]
+    u = urlparse(text)
+    pid = parse_qs(u.query).get('list', [''])[0]
+    parts = [p for p in u.path.split('/') if p]
+    if not pid and (u.hostname or '').lower() == 'studio.youtube.com' and len(parts) > 1 and parts[0] == 'playlist':
+        pid = parts[1]  # studio.youtube.com/playlist/<id>/edit
     return pid if _LIST_ID.match(pid) else None
 
 

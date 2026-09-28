@@ -334,7 +334,7 @@ def _sync_videos(request, track, lessons):
     url = request.POST.get('playlist', '').strip()
     pid = playlist_id(url)
     if not pid:
-        messages.error(request, 'Paste the playlist link, the one with "list=" in it.')
+        messages.error(request, 'That is not a playlist link. Open the playlist on YouTube or in YouTube Studio and copy the whole address.')
         return back
     if url != track.video_playlist:
         track.video_playlist = url

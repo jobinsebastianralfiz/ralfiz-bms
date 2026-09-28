@@ -29,7 +29,7 @@
     {% if youtube_ready %}
     <form method="post" style="display:flex;gap:12px;flex-wrap:wrap;align-items:center">
       {% csrf_token %}<input type="hidden" name="track" value="{{ track.id }}"><input type="hidden" name="action" value="sync">
-      <input type="url" name="playlist" value="{{ track.video_playlist }}" class="form-control" style="flex:1;min-width:280px" placeholder="https://www.youtube.com/playlist?list=…" required>
+      <input type="url" name="playlist" value="{{ track.video_playlist }}" class="form-control" style="flex:1;min-width:280px" placeholder="Playlist link from YouTube or YouTube Studio" required>
       <button type="submit" class="btn btn-primary"><i class="fas fa-rotate"></i> Sync {{ track.code }}</button>
     </form>
     <p class="text-muted mb-0" style="font-size:13px;margin-top:8px">Each video's title must start with the course code and lesson number, like "{{ track.code }} 2.1 …". The titles YouTube makes from our video file names already do. Matching videos replace the lesson's link. Set the videos to Unlisted: private ones cannot play.</p>
