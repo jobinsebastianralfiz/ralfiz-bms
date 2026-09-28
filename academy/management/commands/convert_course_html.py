@@ -177,7 +177,8 @@ class Command(BaseCommand):
                     warnings.append(f'{l["id"]}: widget {widget!r} kept as-is')
                 content = lesson_content(js['DEEP'].get(l['id'], ''), l.get('mocks') or [], predict)
                 for label, html in (('summary', l['learn']), ('content', content)):
-                    attrs = {a for a in ATTR.findall(html) if not re.fullmatch(r'class="[^"]*"', a)}
+                    attrs = {a for a in ATTR.findall(html)
+                             if not re.fullmatch(r'(class="[^"]*"|(col|row)span="\d+")', a)}
                     _, dropped = clean_html(html)
                     if dropped or attrs:
                         warnings.append(f'{l["id"]} {label}: sanitizer will drop {sorted(dropped)} {sorted(attrs)}')
@@ -205,6 +206,11 @@ class Command(BaseCommand):
         # The phone previews become static panels here, so the blurb must not promise them.
         doc['blurb'] = doc['blurb'].replace(' Every screen is shown on a phone next to its code.',
                                             ' Every screen comes with its full code.')
+        # The concept animations are removed above, so no fact may promise them.
+        doc['facts'] = [f for f in doc['facts'] if 'animation' not in str(f[1]).lower()]
+        if len(doc['facts']) < 4:
+            quiz = sum(len(l['quiz']) for d in out_domains for l in d['lessons'])
+            doc['facts'].append([str(quiz), 'quiz questions with explanations'])
         doc['domains'] = out_domains
         doc['questionBank'] = [{'question': q['q'], 'options': q['o'], 'answer': q['a'],
                                 'explanation': q.get('w', ''), 'lesson': q.get('l')}

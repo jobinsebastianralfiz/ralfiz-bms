@@ -42,6 +42,12 @@ class _Cleaner(HTMLParser):
         if tag == 'h3':
             self.h3_count += 1
             parts.append(f'id="sec-{self.h3_count}"')
+        if tag in ('td', 'th'):
+            # Spanning cells keep their layout; only small whole numbers pass.
+            for name in ('colspan', 'rowspan'):
+                value = dict(attrs).get(name) or ''
+                if value.isdigit() and 1 < int(value) <= 20:
+                    parts.append(f'{name}="{int(value)}"')
         allowed = ALLOWED_CLASSES.get(tag)
         if allowed:
             classes = [c for c in (dict(attrs).get('class') or '').split() if c in allowed]

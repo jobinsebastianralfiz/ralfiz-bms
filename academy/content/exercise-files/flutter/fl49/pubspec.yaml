@@ -1,0 +1,20 @@
+name: taskflow
+description: TaskFlow - team task app for modules 9 to 12 of the Ralfiz Academy Flutter track.
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.5.0
+
+dependencies:
+  flutter:
+    sdk: flutter
+  dio: any
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: any
+
+flutter:
+  uses-material-design: true

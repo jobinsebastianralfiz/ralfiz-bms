@@ -39,21 +39,21 @@ class ImportTests(AcademyTestBase):
     def test_counts_match_the_package(self):
         c = self.counts
         self.assertEqual((c['tracks'], c['domains'], c['lessons'], c['files'], c['questions']),
-                         (5, 29, 124, 317, 484))
+                         (5, 33, 139, 376, 544))
 
     def test_reimport_is_a_no_op_and_keeps_answers(self):
         q = Question.objects.filter(source='lesson').first()
         QuizAnswer.objects.create(user=self.user, question=q, last_choice=0)
         run_import(log=_quiet, force=True)
-        self.assertEqual(Question.objects.count(), 484)
+        self.assertEqual(Question.objects.count(), 544)
         self.assertTrue(QuizAnswer.objects.filter(question_id=q.pk).exists())
 
     def test_flutter_track_imports(self):
         track = Track.objects.get(pk='flutter')
         self.assertEqual((track.code, track.name), ('Flutter', 'Flutter & Dart: Zero to Job-Ready'))
-        self.assertEqual(track.domains.count(), 9)
-        self.assertEqual(track.lessons.count(), 48)
-        self.assertEqual(Question.objects.filter(track=track).count(), 192)
+        self.assertEqual(track.domains.count(), 13)
+        self.assertEqual(track.lessons.count(), 63)
+        self.assertEqual(Question.objects.filter(track=track).count(), 252)
         self.assertEqual(list(track.lessons.values_list('num', flat=True)[:3]), ['0.1', '0.2', '1.1'])
         lesson = Lesson.objects.get(pk='fl21')
         self.assertIn('<pre class="code">', lesson.content_html)   # code blocks survive clean_html
@@ -546,3 +546,12 @@ class LandingTests(AcademyTestBase):
         self.assertRedirects(self.client.get(reverse('academy:home')), reverse('academy:catalog'))
         self.login_student()
         self.assertContains(self.client.get(reverse('academy:home')), 'Asha')
+
+
+class SanitizeTests(TestCase):
+    def test_table_cells_keep_small_spans_only(self):
+        from .sanitize import clean_html
+        html, _ = clean_html('<table><tr><td colspan="2" onclick="x()">a</td><th rowspan="999">b</th></tr></table>')
+        self.assertIn('<td colspan="2">', html)
+        self.assertIn('<th>', html)
+        self.assertNotIn('onclick', html)

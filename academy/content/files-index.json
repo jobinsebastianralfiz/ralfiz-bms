@@ -1266,5 +1266,241 @@
  "flutter/fl48/solution/lib/main.dart": {
   "path": "solution/lib/main.dart",
   "description": "Notes app reading FLAVOR, API_URL and APP_VERSION build defines, with a DEV strip and an About dialog."
+ },
+ "flutter/fl49/pubspec.yaml": {
+  "path": "pubspec.yaml",
+  "description": "pubspec.yaml for the TaskFlow project (adds dio)."
+ },
+ "flutter/fl49/start/lib/api/api_client.dart": {
+  "path": "start/lib/api/api_client.dart",
+  "description": "Starter ApiClient: compiles, with TODO(1) to TODO(6) for options, interceptors and error mapping."
+ },
+ "flutter/fl49/start/lib/main.dart": {
+  "path": "start/lib/main.dart",
+  "description": "Complete test screen (same in the solution): loads DummyJSON todos, slow load with Cancel, timeout test."
+ },
+ "flutter/fl49/solution/lib/api/api_client.dart": {
+  "path": "solution/lib/api/api_client.dart",
+  "description": "Finished ApiClient with BaseOptions, HeadersInterceptor, debug-only LogInterceptor and DioException mapping."
+ },
+ "flutter/fl50/start/lib/auth/auth_interceptor.dart": {
+  "path": "start/lib/auth/auth_interceptor.dart",
+  "description": "Starter: TokenStorage (complete) and AuthInterceptor with TODO(1) to TODO(5) for attaching, refreshing and retrying."
+ },
+ "flutter/fl50/start/lib/auth/auth_cubit.dart": {
+  "path": "start/lib/auth/auth_cubit.dart",
+  "description": "Complete (same in the solution): User, AuthRepository, sealed AuthState, AuthCubit and the StreamListenable helper."
+ },
+ "flutter/fl50/start/lib/main.dart": {
+  "path": "start/lib/main.dart",
+  "description": "Complete (same in the solution): wiring, go_router redirect, login page and a tasks page with token-breaking debug buttons."
+ },
+ "flutter/fl50/solution/lib/auth/auth_interceptor.dart": {
+  "path": "solution/lib/auth/auth_interceptor.dart",
+  "description": "Finished QueuedInterceptor: Bearer header, single refresh on 401, retries with a plain Dio, session expiry."
+ },
+ "flutter/fl51/start/lib/tasks/task_data.dart": {
+  "path": "start/lib/tasks/task_data.dart",
+  "description": "Complete (same in the solution): sealed Failure, failureMessage, Result<T>, guard, Task, TaskPage and ApiTaskRepository with a TTL cache."
+ },
+ "flutter/fl51/start/lib/tasks/task_list_bloc.dart": {
+  "path": "start/lib/tasks/task_list_bloc.dart",
+  "description": "Starter TaskListBloc: events and state are done; TODO(1) to TODO(4) for first page, paging guard, load more and refresh."
+ },
+ "flutter/fl51/start/lib/tasks/task_list_page.dart": {
+  "path": "start/lib/tasks/task_list_page.dart",
+  "description": "Complete (same in the solution): ScrollController infinite scroll, footer, error page, RefreshIndicator and SnackBar listener."
+ },
+ "flutter/fl51/solution/lib/tasks/task_list_bloc.dart": {
+  "path": "solution/lib/tasks/task_list_bloc.dart",
+  "description": "Finished TaskListBloc with guarded pagination, failure handling and an isRefreshing flag."
+ },
+ "flutter/fl52/brief.md": {
+  "path": "brief.md",
+  "description": "Lab brief: packages, build.yaml and analysis settings, sample DummyJSON data and acceptance criteria."
+ },
+ "flutter/fl52/start/lib/models/task.dart": {
+  "path": "start/lib/models/task.dart",
+  "description": "Starter: hand-written Task and TodosPage with two deliberate bugs and TODO markers for the freezed conversion."
+ },
+ "flutter/fl52/solution/lib/models/task.dart": {
+  "path": "solution/lib/models/task.dart",
+  "description": "Solution: freezed Task with JSON renames, defaults and an unknown-safe enum, freezed TodosPage and a sealed TasksState union."
+ },
+ "flutter/fl52/solution/test/task_model_test.dart": {
+  "path": "solution/test/task_model_test.dart",
+  "description": "Unit tests for parsing, defaults, unknown enum values, copyWith, round-trips and the union switch."
+ },
+ "flutter/fl53/brief.md": {
+  "path": "brief.md",
+  "description": "Lab brief: the object graph to build, registration rules, run commands for each environment and acceptance criteria."
+ },
+ "flutter/fl53/start/lib/main.dart": {
+  "path": "start/lib/main.dart",
+  "description": "Starter TaskFlow list where the cubit builds its own Dio and repository; TODO markers for DI, get_it and environments."
+ },
+ "flutter/fl53/solution/lib/main.dart": {
+  "path": "solution/lib/main.dart",
+  "description": "Solution: AppConfig from dart-define, constructor injection, setupDependencies with get_it, factory-registered cubit and an environment banner."
+ },
+ "flutter/fl53/solution/test/tasks_page_test.dart": {
+  "path": "solution/test/tasks_page_test.dart",
+  "description": "Widget tests that reset get_it, inject a FakeTaskRepository and check the list, the banner and the failure path."
+ },
+ "flutter/fl54/start/lib/main.dart": {
+  "path": "start/lib/main.dart",
+  "description": "Starter: a working “My tasks” page that calls Dio, parses JSON and sorts inside the widget; the header explains the target layers and TODO markers."
+ },
+ "flutter/fl54/solution/lib/features/tasks/domain/tasks_domain.dart": {
+  "path": "solution/lib/features/tasks/domain/tasks_domain.dart",
+  "description": "Domain layer in pure Dart: Result, Failure, the Task entity, repository interfaces and the GetMyTasks use case."
+ },
+ "flutter/fl54/solution/lib/features/tasks/data/tasks_data.dart": {
+  "path": "solution/lib/features/tasks/data/tasks_data.dart",
+  "description": "Data layer: TaskDto, the toEntity mapper, a Dio data source, TaskRepositoryImpl with error mapping, and DemoAuthRepository."
+ },
+ "flutter/fl54/solution/lib/main.dart": {
+  "path": "solution/lib/main.dart",
+  "description": "Composition root and presentation: get_it wiring, TasksCubit using GetMyTasks and TaskRepository, TasksPage and ErrorView."
+ },
+ "flutter/fl55/README.md": {
+  "path": "README.md",
+  "description": "Setup commands, the seven tasks, a ready-made test file and acceptance criteria for the TaskFlow Drift lab."
+ },
+ "flutter/fl55/lib/main.dart": {
+  "path": "lib/main.dart",
+  "description": "Finished TaskFlow list screen that watches the database. Works with the starter and the solution database."
+ },
+ "flutter/fl55/start/lib/data/app_database.dart": {
+  "path": "start/lib/data/app_database.dart",
+  "description": "Starter AppDatabase: tables and wiring are done; queries, transaction and the version 2 migration are TODOs."
+ },
+ "flutter/fl55/solution/lib/data/app_database.dart": {
+  "path": "solution/lib/data/app_database.dart",
+  "description": "Solution AppDatabase at schema version 2 with TaskDao, a join, watch streams, a transaction and a migration."
+ },
+ "flutter/fl56/README.md": {
+  "path": "README.md",
+  "description": "Task brief, setup commands, offline test instructions and acceptance criteria for the response cache lab."
+ },
+ "flutter/fl56/lib/main.dart": {
+  "path": "lib/main.dart",
+  "description": "Finished TaskFlow todos screen: dark mode in shared_preferences, Hive CE init, Dio client and the cache banner."
+ },
+ "flutter/fl56/start/lib/data/todo_cache.dart": {
+  "path": "start/lib/data/todo_cache.dart",
+  "description": "Starter cache: network only, with TODOs for the TypeAdapter, the CacheStore and cache-then-network."
+ },
+ "flutter/fl56/solution/lib/data/todo_cache.dart": {
+  "path": "solution/lib/data/todo_cache.dart",
+  "description": "Solution: CachedResponse adapter, CacheStore on a Hive CE box, and a TodoRepository with TTL and offline fallback."
+ },
+ "flutter/fl57/README.md": {
+  "path": "README.md",
+  "description": "Task brief, setup, a unit test file for the SyncService and acceptance criteria for the offline-first lab."
+ },
+ "flutter/fl57/lib/main.dart": {
+  "path": "lib/main.dart",
+  "description": "In-memory TaskStore, a fake server with a reachable switch, connectivity_plus wiring and the finished task list UI."
+ },
+ "flutter/fl57/start/lib/sync/sync_service.dart": {
+  "path": "start/lib/sync/sync_service.dart",
+  "description": "Starter: models, interfaces and local writes are done; flush, backoff and the conflict-aware refresh are TODOs."
+ },
+ "flutter/fl57/solution/lib/sync/sync_service.dart": {
+  "path": "solution/lib/sync/sync_service.dart",
+  "description": "Solution SyncService: ordered outbox flush, error classification, backoff with jitter and last-write-wins merge."
+ },
+ "flutter/fl58/README.md": {
+  "path": "README.md",
+  "description": "Lab brief: setup, config files, TODO list, acceptance criteria and an obfuscated release build stretch task."
+ },
+ "flutter/fl58/start/lib/main.dart": {
+  "path": "start/lib/main.dart",
+  "description": "Starter: compiles and runs, but tokens are not stored, logs leak secrets and config is hardcoded (TODO 1 to 6)."
+ },
+ "flutter/fl58/pubspec.yaml": {
+  "path": "pubspec.yaml",
+  "description": "TaskFlow pubspec with dio and flutter_secure_storage."
+ },
+ "flutter/fl58/solution/lib/main.dart": {
+  "path": "solution/lib/main.dart",
+  "description": "Solution: AppConfig from dart-define, TokenStorage on flutter_secure_storage, Bearer interceptor and a debug-only redacting logger."
+ },
+ "flutter/fl59/README.md": {
+  "path": "README.md",
+  "description": "Lab brief: Android and iOS setup for local_auth and HTTPS policies, emulator biometrics, TODO list and acceptance criteria."
+ },
+ "flutter/fl59/start/lib/main.dart": {
+  "path": "start/lib/main.dart",
+  "description": "Starter: compiles and runs, but allows plain HTTP, trusts every link and unlocks without asking (TODO 1 to 5)."
+ },
+ "flutter/fl59/pubspec.yaml": {
+  "path": "pubspec.yaml",
+  "description": "TaskFlow pubspec with dio and local_auth."
+ },
+ "flutter/fl59/solution/lib/main.dart": {
+  "path": "solution/lib/main.dart",
+  "description": "Solution: HttpsOnlyInterceptor, parseTaskLink with a sealed LinkTarget, and an AppLockGate using local_auth and AppLifecycleListener."
+ },
+ "flutter/fl60/README.md": {
+  "path": "README.md",
+  "description": "Lab brief: create the Supabase project, keys and redirect URL, Android and iOS deep link setup, TODO list and acceptance criteria."
+ },
+ "flutter/fl60/start/lib/main.dart": {
+  "path": "start/lib/main.dart",
+  "description": "Starter: initialises Supabase and draws the screens, but the repository, cubit, redirect, error handling and sign-out are TODO 1 to 5."
+ },
+ "flutter/fl60/pubspec.yaml": {
+  "path": "pubspec.yaml",
+  "description": "TaskFlow pubspec with supabase_flutter, flutter_bloc and go_router."
+ },
+ "flutter/fl60/solution/lib/main.dart": {
+  "path": "solution/lib/main.dart",
+  "description": "Solution: AuthRepository over Supabase Auth, AuthCubit with a sealed SessionState, go_router redirect with refreshListenable, sign-in page and tasks page."
+ },
+ "flutter/fl61/README.md": {
+  "path": "README.md",
+  "description": "Task brief, the SQL schema with RLS policies, a policy test block and acceptance criteria."
+ },
+ "flutter/fl61/lib/main.dart": {
+  "path": "lib/main.dart",
+  "description": "Finished TaskFlow app shell shared by starter and solution: Supabase init, auth gate, sign-in and a paged task list."
+ },
+ "flutter/fl61/start/lib/data/supabase_task_repository.dart": {
+  "path": "start/lib/data/supabase_task_repository.dart",
+  "description": "Starter: Task, failures and the TaskRepository interface are done; SupabaseTaskRepository has TODO(1) to TODO(3)."
+ },
+ "flutter/fl61/solution/lib/data/supabase_task_repository.dart": {
+  "path": "solution/lib/data/supabase_task_repository.dart",
+  "description": "Solution: complete SupabaseTaskRepository with error mapping, range pagination and RLS-aware update and delete."
+ },
+ "flutter/fl62/README.md": {
+  "path": "README.md",
+  "description": "Task brief, SQL for Realtime, the attachment column, the private bucket and storage policies, plus acceptance criteria."
+ },
+ "flutter/fl62/start/lib/live_tasks_page.dart": {
+  "path": "start/lib/live_tasks_page.dart",
+  "description": "Starter LiveTasksPage: UI, add and tick work through the repository; stream, channel, cleanup, upload and signed URLs are TODO(1) to TODO(5)."
+ },
+ "flutter/fl62/solution/lib/live_tasks_page.dart": {
+  "path": "solution/lib/live_tasks_page.dart",
+  "description": "Solution LiveTasksPage with stream(), an insert channel with status, removeChannel, private uploads and cached signed URLs."
+ },
+ "flutter/fl63/README.md": {
+  "path": "README.md",
+  "description": "Task brief: create, secure and deploy the project-report Edge Function, call it from Flutter, split dev and prod, and run the production checklist."
+ },
+ "flutter/fl63/supabase/functions/project-report/index.ts": {
+  "path": "supabase/functions/project-report/index.ts",
+  "description": "Finished Edge Function (TypeScript on Deno): checks the caller, counts tasks under RLS, optionally posts to Slack with a secret."
+ },
+ "flutter/fl63/start/lib/project_report_card.dart": {
+  "path": "start/lib/project_report_card.dart",
+  "description": "Starter ProjectReportCard: the UI and state are ready; the function call, response parsing and error mapping are TODO(1) to TODO(3)."
+ },
+ "flutter/fl63/solution/lib/project_report_card.dart": {
+  "path": "solution/lib/project_report_card.dart",
+  "description": "Solution ProjectReportCard: invokes the Edge Function with the user JWT, parses the reply with a map pattern and maps FunctionException statuses."
  }
 }
