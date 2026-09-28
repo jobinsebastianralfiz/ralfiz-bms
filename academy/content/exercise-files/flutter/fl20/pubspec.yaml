@@ -1,0 +1,29 @@
+name: brew_lab
+description: Brew Lab cafe menu - lesson 2.4 (text, images, icons and assets).
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.5.0
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: any
+
+flutter:
+  uses-material-design: true
+
+  # Every file directly inside this folder is bundled.
+  # Subfolders would need their own line.
+  assets:
+    - assets/images/
+
+  fonts:
+    - family: Pacifico
+      fonts:
+        - asset: assets/fonts/Pacifico-Regular.ttf

@@ -15,7 +15,7 @@ from .models import (
 )
 from .sanitize import clean_html
 
-TRACK_ORDER = ['pl900', 'ab410', 'pl300', 'ab400']
+TRACK_ORDER = ['pl900', 'ab410', 'pl300', 'ab400', 'flutter']
 DEFAULT_PACKAGE_DIR = Path(__file__).resolve().parent / 'content'
 SHARED_PREFIXES = ('hd', 'pbi')
 
@@ -140,7 +140,7 @@ def run_import(root=DEFAULT_PACKAGE_DIR, content_version='2026-09', force=False,
 
         kept_question_ids = set()
         for t_order, t in enumerate(tracks):
-            track, _ = Track.objects.update_or_create(id=t['id'], defaults={
+            track, created = Track.objects.update_or_create(id=t['id'], defaults={
                 'code': t['code'], 'name': t['name'], 'level': t.get('level', ''),
                 'status': t.get('status', ''), 'outline_date': t.get('outline', ''),
                 'order_hint': t.get('order', ''), 'blurb': t.get('blurb', ''),
@@ -149,6 +149,10 @@ def run_import(root=DEFAULT_PACKAGE_DIR, content_version='2026-09', force=False,
                 'data_file_ids': t.get('data', []), 'sort_order': t_order,
                 'content_version': content_version,
             })
+            if created and t.get('category'):
+                # Staff can recategorise a course in BMS; only a new course takes the package's value.
+                track.category = t['category']
+                track.save(update_fields=['category'])
             counts['tracks'] += 1
             existing = {(q.lesson_id, q.question): q for q in Question.objects.filter(track=track)}
 

@@ -1,0 +1,44 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ track.code }} pricing - Academy - Ralfiz BMS{% endblock %}
+
+{% block breadcrumb %}
+<a href="{% url 'dashboard' %}" class="breadcrumb-item">Dashboard</a>
+<span class="breadcrumb-separator">/</span>
+<a href="{% url 'academy:manage_home' %}" class="breadcrumb-item">Academy</a>
+<span class="breadcrumb-separator">/</span>
+<span class="breadcrumb-item active">{{ track.code }}</span>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div class="page-header__lead">
+    <span class="page-header__icon"><i class="fas fa-tag"></i></span>
+    <div>
+      <h1 class="page-title">{{ track.code }} {{ track.name }}</h1>
+      <p class="page-subtitle mb-0">The price shows on the public course page and in the course list. Students still enrol through you.</p>
+    </div>
+  </div>
+</div>
+
+<div class="card" style="max-width:720px">
+  <form method="post">
+    {% csrf_token %}
+    <div class="card-body" style="display:grid;gap:16px">
+      {% for field in form %}
+      <div class="form-group">
+        <label class="form-label" for="{{ field.id_for_label }}">{{ field.label }}</label>
+        {{ field }}
+        {% if field.errors %}<small class="text-danger">{{ field.errors|join:" " }}</small>{% elif field.help_text %}<small class="text-muted">{{ field.help_text }}</small>{% endif %}
+      </div>
+      {% endfor %}
+      <p class="text-muted mb-0" style="font-size:13px">Category decides where the course is listed on the public site: with the Microsoft certification courses, or with app development.</p>
+    </div>
+    <div class="card-body" style="display:flex;gap:12px">
+      <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> Save</button>
+      <a href="{% url 'academy:manage_home' %}" class="btn btn-secondary">Cancel</a>
+      <a href="{% url 'academy:catalog_course' track.id %}" target="_blank" class="btn btn-secondary" style="margin-left:auto"><i class="fas fa-arrow-up-right-from-square"></i> Public page</a>
+    </div>
+  </form>
+</div>
+{% endblock %}

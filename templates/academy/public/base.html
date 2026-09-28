@@ -4,12 +4,12 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <title>{% block title %}Ralfiz Academy{% endblock %}</title>
-  <meta name="description" content="{% block description %}Hands-on labs, in-depth lessons, exam-style quizzes and practice tests for Microsoft Power Platform and Power BI certifications.{% endblock %}">
+  <meta name="description" content="{% block description %}Hands-on tech courses: in-depth lessons, real exercise files, quizzes and practice tests for Microsoft certifications and app development.{% endblock %}">
   <link rel="canonical" href="{{ site }}{{ request.path }}">
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="Ralfiz Academy">
   <meta property="og:title" content="{% block og_title %}Ralfiz Academy{% endblock %}">
-  <meta property="og:description" content="{% block og_description %}Hands-on labs for Microsoft certifications.{% endblock %}">
+  <meta property="og:description" content="{% block og_description %}Hands-on courses for real tech skills.{% endblock %}">
   <meta property="og:url" content="{{ site }}{{ request.path }}">
   <link rel="icon" type="image/png" sizes="32x32" href="{% static 'academy/brand/academy-icon-32.png' %}">
   <link rel="icon" type="image/png" sizes="192x192" href="{% static 'academy/brand/academy-icon-192.png' %}">
@@ -23,7 +23,7 @@
     document.documentElement.classList.add('js');
     try { var t = localStorage.getItem('academy-theme'); if (t) document.documentElement.setAttribute('data-theme', t); } catch (e) {}
   </script>
-  <link rel="stylesheet" href="{% static 'academy/academy.css' %}?v=24">
+  <link rel="stylesheet" href="{% static 'academy/academy.css' %}?v=26">
   {% block jsonld %}{% endblock %}
 </head>
 <body data-track="{% block body_track %}home{% endblock %}" class="public">
@@ -56,7 +56,7 @@
     <div class="pf-in">
       <div>
         <a class="brand" href="{% url 'academy:catalog' %}"><img class="brand-mark" src="{% static 'academy/brand/academy-icon-64.png' %}" width="32" height="32" alt=""><span>Ralfiz Academy</span></a>
-        <p>Hands-on training for Microsoft Power Platform and Power BI certifications, by {{ contact.name }}.</p>
+        <p>Hands-on courses in Microsoft Power Platform, Power BI and app development, by {{ contact.name }}.</p>
       </div>
       <div>
         <b>Contact</b>
@@ -70,7 +70,7 @@
         <a href="{% url 'academy:login' %}">Student sign in</a>
       </div>
     </div>
-    <p class="pf-legal">Ralfiz Academy is an independent training provider and is not affiliated with or endorsed by Microsoft. Microsoft, Power Platform and Power BI are trademarks of the Microsoft group of companies. Practice test scores are a guide, not Microsoft's scaled score.</p>
+    <p class="pf-legal">Ralfiz Academy is an independent training provider and is not affiliated with or endorsed by Microsoft or Google. Microsoft, Power Platform and Power BI are trademarks of the Microsoft group of companies. Flutter and Dart are trademarks of Google LLC. Practice test scores are a guide, not Microsoft's scaled score.</p>
   </footer>
   {% block extra_js %}{% endblock %}
   <script>

@@ -1,0 +1,13 @@
+name: grade_book
+description: Grade helpers and tests for the Grade Book app (Flutter & Dart course, lesson 1.14).
+version: 1.0.0
+publish_to: none
+
+environment:
+  sdk: ^3.5.0
+
+# No runtime dependencies: the grade helpers only use dart:core.
+
+dev_dependencies:
+  lints: any
+  test: any

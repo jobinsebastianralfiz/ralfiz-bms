@@ -6,7 +6,7 @@
   <div>
     <div class="eyebrow">{{ track.code }} practice test</div>
     <h1 style="font-size:clamp(26px,4vw,36px)">Test yourself</h1>
-    <p style="margin:6px 0 0;color:var(--muted);max-width:60ch">Random questions from a bank of {{ pool_size }} {{ track.code }} questions, graded out of 1000. The real exam needs 700 to pass. This score is a guide, not Microsoft's scaled score.</p>
+    <p style="margin:6px 0 0;color:var(--muted);max-width:60ch">Random questions from a bank of {{ pool_size }} {{ track.code }} questions, graded out of 1000.{% if track.is_certification %} The real exam needs 700 to pass. This score is a guide, not Microsoft's scaled score.{% else %} Score 700 or more to pass.{% endif %}</p>
   </div>
 </div>
 

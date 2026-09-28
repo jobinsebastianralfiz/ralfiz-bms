@@ -17,7 +17,7 @@
   <b>{{ attempt.score }}</b>
   <div>
     <strong>{{ attempt.correct_count }} of {{ attempt.size }} correct · {% if attempt.passed %}passing range{% else %}below {{ pass_mark }}{% endif %}</strong>
-    <p>{% if attempt.passed %}Good work. Take Microsoft's free practice assessment next, where one exists.{% else %}Review the lessons linked under each missed question, then try a new test.{% endif %}</p>
+    <p>{% if attempt.passed %}Good work.{% if attempt.track.is_certification %} Take Microsoft's free practice assessment next, where one exists.{% endif %}{% else %}Review the lessons linked under each missed question, then try a new test.{% endif %}</p>
   </div>
 </div>
 

@@ -1,0 +1,1 @@
+{% if track.price_label %}<div class="price-tag">{% if track.offer_label %}<b>{{ track.offer_label }}</b><s aria-label="Full price">{{ track.price_label }}</s><span class="off">Offer</span>{% else %}<b>{{ track.price_label }}</b>{% endif %}{% if track.price_note %}<small>{{ track.price_note }}</small>{% endif %}</div>{% endif %}

@@ -52,4 +52,5 @@ urlpatterns = [
          name='manage_student_status'),
     path('manage/progress/', m.manage_progress, name='manage_progress'),
     path('manage/videos/', m.manage_videos, name='manage_videos'),
+    path('manage/courses/<str:track_id>/', m.manage_track_edit, name='manage_track_edit'),
 ]

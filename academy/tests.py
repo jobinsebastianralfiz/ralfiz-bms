@@ -39,14 +39,27 @@ class ImportTests(AcademyTestBase):
     def test_counts_match_the_package(self):
         c = self.counts
         self.assertEqual((c['tracks'], c['domains'], c['lessons'], c['files'], c['questions']),
-                         (4, 20, 76, 158, 292))
+                         (5, 29, 124, 317, 484))
 
     def test_reimport_is_a_no_op_and_keeps_answers(self):
         q = Question.objects.filter(source='lesson').first()
         QuizAnswer.objects.create(user=self.user, question=q, last_choice=0)
         run_import(log=_quiet, force=True)
-        self.assertEqual(Question.objects.count(), 292)
+        self.assertEqual(Question.objects.count(), 484)
         self.assertTrue(QuizAnswer.objects.filter(question_id=q.pk).exists())
+
+    def test_flutter_track_imports(self):
+        track = Track.objects.get(pk='flutter')
+        self.assertEqual((track.code, track.name), ('Flutter', 'Flutter & Dart: Zero to Job-Ready'))
+        self.assertEqual(track.domains.count(), 9)
+        self.assertEqual(track.lessons.count(), 48)
+        self.assertEqual(Question.objects.filter(track=track).count(), 192)
+        self.assertEqual(list(track.lessons.values_list('num', flat=True)[:3]), ['0.1', '0.2', '1.1'])
+        lesson = Lesson.objects.get(pk='fl21')
+        self.assertIn('<pre class="code">', lesson.content_html)   # code blocks survive clean_html
+        self.assertEqual(lesson.lesson_files.count(), 3)
+        self.assertIn('<h3 id="sec-', Lesson.objects.get(pk='fl3').content_html)
+        self.assertIn('Predict the output', Lesson.objects.get(pk='fl3').content_html)
 
     def test_lesson_html_is_on_the_allow_list(self):
         for html in Lesson.objects.values_list('content_html', flat=True):
@@ -479,3 +492,50 @@ class PlaylistSyncTests(AcademyTestBase):
         self.assertContains(r, 'That is not a playlist link')
         with self.settings(YOUTUBE_API_KEY=''):
             self.assertContains(self.client.get(url), 'Add a <code>YOUTUBE_API_KEY</code>')
+
+
+class PricingAndCategoryTests(AcademyTestBase):
+    def test_rupee_labels(self):
+        t = Track.objects.get(pk='pl900')
+        self.assertEqual(t.price_label, '')
+        t.price, t.offer_price = 149999, 4999
+        self.assertEqual((t.price_label, t.offer_label, t.selling_price), ('₹1,49,999', '₹4,999', 4999))
+        t.price, t.offer_price = 0, None
+        self.assertEqual((t.price_label, t.offer_label, t.selling_price), ('Free', '', 0))
+
+    def test_owner_sets_price_and_public_pages_show_it(self):
+        self.client.login(username='owner', password='pw')
+        url = reverse('academy:manage_track_edit', args=['pl900'])
+        self.assertEqual(self.client.get(url).status_code, 200)
+        r = self.client.post(url, {'category': 'certification', 'price': '6999', 'offer_price': '7999',
+                                   'price_note': ''})
+        self.assertContains(r, 'The offer price must be lower than the full price.')
+        r = self.client.post(url, {'category': 'certification', 'price': '6999', 'offer_price': '4999',
+                                   'price_note': 'One-time fee'})
+        self.assertRedirects(r, reverse('academy:manage_home'))
+        self.client.logout()
+        page = self.client.get(reverse('academy:catalog_course', args=['pl900']))
+        self.assertContains(page, '₹4,999')
+        self.assertContains(page, '<s aria-label="Full price">₹6,999</s>', html=True)
+        self.assertContains(page, '"priceCurrency":"INR"')
+        self.assertContains(self.client.get(reverse('academy:catalog')), 'One-time fee')
+
+    def test_flutter_lists_under_app_development_without_exam_wording(self):
+        flutter = Track.objects.get(pk='flutter')
+        self.assertEqual(flutter.category, 'development')
+        catalog = self.client.get(reverse('academy:catalog'))
+        self.assertContains(catalog, 'Microsoft certifications')
+        self.assertContains(catalog, 'App development')
+        self.assertContains(catalog, 'real tech skills')
+        course = self.client.get(reverse('academy:catalog_course', args=['flutter']))
+        self.assertNotContains(course, 'before you book the exam')
+        self.assertNotContains(course, 'official outline dated')
+        lesson = Lesson.objects.filter(track=flutter).exclude(exam_tip='').first()
+        page = self.client.get(reverse('academy:catalog_lesson', args=['flutter', lesson.id]))
+        if page.status_code == 200:
+            self.assertNotContains(page, '<b>Exam tip</b>')
+
+    def test_staff_category_survives_reimport(self):
+        Track.objects.filter(pk='flutter').update(category='certification')
+        run_import(log=_quiet, force=True)
+        self.assertEqual(Track.objects.get(pk='flutter').category, 'certification')

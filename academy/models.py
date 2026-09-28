@@ -13,6 +13,23 @@ from django.db import models
 
 # ---- Content -----------------------------------------------------------------
 
+def _rupees(amount):
+    """'₹14,999' in Indian digit grouping, 'Free' for 0, '' when unset."""
+    if amount is None:
+        return ''
+    if amount == 0:
+        return 'Free'
+    s = str(amount)
+    head, tail = s[:-3], s[-3:]
+    groups = []
+    while len(head) > 2:
+        groups.insert(0, head[-2:])
+        head = head[:-2]
+    if head:
+        groups.insert(0, head)
+    return '₹' + ','.join(groups + [tail])
+
+
 class Track(models.Model):
     id = models.CharField(primary_key=True, max_length=20)          # "pl900"
     code = models.CharField(max_length=20)                           # "PL-900"
@@ -32,6 +49,12 @@ class Track(models.Model):
     content_version = models.CharField(max_length=20, blank=True)
     # YouTube playlist the Lesson Videos page syncs links from. Set by staff, never by the importer.
     video_playlist = models.URLField(max_length=300, blank=True)
+    # Set by staff in BMS (Academy → Courses), never by the importer.
+    CATEGORIES = [('certification', 'Microsoft certification'), ('development', 'App development')]
+    category = models.CharField(max_length=20, choices=CATEGORIES, default='certification')
+    price = models.PositiveIntegerField(null=True, blank=True, help_text='Rupees. Empty hides the price; 0 shows Free.')
+    offer_price = models.PositiveIntegerField(null=True, blank=True, help_text='Rupees. Shown with the full price struck through.')
+    price_note = models.CharField(max_length=120, blank=True, help_text='e.g. One-time fee · lifetime access')
 
     class Meta:
         ordering = ['sort_order']
@@ -39,11 +62,30 @@ class Track(models.Model):
     # Plain glyphs per track (Font Awesome). Deliberately not Microsoft's
     # product logos: the portal says it is not affiliated with Microsoft.
     ICONS = {'pl900': 'fa-cubes', 'ab410': 'fa-wand-magic-sparkles',
-             'pl300': 'fa-chart-column', 'ab400': 'fa-code'}
+             'pl300': 'fa-chart-column', 'ab400': 'fa-code', 'flutter': 'fa-mobile-screen-button'}
 
     @property
     def icon(self):
         return self.ICONS.get(self.id, 'fa-graduation-cap')
+
+    @property
+    def is_certification(self):
+        return self.category == 'certification'
+
+    @property
+    def price_label(self):
+        return _rupees(self.price)
+
+    @property
+    def offer_label(self):
+        # Only a real discount counts as an offer.
+        if self.offer_price is not None and self.price and self.offer_price < self.price:
+            return _rupees(self.offer_price)
+        return ''
+
+    @property
+    def selling_price(self):
+        return self.offer_price if self.offer_label else self.price
 
     def __str__(self):
         return f'{self.code} {self.name}'

@@ -24,19 +24,21 @@ from .models import (
 from . import perks as perks_mod
 from .locks import course_lock, course_locks, lesson_lock, locked_lessons, locks_apply
 from .progress import DONE, lesson_statuses, track_summary
+from .public_views import _contact
 from .sanitize import headings
 
 REMEMBER_ME_SECONDS = 30 * 24 * 60 * 60
-PATH_ORDER = ['pl900', 'ab410', 'pl300', 'ab400']
+PATH_ORDER = ['pl900', 'ab410', 'pl300', 'ab400', 'flutter']
 PATH_LINES = {
     'pl900': 'Start with the basics and understand the core services.',
     'ab410': 'Build real business apps with AI and Dataverse.',
     'pl300': 'Analyse data and build interactive reports.',
     'ab400': 'Extend the platform with custom code and integrations.',
+    'flutter': 'Build and publish mobile apps with Flutter and Dart.',
 }
 FILE_BADGES = {'csv': 'CSV', 'json': 'JSON', 'md': 'DOC', 'txt': 'TXT', 'cs': 'C#', 'ts': 'TS',
                'tsx': 'TSX', 'js': 'JS', 'py': 'PY', 'yml': 'YAML', 'xml': 'XML',
-               'csproj': 'PROJ', 'css': 'CSS'}
+               'csproj': 'PROJ', 'css': 'CSS', 'dart': 'DART', 'yaml': 'YAML'}
 
 
 # --- Auth ------------------------------------------------------------------------
@@ -62,7 +64,10 @@ def academy_login(request):
             request.session.set_expiry(REMEMBER_ME_SECONDS if request.POST.get('remember') else 0)
             nxt = request.GET.get('next', '')
             return redirect(nxt if nxt.startswith('/academy/') else 'academy:home')
-    return render(request, 'academy/login.html', {'error': error})
+    return render(request, 'academy/login.html', {
+        'error': error,
+        'has_flutter': Track.objects.filter(pk='flutter', is_published=True).exists(),
+    })
 
 
 def academy_logout(request):
@@ -419,6 +424,7 @@ def lesson_detail(request, lesson_id):
         'quiz': quiz, 'files': _file_rows(files),
         'prev_lesson': prev_lesson, 'next_lesson': next_lesson,
         'tab': tab if tab in ('learn', 'lab', 'quiz') else 'learn',
+        'contact': _contact(),
         'new_badges': perks_mod.announce_new(request, perks_mod.for_request(request)),
         **_sidebar(request, track, current=lesson.id),
     })

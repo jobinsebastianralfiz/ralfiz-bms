@@ -630,5 +630,641 @@
  "ab400/v16/script.cs": {
   "path": "script.cs",
   "description": "Custom code Script class that adds fullName to GetStaff and SearchStaff responses."
+ },
+ "flutter/fl1/README.md": {
+  "path": "README.md",
+  "description": "Lab brief for Hello Flutter: the five TODOs, how to run in DartPad and the acceptance criteria."
+ },
+ "flutter/fl1/start/lib/main.dart": {
+  "path": "start/lib/main.dart",
+  "description": "Starter Hello Flutter app that runs in DartPad; complete TODO(1) to TODO(5)."
+ },
+ "flutter/fl1/solution/lib/main.dart": {
+  "path": "solution/lib/main.dart",
+  "description": "Finished Hello Flutter app with a new seed colour, your name, a city line, a Say hello button and a dark theme."
+ },
+ "flutter/fl2/README.md": {
+  "path": "README.md",
+  "description": "Setup checklist, first-project steps and acceptance criteria for the Tap Counter lab."
+ },
+ "flutter/fl2/start/lib/main.dart": {
+  "path": "start/lib/main.dart",
+  "description": "Trimmed copy of the flutter create counter template with TODO(1) to TODO(4); paste over lib/main.dart."
+ },
+ "flutter/fl2/solution/lib/main.dart": {
+  "path": "solution/lib/main.dart",
+  "description": "Finished Tap Counter with a green theme, a -1 button that disables at 0 and a Reset button."
+ },
+ "flutter/fl3/README.md": {
+  "path": "README.md",
+  "description": "Grade Book v1 brief: how to run, rules and the exact expected console output."
+ },
+ "flutter/fl3/start/bin/main.dart": {
+  "path": "start/bin/main.dart",
+  "description": "Grade Book v1 starter with student data in variables and TODO(1) to TODO(6)."
+ },
+ "flutter/fl3/solution/bin/main.dart": {
+  "path": "solution/bin/main.dart",
+  "description": "Grade Book v1 solution: total, average, whole-number average, pass check, bonus and a printed report card."
+ },
+ "flutter/fl4/README.md": {
+  "path": "README.md",
+  "description": "Grade Book v2 brief: the no-! rule, expected output and null-safety acceptance checks."
+ },
+ "flutter/fl4/start/bin/main.dart": {
+  "path": "start/bin/main.dart",
+  "description": "Grade Book v2 starter with nullable marks and nicknames; complete TODO(1) to TODO(8)."
+ },
+ "flutter/fl4/solution/bin/main.dart": {
+  "path": "solution/bin/main.dart",
+  "description": "Grade Book v2 solution using ??, ?., promotion, late final and a required named parameter, with no ! operator."
+ },
+ "flutter/fl5/README.md": {
+  "path": "README.md",
+  "description": "Grade Book v3 brief: messy rows, pattern rules, expected output and exhaustiveness checks."
+ },
+ "flutter/fl5/start/bin/main.dart": {
+  "path": "start/bin/main.dart",
+  "description": "Grade Book v3 starter with valid and broken rows; complete TODO(1) to TODO(7)."
+ },
+ "flutter/fl5/solution/bin/main.dart": {
+  "path": "solution/bin/main.dart",
+  "description": "Grade Book v3 solution with if-case map patterns, for-in loops, a guarded switch expression and a class summary."
+ },
+ "flutter/fl6/README.md": {
+  "path": "README.md",
+  "description": "Grade Book v4 brief: functions to write, expected output and closure checks."
+ },
+ "flutter/fl6/start/bin/main.dart": {
+  "path": "start/bin/main.dart",
+  "description": "Grade Book v4 starter with stub functions and TODO(1) to TODO(8)."
+ },
+ "flutter/fl6/solution/bin/main.dart": {
+  "path": "solution/bin/main.dart",
+  "description": "Grade Book v4 solution with typedefs, validation rules, a curve closure, a strategy-style formatRow and a counting local function."
+ },
+ "flutter/fl7/README.md": {
+  "path": "README.md",
+  "description": "Task, expected console output and acceptance criteria for the Grade Book collections lab."
+ },
+ "flutter/fl7/start/bin/main.dart": {
+  "path": "start/bin/main.dart",
+  "description": "Starter Grade Book that compiles and prints placeholders; fill TODO(1) to TODO(7)."
+ },
+ "flutter/fl7/solution/bin/main.dart": {
+  "path": "solution/bin/main.dart",
+  "description": "Finished Grade Book using fold, where, sort, expand, reduce, collection for/if and a Set."
+ },
+ "flutter/fl8/README.md": {
+  "path": "README.md",
+  "description": "Task, expected output and acceptance criteria for Library Manager part 1 (Book and Library classes)."
+ },
+ "flutter/fl8/start/bin/main.dart": {
+  "path": "start/bin/main.dart",
+  "description": "Starter Book and Library classes that compile; fill TODO(1) to TODO(7) and uncomment lines in main."
+ },
+ "flutter/fl8/solution/bin/main.dart": {
+  "path": "solution/bin/main.dart",
+  "description": "Finished Library Manager with static id counter, initializer list, redirecting and factory constructors, getters and toString."
+ },
+ "flutter/fl9/README.md": {
+  "path": "README.md",
+  "description": "Task, expected output and acceptance criteria for Library Manager part 2 (hierarchy, mixins, extension, value equality)."
+ },
+ "flutter/fl9/start/bin/main.dart": {
+  "path": "start/bin/main.dart",
+  "description": "Starter item hierarchy that compiles but has wrong results; fill TODO(1) to TODO(6)."
+ },
+ "flutter/fl9/solution/bin/main.dart": {
+  "path": "solution/bin/main.dart",
+  "description": "Finished LibraryItem hierarchy with Borrowable interface, Lending and Rateable mixins, LoanDates extension and Isbn equality."
+ },
+ "flutter/fl10/README.md": {
+  "path": "README.md",
+  "description": "Task, expected output and acceptance criteria for the Loan Desk lab (records, sealed LoanStatus, enhanced enum)."
+ },
+ "flutter/fl10/start/bin/main.dart": {
+  "path": "start/bin/main.dart",
+  "description": "Starter Loan Desk that compiles with placeholder results; fill TODO(1) to TODO(6)."
+ },
+ "flutter/fl10/solution/bin/main.dart": {
+  "path": "solution/bin/main.dart",
+  "description": "Finished Loan Desk with exhaustive switch expressions, record returns and destructuring, and the Membership enhanced enum."
+ },
+ "flutter/fl11/README.md": {
+  "path": "README.md",
+  "description": "Task, expected output and acceptance criteria for the Typed Repository lab (generic repository, Result<T>, countBy)."
+ },
+ "flutter/fl11/start/bin/main.dart": {
+  "path": "start/bin/main.dart",
+  "description": "Starter repository with casts and placeholder methods that compiles; fill TODO(1) to TODO(4)."
+ },
+ "flutter/fl11/solution/bin/main.dart": {
+  "path": "solution/bin/main.dart",
+  "description": "Finished InMemoryRepository<T extends Entity> with sealed Result<T>, a generic when() extension and a countBy<T, K> function."
+ },
+ "flutter/fl12/README.md": {
+  "path": "README.md",
+  "description": "Task, expected output, what the starter does wrong, and acceptance criteria for the Library Command Desk lab."
+ },
+ "flutter/fl12/start/bin/main.dart": {
+  "path": "start/bin/main.dart",
+  "description": "Starter command desk that compiles but crashes on the first bad command; fill TODO(1) to TODO(5)."
+ },
+ "flutter/fl12/solution/bin/main.dart": {
+  "path": "solution/bin/main.dart",
+  "description": "Finished command desk with a sealed LibraryException family, list-pattern parsing, on/catch/finally, rethrow and assert."
+ },
+ "flutter/fl13/README.md": {
+  "path": "README.md",
+  "description": "Task brief and acceptance criteria for the Weather Fetcher console app, with the expected output."
+ },
+ "flutter/fl13/start/bin/main.dart": {
+  "path": "start/bin/main.dart",
+  "description": "Starter Weather Fetcher that compiles; fill TODO(1) to TODO(6) for futures, errors, Future.wait and a timeout."
+ },
+ "flutter/fl13/solution/bin/main.dart": {
+  "path": "solution/bin/main.dart",
+  "description": "Finished Weather Fetcher with records, sequential vs parallel timing, a custom exception and a timeout."
+ },
+ "flutter/fl14/README.md": {
+  "path": "README.md",
+  "description": "Task brief and expected output for the Weather Station streams app."
+ },
+ "flutter/fl14/start/bin/main.dart": {
+  "path": "start/bin/main.dart",
+  "description": "Starter Weather Station that compiles; fill TODO(1) to TODO(7) for async*, transforms, a broadcast controller and cancelling."
+ },
+ "flutter/fl14/solution/bin/main.dart": {
+  "path": "solution/bin/main.dart",
+  "description": "Finished Weather Station: generator, where/map/take, broadcast alerts, toList and a cancelled periodic ticker."
+ },
+ "flutter/fl15/README.md": {
+  "path": "README.md",
+  "description": "Task brief and acceptance criteria for the Prime Counter isolates app."
+ },
+ "flutter/fl15/start/bin/main.dart": {
+  "path": "start/bin/main.dart",
+  "description": "Starter Prime Counter with a heartbeat timer; fill TODO(1) to TODO(5) to use Isolate.run and split work across isolates."
+ },
+ "flutter/fl15/solution/bin/main.dart": {
+  "path": "solution/bin/main.dart",
+  "description": "Finished Prime Counter comparing main-isolate work, Isolate.run, error propagation and four parallel isolates."
+ },
+ "flutter/fl16/pubspec.yaml": {
+  "path": "pubspec.yaml",
+  "description": "Package manifest for grade_book with test and lints as dev dependencies."
+ },
+ "flutter/fl16/lib/src/grades.dart": {
+  "path": "lib/src/grades.dart",
+  "description": "Grade helpers to test: average, letterFor (switch with relational patterns), letterCounts and reportLine."
+ },
+ "flutter/fl16/start/test/grades_test.dart": {
+  "path": "start/test/grades_test.dart",
+  "description": "Starter test file with two tests done; add the rest at TODO(1) to TODO(6)."
+ },
+ "flutter/fl16/solution/test/grades_test.dart": {
+  "path": "solution/test/grades_test.dart",
+  "description": "Complete package:test suite with groups, boundaries, error matchers and setUp (10 tests)."
+ },
+ "flutter/fl17/README.md": {
+  "path": "README.md",
+  "description": "Setup, experiments (rebuilds, const, hot reload, hot restart, DevTools) and acceptance criteria for the Widget Tree Explorer."
+ },
+ "flutter/fl17/start/lib/main.dart": {
+  "path": "start/lib/main.dart",
+  "description": "Starter Widget Tree Explorer counter app; fill TODO(1) to TODO(5) to log builds and read the theme through context."
+ },
+ "flutter/fl17/solution/lib/main.dart": {
+  "path": "solution/lib/main.dart",
+  "description": "Finished Widget Tree Explorer with build logging, a const Label, initState and a ThemeReader chip."
+ },
+ "flutter/fl18/README.md": {
+  "path": "README.md",
+  "description": "Setup, tasks and acceptance criteria for the Business Card app."
+ },
+ "flutter/fl18/start/lib/main.dart": {
+  "path": "start/lib/main.dart",
+  "description": "Starter Business Card that runs; fill TODO(1) to TODO(7) for theme, AppBar, avatar, texts, contact card and dark mode."
+ },
+ "flutter/fl18/solution/lib/main.dart": {
+  "path": "solution/lib/main.dart",
+  "description": "Finished Business Card with a seed theme, dark theme, AppBar actions, avatar, themed texts and a ContactRow widget."
+ },
+ "flutter/fl19/README.md": {
+  "path": "README.md",
+  "description": "Task, rules and acceptance criteria for the Tip Calculator with bill splitting."
+ },
+ "flutter/fl19/start/lib/main.dart": {
+  "path": "start/lib/main.dart",
+  "description": "Starter Tip Calculator that compiles and runs; complete TODO(1) to TODO(4)."
+ },
+ "flutter/fl19/solution/lib/main.dart": {
+  "path": "solution/lib/main.dart",
+  "description": "Finished Tip Calculator with bill controller, tip choice, people count and derived amounts."
+ },
+ "flutter/fl20/README.md": {
+  "path": "README.md",
+  "description": "Setup (assets and font), tasks and acceptance criteria for the Brew Lab menu."
+ },
+ "flutter/fl20/pubspec.yaml": {
+  "path": "pubspec.yaml",
+  "description": "pubspec.yaml that declares assets/images/ and the Pacifico font."
+ },
+ "flutter/fl20/start/lib/main.dart": {
+  "path": "start/lib/main.dart",
+  "description": "Starter Brew Lab menu; complete TODO(1) to TODO(3)."
+ },
+ "flutter/fl20/solution/lib/main.dart": {
+  "path": "solution/lib/main.dart",
+  "description": "Finished Brew Lab menu with theme text styles, Text.rich, network banner, asset photos and icons."
+ },
+ "flutter/fl21/README.md": {
+  "path": "README.md",
+  "description": "Tasks and acceptance criteria for the Habit Tracker."
+ },
+ "flutter/fl21/start/lib/main.dart": {
+  "path": "start/lib/main.dart",
+  "description": "Starter Habit Tracker list with TODO(1) to TODO(5)."
+ },
+ "flutter/fl21/solution/lib/main.dart": {
+  "path": "solution/lib/main.dart",
+  "description": "Finished Habit Tracker with tap, long press, SnackBar Undo, bottom sheet, confirm dialog and a disabled state."
+ },
+ "flutter/fl22/README.md": {
+  "path": "README.md",
+  "description": "Tasks and acceptance criteria for Recipe Book part 1, the detail screen."
+ },
+ "flutter/fl22/start/lib/main.dart": {
+  "path": "start/lib/main.dart",
+  "description": "Starter recipe detail screen; complete TODO(1) to TODO(5) with Row, Column and Expanded."
+ },
+ "flutter/fl22/solution/lib/main.dart": {
+  "path": "solution/lib/main.dart",
+  "description": "Finished recipe detail screen built from rows, columns, Expanded and a scrolling ingredient list."
+ },
+ "flutter/fl23/README.md": {
+  "path": "README.md",
+  "description": "Tasks, rules and acceptance criteria for Recipe Book part 2, decorated cards."
+ },
+ "flutter/fl23/start/lib/main.dart": {
+  "path": "start/lib/main.dart",
+  "description": "Starter recipe list with plain ListTiles; complete TODO(1) to TODO(5)."
+ },
+ "flutter/fl23/solution/lib/main.dart": {
+  "path": "solution/lib/main.dart",
+  "description": "Finished recipe list with decorated Container cards, gradient thumbnails, pills and a max width."
+ },
+ "flutter/fl24/README.md": {
+  "path": "README.md",
+  "description": "Tasks, layer order and acceptance criteria for Recipe Book part 3, the hero banner."
+ },
+ "flutter/fl24/start/lib/main.dart": {
+  "path": "start/lib/main.dart",
+  "description": "Starter detail page with a flat banner; complete TODO(1) to TODO(5)."
+ },
+ "flutter/fl24/solution/lib/main.dart": {
+  "path": "solution/lib/main.dart",
+  "description": "Finished detail page with a Stack hero banner, gradient scrim, favourite toggle and Badge."
+ },
+ "flutter/fl25/README.md": {
+  "path": "README.md",
+  "description": "Task brief and acceptance criteria for the Recipe Book home screen."
+ },
+ "flutter/fl25/start/lib/main.dart": {
+  "path": "start/lib/main.dart",
+  "description": "Starter: a plain ListView of recipes with TODO(1) to TODO(4) for the sliver home screen."
+ },
+ "flutter/fl25/solution/lib/main.dart": {
+  "path": "solution/lib/main.dart",
+  "description": "Solution: CustomScrollView with SliverAppBar.large, a horizontal quick list and a SliverGrid."
+ },
+ "flutter/fl26/README.md": {
+  "path": "README.md",
+  "description": "Task brief and acceptance criteria for the adaptive Recipe Book shell."
+ },
+ "flutter/fl26/start/lib/main.dart": {
+  "path": "start/lib/main.dart",
+  "description": "Starter: Recipe Book with a fixed bottom NavigationBar and TODO(1) to TODO(5) for the adaptive layout."
+ },
+ "flutter/fl26/solution/lib/main.dart": {
+  "path": "solution/lib/main.dart",
+  "description": "Solution: window size classes, NavigationBar or NavigationRail, and a list–detail layout on expanded windows."
+ },
+ "flutter/fl27/README.md": {
+  "path": "README.md",
+  "description": "Task brief and acceptance criteria for the Travel Explorer home screen."
+ },
+ "flutter/fl27/start/lib/main.dart": {
+  "path": "start/lib/main.dart",
+  "description": "Starter: Travel Explorer data and a plain list with TODO(1) to TODO(5) for the Material 3 components."
+ },
+ "flutter/fl27/solution/lib/main.dart": {
+  "path": "solution/lib/main.dart",
+  "description": "Solution: SearchAnchor.bar, FilterChips, SegmentedButton, cards with toggle hearts and a NavigationBar with a badge."
+ },
+ "flutter/fl28/README.md": {
+  "path": "README.md",
+  "description": "Task brief and acceptance criteria for theming Travel Explorer."
+ },
+ "flutter/fl28/start/lib/main.dart": {
+  "path": "start/lib/main.dart",
+  "description": "Starter: light-only theme with hard-coded colours and TODO(1) to TODO(5)."
+ },
+ "flutter/fl28/solution/lib/main.dart": {
+  "path": "solution/lib/main.dart",
+  "description": "Solution: AppTheme with light and dark ThemeData, component themes, a ThemeExtension and a ThemeMode switch."
+ },
+ "flutter/fl29/README.md": {
+  "path": "README.md",
+  "description": "Refactoring brief and acceptance criteria for Travel Explorer widgets."
+ },
+ "flutter/fl29/start/lib/main.dart": {
+  "path": "start/lib/main.dart",
+  "description": "Starter: a working but messy Travel Explorer home with helper methods and TODO(1) to TODO(4)."
+ },
+ "flutter/fl29/solution/lib/main.dart": {
+  "path": "solution/lib/main.dart",
+  "description": "Solution: SectionHeader, DestinationCard with a trailing slot, a controlled StarRating and keyed PackingTiles."
+ },
+ "flutter/fl30/README.md": {
+  "path": "README.md",
+  "description": "Task brief and acceptance criteria for the Shop Catalog navigation lab."
+ },
+ "flutter/fl30/start/lib/main.dart": {
+  "path": "start/lib/main.dart",
+  "description": "Starter: catalog, product and cart screens without navigation, with TODO(1) to TODO(5)."
+ },
+ "flutter/fl30/solution/lib/main.dart": {
+  "path": "solution/lib/main.dart",
+  "description": "Solution: push with constructor data, typed results with pop, mounted checks, a badge cart and PopScope confirmation."
+ },
+ "flutter/fl31/README.md": {
+  "path": "README.md",
+  "description": "Task brief and acceptance criteria for the go_router Shop Catalog lab."
+ },
+ "flutter/fl31/pubspec.yaml": {
+  "path": "pubspec.yaml",
+  "description": "Project pubspec with go_router added."
+ },
+ "flutter/fl31/start/lib/main.dart": {
+  "path": "start/lib/main.dart",
+  "description": "Starter: screens are built, the router has one route; complete TODO(1) to TODO(6)."
+ },
+ "flutter/fl31/solution/lib/main.dart": {
+  "path": "solution/lib/main.dart",
+  "description": "Solution: StatefulShellRoute tabs, product/:id, login redirect with refreshListenable, errorBuilder."
+ },
+ "flutter/fl32/README.md": {
+  "path": "README.md",
+  "description": "Task brief and acceptance criteria for the Event Registration form."
+ },
+ "flutter/fl32/start/lib/main.dart": {
+  "path": "start/lib/main.dart",
+  "description": "Starter: fields are laid out but there is no Form, no validation and no submit logic."
+ },
+ "flutter/fl32/solution/lib/main.dart": {
+  "path": "solution/lib/main.dart",
+  "description": "Solution: Form with validators, keyboard setup, FormField<bool> checkbox, loading state, dialog and reset."
+ },
+ "flutter/fl32/test/validators_test.dart": {
+  "path": "test/validators_test.dart",
+  "description": "Unit tests for validateName, validateEmail and validatePhone (package name event_registration)."
+ },
+ "flutter/fl33/README.md": {
+  "path": "README.md",
+  "description": "Task brief, acceptance criteria and an experiment for the Meetup Hub navigation lab."
+ },
+ "flutter/fl33/start/lib/main.dart": {
+  "path": "start/lib/main.dart",
+  "description": "Starter: pages and data exist, but there are no tabs, bottom bar, drawer or IndexedStack yet."
+ },
+ "flutter/fl33/solution/lib/main.dart": {
+  "path": "solution/lib/main.dart",
+  "description": "Solution: DefaultTabController tabs, NavigationBar with IndexedStack, and a drawer with header and About."
+ },
+ "flutter/fl34/README.md": {
+  "path": "README.md",
+  "description": "Task brief, acceptance criteria and a rebuild experiment for the Water Tracker."
+ },
+ "flutter/fl34/start/lib/main.dart": {
+  "path": "start/lib/main.dart",
+  "description": "Starter with the classic bug: the count lives in AddButtons, so the header never updates."
+ },
+ "flutter/fl34/solution/lib/main.dart": {
+  "path": "solution/lib/main.dart",
+  "description": "Solution: lifted state in WaterHome, stateless AddButtons, WaterScope InheritedWidget and the ephemeral TipCard."
+ },
+ "flutter/fl35/pubspec.yaml": {
+  "path": "pubspec.yaml",
+  "description": "Project pubspec with provider added (project name shopping_cart, used by the test import)."
+ },
+ "flutter/fl35/start/lib/main.dart": {
+  "path": "start/lib/main.dart",
+  "description": "Starter with the task brief in its header: CartModel is incomplete and no widget is connected to it yet."
+ },
+ "flutter/fl35/solution/lib/main.dart": {
+  "path": "solution/lib/main.dart",
+  "description": "Solution: CartModel, ChangeNotifierProvider above MaterialApp, select/read in the catalog, Consumer/watch in the cart."
+ },
+ "flutter/fl35/test/cart_model_test.dart": {
+  "path": "test/cart_model_test.dart",
+  "description": "Unit tests for CartModel: totals, notifications, duplicates, remove/clear and the read-only items list."
+ },
+ "flutter/fl36/start/lib/task_cubit.dart": {
+  "path": "start/lib/task_cubit.dart",
+  "description": "Starter model and Cubit: Task.props is incomplete and the Cubit methods are empty (TODO 1 to 4)."
+ },
+ "flutter/fl36/start/lib/main.dart": {
+  "path": "start/lib/main.dart",
+  "description": "Starter UI: TaskList and NewTaskField are done; add the observer, BlocProvider, BlocBuilder and BlocListener (TODO 5 to 7)."
+ },
+ "flutter/fl36/solution/lib/task_cubit.dart": {
+  "path": "solution/lib/task_cubit.dart",
+  "description": "Solution: Equatable Task, sealed TasksState, and a TaskCubit with load, add, toggle, delete, undo and filter."
+ },
+ "flutter/fl36/solution/lib/main.dart": {
+  "path": "solution/lib/main.dart",
+  "description": "Solution UI: BlocObserver, BlocProvider, BlocListener for the Undo snack bar and an exhaustive BlocBuilder switch."
+ },
+ "flutter/fl37/start/lib/main.dart": {
+  "path": "start/lib/main.dart",
+  "description": "Starter Task Tracker with a Bloc and sealed events; toggle, delete, filter and SnackBar are TODOs."
+ },
+ "flutter/fl37/start/test/task_bloc_test.dart": {
+  "path": "start/test/task_bloc_test.dart",
+  "description": "Starter bloc_test file with three passing tests and two TODO tests."
+ },
+ "flutter/fl37/solution/lib/main.dart": {
+  "path": "solution/lib/main.dart",
+  "description": "Finished Task Tracker: TaskBloc, FilterCubit, MultiBlocProvider and BlocConsumer."
+ },
+ "flutter/fl37/solution/test/task_bloc_test.dart": {
+  "path": "solution/test/task_bloc_test.dart",
+  "description": "Finished tests for TaskBloc and FilterCubit using blocTest with seed."
+ },
+ "flutter/fl38/brief.md": {
+  "path": "brief.md",
+  "description": "Lab brief: target feature-first folder layout, layer rules and acceptance criteria."
+ },
+ "flutter/fl38/start/lib/main.dart": {
+  "path": "start/lib/main.dart",
+  "description": "Starter Task Tracker with data, fake delays and UI all inside one StatefulWidget."
+ },
+ "flutter/fl38/solution/lib/main.dart": {
+  "path": "solution/lib/main.dart",
+  "description": "Layered solution: Task model, TaskRepository, InMemoryTaskRepository, TasksCubit, TasksPage and composition root."
+ },
+ "flutter/fl38/solution/test/tasks_cubit_test.dart": {
+  "path": "solution/test/tasks_cubit_test.dart",
+  "description": "FakeTaskRepository plus blocTests for load success, load failure and add."
+ },
+ "flutter/fl39/pubspec.yaml": {
+  "path": "pubspec.yaml",
+  "description": "pubspec for the News Reader with flutter_bloc and http."
+ },
+ "flutter/fl39/start/lib/main.dart": {
+  "path": "start/lib/main.dart",
+  "description": "Starter News Reader: compiles and shows an empty list; parsing, requests, errors and detail page are TODOs."
+ },
+ "flutter/fl39/solution/lib/main.dart": {
+  "path": "solution/lib/main.dart",
+  "description": "Finished News Reader: Post model, PostsApi with timeout and error mapping, PostsCubit, list and detail pages."
+ },
+ "flutter/fl39/sample-posts.json": {
+  "path": "sample-posts.json",
+  "description": "Three posts in the JSONPlaceholder shape plus one broken item, for testing Post.fromJson."
+ },
+ "flutter/fl40/README.md": {
+  "path": "README.md",
+  "description": "Lab brief: find the refetch-in-build bug, then add error handling, pull-to-refresh and a live StreamBuilder label."
+ },
+ "flutter/fl40/start/lib/main.dart": {
+  "path": "start/lib/main.dart",
+  "description": "Starter feed that creates the future inside build and only checks ConnectionState.done."
+ },
+ "flutter/fl40/solution/lib/main.dart": {
+  "path": "solution/lib/main.dart",
+  "description": "Finished feed: future and stream created in initState, error-first checks, RefreshIndicator and live label."
+ },
+ "flutter/fl41/pubspec.yaml": {
+  "path": "pubspec.yaml",
+  "description": "pubspec for the Notes app with sqflite, path and shared_preferences."
+ },
+ "flutter/fl41/start/lib/main.dart": {
+  "path": "start/lib/main.dart",
+  "description": "Starter Notes app that keeps notes and the theme only in memory; TODOs add SQLite, preferences, an editor and swipe to delete."
+ },
+ "flutter/fl41/solution/lib/notes_database.dart": {
+  "path": "solution/lib/notes_database.dart",
+  "description": "Note model with toMap/fromMap and NotesDatabase: openDatabase, onCreate and CRUD with whereArgs."
+ },
+ "flutter/fl41/solution/lib/main.dart": {
+  "path": "solution/lib/main.dart",
+  "description": "Finished Notes app UI: startup in main, dark mode with SharedPreferencesAsync, notes list, editor page and Dismissible delete."
+ },
+ "flutter/fl42/brief.md": {
+  "path": "brief.md",
+  "description": "Setup guide: Firebase project, Email/Password provider, Firebase CLI, flutterfire configure, plus acceptance criteria."
+ },
+ "flutter/fl42/pubspec.yaml": {
+  "path": "pubspec.yaml",
+  "description": "pubspec for the Chat app with firebase_core and firebase_auth."
+ },
+ "flutter/fl42/start/lib/main.dart": {
+  "path": "start/lib/main.dart",
+  "description": "Starter Chat app: sign-in form ready, Firebase initialisation, AuthRepository, auth gate and home page are TODOs."
+ },
+ "flutter/fl42/solution/lib/main.dart": {
+  "path": "solution/lib/main.dart",
+  "description": "Finished part 1: Firebase init, AuthRepository with error messages, StreamBuilder auth gate, sign-in/register form and home page."
+ },
+ "flutter/fl43/README.md": {
+  "path": "README.md",
+  "description": "Task brief and acceptance criteria for the real-time Chat room."
+ },
+ "flutter/fl43/lib/message_bubble.dart": {
+  "path": "lib/message_bubble.dart",
+  "description": "Finished chat bubble widget used by both the starter and the solution; copy it into lib/."
+ },
+ "flutter/fl43/start/lib/main.dart": {
+  "path": "start/lib/main.dart",
+  "description": "Starter Chat app: compiles and signs in, but messages are not read or sent yet (TODO 1 to 6)."
+ },
+ "flutter/fl43/solution/lib/main.dart": {
+  "path": "solution/lib/main.dart",
+  "description": "Complete Chat app with typed messages, a live query, batched sends and rule errors."
+ },
+ "flutter/fl44/README.md": {
+  "path": "README.md",
+  "description": "Task brief and acceptance criteria for the Onboarding app."
+ },
+ "flutter/fl44/start/lib/main.dart": {
+  "path": "start/lib/main.dart",
+  "description": "Starter Onboarding app: slides swipe, but dots, button, slides and route are not animated yet (TODO 1 to 5)."
+ },
+ "flutter/fl44/solution/lib/main.dart": {
+  "path": "solution/lib/main.dart",
+  "description": "Complete Onboarding app with animated dots, eased paging, AnimatedSwitcher, per-slide explicit animations, a fade route and a Hero."
+ },
+ "flutter/fl45/README.md": {
+  "path": "README.md",
+  "description": "Task brief, platform setup (Info.plist) and acceptance criteria for the Profile Photo app, plus the optional Kotlin battery handler."
+ },
+ "flutter/fl45/pubspec.yaml": {
+  "path": "pubspec.yaml",
+  "description": "pubspec for the Profile Photo app with image_picker."
+ },
+ "flutter/fl45/start/lib/main.dart": {
+  "path": "start/lib/main.dart",
+  "description": "Starter Profile Photo app: layout is ready; picking, the sheet and the channel are TODO 1 to 5."
+ },
+ "flutter/fl45/solution/lib/main.dart": {
+  "path": "solution/lib/main.dart",
+  "description": "Complete Profile Photo app with image_picker, a source sheet, error handling and a MethodChannel battery tile."
+ },
+ "flutter/fl46/README.md": {
+  "path": "README.md",
+  "description": "Task brief, package setup, integration test and acceptance criteria for testing the Tasks app."
+ },
+ "flutter/fl46/lib/main.dart": {
+  "path": "lib/main.dart",
+  "description": "The finished Tasks app under test: Task model, summary(), TaskRepository, TasksCubit with sealed states, and TasksPage."
+ },
+ "flutter/fl46/start/test/tasks_test.dart": {
+  "path": "start/test/tasks_test.dart",
+  "description": "Starter test file: the mock class and groups are ready; write the tests in TODO 1 to 6."
+ },
+ "flutter/fl46/solution/test/tasks_test.dart": {
+  "path": "solution/test/tasks_test.dart",
+  "description": "Complete tests: unit tests, three blocTests with mocktail, and two widget tests."
+ },
+ "flutter/fl47/README.md": {
+  "path": "README.md",
+  "description": "Task brief, profiling steps and acceptance criteria for tuning the Photo Feed."
+ },
+ "flutter/fl47/start/lib/main.dart": {
+  "path": "start/lib/main.dart",
+  "description": "Slow Photo Feed starter with six deliberate performance and correctness problems (TODO 1 to 6)."
+ },
+ "flutter/fl47/solution/lib/main.dart": {
+  "path": "solution/lib/main.dart",
+  "description": "Tuned Photo Feed: sort once, ListView.builder, stable keys, cacheWidth, Isolate.run and const widgets."
+ },
+ "flutter/fl48/README.md": {
+  "path": "README.md",
+  "description": "Release checklist lab: identity, icons, version, dev/prod defines, Android signing and store upload, with acceptance criteria."
+ },
+ "flutter/fl48/pubspec.yaml": {
+  "path": "pubspec.yaml",
+  "description": "pubspec with version 1.0.0+1 and the flutter_launcher_icons configuration."
+ },
+ "flutter/fl48/start/lib/main.dart": {
+  "path": "start/lib/main.dart",
+  "description": "Starter Notes app with hard-coded settings; read the build defines and add the About dialog (TODO 1 to 4)."
+ },
+ "flutter/fl48/solution/lib/main.dart": {
+  "path": "solution/lib/main.dart",
+  "description": "Notes app reading FLAVOR, API_URL and APP_VERSION build defines, with a DEV strip and an About dialog."
  }
 }

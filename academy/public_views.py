@@ -105,6 +105,15 @@ def catalog(request):
                      'questions': Question.objects.filter(track=t, is_active=True).count(),
                      'free': lessons[:FREE_LESSONS_PER_TRACK],
                      'sample': sample_question(t)})
+    # Microsoft certification courses first, then app development; empty groups are skipped.
+    groups = [
+        {'id': 'certification', 'title': 'Microsoft certifications',
+         'intro': 'Start with PL-900, then choose apps (AB-410) or data (PL-300). AB-400 is for developers, after AB-410.',
+         'rows': [r for r in rows if r['track'].is_certification]},
+        {'id': 'development', 'title': 'App development',
+         'intro': 'Build real apps from the first line of code to a published release.',
+         'rows': [r for r in rows if not r['track'].is_certification]},
+    ]
     totals = {
         'tracks': len(tracks),
         'lessons': Lesson.objects.filter(track__in=tracks).count(),
@@ -112,7 +121,8 @@ def catalog(request):
         'questions': Question.objects.filter(track__in=tracks, is_active=True).count(),
     }
     return render(request, 'academy/public/catalog.html', {
-        'rows': rows, 'totals': totals, **_common(request),
+        'rows': rows, 'groups': [g for g in groups if g['rows']], 'totals': totals,
+        'published': {t.id for t in tracks}, **_common(request),
     })
 
 

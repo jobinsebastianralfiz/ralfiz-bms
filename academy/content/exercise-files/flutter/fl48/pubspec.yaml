@@ -1,0 +1,31 @@
+name: notes
+description: Notes app - lesson 8.5 (build and publish).
+publish_to: 'none'
+
+# build name + build number: 1.0.0 is shown to users, 1 must grow with every upload
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.5.0
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: any
+  flutter_launcher_icons: any
+
+flutter:
+  uses-material-design: true
+
+# Run: dart run flutter_launcher_icons
+flutter_launcher_icons:
+  android: "launcher_icon"
+  ios: true
+  image_path: "assets/icon/icon.png"
+  remove_alpha_ios: true
+  adaptive_icon_background: "#1565C0"
+  adaptive_icon_foreground: "assets/icon/icon.png"

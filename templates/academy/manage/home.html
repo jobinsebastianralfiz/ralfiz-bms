@@ -61,17 +61,18 @@
   <div class="card-body p-0">
     <div class="table-responsive">
       <table class="table mb-0">
-        <thead><tr><th>Track</th><th>Level</th><th>Status</th><th class="text-end">Lessons</th><th class="text-end">Questions</th><th class="text-end">Enrolled</th><th class="text-end"></th></tr></thead>
+        <thead><tr><th>Track</th><th>Price</th><th>Status</th><th class="text-end">Lessons</th><th class="text-end">Questions</th><th class="text-end">Enrolled</th><th class="text-end"></th></tr></thead>
         <tbody>
           {% for t in tracks %}
           <tr>
-            <td><strong>{{ t.code }}</strong> {{ t.name }}<br><small class="text-muted">Outline {{ t.outline_date }}</small></td>
-            <td>{{ t.level }}</td>
+            <td><strong>{{ t.code }}</strong> {{ t.name }}{% if t.outline_date %}<br><small class="text-muted">Outline {{ t.outline_date }}</small>{% endif %}</td>
+            <td>{% if t.offer_label %}<strong>{{ t.offer_label }}</strong> <s class="text-muted">{{ t.price_label }}</s>{% elif t.price_label %}<strong>{{ t.price_label }}</strong>{% else %}<span class="text-muted">Not set</span>{% endif %}<br><small class="text-muted">{{ t.get_category_display }}</small></td>
             <td>{{ t.status }}</td>
             <td class="text-end">{{ t.lesson_count }}</td>
             <td class="text-end">{{ t.question_count }}</td>
             <td class="text-end">{{ t.student_count }}</td>
             <td class="text-end">
+              <a href="{% url 'academy:manage_track_edit' t.id %}" class="btn btn-sm btn-primary"><i class="fas fa-tag"></i> Edit</a>
               <a href="{% url 'academy:manage_progress' %}?track={{ t.id }}" class="btn btn-sm btn-secondary">Progress</a>
               <a href="{% url 'academy:track' t.id %}" target="_blank" class="btn btn-sm btn-secondary">Preview</a>
             </td>

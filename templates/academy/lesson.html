@@ -26,6 +26,7 @@
       <div style="margin-top:14px"><span id="subStatus" class="pill {% if status.status == 'done' %}ok{% elif status.status == 'in_progress' %}lab{% endif %}">{% if status.status == 'done' %}Complete{% elif status.status == 'in_progress' %}In progress{% else %}Not started{% endif %}</span></div>
     </div>
     <div class="les-art" aria-hidden="true">
+      <i class="dots"></i><i class="orb o1"></i><i class="orb o2"></i>
       <div class="screen"><span><i class="fa-solid fa-book-open"></i></span><span><i class="fa-solid fa-flask"></i></span><span><i class="fa-solid fa-trophy"></i></span><span><i class="fa-solid {{ track.icon }}"></i></span></div>
       <div class="base"></div>
     </div>
@@ -56,7 +57,7 @@
       <dl>{% for t in lesson.terms %}<dt>{{ t.term }}</dt><dd>{{ t.definition }}</dd>{% endfor %}</dl>
     </div>
     {% endif %}
-    {% if lesson.exam_tip %}<div class="tip"><b>Exam tip</b><span>{{ lesson.exam_tip }}</span></div>{% endif %}
+    {% if lesson.exam_tip %}<div class="tip"><b>{% if lesson.track.is_certification %}Exam tip{% else %}Tip{% endif %}</b><span>{{ lesson.exam_tip }}</span></div>{% endif %}
     <div style="margin-top:24px"><button class="btn2" type="button" data-go-tab="lab"><i class="fa-solid fa-flask"></i> Start the hands-on lab <i class="fa-solid fa-arrow-right"></i></button></div>
   </div>
 </section>
@@ -174,6 +175,8 @@
   <section class="card2 rhelp">
     <h4><i class="fa-regular fa-circle-question" style="color:var(--tone-blue-i)"></i> Need help?</h4>
     <p>Stuck on a step? Re-read the lesson and the "Check your work" list, then ask your trainer.</p>
+    {% if contact.whatsapp %}<a class="btn2 soft rask" href="{{ contact.whatsapp }}?text={{ 'Hi, I have a question about '|add:track.code|add:' lesson '|add:lesson.num|add:' '|add:lesson.title|urlencode }}" target="_blank" rel="noopener"><i class="fa-regular fa-comment-dots"></i> Ask a question</a>
+    {% elif contact.email %}<a class="btn2 soft rask" href="mailto:{{ contact.email }}?subject={{ track.code|add:' lesson '|add:lesson.num|urlencode }}"><i class="fa-regular fa-comment-dots"></i> Ask a question</a>{% endif %}
   </section>
 </aside>
 {% endblock %}

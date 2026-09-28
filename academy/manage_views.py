@@ -360,3 +360,39 @@ def _sync_videos(request, track, lessons):
     messages.success(request, f'Synced {track.code}: {len(changed)} link{"s" if len(changed) != 1 else ""} '
                               f'updated from {len(videos)} video{"s" if len(videos) != 1 else ""}.')
     return back
+
+
+# --- Course pricing ---------------------------------------------------------------
+
+class TrackPricingForm(forms.ModelForm):
+    class Meta:
+        model = Track
+        fields = ['category', 'price', 'offer_price', 'price_note']
+        labels = {'price': 'Price (₹)', 'offer_price': 'Offer price (₹)', 'price_note': 'Price note'}
+        widgets = {
+            'category': forms.Select(attrs={'class': 'form-control'}),
+            'price': forms.NumberInput(attrs={'class': 'form-control', 'min': 0, 'placeholder': 'Leave empty to hide'}),
+            'offer_price': forms.NumberInput(attrs={'class': 'form-control', 'min': 0, 'placeholder': 'Optional'}),
+            'price_note': forms.TextInput(attrs={'class': 'form-control',
+                                                 'placeholder': 'One-time fee · lifetime access'}),
+        }
+
+    def clean(self):
+        data = super().clean()
+        price, offer = data.get('price'), data.get('offer_price')
+        if offer is not None and price is None:
+            self.add_error('offer_price', 'Set the full price first.')
+        elif offer is not None and offer >= price:
+            self.add_error('offer_price', 'The offer price must be lower than the full price.')
+        return data
+
+
+@admin_required
+def manage_track_edit(request, track_id):
+    track = get_object_or_404(Track, pk=track_id)
+    form = TrackPricingForm(request.POST or None, instance=track)
+    if request.method == 'POST' and form.is_valid():
+        form.save()
+        messages.success(request, f'{track.code} pricing saved.')
+        return redirect('academy:manage_home')
+    return render(request, 'academy/manage/track_form.html', {'track': track, 'form': form})

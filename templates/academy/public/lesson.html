@@ -36,7 +36,7 @@
       {% if lesson.terms %}
       <div class="terms" id="terms"><h3>Key terms</h3><dl>{% for t in lesson.terms %}<dt>{{ t.term }}</dt><dd>{{ t.definition }}</dd>{% endfor %}</dl></div>
       {% endif %}
-      {% if lesson.exam_tip %}<div class="tip"><b>Exam tip</b><span>{{ lesson.exam_tip }}</span></div>{% endif %}
+      {% if lesson.exam_tip %}<div class="tip"><b>{% if lesson.track.is_certification %}Exam tip{% else %}Tip{% endif %}</b><span>{{ lesson.exam_tip }}</span></div>{% endif %}
     </div>
 
     <section class="card2 unlock-more">

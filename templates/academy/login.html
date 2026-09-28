@@ -14,7 +14,7 @@
   <script>
     try { var t = localStorage.getItem('academy-theme'); if (t) document.documentElement.setAttribute('data-theme', t); } catch (e) {}
   </script>
-  <link rel="stylesheet" href="{% static 'academy/academy.css' %}?v=24">
+  <link rel="stylesheet" href="{% static 'academy/academy.css' %}?v=26">
   <style>
     .lg{min-height:100vh;display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,1fr)}
     .lg-art{position:relative;overflow:hidden;color:#ECEBFA;padding:clamp(28px,4.5vw,64px);display:flex;flex-direction:column;gap:clamp(28px,5vh,56px);
@@ -85,13 +85,14 @@
       </div>
 
       <div class="lg-copy">
-        <h1>Hands-on labs for <span>Microsoft certifications</span></h1>
-        <p>In-depth lessons, real exercise files, exam-style quizzes and full practice tests. Your progress is saved to your account, so you can pick up on any device.</p>
+        <h1>Hands-on courses for <span>real tech skills</span></h1>
+        <p>Microsoft certifications and app development. In-depth lessons, real exercise files, quizzes and full practice tests. Your progress is saved to your account, so you can pick up on any device.</p>
         <div class="lg-chips">
           <span class="lg-chip"><svg viewBox="0 0 20 20" aria-hidden="true"><rect x="2" y="11" width="4" height="7" rx="1" fill="#3CC4B2"/><rect x="8" y="7" width="4" height="11" rx="1" fill="#3CC4B2" opacity=".8"/><rect x="14" y="3" width="4" height="15" rx="1" fill="#3CC4B2" opacity=".6"/></svg>PL-900</span>
           <span class="lg-chip"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M10 2 18 6l-8 4-8-4z" fill="#A993F0"/><path d="m2 10 8 4 8-4M2 14l8 4 8-4" fill="none" stroke="#A993F0" stroke-width="1.8" stroke-linejoin="round"/></svg>AB-410</span>
           <span class="lg-chip"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M3 17V9m5 8V5m5 12v-6m4 6V3" stroke="#EBC14A" stroke-width="2.4" stroke-linecap="round"/></svg>PL-300</span>
           <span class="lg-chip"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M7 5 2 10l5 5M13 5l5 5-5 5" fill="none" stroke="#7FA6F2" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>AB-400</span>
+          {% if has_flutter %}<span class="lg-chip"><svg viewBox="0 0 20 20" aria-hidden="true"><rect x="5" y="2" width="10" height="16" rx="2" fill="none" stroke="#F59E6B" stroke-width="1.8"/><path d="M9 15h2" stroke="#F59E6B" stroke-width="1.8" stroke-linecap="round"/></svg>Flutter</span>{% endif %}
         </div>
       </div>
 
@@ -106,7 +107,7 @@
         <div class="lg-bar"><i></i></div>
       </div>
 
-      <p class="lg-foot">Ralfiz Academy course content. Not affiliated with Microsoft.</p>
+      <p class="lg-foot">Ralfiz Academy course content. Not affiliated with Microsoft or Google.</p>
     </section>
 
     <section class="lg-side">
