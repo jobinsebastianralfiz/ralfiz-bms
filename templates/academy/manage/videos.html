@@ -27,11 +27,25 @@
   </div>
   <div class="card-body">
     {% if youtube_ready %}
-    <form method="post" style="display:flex;gap:12px;flex-wrap:wrap;align-items:center">
+    <form method="post" id="video-sync" style="display:flex;gap:12px;flex-wrap:wrap;align-items:center">
       {% csrf_token %}<input type="hidden" name="track" value="{{ track.id }}"><input type="hidden" name="action" value="sync">
       <input type="url" name="playlist" value="{{ track.video_playlist }}" class="form-control" style="flex:1;min-width:280px" placeholder="Playlist link from YouTube or YouTube Studio" required>
-      <button type="submit" class="btn btn-primary"><i class="fas fa-rotate"></i> Sync {{ track.code }}</button>
+      <button type="submit" class="btn btn-primary"><i class="fas fa-rotate"></i> <span>Sync {{ track.code }}</span></button>
     </form>
+    <p id="video-sync-status" class="mb-0" style="display:none;font-size:14px;margin-top:10px;color:var(--primary,#0b7a6e)" role="status">
+      <i class="fas fa-circle-notch fa-spin"></i> Reading the playlist from YouTube and matching videos to lessons…
+    </p>
+    <script>
+      // The sync waits on YouTube, so show that it is working and stop a second click.
+      document.getElementById('video-sync').addEventListener('submit', function () {
+        var btn = this.querySelector('button[type=submit]');
+        btn.disabled = true;
+        btn.querySelector('i').className = 'fas fa-rotate fa-spin';
+        btn.querySelector('span').textContent = 'Syncing…';
+        this.querySelector('input[name=playlist]').readOnly = true;
+        document.getElementById('video-sync-status').style.display = 'block';
+      });
+    </script>
     <p class="text-muted mb-0" style="font-size:13px;margin-top:8px">Each video's title must start with the course code and lesson number, like "{{ track.code }} 2.1 …". The titles YouTube makes from our video file names already do. Matching videos replace the lesson's link. Set the videos to Unlisted: private ones cannot play.</p>
     {% else %}
     <p class="text-muted mb-0">Add a <code>YOUTUBE_API_KEY</code> variable on the server to sync links from a playlist.</p>
