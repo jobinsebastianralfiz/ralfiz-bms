@@ -3,6 +3,7 @@ from pulse import views as pulse_views
 from . import views
 from gympro_licensing import web_views as gympro_web_views
 from eduflow_licensing import web_views as eduflow_web_views
+from ralfpos_licensing import web_views as ralfpos_web_views
 from . import agreement_web_views
 
 urlpatterns = [
@@ -271,6 +272,10 @@ urlpatterns = [
     path('eduflow/licenses/create/', eduflow_web_views.eduflow_license_create, name='eduflow_license_create'),
     path('eduflow/licenses/<uuid:pk>/', eduflow_web_views.eduflow_license_detail, name='eduflow_license_detail'),
     path('eduflow/licenses/<uuid:pk>/update/', eduflow_web_views.eduflow_license_update, name='eduflow_license_update'),
+    path('ralfpos/licenses/', ralfpos_web_views.ralfpos_license_list, name='ralfpos_license_list'),
+    path('ralfpos/licenses/create/', ralfpos_web_views.ralfpos_license_create, name='ralfpos_license_create'),
+    path('ralfpos/licenses/<uuid:pk>/', ralfpos_web_views.ralfpos_license_detail, name='ralfpos_license_detail'),
+    path('ralfpos/licenses/<uuid:pk>/update/', ralfpos_web_views.ralfpos_license_update, name='ralfpos_license_update'),
 
     # HR & Admin
     path('hr/employees/', views.emp_employee_list, name='emp_employee_list'),

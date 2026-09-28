@@ -1,0 +1,153 @@
+{% extends 'base.html' %}
+
+{% block breadcrumb %}
+<a href="{% url 'dashboard' %}" class="breadcrumb-item">Dashboard</a>
+<span class="breadcrumb-separator">/</span>
+<a href="{% url 'ralfpos_license_list' %}" class="breadcrumb-item">RalfPOS Licenses</a>
+<span class="breadcrumb-separator">/</span>
+<span class="breadcrumb-item active">Issue New License</span>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div class="page-header__lead">
+    <span class="page-header__icon"><i class="fas fa-plus-circle"></i></span>
+    <div>
+      <h1 class="page-title">Issue New RalfPOS Licence</h1>
+    </div>
+  </div>
+</div>
+
+<form method="POST" style="max-width: 800px;">
+    {% csrf_token %}
+
+    <!-- Shop -->
+    <div class="card" style="background: white; border-radius: 12px; border: 1px solid #e5e7eb; margin-bottom: 1.5rem;">
+        <div style="padding: 1.25rem 1.5rem; border-bottom: 1px solid #e5e7eb; background: #F9FAFB; border-radius: 12px 12px 0 0;">
+            <h3 style="font-size: 1rem; font-weight: 600; color: #1D2939;"><i class="fas fa-building" style="color: #465FFF; margin-right: 0.5rem;"></i> Shop</h3>
+        </div>
+        <div style="padding: 1.5rem; display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+            <div>
+                <label style="display: block; font-size: 0.875rem; font-weight: 500; color: #344054; margin-bottom: 0.375rem;">Link to Client</label>
+                <select name="client" style="width: 100%; height: 44px; padding: 0 1rem; border: 1px solid #D0D5DD; border-radius: 8px; font-size: 0.875rem;">
+                    <option value="">— No client link —</option>
+                    {% for client in clients %}
+                    <option value="{{ client.id }}">{{ client.name }}{% if client.company_name %} ({{ client.company_name }}){% endif %}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div>
+                <label style="display: block; font-size: 0.875rem; font-weight: 500; color: #344054; margin-bottom: 0.375rem;">Shop Name *</label>
+                <input type="text" name="shop_name" required style="width: 100%; height: 44px; padding: 0 1rem; border: 1px solid #D0D5DD; border-radius: 8px; font-size: 0.875rem;">
+            </div>
+            <div>
+                <label style="display: block; font-size: 0.875rem; font-weight: 500; color: #344054; margin-bottom: 0.375rem;">Owner Name</label>
+                <input type="text" name="owner_name" style="width: 100%; height: 44px; padding: 0 1rem; border: 1px solid #D0D5DD; border-radius: 8px; font-size: 0.875rem;">
+            </div>
+            <div>
+                <label style="display: block; font-size: 0.875rem; font-weight: 500; color: #344054; margin-bottom: 0.375rem;">Email</label>
+                <input type="email" name="shop_email" style="width: 100%; height: 44px; padding: 0 1rem; border: 1px solid #D0D5DD; border-radius: 8px; font-size: 0.875rem;">
+            </div>
+            <div>
+                <label style="display: block; font-size: 0.875rem; font-weight: 500; color: #344054; margin-bottom: 0.375rem;">Phone</label>
+                <input type="text" name="shop_phone" style="width: 100%; height: 44px; padding: 0 1rem; border: 1px solid #D0D5DD; border-radius: 8px; font-size: 0.875rem;">
+            </div>
+            <div style="grid-column: span 2;">
+                <label style="display: block; font-size: 0.875rem; font-weight: 500; color: #344054; margin-bottom: 0.375rem;">Address</label>
+                <textarea name="shop_address" rows="2" style="width: 100%; padding: 0.75rem 1rem; border: 1px solid #D0D5DD; border-radius: 8px; font-size: 0.875rem; resize: vertical;"></textarea>
+            </div>
+        </div>
+    </div>
+
+    <!-- Domain & Deployment -->
+    <div class="card" style="background: white; border-radius: 12px; border: 1px solid #e5e7eb; margin-bottom: 1.5rem;">
+        <div style="padding: 1.25rem 1.5rem; border-bottom: 1px solid #e5e7eb; background: #F9FAFB; border-radius: 12px 12px 0 0;">
+            <h3 style="font-size: 1rem; font-weight: 600; color: #1D2939;"><i class="fas fa-globe" style="color: #465FFF; margin-right: 0.5rem;"></i> Domain & Deployment</h3>
+        </div>
+        <div style="padding: 1.5rem; display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+            <div>
+                <label style="display: block; font-size: 0.875rem; font-weight: 500; color: #344054; margin-bottom: 0.375rem;">RalfPOS address</label>
+                <input type="text" name="api_domain" placeholder="pos.karakcorner.ae (leave blank to bind on first activation)" style="width: 100%; height: 44px; padding: 0 1rem; border: 1px solid #D0D5DD; border-radius: 8px; font-size: 0.875rem;">
+                <p style="font-size: 0.75rem; color: #98A2B3; margin-top: 0.25rem;">Optional. If blank, the shop's RalfPOS address is bound when it is first activated.</p>
+            </div>
+            <div>
+                <label style="display: block; font-size: 0.875rem; font-weight: 500; color: #344054; margin-bottom: 0.375rem;">Country</label>
+                <input type="text" name="country" placeholder="India, UAE, Saudi Arabia..." style="width: 100%; height: 44px; padding: 0 1rem; border: 1px solid #D0D5DD; border-radius: 8px; font-size: 0.875rem;">
+            </div>
+            <div>
+                <label style="display: block; font-size: 0.875rem; font-weight: 500; color: #344054; margin-bottom: 0.375rem;">Server IP</label>
+                <input type="text" name="server_ip" placeholder="167.99.x.x" style="width: 100%; height: 44px; padding: 0 1rem; border: 1px solid #D0D5DD; border-radius: 8px; font-size: 0.875rem;">
+            </div>
+            <div>
+                <label style="display: block; font-size: 0.875rem; font-weight: 500; color: #344054; margin-bottom: 0.375rem;">Deployment Notes</label>
+                <input type="text" name="deployment_notes" style="width: 100%; height: 44px; padding: 0 1rem; border: 1px solid #D0D5DD; border-radius: 8px; font-size: 0.875rem;">
+            </div>
+        </div>
+    </div>
+
+    <!-- Licence -->
+    <div class="card" style="background: white; border-radius: 12px; border: 1px solid #e5e7eb; margin-bottom: 1.5rem;">
+        <div style="padding: 1.25rem 1.5rem; border-bottom: 1px solid #e5e7eb; background: #F9FAFB; border-radius: 12px 12px 0 0;">
+            <h3 style="font-size: 1rem; font-weight: 600; color: #1D2939;"><i class="fas fa-cog" style="color: #465FFF; margin-right: 0.5rem;"></i> Licence</h3>
+        </div>
+        <div style="padding: 1.5rem; display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem;">
+            <div>
+                <label style="display: block; font-size: 0.875rem; font-weight: 500; color: #344054; margin-bottom: 0.375rem;">License Type</label>
+                <select name="license_type" style="width: 100%; height: 44px; padding: 0 1rem; border: 1px solid #D0D5DD; border-radius: 8px; font-size: 0.875rem;">
+                    {% for value, label in license_types %}
+                    <option value="{{ value }}" {% if value == 'yearly' %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div>
+                <label style="display: block; font-size: 0.875rem; font-weight: 500; color: #344054; margin-bottom: 0.375rem;">Billing Cycle</label>
+                <select name="billing_cycle" style="width: 100%; height: 44px; padding: 0 1rem; border: 1px solid #D0D5DD; border-radius: 8px; font-size: 0.875rem;">
+                    {% for value, label in billing_cycles %}
+                    <option value="{{ value }}" {% if value == 'yearly' %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div>
+                <label style="display: block; font-size: 0.875rem; font-weight: 500; color: #344054; margin-bottom: 0.375rem;">Grace Period (days)</label>
+                <input type="number" name="grace_period_days" value="7" min="0" max="30" style="width: 100%; height: 44px; padding: 0 1rem; border: 1px solid #D0D5DD; border-radius: 8px; font-size: 0.875rem;">
+            </div>
+            <div>
+                <label style="display: block; font-size: 0.875rem; font-weight: 500; color: #344054; margin-bottom: 0.375rem;">Max Counters (0=unlimited)</label>
+                <input type="number" name="max_counters" value="1" min="0" style="width: 100%; height: 44px; padding: 0 1rem; border: 1px solid #D0D5DD; border-radius: 8px; font-size: 0.875rem;">
+            </div>
+        </div>
+    </div>
+
+
+    <!-- Add-ons -->
+    <div class="card" style="background: white; border-radius: 12px; border: 1px solid #e5e7eb; margin-bottom: 1.5rem;">
+        <div style="padding: 1.25rem 1.5rem; border-bottom: 1px solid #e5e7eb; background: #F9FAFB; border-radius: 12px 12px 0 0;">
+            <h3 style="font-size: 1rem; font-weight: 600; color: #1D2939;"><i class="fas fa-puzzle-piece" style="color: #465FFF; margin-right: 0.5rem;"></i> Paid Add-ons</h3>
+            <p style="font-size: 0.8125rem; color: #667085; margin-top: 0.25rem;">The basic app (counter billing, back office, reports) is always included. Tick only what the shop has paid for.</p>
+        </div>
+        <div style="padding: 1.5rem; display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;">
+            {% for key, label in modules %}
+            <label style="display: flex; align-items: center; gap: 0.625rem; padding: 0.75rem 1rem; border: 1px solid #E4E7EC; border-radius: 8px; cursor: pointer;">
+                <input type="checkbox" name="modules" value="{{ key }}" style="width: 18px; height: 18px;">
+                <span style="font-size: 0.875rem; color: #344054;">{{ label }}</span>
+            </label>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Notes -->
+    <div class="card" style="background: white; border-radius: 12px; border: 1px solid #e5e7eb; margin-bottom: 1.5rem;">
+        <div style="padding: 1.5rem;">
+            <label style="display: block; font-size: 0.875rem; font-weight: 500; color: #344054; margin-bottom: 0.375rem;">Internal Notes</label>
+            <textarea name="notes" rows="3" placeholder="Any internal notes about this shop..." style="width: 100%; padding: 0.75rem 1rem; border: 1px solid #D0D5DD; border-radius: 8px; font-size: 0.875rem; resize: vertical;"></textarea>
+        </div>
+    </div>
+
+    <div style="display: flex; gap: 0.75rem; justify-content: flex-end;">
+        <a href="{% url 'ralfpos_license_list' %}" class="btn" style="padding: 0.625rem 1.25rem; border: 1px solid #D0D5DD; border-radius: 8px; font-size: 0.875rem; color: #344054; text-decoration: none;">Cancel</a>
+        <button type="submit" class="btn btn-primary" style="padding: 0.625rem 1.5rem; border-radius: 8px; font-size: 0.875rem;">
+            <i class="fas fa-key"></i> Issue Licence
+        </button>
+    </div>
+</form>
+{% endblock %}
