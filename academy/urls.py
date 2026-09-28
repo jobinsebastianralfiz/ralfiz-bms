@@ -18,7 +18,7 @@ urlpatterns = [
     path('login/', v.academy_login, name='login'),
     path('logout/', v.academy_logout, name='logout'),
 
-    path('', v.home, name='home'),
+    path('', v.landing, name='home'),
     path('profile/', v.profile, name='profile'),
     path('courses/', v.courses, name='courses'),
     path('assessments/', v.assessments, name='assessments'),

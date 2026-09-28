@@ -539,3 +539,10 @@ class PricingAndCategoryTests(AcademyTestBase):
         Track.objects.filter(pk='flutter').update(category='certification')
         run_import(log=_quiet, force=True)
         self.assertEqual(Track.objects.get(pk='flutter').category, 'certification')
+
+
+class LandingTests(AcademyTestBase):
+    def test_visitors_land_on_the_catalog_and_students_on_their_dashboard(self):
+        self.assertRedirects(self.client.get(reverse('academy:home')), reverse('academy:catalog'))
+        self.login_student()
+        self.assertContains(self.client.get(reverse('academy:home')), 'Asha')

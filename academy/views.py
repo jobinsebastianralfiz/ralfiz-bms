@@ -162,6 +162,13 @@ def _json_body(request):
 
 # --- Dashboard -------------------------------------------------------------------
 
+def landing(request):
+    """/academy/: visitors see the public course catalog, signed-in learners their dashboard."""
+    if not request.user.is_authenticated:
+        return redirect('academy:catalog')
+    return home(request)
+
+
 @learner_required
 @never_cache
 def home(request):
