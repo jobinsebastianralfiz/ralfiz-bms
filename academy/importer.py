@@ -13,7 +13,7 @@ from django.db import transaction
 from .models import (
     ContentImport, Domain, ExerciseFile, Lesson, LessonFile, Question, Track,
 )
-from .sanitize import clean_html
+from .sanitize import check_mocks, clean_html
 
 TRACK_ORDER = ['pl900', 'ab410', 'pl300', 'ab400', 'flutter']
 DEFAULT_PACKAGE_DIR = Path(__file__).resolve().parent / 'content'
@@ -88,6 +88,7 @@ def _read_package(root):
                         errors.append(f'{lid}: lab file {fid} not in files-index')
                     elif fid in files:
                         files[fid]['track_ids'].add(t['id'])
+                errors += [f'{lid}: {p}' for p in check_mocks(lesson.get('mocks') or [])]
                 for q in lesson.get('quiz', []):
                     if not 0 <= q['answer'] < len(q['options']) or q['answer'] > 3:
                         errors.append(f'{lid}: answer {q["answer"]} out of range')
@@ -190,7 +191,7 @@ def run_import(root=DEFAULT_PACKAGE_DIR, content_version='2026-09', force=False,
                         'terms': raw.get('terms', []), 'exam_tip': raw.get('examTip') or '',
                         'widget': raw.get('widget') or '', 'sorter': raw.get('sorter'),
                         'lab_steps': lab.get('steps', []), 'lab_check': lab.get('check', []),
-                        'sort_order': l_order,
+                        'mocks': raw.get('mocks') or [], 'sort_order': l_order,
                     })
                     counts['lessons'] += 1
                     LessonFile.objects.filter(lesson=lesson).delete()

@@ -4,6 +4,10 @@
 {% block og_title %}{{ lesson.title }} ({{ track.code }} free lesson){% endblock %}
 {% block og_description %}{{ description }}{% endblock %}
 {% block body_track %}{{ track.id }}{% endblock %}
+{% block extra_head %}{% if lesson.mocks %}{% load static %}
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,400,0..1,0&display=block">
+<link rel="stylesheet" href="{% static 'academy/flutter-mocks.css' %}?v=2">
+{% endif %}{% endblock %}
 {% block jsonld %}
 <script type="application/ld+json">
 {"@context":"https://schema.org","@type":"LearningResource","name":"{{ lesson.title|escapejs }}","description":"{{ description|escapejs }}","learningResourceType":"Lesson","isAccessibleForFree":true,"timeRequired":"PT{{ lesson.minutes }}M","isPartOf":{"@type":"Course","name":"{{ track.code|escapejs }} {{ track.name|escapejs }}","url":"{{ site }}{% url 'academy:catalog_course' track.id %}"},"provider":{"@type":"Organization","name":"Ralfiz Academy"}}
@@ -72,4 +76,9 @@
   </aside>
   {% endif %}
 </div>
+{% endblock %}
+
+{% block extra_js %}{% load static %}
+{% if lesson.mocks %}{{ lesson.mocks|json_script:"lessonMocks" }}
+<script src="{% static 'academy/flutter-mocks.js' %}?v=1"></script>{% endif %}
 {% endblock %}

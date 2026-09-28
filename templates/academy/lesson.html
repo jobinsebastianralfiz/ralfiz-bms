@@ -1,6 +1,10 @@
 {% extends 'academy/base.html' %}
 {% block title %}{{ lesson.num }} {{ lesson.title }} · {{ track.code }} · Ralfiz Academy{% endblock %}
 {% block body_track %}{{ track.id }}{% endblock %}
+{% block extra_head %}{% if lesson.mocks %}{% load static %}
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,400,0..1,0&display=block">
+<link rel="stylesheet" href="{% static 'academy/flutter-mocks.css' %}?v=2">
+{% endif %}{% endblock %}
 {% block shell_class %}rail{% endblock %}
 {% block content %}
 <div id="lessonRoot" data-lesson="{{ lesson.id }}" data-lab-url="{% url 'academy:api_lab' lesson.id %}" data-steps="{{ lesson.lab_steps|length }}">
@@ -184,4 +188,6 @@
 {% block extra_js %}
 {% load static %}
 {% if lesson.widget %}<script src="{% static 'academy/sims.js' %}?v=1"></script>{% endif %}
+{% if lesson.mocks %}{{ lesson.mocks|json_script:"lessonMocks" }}
+<script src="{% static 'academy/flutter-mocks.js' %}?v=1"></script>{% endif %}
 {% endblock %}

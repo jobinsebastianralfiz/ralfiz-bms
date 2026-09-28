@@ -125,6 +125,9 @@ class Lesson(models.Model):
     sorter = models.JSONField(null=True, blank=True)
     lab_steps = models.JSONField(default=list)
     lab_check = models.JSONField(default=list)
+    # Phone-screen mocks drawn by static/academy/flutter-mocks.js into the
+    # <div class="mock-slot" data-mock="N"> placeholders of content_html.
+    mocks = models.JSONField(default=list, blank=True)
     sort_order = models.PositiveSmallIntegerField(default=0)
     # Set from the admin, never by import_labs, so re-imports keep it.
     # YouTube, Vimeo or a direct .mp4/.webm link.

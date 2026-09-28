@@ -12,8 +12,11 @@ Node evaluates the data (no DOM needed); the mapping to the package format
 is done here. Parts of the app that have no place in the package are turned
 into allow-listed HTML:
 
-- phone screen mocks (div.mock-slot) become a worked-example panel with the
-  screen title, its Dart code and the caption;
+- phone screen mocks (div.mock-slot) keep a placeholder,
+  <div class="mock-slot" data-mock="N">, holding a worked-example panel with the
+  screen title, its Dart code and the caption; the mock data itself goes into
+  the lesson's "mocks" list, and the lesson page draws the phone over the panel
+  with static/academy/flutter-mocks.js (the panel stays if JavaScript is off);
 - predict-the-output drills (widget "predict") become a "Predict the output"
   section at the end of the lesson, answers last;
 - concept animations (div.anim-slot) are JavaScript-only and are removed.
@@ -91,7 +94,8 @@ def mock_html(i, m):
         caption = (caption + ' ' if caption else '') + 'States: ' + ' → '.join(frames) + '.'
     if caption:
         parts.append(f'<p>{esc(caption)}</p>')
-    return '<div class="example">\n' + '\n'.join(parts) + '\n</div>'
+    return (f'<div class="mock-slot" data-mock="{i}"><div class="example">\n' + '\n'.join(parts)
+            + '\n</div></div>')
 
 
 def option_html(o):
@@ -178,7 +182,7 @@ class Command(BaseCommand):
                 content = lesson_content(js['DEEP'].get(l['id'], ''), l.get('mocks') or [], predict)
                 for label, html in (('summary', l['learn']), ('content', content)):
                     attrs = {a for a in ATTR.findall(html)
-                             if not re.fullmatch(r'(class="[^"]*"|(col|row)span="\d+")', a)}
+                             if not re.fullmatch(r'(class="[^"]*"|(col|row)span="\d+"|class="mock-slot" data-mock="\d+")', a)}
                     _, dropped = clean_html(html)
                     if dropped or attrs:
                         warnings.append(f'{l["id"]} {label}: sanitizer will drop {sorted(dropped)} {sorted(attrs)}')
@@ -190,6 +194,7 @@ class Command(BaseCommand):
                     'widget': widget if widget and widget != 'predict' else None,
                     'sorter': l.get('sorter'),
                     'lab': {'files': files, 'steps': steps, 'check': ex.get('check') or []},
+                    'mocks': l.get('mocks') or [],
                     'quiz': [{'question': q['q'], 'options': q['o'], 'answer': q['a'], 'explanation': q['w']}
                              for q in l.get('quiz', [])],
                 })
@@ -203,9 +208,6 @@ class Command(BaseCommand):
             ('guide', 'guide', ''), ('note', 'note', ''), ('data', 'data', [])]}
         # A course without an exam lists with app development, not the Microsoft certifications.
         doc['category'] = 'certification' if track.get('exam', True) else 'development'
-        # The phone previews become static panels here, so the blurb must not promise them.
-        doc['blurb'] = doc['blurb'].replace(' Every screen is shown on a phone next to its code.',
-                                            ' Every screen comes with its full code.')
         # The concept animations are removed above, so no fact may promise them.
         doc['facts'] = [f for f in doc['facts'] if 'animation' not in str(f[1]).lower()]
         if len(doc['facts']) < 4:

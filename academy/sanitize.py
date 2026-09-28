@@ -3,7 +3,9 @@
 The package's lesson HTML is ours, but it is stored and rendered with |safe,
 so anything outside the documented element set is dropped here, at import.
 Headings get ids on the way through so the lesson page can build its
-"On this page" chips.
+"On this page" chips. The one attribute beyond class and cell spans is the
+phone-mock placeholder, <div class="mock-slot" data-mock="N">; check_mocks()
+vets the mock data that flutter-mocks.js draws into it.
 """
 import re
 from html import escape
@@ -18,6 +20,16 @@ VOID_TAGS = {'br'}
 ALLOWED_CLASSES = {'pre': {'code'}, 'div': {'example', 'callout', 'warn'}}
 # Content of these is dropped along with the tag.
 DROP_WITH_CONTENT = {'script', 'style', 'iframe', 'object', 'embed', 'template'}
+
+
+def _mock_slot(attrs):
+    """The phone-mock placeholder, exactly <div class="mock-slot" data-mock="N"> (N < 100):
+    its slot number, else None."""
+    a = dict(attrs)
+    if a.get('class') != 'mock-slot' or set(a) != {'class', 'data-mock'}:
+        return None
+    n = a['data-mock'] or ''
+    return int(n) if re.fullmatch(r'[0-9]{1,2}', n) else None
 
 
 class _Cleaner(HTMLParser):
@@ -48,6 +60,10 @@ class _Cleaner(HTMLParser):
                 value = dict(attrs).get(name) or ''
                 if value.isdigit() and 1 < int(value) <= 20:
                     parts.append(f'{name}="{int(value)}"')
+        slot = _mock_slot(attrs) if tag == 'div' else None
+        if slot is not None:
+            self.out.append(f'<div class="mock-slot" data-mock="{slot}">')
+            return
         allowed = ALLOWED_CLASSES.get(tag)
         if allowed:
             classes = [c for c in (dict(attrs).get('class') or '').split() if c in allowed]
@@ -89,3 +105,41 @@ def headings(clean):
     """[(anchor id, plain text)] for every h3 in cleaned HTML."""
     from html import unescape
     return [(anchor, unescape(_TAG.sub('', text)).strip()) for anchor, text in _H3.findall(clean)]
+
+
+# Mock data is drawn by static/academy/flutter-mocks.js with innerHTML. Text
+# fields are escaped there, but colours, sizes and alignments are written into
+# style and class attributes as they are, so those must be plain tokens.
+MOCK_TEXT_KEYS = {
+    't', 'title', 'caption', 'code', 'file', 'label', 'hint', 'value', 'subtitle', 'error',
+    'helper', 'content', 'child', 'action', 'actions', 'items', 'tabs', 'i', 'icon',
+    'leading', 'trailing', 'suffix', 'w',
+}
+_MOCK_TOKEN = re.compile(r'[\w#.%(), -]*')
+
+
+def check_mocks(mocks):
+    """Problems (list of strings) with a lesson's phone-mock data; empty if it is safe to draw."""
+    problems = []
+
+    def walk(value, key, path):
+        if isinstance(value, dict):
+            for k, v in value.items():
+                walk(v, k, f'{path}.{k}')
+        elif isinstance(value, list):
+            for n, v in enumerate(value):
+                walk(v, key, f'{path}[{n}]')
+        elif isinstance(value, str):
+            if key not in MOCK_TEXT_KEYS and not _MOCK_TOKEN.fullmatch(value):
+                problems.append(f'{path}: {value[:40]!r} is not a plain value')
+        elif not (value is None or isinstance(value, (bool, int, float))):
+            problems.append(f'{path}: unexpected {type(value).__name__}')
+
+    if not isinstance(mocks, list):
+        return ['mocks must be a list']
+    for n, mock in enumerate(mocks):
+        if not isinstance(mock, dict):
+            problems.append(f'mocks[{n}] must be an object')
+        else:
+            walk(mock, None, f'mocks[{n}]')
+    return problems

@@ -61,6 +61,19 @@ class ImportTests(AcademyTestBase):
         self.assertIn('<h3 id="sec-', Lesson.objects.get(pk='fl3').content_html)
         self.assertIn('Predict the output', Lesson.objects.get(pk='fl3').content_html)
 
+    def test_flutter_lessons_keep_their_phone_mocks(self):
+        import re
+        lessons = Lesson.objects.filter(track_id='flutter')
+        self.assertEqual(sum(len(l.mocks) for l in lessons), 141)
+        self.assertTrue(any(m.get('frames') for l in lessons for m in l.mocks))
+        for lesson in lessons:
+            slots = [int(n) for n in re.findall(r'<div class="mock-slot" data-mock="(\d+)">', lesson.content_html)]
+            self.assertEqual(sorted(slots), list(range(len(lesson.mocks))), lesson.id)
+            # Each slot still holds the static panel for readers without JavaScript.
+            for n in range(len(lesson.mocks)):
+                self.assertIn(f'<div class="mock-slot" data-mock="{n}"><div class="example">', lesson.content_html)
+        self.assertFalse(Lesson.objects.exclude(track_id='flutter').exclude(mocks=[]).exists())
+
     def test_lesson_html_is_on_the_allow_list(self):
         for html in Lesson.objects.values_list('content_html', flat=True):
             self.assertNotIn('<script', html)
@@ -400,6 +413,19 @@ class PublicCatalogTests(AcademyTestBase):
         self.assertIn('<loc>https://', xml)
         self.assertIn('Sitemap: https://', self.client.get('/robots.txt', HTTP_X_FORWARDED_PROTO='https').content.decode())
 
+    def test_mock_assets_load_only_on_lessons_with_mocks(self):
+        page = self.client.get(reverse('academy:catalog_lesson', args=['flutter', 'fl1'])).content.decode()
+        self.assertIn('academy/flutter-mocks.js', page)
+        self.assertIn('academy/flutter-mocks.css', page)
+        self.assertIn('<script id="lessonMocks" type="application/json">', page)
+        self.assertIn('<div class="mock-slot" data-mock="0">', page)
+        page = self.client.get(reverse('academy:catalog_lesson', args=['pl300', 'b1'])).content.decode()
+        self.assertNotIn('flutter-mocks', page)
+        self.assertNotIn('lessonMocks', page)
+        self.client.login(username='owner', password='pw')
+        self.assertContains(self.client.get(reverse('academy:lesson', args=['fl17'])), 'academy/flutter-mocks.js')
+        self.assertNotContains(self.client.get(reverse('academy:lesson', args=['fl3'])), 'flutter-mocks')
+
     def test_student_can_browse_catalog(self):
         self.login_student()
         r = self.client.get(reverse('academy:catalog'))
@@ -555,3 +581,25 @@ class SanitizeTests(TestCase):
         self.assertIn('<td colspan="2">', html)
         self.assertIn('<th>', html)
         self.assertNotIn('onclick', html)
+
+    def test_only_the_exact_mock_placeholder_survives(self):
+        from .sanitize import clean_html
+        html, _ = clean_html('<div class="mock-slot" data-mock="3"><div class="example"><p>x</p></div></div>')
+        self.assertEqual(html, '<div class="mock-slot" data-mock="3"><div class="example"><p>x</p></div></div>')
+        for bad in ['<div class="mock-slot" data-mock="3" onclick="x()">', '<div class="mock-slot" data-mock="x">',
+                    '<div class="mock-slot" data-mock="100">', '<div class="mock-slot example" data-mock="1">',
+                    '<div class="mock-slot">', '<div data-mock="1">', '<p class="mock-slot" data-mock="1">',
+                    '<div class="mock-slot" data-mock="1" data-x="2">']:
+            html, _ = clean_html(bad + '</div>')
+            self.assertNotIn('mock', html, bad)
+            self.assertNotIn('onclick', html, bad)
+
+    def test_mock_data_must_not_break_out_of_attributes(self):
+        from .sanitize import check_mocks
+        good = [{'title': 'A "quoted" <title>', 'code': "Text('<b>')", 'seed': '#6750A4',
+                 'screen': {'w': 'Scaffold', 'body': {'w': 'Container', 'color': 'primary', 'width': 120,
+                                                      'gradient': {'dir': '135deg', 'colors': ['#fff', 'rgb(1, 2, 3)']}}}}]
+        self.assertEqual(check_mocks(good), [])
+        for bad in [{'color': 'red" onmouseover="x()'}, {'width': '10px;background:url(x)'},
+                    {'variant': '"><img src=x onerror=alert(1)>'}, {'gradient': {'colors': ['#fff"']}}]:
+            self.assertTrue(check_mocks([{'screen': {'w': 'Container', **bad}}]), bad)

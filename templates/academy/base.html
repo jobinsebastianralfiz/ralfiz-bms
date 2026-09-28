@@ -17,6 +17,7 @@
     try { var t = localStorage.getItem('academy-theme'); if (t) document.documentElement.setAttribute('data-theme', t); } catch (e) {}
   </script>
   <link rel="stylesheet" href="{% static 'academy/academy.css' %}?v=27">
+  {% block extra_head %}{% endblock %}
 </head>
 <body data-track="{% block body_track %}home{% endblock %}">
   {% if request.is_preview %}
