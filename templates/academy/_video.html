@@ -1,6 +1,6 @@
 {% with v=lesson.video %}{% if v %}
 <section class="card2 vid" id="video" aria-label="Lesson video">
-  <div class="vid-h"><span class="tile sm"><i class="fa-solid fa-circle-play"></i></span><h2>Watch the lesson</h2><span class="rt">Video overview</span></div>
+  <div class="vid-h"><span class="tile sm"><i class="fa-solid fa-circle-play"></i></span><h2>Watch the lesson</h2>{% if lesson.video_url %}<a class="rt" href="{{ lesson.video_url }}" target="_blank" rel="noopener">Video overview <i class="fa-solid fa-arrow-up-right-from-square"></i></a>{% else %}<span class="rt">Video overview</span>{% endif %}</div>
   <div class="vid-frame">
     {% if v.kind == 'iframe' %}
     <iframe src="{{ v.src }}" title="{{ lesson.num }} {{ lesson.title }} video" loading="lazy" allow="accelerometer; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>

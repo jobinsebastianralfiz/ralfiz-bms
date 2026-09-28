@@ -66,8 +66,25 @@
   };
   if (scrim) scrim.onclick = closeMenu;
   document.addEventListener('keydown', function (e) { if (e.key === 'Escape') closeMenu(); });
+  // Only the mobile drawer scrolls on its own; on desktop scrollIntoView would move the page.
   var cur = side && side.querySelector('a[aria-current="page"]');
-  if (cur && cur.scrollIntoView) cur.scrollIntoView({ block: 'center' });
+  if (cur && side.scrollHeight > side.clientHeight + 1) side.scrollTop = cur.offsetTop - side.clientHeight / 2;
+
+  // Side columns stay on the page scroll (no second scrollbar). One taller than the
+  // window pins by its bottom edge instead of its top, so all of it is still reachable.
+  var pinned = document.querySelectorAll('.side2, .rail2');
+  function pin() {
+    pinned.forEach(function (el) {
+      el.style.top = '';
+      var base = parseFloat(getComputedStyle(el).top) || 0;
+      el.style.top = Math.min(base, window.innerHeight - el.offsetHeight) + 'px';
+    });
+  }
+  if (pinned.length) {
+    pin();
+    window.addEventListener('resize', pin);
+    if (window.ResizeObserver) { var ro = new ResizeObserver(pin); pinned.forEach(function (el) { ro.observe(el); }); }
+  }
 
   var trackSel = $('#trackSel');
   if (trackSel) trackSel.onchange = function () {
