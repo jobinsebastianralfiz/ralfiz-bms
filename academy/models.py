@@ -30,6 +30,8 @@ class Track(models.Model):
     sort_order = models.PositiveSmallIntegerField(default=0)
     is_published = models.BooleanField(default=True)
     content_version = models.CharField(max_length=20, blank=True)
+    # YouTube playlist the Lesson Videos page syncs links from. Set by staff, never by the importer.
+    video_playlist = models.URLField(max_length=300, blank=True)
 
     class Meta:
         ordering = ['sort_order']

@@ -3,6 +3,7 @@ import csv
 import secrets
 
 from django import forms
+from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.models import User
 from django.db import transaction
@@ -299,6 +300,8 @@ def manage_videos(request):
         or tracks.first()
     lessons = list(Lesson.objects.filter(track=track).select_related('domain')) if track else []
     errors = {}
+    if request.method == 'POST' and request.POST.get('action') == 'sync':
+        return _sync_videos(request, track, lessons)
     if request.method == 'POST':
         changed = 0
         for lesson in lessons:
@@ -319,4 +322,41 @@ def manage_videos(request):
     return render(request, 'academy/manage/videos.html', {
         'tracks': tracks, 'track': track, 'rows': rows,
         'with_video': sum(1 for l in lessons if l.video_url),
+        'sync_report': request.session.pop('video_sync_report', None),
+        'youtube_ready': bool(settings.YOUTUBE_API_KEY),
     })
+
+
+def _sync_videos(request, track, lessons):
+    """Fill lesson links from the course's YouTube playlist, matched by lesson number."""
+    from .youtube import YouTubeError, match, playlist_id, playlist_videos
+    back = redirect(f"{request.path}?track={track.pk}")
+    url = request.POST.get('playlist', '').strip()
+    pid = playlist_id(url)
+    if not pid:
+        messages.error(request, 'Paste the playlist link, the one with "list=" in it.')
+        return back
+    if url != track.video_playlist:
+        track.video_playlist = url
+        track.save(update_fields=['video_playlist'])
+    try:
+        videos = playlist_videos(pid)
+    except YouTubeError as e:
+        messages.error(request, str(e))
+        return back
+    links, unmatched, private = match(videos, lessons, track.code)
+    changed = []
+    for lesson in lessons:
+        link = links.get(lesson.id)
+        if link and link != lesson.video_url:
+            lesson.video_url = link
+            lesson.save(update_fields=['video_url'])
+            changed.append(f'{lesson.num} {lesson.title}')
+    request.session['video_sync_report'] = {
+        'found': len(videos), 'matched': len(links), 'changed': changed,
+        'missing': [f'{l.num} {l.title}' for l in lessons if not l.video_url],
+        'unmatched': unmatched, 'private': private,
+    }
+    messages.success(request, f'Synced {track.code}: {len(changed)} link{"s" if len(changed) != 1 else ""} '
+                              f'updated from {len(videos)} video{"s" if len(videos) != 1 else ""}.')
+    return back

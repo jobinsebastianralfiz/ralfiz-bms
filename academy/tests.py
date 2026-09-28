@@ -425,3 +425,52 @@ class VideoTests(AcademyTestBase):
         self.assertContains(self.client.get(reverse('academy:lesson', args=['l0-1'])), 'Watch the lesson')
         run_import(log=_quiet, force=True)
         self.assertEqual(Lesson.objects.get(pk='l0-1').video_url, 'https://youtu.be/dQw4w9WgXcQ')
+
+
+class PlaylistSyncTests(AcademyTestBase):
+    def test_lesson_numbers_from_titles(self):
+        from .youtube import lesson_num, playlist_id
+        self.assertEqual(lesson_num('PL 900 2 10 ALM with Power Platform pipelines', 'PL-900'), '2.10')
+        self.assertEqual(lesson_num('PL-900 0.1 · Set up your free lab', 'PL-900'), '0.1')
+        self.assertEqual(lesson_num('pl900 1.1 The Power Platform family', 'PL-900'), '1.1')
+        self.assertIsNone(lesson_num('PL-300 1.1 Get data', 'PL-900'))
+        self.assertIsNone(lesson_num('Channel trailer', 'PL-900'))
+        self.assertEqual(playlist_id('https://www.youtube.com/playlist?list=PLabc123XYZ_-q'), 'PLabc123XYZ_-q')
+        self.assertEqual(playlist_id('https://www.youtube.com/watch?v=dQw4w9WgXcQ&list=PLabc123XYZ_-q'),
+                         'PLabc123XYZ_-q')
+        self.assertIsNone(playlist_id('https://youtu.be/dQw4w9WgXcQ'))
+
+    def test_sync_fills_links_and_reports(self):
+        from unittest import mock
+        videos = [
+            {'id': 'aaaaaaaaaaa', 'title': 'PL 900 0 1 Set up your free lab', 'private': False},
+            {'id': 'bbbbbbbbbbb', 'title': 'PL-900 2.10 · ALM', 'private': False},
+            {'id': 'ccccccccccc', 'title': 'PL 900 1 2 Generative AI', 'private': True},
+            {'id': 'ddddddddddd', 'title': 'Channel trailer', 'private': False},
+        ]
+        self.client.login(username='owner', password='pw')
+        url = reverse('academy:manage_videos')
+        playlist = 'https://www.youtube.com/playlist?list=PLabc123XYZ_-q'
+        with self.settings(YOUTUBE_API_KEY='k'), \
+                mock.patch('academy.youtube.playlist_videos', return_value=videos) as fetch:
+            r = self.client.post(url, {'track': 'pl900', 'action': 'sync', 'playlist': playlist})
+            fetch.assert_called_once_with('PLabc123XYZ_-q')
+            self.assertRedirects(r, url + '?track=pl900', fetch_redirect_response=False)
+            page = self.client.get(url + '?track=pl900')
+        self.assertEqual(Lesson.objects.get(pk='l0-1').video_url, 'https://youtu.be/aaaaaaaaaaa')
+        self.assertEqual(Lesson.objects.get(pk='l2-10').video_url, 'https://youtu.be/bbbbbbbbbbb')
+        self.assertEqual(Lesson.objects.get(pk='l1-2').video_url, '')
+        self.assertEqual(Track.objects.get(pk='pl900').video_playlist, playlist)
+        self.assertContains(page, '<strong>2</strong> of 4 playlist videos matched a lesson')
+        self.assertContains(page, 'Private, so skipped: PL 900 1 2 Generative AI')
+        self.assertContains(page, 'Not matched to a lesson: Channel trailer')
+
+    def test_sync_needs_a_playlist_link_and_a_key(self):
+        self.client.login(username='owner', password='pw')
+        url = reverse('academy:manage_videos')
+        with self.settings(YOUTUBE_API_KEY='k'):
+            r = self.client.post(url, {'track': 'pl900', 'action': 'sync', 'playlist': 'https://youtu.be/x'},
+                                 follow=True)
+        self.assertContains(r, 'Paste the playlist link')
+        with self.settings(YOUTUBE_API_KEY=''):
+            self.assertContains(self.client.get(url), 'Add a <code>YOUTUBE_API_KEY</code>')

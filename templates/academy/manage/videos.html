@@ -21,6 +21,32 @@
   </div>
 </div>
 
+<div class="card" style="margin-bottom:20px">
+  <div class="card-header">
+    <h2 class="card-title mb-0"><i class="fab fa-youtube" style="color:#dc2626"></i> Sync from a YouTube playlist</h2>
+  </div>
+  <div class="card-body">
+    {% if youtube_ready %}
+    <form method="post" style="display:flex;gap:12px;flex-wrap:wrap;align-items:center">
+      {% csrf_token %}<input type="hidden" name="track" value="{{ track.id }}"><input type="hidden" name="action" value="sync">
+      <input type="url" name="playlist" value="{{ track.video_playlist }}" class="form-control" style="flex:1;min-width:280px" placeholder="https://www.youtube.com/playlist?list=…" required>
+      <button type="submit" class="btn btn-primary"><i class="fas fa-rotate"></i> Sync {{ track.code }}</button>
+    </form>
+    <p class="text-muted mb-0" style="font-size:13px;margin-top:8px">Each video's title must start with the course code and lesson number, like "{{ track.code }} 2.1 …". The titles YouTube makes from our video file names already do. Matching videos replace the lesson's link. Set the videos to Unlisted: private ones cannot play.</p>
+    {% else %}
+    <p class="text-muted mb-0">Add a <code>YOUTUBE_API_KEY</code> variable on the server to sync links from a playlist.</p>
+    {% endif %}
+    {% if sync_report %}
+    <div style="margin-top:14px;font-size:14px">
+      <p class="mb-1"><strong>{{ sync_report.matched }}</strong> of {{ sync_report.found }} playlist videos matched a lesson. {{ sync_report.changed|length }} link{{ sync_report.changed|length|pluralize }} changed.</p>
+      {% if sync_report.private %}<p class="mb-1 text-danger">Private, so skipped: {{ sync_report.private|join:"; " }}</p>{% endif %}
+      {% if sync_report.unmatched %}<p class="mb-1" style="color:#b45309">Not matched to a lesson: {{ sync_report.unmatched|join:"; " }}</p>{% endif %}
+      {% if sync_report.missing %}<p class="mb-0 text-muted">Still without a video: {{ sync_report.missing|join:"; " }}</p>{% endif %}
+    </div>
+    {% endif %}
+  </div>
+</div>
+
 <div class="card">
   <div class="card-header acct-head">
     <div>
