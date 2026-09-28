@@ -151,7 +151,7 @@
 
   {% if next_lesson %}
   <section class="card2">
-    <h4>Next up <a href="{% url 'academy:lesson' next_lesson.id %}" style="margin-left:auto;color:var(--accent)" aria-label="Open next lesson"><i class="fa-solid fa-arrow-right"></i></a></h4>
+    <h4>Next up {% if not next_locked %}<a href="{% url 'academy:lesson' next_lesson.id %}" style="margin-left:auto;color:var(--accent)" aria-label="Open next lesson"><i class="fa-solid fa-arrow-right"></i></a>{% endif %}</h4>
     {% if next_locked %}
     <div class="rnext" style="cursor:not-allowed">
       <span class="tile sm plain"><i class="fa-solid fa-lock"></i></span>

@@ -285,6 +285,9 @@ class LockAndPerkTests(AcademyTestBase):
         first, second = self.lessons[0], self.lessons[1]
         r = self.client.get(reverse('academy:lesson', args=[second.id]))
         self.assertRedirects(r, reverse('academy:track', args=['pl900']))
+        # The first lesson's page offers no link into the locked one.
+        page = self.client.get(reverse('academy:lesson', args=[first.id]))
+        self.assertNotContains(page, 'href="%s"' % reverse('academy:lesson', args=[second.id]))
         r = self.post_json(reverse('academy:api_lab', args=[second.id]), {'ticked_steps': [0]})
         self.assertEqual(r.status_code, 403)
         self.finish(first)
