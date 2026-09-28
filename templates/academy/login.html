@@ -4,46 +4,48 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <title>Sign in · Ralfiz Academy</title>
-  <link rel="icon" type="image/svg+xml" href="{% static 'favicon.svg' %}">
+  <link rel="icon" type="image/png" sizes="32x32" href="{% static 'academy/brand/academy-icon-32.png' %}">
+  <link rel="icon" type="image/png" sizes="192x192" href="{% static 'academy/brand/academy-icon-192.png' %}">
+  <link rel="apple-touch-icon" href="{% static 'academy/brand/academy-icon-180.png' %}">
+  <meta name="theme-color" content="#5B3FE0">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700;12..96,800&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
   <script>
     try { var t = localStorage.getItem('academy-theme'); if (t) document.documentElement.setAttribute('data-theme', t); } catch (e) {}
   </script>
-  <link rel="stylesheet" href="{% static 'academy/academy.css' %}?v=21">
+  <link rel="stylesheet" href="{% static 'academy/academy.css' %}?v=23">
   <style>
     .lg{min-height:100vh;display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,1fr)}
-    .lg-art{position:relative;overflow:hidden;color:#EAF4F1;padding:clamp(28px,4.5vw,64px);display:flex;flex-direction:column;gap:clamp(28px,5vh,56px);
-      background:radial-gradient(120% 80% at 100% 100%,#0F5A4E 0%,transparent 60%),radial-gradient(90% 70% at 0% 100%,#0C3F38 0%,transparent 65%),linear-gradient(160deg,#0B1F1C 0%,#0E2B27 55%,#0F332D 100%)}
-    .lg-art::after{content:"";position:absolute;inset:auto -10% -30% 40%;height:70%;border-radius:50%;background:rgba(60,196,178,.08);filter:blur(10px);pointer-events:none}
+    .lg-art{position:relative;overflow:hidden;color:#ECEBFA;padding:clamp(28px,4.5vw,64px);display:flex;flex-direction:column;gap:clamp(28px,5vh,56px);
+      background:radial-gradient(110% 80% at 100% 0%,rgba(211,87,227,.45) 0%,transparent 60%),radial-gradient(90% 70% at 0% 0%,rgba(94,134,255,.5) 0%,transparent 65%),radial-gradient(100% 70% at 50% 100%,rgba(106,69,230,.55) 0%,transparent 70%),linear-gradient(160deg,#141033 0%,#1B1545 55%,#221650 100%)}
+    .lg-art::after{content:"";position:absolute;inset:auto -10% -30% 40%;height:70%;border-radius:50%;background:rgba(255,138,61,.10);filter:blur(10px);pointer-events:none}
     .lg-top{display:flex;justify-content:space-between;align-items:center;gap:16px;position:relative;z-index:1}
     .lg-top .brand{color:#fff}
-    .lg-top .brand-mark{background:#0B7A6E;color:#fff}
-    .lg-tag{font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:rgba(234,244,241,.72);font-weight:500;white-space:nowrap}
+    .lg-tag{font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:rgba(236,235,250,.72);font-weight:500;white-space:nowrap}
     .lg-tag i{font-style:normal;margin:0 8px;opacity:.6}
     .lg-copy{display:grid;gap:18px;position:relative;z-index:1}
     .lg-copy h1{font-size:clamp(34px,4.2vw,58px);font-weight:700;line-height:1.05;letter-spacing:-.015em;max-width:19ch}
-    .lg-copy h1 span{background:linear-gradient(90deg,#3CC4B2,#7FE3B8);-webkit-background-clip:text;background-clip:text;color:transparent}
-    .lg-copy p{margin:0;color:rgba(234,244,241,.78);font-size:17px;line-height:1.6;max-width:46ch}
+    .lg-copy h1 span{background:linear-gradient(90deg,#9EE3FC,#B9A8FF 50%,#FFB36B);-webkit-background-clip:text;background-clip:text;color:transparent}
+    .lg-copy p{margin:0;color:rgba(236,235,250,.78);font-size:17px;line-height:1.6;max-width:46ch}
     .lg-chips{display:flex;flex-wrap:wrap;gap:10px;margin-top:6px}
-    .lg-chip{display:inline-flex;align-items:center;gap:10px;padding:9px 16px 9px 12px;border-radius:99px;border:1px solid rgba(234,244,241,.16);background:rgba(255,255,255,.04);font-family:var(--mono);font-size:14px;font-weight:500;color:#fff}
+    .lg-chip{display:inline-flex;align-items:center;gap:10px;padding:9px 16px 9px 12px;border-radius:99px;border:1px solid rgba(236,235,250,.16);background:rgba(255,255,255,.04);font-family:var(--mono);font-size:14px;font-weight:500;color:#fff}
     .lg-chip svg{width:18px;height:18px;flex:none}
-    .lg-card{position:relative;z-index:1;align-self:center;width:min(420px,100%);background:rgba(14,32,29,.72);border:1px solid rgba(234,244,241,.12);border-radius:16px;padding:22px 24px;box-shadow:0 30px 60px rgba(0,0,0,.35);backdrop-filter:blur(6px);margin-top:auto}
+    .lg-card{position:relative;z-index:1;align-self:center;width:min(420px,100%);background:rgba(22,18,56,.72);border:1px solid rgba(236,235,250,.12);border-radius:16px;padding:22px 24px;box-shadow:0 30px 60px rgba(0,0,0,.35);backdrop-filter:blur(6px);margin-top:auto}
     .lg-card h3{font-size:19px;color:#fff;margin-bottom:14px;display:flex;justify-content:space-between;align-items:baseline;gap:10px}
-    .lg-card h3 small{font-family:var(--mono);font-size:12px;font-weight:500;color:#7FE3B8}
+    .lg-card h3 small{font-family:var(--mono);font-size:12px;font-weight:500;color:#FFB36B}
     .lg-steps{list-style:none;margin:0 0 16px;padding:0;display:grid;gap:10px}
-    .lg-steps li{display:flex;align-items:center;gap:12px;font-size:14.5px;color:rgba(234,244,241,.9)}
-    .lg-steps .ck{width:22px;height:22px;border-radius:6px;display:grid;place-items:center;flex:none;background:#1FA58C;color:#fff}
-    .lg-steps .ck.todo{background:transparent;border:1.5px solid rgba(234,244,241,.3)}
-    .lg-steps li.todo{color:rgba(234,244,241,.55)}
-    .lg-steps small{margin-left:auto;font-family:var(--mono);font-size:11.5px;color:rgba(234,244,241,.5)}
-    .lg-bar{height:6px;border-radius:99px;background:rgba(234,244,241,.12);overflow:hidden}
-    .lg-bar i{display:block;height:100%;width:75%;border-radius:99px;background:linear-gradient(90deg,#1FA58C,#7FE3B8)}
-    .lg-foot{position:relative;z-index:1;font-size:12.5px;color:rgba(234,244,241,.6);margin:0}
+    .lg-steps li{display:flex;align-items:center;gap:12px;font-size:14.5px;color:rgba(236,235,250,.9)}
+    .lg-steps .ck{width:22px;height:22px;border-radius:6px;display:grid;place-items:center;flex:none;background:#6A45E6;color:#fff}
+    .lg-steps .ck.todo{background:transparent;border:1.5px solid rgba(236,235,250,.3)}
+    .lg-steps li.todo{color:rgba(236,235,250,.55)}
+    .lg-steps small{margin-left:auto;font-family:var(--mono);font-size:11.5px;color:rgba(236,235,250,.5)}
+    .lg-bar{height:6px;border-radius:99px;background:rgba(236,235,250,.12);overflow:hidden}
+    .lg-bar i{display:block;height:100%;width:75%;border-radius:99px;background:linear-gradient(90deg,#FFC23D,#FF8A3D 50%,#F0567A)}
+    .lg-foot{position:relative;z-index:1;font-size:12.5px;color:rgba(236,235,250,.6);margin:0}
 
     .lg-side{display:grid;place-items:center;padding:32px 16px;background:var(--ground)}
-    .lg-form{width:min(460px,100%);background:var(--surface);border:1px solid var(--line);border-radius:20px;padding:clamp(24px,4vw,44px);box-shadow:0 20px 50px rgba(21,32,29,.07);display:grid;gap:18px}
+    .lg-form{width:min(460px,100%);background:var(--surface);border:1px solid var(--line);border-radius:20px;padding:clamp(24px,4vw,44px);box-shadow:0 20px 50px rgba(30,24,80,.08);display:grid;gap:18px}
     .lg-form h2{font-size:clamp(28px,3vw,34px);font-weight:700;letter-spacing:-.01em}
     .lg-form .lead{margin:4px 0 0;color:var(--muted);font-size:15px}
     .lg-row{display:flex;justify-content:space-between;align-items:center;gap:8px 12px;flex-wrap:wrap;font-size:13.5px}
@@ -78,7 +80,7 @@
   <div class="lg">
     <section class="lg-art" aria-hidden="false">
       <div class="lg-top">
-        <a class="brand" href="{% url 'academy:login' %}"><span class="brand-mark" aria-hidden="true">R</span><span>Ralfiz Academy</span></a>
+        <a class="brand" href="{% url 'academy:login' %}"><img class="brand-mark" src="{% static 'academy/brand/academy-icon-64.png' %}" width="32" height="32" alt=""><span>Ralfiz Academy</span></a>
         <span class="lg-tag">Learn<i>•</i>Practice<i>•</i>Certify</span>
       </div>
 
@@ -108,7 +110,7 @@
     </section>
 
     <section class="lg-side">
-      <a class="brand lg-mbrand" href="{% url 'academy:login' %}"><span class="brand-mark" aria-hidden="true">R</span><span>Ralfiz Academy</span></a>
+      <a class="brand lg-mbrand" href="{% url 'academy:login' %}"><img class="brand-mark" src="{% static 'academy/brand/academy-icon-64.png' %}" width="32" height="32" alt=""><span>Ralfiz Academy</span></a>
       <form method="post" class="lg-form" novalidate>
         {% csrf_token %}
         <div>

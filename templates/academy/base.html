@@ -5,7 +5,10 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <meta name="csrf-token" content="{{ csrf_token }}">
   <title>{% block title %}Ralfiz Academy{% endblock %}</title>
-  <link rel="icon" type="image/svg+xml" href="{% static 'favicon.svg' %}">
+  <link rel="icon" type="image/png" sizes="32x32" href="{% static 'academy/brand/academy-icon-32.png' %}">
+  <link rel="icon" type="image/png" sizes="192x192" href="{% static 'academy/brand/academy-icon-192.png' %}">
+  <link rel="apple-touch-icon" href="{% static 'academy/brand/academy-icon-180.png' %}">
+  <meta name="theme-color" content="#5B3FE0">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700;12..96,800&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -13,7 +16,7 @@
   <script>
     try { var t = localStorage.getItem('academy-theme'); if (t) document.documentElement.setAttribute('data-theme', t); } catch (e) {}
   </script>
-  <link rel="stylesheet" href="{% static 'academy/academy.css' %}?v=21">
+  <link rel="stylesheet" href="{% static 'academy/academy.css' %}?v=23">
 </head>
 <body data-track="{% block body_track %}home{% endblock %}">
   {% if request.is_preview %}
@@ -23,7 +26,7 @@
     <div class="top2-in">
       {% if side_track %}<button class="menu-btn2" id="menuBtn" type="button" aria-expanded="false" aria-controls="side" aria-label="Course outline"><i class="fa-solid fa-bars"></i></button>{% endif %}
       <a class="brand" href="{% url 'academy:home' %}">
-        <span class="brand-mark" aria-hidden="true">R</span>
+        <img class="brand-mark" src="{% static 'academy/brand/academy-icon-64.png' %}" width="32" height="32" alt="">
         <span class="word">Ralfiz <span class="labs">Academy</span></span>
       </a>
       <nav class="mainnav" aria-label="Main">

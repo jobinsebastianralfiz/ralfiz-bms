@@ -11,7 +11,10 @@
   <meta property="og:title" content="{% block og_title %}Ralfiz Academy{% endblock %}">
   <meta property="og:description" content="{% block og_description %}Hands-on labs for Microsoft certifications.{% endblock %}">
   <meta property="og:url" content="{{ site }}{{ request.path }}">
-  <link rel="icon" type="image/svg+xml" href="{% static 'favicon.svg' %}">
+  <link rel="icon" type="image/png" sizes="32x32" href="{% static 'academy/brand/academy-icon-32.png' %}">
+  <link rel="icon" type="image/png" sizes="192x192" href="{% static 'academy/brand/academy-icon-192.png' %}">
+  <link rel="apple-touch-icon" href="{% static 'academy/brand/academy-icon-180.png' %}">
+  <meta name="theme-color" content="#5B3FE0">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700;12..96,800&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -20,14 +23,14 @@
     document.documentElement.classList.add('js');
     try { var t = localStorage.getItem('academy-theme'); if (t) document.documentElement.setAttribute('data-theme', t); } catch (e) {}
   </script>
-  <link rel="stylesheet" href="{% static 'academy/academy.css' %}?v=21">
+  <link rel="stylesheet" href="{% static 'academy/academy.css' %}?v=23">
   {% block jsonld %}{% endblock %}
 </head>
 <body data-track="{% block body_track %}home{% endblock %}" class="public">
   <header class="top2">
     <div class="top2-in">
       <a class="brand" href="{% url 'academy:catalog' %}">
-        <span class="brand-mark" aria-hidden="true">R</span>
+        <img class="brand-mark" src="{% static 'academy/brand/academy-icon-64.png' %}" width="32" height="32" alt="">
         <span class="word">Ralfiz <span class="labs">Academy</span></span>
       </a>
       <nav class="mainnav pubnav" aria-label="Main">
@@ -52,7 +55,7 @@
   <footer class="pubfoot">
     <div class="pf-in">
       <div>
-        <a class="brand" href="{% url 'academy:catalog' %}"><span class="brand-mark" aria-hidden="true">R</span><span>Ralfiz Academy</span></a>
+        <a class="brand" href="{% url 'academy:catalog' %}"><img class="brand-mark" src="{% static 'academy/brand/academy-icon-64.png' %}" width="32" height="32" alt=""><span>Ralfiz Academy</span></a>
         <p>Hands-on training for Microsoft Power Platform and Power BI certifications, by {{ contact.name }}.</p>
       </div>
       <div>
