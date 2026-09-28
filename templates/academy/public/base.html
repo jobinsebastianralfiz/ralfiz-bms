@@ -23,7 +23,7 @@
     document.documentElement.classList.add('js');
     try { var t = localStorage.getItem('academy-theme'); if (t) document.documentElement.setAttribute('data-theme', t); } catch (e) {}
   </script>
-  <link rel="stylesheet" href="{% static 'academy/academy.css' %}?v=26">
+  <link rel="stylesheet" href="{% static 'academy/academy.css' %}?v=27">
   {% block jsonld %}{% endblock %}
 </head>
 <body data-track="{% block body_track %}home{% endblock %}" class="public">

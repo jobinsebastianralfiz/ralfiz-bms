@@ -122,6 +122,7 @@ def catalog(request):
     }
     return render(request, 'academy/public/catalog.html', {
         'rows': rows, 'groups': [g for g in groups if g['rows']], 'totals': totals,
+        'featured': next((r for r in rows if r['sample']), None),
         'published': {t.id for t in tracks}, **_common(request),
     })
 

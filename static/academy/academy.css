@@ -1177,3 +1177,87 @@ body.public .top2-right .btn2{padding:9px 16px;font-size:14px}
 .price-tag .off{font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;padding:3px 8px;border-radius:6px;color:var(--c,var(--accent));background:color-mix(in srgb,var(--c,var(--accent)) 12%,transparent)}
 .price-tag small{flex-basis:100%;color:var(--muted);font-size:13px}
 .trk-hero .price-tag b{font-size:32px}
+
+/* ===================================================================
+   Public catalogue, minimal layout (Sep 2026). Scoped to .cx.
+   =================================================================== */
+.cx{max-width:1120px;margin:0 auto}
+.cx h2{font-size:clamp(24px,2.4vw,30px);font-weight:700;letter-spacing:-.01em}
+.cx-hero{padding:clamp(40px,7vw,88px) 0 clamp(32px,5vw,56px);border-bottom:1px solid var(--line)}
+.cx-eyebrow{margin:0 0 14px;font-size:13px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--accent)}
+.cx-hero h1{font-size:clamp(36px,5.4vw,64px);font-weight:700;line-height:1.04;letter-spacing:-.025em;max-width:16ch}
+.cx-lead{margin:20px 0 0;max-width:58ch;color:var(--muted);font-size:clamp(16px,1.4vw,18.5px);line-height:1.6}
+.cx-actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:28px}
+.cx-stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));margin:clamp(36px,5vw,56px) 0 0;max-width:760px}
+.cx-stats div{padding:0 20px;border-left:1px solid var(--line)}
+.cx-stats div:first-child{padding-left:0;border-left:0}
+.cx-stats dt{font-size:13px;color:var(--muted)}
+.cx-stats dd{margin:4px 0 0;font-family:var(--display);font-size:clamp(24px,2.6vw,32px);font-weight:700;font-variant-numeric:tabular-nums;letter-spacing:-.01em}
+@media (max-width:640px){.cx-stats{grid-template-columns:repeat(2,minmax(0,1fr));gap:20px 0}.cx-stats div:nth-child(3){padding-left:0;border-left:0}}
+
+.cx-sec{padding:clamp(40px,6vw,72px) 0 0}
+.cx-h{margin-bottom:24px}
+.cx-h p{margin:8px 0 0;color:var(--muted);font-size:15.5px;max-width:60ch}
+.cx-code{font-family:var(--mono);font-size:13px;font-weight:600;color:var(--c,var(--accent));white-space:nowrap}
+
+.cx-group+.cx-group{margin-top:40px}
+.cx-group-h{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 16px;padding-bottom:12px;border-bottom:1px solid var(--ink)}
+.cx-group-h h3{font-size:17px;font-weight:700}
+.cx-group-h p{margin:0;color:var(--muted);font-size:14px}
+.cx-list{list-style:none;margin:0;padding:0}
+.cx-list li{border-bottom:1px solid var(--line)}
+.cx-course{display:grid;grid-template-columns:96px minmax(0,1fr) 200px;gap:24px;align-items:start;padding:24px 8px;text-decoration:none;color:var(--ink);border-radius:10px;transition:background .15s}
+.cx-course:hover{background:var(--surface)}
+.cx-course .cx-code{padding-top:4px}
+.cx-main{display:grid;gap:6px;min-width:0}
+.cx-main b{font-family:var(--display);font-size:20px;font-weight:700;letter-spacing:-.01em}
+.cx-blurb{color:var(--muted);font-size:15px;line-height:1.55;max-width:62ch}
+.cx-meta{font-size:13px;color:var(--muted)}
+.cx-side{display:grid;justify-items:end;gap:10px;text-align:right}
+.cx-side .price-tag{justify-content:flex-end;margin:0}
+.cx-side .price-tag b{font-size:22px}
+.cx-side .price-tag small{text-align:right}
+.cx-go{display:inline-flex;align-items:center;gap:8px;font-weight:600;font-size:14.5px;color:var(--accent)}
+.cx-go i{font-size:12px;transition:transform .15s}
+.cx-course:hover .cx-go i{transform:translateX(3px)}
+@media (max-width:760px){
+  .cx-course{grid-template-columns:minmax(0,1fr);gap:10px;padding:20px 0}
+  .cx-course .cx-code{padding-top:0}
+  .cx-side{justify-items:start;text-align:left}
+  .cx-side .price-tag{justify-content:flex-start}
+  .cx-side .price-tag small{text-align:left}
+}
+
+.cx-steps{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:clamp(20px,4vw,48px)}
+.cx-steps li{border-top:1px solid var(--line);padding-top:18px}
+.cx-steps span{font-family:var(--mono);font-size:13px;color:var(--accent);font-weight:600}
+.cx-steps h3{font-size:19px;margin:10px 0 6px}
+.cx-steps p{margin:0;color:var(--muted);font-size:15px;line-height:1.6}
+@media (max-width:760px){.cx-steps{grid-template-columns:minmax(0,1fr)}}
+
+.cx .try-box{box-shadow:none}
+.cx-q{margin-top:16px;padding:24px;box-shadow:none;max-width:760px;border-top:1px solid var(--line) !important}
+.cx-q-h{margin:0 0 8px;font-size:13px;color:var(--muted)}
+
+.cx-free{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:32px 40px}
+.cx-free h3{display:flex;align-items:baseline;gap:10px;font-size:16px;font-weight:700;padding-bottom:10px;border-bottom:1px solid var(--ink);margin:0}
+.cx-free ul{list-style:none;margin:0;padding:0}
+.cx-free li a{display:grid;grid-template-columns:44px minmax(0,1fr) auto;gap:12px;align-items:baseline;padding:12px 0;border-bottom:1px solid var(--line);text-decoration:none;color:var(--ink);font-size:15px}
+.cx-free li a:hover .t{color:var(--accent)}
+.cx-free .n{font-family:var(--mono);font-size:13px;color:var(--muted)}
+.cx-free .m{font-size:13px;color:var(--muted);white-space:nowrap}
+
+.cx-faq{max-width:820px;border-top:1px solid var(--line)}
+.cx-faq details{border-bottom:1px solid var(--line)}
+.cx-faq summary{list-style:none;display:flex;justify-content:space-between;align-items:center;gap:16px;padding:20px 0;cursor:pointer;font-weight:600;font-size:16px}
+.cx-faq summary::-webkit-details-marker{display:none}
+.cx-faq summary i{color:var(--muted);font-size:13px;transition:transform .2s}
+.cx-faq details[open] summary i{transform:rotate(45deg)}
+.cx-faq details p{margin:0;padding:0 0 20px;color:var(--muted);line-height:1.65;max-width:70ch}
+
+.cx-cta{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:16px 32px;align-items:center;margin:clamp(48px,7vw,88px) 0 clamp(40px,6vw,64px);padding:clamp(28px,4vw,44px);border-radius:18px;background:var(--surface);border:1px solid var(--line)}
+.cx-cta p{margin:8px 0 0;color:var(--muted)}
+.cx-cta-btns{display:flex;flex-wrap:wrap;gap:10px}
+.cx-cta-foot{grid-column:1/-1;margin:0 !important;padding-top:16px;border-top:1px solid var(--line);font-size:14px}
+.cx-cta-foot a{color:var(--accent);font-weight:600;text-decoration:none}
+@media (max-width:760px){.cx-cta{grid-template-columns:minmax(0,1fr)}}

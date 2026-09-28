@@ -9,86 +9,62 @@
 </script>
 {% endblock %}
 {% block page %}
-<section class="hero2 pub-hero">
-  <div class="hz pub-hero-in">
-    <div>
-      <div class="eyebrow">Ralfiz Academy · Learn · Build · Prove</div>
-      <h1>Hands-on courses for <span class="grad">real tech skills</span></h1>
-      <p class="sub">Microsoft certification courses{% if 'flutter' in published %} and app development with Flutter{% endif %}. Learn the concept, build it yourself with real exercise files, then prove it with quizzes and tests.</p>
-      <div class="pub-cta">
-        <a class="btn2" href="#courses"><i class="fa-solid fa-table-cells-large"></i> Browse courses</a>
-        <a class="btn2 ghost" href="#try"><i class="fa-solid fa-play"></i> Try it in your browser</a>
-      </div>
-      <div class="want" aria-label="Find your course">
-        <span>I want to…</span>
-        <a href="{% url 'academy:catalog_course' 'pl900' %}" data-t="pl900"><i class="fa-solid fa-seedling"></i> Start from zero</a>
-        <a href="{% url 'academy:catalog_course' 'ab410' %}" data-t="ab410"><i class="fa-solid fa-wand-magic-sparkles"></i> Build apps with AI</a>
-        <a href="{% url 'academy:catalog_course' 'pl300' %}" data-t="pl300"><i class="fa-solid fa-chart-column"></i> Analyse data</a>
-        <a href="{% url 'academy:catalog_course' 'ab400' %}" data-t="ab400"><i class="fa-solid fa-code"></i> Write code</a>
-        {% if 'flutter' in published %}<a href="{% url 'academy:catalog_course' 'flutter' %}" data-t="flutter"><i class="fa-solid fa-mobile-screen-button"></i> Build mobile apps</a>{% endif %}
-      </div>
-    </div>
-    <div class="flow-demo" aria-hidden="true">
-      <div class="fd-card">
-        <div class="fd-top"><span class="dots"><i></i><i></i><i></i></span><span class="fd-code">PL-300 · B.7 DAX fundamentals</span></div>
-        <div class="fd-tabs"><span class="t1">Learn</span><span class="t2">Lab</span><span class="t3">Quiz</span><b class="ink"></b></div>
-        <div class="fd-body">
-          <div class="p p1"><b>Measures vs calculated columns</b><span class="ln w90"></span><span class="ln w70"></span><span class="ln w80"></span><div class="fd-callout">Measures respond to slicers.</div></div>
-          <div class="p p2"><div class="fd-dax"><span class="k">Measure =</span> COUNTROWS(Tickets)</div><div class="fd-res"><b>60</b><span>✓ Correct in every filter context</span></div></div>
-          <div class="p p3"><b>Which one changes with a slicer?</b><span class="opt">A calculated column</span><span class="opt ok">A measure ✓</span><span class="opt">A calculated table</span></div>
-        </div>
-      </div>
-      <span class="fd-chip c1"><i class="fa-solid fa-star"></i> +50 XP</span>
-      <span class="fd-chip c2"><i class="fa-solid fa-medal"></i> Exam ready</span>
-      <span class="fd-chip c3"><i class="fa-solid fa-fire"></i> 5-day streak</span>
-    </div>
+<div class="cx">
+
+<section class="cx-hero">
+  <p class="cx-eyebrow">Ralfiz Academy</p>
+  <h1>Hands-on courses for <span class="grad">real tech skills</span></h1>
+  <p class="cx-lead">Microsoft certification courses{% if 'flutter' in published %} and app development with Flutter{% endif %}. Learn the concept, build it yourself with real exercise files, then prove it with quizzes and practice tests.</p>
+  <div class="cx-actions">
+    <a class="btn2" href="#courses">Browse courses</a>
+    <a class="btn2 ghost" href="#free">Read a free lesson</a>
   </div>
+  <dl class="cx-stats" aria-label="Academy in numbers">
+    <div><dt>Courses</dt><dd>{{ totals.tracks }}</dd></div>
+    <div><dt>Lessons</dt><dd>{{ totals.lessons }}</dd></div>
+    <div><dt>Exercise files</dt><dd>{{ totals.files }}</dd></div>
+    <div><dt>Practice questions</dt><dd>{{ totals.questions }}</dd></div>
+  </dl>
 </section>
 
-<section class="stats2 pub-stats" aria-label="Academy in numbers">
-  <div class="card2 stat2"><span class="tile"><i class="fa-solid fa-certificate"></i></span><b>{{ totals.tracks }}</b><span class="l">courses</span></div>
-  <div class="card2 stat2"><span class="tile violet"><i class="fa-solid fa-book-open"></i></span><b>{{ totals.lessons }}</b><span class="l">in-depth lessons</span></div>
-  <div class="card2 stat2"><span class="tile amber"><i class="fa-solid fa-folder-open"></i></span><b>{{ totals.files }}</b><span class="l">exercise files and datasets</span></div>
-  <div class="card2 stat2"><span class="tile blue"><i class="fa-regular fa-circle-question"></i></span><b>{{ totals.questions }}</b><span class="l">quiz and exam-style questions</span></div>
-</section>
-
-<div id="courses"></div>
-{% for g in groups %}
-<div class="sec-h reveal"><div><h2>{{ g.title }}</h2><p>{{ g.intro }}</p></div></div>
-<div class="cgrid">
-  {% for r in g.rows %}
-  <article class="card2 ccard" data-t="{{ r.track.id }}">
-    <div class="h">
-      <div><span class="code">{{ r.track.code }}</span><span class="lvl">{{ r.track.level }}</span><h3>{{ r.track.name }}</h3></div>
-      <span class="glyph" aria-hidden="true"><i class="fa-solid {{ r.track.icon }}"></i></span>
-    </div>
-    <p>{{ r.track.blurb }}</p>
-    <div class="cmeta">
-      <div><i class="fa-solid fa-book-open"></i><span>{{ r.lessons }}<small>Lessons</small></span></div>
-      <div><i class="fa-regular fa-clock"></i><span>{{ r.hours }}h<small>Of study</small></span></div>
-      <div><i class="fa-regular fa-circle-question"></i><span>{{ r.questions }}<small>Questions</small></span></div>
-    </div>
-    {% if r.track.order_hint or r.track.status %}<p class="pub-when"><i class="fa-solid fa-signs-post"></i> {{ r.track.order_hint }}{% if r.track.order_hint and r.track.status %} · {% endif %}{{ r.track.status }}</p>{% endif %}
-    {% include 'academy/public/_price.html' with track=r.track %}
-    <div class="cfoot"><a class="btn2" href="{% url 'academy:catalog_course' r.track.id %}">View course <i class="fa-solid fa-arrow-right"></i></a></div>
-  </article>
+<section class="cx-sec" id="courses">
+  <header class="cx-h"><h2>Courses</h2></header>
+  {% for g in groups %}
+  <div class="cx-group">
+    <div class="cx-group-h"><h3>{{ g.title }}</h3><p>{{ g.intro }}</p></div>
+    <ul class="cx-list">
+      {% for r in g.rows %}
+      <li data-t="{{ r.track.id }}">
+        <a class="cx-course" href="{% url 'academy:catalog_course' r.track.id %}">
+          <span class="cx-code">{{ r.track.code }}</span>
+          <span class="cx-main">
+            <b>{{ r.track.name }}</b>
+            <span class="cx-blurb">{{ r.track.blurb }}</span>
+            <span class="cx-meta">{{ r.track.level }} · {{ r.lessons }} lessons · {{ r.hours }} h · {{ r.questions }} questions{% if r.track.order_hint %} · {{ r.track.order_hint }}{% endif %}</span>
+          </span>
+          <span class="cx-side">
+            {% include 'academy/public/_price.html' with track=r.track %}
+            <span class="cx-go">View course <i class="fa-solid fa-arrow-right"></i></span>
+          </span>
+        </a>
+      </li>
+      {% endfor %}
+    </ul>
+  </div>
   {% endfor %}
-</div>
-{% endfor %}
+</section>
 
-<section class="build reveal" id="build">
-  <div class="sec-h" style="margin-top:0"><div><h2>What you'll build</h2><p>One realistic project runs through the Microsoft courses: a <b>Campus Help Desk</b> for a college, from the first table to secured reports and custom code.</p></div></div>
-  <ol class="build-steps">
-    <li data-t="pl900"><span class="bs-n">1</span><span class="glyph"><i class="fa-solid fa-table"></i></span><b>Data model</b><small>Dataverse tables for tickets, students, staff and categories</small><em>PL-900</em></li>
-    <li data-t="pl900"><span class="bs-n">2</span><span class="glyph"><i class="fa-solid fa-mobile-screen"></i></span><b>Apps &amp; flows</b><small>Canvas and model-driven apps, cloud flows and approvals</small><em>PL-900 · AB-410</em></li>
-    <li data-t="ab410"><span class="bs-n">3</span><span class="glyph"><i class="fa-solid fa-robot"></i></span><b>AI features</b><small>Prompt columns, AI Hub prompts and a Copilot Studio agent</small><em>AB-410</em></li>
-    <li data-t="pl300"><span class="bs-n">4</span><span class="glyph"><i class="fa-solid fa-chart-pie"></i></span><b>Reports</b><small>A Power BI star schema, DAX measures and row-level security</small><em>PL-300</em></li>
-    <li data-t="ab400"><span class="bs-n">5</span><span class="glyph"><i class="fa-solid fa-code"></i></span><b>Custom code</b><small>Plug-ins, PCF controls, custom APIs and connectors</small><em>AB-400</em></li>
+<section class="cx-sec">
+  <header class="cx-h"><h2>How every lesson works</h2></header>
+  <ol class="cx-steps">
+    <li><span>01</span><h3>Learn</h3><p>Plain-language explanations, comparison tables, worked examples and the common mistakes to avoid.</p></li>
+    <li><span>02</span><h3>Build</h3><p>Real exercise files and numbered steps in your own free environment, with a "check your work" list.</p></li>
+    <li><span>03</span><h3>Prove</h3><p>A quiz after every lesson with explanations, plus full practice tests scored out of 1000.</p></li>
   </ol>
 </section>
 
-<section class="try reveal" id="try">
-  <div class="sec-h"><div><h2>Try it in your browser</h2><p>These are the real practice tools from the labs. No sign-up, nothing to install.</p></div></div>
+<section class="cx-sec" id="try">
+  <header class="cx-h"><h2>Try it in your browser</h2><p>The real practice tools from the labs. No sign-up, nothing to install.</p></header>
   <div class="card2 try-box">
     <div class="try-tabs" role="tablist">
       <button type="button" role="tab" data-sim="powerfx" aria-selected="true"><i class="fa-solid fa-square-root-variable"></i><span><b>Power Fx console</b><small>PL-900 · formulas</small></span></button>
@@ -101,64 +77,58 @@
       <div class="try-pane" data-pane="flow" hidden></div>
     </div>
   </div>
+  {% if featured %}{% with r=featured %}
+  <div class="card2 sq cx-q" data-t="{{ r.track.id }}" data-url="{% url 'academy:catalog_try' r.sample.id %}">
+    <p class="cx-q-h">Sample question · {{ r.track.code }} · Lesson {{ r.sample.lesson.num }}</p>
+    <p class="stem">{{ r.sample.question }}</p>
+    <div class="opts">
+      {% for opt in r.sample.options %}<button class="opt" type="button" data-j="{{ forloop.counter0 }}"><span class="k">{% cycle 'A' 'B' 'C' 'D' %}</span><span>{{ opt }}</span></button>{% endfor %}
+    </div>
+    <div class="why" hidden><b></b> <span class="exp"></span></div>
+    <a class="sq-more" href="{% url 'academy:catalog_lesson' r.track.id r.sample.lesson_id %}" hidden>Read the free lesson this comes from <i class="fa-solid fa-arrow-right"></i></a>
+  </div>
+  {% endwith %}{% endif %}
 </section>
 
-<section class="reveal" id="quiz">
-  <div class="sec-h"><div><h2>Try a real exam question</h2><p>One question from each course, straight from the free lessons. Pick an answer to see the explanation.</p></div></div>
-  <div class="sq-grid">
-    {% for r in rows %}{% if r.sample %}
-    <div class="card2 sq" data-t="{{ r.track.id }}" data-url="{% url 'academy:catalog_try' r.sample.id %}">
-      <div class="sq-h"><span class="code">{{ r.track.code }}</span><span class="pill">Lesson {{ r.sample.lesson.num }}</span></div>
-      <p class="stem">{{ r.sample.question }}</p>
-      <div class="opts">
-        {% for opt in r.sample.options %}<button class="opt" type="button" data-j="{{ forloop.counter0 }}"><span class="k">{% cycle 'A' 'B' 'C' 'D' %}</span><span>{{ opt }}</span></button>{% endfor %}
-        {% resetcycle %}
-      </div>
-      <div class="why" hidden><b></b> <span class="exp"></span></div>
-      <a class="sq-more" href="{% url 'academy:catalog_lesson' r.track.id r.sample.lesson_id %}" hidden>Read the free lesson this comes from <i class="fa-solid fa-arrow-right"></i></a>
+<section class="cx-sec" id="free">
+  <header class="cx-h"><h2>Free sample lessons</h2><p>Read the first lessons of every course in full. No sign-up needed.</p></header>
+  <div class="cx-free">
+    {% for r in rows %}{% if r.free %}
+    <div data-t="{{ r.track.id }}">
+      <h3><span class="cx-code">{{ r.track.code }}</span>{{ r.track.name }}</h3>
+      <ul>
+        {% for l in r.free %}
+        <li><a href="{% url 'academy:catalog_lesson' r.track.id l.id %}"><span class="n">{{ l.num }}</span><span class="t">{{ l.title }}</span><span class="m">{{ l.minutes }} min</span></a></li>
+        {% endfor %}
+      </ul>
     </div>
     {% endif %}{% endfor %}
   </div>
 </section>
 
-<div class="sec-h"><div><h2>How every lesson works</h2></div></div>
-<div class="how2" style="margin-top:0">
-  <div class="card2 l"><span class="tile"><i class="fa-solid fa-book-open"></i></span><div><h3>Learn</h3><p>Plain-language explanations, comparison tables, worked examples, common mistakes, and how the exam asks about each concept.</p></div></div>
-  <div class="card2 b"><span class="tile violet"><i class="fa-solid fa-flask"></i></span><div><h3>Hands-on lab</h3><p>Real exercise files, numbered steps in your own free environment, and a "check your work" list. Some labs have in-browser simulators.</p></div></div>
-  <div class="card2 q"><span class="tile blue"><i class="fa-regular fa-circle-question"></i></span><div><h3>Quiz and practice tests</h3><p>Exam-style questions with explanations after every lesson, plus 30-question practice tests and 50-question full mocks scored out of 1000.</p></div></div>
-</div>
+<section class="cx-sec">
+  <header class="cx-h"><h2>Questions</h2></header>
+  <div class="cx-faq">
+    <details><summary>Do I get a certificate? <i class="fa-solid fa-plus"></i></summary><p>Yes. When you finish a course you receive a Ralfiz Academy certificate of completion. The Microsoft courses prepare you for Microsoft's own exams, which you book and take with Microsoft; Ralfiz Academy is not affiliated with Microsoft.</p></details>
+    <details><summary>What do I need for the labs? <i class="fa-solid fa-plus"></i></summary><p>The first lesson of each course shows you how to set up everything you need. Most Microsoft labs run in a free Microsoft developer environment, and PL-300 labs use Power BI Desktop, which runs on Windows.{% if 'flutter' in published %} Flutter labs run on your own computer.{% endif %}</p></details>
+    <details><summary>How is my progress tracked? <i class="fa-solid fa-plus"></i></summary><p>You get your own student login. Lab steps, quiz answers and practice test scores are saved to your account, so you can continue on any device. Courses unlock one after another as you complete them.</p></details>
+    <details><summary>Which course should I start with? <i class="fa-solid fa-plus"></i></summary><p>For the Microsoft courses, start with PL-900 Power Platform Fundamentals. Then take AB-410 to build apps or PL-300 to analyse data. AB-400 is for developers and comes after AB-410.{% if 'flutter' in published %} Flutter stands on its own and starts from the basics.{% endif %} Not sure? Message us and we'll help you choose.</p></details>
+  </div>
+</section>
 
-<div class="sec-h" id="free"><div><h2>Free sample lessons</h2><p>Read the first lessons of every course in full, no sign-up needed.</p></div></div>
-<div class="free-grid">
-  {% for r in rows %}{% for l in r.free %}
-  <a class="card2 free-card" data-t="{{ r.track.id }}" href="{% url 'academy:catalog_lesson' r.track.id l.id %}">
-    <span class="glyph" aria-hidden="true"><i class="fa-solid {{ r.track.icon }}"></i></span>
-    <span><small>{{ r.track.code }} · Lesson {{ l.num }}</small><b>{{ l.title }}</b><em>{{ l.minutes }} min · Free</em></span>
-    <i class="fa-solid fa-arrow-right"></i>
-  </a>
-  {% endfor %}{% endfor %}
-</div>
-
-<div class="sec-h"><div><h2>Questions</h2></div></div>
-<div class="faq">
-  <details class="card2"><summary>Do I get a certificate? <i class="fa-solid fa-chevron-down"></i></summary><p>Yes. When you finish a course you receive a Ralfiz Academy certificate of completion. The Microsoft courses prepare you for Microsoft's own exams, which you book and take with Microsoft; Ralfiz Academy is not affiliated with Microsoft.</p></details>
-  <details class="card2"><summary>What do I need for the labs? <i class="fa-solid fa-chevron-down"></i></summary><p>The first lesson of each course shows you how to set up everything you need. Most Microsoft labs run in a free Microsoft developer environment, and PL-300 labs use Power BI Desktop, which runs on Windows.{% if 'flutter' in published %} Flutter labs run on your own computer.{% endif %}</p></details>
-  <details class="card2"><summary>How is my progress tracked? <i class="fa-solid fa-chevron-down"></i></summary><p>You get your own student login. Lab steps, quiz answers and practice test scores are saved to your account, so you can continue on any device. Courses unlock one after another as you complete them.</p></details>
-  <details class="card2"><summary>Which course should I start with? <i class="fa-solid fa-chevron-down"></i></summary><p>For the Microsoft courses, start with PL-900 Power Platform Fundamentals. Then take AB-410 to build apps or PL-300 to analyse data. AB-400 is for developers and comes after AB-410.{% if 'flutter' in published %} Flutter stands on its own and starts from the basics.{% endif %} Not sure? Message us and we'll help you choose.</p></details>
-</div>
-
-<section class="card2 enrol" id="enrol">
+<section class="cx-cta" id="enrol">
   <div>
     <h2>Ready to start?</h2>
     <p>Get in touch to enrol. Your trainer sets up your student login and the courses you need.</p>
   </div>
-  <div class="enrol-btns">
+  <div class="cx-cta-btns">
     {% if contact.whatsapp %}<a class="btn2" href="{{ contact.whatsapp }}?text={{ 'Hi, I would like to enrol in Ralfiz Academy.'|urlencode }}" target="_blank" rel="noopener"><i class="fa-brands fa-whatsapp"></i> WhatsApp us</a>{% endif %}
-    {% if contact.phone %}<a class="btn2 ghost" href="tel:{{ contact.phone }}"><i class="fa-solid fa-phone"></i> {{ contact.phone }}</a>{% endif %}
-    {% if contact.email %}<a class="btn2 ghost" href="mailto:{{ contact.email }}?subject={{ 'Ralfiz Academy enrolment'|urlencode }}"><i class="fa-regular fa-envelope"></i> Email us</a>{% endif %}
-    <a class="btn2 ghost" href="{% url 'academy:login' %}"><i class="fa-solid fa-right-to-bracket"></i> Already enrolled? Sign in</a>
+    {% if contact.email %}<a class="btn2 ghost" href="mailto:{{ contact.email }}?subject={{ 'Ralfiz Academy enrolment'|urlencode }}">Email us</a>{% endif %}
   </div>
+  <p class="cx-cta-foot">{% if contact.phone %}Or call <a href="tel:{{ contact.phone }}">{{ contact.phone }}</a>. {% endif %}Already enrolled? <a href="{% url 'academy:login' %}">Sign in</a></p>
 </section>
+
+</div>
 {% endblock %}
 
 {% block extra_js %}
