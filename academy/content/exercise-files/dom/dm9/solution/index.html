@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Full-Stack JavaScript · Ralfiz Academy</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="app.js" defer></script>
+</head>
+<body>
+  <header class="hero">
+    <p class="eyebrow">Ralfiz Academy · Batch starts 5 Oct</p>
+    <h1>Full-Stack JavaScript</h1>
+    <p class="lead">16 weeks, live classes, real projects and a demo day.</p>
+    <button class="btn primary" id="enroll-btn" type="button">Reserve a seat</button>
+  </header>
+
+  <main class="wrap">
+    <div class="tabs" role="tablist" aria-label="Course details">
+      <button role="tab" id="tab-overview" aria-controls="panel-overview" aria-selected="true">Overview</button>
+      <button role="tab" id="tab-curriculum" aria-controls="panel-curriculum" aria-selected="false" tabindex="-1">Curriculum</button>
+      <button role="tab" id="tab-reviews" aria-controls="panel-reviews" aria-selected="false" tabindex="-1">Reviews</button>
+    </div>
+    <section role="tabpanel" id="panel-overview" aria-labelledby="tab-overview" tabindex="0">
+      <p>Learn JavaScript, the DOM, Node.js and PostgreSQL by building a store, a dashboard and a booking app.</p>
+    </section>
+    <section role="tabpanel" id="panel-curriculum" aria-labelledby="tab-curriculum" tabindex="0" hidden>
+      <ol>
+        <li>JavaScript fundamentals</li>
+        <li>DOM, events and components</li>
+        <li>APIs with Node.js and Express</li>
+        <li>Databases and deployment</li>
+      </ol>
+    </section>
+    <section role="tabpanel" id="panel-reviews" aria-labelledby="tab-reviews" tabindex="0" hidden>
+      <p>★★★★★ “The projects are what got me my first job.” — Rahul, Kozhikode</p>
+    </section>
+
+    <h2 class="faq-title">Questions</h2>
+    <div class="faq" id="faq">
+      <h3><button class="acc-btn" id="q1" aria-expanded="false" aria-controls="a1">Do I need a laptop?</button></h3>
+      <div class="acc-panel" id="a1" role="region" aria-labelledby="q1" hidden>
+        <p>Yes. Any laptop with 8 GB RAM runs everything we use.</p>
+      </div>
+      <h3><button class="acc-btn" id="q2" aria-expanded="false" aria-controls="a2">Are classes recorded?</button></h3>
+      <div class="acc-panel" id="a2" role="region" aria-labelledby="q2" hidden>
+        <p>Every live class is recorded and available the same evening.</p>
+      </div>
+    </div>
+  </main>
+
+  <dialog id="enroll" aria-labelledby="enroll-title">
+    <form method="dialog" class="form">
+      <h2 id="enroll-title">Reserve your seat</h2>
+      <label>Full name <input name="name" required autocomplete="name"></label>
+      <label>Email <input name="email" type="email" required autocomplete="email"></label>
+      <label>Batch
+        <select name="batch">
+          <option>Weekday evenings</option>
+          <option>Weekend</option>
+        </select>
+      </label>
+      <div class="actions">
+        <button class="btn ghost" type="button" data-close>Cancel</button>
+        <button class="btn primary" value="enroll">Reserve</button>
+      </div>
+    </form>
+  </dialog>
+
+  <div class="toasts" id="toasts" role="status" aria-live="polite"></div>
+</body>
+</html>

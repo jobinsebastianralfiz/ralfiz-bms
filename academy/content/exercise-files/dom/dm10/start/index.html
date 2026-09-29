@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Task Board · Ralfiz</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="app.js" defer></script>
+</head>
+<body>
+  <main class="board">
+    <header class="head">
+      <div>
+        <p class="eyebrow">Ralfiz Technologies</p>
+        <h1>Task Board</h1>
+      </div>
+      <span class="pill" id="summary">0/0 done</span>
+    </header>
+
+    <form id="add-form" class="add" autocomplete="off">
+      <input name="text" required maxlength="80" placeholder="What needs doing?" aria-label="New task">
+      <button class="btn">Add</button>
+    </form>
+
+    <ul id="list" class="list"></ul>
+    <p class="empty" id="empty" hidden>Nothing here yet.</p>
+
+    <footer class="foot">
+      <span id="left">0 items left</span>
+      <nav class="filters" aria-label="Filter tasks">
+        <a href="#/all" data-filter="all">All</a>
+        <a href="#/active" data-filter="active">Active</a>
+        <a href="#/done" data-filter="done">Done</a>
+      </nav>
+      <button class="link" id="clear" type="button">Clear completed</button>
+    </footer>
+  </main>
+  <p class="help">Double-click a task to edit it. Enter saves, Esc cancels.</p>
+</body>
+</html>

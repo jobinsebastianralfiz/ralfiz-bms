@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy"
+    content="default-src 'self'; script-src 'self' https://cdn.jsdelivr.net; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <title>Discussion · Ralfiz Academy</title>
+  <link rel="stylesheet" href="style.css">
+  <!-- Production: pin a version and add integrity="sha384-…" crossorigin="anonymous" -->
+  <script src="https://cdn.jsdelivr.net/npm/dompurify/dist/purify.min.js" defer></script>
+  <script src="app.js" defer></script>
+</head>
+<body>
+  <main class="wrap">
+    <h1>Lesson 5.3 discussion</h1>
+    <form id="form" class="card">
+      <div class="grid">
+        <label>Name <input name="name" required maxlength="40"></label>
+        <label>Website (optional) <input name="site" placeholder="https://…"></label>
+      </div>
+      <label>Comment <textarea name="body" rows="3" required maxlength="500"></textarea></label>
+      <p class="hint">You may use &lt;b&gt;, &lt;i&gt; and &lt;code&gt;.</p>
+      <button class="btn">Post comment</button>
+    </form>
+    <ul id="comments" class="comments"></ul>
+  </main>
+</body>
+</html>

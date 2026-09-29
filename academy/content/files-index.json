@@ -1502,5 +1502,713 @@
  "flutter/fl63/solution/lib/project_report_card.dart": {
   "path": "solution/lib/project_report_card.dart",
   "description": "Solution ProjectReportCard: invokes the Edge Function with the user JWT, parses the reply with a map pattern and maps FunctionException statuses."
+ },
+ "dom/dm1/README.md": {
+  "path": "README.md",
+  "description": "Lab brief for the profile card: how to run it with Live Server, the five TODOs and the acceptance criteria."
+ },
+ "dom/dm1/start/index.html": {
+  "path": "start/index.html",
+  "description": "Starter page: the card markup with empty placeholders and a script tag that still lacks defer (TODO 1)."
+ },
+ "dom/dm1/start/style.css": {
+  "path": "start/style.css",
+  "description": "Finished styles for the profile card (same in start and solution)."
+ },
+ "dom/dm1/start/app.js": {
+  "path": "start/app.js",
+  "description": "Starter script: the profile data object and TODOs for readyState logging, filling the card, skill tags and the Follow toggle."
+ },
+ "dom/dm1/solution/index.html": {
+  "path": "solution/index.html",
+  "description": "Solution page: the same markup with a deferred script."
+ },
+ "dom/dm1/solution/style.css": {
+  "path": "solution/style.css",
+  "description": "Profile card styles."
+ },
+ "dom/dm1/solution/app.js": {
+  "path": "solution/app.js",
+  "description": "Solution: logs the readyState sequence, fills the card with textContent, builds skill tags and toggles Follow with aria-pressed."
+ },
+ "dom/dm2/README.md": {
+  "path": "README.md",
+  "description": "Lab brief for the inventory inspector: selecting, counting, highlighting, closest() details and matches() filters."
+ },
+ "dom/dm2/start/index.html": {
+  "path": "start/index.html",
+  "description": "Inventory page with eight products carrying data-price, data-stock and data-category, filter buttons and a details panel."
+ },
+ "dom/dm2/start/style.css": {
+  "path": "start/style.css",
+  "description": "Finished styles: summary tiles, filter chips, product rows, sold-out and dim states, details panel."
+ },
+ "dom/dm2/start/app.js": {
+  "path": "start/app.js",
+  "description": "Starter script with a ready showDetails() helper and TODOs for querySelectorAll, attribute selectors, closest() and matches()."
+ },
+ "dom/dm2/solution/index.html": {
+  "path": "solution/index.html",
+  "description": "Inventory page (unchanged from the starter)."
+ },
+ "dom/dm2/solution/style.css": {
+  "path": "solution/style.css",
+  "description": "Inventory inspector styles."
+ },
+ "dom/dm2/solution/app.js": {
+  "path": "solution/app.js",
+  "description": "Solution: counts, sold-out highlighting, cheapest product, click inspection with closest() and siblings, category filters with matches()."
+ },
+ "dom/dm3/README.md": {
+  "path": "README.md",
+  "description": "Lab brief for the settings and pricing page: theme switcher with storage, accent colour custom property and a monthly/yearly pricing switch."
+ },
+ "dom/dm3/start/index.html": {
+  "path": "start/index.html",
+  "description": "Settings page: theme radio group, accent colour input, Save button and three pricing plans with data-monthly and data-yearly."
+ },
+ "dom/dm3/start/style.css": {
+  "path": "start/style.css",
+  "description": "Finished styles where every colour is a CSS custom property, with a [data-theme=\"dark\"] override."
+ },
+ "dom/dm3/start/app.js": {
+  "path": "start/app.js",
+  "description": "Starter script with TODOs for dataset.theme, classList and aria-checked, localStorage, style.setProperty and the pricing switch."
+ },
+ "dom/dm3/solution/index.html": {
+  "path": "solution/index.html",
+  "description": "Settings page (unchanged from the starter)."
+ },
+ "dom/dm3/solution/style.css": {
+  "path": "solution/style.css",
+  "description": "Settings and pricing styles."
+ },
+ "dom/dm3/solution/app.js": {
+  "path": "solution/app.js",
+  "description": "Solution: theme with System support and safe storage, accent colour via --accent, computed style logging, pricing with Intl and aria-pressed."
+ },
+ "dom/dm4/README.md": {
+  "path": "README.md",
+  "description": "Lab brief for the notification centre: fetch JSON, render from a template with a fragment, prepend, dismiss, mark read and badge counts."
+ },
+ "dom/dm4/start/index.html": {
+  "path": "start/index.html",
+  "description": "Notification centre page with a <template> for one notification, loaded as a module."
+ },
+ "dom/dm4/start/style.css": {
+  "path": "start/style.css",
+  "description": "Finished styles for the notification list, unread state, entrance animation (respecting reduced motion) and messages."
+ },
+ "dom/dm4/start/app.js": {
+  "path": "start/app.js",
+  "description": "Starter module: fetch with an ok check is done; TODOs for cloneNode, DocumentFragment, remove, counts, prepend and mark all read."
+ },
+ "dom/dm4/start/notifications.json": {
+  "path": "start/notifications.json",
+  "description": "Sample data: five notifications and three incoming ones for the New button."
+ },
+ "dom/dm4/solution/index.html": {
+  "path": "solution/index.html",
+  "description": "Notification centre page (unchanged from the starter)."
+ },
+ "dom/dm4/solution/style.css": {
+  "path": "solution/style.css",
+  "description": "Notification centre styles."
+ },
+ "dom/dm4/solution/app.js": {
+  "path": "solution/app.js",
+  "description": "Solution: template cloning, one fragment insertion, prepend with animation, dismiss, click to read, counts derived from the DOM, error message on failed fetch."
+ },
+ "dom/dm4/solution/notifications.json": {
+  "path": "solution/notifications.json",
+  "description": "Sample notification data (same as the starter)."
+ },
+ "dom/dm5/README.md": {
+  "path": "README.md",
+  "description": "Lab brief for the Ralfiz Academy post card: TODOs, how to run it and acceptance criteria."
+ },
+ "dom/dm5/start/index.html": {
+  "path": "start/index.html",
+  "description": "Starter page: the finished post card markup. Links style.css and app.js with defer."
+ },
+ "dom/dm5/start/style.css": {
+  "path": "start/style.css",
+  "description": "Starter styles (complete, same as the solution)."
+ },
+ "dom/dm5/start/app.js": {
+  "path": "start/app.js",
+  "description": "Starter script with TODO(1) to TODO(7). Loads without errors."
+ },
+ "dom/dm5/solution/index.html": {
+  "path": "solution/index.html",
+  "description": "Solution page (same markup as the starter)."
+ },
+ "dom/dm5/solution/style.css": {
+  "path": "solution/style.css",
+  "description": "Solution styles (identical to the starter)."
+ },
+ "dom/dm5/solution/app.js": {
+  "path": "solution/app.js",
+  "description": "Complete solution: like toggle, double-click, counter, posting, shortcut, once and AbortController."
+ },
+ "dom/dm6/README.md": {
+  "path": "README.md",
+  "description": "Lab brief for Ralfiz Tasks with event delegation: TODOs, how to run it and acceptance criteria."
+ },
+ "dom/dm6/start/index.html": {
+  "path": "start/index.html",
+  "description": "Starter page: the to-do app markup."
+ },
+ "dom/dm6/start/style.css": {
+  "path": "start/style.css",
+  "description": "Starter styles (complete, same as the solution)."
+ },
+ "dom/dm6/start/app.js": {
+  "path": "start/app.js",
+  "description": "Starter script: state and render() are done; the listeners are TODO(1) to TODO(6)."
+ },
+ "dom/dm6/solution/index.html": {
+  "path": "solution/index.html",
+  "description": "Solution page (same markup as the starter)."
+ },
+ "dom/dm6/solution/style.css": {
+  "path": "solution/style.css",
+  "description": "Solution styles (identical to the starter)."
+ },
+ "dom/dm6/solution/app.js": {
+  "path": "solution/app.js",
+  "description": "Complete solution: every interaction handled by delegated listeners."
+ },
+ "dom/dm7/README.md": {
+  "path": "README.md",
+  "description": "Lab brief for the Ralfiz Admin command palette and resizable sidebar."
+ },
+ "dom/dm7/start/index.html": {
+  "path": "start/index.html",
+  "description": "Starter page: admin shell, sidebar, resize handle and hidden palette."
+ },
+ "dom/dm7/start/style.css": {
+  "path": "start/style.css",
+  "description": "Starter styles (complete, same as the solution)."
+ },
+ "dom/dm7/start/app.js": {
+  "path": "start/app.js",
+  "description": "Starter script: commands and render() are ready; keyboard, pointer and custom-event code are TODO(1) to TODO(6)."
+ },
+ "dom/dm7/solution/index.html": {
+  "path": "solution/index.html",
+  "description": "Solution page (same markup as the starter)."
+ },
+ "dom/dm7/solution/style.css": {
+  "path": "solution/style.css",
+  "description": "Solution styles (identical to the starter)."
+ },
+ "dom/dm7/solution/app.js": {
+  "path": "solution/app.js",
+  "description": "Complete solution: global shortcuts, palette navigation, command CustomEvent and a pointer-captured resize handle."
+ },
+ "dom/dm8/README.md": {
+  "path": "README.md",
+  "description": "Lab brief for the Ralfiz Academy enrolment form."
+ },
+ "dom/dm8/start/index.html": {
+  "path": "start/index.html",
+  "description": "Starter page: the complete enrolment form markup with novalidate, labels and error slots."
+ },
+ "dom/dm8/start/style.css": {
+  "path": "start/style.css",
+  "description": "Finished styles for the form, errors, password checklist and success panel."
+ },
+ "dom/dm8/start/app.js": {
+  "path": "start/app.js",
+  "description": "Starter script with helpers ready and TODO(1)-TODO(6) for validation and submit."
+ },
+ "dom/dm8/solution/index.html": {
+  "path": "solution/index.html",
+  "description": "Solution page (same markup as the starter)."
+ },
+ "dom/dm8/solution/style.css": {
+  "path": "solution/style.css",
+  "description": "Solution styles (same as the starter)."
+ },
+ "dom/dm8/solution/app.js": {
+  "path": "solution/app.js",
+  "description": "Finished validation, custom rules, error summary, POST and success state."
+ },
+ "dom/dm9/README.md": {
+  "path": "README.md",
+  "description": "Lab brief: build dialog, tabs, accordion and toast behaviour for the Ralfiz Academy course page; how to run with Live Server and the acceptance criteria."
+ },
+ "dom/dm9/start/app.js": {
+  "path": "start/app.js",
+  "description": "Starter script with TODO(1)–TODO(7) for toast, tabs, accordion and the enrol dialog"
+ },
+ "dom/dm9/start/index.html": {
+  "path": "start/index.html",
+  "description": "Course page markup with ARIA tabs, the FAQ accordion, the enrol dialog and the toast region (starter copy)"
+ },
+ "dom/dm9/start/style.css": {
+  "path": "start/style.css",
+  "description": "Styles for the hero, tabs, accordion, dialog and toasts (starter copy)"
+ },
+ "dom/dm9/solution/app.js": {
+  "path": "solution/app.js",
+  "description": "Complete behaviour: toast with pause on hover, roving-tabindex tabs, accordion, and the enrol dialog with returnValue and FormData"
+ },
+ "dom/dm9/solution/index.html": {
+  "path": "solution/index.html",
+  "description": "Course page markup with ARIA tabs, the FAQ accordion, the enrol dialog and the toast region (solution copy)"
+ },
+ "dom/dm9/solution/style.css": {
+  "path": "solution/style.css",
+  "description": "Styles for the hero, tabs, accordion, dialog and toasts (solution copy)"
+ },
+ "dom/dm10/README.md": {
+  "path": "README.md",
+  "description": "Lab brief for the Task Board: state, render, derived counts, hash filters, persistence and editing; how to run and acceptance criteria."
+ },
+ "dom/dm10/start/app.js": {
+  "path": "start/app.js",
+  "description": "Starter with the state object and TODO(1)–TODO(8) for loading, saving, rendering, derived values and events"
+ },
+ "dom/dm10/start/index.html": {
+  "path": "start/index.html",
+  "description": "Task Board markup: add form, list, empty state, footer with filter links and Clear completed (starter copy)"
+ },
+ "dom/dm10/start/style.css": {
+  "path": "start/style.css",
+  "description": "Task Board styles (starter copy)"
+ },
+ "dom/dm10/solution/app.js": {
+  "path": "solution/app.js",
+  "description": "Complete Task Board: single state, update() + render(), derived counters, focus restore, hash filters, inline editing and localStorage"
+ },
+ "dom/dm10/solution/index.html": {
+  "path": "solution/index.html",
+  "description": "Task Board markup: add form, list, empty state, footer with filter links and Clear completed (solution copy)"
+ },
+ "dom/dm10/solution/style.css": {
+  "path": "solution/style.css",
+  "description": "Task Board styles (solution copy)"
+ },
+ "dom/dm11/README.md": {
+  "path": "README.md",
+  "description": "Lab brief for the Ralfiz Store product browser: states, skeletons, pagination, debounced search with abort and cache; how to run and acceptance criteria."
+ },
+ "dom/dm11/start/app.js": {
+  "path": "start/app.js",
+  "description": "Starter with state, cache and TODO(1)–TODO(8)"
+ },
+ "dom/dm11/start/index.html": {
+  "path": "start/index.html",
+  "description": "Store page with search box, status line, grid, error box, Load more button and card/skeleton templates (starter copy)"
+ },
+ "dom/dm11/start/style.css": {
+  "path": "start/style.css",
+  "description": "Responsive product grid, card, skeleton shimmer and error styles (starter copy)"
+ },
+ "dom/dm11/solution/app.js": {
+  "path": "solution/app.js",
+  "description": "Complete browser: URLSearchParams, cached fetch with AbortController, template cards, status rendering, debounce and Load more"
+ },
+ "dom/dm11/solution/index.html": {
+  "path": "solution/index.html",
+  "description": "Store page with search box, status line, grid, error box, Load more button and card/skeleton templates (solution copy)"
+ },
+ "dom/dm11/solution/style.css": {
+  "path": "solution/style.css",
+  "description": "Responsive product grid, card, skeleton shimmer and error styles (solution copy)"
+ },
+ "dom/dm12/README.md": {
+  "path": "README.md",
+  "description": "Lab brief for Ralfiz Notes: which storage holds what and why, how to run with a server, TODO list and acceptance criteria."
+ },
+ "dom/dm12/start/app.js": {
+  "path": "start/app.js",
+  "description": "Starter for preferences, storage-event sync, sessionStorage draft and notes UI with TODO(1)–(4), (8), (9)"
+ },
+ "dom/dm12/start/db.js": {
+  "path": "start/db.js",
+  "description": "Starter IndexedDB wrapper with TODO(5)–(7)"
+ },
+ "dom/dm12/start/index.html": {
+  "path": "start/index.html",
+  "description": "Notes page: theme button, editor form, saved notes list; loads app.js as a module (starter copy)"
+ },
+ "dom/dm12/start/style.css": {
+  "path": "start/style.css",
+  "description": "Light and dark themes with CSS variables, editor and notes list styles (starter copy)"
+ },
+ "dom/dm12/solution/app.js": {
+  "path": "solution/app.js",
+  "description": "Complete app: localStorage prefs with cross-tab sync, debounced sessionStorage draft, IndexedDB notes rendered safely"
+ },
+ "dom/dm12/solution/db.js": {
+  "path": "solution/db.js",
+  "description": "Promise-based IndexedDB wrapper: openDB with onupgradeneeded, addNote, getAllNotes by date, deleteNote"
+ },
+ "dom/dm12/solution/index.html": {
+  "path": "solution/index.html",
+  "description": "Notes page: theme button, editor form, saved notes list; loads app.js as a module (solution copy)"
+ },
+ "dom/dm12/solution/style.css": {
+  "path": "solution/style.css",
+  "description": "Light and dark themes with CSS variables, editor and notes list styles (solution copy)"
+ },
+ "dom/dm13/README.md": {
+  "path": "README.md",
+  "description": "Task, how to run it and acceptance criteria"
+ },
+ "dom/dm13/start/index.html": {
+  "path": "start/index.html",
+  "description": "Starter page: nav and an empty outlet"
+ },
+ "dom/dm13/start/style.css": {
+  "path": "start/style.css",
+  "description": "Styles (same as the solution)"
+ },
+ "dom/dm13/start/app.js": {
+  "path": "start/app.js",
+  "description": "Starter router with TODO markers"
+ },
+ "dom/dm13/solution/index.html": {
+  "path": "solution/index.html",
+  "description": "Solution page"
+ },
+ "dom/dm13/solution/style.css": {
+  "path": "solution/style.css",
+  "description": "Styles"
+ },
+ "dom/dm13/solution/app.js": {
+  "path": "solution/app.js",
+  "description": "Complete history router"
+ },
+ "dom/dm14/README.md": {
+  "path": "README.md",
+  "description": "Task, how to run it and acceptance criteria"
+ },
+ "dom/dm14/start/index.html": {
+  "path": "start/index.html",
+  "description": "Starter page"
+ },
+ "dom/dm14/start/style.css": {
+  "path": "start/style.css",
+  "description": "Styles (same as the solution)"
+ },
+ "dom/dm14/start/app.js": {
+  "path": "start/app.js",
+  "description": "Starter feed with TODO markers"
+ },
+ "dom/dm14/solution/index.html": {
+  "path": "solution/index.html",
+  "description": "Solution page"
+ },
+ "dom/dm14/solution/style.css": {
+  "path": "solution/style.css",
+  "description": "Styles"
+ },
+ "dom/dm14/solution/app.js": {
+  "path": "solution/app.js",
+  "description": "Complete feed with three observers"
+ },
+ "dom/dm15/README.md": {
+  "path": "README.md",
+  "description": "Task, how to run it and acceptance criteria"
+ },
+ "dom/dm15/start/index.html": {
+  "path": "start/index.html",
+  "description": "Starter page"
+ },
+ "dom/dm15/start/style.css": {
+  "path": "start/style.css",
+  "description": "Styles (same as the solution)"
+ },
+ "dom/dm15/start/app.js": {
+  "path": "start/app.js",
+  "description": "Starter leaderboard with TODO markers"
+ },
+ "dom/dm15/solution/index.html": {
+  "path": "solution/index.html",
+  "description": "Solution page"
+ },
+ "dom/dm15/solution/style.css": {
+  "path": "solution/style.css",
+  "description": "Styles"
+ },
+ "dom/dm15/solution/app.js": {
+  "path": "solution/app.js",
+  "description": "Complete leaderboard: drift-proof clock, rAF count-up, FLIP"
+ },
+ "dom/dm16/README.md": {
+  "path": "README.md",
+  "description": "Task, how to run it and acceptance criteria"
+ },
+ "dom/dm16/start/index.html": {
+  "path": "start/index.html",
+  "description": "Starter page"
+ },
+ "dom/dm16/start/style.css": {
+  "path": "start/style.css",
+  "description": "Styles (same as the solution)"
+ },
+ "dom/dm16/start/app.js": {
+  "path": "start/app.js",
+  "description": "Starter dashboard with TODO markers"
+ },
+ "dom/dm16/start/sales.json": {
+  "path": "start/sales.json",
+  "description": "Monthly revenue and category split (same in solution)"
+ },
+ "dom/dm16/solution/index.html": {
+  "path": "solution/index.html",
+  "description": "Solution page"
+ },
+ "dom/dm16/solution/style.css": {
+  "path": "solution/style.css",
+  "description": "Styles"
+ },
+ "dom/dm16/solution/app.js": {
+  "path": "solution/app.js",
+  "description": "Complete dashboard: DPR-aware canvas bars, SVG donut"
+ },
+ "dom/dm16/solution/sales.json": {
+  "path": "solution/sales.json",
+  "description": "Monthly revenue and category split"
+ },
+ "dom/dm17/README.md": {
+  "path": "README.md",
+  "description": "Lab brief for the Ralfiz Deals page: TODOs, how to run it on localhost and acceptance criteria."
+ },
+ "dom/dm17/start/index.html": {
+  "path": "start/index.html",
+  "description": "Starter page: the full Ralfiz Deals markup."
+ },
+ "dom/dm17/start/style.css": {
+  "path": "start/style.css",
+  "description": "Styles for the Deals page with light and dark tokens."
+ },
+ "dom/dm17/start/app.js": {
+  "path": "start/app.js",
+  "description": "Starter script: helpers and data are ready; the six TODOs wire up the platform APIs."
+ },
+ "dom/dm17/solution/index.html": {
+  "path": "solution/index.html",
+  "description": "Solution page (same markup as the starter)."
+ },
+ "dom/dm17/solution/style.css": {
+  "path": "solution/style.css",
+  "description": "Solution styles (same as the starter)."
+ },
+ "dom/dm17/solution/app.js": {
+  "path": "solution/app.js",
+  "description": "Solution: clipboard, share, theme, offline, visibility-aware countdown, geolocation and notifications, each with a fallback."
+ },
+ "dom/dm18/README.md": {
+  "path": "README.md",
+  "description": "Lab brief: speed up the Order Dashboard, with the TODO list, DevTools steps and acceptance criteria."
+ },
+ "dom/dm18/start/index.html": {
+  "path": "start/index.html",
+  "description": "Starter markup for the Order Dashboard."
+ },
+ "dom/dm18/start/style.css": {
+  "path": "start/style.css",
+  "description": "Starter styles; TODO(7) adds content-visibility and reduced-motion rules."
+ },
+ "dom/dm18/start/app.js": {
+  "path": "start/app.js",
+  "description": "Starter script: works but slow. Each TODO fixes one performance problem."
+ },
+ "dom/dm18/solution/index.html": {
+  "path": "solution/index.html",
+  "description": "Solution markup (same as the starter)."
+ },
+ "dom/dm18/solution/style.css": {
+  "path": "solution/style.css",
+  "description": "Solution styles: transform-based toast, content-visibility and reduced motion."
+ },
+ "dom/dm18/solution/app.js": {
+  "path": "solution/app.js",
+  "description": "Solution: measured render, virtual list, batched bars, throttled scroll, debounced resize, class-based toast."
+ },
+ "dom/dm19/README.md": {
+  "path": "README.md",
+  "description": "Lab brief: make the Ralfiz Store header and cart accessible, with TODOs, testing steps and acceptance criteria."
+ },
+ "dom/dm19/start/index.html": {
+  "path": "start/index.html",
+  "description": "Starter markup with the accessibility problems to fix (div buttons, no alt, no label, no live region)."
+ },
+ "dom/dm19/start/style.css": {
+  "path": "start/style.css",
+  "description": "Starter styles; TODO(2) restores focus styles and adds .sr-only."
+ },
+ "dom/dm19/start/app.js": {
+  "path": "start/app.js",
+  "description": "Starter script: products, cart and a class-toggled menu that works only with a mouse."
+ },
+ "dom/dm19/solution/index.html": {
+  "path": "solution/index.html",
+  "description": "Solution markup: skip link, semantic buttons, labelled search, live region."
+ },
+ "dom/dm19/solution/style.css": {
+  "path": "solution/style.css",
+  "description": "Solution styles: focus-visible rings, skip link and the .sr-only utility."
+ },
+ "dom/dm19/solution/app.js": {
+  "path": "solution/app.js",
+  "description": "Solution: disclosure menu, named buttons, live region announcements and focus management."
+ },
+ "dom/dm20/README.md": {
+  "path": "README.md",
+  "description": "Lab brief: secure the comments widget, with the attack to test, the TODOs and acceptance criteria."
+ },
+ "dom/dm20/start/index.html": {
+  "path": "start/index.html",
+  "description": "Starter markup for the comments widget (no CSP yet)."
+ },
+ "dom/dm20/start/style.css": {
+  "path": "start/style.css",
+  "description": "Styles for the comments widget."
+ },
+ "dom/dm20/start/app.js": {
+  "path": "start/app.js",
+  "description": "Starter script: a working but vulnerable widget (innerHTML with user data, unchecked URLs, a secret, a token in localStorage)."
+ },
+ "dom/dm20/solution/index.html": {
+  "path": "solution/index.html",
+  "description": "Solution markup: CSP meta tag and DOMPurify from the CDN before app.js."
+ },
+ "dom/dm20/solution/style.css": {
+  "path": "solution/style.css",
+  "description": "Solution styles (same as the starter)."
+ },
+ "dom/dm20/solution/app.js": {
+  "path": "solution/app.js",
+  "description": "Solution: safe rendering, URL allowlist, DOMPurify with a fail-closed fallback, no secrets, no stored token."
+ },
+ "dom/dm21/README.md": {
+  "path": "README.md",
+  "description": "Task, how to run and acceptance criteria"
+ },
+ "dom/dm21/start/index.html": {
+  "path": "start/index.html",
+  "description": "Starter page markup (complete)"
+ },
+ "dom/dm21/start/style.css": {
+  "path": "start/style.css",
+  "description": "Styles (complete, same as the solution)"
+ },
+ "dom/dm21/start/app.js": {
+  "path": "start/app.js",
+  "description": "Starter script with TODO(1)–TODO(7)"
+ },
+ "dom/dm21/solution/index.html": {
+  "path": "solution/index.html",
+  "description": "Finished page markup"
+ },
+ "dom/dm21/solution/style.css": {
+  "path": "solution/style.css",
+  "description": "Finished styles"
+ },
+ "dom/dm21/solution/app.js": {
+  "path": "solution/app.js",
+  "description": "Finished expense tracker"
+ },
+ "dom/dm22/README.md": {
+  "path": "README.md",
+  "description": "Task, how to run and acceptance criteria"
+ },
+ "dom/dm22/start/index.html": {
+  "path": "start/index.html",
+  "description": "Starter markup (complete)"
+ },
+ "dom/dm22/start/style.css": {
+  "path": "start/style.css",
+  "description": "Styles (complete)"
+ },
+ "dom/dm22/start/app.js": {
+  "path": "start/app.js",
+  "description": "Starter script with TODO(1)–TODO(6)"
+ },
+ "dom/dm22/solution/index.html": {
+  "path": "solution/index.html",
+  "description": "Finished markup"
+ },
+ "dom/dm22/solution/style.css": {
+  "path": "solution/style.css",
+  "description": "Finished styles (same as the starter)"
+ },
+ "dom/dm22/solution/app.js": {
+  "path": "solution/app.js",
+  "description": "Finished product browser"
+ },
+ "dom/dm23/README.md": {
+  "path": "README.md",
+  "description": "Task, how to run and acceptance criteria"
+ },
+ "dom/dm23/start/index.html": {
+  "path": "start/index.html",
+  "description": "Starter page (complete)"
+ },
+ "dom/dm23/start/style.css": {
+  "path": "start/style.css",
+  "description": "Page styles with TODO(6)"
+ },
+ "dom/dm23/start/app.js": {
+  "path": "start/app.js",
+  "description": "Starter components with TODO(1)–TODO(6)"
+ },
+ "dom/dm23/solution/index.html": {
+  "path": "solution/index.html",
+  "description": "Finished page"
+ },
+ "dom/dm23/solution/style.css": {
+  "path": "solution/style.css",
+  "description": "Finished page styles"
+ },
+ "dom/dm23/solution/app.js": {
+  "path": "solution/app.js",
+  "description": "Finished components and page code"
+ },
+ "dom/dm24/README.md": {
+  "path": "README.md",
+  "description": "Task, how to run and acceptance criteria"
+ },
+ "dom/dm24/start/index.html": {
+  "path": "start/index.html",
+  "description": "Starter page (complete)"
+ },
+ "dom/dm24/start/style.css": {
+  "path": "start/style.css",
+  "description": "Styles (complete)"
+ },
+ "dom/dm24/start/signals.js": {
+  "path": "start/signals.js",
+  "description": "Starter reactive core with TODO(1)–TODO(2)"
+ },
+ "dom/dm24/start/app.js": {
+  "path": "start/app.js",
+  "description": "Starter Task Board with TODO(3)–TODO(5)"
+ },
+ "dom/dm24/solution/index.html": {
+  "path": "solution/index.html",
+  "description": "Finished page"
+ },
+ "dom/dm24/solution/style.css": {
+  "path": "solution/style.css",
+  "description": "Styles (same as the starter)"
+ },
+ "dom/dm24/solution/signals.js": {
+  "path": "solution/signals.js",
+  "description": "Finished reactive core"
+ },
+ "dom/dm24/solution/app.js": {
+  "path": "solution/app.js",
+  "description": "Finished Task Board on signals"
+ },
+ "dom/dm24/reference/TaskBoard.jsx": {
+  "path": "reference/TaskBoard.jsx",
+  "description": "The same Task Board as a React component, for comparison (not run)"
  }
 }

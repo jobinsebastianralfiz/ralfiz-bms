@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Ralfiz Store · Browse</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="app.js" defer></script>
+</head>
+<body>
+  <header class="top">
+    <strong class="brand"><span aria-hidden="true">◆</span> Ralfiz Store</strong>
+    <input id="search" class="search" type="search" placeholder="Search products…"
+           aria-label="Search products" autocomplete="off">
+  </header>
+
+  <main class="wrap">
+    <p id="status" class="status" role="status"></p>
+    <section id="grid" class="grid" aria-busy="false"></section>
+
+    <div id="error" class="error" hidden>
+      <p>We could not load products. <span id="error-detail"></span></p>
+      <button id="retry" class="btn" type="button">Try again</button>
+    </div>
+
+    <div class="more">
+      <button id="more" class="btn ghost" type="button" hidden>Load more</button>
+    </div>
+  </main>
+
+  <template id="card-template">
+    <article class="card">
+      <div class="thumb"><img alt="" width="300" height="300" loading="lazy"></div>
+      <h3 class="title"></h3>
+      <p class="brandline"></p>
+      <div class="row"><span class="price"></span><span class="rating"></span></div>
+    </article>
+  </template>
+
+  <template id="skeleton-template">
+    <div class="card skeleton" aria-hidden="true">
+      <div class="thumb sk"></div>
+      <div class="sk line"></div>
+      <div class="sk line short"></div>
+    </div>
+  </template>
+</body>
+</html>

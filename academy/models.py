@@ -62,7 +62,8 @@ class Track(models.Model):
     # Plain glyphs per track (Font Awesome). Deliberately not Microsoft's
     # product logos: the portal says it is not affiliated with Microsoft.
     ICONS = {'pl900': 'fa-cubes', 'ab410': 'fa-wand-magic-sparkles',
-             'pl300': 'fa-chart-column', 'ab400': 'fa-code', 'flutter': 'fa-mobile-screen-button'}
+             'pl300': 'fa-chart-column', 'ab400': 'fa-code', 'flutter': 'fa-mobile-screen-button',
+             'dom': 'fa-window-maximize'}
 
     @property
     def icon(self):
@@ -128,6 +129,9 @@ class Lesson(models.Model):
     # Phone-screen mocks drawn by static/academy/flutter-mocks.js into the
     # <div class="mock-slot" data-mock="N"> placeholders of content_html.
     mocks = models.JSONField(default=list, blank=True)
+    # Live code playgrounds run by static/academy/dom-play.js in sandboxed
+    # frames, in the <div class="play-slot" data-play="N"> placeholders.
+    plays = models.JSONField(default=list, blank=True)
     sort_order = models.PositiveSmallIntegerField(default=0)
     # Set from the admin, never by import_labs, so re-imports keep it.
     # YouTube, Vimeo or a direct .mp4/.webm link.

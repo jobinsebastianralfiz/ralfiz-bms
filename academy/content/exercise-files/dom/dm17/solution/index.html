@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Ralfiz Deals</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="app.js" defer></script>
+</head>
+<body>
+  <div id="offline" class="banner" role="status" hidden>
+    You are offline. You can still copy the code; claiming needs a connection.
+  </div>
+  <header class="top">
+    <strong class="brand"><span class="logo">R</span> Ralfiz Deals</strong>
+    <div class="seg" role="group" aria-label="Theme">
+      <button type="button" data-choice="system">System</button>
+      <button type="button" data-choice="light">Light</button>
+      <button type="button" data-choice="dark">Dark</button>
+    </div>
+  </header>
+  <main class="wrap">
+    <section class="card">
+      <p class="eyebrow">Festive sale · ends in <span id="countdown">--</span></p>
+      <h1>Flat 20% off all headphones</h1>
+      <div class="code-row">
+        <input id="code" value="RALFIZ20" readonly aria-label="Coupon code">
+        <button id="copy" class="btn primary" type="button">Copy code</button>
+      </div>
+      <div class="row">
+        <button id="claim" class="btn" type="button">Claim deal</button>
+        <button id="share" class="btn" type="button">Share</button>
+      </div>
+      <p id="status" class="status" role="status"></p>
+    </section>
+    <section class="card">
+      <h2>Stores and alerts</h2>
+      <div class="row">
+        <button id="find" class="btn" type="button">📍 Find my nearest store</button>
+        <button id="alerts" class="btn" type="button">🔔 Deal alerts</button>
+      </div>
+      <ul id="stores" class="stores"></ul>
+    </section>
+  </main>
+</body>
+</html>

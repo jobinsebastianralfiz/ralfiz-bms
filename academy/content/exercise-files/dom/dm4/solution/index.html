@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Notifications · Ralfiz Academy</title>
+  <link rel="stylesheet" href="style.css">
+  <script type="module" src="app.js"></script>
+</head>
+<body>
+  <main class="inbox">
+    <header class="head">
+      <h1>Notifications <span class="badge" id="unread" hidden>0</span></h1>
+      <div class="actions">
+        <button id="new">+ New</button>
+        <button id="read-all" class="ghost">Mark all read</button>
+      </div>
+    </header>
+
+    <p class="message" id="message" role="status">Loading notifications…</p>
+    <ul class="list" id="list" hidden></ul>
+    <p class="empty" id="empty" hidden>🎉 You’re all caught up</p>
+
+    <template id="note-tpl">
+      <li class="note">
+        <span class="icon" aria-hidden="true"></span>
+        <div class="body">
+          <p class="text"></p>
+          <time class="time"></time>
+        </div>
+        <button class="dismiss" aria-label="Dismiss notification">✕</button>
+      </li>
+    </template>
+  </main>
+</body>
+</html>

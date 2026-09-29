@@ -13,9 +13,9 @@ from django.db import transaction
 from .models import (
     ContentImport, Domain, ExerciseFile, Lesson, LessonFile, Question, Track,
 )
-from .sanitize import check_mocks, clean_html
+from .sanitize import check_mocks, check_plays, clean_html
 
-TRACK_ORDER = ['pl900', 'ab410', 'pl300', 'ab400', 'flutter']
+TRACK_ORDER = ['pl900', 'ab410', 'pl300', 'ab400', 'flutter', 'dom']
 DEFAULT_PACKAGE_DIR = Path(__file__).resolve().parent / 'content'
 SHARED_PREFIXES = ('hd', 'pbi')
 
@@ -89,6 +89,7 @@ def _read_package(root):
                     elif fid in files:
                         files[fid]['track_ids'].add(t['id'])
                 errors += [f'{lid}: {p}' for p in check_mocks(lesson.get('mocks') or [])]
+                errors += [f'{lid}: {p}' for p in check_plays(lesson.get('plays') or [])]
                 for q in lesson.get('quiz', []):
                     if not 0 <= q['answer'] < len(q['options']) or q['answer'] > 3:
                         errors.append(f'{lid}: answer {q["answer"]} out of range')
@@ -191,7 +192,8 @@ def run_import(root=DEFAULT_PACKAGE_DIR, content_version='2026-09', force=False,
                         'terms': raw.get('terms', []), 'exam_tip': raw.get('examTip') or '',
                         'widget': raw.get('widget') or '', 'sorter': raw.get('sorter'),
                         'lab_steps': lab.get('steps', []), 'lab_check': lab.get('check', []),
-                        'mocks': raw.get('mocks') or [], 'sort_order': l_order,
+                        'mocks': raw.get('mocks') or [], 'plays': raw.get('plays') or [],
+                        'sort_order': l_order,
                     })
                     counts['lessons'] += 1
                     LessonFile.objects.filter(lesson=lesson).delete()

@@ -1,0 +1,12 @@
+{
+  "year": "FY 2025–26",
+  "months": ["Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec", "Jan", "Feb", "Mar"],
+  "revenue": [412000, 388000, 505000, 462000, 590000, 638000, 571000, 684000, 731000, 652000, 704000, 818000],
+  "categories": [
+    { "name": "Laptops", "color": "#f97316", "revenue": 2455000 },
+    { "name": "Audio", "color": "#6366f1", "revenue": 1712000 },
+    { "name": "Wearables", "color": "#06b6d4", "revenue": 1098000 },
+    { "name": "Accessories", "color": "#10b981", "revenue": 931000 },
+    { "name": "Smart home", "color": "#f43f5e", "revenue": 959000 }
+  ]
+}

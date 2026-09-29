@@ -1,0 +1,14 @@
+{
+  "notifications": [
+    { "id": 1, "icon": "🛒", "text": "Order #RZ-1042 has shipped", "time": "2 min ago", "unread": true },
+    { "id": 2, "icon": "💬", "text": "Rahul replied to your question in Lesson 1.3", "time": "1 h ago", "unread": true },
+    { "id": 3, "icon": "🎓", "text": "Certificate ready: JavaScript Basics", "time": "3 h ago", "unread": true },
+    { "id": 4, "icon": "⭐", "text": "You earned the DOM Explorer badge", "time": "Yesterday", "unread": false },
+    { "id": 5, "icon": "📦", "text": "Your Ralfiz Store refund was approved", "time": "2 days ago", "unread": false }
+  ],
+  "incoming": [
+    { "icon": "🔥", "text": "7-day learning streak! Keep going", "time": "Just now" },
+    { "icon": "📝", "text": "New lab unlocked: Events and listeners", "time": "Just now" },
+    { "icon": "💡", "text": "Tip: press Ctrl+Enter to run code in the playground", "time": "Just now" }
+  ]
+}

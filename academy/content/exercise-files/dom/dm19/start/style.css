@@ -1,0 +1,32 @@
+:root { --accent: #4f46e5; --line: #e5e7eb; --text: #111827; }
+* { box-sizing: border-box; }
+*:focus { outline: none; } /* TODO(2): remove this and add :focus-visible styles */
+body { margin: 0; font: 15px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  color: var(--text); background: #f6f7fb; }
+.top { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; padding: 12px 16px;
+  background: #fff; border-bottom: 1px solid var(--line); }
+.cat { position: relative; }
+.btn { font: inherit; font-weight: 600; display: inline-flex; align-items: center; gap: 4px;
+  padding: 8px 12px; border-radius: 8px; border: 1px solid var(--line); background: #fff;
+  color: var(--text); cursor: pointer; min-height: 36px; }
+.btn.primary { background: var(--accent); color: #fff; border-color: transparent; }
+.panel { display: none; position: absolute; top: calc(100% + 6px); left: 0; min-width: 200px;
+  list-style: none; margin: 0; padding: 6px; background: #fff; border: 1px solid var(--line);
+  border-radius: 12px; box-shadow: 0 12px 32px rgba(0, 0, 0, .12); z-index: 5; }
+.panel.open { display: block; }
+.panel a { display: block; padding: 8px 10px; border-radius: 8px; color: var(--text); text-decoration: none; }
+.search { margin-left: auto; font: inherit; padding: 8px 12px; border: 1px solid var(--line);
+  border-radius: 10px; min-width: 0; flex: 0 1 240px; }
+.wrap { max-width: 900px; margin: 0 auto; padding: 16px; display: grid; gap: 16px; }
+h1 { font-size: 20px; margin: 0; }
+.grid { list-style: none; margin: 0; padding: 0; display: grid; gap: 12px;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); }
+.card { background: #fff; border: 1px solid var(--line); border-radius: 14px; padding: 12px; }
+.card h3 { font-size: 15px; margin: 0; }
+.card p { margin: 2px 0 8px; color: #4b5563; }
+.cart { background: #fff; border: 1px solid var(--line); border-radius: 14px; padding: 16px; }
+.cart h2 { font-size: 17px; margin: 0 0 8px; }
+.lines { list-style: none; padding: 0; margin: 0; display: grid; gap: 8px; }
+.lines li { display: flex; justify-content: space-between; align-items: center; gap: 8px;
+  padding: 8px 0; border-bottom: 1px solid #f3f4f6; }
+.total { font-weight: 700; margin: 8px 0 0; }

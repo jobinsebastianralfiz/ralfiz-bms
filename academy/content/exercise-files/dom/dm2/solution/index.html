@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Inventory inspector · Ralfiz Store</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="app.js" defer></script>
+</head>
+<body>
+  <main class="page">
+    <header class="top">
+      <h1>Ralfiz Store · Inventory</h1>
+      <p class="muted">Selecting and traversing the DOM</p>
+    </header>
+
+    <section class="summary" aria-label="Summary">
+      <div class="stat"><span>Products</span><strong id="total">–</strong></div>
+      <div class="stat"><span>Out of stock</span><strong id="out">–</strong></div>
+      <div class="stat"><span>Cheapest</span><strong id="cheapest">–</strong></div>
+    </section>
+
+    <nav class="filters" id="filters" aria-label="Filter by category">
+      <button data-filter=".product">All</button>
+      <button data-filter="[data-category='audio']">Audio</button>
+      <button data-filter="[data-category='desk']">Desk</button>
+      <button data-filter="[data-category='bags']">Bags</button>
+      <button data-filter=".product:not([data-stock='0'])">In stock</button>
+    </nav>
+
+    <div class="layout">
+      <ul class="list" id="list">
+        <li class="product" data-category="audio" data-price="4999" data-stock="12">
+          <span class="thumb">🎧</span><h2>Wave Pro Headphones</h2><span class="price">₹4,999</span>
+        </li>
+        <li class="product" data-category="audio" data-price="1799" data-stock="0">
+          <span class="thumb">🔊</span><h2>Pulse Mini Speaker</h2><span class="price">₹1,799</span>
+        </li>
+        <li class="product" data-category="desk" data-price="1299" data-stock="31">
+          <span class="thumb">💡</span><h2>Glow Desk Lamp</h2><span class="price">₹1,299</span>
+        </li>
+        <li class="product" data-category="desk" data-price="3450" data-stock="5">
+          <span class="thumb">⌨️</span><h2>Tactile Keyboard</h2><span class="price">₹3,450</span>
+        </li>
+        <li class="product" data-category="desk" data-price="349" data-stock="58">
+          <span class="thumb">🖊️</span><h2>Bamboo Pen Stand</h2><span class="price">₹349</span>
+        </li>
+        <li class="product" data-category="bags" data-price="2199" data-stock="0">
+          <span class="thumb">🎒</span><h2>Commuter Backpack</h2><span class="price">₹2,199</span>
+        </li>
+        <li class="product" data-category="bags" data-price="899" data-stock="17">
+          <span class="thumb">👝</span><h2>Tech Pouch</h2><span class="price">₹899</span>
+        </li>
+        <li class="product" data-category="audio" data-price="2499" data-stock="3">
+          <span class="thumb">🎙️</span><h2>Studio USB Mic</h2><span class="price">₹2,499</span>
+        </li>
+      </ul>
+
+      <aside class="details" id="details" aria-live="polite">
+        <p class="muted">Click a product to inspect it.</p>
+      </aside>
+    </div>
+  </main>
+</body>
+</html>

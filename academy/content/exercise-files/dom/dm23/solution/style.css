@@ -1,0 +1,18 @@
+* { box-sizing: border-box; }
+body { margin: 0; font: 14px/1.45 system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; color: #0f172a; background: #f4f6fb; }
+.page { max-width: 920px; margin: 0 auto; padding: 16px; }
+.top { display: flex; justify-content: space-between; align-items: center; }
+h1 { font-size: 20px; margin: 0; }
+h2 { font-size: 16px; margin: 20px 0 10px; }
+.cart { background: #fff; border: 1px solid #e5e7ef; border-radius: 99px; padding: 6px 12px; font-weight: 600; }
+.review { background: #fff; border: 1px solid #e5e7ef; border-radius: 16px; padding: 16px; margin-top: 16px; max-width: 460px; }
+.review h2 { margin-top: 0; }
+.row { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-top: 1px solid #f0f2f7; }
+.primary { font: inherit; font-weight: 600; border: 0; border-radius: 10px; padding: 9px 14px; background: #4f46e5; color: #fff; cursor: pointer; margin-top: 8px; }
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px; }
+product-card:not(:defined) { display: block; min-height: 260px; background: #fff; border-radius: 16px; }
+rating-stars:not(:defined) { display: inline-block; min-width: 140px; }
+button { letter-spacing: .01em; }
+.promo { --accent: #db2777; --tint: #fce7f3; }
+product-card::part(button):hover { filter: brightness(1.1); }
+product-card::part(badge) { letter-spacing: .03em; }

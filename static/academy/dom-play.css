@@ -1,0 +1,89 @@
+/* Live JavaScript / DOM playgrounds (lesson pages with playgrounds only).
+   The .jp-* and .h-* rules are copied from the standalone course app
+   academy/content/sources/ralfiz-dom-academy.html. They use the Academy's own
+   tokens from academy.css (--line, --surface, --sunk, --ink, --muted, --tc, --mono,
+   --r, --ok, --bad, --lab), which carry the light and dark themes; only the
+   syntax colours and editor backgrounds are defined here. */
+:root{--h-k:#8250DF;--h-s:#0A7F4B;--h-n:#B35900;--h-c:#6E7781;--h-f:#0550AE;--h-t:#116E78;--h-l:#CF222E;--h-pr:#1F5E9C;--h-r:#A0527A;--h-p:#6E7781;--h-tag:#116329;--h-a:#6639BA;
+  --jp-ed:#FBFCFE;--jp-con:#FBFCFE;--jp-bar:#E7E9F3}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--h-k:#D2A8FF;--h-s:#7EE2A8;--h-n:#FFB870;--h-c:#8B98A5;--h-f:#79C0FF;--h-t:#6FD6D0;--h-l:#FF8B85;--h-pr:#9CCBFF;--h-r:#F0A0C8;--h-p:#8B98A5;--h-tag:#7EE787;--h-a:#D2A8FF;
+  --jp-ed:#12162A;--jp-con:#12162A;--jp-bar:#222843}}
+:root[data-theme="dark"]{--h-k:#D2A8FF;--h-s:#7EE2A8;--h-n:#FFB870;--h-c:#8B98A5;--h-f:#79C0FF;--h-t:#6FD6D0;--h-l:#FF8B85;--h-pr:#9CCBFF;--h-r:#F0A0C8;--h-p:#8B98A5;--h-tag:#7EE787;--h-a:#D2A8FF;
+  --jp-ed:#12162A;--jp-con:#12162A;--jp-bar:#222843}
+.h-k{color:var(--h-k)}.h-s{color:var(--h-s)}.h-n{color:var(--h-n)}.h-c{color:var(--h-c);font-style:italic}.h-f{color:var(--h-f)}.h-t{color:var(--h-t)}.h-l{color:var(--h-l)}.h-pr{color:var(--h-pr)}.h-r{color:var(--h-r)}.h-p{color:var(--h-p)}.h-tag{color:var(--h-tag)}.h-a{color:var(--h-a)}
+pre.code[data-hl]::before{content:attr(data-hl);float:right;font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin:-4px -6px 0 8px;opacity:.8}
+pre.code[data-hl="js"]::before{content:"JS"}pre.code[data-hl="text"]::before{content:""}
+/* playground frame */
+.play-slot{margin:22px 0}
+.jp-wait{border:1px dashed var(--line);border-radius:var(--r);background:var(--sunk)}
+.jp{margin:0;border:1px solid var(--line);border-radius:12px;background:var(--surface);overflow:hidden;font-size:14px;line-height:1.5;box-shadow:0 1px 0 rgba(0,0,0,.03)}
+.jp-head{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:9px 12px;border-bottom:1px solid var(--line);background:var(--surface)}
+.jp-badge{font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;font-weight:600;color:var(--tc);border:1px solid currentColor;border-radius:99px;padding:1px 8px;white-space:nowrap}
+.jp-title{font-weight:600;font-size:14.5px;min-width:0;overflow-wrap:anywhere}
+.jp-sp{flex:1 1 auto}
+.jp .btn.sm{display:inline-flex;align-items:center;gap:5px;padding:4px 10px;font-size:13px}
+.jp .btn svg{flex:none}
+.jp-ib{display:inline-grid;place-items:center;width:28px;height:28px;border:0;border-radius:7px;background:transparent;color:var(--muted);cursor:pointer;flex:none}
+.jp-ib:hover{background:var(--sunk);color:var(--ink)}
+/* browser window mockup */
+.jp-win{margin:12px 12px 0;border:1px solid var(--line);border-radius:10px;overflow:hidden;background:#fff}
+.jp-bar{display:flex;align-items:center;gap:6px;padding:6px 8px;background:var(--jp-bar);border-bottom:1px solid var(--line);min-width:0}
+.jp-dots{display:flex;gap:6px;padding:0 6px 0 2px;flex:none}.jp-dots i{width:11px;height:11px;border-radius:50%;background:#FF5F57}.jp-dots i:nth-child(2){background:#FEBC2E}.jp-dots i:nth-child(3){background:#28C840}
+.jp-nav{display:flex;color:var(--muted);opacity:.7;flex:none}
+.jp-url{flex:1 1 auto;min-width:0;display:flex;align-items:center;gap:6px;background:var(--surface);border:1px solid var(--line);border-radius:99px;padding:3px 12px;font-family:var(--mono);font-size:12.5px;color:var(--muted);white-space:nowrap;overflow:hidden}
+.jp-lock{color:var(--ok);display:inline-flex;flex:none}.jp-host{overflow:hidden;text-overflow:ellipsis}.jp-hash{color:var(--ink)}
+.jp-view{position:relative;background:#fff;display:flex;justify-content:center;resize:vertical;overflow:hidden;min-height:120px}
+.jp-view iframe{border:0;width:100%;height:100%;background:#fff;display:block;transition:width .3s ease}
+.jp-phone .jp-view{background:var(--sunk)}
+.jp-phone .jp-view iframe{width:375px;max-width:100%;border-left:1px solid var(--line);border-right:1px solid var(--line)}
+.jp-dev[aria-pressed="true"]{color:var(--tc);background:var(--surface)}
+/* editor */
+.jp-code{margin:12px 12px 0;border:1px solid var(--line);border-radius:10px;overflow:hidden;background:var(--jp-ed)}
+.jp-tabs{display:flex;align-items:center;gap:2px;padding:4px 6px 0;border-bottom:1px solid var(--line);background:var(--sunk);overflow-x:auto}
+.jp-tab{border:0;background:transparent;padding:6px 12px 7px;font-family:var(--mono);font-size:12.5px;color:var(--muted);border-radius:7px 7px 0 0;cursor:pointer;white-space:nowrap;border-bottom:2px solid transparent}
+.jp-tab[aria-selected="true"]{background:var(--jp-ed);color:var(--ink);border-bottom-color:var(--tc)}
+.jp-single{cursor:default}
+.jp-hint{font-size:11.5px;color:var(--muted);padding:0 6px;white-space:nowrap}
+.jp-ed{display:grid;max-height:460px;overflow:auto;position:relative}
+.jp-ed>*{grid-area:1/1;margin:0;padding:12px 14px;font-family:var(--mono);font-size:13.5px;line-height:1.6;white-space:pre;tab-size:2;letter-spacing:0;min-width:100%;border:0;word-wrap:normal;overflow-wrap:normal}
+.jp-hl{pointer-events:none;color:var(--ink);background:transparent}
+.jp-hl code{font:inherit;background:none;padding:0}
+.jp-ta{resize:none;overflow:hidden;background:transparent;color:transparent;caret-color:var(--ink);outline:none;width:100%;height:100%}
+.jp-ta::selection{background:color-mix(in srgb,var(--tc) 30%,transparent);color:transparent}
+.jp-ed:focus-within{box-shadow:inset 0 0 0 2px color-mix(in srgb,var(--tc) 55%,transparent)}
+/* console */
+.jp-con-host{margin:12px}
+.jp-con-host:empty{display:none}
+.jp-ch{display:flex;align-items:center;gap:8px;padding:5px 6px 5px 10px;background:var(--sunk);border:1px solid var(--line);border-bottom:0;border-radius:10px 10px 0 0;font-size:12.5px;color:var(--muted)}
+.jp-ct{display:inline-flex;align-items:center;gap:6px;font-weight:600;color:var(--ink)}
+.jp-errc{color:var(--bad);font-weight:600}
+.jp-lines{border:1px solid var(--line);border-radius:0 0 10px 10px;background:var(--jp-con);font-family:var(--mono);font-size:13px;line-height:1.55;max-height:280px;overflow:auto;padding:4px 0}
+.jp-l{padding:3px 10px;border-bottom:1px solid color-mix(in srgb,var(--line) 60%,transparent);white-space:pre-wrap;overflow-wrap:anywhere}
+.jp-l:last-child{border-bottom:0}
+.jp-l.jp-info::before{content:"i ";color:var(--h-f);font-weight:600}
+.jp-l.jp-warn{background:var(--lab-soft);color:var(--lab)}
+.jp-l.jp-warn::before{content:"⚠ "}
+.jp-l.jp-error{background:var(--bad-soft);color:var(--bad)}
+.jp-l.jp-error::before{content:"✕ ";font-weight:700}
+.jp-l.jp-group{font-weight:600}
+.jp-l.jp-group::before{content:"▾ ";color:var(--muted)}
+.jp-l.jp-note,.jp-empty{color:var(--muted);font-style:italic;font-family:var(--body);font-size:12.5px;padding:6px 10px}
+.jp-tw{overflow-x:auto}
+.jp-tbl{border-collapse:collapse;font-size:12.5px;margin:4px 0}
+.jp-tbl th,.jp-tbl td{border:1px solid var(--line);padding:3px 9px;text-align:left;white-space:nowrap}
+.jp-tbl th{background:var(--sunk);font-weight:600}
+.jp-cap{margin:10px 14px 14px;color:var(--muted);font-size:13.5px;line-height:1.55}
+.jp-con .jp-cap{margin-top:0}
+/* predict with run */
+.jp-prb{display:inline-flex;gap:6px;margin-left:4px;vertical-align:middle;flex-wrap:wrap}
+.jp-prb .btn{display:inline-flex;align-items:center;gap:5px}
+.jp-prrun{margin-top:10px}
+.jp-hlpre code{color:var(--ink)}
+@media (max-width:560px){
+  .jp-win,.jp-code{margin:10px 8px 0}.jp-con-host{margin:10px 8px}
+  .jp-nav,.jp-hint{display:none}
+  .jp-ed>*{font-size:12.5px;padding:10px 11px}
+  .jp-head .btn.sm span{display:none}
+  .jp .jp-head .jp-store{display:none}
+}
+@media (prefers-reduced-motion:reduce){.jp-view iframe{transition:none}}

@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Ralfiz Academy · Community</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="app.js" defer></script>
+</head>
+<body>
+  <main class="wrap">
+    <div class="tip" id="tip">
+      <span>💡 Tip: double-click a post to like it.</span>
+      <button type="button" class="link" id="tip-ok">Got it</button>
+    </div>
+
+    <article class="post">
+      <header class="post-head">
+        <div class="avatar" aria-hidden="true">AN</div>
+        <div><strong>Anjali Nair</strong><span class="meta">Ralfiz Academy · 2h</span></div>
+      </header>
+      <p class="post-body" id="post-text">Finished my first DOM project today: a task board with
+        filters and no framework. Events finally make sense!</p>
+      <footer class="actions">
+        <button class="like" id="like" type="button" aria-pressed="false" aria-label="Like">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20.5s-7.4-4.4-9.3-8.9C1.3 8.3 3.4 4.6 7 4.6c2 0 3.5 1 5 2.9 1.5-1.9 3-2.9 5-2.9 3.6 0 5.7 3.7 4.3 7-1.9 4.5-9.3 8.9-9.3 8.9z"/></svg>
+          <span class="count" id="like-count">41</span>
+        </button>
+        <button class="ghost" id="close" type="button">Close discussion</button>
+      </footer>
+      <div class="big-heart" id="big-heart" aria-hidden="true">❤️</div>
+
+      <ul class="comments" id="comments">
+        <li><strong>Rahul</strong> Well done! Delegation is next.</li>
+      </ul>
+
+      <form class="composer" id="composer">
+        <label for="comment" class="sr-only">Write a comment</label>
+        <textarea id="comment" rows="3" placeholder="Write a comment… (Ctrl+Enter to post)"
+          aria-describedby="counter"></textarea>
+        <div class="row">
+          <span id="counter" class="counter">200 left</span>
+          <button class="primary" id="post" type="submit" disabled>Post</button>
+        </div>
+      </form>
+    </article>
+  </main>
+</body>
+</html>

@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Enrol | Ralfiz Academy</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="app.js" defer></script>
+</head>
+<body>
+  <main class="page">
+    <section class="card">
+      <form id="enrol" novalidate>
+        <p class="brand">◆ Ralfiz Academy</p>
+        <h1>Enrol in a course</h1>
+        <p class="sub">New batches start every Monday. All fields are required.</p>
+        <div id="summary" class="summary" role="alert" hidden></div>
+
+        <div class="grid">
+          <div class="field">
+            <label for="fullName">Full name</label>
+            <input id="fullName" name="fullName" required minlength="2"
+              autocomplete="name" aria-describedby="fullName-error">
+            <p class="error" id="fullName-error"></p>
+          </div>
+          <div class="field">
+            <label for="email">Email</label>
+            <input id="email" name="email" type="email" required
+              autocomplete="email" aria-describedby="email-error">
+            <p class="error" id="email-error"></p>
+          </div>
+          <div class="field">
+            <label for="phone">Mobile number</label>
+            <input id="phone" name="phone" type="tel" required pattern="[6-9][0-9]{9}"
+              inputmode="numeric" maxlength="10" autocomplete="tel-national"
+              aria-describedby="phone-hint phone-error">
+            <p class="hint" id="phone-hint">10 digits, starting with 6, 7, 8 or 9</p>
+            <p class="error" id="phone-error"></p>
+          </div>
+          <div class="field">
+            <label for="course">Course</label>
+            <select id="course" name="course" required aria-describedby="course-error">
+              <option value="">Choose a course…</option>
+              <option value="js">JavaScript: Zero to Job-Ready</option>
+              <option value="dom">DOM &amp; Browser</option>
+              <option value="pl900">Power Platform PL-900</option>
+            </select>
+            <p class="error" id="course-error"></p>
+          </div>
+        </div>
+
+        <fieldset class="field">
+          <legend>Batch</legend>
+          <div class="seg">
+            <label><input type="radio" name="batch" value="Weekday evenings" required
+              aria-describedby="batch-error"><span>Weekday evenings</span></label>
+            <label><input type="radio" name="batch" value="Weekend mornings"
+              aria-describedby="batch-error"><span>Weekend mornings</span></label>
+          </div>
+          <p class="error" id="batch-error"></p>
+        </fieldset>
+
+        <div class="grid">
+          <div class="field">
+            <label for="password">Password</label>
+            <input id="password" name="password" type="password" required minlength="8"
+              autocomplete="new-password" aria-describedby="password-rules password-error">
+            <ul class="rules" id="password-rules">
+              <li data-rule="length">8+ characters</li>
+              <li data-rule="letter">A letter</li>
+              <li data-rule="digit">A number</li>
+            </ul>
+            <p class="error" id="password-error"></p>
+          </div>
+          <div class="field">
+            <label for="confirm">Confirm password</label>
+            <input id="confirm" name="confirm" type="password" required
+              autocomplete="new-password" aria-describedby="confirm-error">
+            <p class="error" id="confirm-error"></p>
+          </div>
+        </div>
+
+        <label class="tick"><input id="terms" name="terms" type="checkbox" required
+          aria-describedby="terms-error"> I agree to the course terms</label>
+        <p class="error" id="terms-error"></p>
+
+        <button id="submit" class="primary">Enrol now</button>
+      </form>
+
+      <div id="success" class="success" tabindex="-1" hidden>
+        <div class="badge" aria-hidden="true">✓</div>
+        <h2 id="success-title">You are enrolled!</h2>
+        <dl id="success-details"></dl>
+        <button type="button" id="again" class="ghost">Enrol another student</button>
+      </div>
+    </section>
+  </main>
+</body>
+</html>

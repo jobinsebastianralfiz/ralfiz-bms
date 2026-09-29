@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Ralfiz Store · Components</title>
+  <link rel="stylesheet" href="style.css">
+  <script type="module" src="app.js"></script>
+</head>
+<body>
+  <main class="page">
+    <header class="top"><h1>Ralfiz Store</h1><span class="cart" id="cart">🛒 0 items</span></header>
+    <form class="review" id="review">
+      <h2>Rate your last order</h2>
+      <label class="row"><span>Product quality</span><rating-stars name="quality" value="4"></rating-stars></label>
+      <label class="row"><span>Delivery speed</span><rating-stars name="delivery" value="3"></rating-stars></label>
+      <button class="primary">Send review</button>
+      <p id="summary" role="status"></p>
+    </form>
+    <h2>New arrivals</h2>
+    <section class="grid" id="grid">
+      <product-card price="24.99" emoji="💡" badge="New">
+        <span slot="title">Ralfiz Desk Lamp</span>
+        Warm LED with three brightness levels and USB-C power.
+      </product-card>
+      <product-card price="39.5" emoji="🎒">
+        <span slot="title">Canvas Backpack</span>
+        Water-resistant, fits a 15-inch laptop.
+      </product-card>
+      <product-card class="promo" price="8.75" emoji="☕" badge="−20%">
+        <span slot="title">Ceramic Mug</span>
+        Holds 350 ml. Dishwasher safe.
+      </product-card>
+    </section>
+  </main>
+</body>
+</html>

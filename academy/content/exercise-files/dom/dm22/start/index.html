@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Ralfiz Store · Search</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="app.js" defer></script>
+</head>
+<body>
+  <div class="app">
+    <header class="top">
+      <span class="brand"><span class="logo" aria-hidden="true">R</span><strong>Ralfiz Store</strong></span>
+      <label class="search"><span aria-hidden="true">🔍</span>
+        <input id="q" type="search" placeholder="Search products…" aria-label="Search products" autocomplete="off"></label>
+      <button id="cartBtn" class="cart-btn" type="button">🛒 <span id="cartCount">0</span></button>
+    </header>
+    <nav id="chips" class="chips" aria-label="Categories"></nav>
+    <div class="bar">
+      <p id="status" class="status" role="status"></p>
+      <select id="sort" aria-label="Sort products">
+        <option value="">Featured</option><option value="price-asc">Price: low to high</option>
+        <option value="price-desc">Price: high to low</option><option value="rating-desc">Top rated</option>
+      </select>
+    </div>
+    <section id="grid" class="grid" aria-label="Products"></section>
+    <nav class="pager" aria-label="Pages">
+      <button id="prev" type="button">← Prev</button><span id="pageInfo"></span><button id="next" type="button">Next →</button>
+    </nav>
+    <p id="sr" class="sr" aria-live="polite"></p>
+  </div>
+  <dialog id="detail" aria-labelledby="dTitle">
+    <form method="dialog"><button class="x" aria-label="Close">✕</button></form>
+    <img id="dImg" class="hero" alt="" width="400" height="300">
+    <p id="dMeta" class="eyebrow"></p>
+    <h2 id="dTitle"></h2>
+    <p id="dDesc" class="desc"></p>
+    <ul class="facts"><li>Rating<b id="dRating"></b></li><li>Stock<b id="dStock"></b></li><li>Price<b id="dPrice"></b></li></ul>
+    <button id="dAdd" class="primary" type="button">Add to cart</button>
+  </dialog>
+  <dialog id="cart" aria-labelledby="cTitle">
+    <form method="dialog"><button class="x" aria-label="Close">✕</button></form>
+    <h2 id="cTitle">Your cart</h2>
+    <ul id="cartList" class="lines"></ul>
+    <p class="sum">Total <strong id="cartTotal"></strong></p>
+  </dialog>
+  <template id="card">
+    <article class="card">
+      <div class="thumb"><img alt="" width="300" height="225" loading="lazy"><span class="off"></span></div>
+      <p class="eyebrow"></p>
+      <h3><button class="title" type="button"></button></h3>
+      <p class="rating"></p>
+      <div class="buy"><span><b class="price"></b> <s class="was"></s></span><button class="add" type="button">Add</button></div>
+    </article>
+  </template>
+</body>
+</html>

@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Order Dashboard · Ralfiz Store</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="app.js" defer></script>
+</head>
+<body>
+  <header class="top"><strong>Ralfiz Store · Orders</strong><span id="summary" class="chip"></span></header>
+  <main class="wrap">
+    <section class="card">
+      <h2>Revenue by city</h2>
+      <ul id="bars" class="bars"></ul>
+    </section>
+    <section class="card">
+      <h2>All orders</h2>
+      <div id="viewport" class="viewport" tabindex="0" aria-label="Orders">
+        <div id="spacer" class="spacer"><div id="rows" class="rows"></div></div>
+      </div>
+    </section>
+    <section class="card report">
+      <h2>Monthly report</h2>
+      <p>Below the fold: a long written summary of the month, targets and notes for the team.
+        In a real app this section holds charts and tables that nobody sees until they scroll.</p>
+    </section>
+  </main>
+  <div id="toast" class="toast" role="status">New order received</div>
+</body>
+</html>

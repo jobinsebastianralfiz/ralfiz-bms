@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Settings and plans · Ralfiz Academy</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="app.js" defer></script>
+</head>
+<body>
+  <main class="page">
+    <header class="top">
+      <div class="logo" aria-hidden="true">R</div>
+      <div>
+        <h1>Settings</h1>
+        <p class="muted">Ralfiz Academy · Appearance and plan</p>
+      </div>
+    </header>
+
+    <section class="card">
+      <h2>Theme</h2>
+      <p class="muted">Choose how Ralfiz Academy looks on this device.</p>
+      <div class="seg" role="radiogroup" aria-label="Theme" id="themes">
+        <button role="radio" aria-checked="false" data-choice="light">☀️ Light</button>
+        <button role="radio" aria-checked="false" data-choice="dark">🌙 Dark</button>
+        <button role="radio" aria-checked="false" data-choice="system">💻 System</button>
+      </div>
+      <label class="colour">
+        <span>Accent colour</span>
+        <input type="color" id="accent" value="#7c3aed">
+      </label>
+      <div class="row">
+        <button class="primary" id="save">Save preferences</button>
+        <span class="muted" id="status" role="status"></span>
+      </div>
+    </section>
+
+    <section class="card">
+      <div class="plans-head">
+        <h2>Your plan</h2>
+        <div class="switch" id="billing" role="group" aria-label="Billing period">
+          <button data-period="monthly" aria-pressed="true">Monthly</button>
+          <button data-period="yearly" aria-pressed="false">Yearly <span class="save">Save 20%</span></button>
+        </div>
+      </div>
+      <div class="plans">
+        <article class="plan" data-monthly="0" data-yearly="0">
+          <h3>Starter</h3>
+          <p class="price"><span class="amount">Free</span><span class="per"></span></p>
+          <p class="note">Forever</p>
+        </article>
+        <article class="plan featured" data-monthly="499" data-yearly="399">
+          <h3>Pro</h3>
+          <p class="price"><span class="amount">₹499</span><span class="per">/mo</span></p>
+          <p class="note">Billed monthly</p>
+        </article>
+        <article class="plan" data-monthly="1499" data-yearly="1199">
+          <h3>Team</h3>
+          <p class="price"><span class="amount">₹1,499</span><span class="per">/mo</span></p>
+          <p class="note">Billed monthly</p>
+        </article>
+      </div>
+    </section>
+  </main>
+</body>
+</html>

@@ -1,0 +1,132 @@
+*, *::before, *::after { box-sizing: border-box; }
+[hidden] { display: none !important; }
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  color: #1b1e27;
+  background: linear-gradient(160deg, #fdf2f8, #f3f4f8 50%);
+  font: 15px/1.5 system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+}
+
+.page { display: grid; place-items: start center; padding: 32px 16px; }
+
+.card {
+  width: 100%;
+  max-width: 640px;
+  background: #fff;
+  border: 1px solid #ece8ef;
+  border-radius: 18px;
+  padding: 28px;
+  box-shadow: 0 24px 48px -28px rgba(90, 20, 60, 0.35);
+}
+
+form { display: grid; gap: 14px; }
+.brand { margin: 0; font-weight: 700; font-size: 13px; color: #db2777; }
+h1 { margin: 0; font-size: 24px; }
+.sub { margin: -8px 0 4px; color: #6b7080; font-size: 14px; }
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 14px 16px;
+}
+
+.field { display: grid; gap: 5px; align-content: start; }
+fieldset { border: 0; margin: 0; padding: 0; min-width: 0; }
+label, legend { font-size: 13px; font-weight: 600; color: #454a5c; }
+legend { margin-bottom: 5px; padding: 0; }
+
+input:not([type='checkbox'], [type='radio']),
+select {
+  width: 100%;
+  font: inherit;
+  color: inherit;
+  background: #fff;
+  border: 1px solid #d7dae3;
+  border-radius: 10px;
+  padding: 10px 12px;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+input:focus, select:focus { outline: none; border-color: #db2777; box-shadow: 0 0 0 3px #fce7f3; }
+[aria-invalid='true'] { border-color: #dc2626 !important; background: #fef2f2 !important; }
+[aria-invalid='true']:focus { box-shadow: 0 0 0 3px #fee2e2; }
+
+.hint { margin: 0; font-size: 12px; color: #6b7080; }
+.error { margin: 0; font-size: 12.5px; color: #b91c1c; }
+.error:empty { display: none; }
+.error::before { content: '⚠ '; }
+
+.seg { display: flex; flex-wrap: wrap; gap: 8px; }
+.seg label { flex: 1 1 180px; font-weight: 500; }
+.seg input { position: absolute; opacity: 0; }
+.seg span {
+  display: block;
+  text-align: center;
+  padding: 10px;
+  border: 1px solid #d7dae3;
+  border-radius: 10px;
+  cursor: pointer;
+}
+.seg input:checked + span { border-color: #db2777; background: #fdf2f8; color: #9d174d; }
+.seg input:focus-visible + span { box-shadow: 0 0 0 3px #fce7f3; }
+.seg input[aria-invalid='true'] + span { border-color: #dc2626; }
+
+.rules { list-style: none; margin: 2px 0 0; padding: 0; display: flex; flex-wrap: wrap; gap: 6px; }
+.rules li { font-size: 12px; color: #6b7080; background: #f3f4f8; border-radius: 999px; padding: 3px 9px; }
+.rules li::before { content: '○ '; }
+.rules li.ok { color: #047857; background: #ecfdf5; }
+.rules li.ok::before { content: '✓ '; }
+
+.tick { display: flex; align-items: center; gap: 8px; font-weight: 500; }
+.tick input { width: 17px; height: 17px; accent-color: #db2777; }
+
+.summary {
+  background: #fef2f2;
+  color: #991b1b;
+  border: 1px solid #fecaca;
+  border-radius: 10px;
+  padding: 10px 12px;
+  font-weight: 600;
+}
+
+.primary, .ghost {
+  font: inherit;
+  font-weight: 600;
+  border-radius: 10px;
+  padding: 12px 18px;
+  cursor: pointer;
+}
+.primary { color: #fff; background: #db2777; border: 0; }
+.primary:hover { background: #be185d; }
+.primary:disabled { opacity: 0.6; cursor: progress; }
+.ghost { background: #fff; color: #1b1e27; border: 1px solid #d7dae3; }
+.ghost:hover { border-color: #db2777; }
+
+.success { display: grid; justify-items: center; gap: 12px; text-align: center; outline: none; }
+.badge {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font-size: 30px;
+  color: #fff;
+  background: linear-gradient(135deg, #10b981, #059669);
+  box-shadow: 0 10px 24px -10px #059669;
+}
+.success h2 { margin: 0; }
+dl {
+  width: 100%;
+  margin: 0;
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 8px 16px;
+  text-align: left;
+  background: #f8f8fb;
+  border-radius: 12px;
+  padding: 14px 16px;
+}
+dt { color: #6b7080; font-size: 13px; }
+dd { margin: 0; font-weight: 600; overflow-wrap: anywhere; }

@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Ralfiz Store</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="app.js" defer></script>
+</head>
+<body>
+  <a class="skip" href="#main">Skip to content</a>
+  <header class="top">
+    <img class="logo" alt="Ralfiz Store home" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 28 28'%3E%3Crect width='28' height='28' rx='8' fill='%234f46e5'/%3E%3C/svg%3E" width="28" height="28">
+    <strong>Ralfiz Store</strong>
+    <nav class="cat" aria-label="Categories">
+      <button type="button" class="btn toggle" id="cat-toggle" aria-expanded="false" aria-controls="cat-panel">
+        Categories <span aria-hidden="true">▾</span>
+      </button>
+      <ul id="cat-panel" class="panel" hidden>
+        <li><a href="#audio">Audio</a></li>
+        <li><a href="#desk">Desk setup</a></li>
+        <li><a href="#stationery">Stationery</a></li>
+      </ul>
+    </nav>
+    <label class="sr-only" for="search">Search products</label>
+    <input id="search" class="search" type="search" placeholder="Search products">
+  </header>
+  <main id="main" class="wrap" tabindex="-1">
+    <h1>Popular this week</h1>
+    <ul id="products" class="grid"></ul>
+    <section class="cart" aria-labelledby="cart-heading">
+      <h2 id="cart-heading" tabindex="-1">Your cart</h2>
+      <ul id="lines" class="lines"></ul>
+      <p id="total" class="total"></p>
+    </section>
+  </main>
+  <div id="live" class="sr-only" role="status"></div>
+</body>
+</html>

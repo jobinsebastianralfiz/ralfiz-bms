@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Ralfiz Admin</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="app.js" defer></script>
+</head>
+<body>
+  <div class="layout">
+    <nav class="sidebar" aria-label="Main">
+      <strong class="logo">◆ Ralfiz Admin</strong>
+      <a href="#" class="active">Dashboard</a>
+      <a href="#">Orders</a>
+      <a href="#">Products</a>
+      <a href="#">Customers</a>
+    </nav>
+    <div class="handle" id="handle" role="separator" tabindex="0"
+      aria-orientation="vertical" aria-label="Resize sidebar"></div>
+    <main class="content">
+      <header class="top">
+        <h1 id="page">Dashboard</h1>
+        <button class="trigger" id="trigger" type="button">🔍 Commands <kbd>Ctrl K</kbd></button>
+      </header>
+      <label class="search">Search orders <input type="search" placeholder="Try typing / here"></label>
+      <div class="stats">
+        <div class="stat"><span>Orders today</span><b>128</b></div>
+        <div class="stat"><span>Revenue</span><b>₹2.4L</b></div>
+        <div class="stat"><span>Refunds</span><b>3</b></div>
+      </div>
+      <p class="status" id="status">Last command: none</p>
+    </main>
+  </div>
+
+  <div class="overlay" id="overlay" hidden>
+    <div class="palette" id="palette" role="dialog" aria-modal="true" aria-label="Command palette">
+      <input id="q" role="combobox" aria-expanded="true" aria-controls="cmds"
+        aria-autocomplete="list" placeholder="Type a command…" autocomplete="off">
+      <ul id="cmds" role="listbox" aria-label="Commands"></ul>
+    </div>
+  </div>
+</body>
+</html>

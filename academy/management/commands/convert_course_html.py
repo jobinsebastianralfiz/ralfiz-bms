@@ -17,6 +17,11 @@ into allow-listed HTML:
   screen title, its Dart code and the caption; the mock data itself goes into
   the lesson's "mocks" list, and the lesson page draws the phone over the panel
   with static/academy/flutter-mocks.js (the panel stays if JavaScript is off);
+- live code playgrounds (div.play-slot) keep a placeholder,
+  <div class="play-slot" data-play="N">, holding a worked-example panel with the
+  title, its HTML/CSS/JavaScript and the caption; the playground data goes into
+  the lesson's "plays" list, and the lesson page runs it in a sandboxed frame
+  with static/academy/dom-play.js (the panel stays if JavaScript is off);
 - predict-the-output drills (widget "predict") become a "Predict the output"
   section at the end of the lesson, answers last;
 - concept animations (div.anim-slot) are JavaScript-only and are removed.
@@ -49,6 +54,7 @@ process.stdout.write(box.__out);
 
 SCRIPT_RE = re.compile(r'<script>(.*?)</script>', re.S)
 MOCK_SLOT = re.compile(r'<div class="mock-slot" data-i="(\d+)"></div>')
+PLAY_SLOT = re.compile(r'<div class="play-slot" data-i="(\d+)"></div>')
 ANIM_SLOT = re.compile(r'\n?<div class="anim-slot" data-a="[\w-]+"></div>\n?')
 # A numbered list interrupted by a mock and resumed with <ol start="n">: the
 # sanitizer drops the start attribute, so keep one list with the mock inside
@@ -98,6 +104,17 @@ def mock_html(i, m):
             + '\n</div></div>')
 
 
+def play_html(i, p):
+    parts = [f'<p><strong>Try it: {esc(p.get("title", ""))}</strong></p>']
+    for key, label in (('html', 'HTML'), ('css', 'CSS'), ('js', 'JavaScript')):
+        if (p.get(key) or '').strip():
+            parts.append(f'<p>{label}</p>\n<pre class="code">{esc(p[key].strip())}</pre>')
+    if p.get('caption'):
+        parts.append(f'<p>{esc(p["caption"])}</p>')
+    return (f'<div class="play-slot" data-play="{i}"><div class="example">\n' + '\n'.join(parts)
+            + '\n</div></div>')
+
+
 def option_html(o):
     return f'<pre class="code">{esc(o)}</pre>' if '\n' in o else f'<code>{esc(o)}</code>'
 
@@ -116,9 +133,21 @@ def predict_html(items):
     return '\n'.join(out)
 
 
-def lesson_content(deep, mocks, predict):
+def lesson_content(deep, mocks, predict, plays=()):
     html = SPLIT_LIST.sub(r'\n\1</li>\n', deep)
-    used = set()
+    used, played = set(), set()
+
+    def play(m):
+        i = int(m.group(1))
+        if i >= len(plays):
+            return ''
+        played.add(i)
+        return play_html(i, plays[i])
+
+    html = PLAY_SLOT.sub(play, html)
+    rest = [i for i in range(len(plays)) if i not in played]
+    if rest:
+        html += '\n\n<h3>Try it yourself</h3>\n' + '\n'.join(play_html(i, plays[i]) for i in rest)
 
     def slot(m):
         i = int(m.group(1))
@@ -179,10 +208,12 @@ class Command(BaseCommand):
                 predict = l.get('predict') if widget == 'predict' else None
                 if widget and widget != 'predict':
                     warnings.append(f'{l["id"]}: widget {widget!r} kept as-is')
-                content = lesson_content(js['DEEP'].get(l['id'], ''), l.get('mocks') or [], predict)
+                content = lesson_content(js['DEEP'].get(l['id'], ''), l.get('mocks') or [], predict,
+                                         l.get('play') or [])
                 for label, html in (('summary', l['learn']), ('content', content)):
                     attrs = {a for a in ATTR.findall(html)
-                             if not re.fullmatch(r'(class="[^"]*"|(col|row)span="\d+"|class="mock-slot" data-mock="\d+")', a)}
+                             if not re.fullmatch(r'(class="[^"]*"|(col|row)span="\d+"|class="mock-slot" data-mock="\d+"|class="play-slot" data-play="\d+"'
+                                                 r'|class="code" data-lang="\w+")', a)}
                     _, dropped = clean_html(html)
                     if dropped or attrs:
                         warnings.append(f'{l["id"]} {label}: sanitizer will drop {sorted(dropped)} {sorted(attrs)}')
@@ -195,6 +226,7 @@ class Command(BaseCommand):
                     'sorter': l.get('sorter'),
                     'lab': {'files': files, 'steps': steps, 'check': ex.get('check') or []},
                     'mocks': l.get('mocks') or [],
+                    'plays': l.get('play') or [],
                     'quiz': [{'question': q['q'], 'options': q['o'], 'answer': q['a'], 'explanation': q['w']}
                              for q in l.get('quiz', [])],
                 })

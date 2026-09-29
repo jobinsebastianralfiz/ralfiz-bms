@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Ralfiz Tasks</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="app.js" defer></script>
+</head>
+<body>
+  <main class="wrap">
+    <section class="app">
+      <header class="top">
+        <div><h1>Today</h1><p class="sub">Sprint 14 · Ralfiz Tasks</p></div>
+        <span class="avatar" aria-hidden="true">RS</span>
+      </header>
+      <form id="new" class="new">
+        <input id="title" placeholder="Add a task and press Enter" autocomplete="off"
+          aria-label="New task" required>
+        <button class="primary" type="submit">Add</button>
+      </form>
+      <ul id="list" class="list"></ul>
+      <footer class="foot">
+        <span id="left" class="left"></span>
+        <div class="filters" id="filters" role="group" aria-label="Show">
+          <button type="button" data-filter="all" aria-pressed="true">All</button>
+          <button type="button" data-filter="active" aria-pressed="false">Active</button>
+          <button type="button" data-filter="done" aria-pressed="false">Done</button>
+        </div>
+        <button type="button" id="clear" class="link">Clear completed</button>
+      </footer>
+      <p class="help">Double-click a task to edit it.</p>
+    </section>
+  </main>
+</body>
+</html>

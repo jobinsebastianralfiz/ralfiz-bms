@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Ralfiz Task Board · Signals</title>
+  <link rel="stylesheet" href="style.css">
+  <script type="module" src="app.js"></script>
+</head>
+<body>
+  <main class="board">
+    <header><h1>Ralfiz Task Board</h1><span id="left" class="pill"></span></header>
+    <form id="add" class="add">
+      <input name="title" required maxlength="60" placeholder="Add a task and press Enter" aria-label="New task">
+      <button>Add</button>
+    </form>
+    <nav class="filters" aria-label="Filter tasks">
+      <button type="button" data-f="all">All</button><button type="button" data-f="active">Active</button><button type="button" data-f="done">Done</button>
+    </nav>
+    <ul id="list" class="list"></ul>
+    <footer><button type="button" id="clear" class="link">Clear completed</button></footer>
+  </main>
+</body>
+</html>

@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Sales dashboard · Ralfiz Store</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="app.js" defer></script>
+</head>
+<body>
+  <main class="wrap">
+    <header class="top">
+      <div><p class="eyebrow">Ralfiz Store · Admin</p><h1>Sales dashboard</h1></div>
+      <div class="kpis">
+        <div class="kpi"><span>Revenue</span><b id="total">…</b></div>
+        <div class="kpi"><span>Best month</span><b id="best">…</b></div>
+      </div>
+    </header>
+    <div class="grid">
+      <section class="card wide">
+        <h2 id="barsTitle">Monthly revenue</h2>
+        <div class="chart">
+          <canvas id="bars" role="img" aria-label="Monthly revenue bar chart"></canvas>
+          <div id="tip" class="tip" hidden></div>
+        </div>
+      </section>
+      <section class="card">
+        <h2>By category</h2>
+        <div id="donut" class="donut"></div>
+        <ul id="legend" class="legend"></ul>
+      </section>
+    </div>
+  </main>
+</body>
+</html>

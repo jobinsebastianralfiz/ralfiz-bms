@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Ralfiz Money · Expense tracker</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="app.js" defer></script>
+</head>
+<body>
+  <div class="app">
+    <header class="top">
+      <div class="brand"><span class="logo">₹</span><div><strong>Ralfiz Money</strong><small>Expense tracker</small></div></div>
+      <div class="tools">
+        <select id="month" aria-label="Month"></select>
+        <button id="export" class="ghost" type="button">⬇ Export CSV</button>
+      </div>
+    </header>
+    <section class="stats">
+      <div class="stat"><span>Total spent</span><strong id="total"></strong></div>
+      <div class="stat"><span>Expenses</span><strong id="count"></strong></div>
+      <div class="stat"><span>Top category</span><strong id="top"></strong></div>
+    </section>
+    <div class="grid">
+      <form id="form" class="card" autocomplete="off">
+        <h2 id="formTitle">Add expense</h2>
+        <label>Title<input name="title" required maxlength="40" placeholder="e.g. Groceries"></label>
+        <div class="two">
+          <label>Amount (₹)<input name="amount" type="number" min="0.01" step="0.01" required placeholder="0.00"></label>
+          <label>Date<input name="date" type="date" required></label>
+        </div>
+        <label>Category<select name="cat"></select></label>
+        <div class="actions">
+          <button id="save" class="primary">Add expense</button>
+          <button id="cancel" class="ghost" type="button" hidden>Cancel</button>
+        </div>
+      </form>
+      <section class="card">
+        <h2>By category</h2>
+        <div class="chart">
+          <div class="donut">
+            <svg id="donut" viewBox="0 0 42 42" role="img" aria-labelledby="center">
+              <circle class="track" cx="21" cy="21" r="15.915"></circle>
+            </svg>
+            <div class="center"><small>Spent</small><b id="center"></b></div>
+          </div>
+          <ul id="legend" class="legend"></ul>
+        </div>
+      </section>
+    </div>
+    <section class="card">
+      <h2>Transactions</h2>
+      <ul id="list" class="list"></ul>
+      <p id="empty" class="empty" hidden>No expenses in this month yet.</p>
+    </section>
+    <div id="toast" class="toast" role="status"></div>
+  </div>
+  <template id="row">
+    <li class="row">
+      <span class="ico" aria-hidden="true"></span>
+      <div class="info"><span class="t"></span><span class="m"></span></div>
+      <span class="amt"></span>
+      <button class="icon" type="button" data-act="edit">✎</button>
+      <button class="icon del" type="button" data-act="del">🗑</button>
+    </li>
+  </template>
+</body>
+</html>

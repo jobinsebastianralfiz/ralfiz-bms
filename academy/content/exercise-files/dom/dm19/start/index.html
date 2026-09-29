@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Ralfiz Store</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="app.js" defer></script>
+</head>
+<body>
+  <!-- TODO(1): add a skip link, fix the logo, the search label and the div buttons -->
+  <header class="top">
+    <img class="logo" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 28 28'%3E%3Crect width='28' height='28' rx='8' fill='%234f46e5'/%3E%3C/svg%3E" width="28" height="28">
+    <strong>Ralfiz Store</strong>
+    <div class="cat">
+      <div class="btn toggle" id="cat-toggle">Categories ▾</div>
+      <ul id="cat-panel" class="panel">
+        <li><a href="#audio">Audio</a></li>
+        <li><a href="#desk">Desk setup</a></li>
+        <li><a href="#stationery">Stationery</a></li>
+      </ul>
+    </div>
+    <input class="search" type="search" placeholder="Search products">
+  </header>
+  <main id="main" class="wrap">
+    <h1>Popular this week</h1>
+    <ul id="products" class="grid"></ul>
+    <section class="cart">
+      <h2 id="cart-heading">Your cart</h2>
+      <ul id="lines" class="lines"></ul>
+      <p id="total" class="total"></p>
+    </section>
+  </main>
+</body>
+</html>

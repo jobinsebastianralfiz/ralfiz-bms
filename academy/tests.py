@@ -39,13 +39,13 @@ class ImportTests(AcademyTestBase):
     def test_counts_match_the_package(self):
         c = self.counts
         self.assertEqual((c['tracks'], c['domains'], c['lessons'], c['files'], c['questions']),
-                         (5, 33, 139, 376, 544))
+                         (6, 40, 163, 553, 640))
 
     def test_reimport_is_a_no_op_and_keeps_answers(self):
         q = Question.objects.filter(source='lesson').first()
         QuizAnswer.objects.create(user=self.user, question=q, last_choice=0)
         run_import(log=_quiet, force=True)
-        self.assertEqual(Question.objects.count(), 544)
+        self.assertEqual(Question.objects.count(), 640)
         self.assertTrue(QuizAnswer.objects.filter(question_id=q.pk).exists())
 
     def test_flutter_track_imports(self):
@@ -74,10 +74,28 @@ class ImportTests(AcademyTestBase):
                 self.assertIn(f'<div class="mock-slot" data-mock="{n}"><div class="example">', lesson.content_html)
         self.assertFalse(Lesson.objects.exclude(track_id='flutter').exclude(mocks=[]).exists())
 
+    def test_dom_lessons_keep_their_live_playgrounds(self):
+        import re
+        track = Track.objects.get(pk='dom')
+        self.assertEqual(track.lessons.count(), 24)
+        self.assertEqual(track.category, 'development')
+        lessons = Lesson.objects.filter(track_id='dom')
+        self.assertEqual(sum(len(l.plays) for l in lessons), 98)
+        for lesson in lessons:
+            slots = [int(n) for n in re.findall(r'<div class="play-slot" data-play="(\d+)">', lesson.content_html)]
+            self.assertEqual(sorted(slots), list(range(len(lesson.plays))), lesson.id)
+            # Each slot still holds the static code panel for readers without JavaScript.
+            for n in range(len(lesson.plays)):
+                self.assertIn(f'<div class="play-slot" data-play="{n}"><div class="example">', lesson.content_html)
+        self.assertFalse(Lesson.objects.exclude(track_id='dom').exclude(plays=[]).exists())
+
     def test_lesson_html_is_on_the_allow_list(self):
+        import re
+        # The DOM course talks about onclick and <script> in its text, so look for real tags:
+        # every tag the cleaner writes is on the allow-list and has no event handler.
         for html in Lesson.objects.values_list('content_html', flat=True):
             self.assertNotIn('<script', html)
-            self.assertNotIn('onclick', html)
+            self.assertIsNone(re.search(r'<[a-z][^>]*\son\w+=', html))
 
 
 class AccessTests(AcademyTestBase):
@@ -426,6 +444,19 @@ class PublicCatalogTests(AcademyTestBase):
         self.assertContains(self.client.get(reverse('academy:lesson', args=['fl17'])), 'academy/flutter-mocks.js')
         self.assertNotContains(self.client.get(reverse('academy:lesson', args=['fl3'])), 'flutter-mocks')
 
+    def test_play_assets_load_only_on_lessons_with_playgrounds(self):
+        page = self.client.get(reverse('academy:catalog_lesson', args=['dom', 'dm1'])).content.decode()
+        self.assertIn('academy/dom-play.js', page)
+        self.assertIn('academy/dom-play.css', page)
+        self.assertIn('<script id="lessonPlays" type="application/json">', page)
+        self.assertIn('<div class="play-slot" data-play="0">', page)
+        self.assertNotIn('flutter-mocks', page)
+        page = self.client.get(reverse('academy:catalog_lesson', args=['flutter', 'fl1'])).content.decode()
+        self.assertNotIn('dom-play', page)
+        self.assertNotIn('lessonPlays', page)
+        self.client.login(username='owner', password='pw')
+        self.assertContains(self.client.get(reverse('academy:lesson', args=['dm10'])), 'academy/dom-play.js')
+
     def test_student_can_browse_catalog(self):
         self.login_student()
         r = self.client.get(reverse('academy:catalog'))
@@ -593,6 +624,27 @@ class SanitizeTests(TestCase):
             html, _ = clean_html(bad + '</div>')
             self.assertNotIn('mock', html, bad)
             self.assertNotIn('onclick', html, bad)
+
+    def test_only_the_exact_play_placeholder_survives(self):
+        from .sanitize import clean_html
+        html, _ = clean_html('<div class="play-slot" data-play="4"><div class="example"><p>x</p></div></div>')
+        self.assertEqual(html, '<div class="play-slot" data-play="4"><div class="example"><p>x</p></div></div>')
+        for bad in ['<div class="play-slot" data-play="3" onclick="x()">', '<div class="play-slot" data-play="x">',
+                    '<div class="play-slot" data-play="100">', '<div class="play-slot" data-mock="1">',
+                    '<div class="mock-slot" data-play="1">', '<div class="play-slot">']:
+            html, _ = clean_html(bad + '</div>')
+            self.assertNotIn('play', html, bad)
+            self.assertNotIn('onclick', html, bad)
+
+    def test_play_data_must_be_plain_values(self):
+        from .sanitize import check_plays
+        good = [{'title': 'A <b>title</b>', 'url': 'shop.dev', 'caption': 'x', 'html': '<script>x()</script>',
+                 'css': 'b{}', 'js': 'alert(1)', 'tab': 'js', 'module': True, 'height': 590, 'wait': 2500}]
+        self.assertEqual(check_plays(good), [])
+        for bad in [{'height': '300px;background:url(x)'}, {'height': 99999}, {'module': 'yes'},
+                    {'onload': 'x'}, {'title': ['a']}, {'height': True}]:
+            self.assertTrue(check_plays([bad]), bad)
+        self.assertTrue(check_plays({'title': 'x'}))
 
     def test_mock_data_must_not_break_out_of_attributes(self):
         from .sanitize import check_mocks

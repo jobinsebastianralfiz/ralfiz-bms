@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Ralfiz Notes</title>
+  <link rel="stylesheet" href="style.css">
+  <script type="module" src="app.js"></script>
+</head>
+<body>
+  <header class="top">
+    <strong class="brand"><span aria-hidden="true">◆</span> Ralfiz Notes</strong>
+    <button id="theme" class="chip" type="button" aria-pressed="false">🌙 Dark mode</button>
+  </header>
+
+  <main class="wrap">
+    <form id="editor" class="card editor" autocomplete="off">
+      <input name="title" required maxlength="60" placeholder="Title" aria-label="Note title">
+      <textarea name="body" rows="5" placeholder="Write something…" aria-label="Note text"></textarea>
+      <div class="bar">
+        <small id="draft-status" class="muted" role="status"></small>
+        <button class="btn">Save note</button>
+      </div>
+    </form>
+
+    <section class="card">
+      <h2>Saved notes <small id="count" class="muted"></small></h2>
+      <ul id="notes" class="notes"></ul>
+      <p id="empty" class="muted empty">No notes yet. They are kept in IndexedDB.</p>
+    </section>
+  </main>
+</body>
+</html>
