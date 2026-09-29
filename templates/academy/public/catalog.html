@@ -1,6 +1,6 @@
 {% extends 'academy/public/base.html' %}
 {% block title %}Hands-on tech courses: Microsoft certifications and app development · Ralfiz Academy{% endblock %}
-{% block description %}{{ totals.lessons }} in-depth lessons with hands-on labs, real exercise files and quizzes: Microsoft certification courses (PL-900, AB-410, PL-300, AB-400){% if 'flutter' in published %} and Flutter app development{% endif %}{% if 'dom' in published %} and web development with the DOM{% endif %}. Free sample lessons.{% endblock %}
+{% block description %}{{ totals.lessons }} in-depth lessons with hands-on labs, real exercise files and quizzes: Microsoft certification courses (PL-900, AB-410, PL-300, AB-400){% if 'flutter' in published %} and Flutter app development{% endif %}{% if 'js' in published or 'dom' in published %} and web development with JavaScript{% endif %}. Free sample lessons.{% endblock %}
 {% block og_title %}Courses · Ralfiz Academy{% endblock %}
 {% block og_description %}{{ totals.lessons }} lessons with hands-on labs, quizzes and practice tests. Learn it, build it, prove it.{% endblock %}
 {% block jsonld %}
@@ -14,7 +14,7 @@
 <section class="cx-hero">
   <p class="cx-eyebrow">Ralfiz Academy</p>
   <h1>Hands-on courses for <span class="grad">real tech skills</span></h1>
-  <p class="cx-lead">Microsoft certification courses{% if 'flutter' in published %} and app development with Flutter{% endif %}{% if 'dom' in published %}{% if 'flutter' in published %},{% else %} and{% endif %} web pages with the DOM and browser APIs{% endif %}. Learn the concept, build it yourself with real exercise files, then prove it with quizzes and practice tests.</p>
+  <p class="cx-lead">Microsoft certification courses{% if 'flutter' in published %} and app development with Flutter{% endif %}{% if 'js' in published or 'dom' in published %}{% if 'flutter' in published %},{% else %} and{% endif %} web development with JavaScript and the browser{% endif %}. Learn the concept, build it yourself with real exercise files, then prove it with quizzes and practice tests.</p>
   <div class="cx-actions">
     <a class="btn2" href="#courses">Browse courses</a>
     <a class="btn2 ghost" href="#free">Read a free lesson</a>
@@ -110,9 +110,9 @@
   <header class="cx-h"><h2>Questions</h2></header>
   <div class="cx-faq">
     <details><summary>Do I get a certificate? <i class="fa-solid fa-plus"></i></summary><p>Yes. When you finish a course you receive a Ralfiz Academy certificate of completion. The Microsoft courses prepare you for Microsoft's own exams, which you book and take with Microsoft; Ralfiz Academy is not affiliated with Microsoft.</p></details>
-    <details><summary>What do I need for the labs? <i class="fa-solid fa-plus"></i></summary><p>The first lesson of each course shows you how to set up everything you need. Most Microsoft labs run in a free Microsoft developer environment, and PL-300 labs use Power BI Desktop, which runs on Windows.{% if 'flutter' in published %} Flutter labs run on your own computer.{% endif %}{% if 'dom' in published %} DOM & Browser labs need only a browser and a code editor.{% endif %}</p></details>
+    <details><summary>What do I need for the labs? <i class="fa-solid fa-plus"></i></summary><p>The first lesson of each course shows you how to set up everything you need. Most Microsoft labs run in a free Microsoft developer environment, and PL-300 labs use Power BI Desktop, which runs on Windows.{% if 'flutter' in published %} Flutter labs run on your own computer.{% endif %}{% if 'js' in published or 'dom' in published %} JavaScript and DOM labs need a browser, a code editor and Node.js.{% endif %}</p></details>
     <details><summary>How is my progress tracked? <i class="fa-solid fa-plus"></i></summary><p>You get your own student login. Lab steps, quiz answers and practice test scores are saved to your account, so you can continue on any device. Courses unlock one after another as you complete them.</p></details>
-    <details><summary>Which course should I start with? <i class="fa-solid fa-plus"></i></summary><p>For the Microsoft courses, start with PL-900 Power Platform Fundamentals. Then take AB-410 to build apps or PL-300 to analyse data. AB-400 is for developers and comes after AB-410.{% if 'flutter' in published %} Flutter stands on its own and starts from the basics.{% endif %}{% if 'dom' in published %} DOM & Browser expects you to know basic JavaScript.{% endif %} Not sure? Message us and we'll help you choose.</p></details>
+    <details><summary>Which course should I start with? <i class="fa-solid fa-plus"></i></summary><p>For the Microsoft courses, start with PL-900 Power Platform Fundamentals. Then take AB-410 to build apps or PL-300 to analyse data. AB-400 is for developers and comes after AB-410.{% if 'flutter' in published %} Flutter stands on its own and starts from the basics.{% endif %}{% if 'js' in published %} For the web, start with JavaScript{% if 'dom' in published %}, then take DOM & Browser{% endif %}.{% elif 'dom' in published %} DOM & Browser expects you to know basic JavaScript.{% endif %} Not sure? Message us and we'll help you choose.</p></details>
   </div>
 </section>
 

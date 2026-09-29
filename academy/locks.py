@@ -12,7 +12,7 @@
 from .models import LabProgress, Lesson, QuizAnswer, TestAttempt, Track
 from .progress import DONE, NOT_STARTED, lesson_statuses, track_summary
 
-PREREQS = {'ab410': ['pl900'], 'pl300': ['pl900'], 'ab400': ['ab410']}
+PREREQS = {'ab410': ['pl900'], 'pl300': ['pl900'], 'ab400': ['ab410'], 'dom': ['js']}
 
 
 def locks_apply(request):

@@ -2210,5 +2210,457 @@
  "dom/dm24/reference/TaskBoard.jsx": {
   "path": "reference/TaskBoard.jsx",
   "description": "The same Task Board as a React component, for comparison (not run)"
+ },
+ "js/js1/start/index.js": {
+  "path": "start/index.js",
+  "description": "Starter: your first Node.js program with four TODOs."
+ },
+ "js/js1/solution/index.js": {
+  "path": "solution/index.js",
+  "description": "Solution: the finished first program."
+ },
+ "js/js1/README.md": {
+  "path": "README.md",
+  "description": "Task, how to run it and acceptance criteria."
+ },
+ "js/js2/start/index.js": {
+  "path": "start/index.js",
+  "description": "Starter: a small program to lint, format and run through npm scripts."
+ },
+ "js/js2/solution/index.js": {
+  "path": "solution/index.js",
+  "description": "Solution: prints the environment and formatted orders."
+ },
+ "js/js2/solution/package.json": {
+  "path": "solution/package.json",
+  "description": "Solution: package.json with type module, scripts and dev tools."
+ },
+ "js/js2/solution/eslint.config.js": {
+  "path": "solution/eslint.config.js",
+  "description": "Solution: ESLint flat config for a Node.js project."
+ },
+ "js/js2/README.md": {
+  "path": "README.md",
+  "description": "Task, setup commands and acceptance criteria."
+ },
+ "js/js3/start/index.js": {
+  "path": "start/index.js",
+  "description": "Starter: Shop Bill version 1 with TODOs."
+ },
+ "js/js3/solution/index.js": {
+  "path": "solution/index.js",
+  "description": "Solution: Shop Bill version 1."
+ },
+ "js/js3/README.md": {
+  "path": "README.md",
+  "description": "Task, how to run it and acceptance criteria."
+ },
+ "js/js4/start/index.js": {
+  "path": "start/index.js",
+  "description": "Starter: Shop Bill version 2 (checkout rules) with coercion bugs to fix."
+ },
+ "js/js4/solution/index.js": {
+  "path": "solution/index.js",
+  "description": "Solution: Shop Bill version 2 with safe conversions and defaults."
+ },
+ "js/js4/README.md": {
+  "path": "README.md",
+  "description": "Task, how to run it and acceptance criteria."
+ },
+ "js/js5/README.md": {
+  "path": "README.md",
+  "description": "Lab brief for the receipt toolkit: tasks, how to run and acceptance criteria."
+ },
+ "js/js5/start/index.js": {
+  "path": "start/index.js",
+  "description": "Starter: six string helpers with TODO markers and a small order to print."
+ },
+ "js/js5/solution/index.js": {
+  "path": "solution/index.js",
+  "description": "Solution: the finished string helpers and a printed receipt."
+ },
+ "js/js6/README.md": {
+  "path": "README.md",
+  "description": "Lab brief for the paise-safe GST invoice calculator: tasks, how to run and acceptance criteria."
+ },
+ "js/js6/start/index.js": {
+  "path": "start/index.js",
+  "description": "Starter: money and date helpers with TODO markers and a sample invoice."
+ },
+ "js/js6/solution/index.js": {
+  "path": "solution/index.js",
+  "description": "Solution: integer-paise invoice maths, INR formatting and UTC-safe due dates."
+ },
+ "js/js7/README.md": {
+  "path": "README.md",
+  "description": "Lab brief for the console Grade Book: tasks, how to run and acceptance criteria."
+ },
+ "js/js7/start/students.json": {
+  "path": "start/students.json",
+  "description": "Marks for eight students; null means absent."
+ },
+ "js/js7/start/index.js": {
+  "path": "start/index.js",
+  "description": "Starter: Grade Book skeleton with TODO markers."
+ },
+ "js/js7/solution/students.json": {
+  "path": "solution/students.json",
+  "description": "Marks for eight students; null means absent."
+ },
+ "js/js7/solution/index.js": {
+  "path": "solution/index.js",
+  "description": "Solution: the complete Grade Book with guard clauses, switch and loops."
+ },
+ "js/js8/README.md": {
+  "path": "README.md",
+  "description": "Lab brief for the Ralfiz Stays booking quote: tasks, how to run and acceptance criteria."
+ },
+ "js/js8/start/index.js": {
+  "path": "start/index.js",
+  "description": "Starter: booking-quote functions with TODO markers and an impure shell."
+ },
+ "js/js8/solution/index.js": {
+  "path": "solution/index.js",
+  "description": "Solution: pure booking-quote core, JSDoc and a small impure shell."
+ },
+ "js/js9/README.md": {
+  "path": "README.md",
+  "description": "Task, how to run it and acceptance criteria"
+ },
+ "js/js9/start/index.js": {
+  "path": "start/index.js",
+  "description": "Starter: closure utilities with TODOs"
+ },
+ "js/js9/solution/index.js": {
+  "path": "solution/index.js",
+  "description": "Solution: ID generator, counter, once, rate limiter, loop fix"
+ },
+ "js/js10/README.md": {
+  "path": "README.md",
+  "description": "Task, how to run it and acceptance criteria"
+ },
+ "js/js10/start/index.js": {
+  "path": "start/index.js",
+  "description": "Starter: a Booking Desk class with lost-this bugs"
+ },
+ "js/js10/solution/index.js": {
+  "path": "solution/index.js",
+  "description": "Solution: every this bug fixed with arrows, bind and call"
+ },
+ "js/js11/README.md": {
+  "path": "README.md",
+  "description": "Task, how to run it and acceptance criteria"
+ },
+ "js/js11/start/index.js": {
+  "path": "start/index.js",
+  "description": "Starter: bill utilities with TODOs"
+ },
+ "js/js11/solution/index.js": {
+  "path": "solution/index.js",
+  "description": "Solution: pipe, curried money helpers, fair splitting"
+ },
+ "js/js12/README.md": {
+  "path": "README.md",
+  "description": "Task, how to run it and acceptance criteria"
+ },
+ "js/js12/package.json": {
+  "path": "package.json",
+  "description": "Marks the lab as ES modules so index.js can use import"
+ },
+ "js/js12/students.json": {
+  "path": "students.json",
+  "description": "Twelve student records shared by start and solution"
+ },
+ "js/js12/start/index.js": {
+  "path": "start/index.js",
+  "description": "Starter: Student Records Analyser with TODOs"
+ },
+ "js/js12/solution/index.js": {
+  "path": "solution/index.js",
+  "description": "Solution: every report built with array methods"
+ },
+ "js/js13/README.md": {
+  "path": "README.md",
+  "description": "Lab brief for the Invoice Builder: tasks, how to run and acceptance criteria."
+ },
+ "js/js13/start/index.js": {
+  "path": "start/index.js",
+  "description": "Starter: raw orders and catalogue with six TODOs for the Invoice Builder."
+ },
+ "js/js13/solution/index.js": {
+  "path": "solution/index.js",
+  "description": "Solution: the complete Invoice Builder."
+ },
+ "js/js14/README.md": {
+  "path": "README.md",
+  "description": "Lab brief for the Order Report: tasks, how to run and acceptance criteria."
+ },
+ "js/js14/start/index.js": {
+  "path": "start/index.js",
+  "description": "Starter: two months of orders and six TODOs for the Order Report."
+ },
+ "js/js14/solution/index.js": {
+  "path": "solution/index.js",
+  "description": "Solution: the complete Order Report."
+ },
+ "js/js15/README.md": {
+  "path": "README.md",
+  "description": "Lab brief for the Store catalogue toolkit: generators, an iterable class, chunking and iterator helpers."
+ },
+ "js/js15/start/index.js": {
+  "path": "start/index.js",
+  "description": "Starter: catalogue data and six TODOs for generators and iteration."
+ },
+ "js/js15/solution/index.js": {
+  "path": "solution/index.js",
+  "description": "Solution: generators, an iterable Catalogue class, chunk() and a lazy query."
+ },
+ "js/js16/README.md": {
+  "path": "README.md",
+  "description": "Lab brief: a product hierarchy with constructor functions, then with class, plus chain helpers."
+ },
+ "js/js16/start/index.js": {
+  "path": "start/index.js",
+  "description": "Starter: a flawed Product constructor and six TODOs on prototypes and classes."
+ },
+ "js/js16/solution/index.js": {
+  "path": "solution/index.js",
+  "description": "Solution: constructor-function inheritance, chain helpers and the class equivalent."
+ },
+ "js/js17/README.md": {
+  "path": "README.md",
+  "description": "Task, how to run it, and acceptance criteria"
+ },
+ "js/js17/start/index.js": {
+  "path": "start/index.js",
+  "description": "Starter: class skeletons with TODO markers (runs as is)"
+ },
+ "js/js17/solution/index.js": {
+  "path": "solution/index.js",
+  "description": "Solution: complete bank and library models with a demo"
+ },
+ "js/js18/README.md": {
+  "path": "README.md",
+  "description": "Task, how to run it, and acceptance criteria"
+ },
+ "js/js18/start/index.js": {
+  "path": "start/index.js",
+  "description": "Starter: importer skeleton with TODO markers (runs as is)"
+ },
+ "js/js18/solution/index.js": {
+  "path": "solution/index.js",
+  "description": "Solution: custom errors, cause chains, collected validation errors and finally"
+ },
+ "js/js19/README.md": {
+  "path": "README.md",
+  "description": "Task, how to run it, and acceptance criteria"
+ },
+ "js/js19/start/index.js": {
+  "path": "start/index.js",
+  "description": "Starter: ordering experiment and a blocking job, with TODO markers"
+ },
+ "js/js19/solution/index.js": {
+  "path": "solution/index.js",
+  "description": "Solution: ordering experiment plus blocking and chunked jobs with a heartbeat"
+ },
+ "js/js20/README.md": {
+  "path": "README.md",
+  "description": "Task, how to run it, and acceptance criteria"
+ },
+ "js/js20/start/index.js": {
+  "path": "start/index.js",
+  "description": "Starter: callback-based legacy API, the pyramid version and TODO markers"
+ },
+ "js/js20/solution/index.js": {
+  "path": "solution/index.js",
+  "description": "Solution: promisify, flat chains, all, allSettled, race-based timeout and withResolvers"
+ },
+ "js/js21/README.md": {
+  "path": "README.md",
+  "description": "Task, how to run it and acceptance criteria"
+ },
+ "js/js21/package.json": {
+  "path": "package.json",
+  "description": "Makes the .js files ES modules so top-level await works"
+ },
+ "js/js21/start/index.js": {
+  "path": "start/index.js",
+  "description": "Starter: fake API plus TODO(1)–TODO(7)"
+ },
+ "js/js21/solution/index.js": {
+  "path": "solution/index.js",
+  "description": "Solution: parallel loading, timeout, retry, allSettled and a sequential loop"
+ },
+ "js/js22/README.md": {
+  "path": "README.md",
+  "description": "Task, how to run it and acceptance criteria"
+ },
+ "js/js22/package.json": {
+  "path": "package.json",
+  "description": "Marks the lab folders as ES modules"
+ },
+ "js/js22/start/index.js": {
+  "path": "start/index.js",
+  "description": "Starter: a naive request() with TODO(1)–TODO(10)"
+ },
+ "js/js22/solution/index.js": {
+  "path": "solution/index.js",
+  "description": "Solution: ApiError, request() with query, JSON, token, ok check and timeout"
+ },
+ "js/js23/README.md": {
+  "path": "README.md",
+  "description": "Task, how to run it and acceptance criteria"
+ },
+ "js/js23/start/index.js": {
+  "path": "start/index.js",
+  "description": "Starter: a one-file CommonJS invoice script with TODO(1)–TODO(8)"
+ },
+ "js/js23/solution/package.json": {
+  "path": "solution/package.json",
+  "description": "Tells Node that .js files in this folder are ES modules"
+ },
+ "js/js23/solution/cart.js": {
+  "path": "solution/cart.js",
+  "description": "Solution: named exports plus a default Cart class"
+ },
+ "js/js23/solution/index.js": {
+  "path": "solution/index.js",
+  "description": "Solution: entry module with static and dynamic imports and import.meta"
+ },
+ "js/js24/README.md": {
+  "path": "README.md",
+  "description": "Step-by-step setup: create-vite, ESLint, Prettier, .env files, build and preview"
+ },
+ "js/js24/solution/package.json": {
+  "path": "solution/package.json",
+  "description": "Solution: scripts and devDependencies of the finished project"
+ },
+ "js/js24/solution/index.html": {
+  "path": "solution/index.html",
+  "description": "Solution: Vite entry page (styles inline, module script)"
+ },
+ "js/js24/solution/src/main.js": {
+  "path": "solution/src/main.js",
+  "description": "Solution: reads import.meta.env and renders products from DummyJSON"
+ },
+ "js/js24/solution/eslint.config.js": {
+  "path": "solution/eslint.config.js",
+  "description": "Solution: ESLint flat config for browser ES modules"
+ },
+ "js/js25/README.md": {
+  "path": "README.md",
+  "description": "Task, how to run, acceptance criteria."
+ },
+ "js/js25/start/index.js": {
+  "path": "start/index.js",
+  "description": "Legacy order report with seven TODOs to modernise (and two hidden bugs)."
+ },
+ "js/js25/start/package.json": {
+  "path": "start/package.json",
+  "description": "Marks the folder as ES modules so top-level await works."
+ },
+ "js/js25/solution/index.js": {
+  "path": "solution/index.js",
+  "description": "The modern order report: ?? defaults, structuredClone, toSorted, Object.groupBy, Set methods, withResolvers, iterator helpers."
+ },
+ "js/js25/solution/package.json": {
+  "path": "solution/package.json",
+  "description": "ES module settings for the solution."
+ },
+ "js/js26/README.md": {
+  "path": "README.md",
+  "description": "Task, how to run, acceptance criteria."
+ },
+ "js/js26/start/index.js": {
+  "path": "start/index.js",
+  "description": "Lead cleaner starter: validate, normalise, extract and redact with regex (seven TODOs)."
+ },
+ "js/js26/solution/index.js": {
+  "path": "solution/index.js",
+  "description": "Complete lead cleaner: anchored validators, normalisation, matchAll totals, redaction, safe search, date rewrite."
+ },
+ "js/js27/README.md": {
+  "path": "README.md",
+  "description": "Task, how to run, acceptance criteria."
+ },
+ "js/js27/start/index.js": {
+  "path": "start/index.js",
+  "description": "The messy checkout script to refactor. It works; keep its output identical."
+ },
+ "js/js27/solution/index.js": {
+  "path": "solution/index.js",
+  "description": "The imperative shell: wires subscribers, runs the checkout and prints exactly what the old script printed."
+ },
+ "js/js27/solution/checkout.js": {
+  "path": "solution/checkout.js",
+  "description": "The pure core: constants, coupon parsing, shipping strategies, pricing, receipt formatting and a tiny emitter."
+ },
+ "js/js27/solution/package.json": {
+  "path": "solution/package.json",
+  "description": "ES module settings for the refactored solution."
+ },
+ "js/js28/README.md": {
+  "path": "README.md",
+  "description": "Setup with Vitest, the tasks and acceptance criteria."
+ },
+ "js/js28/start/cart.js": {
+  "path": "start/cart.js",
+  "description": "The cart module under test. It has one bug (repeat adds) and a missing feature (coupon cap) for you to find and build test-first."
+ },
+ "js/js28/start/cart.test.js": {
+  "path": "start/cart.test.js",
+  "description": "Starter tests: three passing examples and it.todo entries marked TODO(1)–TODO(8)."
+ },
+ "js/js28/solution/cart.js": {
+  "path": "solution/cart.js",
+  "description": "The fixed cart module: repeat adds sum up (with a stock check on the total) and coupons respect max."
+ },
+ "js/js28/solution/cart.test.js": {
+  "path": "solution/cart.test.js",
+  "description": "The full test suite: matchers, errors, rounding, TDD coupon cap, injected and fake time, async checkout with mocks, debounce with fake timers."
+ },
+ "js/js29/README.md": {
+  "path": "README.md",
+  "description": "Task, how to run it and acceptance criteria"
+ },
+ "js/js29/start/tsconfig.json": {
+  "path": "start/tsconfig.json",
+  "description": "Compiler settings: strict mode, output to dist/"
+ },
+ "js/js29/start/index.ts": {
+  "path": "start/index.ts",
+  "description": "Starter: loosely typed order module with TODO markers"
+ },
+ "js/js29/solution/tsconfig.json": {
+  "path": "solution/tsconfig.json",
+  "description": "Compiler settings: strict mode, output to dist/"
+ },
+ "js/js29/solution/index.ts": {
+  "path": "solution/index.ts",
+  "description": "Solution: fully typed order module"
+ },
+ "js/js30/README.md": {
+  "path": "README.md",
+  "description": "Task, how to run it and acceptance criteria"
+ },
+ "js/js30/start/index.js": {
+  "path": "start/index.js",
+  "description": "Starter: the slow report plus stubs with TODO markers"
+ },
+ "js/js30/solution/index.js": {
+  "path": "solution/index.js",
+  "description": "Solution: indexed, memoized report with timings, LRU cache, debounce and throttle"
+ },
+ "js/js31/README.md": {
+  "path": "README.md",
+  "description": "Task, how to run it and acceptance criteria"
+ },
+ "js/js31/start/index.js": {
+  "path": "start/index.js",
+  "description": "Starter: eight challenge stubs and the test runner"
+ },
+ "js/js31/solution/index.js": {
+  "path": "solution/index.js",
+  "description": "Solution: all eight challenges passing 20 tests"
  }
 }

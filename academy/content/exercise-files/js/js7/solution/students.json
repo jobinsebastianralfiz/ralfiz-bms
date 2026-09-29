@@ -1,0 +1,10 @@
+[
+  { "name": "Anu", "marks": { "maths": 92, "science": 88, "english": 95 } },
+  { "name": "Bala", "marks": { "maths": 78, "science": 65, "english": 70 } },
+  { "name": "Chitra", "marks": { "maths": 55, "science": null, "english": 61 } },
+  { "name": "Dev", "marks": { "maths": 85, "science": 91, "english": 79 } },
+  { "name": "Esha", "marks": { "maths": 40, "science": 52, "english": 38 } },
+  { "name": "Farhan", "marks": { "maths": 67, "science": 72, "english": null } },
+  { "name": "Gita", "marks": { "maths": null, "science": null, "english": null } },
+  { "name": "Hari", "marks": { "maths": 99, "science": 94, "english": 90 } }
+]

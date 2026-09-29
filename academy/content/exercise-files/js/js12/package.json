@@ -1,0 +1,9 @@
+{
+  "name": "js12-student-records",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "node start/index.js",
+    "solution": "node solution/index.js"
+  }
+}

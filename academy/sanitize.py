@@ -171,7 +171,7 @@ def check_plays(plays):
             continue
         for k, v in play.items():
             ok = (isinstance(v, str) if k in PLAY_TEXT_KEYS
-                  else isinstance(v, bool) if k in ('module', 'autorun')
+                  else isinstance(v, bool) if k in ('module', 'autorun', 'expectError')
                   else isinstance(v, int) and not isinstance(v, bool) and 0 <= v <= LIMITS[k] if k in LIMITS
                   else False)
             if not ok:

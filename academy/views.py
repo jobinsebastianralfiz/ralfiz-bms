@@ -28,13 +28,14 @@ from .public_views import _contact
 from .sanitize import headings
 
 REMEMBER_ME_SECONDS = 30 * 24 * 60 * 60
-PATH_ORDER = ['pl900', 'ab410', 'pl300', 'ab400', 'flutter', 'dom']
+PATH_ORDER = ['pl900', 'ab410', 'pl300', 'ab400', 'flutter', 'js', 'dom']
 PATH_LINES = {
     'pl900': 'Start with the basics and understand the core services.',
     'ab410': 'Build real business apps with AI and Dataverse.',
     'pl300': 'Analyse data and build interactive reports.',
     'ab400': 'Extend the platform with custom code and integrations.',
     'flutter': 'Build and publish mobile apps with Flutter and Dart.',
+    'js': 'Learn modern JavaScript from the first line to job-ready.',
     'dom': 'Build real web pages with the DOM and browser APIs.',
 }
 FILE_BADGES = {'csv': 'CSV', 'json': 'JSON', 'md': 'DOC', 'txt': 'TXT', 'cs': 'C#', 'ts': 'TS',

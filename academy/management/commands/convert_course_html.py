@@ -253,7 +253,19 @@ class Command(BaseCommand):
         missing = [f for f in file_ids if f not in js['FILES']]
         if missing:
             raise CommandError(f'Files referenced but not in FILES: {", ".join(missing)}')
-        bad = [f for f in file_ids if f.split('/', 1)[0] != tid]
+        # Some course apps keep a track's files under a longer folder name
+        # (the "js" track's under javascript/). One such folder is renamed to
+        # the track id; anything else outside <track>/ is refused.
+        folders = {f.split('/', 1)[0] for f in file_ids}
+        rename = {}
+        if len(folders) == 1 and tid not in folders and not folders & set(SHARED_PREFIXES):
+            src = folders.pop()
+            rename = {f: tid + f[len(src):] for f in file_ids}
+            for d in out_domains:
+                for l in d['lessons']:
+                    l['lab']['files'] = [rename[f] for f in l['lab']['files']]
+            doc['data'] = [rename.get(f, f) for f in doc['data']]
+        bad = [f for f in file_ids if rename.get(f, f).split('/', 1)[0] != tid]
         if bad:
             raise CommandError(f'File ids outside {tid}/ are not supported: {", ".join(bad)}')
 
@@ -265,8 +277,8 @@ class Command(BaseCommand):
         index_path = out / 'files-index.json'
         index = json.loads(index_path.read_text(encoding='utf-8')) if index_path.exists() else {}
         index = {k: v for k, v in index.items() if k.split('/', 1)[0] != tid}
-        for fid in dict.fromkeys(file_ids):
-            f = js['FILES'][fid]
+        for src_id in dict.fromkeys(file_ids):
+            f, fid = js['FILES'][src_id], rename.get(src_id, src_id)
             disk = out / 'exercise-files' / fid
             disk.parent.mkdir(parents=True, exist_ok=True)
             disk.write_text(f['text'], encoding='utf-8')
@@ -276,6 +288,8 @@ class Command(BaseCommand):
 
         for w in warnings:
             self.stderr.write(f'Warning: {w}')
+        if rename:
+            self.stdout.write(f'Renamed the exercise-file folder to {tid}/.')
         n_lessons = sum(len(d['lessons']) for d in out_domains)
         self.stdout.write(
             f'{tid}: {len(out_domains)} domains, {n_lessons} lessons, '

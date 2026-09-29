@@ -63,7 +63,7 @@ class Track(models.Model):
     # product logos: the portal says it is not affiliated with Microsoft.
     ICONS = {'pl900': 'fa-cubes', 'ab410': 'fa-wand-magic-sparkles',
              'pl300': 'fa-chart-column', 'ab400': 'fa-code', 'flutter': 'fa-mobile-screen-button',
-             'dom': 'fa-window-maximize'}
+             'js': 'fa-terminal', 'dom': 'fa-window-maximize'}
 
     @property
     def icon(self):

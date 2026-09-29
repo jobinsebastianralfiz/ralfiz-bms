@@ -10,7 +10,7 @@ from employees.models import Employee
 
 from .importer import run_import
 from .models import (
-    Enrollment, LabProgress, Lesson, Question, QuizAnswer, Student, TestAttempt, Track,
+    Enrollment, LabProgress, Lesson, LessonFile, Question, QuizAnswer, Student, TestAttempt, Track,
 )
 from .progress import lesson_statuses
 
@@ -39,13 +39,13 @@ class ImportTests(AcademyTestBase):
     def test_counts_match_the_package(self):
         c = self.counts
         self.assertEqual((c['tracks'], c['domains'], c['lessons'], c['files'], c['questions']),
-                         (6, 40, 163, 553, 640))
+                         (7, 48, 194, 666, 764))
 
     def test_reimport_is_a_no_op_and_keeps_answers(self):
         q = Question.objects.filter(source='lesson').first()
         QuizAnswer.objects.create(user=self.user, question=q, last_choice=0)
         run_import(log=_quiet, force=True)
-        self.assertEqual(Question.objects.count(), 640)
+        self.assertEqual(Question.objects.count(), 764)
         self.assertTrue(QuizAnswer.objects.filter(question_id=q.pk).exists())
 
     def test_flutter_track_imports(self):
@@ -87,7 +87,17 @@ class ImportTests(AcademyTestBase):
             # Each slot still holds the static code panel for readers without JavaScript.
             for n in range(len(lesson.plays)):
                 self.assertIn(f'<div class="play-slot" data-play="{n}"><div class="example">', lesson.content_html)
-        self.assertFalse(Lesson.objects.exclude(track_id='dom').exclude(plays=[]).exists())
+        self.assertFalse(Lesson.objects.exclude(track_id__in=['dom', 'js']).exclude(plays=[]).exists())
+
+    def test_javascript_track_imports(self):
+        track = Track.objects.get(pk='js')
+        self.assertEqual((track.domains.count(), track.lessons.count()), (8, 31))
+        self.assertEqual(sum(len(l.plays) for l in track.lessons.all()), 170)
+        self.assertEqual(Question.objects.filter(track=track).count(), 124)
+        # The course app keeps its files under javascript/; the converter renames the folder.
+        files = LessonFile.objects.filter(lesson__track=track).values_list('file_id', flat=True)
+        self.assertTrue(files)
+        self.assertTrue(all(f.startswith('js/') for f in files))
 
     def test_lesson_html_is_on_the_allow_list(self):
         import re

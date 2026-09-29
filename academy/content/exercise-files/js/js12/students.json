@@ -1,0 +1,14 @@
+[
+  { "id": 1, "name": "Aisha Rahman", "batch": "A", "city": "Kochi", "marks": [78, 85, 92], "attendance": 0.93 },
+  { "id": 2, "name": "Rahul Menon", "batch": "A", "city": "Thrissur", "marks": [65, 58, 71], "attendance": 0.88 },
+  { "id": 3, "name": "Fathima Nazar", "batch": "B", "city": "Malappuram", "marks": [92, 88, 95], "attendance": 0.97 },
+  { "id": 4, "name": "Arjun Das", "batch": "B", "city": "Kozhikode", "marks": [35, 52, 48], "attendance": 0.81 },
+  { "id": 5, "name": "Sneha Pillai", "batch": "A", "city": "Kochi", "marks": [88, 79, 84], "attendance": 0.72 },
+  { "id": 6, "name": "Mohammed Ashik", "batch": "B", "city": "Perinthalmanna", "marks": [72, 69, 80], "attendance": 0.9 },
+  { "id": 7, "name": "Divya Krishnan", "batch": "A", "city": "Thrissur", "marks": [55, 61, 47], "attendance": 0.85 },
+  { "id": 8, "name": "Nikhil Varghese", "batch": "B", "city": "Kochi", "marks": [90, 94, 89], "attendance": 0.95 },
+  { "id": 9, "name": "Ananya Joseph", "batch": "A", "city": "Kozhikode", "marks": [47, 39, 52], "attendance": 0.78 },
+  { "id": 10, "name": "Irfan Ali", "batch": "B", "city": "Malappuram", "marks": [81, 76, 88], "attendance": 0.91 },
+  { "id": 11, "name": "Meera Nair", "batch": "A", "city": "Perinthalmanna", "marks": [70, 82, 77], "attendance": 0.86 },
+  { "id": 12, "name": "Joel Thomas", "batch": "B", "city": "Thrissur", "marks": [60, 66, 58], "attendance": 0.8 }
+]
