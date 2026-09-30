@@ -11,11 +11,9 @@
   {% if seconds_left is not None %}<div class="timer" id="tTimer" data-seconds="{{ seconds_left }}" role="timer" aria-live="off"><i class="fa-regular fa-clock"></i> <b>{{ attempt.time_limit }}:00</b><span>left</span></div>{% endif %}
 </div>
 
-<nav class="qnav" aria-label="Questions">
-  {% for it in items %}<a href="#q{{ it.i }}" data-qnav="{{ it.i }}" {% if it.chosen is not None %}class="on"{% endif %}>{{ forloop.counter }}</a>{% endfor %}
-</nav>
-
-<form method="post" action="{% url 'academy:test_submit' attempt.id %}" id="testForm" data-save-url="{% url 'academy:api_test_save' attempt.id %}" data-total="{{ items|length }}">
+{% comment %}CBT layout: academy.js shows one question at a time and colours the palette. Without JavaScript every question is listed.{% endcomment %}
+<div class="cbt" id="cbt" data-attempt="{{ attempt.id }}">
+<form method="post" action="{% url 'academy:test_submit' attempt.id %}" id="testForm" class="cbt-main" data-save-url="{% url 'academy:api_test_save' attempt.id %}" data-total="{{ items|length }}">
   {% csrf_token %}
   {% for it in items %}
   <div class="q" id="q{{ it.i }}" data-i="{{ it.i }}">
@@ -30,10 +28,36 @@
     <input type="hidden" name="q{{ it.i }}" value="{% if it.chosen is not None %}{{ it.chosen }}{% endif %}">
   </div>
   {% endfor %}
+  <div class="cbt-actions" hidden>
+    <button class="btn" type="button" data-act="review"><i class="fa-regular fa-bookmark"></i> Mark for review &amp; next</button>
+    <button class="btn ghost" type="button" data-act="clear">Clear response</button>
+    <span class="grow"></span>
+    <button class="btn" type="button" data-act="prev"><i class="fa-solid fa-arrow-left"></i> Previous</button>
+    <button class="btn primary" type="button" data-act="next">Save &amp; next <i class="fa-solid fa-arrow-right"></i></button>
+  </div>
   <div class="submit-bar">
     <button class="btn primary" type="submit" id="submitT">Submit answers</button>
     <span id="tCount" style="color:var(--muted);font-size:14px">{{ answered }} of {{ items|length }} answered</span>
     <span id="tSaved" style="color:var(--muted);font-size:13px;margin-left:auto"></span>
   </div>
 </form>
+
+<aside class="cbt-pal" aria-label="Question palette">
+  <button class="pal-toggle" type="button" hidden><i class="fa-solid fa-table-cells"></i> Question palette <span class="pal-count"></span></button>
+  <div class="pal-body">
+    <h3>Question palette</h3>
+    <ul class="pal-legend" hidden>
+      <li><span class="pk pa" data-n="answered">0</span> Answered</li>
+      <li><span class="pk pn" data-n="notanswered">0</span> Not answered</li>
+      <li><span class="pk pv" data-n="notvisited">0</span> Not visited</li>
+      <li><span class="pk pr" data-n="review">0</span> Marked for review</li>
+      <li class="wide"><span class="pk pra" data-n="reviewanswered">0</span> Answered and marked for review (will be evaluated)</li>
+    </ul>
+    <nav class="qnav" aria-label="Questions">
+      {% for it in items %}<a href="#q{{ it.i }}" data-qnav="{{ it.i }}" {% if it.chosen is not None %}class="on"{% endif %}>{{ forloop.counter }}</a>{% endfor %}
+    </nav>
+    <button class="btn primary pal-submit" type="submit" form="testForm" hidden>Submit test</button>
+  </div>
+</aside>
+</div>
 {% endblock %}

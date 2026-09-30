@@ -1298,3 +1298,41 @@ body.public .top2-right .btn2{padding:9px 16px;font-size:14px}
 .shell2,.wrap2,.top2-in{max-width:none}
 .hero,.lesson-head,.prose,.terms,.glance,.toc,.tip,.lab-intro,.steps,.labdone,.q,.pager,.console,
 .test-head,.score,.exfiles,.checkyw,.flash,.dblock,.cert,.choose,.submit-bar,.qnav,.note,.hero p{max-width:none}
+
+/* ---- CBT test screen: one question at a time with a status palette (like the NTA exam) ---- */
+.cbt{display:block}
+.cbt-on{display:grid;grid-template-columns:minmax(0,1fr) 320px;gap:24px;align-items:start}
+.cbt-on .q{display:none;margin-bottom:0}
+.cbt-on .q.cur{display:block;min-height:320px}
+.cbt-on .submit-bar{display:none}
+.cbt-actions{display:flex;gap:10px;align-items:center;flex-wrap:wrap;position:sticky;bottom:0;z-index:20;background:var(--ground);border-top:1px solid var(--line);padding:12px 0 calc(12px + env(safe-area-inset-bottom,0px));margin-top:14px}
+.cbt-actions .grow{flex:1}
+.cbt-actions .btn:disabled{opacity:.45;cursor:not-allowed}
+.cbt-pal{position:sticky;top:84px}
+.cbt:not(.cbt-on) .cbt-pal{display:none}
+.pal-body{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:14px 16px 16px}
+.pal-body h3{font-size:16px;margin:0 0 12px}
+.pal-legend{list-style:none;padding:0;margin:0 0 14px;display:grid;grid-template-columns:1fr 1fr;gap:8px 10px;font-size:12.5px;color:var(--muted)}
+.pal-legend li{display:flex;align-items:center;gap:8px}
+.pal-legend li.wide{grid-column:1/-1}
+.cbt-pal .qnav{display:grid;grid-template-columns:repeat(auto-fill,minmax(38px,1fr));gap:6px;margin:0 0 14px;max-height:48vh;overflow-y:auto;padding:2px}
+.cbt-pal .qnav a,.pk{display:inline-flex;align-items:center;justify-content:center;min-width:28px;height:36px;border-radius:8px;font-family:var(--mono);font-size:13px;font-weight:600;text-decoration:none;border:1px solid var(--line);background:var(--sunk);color:var(--ink)}
+.pk{height:26px;min-width:30px;font-size:12px;flex:none}
+.cbt-pal .qnav a.pa,.pk.pa{background:#1D9A4C;border-color:#1D9A4C;color:#fff;border-radius:12px 12px 4px 4px}
+.cbt-pal .qnav a.pn,.pk.pn{background:#D1382E;border-color:#D1382E;color:#fff;border-radius:4px 4px 12px 12px}
+.cbt-pal .qnav a.pv,.pk.pv{background:var(--sunk);color:var(--ink)}
+.cbt-pal .qnav a.pr,.pk.pr{background:#6D3FD1;border-color:#6D3FD1;color:#fff;border-radius:50%}
+.cbt-pal .qnav a.pra,.pk.pra{background:#6D3FD1;border-color:#6D3FD1;color:#fff;border-radius:50%;box-shadow:inset 0 0 0 2px #6D3FD1,inset 0 0 0 4px #1D9A4C}
+.cbt-pal .qnav a.cur{outline:2px solid var(--accent);outline-offset:2px}
+.pal-submit{width:100%;justify-content:center}
+.pal-toggle{display:none}
+@media (max-width:1100px){
+  .cbt-on{grid-template-columns:minmax(0,1fr)}
+  .cbt-pal{position:static;order:-1}
+  .pal-toggle:not([hidden]){display:flex;align-items:center;gap:8px;width:100%;justify-content:center;padding:10px 14px;border:1px solid var(--line);border-radius:var(--r);background:var(--surface);font-weight:600;cursor:pointer}
+  .pal-count{font-family:var(--mono);color:var(--muted);font-weight:500}
+  .cbt-on .pal-body{display:none;margin-top:8px}
+  .cbt-on.pal-open .pal-body{display:block}
+  .cbt-actions .btn{flex:1 1 auto;justify-content:center}
+  .cbt-actions .grow{display:none}
+}

@@ -16,7 +16,7 @@
   <script>
     try { var t = localStorage.getItem('academy-theme'); if (t) document.documentElement.setAttribute('data-theme', t); } catch (e) {}
   </script>
-  <link rel="stylesheet" href="{% static 'academy/academy.css' %}?v=31">
+  <link rel="stylesheet" href="{% static 'academy/academy.css' %}?v=32">
   {% block extra_head %}{% endblock %}
 </head>
 <body data-track="{% block body_track %}home{% endblock %}">
@@ -123,7 +123,7 @@
 
   <div class="toasts" id="toasts" aria-live="polite"></div>
   {% if new_badges %}{{ new_badges|json_script:"newBadges" }}{% endif %}
-  <script src="{% static 'academy/academy.js' %}?v=6"></script>
+  <script src="{% static 'academy/academy.js' %}?v=7"></script>
   {% block extra_js %}{% endblock %}
 </body>
 </html>

@@ -275,6 +275,7 @@
   var form = $('#testForm');
   if (form) {
     var total = +form.dataset.total, timer = null, dirty = false;
+    var refresh = function () {};  // the CBT palette replaces this
     var answers = function () {
       var out = {};
       $$('input[type=hidden][name^="q"]', form).forEach(function (inp) {
@@ -303,6 +304,7 @@
           var n = Object.keys(answers()).length;
           $('#tCount').textContent = n + ' of ' + total + ' answered';
           dirty = true; clearTimeout(timer); timer = setTimeout(flush, 800);
+          refresh();
         };
       });
     });
@@ -332,6 +334,81 @@
         setTimeout(tick, 250);
       };
       tick();
+    }
+
+    // CBT screen (like the NTA exam): one question at a time, a palette coloured by status,
+    // Save & next, Mark for review & next, Clear response and Previous. Visited and
+    // marked-for-review are kept in this browser only; answers are saved to the server.
+    var cbt = $('#cbt');
+    if (cbt) {
+      var qs = $$('.q', form), cur = 0, key = 'cbt:' + cbt.dataset.attempt;
+      var state = { visited: [], review: [], cur: 0 };
+      try { state = Object.assign(state, JSON.parse(localStorage.getItem(key)) || {}); } catch (e) {}
+      var visited = new Set(state.visited), review = new Set(state.review);
+      var keep = function () {
+        try { localStorage.setItem(key, JSON.stringify({ visited: [...visited], review: [...review], cur: cur })); } catch (e) {}
+      };
+      var answered = function (i) { return $('input[name="q' + qs[i].dataset.i + '"]', qs[i]).value !== ''; };
+      cbt.classList.add('cbt-on');
+      $$('.cbt-actions, .pal-legend, .pal-submit, .pal-toggle', cbt).forEach(function (el) { el.hidden = false; });
+      refresh = function () {
+        var n = { answered: 0, notanswered: 0, notvisited: 0, review: 0, reviewanswered: 0 };
+        qs.forEach(function (q, i) {
+          var a = answered(i), r = review.has(i), v = visited.has(i) || i === cur;
+          var st = r ? (a ? 'reviewanswered' : 'review') : a ? 'answered' : v ? 'notanswered' : 'notvisited';
+          n[st]++;
+          var link = $('[data-qnav="' + q.dataset.i + '"]', cbt);
+          link.className = { answered: 'pa', notanswered: 'pn', notvisited: 'pv', review: 'pr', reviewanswered: 'pra' }[st] + (i === cur ? ' cur' : '');
+          link.setAttribute('aria-current', i === cur ? 'true' : 'false');
+        });
+        Object.keys(n).forEach(function (k) { var el = $('[data-n="' + k + '"]', cbt); if (el) el.textContent = n[k]; });
+        $('.pal-count', cbt).textContent = (n.answered + n.reviewanswered) + '/' + total;
+        $('[data-act="prev"]', cbt).disabled = cur === 0;
+        $('[data-act="next"]', cbt).innerHTML = cur === qs.length - 1
+          ? 'Save <i class="fa-solid fa-check"></i>' : 'Save &amp; next <i class="fa-solid fa-arrow-right"></i>';
+      };
+      var show = function (i, scroll) {
+        visited.add(cur);
+        cur = Math.max(0, Math.min(qs.length - 1, i));
+        visited.add(cur);
+        qs.forEach(function (q, k) { q.classList.toggle('cur', k === cur); });
+        refresh(); keep(); flush();
+        cbt.classList.remove('pal-open');
+        if (scroll !== false) {
+          var top = cbt.getBoundingClientRect().top + window.scrollY - 90;
+          if (window.scrollY > top) window.scrollTo({ top: top });
+        }
+      };
+      cbt.addEventListener('click', function (e) {
+        var link = e.target.closest('[data-qnav]');
+        if (link) {
+          e.preventDefault();
+          show(qs.findIndex(function (q) { return q.dataset.i === link.dataset.qnav; }));
+          return;
+        }
+        var btn = e.target.closest('[data-act]');
+        if (!btn) return;
+        var act = btn.dataset.act;
+        if (act === 'next') show(cur + 1);
+        else if (act === 'prev') show(cur - 1);
+        else if (act === 'review') { review.add(cur); show(cur + 1); }
+        else if (act === 'clear') {
+          var q = qs[cur];
+          $('input[type=hidden]', q).value = '';
+          $$('.opt', q).forEach(function (x) { x.classList.remove('sel'); x.setAttribute('aria-checked', 'false'); });
+          $('#tCount').textContent = Object.keys(answers()).length + ' of ' + total + ' answered';
+          dirty = true; flush(); refresh();
+        }
+      });
+      // Choosing an answer on a question marked for review keeps the mark (NTA's "answered and marked").
+      $('.pal-toggle', cbt).addEventListener('click', function () { cbt.classList.toggle('pal-open'); });
+      document.addEventListener('keydown', function (e) {
+        if (e.target.closest('input, textarea, select') || e.altKey || e.ctrlKey || e.metaKey) return;
+        if (e.key === 'ArrowRight') show(cur + 1);
+        else if (e.key === 'ArrowLeft') show(cur - 1);
+      });
+      var start = location.hash ? qs.findIndex(function (q) { return '#' + q.id === location.hash; }) : -1;
+      show(start >= 0 ? start : Math.min(state.cur || 0, qs.length - 1), false);
     }
   }
 })();
