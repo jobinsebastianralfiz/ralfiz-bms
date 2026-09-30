@@ -6,7 +6,7 @@
   <div>
     <div class="eyebrow">{{ track.code }} {% if paper %}pattern paper{% else %}practice test{% endif %}</div>
     <h1 style="font-size:clamp(26px,4vw,36px)">{% if paper %}{{ paper.title }}{% else %}{{ items|length }} random questions{% endif %}</h1>
-    <p style="margin:6px 0 0;color:var(--muted);max-width:60ch">{% if attempt.time_limit %}{{ items|length }} questions in {{ attempt.time_limit }} minutes{% if track.marks_each %}, {{ track.marks_each }} marks each, no negative marking{% endif %}. Answers save as you go. When the time runs out, the paper is submitted with your saved answers.{% else %}Answers save as you go, so you can leave and resume. Nothing is marked until you submit.{% endif %}</p>
+    <p style="margin:6px 0 0;color:var(--muted)">{% if attempt.time_limit %}{{ items|length }} questions in {{ attempt.time_limit }} minutes{% if track.marks_each %}, {{ track.marks_each }} marks each, no negative marking{% endif %}. Answers save as you go. When the time runs out, the paper is submitted with your saved answers.{% else %}Answers save as you go, so you can leave and resume. Nothing is marked until you submit.{% endif %}</p>
   </div>
   {% if seconds_left is not None %}<div class="timer" id="tTimer" data-seconds="{{ seconds_left }}" role="timer" aria-live="off"><i class="fa-regular fa-clock"></i> <b>{{ attempt.time_limit }}:00</b><span>left</span></div>{% endif %}
 </div>

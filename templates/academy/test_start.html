@@ -6,13 +6,13 @@
   <div>
     <div class="eyebrow">{{ track.code }} practice test</div>
     <h1 style="font-size:clamp(26px,4vw,36px)">Test yourself</h1>
-    {% if track.is_exam %}<p style="margin:6px 0 0;color:var(--muted);max-width:62ch">{{ exam.intro }} Every question is worth {{ exam.marks }} marks and there is no negative marking. Take a timed pattern paper in the NTA format, or a practice set drawn at random from {{ pool_size }} questions.</p>
-    {% else %}<p style="margin:6px 0 0;color:var(--muted);max-width:60ch">Random questions from a bank of {{ pool_size }} {{ track.code }} questions, graded out of 1000.{% if track.is_certification %} The real exam needs 700 to pass. This score is a guide, not Microsoft's scaled score.{% else %} Score 700 or more to pass.{% endif %}</p>{% endif %}
+    {% if track.is_exam %}<p style="margin:6px 0 0;color:var(--muted)">{{ exam.intro }} Every question is worth {{ exam.marks }} marks and there is no negative marking. Take a timed pattern paper in the NTA format, or a practice set drawn at random from {{ pool_size }} questions.</p>
+    {% else %}<p style="margin:6px 0 0;color:var(--muted)">Random questions from a bank of {{ pool_size }} {{ track.code }} questions, graded out of 1000.{% if track.is_certification %} The real exam needs 700 to pass. This score is a guide, not Microsoft's scaled score.{% else %} Score 700 or more to pass.{% endif %}</p>{% endif %}
   </div>
 </div>
 
 {% if open_attempt %}
-<div class="cert" style="max-width:760px">
+<div class="cert">
   <span class="ci" aria-hidden="true">⏳</span>
   <div style="flex:1"><strong>You have a test in progress</strong><p>{{ open_attempt.answers|length }} of {{ open_attempt.size }} answered, started {{ open_attempt.started_at|date:"j M, g:i A" }}.</p></div>
   <a class="btn primary" href="{% url 'academy:test_take' open_attempt.id %}">Resume</a>
@@ -28,7 +28,7 @@
 </form>
 
 {% if papers %}
-<section class="panel papers" style="max-width:760px;margin-bottom:22px">
+<section class="panel papers" style="margin-bottom:22px">
   <h3>NTA pattern papers <small>{{ papers|length }} full papers · {{ exam.label }}</small></h3>
   <form method="post">
     {% csrf_token %}
@@ -46,7 +46,7 @@
 </section>
 {% endif %}
 
-<section class="panel" style="max-width:760px">
+<section class="panel">
   <h3>Your attempts</h3>
   {% if history %}
   <div style="overflow-x:auto">
