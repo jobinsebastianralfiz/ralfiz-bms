@@ -112,7 +112,10 @@ def catalog(request):
          'rows': [r for r in rows if r['track'].is_certification]},
         {'id': 'development', 'title': 'App development',
          'intro': 'Build real apps from the first line of code to a published release.',
-         'rows': [r for r in rows if not r['track'].is_certification]},
+         'rows': [r for r in rows if r['track'].category == 'development']},
+        {'id': 'exam', 'title': 'Competitive exams',
+         'intro': 'UGC NET Computer Science: Paper 1 and Paper 2 together, with NTA-format questions and timed pattern papers.',
+         'rows': [r for r in rows if r['track'].is_exam]},
     ]
     totals = {
         'tracks': len(tracks),

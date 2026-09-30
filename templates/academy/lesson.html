@@ -6,6 +6,8 @@
 <link rel="stylesheet" href="{% static 'academy/flutter-mocks.css' %}?v=2">
 {% endif %}{% if lesson.plays %}
 <link rel="stylesheet" href="{% static 'academy/dom-play.css' %}?v=1">
+{% endif %}{% if lesson.solvers %}
+<link rel="stylesheet" href="{% static 'academy/ugc-solvers.css' %}?v=1">
 {% endif %}{% endblock %}
 {% block shell_class %}rail{% endblock %}
 {% block content %}
@@ -63,7 +65,7 @@
       <dl>{% for t in lesson.terms %}<dt>{{ t.term }}</dt><dd>{{ t.definition }}</dd>{% endfor %}</dl>
     </div>
     {% endif %}
-    {% if lesson.exam_tip %}<div class="tip"><b>{% if lesson.track.is_certification %}Exam tip{% else %}Tip{% endif %}</b><span>{{ lesson.exam_tip }}</span></div>{% endif %}
+    {% if lesson.exam_tip %}<div class="tip"><b>{% if lesson.track.has_exam %}Exam tip{% else %}Tip{% endif %}</b><span>{{ lesson.exam_tip }}</span></div>{% endif %}
     <div style="margin-top:24px"><button class="btn2" type="button" data-go-tab="lab"><i class="fa-solid fa-flask"></i> Start the hands-on lab <i class="fa-solid fa-arrow-right"></i></button></div>
   </div>
 </section>
@@ -102,7 +104,7 @@
   {% for item in quiz %}
   <div class="q" id="q-{{ forloop.counter }}" data-qid="{{ item.q.id }}" data-url="{% url 'academy:api_answer' item.q.id %}" {% if item.chosen is not None %}data-chosen="{{ item.chosen }}" data-answer="{{ item.correct_index }}"{% endif %}>
     <span class="qn">Question {{ forloop.counter }}</span>
-    <p class="stem">{{ item.q.question }}</p>
+    {% include 'academy/_stem.html' with q=item.q %}
     <div class="opts">
       {% for j, opt in item.options %}
       <button class="opt" type="button" data-j="{{ j }}"><span class="k">{% cycle 'A' 'B' 'C' 'D' %}</span><span>{{ opt }}</span></button>
@@ -194,4 +196,6 @@
 <script src="{% static 'academy/flutter-mocks.js' %}?v=1"></script>{% endif %}
 {% if lesson.plays %}{{ lesson.plays|json_script:"lessonPlays" }}
 <script src="{% static 'academy/dom-play.js' %}?v=1"></script>{% endif %}
+{% if lesson.solvers %}{{ lesson.solvers|json_script:"lessonSolvers" }}
+<script src="{% static 'academy/ugc-solvers.js' %}?v=1"></script>{% endif %}
 {% endblock %}

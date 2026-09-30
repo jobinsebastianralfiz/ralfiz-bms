@@ -6,7 +6,8 @@
   <div>
     <div class="eyebrow">{{ track.code }} practice test</div>
     <h1 style="font-size:clamp(26px,4vw,36px)">Test yourself</h1>
-    <p style="margin:6px 0 0;color:var(--muted);max-width:60ch">Random questions from a bank of {{ pool_size }} {{ track.code }} questions, graded out of 1000.{% if track.is_certification %} The real exam needs 700 to pass. This score is a guide, not Microsoft's scaled score.{% else %} Score 700 or more to pass.{% endif %}</p>
+    {% if track.is_exam %}<p style="margin:6px 0 0;color:var(--muted);max-width:62ch">{{ exam.intro }} Every question is worth {{ exam.marks }} marks and there is no negative marking. Take a timed pattern paper in the NTA format, or a practice set drawn at random from {{ pool_size }} questions.</p>
+    {% else %}<p style="margin:6px 0 0;color:var(--muted);max-width:60ch">Random questions from a bank of {{ pool_size }} {{ track.code }} questions, graded out of 1000.{% if track.is_certification %} The real exam needs 700 to pass. This score is a guide, not Microsoft's scaled score.{% else %} Score 700 or more to pass.{% endif %}</p>{% endif %}
   </div>
 </div>
 
@@ -20,23 +21,44 @@
 
 <form method="post" class="choose">
   {% csrf_token %}
-  <button type="submit" name="size" value="30"><b>30</b><span>Quick test · about 40 minutes</span></button>
-  {% if pool_size >= 50 %}<button type="submit" name="size" value="50"><b>50</b><span>Full mock · about 65 minutes</span></button>{% endif %}
+  <button type="submit" name="size" value="30"><b>30</b><span>{% if track.is_exam %}Practice set · untimed{% else %}Quick test · about 40 minutes{% endif %}</span></button>
+  {% if track.is_exam and exam.full == 50 %}<button type="submit" name="size" value="50"><b>50</b><span>Random full paper · {{ exam.minutes }} minutes, timed</span></button>
+  {% elif pool_size >= 50 %}<button type="submit" name="size" value="50"><b>50</b><span>{% if track.is_exam %}Practice set · untimed{% else %}Full mock · about 65 minutes{% endif %}</span></button>{% endif %}
+  {% if full_mock %}<button type="submit" name="size" value="{{ full_mock }}"><b>{{ full_mock }}</b><span>Random full paper · {{ exam.minutes }} minutes, timed</span></button>{% endif %}
 </form>
+
+{% if papers %}
+<section class="panel papers" style="max-width:760px;margin-bottom:22px">
+  <h3>NTA pattern papers <small>{{ papers|length }} full papers · {{ exam.label }}</small></h3>
+  <form method="post">
+    {% csrf_token %}
+    <ul class="rows">
+      {% for p in papers %}
+      <li><div class="paper-row">
+        <div class="grow"><strong>{{ p.title }}</strong><span class="pb">{{ p.blurb }}</span></div>
+        <span class="pm"><i class="fa-regular fa-clock"></i> {{ p.minutes }} min</span>
+        {% if p.best %}<a class="badge {% if p.best.score >= 400 %}ok{% else %}no{% endif %}" href="{% url 'academy:test_result' p.best.id %}" title="Your best attempt">{{ p.best.marks.0 }}/{{ p.best.marks.1 }}</a>{% endif %}
+        <button class="btn sm" type="submit" name="paper" value="{{ p.id }}">{% if p.best %}Retake{% else %}Start{% endif %}</button>
+      </div></li>
+      {% endfor %}
+    </ul>
+  </form>
+</section>
+{% endif %}
 
 <section class="panel" style="max-width:760px">
   <h3>Your attempts</h3>
   {% if history %}
   <div style="overflow-x:auto">
   <table class="hist">
-    <thead><tr><th>Date</th><th>Questions</th><th>Correct</th><th>Score</th><th></th></tr></thead>
+    <thead><tr><th>Date</th><th>Questions</th><th>Correct</th><th>{% if track.is_exam %}Marks{% else %}Score{% endif %}</th><th></th></tr></thead>
     <tbody>
       {% for t in history %}
       <tr>
         <td>{{ t.started_at|date:"j M Y, g:i A" }}</td>
         <td class="n">{{ t.size }}</td>
         <td class="n">{% if t.submitted_at %}{{ t.correct_count }}{% else %}–{% endif %}</td>
-        <td class="n">{% if t.submitted_at %}<span class="badge {% if t.passed %}ok{% else %}no{% endif %}">{{ t.score }}</span>{% else %}<span class="badge lab">In progress</span>{% endif %}</td>
+        <td class="n">{% if t.submitted_at %}{% if t.marks %}<span class="badge {% if t.score >= 400 %}ok{% else %}no{% endif %}">{{ t.marks.0 }}/{{ t.marks.1 }}</span>{% else %}<span class="badge {% if t.passed %}ok{% else %}no{% endif %}">{{ t.score }}</span>{% endif %}{% else %}<span class="badge lab">In progress</span>{% endif %}</td>
         <td>{% if t.submitted_at %}<a href="{% url 'academy:test_result' t.id %}">Review</a>{% else %}<a href="{% url 'academy:test_take' t.id %}">Resume</a>{% endif %}</td>
       </tr>
       {% endfor %}

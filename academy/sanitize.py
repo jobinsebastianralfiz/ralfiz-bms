@@ -4,10 +4,11 @@ The package's lesson HTML is ours, but it is stored and rendered with |safe,
 so anything outside the documented element set is dropped here, at import.
 Headings get ids on the way through so the lesson page can build its
 "On this page" chips. The only attributes beyond class and cell spans are the
-two widget placeholders: the phone mock, <div class="mock-slot" data-mock="N">,
-whose data check_mocks() vets for flutter-mocks.js, and the live code
-playground, <div class="play-slot" data-play="N">, whose data check_plays()
-vets for dom-play.js.
+three widget placeholders: the phone mock, <div class="mock-slot" data-mock="N">,
+whose data check_mocks() vets for flutter-mocks.js, the live code playground,
+<div class="play-slot" data-play="N">, whose data check_plays() vets for
+dom-play.js, and the interactive solver, <div class="solver-slot"
+data-solver="N">, mounted by ugc-solvers.js from the names check_solvers() vets.
 """
 import re
 from html import escape
@@ -15,7 +16,7 @@ from html.parser import HTMLParser
 
 ALLOWED_TAGS = {
     'h3', 'p', 'ul', 'ol', 'li', 'strong', 'em', 'code', 'pre',
-    'table', 'thead', 'tbody', 'tr', 'th', 'td', 'div', 'br', 'kbd',
+    'table', 'thead', 'tbody', 'tr', 'th', 'td', 'div', 'br', 'kbd', 'sub', 'sup',
 }
 VOID_TAGS = {'br'}
 # Only these class values survive, and only on these tags.
@@ -24,12 +25,13 @@ ALLOWED_CLASSES = {'pre': {'code'}, 'div': {'example', 'callout', 'warn'}}
 DROP_WITH_CONTENT = {'script', 'style', 'iframe', 'object', 'embed', 'template'}
 
 
-SLOTS = (('mock-slot', 'data-mock'), ('play-slot', 'data-play'))
+SLOTS = (('mock-slot', 'data-mock'), ('play-slot', 'data-play'), ('solver-slot', 'data-solver'))
 
 
 def _slot(attrs):
-    """A widget placeholder, exactly <div class="mock-slot" data-mock="N"> or
-    <div class="play-slot" data-play="N"> (N < 100): its clean tag, else None."""
+    """A widget placeholder, exactly <div class="mock-slot" data-mock="N">,
+    <div class="play-slot" data-play="N"> or <div class="solver-slot" data-solver="N">
+    (N < 100): its clean tag, else None."""
     a = dict(attrs)
     for cls, name in SLOTS:
         if a.get('class') == cls and set(a) == {'class', name}:
@@ -176,4 +178,46 @@ def check_plays(plays):
                   else False)
             if not ok:
                 problems.append(f'plays[{n}].{k}: {str(v)[:40]!r} is not allowed')
+    return problems
+
+
+# Solver names are looked up in ugc-solvers.js's registry; anything else is refused.
+_SOLVER_NAME = re.compile(r'[a-z][a-z0-9]{1,23}')
+
+
+def check_solvers(solvers):
+    """Problems (list of strings) with a lesson's solver names; empty if they are plain names."""
+    if not isinstance(solvers, list):
+        return ['solvers must be a list']
+    return [f'solvers[{n}]: {str(v)[:40]!r} is not a solver name'
+            for n, v in enumerate(solvers) if not (isinstance(v, str) and _SOLVER_NAME.fullmatch(v))]
+
+
+# Exam-format question parts. They are rendered by templates with autoescaping,
+# so only the shape is checked here.
+STEM_TEXT_KEYS = {'passage', 'passageTitle', 'code', 'after'}
+
+
+def check_stem(stem):
+    """Problems (list of strings) with a question's stem parts; empty if the shape is right."""
+    if not isinstance(stem, dict):
+        return ['stem must be an object']
+    problems = []
+    strings = lambda v: isinstance(v, list) and all(isinstance(x, str) for x in v)
+    for k, v in stem.items():
+        if k in STEM_TEXT_KEYS:
+            ok = isinstance(v, str)
+        elif k == 'stmts':
+            ok = strings(v)
+        elif k == 'lists':
+            ok = (isinstance(v, dict) and strings(v.get('a')) and strings(v.get('b'))
+                  and (v.get('h') is None or (strings(v['h']) and len(v['h']) == 2)))
+        elif k == 'data':
+            ok = (isinstance(v, dict) and strings(v.get('head'))
+                  and isinstance(v.get('rows'), list) and all(isinstance(r, list) for r in v['rows'])
+                  and all(isinstance(v.get(x, ''), str) for x in ('caption', 'note')))
+        else:
+            ok = False
+        if not ok:
+            problems.append(f'stem.{k}: not allowed or wrong shape')
     return problems

@@ -2662,5 +2662,765 @@
  "js/js31/solution/index.js": {
   "path": "solution/index.js",
   "description": "Solution: all eight challenges passing 20 tests"
+ },
+ "net1/pa1/practice-set.md": {
+  "path": "practice-set.md",
+  "description": "15 exam-level problems on the meaning, nature, objectives, levels and maxims of teaching."
+ },
+ "net1/pa1/solutions.md": {
+  "path": "solutions.md",
+  "description": "Worked solutions with reasoning and traps for practice set 1.1."
+ },
+ "net1/pa2/practice-set.md": {
+  "path": "practice-set.md",
+  "description": "15 exam-level problems on adolescent and adult learners, individual differences and factors affecting teaching."
+ },
+ "net1/pa2/solutions.md": {
+  "path": "solutions.md",
+  "description": "Worked solutions with reasoning and traps for practice set 1.2."
+ },
+ "net1/pa3/practice-set.md": {
+  "path": "practice-set.md",
+  "description": "15 exam-level problems on teaching methods, group methods, SWAYAM, SWAYAM PRABHA, MOOCs and support systems."
+ },
+ "net1/pa3/solutions.md": {
+  "path": "solutions.md",
+  "description": "Worked solutions with the reasoning and the trap for every problem."
+ },
+ "net1/pa4/practice-set.md": {
+  "path": "practice-set.md",
+  "description": "15 exam-level problems on types of evaluation, tools, test qualities, item analysis, CBCS grading (SGPA/CGPA), CBT and innovations."
+ },
+ "net1/pa4/solutions.md": {
+  "path": "solutions.md",
+  "description": "Worked solutions with the reasoning and the trap for every problem."
+ },
+ "net1/pa5/practice-set.md": {
+  "path": "practice-set.md",
+  "description": "15 exam-level problems on the meaning, types, paradigms and methods of research."
+ },
+ "net1/pa5/solutions.md": {
+  "path": "solutions.md",
+  "description": "Worked solutions with the reasoning and traps for every practice problem."
+ },
+ "net1/pa6/practice-set.md": {
+  "path": "practice-set.md",
+  "description": "15 exam-level problems on research steps, hypotheses, variables, sampling, tools, reliability and validity."
+ },
+ "net1/pa6/solutions.md": {
+  "path": "solutions.md",
+  "description": "Worked solutions with the working for every numerical and the reasoning for every format question."
+ },
+ "net1/pa7/practice-set.md": {
+  "path": "practice-set.md",
+  "description": "15 exam-level problems on thesis structure, referencing styles, ICT tools, metrics, research ethics and the UGC regulations."
+ },
+ "net1/pa7/solutions.md": {
+  "path": "solutions.md",
+  "description": "Worked solutions with the working for every metric and the reasoning for every style, ethics and regulation question."
+ },
+ "net1/pa8/practice-set.md": {
+  "path": "practice-set.md",
+  "description": "One full passage set (5 questions) plus 10 strategy drills on inference, assumption, tone, traps, sequencing and timing."
+ },
+ "net1/pa8/solutions.md": {
+  "path": "solutions.md",
+  "description": "Worked solutions with the supporting line from the passage and the trap behind every wrong option."
+ },
+ "net1/pa9/practice-set.md": {
+  "path": "practice-set.md",
+  "description": "15 exam-level problems on the process, non-verbal codes, directions, networks, inter-cultural and classroom communication and barriers."
+ },
+ "net1/pa9/solutions.md": {
+  "path": "solutions.md",
+  "description": "Worked solutions with the reasoning and the trap for every problem."
+ },
+ "net1/pa10/practice-set.md": {
+  "path": "practice-set.md",
+  "description": "15 exam-level problems on models, functions, effects theories, McLuhan, new media and Indian media milestones."
+ },
+ "net1/pa10/solutions.md": {
+  "path": "solutions.md",
+  "description": "Worked solutions with the reasoning and the trap for every problem."
+ },
+ "net1/pa11/practice-set.md": {
+  "path": "practice-set.md",
+  "description": "15 exam-level problems on number and letter series, coding, blood relations, directions and ranking."
+ },
+ "net1/pa11/solutions.md": {
+  "path": "solutions.md",
+  "description": "Worked solutions for practice set 5.1 with the rule found for every item."
+ },
+ "net1/pa12/practice-set.md": {
+  "path": "practice-set.md",
+  "description": "15 exam-level problems on percentages, profit and loss, interest and discounting, averages, ratio and time and distance."
+ },
+ "net1/pa12/solutions.md": {
+  "path": "solutions.md",
+  "description": "Worked solutions for practice set 5.2, each with the standard method and the shortcut."
+ },
+ "net1/pa13/practice-set.md": {
+  "path": "practice-set.md",
+  "description": "15 exam-level problems on arguments, categorical propositions, the square of opposition, syllogisms and fallacies."
+ },
+ "net1/pa13/solutions.md": {
+  "path": "solutions.md",
+  "description": "Worked solutions with the reasoning and the trap for every problem."
+ },
+ "net1/pa14/practice-set.md": {
+  "path": "practice-set.md",
+  "description": "15 exam-level problems on analogies, Venn diagrams (choice, counting, validity) and statement–conclusion syllogisms."
+ },
+ "net1/pa14/solutions.md": {
+  "path": "solutions.md",
+  "description": "Worked solutions with the reasoning and the trap for every problem."
+ },
+ "net1/pa15/practice-set.md": {
+  "path": "practice-set.md",
+  "description": "15 exam-level problems on pramāṇas, anumāna, vyāpti, the five members and the hetvābhāsas."
+ },
+ "net1/pa15/solutions.md": {
+  "path": "solutions.md",
+  "description": "Worked solutions with the reasoning and the trap for every problem."
+ },
+ "net1/pa16/practice-set.md": {
+  "path": "practice-set.md",
+  "description": "15 exam-level problems on sources and kinds of data, levels of measurement, tabulation, choice of diagram, pie angles, histograms, ogives and data governance."
+ },
+ "net1/pa16/solutions.md": {
+  "path": "solutions.md",
+  "description": "Worked solutions with the formula and the trap for each of the 15 practice problems."
+ },
+ "net1/pa17/practice-set.md": {
+  "path": "practice-set.md",
+  "description": "Three full DI sets (table, pie chart as percentages, line graph) of five questions each, timed at exam pace."
+ },
+ "net1/pa17/solutions.md": {
+  "path": "solutions.md",
+  "description": "Worked solutions for the three DI sets, with the base of every percentage stated."
+ },
+ "net1/pa18/practice-set.md": {
+  "path": "practice-set.md",
+  "description": "15 exam-level problems on storage units, number systems, internet, e-mail, conferencing, hardware and software."
+ },
+ "net1/pa18/solutions.md": {
+  "path": "solutions.md",
+  "description": "Worked solutions with the reasoning and the trap for every problem."
+ },
+ "net1/pa19/practice-set.md": {
+  "path": "practice-set.md",
+  "description": "15 exam-level problems on higher-education digital initiatives, e-governance and cyber security."
+ },
+ "net1/pa19/solutions.md": {
+  "path": "solutions.md",
+  "description": "Worked solutions with the reasoning and the trap for every problem."
+ },
+ "net1/pa20/practice-set.md": {
+  "path": "practice-set.md",
+  "description": "15 exam-level problems on sustainable development, MDGs, SDGs, human impacts and the scale of environmental issues."
+ },
+ "net1/pa20/solutions.md": {
+  "path": "solutions.md",
+  "description": "Worked solutions with reasons for every problem in practice set 9.1."
+ },
+ "net1/pa21/practice-set.md": {
+  "path": "practice-set.md",
+  "description": "15 exam-level problems on pollution, health effects, waste rules, energy numericals and disaster management."
+ },
+ "net1/pa21/solutions.md": {
+  "path": "solutions.md",
+  "description": "Worked solutions with reasons for every problem in practice set 9.2."
+ },
+ "net1/pa22/practice-set.md": {
+  "path": "practice-set.md",
+  "description": "15 exam-level problems on the EPA 1986, NAPCC, India’s NDCs, ozone, climate and biodiversity treaties, ISA and COP chronology."
+ },
+ "net1/pa22/solutions.md": {
+  "path": "solutions.md",
+  "description": "Worked solutions with reasons for every problem in practice set 9.3."
+ },
+ "net1/pa23/practice-set.md": {
+  "path": "practice-set.md",
+  "description": "15 exam-level problems on ancient centres, colonial and post-independence milestones, and types of programmes."
+ },
+ "net1/pa23/solutions.md": {
+  "path": "solutions.md",
+  "description": "Worked solutions with the reasoning and the trap for every practice problem."
+ },
+ "net1/pa24/practice-set.md": {
+  "path": "practice-set.md",
+  "description": "15 exam-level problems on professional, technical, skill, value and environmental education."
+ },
+ "net1/pa24/solutions.md": {
+  "path": "solutions.md",
+  "description": "Worked solutions with the reasoning and the trap for every practice problem."
+ },
+ "net1/pa25/practice-set.md": {
+  "path": "practice-set.md",
+  "description": "15 exam-level problems on NEP 2020, HECI, constitutional provisions, regulators, NAAC and NIRF."
+ },
+ "net1/pa25/solutions.md": {
+  "path": "solutions.md",
+  "description": "Worked solutions with the reasoning and the trap for every practice problem."
+ },
+ "net2/cs1/practice-set.md": {
+  "path": "practice-set.md",
+  "description": "15 exam-level problems on truth tables, equivalences, normal forms, inference and quantifiers."
+ },
+ "net2/cs1/solutions.md": {
+  "path": "solutions.md",
+  "description": "Worked solutions with the reasoning and the trap for every problem."
+ },
+ "net2/cs2/practice-set.md": {
+  "path": "practice-set.md",
+  "description": "15 exam-level problems on counting relations and functions, partitions, closures, Hasse diagrams and lattices."
+ },
+ "net2/cs2/solutions.md": {
+  "path": "solutions.md",
+  "description": "Worked solutions with the reasoning and the trap for every problem."
+ },
+ "net2/cs3/practice-set.md": {
+  "path": "practice-set.md",
+  "description": "15 exam-level problems on permutations, combinations, pigeonhole, inclusion–exclusion, derangements, recurrences, generating functions and Catalan numbers."
+ },
+ "net2/cs3/solutions.md": {
+  "path": "solutions.md",
+  "description": "Worked solutions with the reasoning and the trap for every problem."
+ },
+ "net2/cs4/practice-set.md": {
+  "path": "practice-set.md",
+  "description": "15 exam-level problems on induction, conditional probability, Bayes, expectation, variance and standard distributions."
+ },
+ "net2/cs4/solutions.md": {
+  "path": "solutions.md",
+  "description": "Worked solutions with the reasoning and the trap for each of the 15 practice problems."
+ },
+ "net2/cs5/practice-set.md": {
+  "path": "practice-set.md",
+  "description": "15 exam-level problems on group axioms, orders, cyclic groups, Lagrange, permutations, homomorphisms and rings."
+ },
+ "net2/cs5/solutions.md": {
+  "path": "solutions.md",
+  "description": "Worked solutions with the reasoning and the trap for each of the 15 practice problems."
+ },
+ "net2/cs6/practice-set.md": {
+  "path": "practice-set.md",
+  "description": "15 exam-level problems on degrees, connectivity, Euler and Hamilton, trees, planarity, colouring and matching."
+ },
+ "net2/cs6/solutions.md": {
+  "path": "solutions.md",
+  "description": "Worked solutions with the reasoning and the trap for each of the 15 practice problems."
+ },
+ "net2/cs7/practice-set.md": {
+  "path": "practice-set.md",
+  "description": "15 exam-level problems on Boolean algebra: K-maps with don’t-cares, POS, canonical forms, duality, counting and functional completeness."
+ },
+ "net2/cs7/solutions.md": {
+  "path": "solutions.md",
+  "description": "Worked solutions for practice set 1.7, with the K-map groups and the trap behind each distractor."
+ },
+ "net2/cs8/practice-set.md": {
+  "path": "practice-set.md",
+  "description": "15 exam-level problems on LPP (graphical, simplex, duality), transportation (NWCR, LCM, VAM, MODI), assignment and integer programming."
+ },
+ "net2/cs8/solutions.md": {
+  "path": "solutions.md",
+  "description": "Worked solutions for practice set 1.8, with corner tables, VAM penalties, MODI loops and Hungarian reductions."
+ },
+ "net2/cs9/practice-set.md": {
+  "path": "practice-set.md",
+  "description": "15 exam-level problems on gates, combinational circuits, flip-flops and counters (numericals and NTA formats)."
+ },
+ "net2/cs9/solutions.md": {
+  "path": "solutions.md",
+  "description": "Worked solutions with the reasoning for all 15 problems of practice set 2.1."
+ },
+ "net2/cs10/practice-set.md": {
+  "path": "practice-set.md",
+  "description": "15 exam-level problems on number systems, complements, signed numbers, IEEE 754, codes and Hamming codes."
+ },
+ "net2/cs10/solutions.md": {
+  "path": "solutions.md",
+  "description": "Worked solutions with the reasoning for all 15 problems of practice set 2.2."
+ },
+ "net2/cs11/practice-set.md": {
+  "path": "practice-set.md",
+  "description": "15 exam-level problems on RTL, bus transfer, micro-operations and Mano’s basic computer (traces, decoding, interrupts)."
+ },
+ "net2/cs11/solutions.md": {
+  "path": "solutions.md",
+  "description": "Worked solutions with the reasoning for all 15 problems of practice set 2.3."
+ },
+ "net2/cs12/practice-set.md": {
+  "path": "practice-set.md",
+  "description": "15 exam-level problems on basic-computer programming and microprogrammed control."
+ },
+ "net2/cs12/solutions.md": {
+  "path": "solutions.md",
+  "description": "Worked solutions for practice set 2.4 with the reasoning for every problem."
+ },
+ "net2/cs13/practice-set.md": {
+  "path": "practice-set.md",
+  "description": "15 exam-level problems on the CPU: register and stack organisation, formats, addressing modes, flags and RISC/CISC."
+ },
+ "net2/cs13/solutions.md": {
+  "path": "solutions.md",
+  "description": "Worked solutions for practice set 2.5 with the reasoning for every problem."
+ },
+ "net2/cs14/practice-set.md": {
+  "path": "practice-set.md",
+  "description": "15 exam-level problems on pipelining, hazards, vector processing and latency analysis."
+ },
+ "net2/cs14/solutions.md": {
+  "path": "solutions.md",
+  "description": "Worked solutions for practice set 2.6 with the reasoning for every problem."
+ },
+ "net2/cs15/practice-set.md": {
+  "path": "practice-set.md",
+  "description": "15 exam-level problems on I/O organization: overhead numericals, DMA, serial frames, priority and NTA formats."
+ },
+ "net2/cs15/solutions.md": {
+  "path": "solutions.md",
+  "description": "Worked solutions with reasoning for all 15 problems of the cs15 practice set."
+ },
+ "net2/cs16/practice-set.md": {
+  "path": "practice-set.md",
+  "description": "15 exam-level problems on memory hierarchy: chips and address maps, cache splits and traces, AMAT, TLB and page faults, disks, CAM, and NTA formats."
+ },
+ "net2/cs16/solutions.md": {
+  "path": "solutions.md",
+  "description": "Worked solutions with reasoning for all 15 problems of the cs16 practice set."
+ },
+ "net2/cs17/practice-set.md": {
+  "path": "practice-set.md",
+  "description": "15 exam-level problems on multiprocessors: Amdahl and Gustafson, networks, hypercube routing, directories, MESI traces and NTA formats."
+ },
+ "net2/cs17/solutions.md": {
+  "path": "solutions.md",
+  "description": "Worked solutions with reasoning for all 15 problems of the cs17 practice set."
+ },
+ "net2/cs18/practice-set.md": {
+  "path": "practice-set.md",
+  "description": "15 exam-level problems on binding, scope, lifetime, translation and parameter passing, with traced pseudo-code."
+ },
+ "net2/cs18/solutions.md": {
+  "path": "solutions.md",
+  "description": "Worked solutions with a variable-box trace for every scope and parameter-passing problem."
+ },
+ "net2/cs19/practice-set.md": {
+  "path": "practice-set.md",
+  "description": "15 exam-level problems on C types, conversions, operators, pointers, strings, structures, macros and recursion, all outputs verified with gcc."
+ },
+ "net2/cs19/solutions.md": {
+  "path": "solutions.md",
+  "description": "Worked solutions with traces; every output checked with gcc -Wall -Wextra and the sanitizers."
+ },
+ "net2/cs20/practice-set.md": {
+  "path": "practice-set.md",
+  "description": "15 exam-level problems on classes, constructors, references, static and mutable members, inheritance, virtual functions, templates, exceptions and the STL; every output verified with g++."
+ },
+ "net2/cs20/solutions.md": {
+  "path": "solutions.md",
+  "description": "Worked solutions with traces of construction order, dynamic binding, references and STL state for every problem in practice set 3.3."
+ },
+ "net2/cs21/practice-set.md": {
+  "path": "practice-set.md",
+  "description": "15 exam-level problems on web programming: HTTP, HTML, CSS, JavaScript output, XML/DTD, servlets, JSP and applets."
+ },
+ "net2/cs21/solutions.md": {
+  "path": "solutions.md",
+  "description": "Worked solutions for the web programming practice set, with the reason behind every answer."
+ },
+ "net2/cs22/practice-set.md": {
+  "path": "practice-set.md",
+  "description": "15 exam-level problems on output primitives: displays, frame buffers, DDA, Bresenham, midpoint circle, filling and clipping."
+ },
+ "net2/cs22/solutions.md": {
+  "path": "solutions.md",
+  "description": "Worked solutions for the output-primitives practice set, every value computed by program."
+ },
+ "net2/cs23/practice-set.md": {
+  "path": "practice-set.md",
+  "description": "15 exam-level problems on 2D/3D transformations, projections, Bezier and B-spline curves, hidden surfaces and colour models."
+ },
+ "net2/cs23/solutions.md": {
+  "path": "solutions.md",
+  "description": "Worked solutions for the transformations, 3D and curves practice set; every value checked with numpy or exact fractions."
+ },
+ "net2/cs24/practice-set.md": {
+  "path": "practice-set.md",
+  "description": "15 exam-level problems on DBMS architecture, ER modelling and ER-to-table mapping, in NTA formats."
+ },
+ "net2/cs24/solutions.md": {
+  "path": "solutions.md",
+  "description": "Worked solutions with the counting steps and the trap behind each wrong option."
+ },
+ "net2/cs25/practice-set.md": {
+  "path": "practice-set.md",
+  "description": "15 exam-level problems on keys, integrity, relational algebra output, division and relational calculus."
+ },
+ "net2/cs25/solutions.md": {
+  "path": "solutions.md",
+  "description": "Worked solutions showing every intermediate relation and count."
+ },
+ "net2/cs26/practice-set.md": {
+  "path": "practice-set.md",
+  "description": "15 exam-level SQL output and concept problems on a student–course database with NULLs."
+ },
+ "net2/cs26/solutions.md": {
+  "path": "solutions.md",
+  "description": "Worked solutions with intermediate rows, the NULL reasoning for each trap, and SQL to recreate the tables."
+ },
+ "net2/cs27/practice-set.md": {
+  "path": "practice-set.md",
+  "description": "15 exam-level normalization problems: closures, keys, covers, normal forms and decompositions"
+ },
+ "net2/cs27/solutions.md": {
+  "path": "solutions.md",
+  "description": "Worked solutions for the normalization practice set"
+ },
+ "net2/cs28/practice-set.md": {
+  "path": "practice-set.md",
+  "description": "15 exam-level problems on schedules, locking, timestamps, recovery, B+-trees and indexing"
+ },
+ "net2/cs28/solutions.md": {
+  "path": "solutions.md",
+  "description": "Worked solutions for the transactions, concurrency, recovery and indexing practice set"
+ },
+ "net2/cs29/practice-set.md": {
+  "path": "practice-set.md",
+  "description": "15 exam-level problems on enhanced data models, distributed databases, warehousing and data mining (numericals plus NTA formats)."
+ },
+ "net2/cs29/solutions.md": {
+  "path": "solutions.md",
+  "description": "Complete worked solutions for practice set 4.6, with the reasoning and the trap behind each distractor."
+ },
+ "net2/cs30/practice-set.md": {
+  "path": "practice-set.md",
+  "description": "15 exam-level problems on HDFS, MapReduce, YARN, Spark, CAP/BASE, NoSQL types and MongoDB queries."
+ },
+ "net2/cs30/solutions.md": {
+  "path": "solutions.md",
+  "description": "Complete worked solutions for practice set 4.7, with traces for the MapReduce, MongoDB and Spark problems."
+ },
+ "net2/cs31/practice-set.md": {
+  "path": "practice-set.md",
+  "description": "15 exam-level problems on assemblers, macros, loaders, linkers and relocation."
+ },
+ "net2/cs31/solutions.md": {
+  "path": "solutions.md",
+  "description": "Worked solutions for the system software practice set."
+ },
+ "net2/cs32/practice-set.md": {
+  "path": "practice-set.md",
+  "description": "15 exam-level problems on processes, threads, fork and synchronization."
+ },
+ "net2/cs32/solutions.md": {
+  "path": "solutions.md",
+  "description": "Worked solutions for the processes and synchronization practice set."
+ },
+ "net2/cs33/practice-set.md": {
+  "path": "practice-set.md",
+  "description": "15 exam-level CPU scheduling problems: Gantt-chart numericals and NTA formats."
+ },
+ "net2/cs33/solutions.md": {
+  "path": "solutions.md",
+  "description": "Worked solutions with Gantt charts for the CPU scheduling practice set."
+ },
+ "net2/cs34/practice-set.md": {
+  "path": "practice-set.md",
+  "description": "15 exam-level problems on deadlocks: Banker’s safety and requests, detection, minimum resources and NTA formats."
+ },
+ "net2/cs34/solutions.md": {
+  "path": "solutions.md",
+  "description": "Worked solutions for the deadlock practice set, with every Banker’s step shown."
+ },
+ "net2/cs35/practice-set.md": {
+  "path": "practice-set.md",
+  "description": "15 exam-level problems on memory management: fits, paging sizes, EAT, page replacement and NTA formats."
+ },
+ "net2/cs35/solutions.md": {
+  "path": "solutions.md",
+  "description": "Worked solutions for the memory-management practice set."
+ },
+ "net2/cs36/practice-set.md": {
+  "path": "practice-set.md",
+  "description": "15 exam-level problems on file systems and I/O: disk scheduling, inodes, capacity, free space, RAID and NTA formats."
+ },
+ "net2/cs36/solutions.md": {
+  "path": "solutions.md",
+  "description": "Worked solutions for the file systems and I/O practice set."
+ },
+ "net2/cs37/practice-set.md": {
+  "path": "practice-set.md",
+  "description": "15 exam-level problems on protection, security threats, authentication, cryptography basics and virtual machines, in NTA formats."
+ },
+ "net2/cs37/solutions.md": {
+  "path": "solutions.md",
+  "description": "Worked solutions with the reasoning and trap for all 15 practice problems of Lesson 5.7."
+ },
+ "net2/cs38/practice-set.md": {
+  "path": "practice-set.md",
+  "description": "15 exam-level problems on Linux, Windows, Android and iOS basics and on distributed systems: clocks, mutual exclusion, election and distributed file systems."
+ },
+ "net2/cs38/solutions.md": {
+  "path": "solutions.md",
+  "description": "Worked solutions with the reasoning and trap for all 15 practice problems of Lesson 5.8."
+ },
+ "net2/cs39/practice-set.md": {
+  "path": "practice-set.md",
+  "description": "15 exam-level problems on process models, the Unified Process, agile methods and risk-driven planning, in NTA formats."
+ },
+ "net2/cs39/solutions.md": {
+  "path": "solutions.md",
+  "description": "Worked solutions with the reasoning and the trap for every problem in the cs39 practice set."
+ },
+ "net2/cs40/practice-set.md": {
+  "path": "practice-set.md",
+  "description": "15 exam-level problems on requirement types, elicitation, DFDs, data dictionaries, decision tables, SRS quality and use cases, in NTA formats."
+ },
+ "net2/cs40/solutions.md": {
+  "path": "solutions.md",
+  "description": "Worked solutions with the reasoning and the trap for every problem in the cs40 practice set."
+ },
+ "net2/cs41/practice-set.md": {
+  "path": "practice-set.md",
+  "description": "15 exam-level problems on design concepts, cohesion and coupling, architectural styles, structured and object-oriented design, UML, UI rules and design patterns, in NTA formats."
+ },
+ "net2/cs41/solutions.md": {
+  "path": "solutions.md",
+  "description": "Worked solutions with the reasoning and the trap for every problem in the cs41 practice set."
+ },
+ "net2/cs42/practice-set.md": {
+  "path": "practice-set.md",
+  "description": "15 exam-level problems on software quality: availability, reliability, Musa model, DRE, DPMO, maintenance effort and the NTA formats."
+ },
+ "net2/cs42/solutions.md": {
+  "path": "solutions.md",
+  "description": "Worked solutions with the reasoning and traps for every cs42 practice problem."
+ },
+ "net2/cs43/practice-set.md": {
+  "path": "practice-set.md",
+  "description": "15 exam-level problems on function points, COCOMO, Putnam, PERT/CPM, earned value and risk."
+ },
+ "net2/cs43/solutions.md": {
+  "path": "solutions.md",
+  "description": "Worked solutions with the reasoning and traps for every cs43 practice problem."
+ },
+ "net2/cs44/practice-set.md": {
+  "path": "practice-set.md",
+  "description": "15 exam-level problems on BVA, equivalence classes, cyclomatic complexity, coverage, mutation, seeding and the NTA formats."
+ },
+ "net2/cs44/solutions.md": {
+  "path": "solutions.md",
+  "description": "Worked solutions with the reasoning and traps for every cs44 practice problem."
+ },
+ "net2/cs45/practice-set.md": {
+  "path": "practice-set.md",
+  "description": "15 exam-level problems on arrays, stacks, queues and linked lists"
+ },
+ "net2/cs45/solutions.md": {
+  "path": "solutions.md",
+  "description": "Worked solutions with the reasoning for every problem"
+ },
+ "net2/cs46/practice-set.md": {
+  "path": "practice-set.md",
+  "description": "15 exam-level problems on trees, balanced trees and heaps"
+ },
+ "net2/cs46/solutions.md": {
+  "path": "solutions.md",
+  "description": "Worked solutions with every trace for the cs46 practice set"
+ },
+ "net2/cs47/practice-set.md": {
+  "path": "practice-set.md",
+  "description": "15 exam-level problems on searching, sorting and hashing"
+ },
+ "net2/cs47/solutions.md": {
+  "path": "solutions.md",
+  "description": "Worked solutions with every pass and probe for the cs47 practice set"
+ },
+ "net2/cs48/practice-set.md": {
+  "path": "practice-set.md",
+  "description": "15 exam-level problems on asymptotic notation, loop counts, recurrences, amortised analysis and space complexity."
+ },
+ "net2/cs48/solutions.md": {
+  "path": "solutions.md",
+  "description": "Worked solutions with the method and the trap for each of the 15 practice problems."
+ },
+ "net2/cs49/practice-set.md": {
+  "path": "practice-set.md",
+  "description": "15 exam-level problems on divide and conquer, greedy, dynamic programming, backtracking and branch and bound."
+ },
+ "net2/cs49/solutions.md": {
+  "path": "solutions.md",
+  "description": "Worked solutions with tables, merge sequences and traps for the 15 practice problems."
+ },
+ "net2/cs50/practice-set.md": {
+  "path": "practice-set.md",
+  "description": "15 exam-level problems on traversals, topological sort, SCCs, MSTs, shortest paths and maximum flow."
+ },
+ "net2/cs50/solutions.md": {
+  "path": "solutions.md",
+  "description": "Worked solutions with traversal traces, distance tables and cuts for the 15 practice problems."
+ },
+ "net2/cs51/practice-set.md": {
+  "path": "practice-set.md",
+  "description": "15 exam-level problems on P, NP, NP-completeness, reductions and approximation"
+ },
+ "net2/cs51/solutions.md": {
+  "path": "solutions.md",
+  "description": "Worked solutions with reasoning for the complexity theory practice set"
+ },
+ "net2/cs52/practice-set.md": {
+  "path": "practice-set.md",
+  "description": "15 exam-level problems on PRAM, randomized algorithms, string matching, number theory, RSA and approximation"
+ },
+ "net2/cs52/solutions.md": {
+  "path": "solutions.md",
+  "description": "Worked solutions with every calculation for the advanced algorithms practice set"
+ },
+ "net2/cs53/practice-set.md": {
+  "path": "practice-set.md",
+  "description": "15 exam-level problems for lesson cs53"
+ },
+ "net2/cs53/solutions.md": {
+  "path": "solutions.md",
+  "description": "Worked solutions for the cs53 practice set"
+ },
+ "net2/cs54/practice-set.md": {
+  "path": "practice-set.md",
+  "description": "15 exam-level problems for lesson cs54"
+ },
+ "net2/cs54/solutions.md": {
+  "path": "solutions.md",
+  "description": "Worked solutions for the cs54 practice set"
+ },
+ "net2/cs55/practice-set.md": {
+  "path": "practice-set.md",
+  "description": "15 exam-level problems for lesson cs55"
+ },
+ "net2/cs55/solutions.md": {
+  "path": "solutions.md",
+  "description": "Worked solutions for the cs55 practice set"
+ },
+ "net2/cs56/practice-set.md": {
+  "path": "practice-set.md",
+  "description": "15 exam-level problems on token counting, left recursion and factoring, FIRST/FOLLOW, LL(1) tables, LR(0)/SLR/LALR/CLR item sets and conflicts, and LEX/YACC, in NTA formats."
+ },
+ "net2/cs56/solutions.md": {
+  "path": "solutions.md",
+  "description": "Complete worked solutions for practice set 8.4, with item sets, parse traces and the trap behind each distractor."
+ },
+ "net2/cs57/practice-set.md": {
+  "path": "practice-set.md",
+  "description": "15 exam-level problems on SDT evaluation and printing, L-attributed definitions, quadruples, triples and DAGs, basic blocks and loops, liveness and Sethi–Ullman registers, activation records and optimisation, in NTA formats."
+ },
+ "net2/cs57/solutions.md": {
+  "path": "solutions.md",
+  "description": "Complete worked solutions for practice set 8.5, with DAG construction, leader lists, live sets and the trap behind each distractor."
+ },
+ "net2/cs58/practice-set.md": {
+  "path": "practice-set.md",
+  "description": "15 exam-level problems on Nyquist and Shannon capacity, decibels, QAM, line-coding waveforms, FDM/TDM, delays and switching, in NTA formats."
+ },
+ "net2/cs58/solutions.md": {
+  "path": "solutions.md",
+  "description": "Complete worked solutions for practice set 9.1, with every formula substituted and the trap behind each distractor."
+ },
+ "net2/cs59/practice-set.md": {
+  "path": "practice-set.md",
+  "description": "15 exam-level problems on topologies, OSI and TCP/IP layers, addressing, devices, collision and broadcast domains, learning switches, Ethernet frames and 802.11, in NTA formats."
+ },
+ "net2/cs59/solutions.md": {
+  "path": "solutions.md",
+  "description": "Complete worked solutions for practice set 9.2, with domain counts drawn port by port and the trap behind each distractor."
+ },
+ "net2/cs60/practice-set.md": {
+  "path": "practice-set.md",
+  "description": "15 exam-level problems on CRC, checksums, Hamming distance and Hamming codes, stop-and-wait, Go-Back-N and Selective Repeat, ALOHA, CSMA/CD and bit stuffing, in NTA formats."
+ },
+ "net2/cs60/solutions.md": {
+  "path": "solutions.md",
+  "description": "Complete worked solutions for practice set 9.3, with each division, syndrome, window and transmission count shown step by step."
+ },
+ "net2/cs61/practice-set.md": {
+  "path": "practice-set.md",
+  "description": "15 exam-level problems for lesson cs61"
+ },
+ "net2/cs61/solutions.md": {
+  "path": "solutions.md",
+  "description": "Worked solutions for the cs61 practice set"
+ },
+ "net2/cs62/practice-set.md": {
+  "path": "practice-set.md",
+  "description": "15 exam-level problems for lesson cs62"
+ },
+ "net2/cs62/solutions.md": {
+  "path": "solutions.md",
+  "description": "Worked solutions for the cs62 practice set"
+ },
+ "net2/cs63/practice-set.md": {
+  "path": "practice-set.md",
+  "description": "15 exam-level problems for lesson cs63"
+ },
+ "net2/cs63/solutions.md": {
+  "path": "solutions.md",
+  "description": "Worked solutions for the cs63 practice set"
+ },
+ "net2/cs64/practice-set.md": {
+  "path": "practice-set.md",
+  "description": "15 exam-level problems for lesson cs64"
+ },
+ "net2/cs64/solutions.md": {
+  "path": "solutions.md",
+  "description": "Worked solutions for the cs64 practice set"
+ },
+ "net2/cs65/practice-set.md": {
+  "path": "practice-set.md",
+  "description": "15 exam-level problems on BFS, DFS, UCS, IDS, greedy and A* traces, heuristic properties, alpha–beta pruning, CSPs, simulated annealing and environment types, in NTA formats."
+ },
+ "net2/cs65/solutions.md": {
+  "path": "solutions.md",
+  "description": "Complete worked solutions for practice set 10.1, with frontier tables, alpha–beta traces and the trap behind each distractor."
+ },
+ "net2/cs66/practice-set.md": {
+  "path": "practice-set.md",
+  "description": "15 exam-level problems on unification, CNF and Skolemisation, resolution proofs, forward and backward chaining, Bayes’ rule, Bayesian networks, d-separation, certainty factors, Dempster–Shafer and frames, in NTA formats."
+ },
+ "net2/cs66/solutions.md": {
+  "path": "solutions.md",
+  "description": "Complete worked solutions for practice set 10.2, with every MGU, clause set, probability and combination worked in exact fractions."
+ },
+ "net2/cs67/practice-set.md": {
+  "path": "practice-set.md",
+  "description": "15 exam-level problems on STRIPS states and regression, shortest blocks-world plans, partial-order linearisations and threats, GraphPlan mutexes, NLP levels and ambiguity, CYK parse counts, bigram models with add-one smoothing, TF-IDF and cosine ranking, precision and recall, edit distance, Nash equilibria, auctions, voting and the Zeuthen strategy, in NTA formats."
+ },
+ "net2/cs67/solutions.md": {
+  "path": "solutions.md",
+  "description": "Complete worked solutions for practice set 10.3, with every STRIPS state, parse count, probability, TF-IDF weight, cosine and voting tally shown, and the trap behind each distractor."
+ },
+ "net2/cs68/practice-set.md": {
+  "path": "practice-set.md",
+  "description": "15 exam-level problems on fuzzy set operations, α-cuts, t-norms and t-conorms, max–min and max–product composition, Mamdani and Sugeno inference, centroid defuzzification, hedges and implications, in NTA formats."
+ },
+ "net2/cs68/solutions.md": {
+  "path": "solutions.md",
+  "description": "Complete worked solutions for practice set 10.4, with every membership table, composition entry and centroid sum written out, and the trap behind each distractor."
+ },
+ "net2/cs69/practice-set.md": {
+  "path": "practice-set.md",
+  "description": "15 exam-level problems on roulette-wheel and SUS selection, tournament selection, one-point, two-point and uniform crossover, OX and PMX, schema order, defining length and the schema theorem, decoding, precision and Gray code, in NTA formats."
+ },
+ "net2/cs69/solutions.md": {
+  "path": "solutions.md",
+  "description": "Complete worked solutions for practice set 10.5, with every probability table, crossover split and schema calculation shown, and the trap behind each distractor."
+ },
+ "net2/cs70/practice-set.md": {
+  "path": "practice-set.md",
+  "description": "15 exam-level problems on perceptron updates and training traces, decision boundaries and linear separability, activation functions, McCulloch–Pitts neurons, a full backpropagation step, hidden deltas, Hebbian and delta-rule learning, Hopfield storage, recall and energy, Kohonen updates, Q-learning, k-means and classifier metrics, in NTA formats."
+ },
+ "net2/cs70/solutions.md": {
+  "path": "solutions.md",
+  "description": "Complete worked solutions for practice set 10.6, with every epoch table, forward and backward pass, weight matrix, distance and metric shown, and the trap behind each distractor."
  }
 }

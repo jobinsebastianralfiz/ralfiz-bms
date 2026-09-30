@@ -24,7 +24,16 @@ into allow-listed HTML:
   with static/academy/dom-play.js (the panel stays if JavaScript is off);
 - predict-the-output drills (widget "predict") become a "Predict the output"
   section at the end of the lesson, answers last;
-- concept animations (div.anim-slot) are JavaScript-only and are removed.
+- interactive solvers (div.anim-slot whose name is in SOLVERS, the UGC NET
+  course) keep a placeholder, <div class="solver-slot" data-solver="N">, holding
+  a short panel naming the solver; the names go into the lesson's "solvers"
+  list and static/academy/ugc-solvers.js mounts them;
+- other concept animations (div.anim-slot) are JavaScript-only and are removed.
+
+Exam-format questions (UGC NET) keep their parts (passage, data table, code,
+statements, List I / List II and the closing line) as a "stem" object with the
+format in "kind"; a course with a timed mock exam (netExam) gets an "exam"
+object listing its pattern papers, and each paper question names its paper.
 
 Safe to re-run: the track's JSON, its exercise-files folder and its
 files-index entries are replaced. Run import_labs afterwards.
@@ -47,15 +56,27 @@ NODE_EVAL = r"""
 const vm = require('vm');
 const src = JSON.parse(require('fs').readFileSync(0, 'utf8'));
 const box = {};
+box.window = box;  // the UGC NET data reads window.NETPAPERS
 vm.runInNewContext(src.data + '\n;\n' + src.meta +
-  '\n;__out = JSON.stringify({FILES, EX, QBANK, DEEP, LESSONS, DOMAINS, TRACKS});', box);
+  '\n;__out = JSON.stringify({FILES, EX, QBANK, DEEP, LESSONS, DOMAINS, TRACKS,' +
+  ' NETPAPERS: typeof NETPAPERS === "undefined" ? {} : NETPAPERS});', box);
 process.stdout.write(box.__out);
 """
 
 SCRIPT_RE = re.compile(r'<script>(.*?)</script>', re.S)
 MOCK_SLOT = re.compile(r'<div class="mock-slot" data-i="(\d+)"></div>')
 PLAY_SLOT = re.compile(r'<div class="play-slot" data-i="(\d+)"></div>')
-ANIM_SLOT = re.compile(r'\n?<div class="anim-slot" data-a="[\w-]+"></div>\n?')
+ANIM_SLOT = re.compile(r'\n?<div class="anim-slot" data-a="([\w-]+)"></div>\n?')
+# The interactive solvers static/academy/ugc-solvers.js can mount (UGC NET course).
+SOLVERS = {
+    'kmap', 'amat', 'bptree', 'truthtable', 'lpp', 'transport', 'assign', 'ieee754', 'pipeline',
+    'cachemap', 'raster', 'transform2d', 'fdtool', 'serial', 'cpusched', 'banker', 'pagerepl',
+    'disksched', 'seest', 'infix', 'treeops', 'sorttrace', 'hashprobe', 'graphalgo', 'dfa', 'll1',
+    'lr', 'crc', 'slidewin', 'subnet', 'tcpcong', 'gamesearch',
+}
+SOLVER_TITLE = re.compile(r"ANIM\.register\('(\w+)',\{title:'((?:[^'\\]|\\.)*)'")
+# The parts of an exam-format question drawn around its text (see Question.stem).
+STEM_KEYS = ('passage', 'passageTitle', 'data', 'code', 'stmts', 'lists', 'after')
 # A numbered list interrupted by a mock and resumed with <ol start="n">: the
 # sanitizer drops the start attribute, so keep one list with the mock inside
 # the last item instead.
@@ -77,6 +98,7 @@ def read_js(html_path):
     start, end = app.find('const TRACKS='), app.find('const TRACK_ORDER=')
     if end < start:
         raise CommandError('Could not find the TRACKS / DOMAINS block in the app script.')
+    titles = {name: title.replace("\\'", "'") for name, title in SOLVER_TITLE.findall(app)}
     try:
         out = subprocess.run(['node', '-e', NODE_EVAL], input=json.dumps({'data': data, 'meta': app[start:end]}),
                              capture_output=True, text=True, check=True, timeout=120)
@@ -84,7 +106,9 @@ def read_js(html_path):
         raise CommandError('Node.js is needed to evaluate the course data (node not found on PATH).')
     except subprocess.CalledProcessError as e:
         raise CommandError(f'Node could not evaluate the course data:\n{e.stderr}')
-    return json.loads(out.stdout)
+    js = json.loads(out.stdout)
+    js['SOLVER_TITLES'] = titles
+    return js
 
 
 def mock_html(i, m):
@@ -115,6 +139,29 @@ def play_html(i, p):
             + '\n</div></div>')
 
 
+def solver_html(i, title):
+    return (f'<div class="solver-slot" data-solver="{i}"><div class="example">\n'
+            f'<p><strong>Interactive solver: {esc(title)}</strong></p>\n'
+            '<p>The solver runs in your browser. Turn on JavaScript to use it.</p>\n</div></div>')
+
+
+def question(q):
+    """A course-app question as a package question, keeping exam-format parts in "stem"."""
+    stem = {k: q[k] for k in STEM_KEYS if q.get(k) not in (None, '', [], {})}
+    if 'data' in stem:  # some table cells are numbers
+        d = stem['data']
+        stem['data'] = {'caption': str(d.get('caption') or ''), 'note': str(d.get('note') or ''),
+                        'head': [str(c) for c in d.get('head') or []],
+                        'rows': [[str(c) for c in r] for r in d.get('rows') or []]}
+    out = {'question': q['q'], 'options': q['o'], 'answer': q['a'], 'explanation': q.get('w', '')}
+    if stem:
+        out['stem'] = stem
+    for src, key in (('type', 'kind'), ('topic', 'topic'), ('paper', 'paper')):
+        if q.get(src):
+            out[key] = q[src]
+    return out
+
+
 def option_html(o):
     return f'<pre class="code">{esc(o)}</pre>' if '\n' in o else f'<code>{esc(o)}</code>'
 
@@ -133,7 +180,8 @@ def predict_html(items):
     return '\n'.join(out)
 
 
-def lesson_content(deep, mocks, predict, plays=()):
+def lesson_content(deep, mocks, predict, plays=(), solvers=None, titles=None):
+    """The lesson's HTML. Solver names found in it are appended to the solvers list."""
     html = SPLIT_LIST.sub(r'\n\1</li>\n', deep)
     used, played = set(), set()
 
@@ -160,7 +208,14 @@ def lesson_content(deep, mocks, predict, plays=()):
     rest = [i for i in range(len(mocks)) if i not in used]
     if rest:
         html += '\n\n<h3>Screen examples</h3>\n' + '\n'.join(mock_html(i, mocks[i]) for i in rest)
-    html = ANIM_SLOT.sub('\n', html)
+    def anim(m):
+        name = m.group(1)
+        if solvers is None or name not in SOLVERS:
+            return '\n'
+        solvers.append(name)
+        return '\n' + solver_html(len(solvers) - 1, (titles or {}).get(name, name)) + '\n'
+
+    html = ANIM_SLOT.sub(anim, html)
     if predict:
         html += '\n\n' + predict_html(predict)
     return html.strip()
@@ -208,11 +263,13 @@ class Command(BaseCommand):
                 predict = l.get('predict') if widget == 'predict' else None
                 if widget and widget != 'predict':
                     warnings.append(f'{l["id"]}: widget {widget!r} kept as-is')
+                solvers = []
                 content = lesson_content(js['DEEP'].get(l['id'], ''), l.get('mocks') or [], predict,
-                                         l.get('play') or [])
+                                         l.get('play') or [], solvers, js['SOLVER_TITLES'])
                 for label, html in (('summary', l['learn']), ('content', content)):
                     attrs = {a for a in ATTR.findall(html)
                              if not re.fullmatch(r'(class="[^"]*"|(col|row)span="\d+"|class="mock-slot" data-mock="\d+"|class="play-slot" data-play="\d+"'
+                                                 r'|class="solver-slot" data-solver="\d+"'
                                                  r'|class="code" data-lang="\w+")', a)}
                     _, dropped = clean_html(html)
                     if dropped or attrs:
@@ -227,8 +284,8 @@ class Command(BaseCommand):
                     'lab': {'files': files, 'steps': steps, 'check': ex.get('check') or []},
                     'mocks': l.get('mocks') or [],
                     'plays': l.get('play') or [],
-                    'quiz': [{'question': q['q'], 'options': q['o'], 'answer': q['a'], 'explanation': q['w']}
-                             for q in l.get('quiz', [])],
+                    'solvers': solvers,
+                    'quiz': [question(q) for q in l.get('quiz', [])],
                 })
             out_domains.append({'id': d['id'], 'name': d['name'], 'weight': d.get('weight', ''),
                                 'blurb': d.get('blurb', ''), 'lessons': out_lessons})
@@ -238,17 +295,36 @@ class Command(BaseCommand):
             ('status', 'status', ''), ('outline', 'outline', ''), ('order', 'order', ''),
             ('blurb', 'blurb', ''), ('facts', 'facts', []), ('tool', 'tool', ''),
             ('guide', 'guide', ''), ('note', 'note', ''), ('data', 'data', [])]}
-        # A course without an exam lists with app development, not the Microsoft certifications.
-        doc['category'] = 'certification' if track.get('exam', True) else 'development'
+        # A course without an exam lists with app development, not the Microsoft certifications;
+        # one with a timed NTA-style mock (UGC NET) is a competitive exam.
+        net = track.get('netExam')
+        doc['category'] = 'exam' if net else 'certification' if track.get('exam', True) else 'development'
+        if net:
+            doc['exam'] = {k: net[k] for k in ('label', 'full', 'minutes', 'marks', 'intro', 'pair') if k in net}
+            doc['exam']['papers'] = [{k: p.get(k, '') for k in ('id', 'title', 'blurb', 'minutes')}
+                                     for p in js['NETPAPERS'].get(tid) or []]
         # The concept animations are removed above, so no fact may promise them.
         doc['facts'] = [f for f in doc['facts'] if 'animation' not in str(f[1]).lower()]
         if len(doc['facts']) < 4:
             quiz = sum(len(l['quiz']) for d in out_domains for l in d['lessons'])
             doc['facts'].append([str(quiz), 'quiz questions with explanations'])
         doc['domains'] = out_domains
-        doc['questionBank'] = [{'question': q['q'], 'options': q['o'], 'answer': q['a'],
-                                'explanation': q.get('w', ''), 'lesson': q.get('l')}
-                               for q in (js['QBANK'].get(tid) or [])]
+        doc['questionBank'] = [{**question(q), 'lesson': q.get('l')} for q in (js['QBANK'].get(tid) or [])]
+        # The same question (text, parts and options) twice in one lesson is one question.
+        seen = set()
+
+        def first(lesson_id, q):
+            k = json.dumps([lesson_id, q['question'], q.get('stem'), q['options']], sort_keys=True)
+            if k in seen:
+                warnings.append(f'{lesson_id}: duplicate question dropped: {q["question"][:60]!r}')
+                return False
+            seen.add(k)
+            return True
+
+        for d in out_domains:
+            for l in d['lessons']:
+                l['quiz'] = [q for q in l['quiz'] if first(l['id'], q)]
+        doc['questionBank'] = [q for q in doc['questionBank'] if first(q['lesson'], q)]
 
         missing = [f for f in file_ids if f not in js['FILES']]
         if missing:

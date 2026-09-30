@@ -306,12 +306,32 @@
         };
       });
     });
+    var timesUp = false;
     form.addEventListener('submit', function (e) {
       var n = Object.keys(answers()).length;
-      if (n < total && !confirm(n + ' of ' + total + ' answered. Submit anyway? Unanswered questions count as wrong.')) {
+      if (!timesUp && n < total && !confirm(n + ' of ' + total + ' answered. Submit anyway? Unanswered questions count as wrong.')) {
         e.preventDefault();
       }
     });
     window.addEventListener('pagehide', flush);
+
+    // Timed pattern paper: count down from the server's remaining time, submit at zero.
+    var clock = $('#tTimer');
+    if (clock) {
+      var end = Date.now() + (+clock.dataset.seconds) * 1000, shown = $('b', clock);
+      var tick = function () {
+        var left = Math.max(0, Math.round((end - Date.now()) / 1000));
+        var h = Math.floor(left / 3600), m = Math.floor(left % 3600 / 60), sec = left % 60;
+        shown.textContent = (h ? h + ':' + String(m).padStart(2, '0') : m) + ':' + String(sec).padStart(2, '0');
+        clock.classList.toggle('low', left <= 300);
+        if (left === 0) {
+          timesUp = true;
+          form.submit();
+          return;
+        }
+        setTimeout(tick, 250);
+      };
+      tick();
+    }
   }
 })();

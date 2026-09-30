@@ -4,6 +4,7 @@ import json
 import random
 import re
 import zipfile
+from datetime import timedelta
 from html import unescape
 
 from django import forms
@@ -28,7 +29,7 @@ from .public_views import _contact
 from .sanitize import headings
 
 REMEMBER_ME_SECONDS = 30 * 24 * 60 * 60
-PATH_ORDER = ['pl900', 'ab410', 'pl300', 'ab400', 'flutter', 'js', 'dom']
+PATH_ORDER = ['pl900', 'ab410', 'pl300', 'ab400', 'flutter', 'js', 'dom', 'net1', 'net2']
 PATH_LINES = {
     'pl900': 'Start with the basics and understand the core services.',
     'ab410': 'Build real business apps with AI and Dataverse.',
@@ -37,6 +38,8 @@ PATH_LINES = {
     'flutter': 'Build and publish mobile apps with Flutter and Dart.',
     'js': 'Learn modern JavaScript from the first line to job-ready.',
     'dom': 'Build real web pages with the DOM and browser APIs.',
+    'net1': 'Teaching and research aptitude for UGC NET Paper 1.',
+    'net2': 'Every unit of UGC NET Computer Science, with timed mock papers.',
 }
 FILE_BADGES = {'csv': 'CSV', 'json': 'JSON', 'md': 'DOC', 'txt': 'TXT', 'cs': 'C#', 'ts': 'TS',
                'tsx': 'TSX', 'js': 'JS', 'py': 'PY', 'yml': 'YAML', 'xml': 'XML',
@@ -100,6 +103,13 @@ def _file_rows(files):
     } for f in files]
 
 
+def _domain_number(first_lesson, position):
+    """A skill area's number: the unit its lessons are numbered in (2 for lesson 2.6),
+    or its position when lessons are lettered (A.3)."""
+    head = first_lesson.num.split('.', 1)[0]
+    return int(head) if head.isdigit() else position
+
+
 def _sidebar(request, track, current=None):
     """The course outline: domains (collapsible) with lessons and status dots."""
     lessons = list(Lesson.objects.filter(track=track).select_related('domain'))
@@ -108,7 +118,7 @@ def _sidebar(request, track, current=None):
     domains = []
     for lesson in lessons:
         if not domains or domains[-1]['domain'].pk != lesson.domain_id:
-            domains.append({'domain': lesson.domain, 'index': len(domains), 'lessons': [],
+            domains.append({'domain': lesson.domain, 'index': _domain_number(lesson, len(domains)), 'lessons': [],
                             'done': 0, 'open': False})
         st = statuses[lesson.id]['status']
         domains[-1]['lessons'].append({'lesson': lesson, 'status': st,
@@ -312,6 +322,7 @@ def assessments(request):
     return render(request, 'academy/assessments.html', {
         'rows': rows, 'history': [a for a in attempts if a.submitted_at][:30],
         'pass_mark': TestAttempt.PASS_MARK, 'nav': 'assessments',
+        'has_exam_course': any(r['track'].is_exam for r in rows),
     })
 
 
@@ -346,7 +357,7 @@ def track_detail(request, track_id):
             domains[-1]['done'] += 1
     open_left = 2
     for i, d in enumerate(domains):
-        d['index'] = i
+        d['index'] = _domain_number(d['lessons'][0]['lesson'], i)
         d['percent'] = round(d['done'] / len(d['lessons']) * 100)
         d['minutes'] = sum(x['lesson'].minutes for x in d['lessons'])
         # Open the first two skill areas that still have work in them.
@@ -554,6 +565,22 @@ def _grade(attempt, questions):
     return correct, round(correct / len(questions) * 1000) if questions else 0
 
 
+# Answers saved or submitted this long after a timed paper's deadline are ignored
+# (the page submits itself at zero; this covers a slow network).
+TIME_GRACE = timedelta(seconds=90)
+
+
+def _time_up(attempt):
+    return attempt.deadline is not None and timezone.now() > attempt.deadline + TIME_GRACE
+
+
+def _finish(request, attempt):
+    attempt.correct_count, attempt.score = _grade(attempt, _attempt_questions(attempt))
+    attempt.submitted_at = timezone.now()
+    attempt.save()
+    perks_mod.record_activity(request.user)
+
+
 def _attempt_questions(attempt):
     by_id = Question.objects.select_related('lesson').in_bulk(attempt.question_ids)
     return [by_id.get(qid) for qid in attempt.question_ids]
@@ -568,16 +595,43 @@ def test_start(request, track_id):
         messages.info(request, f'The {track.code} practice test is locked. {reason}')
         return redirect('academy:track', track_id=track.id)
     pool = list(Question.objects.filter(track=track, is_active=True).values_list('id', flat=True))
+    exam = track.exam if track.is_exam else {}
+    papers = {p['id']: p for p in exam.get('papers', [])}
+    full = exam.get('full')  # a competitive exam's full paper: timed, random questions
     if request.method == 'POST':
-        size = 50 if request.POST.get('size') == '50' and len(pool) >= 50 else 30
+        paper = papers.get(request.POST.get('paper'))
+        if paper:
+            chosen = list(Question.objects.filter(track=track, paper=paper['id'], is_active=True)
+                          .order_by('sort_order', 'id').values_list('id', flat=True))
+            if not chosen:
+                messages.info(request, 'That paper has no questions yet.')
+                return redirect('academy:test_start', track_id=track.id)
+            attempt = TestAttempt.objects.create(user=request.user, track=track, question_ids=chosen,
+                                                 paper=paper['id'], time_limit=paper.get('minutes') or None)
+            return redirect('academy:test_take', attempt_id=attempt.id)
+        size, limit = request.POST.get('size'), None
+        if full and size == str(full) and len(pool) >= full:
+            size, limit = full, exam.get('minutes') or None
+        else:
+            size = 50 if size == '50' and len(pool) >= 50 else 30
         chosen = random.sample(pool, min(size, len(pool)))
-        attempt = TestAttempt.objects.create(user=request.user, track=track, question_ids=chosen)
+        attempt = TestAttempt.objects.create(user=request.user, track=track, question_ids=chosen,
+                                             time_limit=limit)
         return redirect('academy:test_take', attempt_id=attempt.id)
 
     history = TestAttempt.objects.filter(user=request.user, track=track)
+    best = {}
+    for a in history.filter(submitted_at__isnull=False).exclude(paper=''):
+        if a.paper not in best or a.score > best[a.paper].score:
+            best[a.paper] = a
+    paper_rows = []
+    for p in exam.get('papers', []):
+        paper_rows.append({**p, 'best': best.get(p['id'])})
     return render(request, 'academy/test_start.html', {
         'track': track, 'pool_size': len(pool), 'history': history[:20],
         'open_attempt': history.filter(submitted_at__isnull=True).first(),
+        'exam': exam, 'papers': paper_rows,
+        'full_mock': full if full and len(pool) >= full and full not in (30, 50) else None,
         **_sidebar(request, track, current='test'),
     })
 
@@ -595,12 +649,18 @@ def test_take(request, attempt_id):
     attempt = _own_attempt(request, attempt_id)
     if attempt.submitted_at:
         return redirect('academy:test_result', attempt_id=attempt.id)
+    if _time_up(attempt):
+        _finish(request, attempt)
+        messages.info(request, 'Time is up, so the paper was submitted with your saved answers.')
+        return redirect('academy:test_result', attempt_id=attempt.id)
     questions = _attempt_questions(attempt)
     items = [{'i': i, 'q': q, 'options': list(enumerate(q.options)),
               'chosen': attempt.answers.get(str(i))}
              for i, q in enumerate(questions) if q is not None]
+    paper = next((p for p in attempt.track.exam.get('papers', []) if p['id'] == attempt.paper), None)
     return render(request, 'academy/test_take.html', {
-        'attempt': attempt, 'track': attempt.track, 'items': items,
+        'attempt': attempt, 'track': attempt.track, 'items': items, 'paper': paper,
+        'seconds_left': max(0, int((attempt.deadline - timezone.now()).total_seconds())) if attempt.deadline else None,
         'answered': len(attempt.answers),
         **_sidebar(request, attempt.track, current='test'),
     })
@@ -612,6 +672,8 @@ def api_test_save(request, attempt_id):
     attempt = _own_attempt(request, attempt_id)
     if attempt.submitted_at:
         return JsonResponse({'detail': 'Already submitted.'}, status=409)
+    if _time_up(attempt):
+        return JsonResponse({'detail': 'Time is up.'}, status=409)
     data = _json_body(request)
     if data is None or not isinstance(data.get('answers'), dict):
         return HttpResponseBadRequest('answers must be an object')
@@ -629,15 +691,14 @@ def api_test_save(request, attempt_id):
 def test_submit(request, attempt_id):
     attempt = _own_attempt(request, attempt_id)
     if not attempt.submitted_at:
-        # The form carries the final answers too, in case the last autosave was lost.
-        for key, value in request.POST.items():
-            if key.startswith('q') and key[1:].isdigit() and value.isdigit():
-                if int(key[1:]) < attempt.size and 0 <= int(value) <= 3:
-                    attempt.answers[str(int(key[1:]))] = int(value)
-        attempt.correct_count, attempt.score = _grade(attempt, _attempt_questions(attempt))
-        attempt.submitted_at = timezone.now()
-        attempt.save()
-        perks_mod.record_activity(request.user)
+        # The form carries the final answers too, in case the last autosave was lost,
+        # unless a timed paper's time ran out: then only the saved answers count.
+        if not _time_up(attempt):
+            for key, value in request.POST.items():
+                if key.startswith('q') and key[1:].isdigit() and value.isdigit():
+                    if int(key[1:]) < attempt.size and 0 <= int(value) <= 3:
+                        attempt.answers[str(int(key[1:]))] = int(value)
+        _finish(request, attempt)
     return redirect('academy:test_result', attempt_id=attempt.id)
 
 
@@ -659,8 +720,9 @@ def test_result(request, attempt_id):
     for it in items:
         if not it['correct'] and it['q'].lesson:
             missed_lessons.setdefault(it['q'].lesson.id, {'lesson': it['q'].lesson, 'n': 0})['n'] += 1
+    paper = next((p for p in attempt.track.exam.get('papers', []) if p['id'] == attempt.paper), None)
     return render(request, 'academy/test_result.html', {
-        'attempt': attempt, 'track': attempt.track, 'items': items,
+        'attempt': attempt, 'track': attempt.track, 'items': items, 'paper': paper,
         'missed_lessons': sorted(missed_lessons.values(), key=lambda m: -m['n'])[:6],
         'pass_mark': TestAttempt.PASS_MARK,
         'new_badges': perks_mod.announce_new(request, perks_mod.for_request(request)),

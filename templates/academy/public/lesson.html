@@ -7,6 +7,8 @@
 {% block extra_head %}{% load static %}{% if lesson.mocks %}
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,400,0..1,0&display=block">
 <link rel="stylesheet" href="{% static 'academy/flutter-mocks.css' %}?v=2">
+{% endif %}{% if lesson.solvers %}
+<link rel="stylesheet" href="{% static 'academy/ugc-solvers.css' %}?v=1">
 {% endif %}{% if lesson.plays %}
 <link rel="stylesheet" href="{% static 'academy/dom-play.css' %}?v=1">
 {% endif %}{% endblock %}
@@ -42,14 +44,14 @@
       {% if lesson.terms %}
       <div class="terms" id="terms"><h3>Key terms</h3><dl>{% for t in lesson.terms %}<dt>{{ t.term }}</dt><dd>{{ t.definition }}</dd>{% endfor %}</dl></div>
       {% endif %}
-      {% if lesson.exam_tip %}<div class="tip"><b>{% if lesson.track.is_certification %}Exam tip{% else %}Tip{% endif %}</b><span>{{ lesson.exam_tip }}</span></div>{% endif %}
+      {% if lesson.exam_tip %}<div class="tip"><b>{% if lesson.track.has_exam %}Exam tip{% else %}Tip{% endif %}</b><span>{{ lesson.exam_tip }}</span></div>{% endif %}
     </div>
 
     <section class="card2 unlock-more">
       <div class="um-row">
         <div><span class="tile violet"><i class="fa-solid fa-flask"></i></span><b>Hands-on lab</b><small>{{ lesson.lab_steps|length }} steps{% if file_count %} · {{ file_count }} exercise file{{ file_count|pluralize }}{% endif %}{% if lesson.widget %} · simulator{% endif %}</small></div>
         <div><span class="tile blue"><i class="fa-regular fa-circle-question"></i></span><b>Quiz</b><small>{{ quiz_count }} exam-style question{{ quiz_count|pluralize }} with explanations</small></div>
-        <div><span class="tile amber"><i class="fa-solid fa-trophy"></i></span><b>Practice tests</b><small>30 and 50-question mocks, scored out of 1000</small></div>
+        <div><span class="tile amber"><i class="fa-solid fa-trophy"></i></span><b>Practice tests</b><small>{% if lesson.track.is_exam %}Timed NTA pattern papers, 2 marks a question{% else %}30 and 50-question mocks, scored out of 1000{% endif %}</small></div>
       </div>
       <p>The lab, quiz and practice tests for this lesson are for enrolled students, with progress saved to your own login.</p>
       <div class="enrol-btns">
@@ -85,4 +87,6 @@
 <script src="{% static 'academy/flutter-mocks.js' %}?v=1"></script>{% endif %}
 {% if lesson.plays %}{{ lesson.plays|json_script:"lessonPlays" }}
 <script src="{% static 'academy/dom-play.js' %}?v=1"></script>{% endif %}
+{% if lesson.solvers %}{{ lesson.solvers|json_script:"lessonSolvers" }}
+<script src="{% static 'academy/ugc-solvers.js' %}?v=1"></script>{% endif %}
 {% endblock %}

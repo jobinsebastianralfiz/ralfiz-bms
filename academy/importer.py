@@ -1,8 +1,10 @@
 """Load an Academy Labs content package into the database.
 
 Idempotent: tracks, domains, lessons and files are upserted by id; questions
-are matched on (track, lesson, question text) so learners' answers survive a
-re-import. A package whose hash matches the last import is skipped.
+are matched on (track, lesson, question text, key) so learners' answers survive
+a re-import. The key is empty for plain questions and a hash of the stem and
+options for exam-format ones (those with a kind), whose text alone repeats ("Match List I with
+List II"). A package whose hash matches the last import is skipped.
 """
 import hashlib
 import json
@@ -13,9 +15,9 @@ from django.db import transaction
 from .models import (
     ContentImport, Domain, ExerciseFile, Lesson, LessonFile, Question, Track,
 )
-from .sanitize import check_mocks, check_plays, clean_html
+from .sanitize import check_mocks, check_plays, check_solvers, check_stem, clean_html
 
-TRACK_ORDER = ['pl900', 'ab410', 'pl300', 'ab400', 'flutter', 'js', 'dom']
+TRACK_ORDER = ['pl900', 'ab410', 'pl300', 'ab400', 'flutter', 'js', 'dom', 'net1', 'net2']
 DEFAULT_PACKAGE_DIR = Path(__file__).resolve().parent / 'content'
 SHARED_PREFIXES = ('hd', 'pbi')
 
@@ -28,6 +30,24 @@ def file_disk_path(root, file_id):
     if file_id.split('/', 1)[0] in SHARED_PREFIXES:
         return root / 'exercise-files' / 'shared-data' / file_id
     return root / 'exercise-files' / file_id
+
+
+def question_key(q):
+    """Import identity beyond the question text: '' for a plain question, whose text is unique."""
+    if not (q.get('stem') or q.get('kind')):
+        return ''
+    raw = json.dumps([q.get('stem') or {}, q['options']], sort_keys=True, ensure_ascii=False)
+    return hashlib.sha256(raw.encode()).hexdigest()
+
+
+def _check_question(where, q, papers):
+    errors = []
+    if not 0 <= q['answer'] < len(q['options']) or q['answer'] > 3:
+        errors.append(f'{where}: answer {q["answer"]} out of range')
+    errors += [f'{where}: {p}' for p in check_stem(q.get('stem') or {})]
+    if q.get('paper') and q['paper'] not in papers:
+        errors.append(f'{where}: unknown paper {q["paper"]}')
+    return errors
 
 
 def _read_package(root):
@@ -72,6 +92,7 @@ def _read_package(root):
 
     seen_lessons = set()
     for t in tracks:
+        papers = {p['id'] for p in (t.get('exam') or {}).get('papers', [])}
         for fid in t.get('data', []):
             if fid not in index:
                 errors.append(f'{t["id"]}: course data file {fid} not in files-index')
@@ -90,17 +111,16 @@ def _read_package(root):
                         files[fid]['track_ids'].add(t['id'])
                 errors += [f'{lid}: {p}' for p in check_mocks(lesson.get('mocks') or [])]
                 errors += [f'{lid}: {p}' for p in check_plays(lesson.get('plays') or [])]
+                errors += [f'{lid}: {p}' for p in check_solvers(lesson.get('solvers') or [])]
                 for q in lesson.get('quiz', []):
-                    if not 0 <= q['answer'] < len(q['options']) or q['answer'] > 3:
-                        errors.append(f'{lid}: answer {q["answer"]} out of range')
+                    errors += _check_question(lid, q, papers)
                 sorter = lesson.get('sorter')
                 if sorter:
                     for item in sorter.get('items', []):
                         if not 0 <= item['a'] < len(sorter['options']):
                             errors.append(f'{lid}: sorter answer {item["a"]} out of range')
         for q in t.get('questionBank', []):
-            if not 0 <= q['answer'] < len(q['options']) or q['answer'] > 3:
-                errors.append(f'{t["id"]} bank: answer {q["answer"]} out of range')
+            errors += _check_question(f'{t["id"]} bank', q, papers)
     for t in tracks:
         for q in t.get('questionBank', []):
             if q.get('lesson') and q['lesson'] not in seen_lessons:
@@ -149,29 +169,34 @@ def run_import(root=DEFAULT_PACKAGE_DIR, content_version='2026-09', force=False,
                 'facts': t.get('facts', []), 'tool': t.get('tool', ''),
                 'guide_url': t.get('guide', ''), 'note': t.get('note', ''),
                 'data_file_ids': t.get('data', []), 'sort_order': t_order,
-                'content_version': content_version,
+                'content_version': content_version, 'exam': t.get('exam') or {},
             })
             if created and t.get('category'):
                 # Staff can recategorise a course in BMS; only a new course takes the package's value.
                 track.category = t['category']
                 track.save(update_fields=['category'])
             counts['tracks'] += 1
-            existing = {(q.lesson_id, q.question): q for q in Question.objects.filter(track=track)}
+            existing = {(q.lesson_id, q.question, q.key): q for q in Question.objects.filter(track=track)}
+            # Thousands of questions per course (UGC NET), so they are written in bulk.
+            to_create, to_update = [], []
 
             def upsert_question(lesson_id, source, order, q):
-                obj = existing.get((lesson_id, q['question']))
+                key = question_key(q)
+                obj = existing.get((lesson_id, q['question'], key))
                 fields = {'source': source, 'sort_order': order, 'options': q['options'],
                           'answer': q['answer'], 'explanation': q.get('explanation', ''),
+                          'kind': q.get('kind', ''), 'stem': q.get('stem') or {},
+                          'topic': q.get('topic', ''), 'paper': q.get('paper', ''),
                           'is_active': True}
                 if obj is None:
-                    obj = Question.objects.create(track=track, lesson_id=lesson_id,
-                                                  question=q['question'], **fields)
+                    to_create.append(Question(track=track, lesson_id=lesson_id,
+                                              question=q['question'], key=key, **fields))
                     counts['questions_added'] += 1
                 else:
                     for k, v in fields.items():
                         setattr(obj, k, v)
-                    obj.save()
-                kept_question_ids.add(obj.pk)
+                    to_update.append(obj)
+                    kept_question_ids.add(obj.pk)
                 counts['questions'] += 1
 
             for d_order, d in enumerate(t['domains']):
@@ -193,7 +218,7 @@ def run_import(root=DEFAULT_PACKAGE_DIR, content_version='2026-09', force=False,
                         'widget': raw.get('widget') or '', 'sorter': raw.get('sorter'),
                         'lab_steps': lab.get('steps', []), 'lab_check': lab.get('check', []),
                         'mocks': raw.get('mocks') or [], 'plays': raw.get('plays') or [],
-                        'sort_order': l_order,
+                        'solvers': raw.get('solvers') or [], 'sort_order': l_order,
                     })
                     counts['lessons'] += 1
                     LessonFile.objects.filter(lesson=lesson).delete()
@@ -206,6 +231,11 @@ def run_import(root=DEFAULT_PACKAGE_DIR, content_version='2026-09', force=False,
 
             for b_order, q in enumerate(t.get('questionBank', [])):
                 upsert_question(q.get('lesson'), 'bank', b_order, q)
+            Question.objects.bulk_update(to_update, ['source', 'sort_order', 'options', 'answer', 'explanation',
+                                                     'kind', 'stem', 'topic', 'paper', 'is_active'],
+                                         batch_size=500)
+            created_qs = Question.objects.bulk_create(to_create, batch_size=500)
+            kept_question_ids.update(q.pk for q in created_qs)
 
         retired = (Question.objects.filter(is_active=True, track_id__in=[t['id'] for t in tracks])
                    .exclude(pk__in=kept_question_ids))

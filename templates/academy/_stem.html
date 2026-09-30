@@ -1,0 +1,9 @@
+{% comment %}A question's text with its exam-format parts (UGC NET): passage, data table, code, statements, List I / List II and the closing line. Include with q=<Question>.{% endcomment %}
+{% if q.kind_label %}<span class="qkind">{{ q.kind_label }}</span>{% endif %}
+{% if q.stem.passage %}<details class="nq-pass" open><summary>{{ q.stem.passageTitle|default:"Read the passage" }}</summary>{% for p in q.passage_paras %}<p>{{ p|linebreaksbr }}</p>{% endfor %}</details>{% endif %}
+{% with d=q.stem.data %}{% if d %}<div class="nq-data">{% if d.caption %}<div class="nq-cap">{{ d.caption }}</div>{% endif %}<div class="nq-tw"><table><thead><tr>{% for h in d.head %}<th>{{ h }}</th>{% endfor %}</tr></thead><tbody>{% for r in d.rows %}<tr>{% for c in r %}{% if forloop.first %}<th scope="row">{{ c }}</th>{% else %}<td>{{ c }}</td>{% endif %}{% endfor %}</tr>{% endfor %}</tbody></table></div>{% if d.note %}<div class="nq-note">{{ d.note }}</div>{% endif %}</div>{% endif %}{% endwith %}
+<p class="stem">{{ q.question|linebreaksbr }}</p>
+{% if q.stem.code %}<pre class="code nq-code"><code>{{ q.stem.code }}</code></pre>{% endif %}
+{% if q.stem.stmts %}<div class="nq-st">{% for label, text in q.statements %}<div class="nq-s">{% if label %}<b>{{ label }}:</b> {% endif %}{{ text|linebreaksbr }}</div>{% endfor %}</div>{% endif %}
+{% if q.stem.lists %}<div class="nq-tw"><table class="nq-lists"><thead><tr><th colspan="2">{{ q.stem.lists.h.0|default:"List I" }}</th><th colspan="2">{{ q.stem.lists.h.1|default:"List II" }}</th></tr></thead><tbody>{% for k1, a, k2, b in q.list_rows %}<tr><td class="k">{{ k1 }}</td><td>{{ a }}</td><td class="k">{{ k2 }}</td><td>{{ b }}</td></tr>{% endfor %}</tbody></table></div>{% endif %}
+{% if q.stem.after %}<p class="stem nq-after">{{ q.stem.after|linebreaksbr }}</p>{% endif %}

@@ -39,13 +39,14 @@ class ImportTests(AcademyTestBase):
     def test_counts_match_the_package(self):
         c = self.counts
         self.assertEqual((c['tracks'], c['domains'], c['lessons'], c['files'], c['questions']),
-                         (7, 48, 194, 666, 764))
+                         (9, 68, 289, 856, 8486))
 
     def test_reimport_is_a_no_op_and_keeps_answers(self):
         q = Question.objects.filter(source='lesson').first()
         QuizAnswer.objects.create(user=self.user, question=q, last_choice=0)
         run_import(log=_quiet, force=True)
-        self.assertEqual(Question.objects.count(), 764)
+        self.assertEqual(Question.objects.count(), 8486)
+        self.assertEqual(Question.objects.filter(is_active=False).count(), 0)
         self.assertTrue(QuizAnswer.objects.filter(question_id=q.pk).exists())
 
     def test_flutter_track_imports(self):
@@ -615,6 +616,111 @@ class LandingTests(AcademyTestBase):
         self.assertContains(self.client.get(reverse('academy:home')), 'Asha')
 
 
+class UgcNetTests(AcademyTestBase):
+    """UGC NET Paper 1 (net1) and Computer Science Paper 2 (net2): exam-format questions,
+    interactive solvers and timed pattern papers."""
+
+    def setUp(self):
+        Enrollment.objects.get_or_create(student=self.student, track_id='net2')
+        self.login_student()
+
+    def test_tracks_import_as_competitive_exams(self):
+        for tid, lessons, papers, marks in (('net1', 25, 20, 50), ('net2', 70, 20, 100)):
+            t = Track.objects.get(pk=tid)
+            self.assertEqual((t.category, t.lessons.count(), len(t.exam['papers'])), ('exam', lessons, papers), tid)
+            self.assertTrue(t.is_exam and t.has_exam and not t.is_certification)
+            self.assertEqual(Question.objects.filter(track=t, paper=t.exam['papers'][0]['id']).count(), marks)
+        self.assertEqual(Question.objects.filter(track_id__in=['net1', 'net2']).count(), 7722)
+
+    def test_repeated_question_text_stays_separate_questions(self):
+        match = Question.objects.filter(track_id='net2', question='Match List I with List II')
+        self.assertGreater(match.count(), 100)
+        self.assertEqual(match.values('key').distinct().count(), match.count())
+
+    def test_exam_formats_render_on_the_lesson_quiz(self):
+        self.client.login(username='owner', password='pw')  # lessons unlock in order for students
+        q = Question.objects.filter(track_id='net2', source='lesson', kind='match').first()
+        page = self.client.get(reverse('academy:lesson', args=[q.lesson_id]) + '?tab=quiz').content.decode()
+        self.assertIn('class="nq-lists"', page)
+        self.assertIn(q.stem['lists']['b'][0].split('. ', 1)[-1][:30].replace("'", '&#x27;'), page)
+        self.assertIn('Match the lists', page)
+        ar = Question.objects.filter(track_id='net2', source='lesson', kind='ar').first()
+        page = self.client.get(reverse('academy:lesson', args=[ar.lesson_id]) + '?tab=quiz').content.decode()
+        self.assertIn('<b>Assertion (A):</b>', page)
+
+    def test_lesson_html_keeps_subscripts_and_solver_slots(self):
+        lesson = Lesson.objects.get(pk='cs1')
+        self.assertEqual(lesson.solvers, ['truthtable'])
+        self.assertIn('<div class="solver-slot" data-solver="0">', lesson.content_html)
+        self.assertTrue(Lesson.objects.filter(track_id='net2', content_html__contains='<sub>').exists())
+        page = self.client.get(reverse('academy:lesson', args=['cs1'])).content.decode()
+        self.assertIn('academy/ugc-solvers.js', page)
+        self.assertIn('<script id="lessonSolvers" type="application/json">["truthtable"]</script>', page)
+        self.assertNotIn('ugc-solvers', self.client.get(reverse('academy:lesson', args=['cs2'])).content.decode()
+                         if not Lesson.objects.get(pk='cs2').solvers else '')
+
+    def test_pattern_paper_is_timed_and_marked(self):
+        track = Track.objects.get(pk='net2')
+        paper = track.exam['papers'][0]
+        page = self.client.get(reverse('academy:test_start', args=['net2'])).content.decode()
+        self.assertIn(paper['title'], page)
+        self.client.post(reverse('academy:test_start', args=['net2']), {'paper': paper['id']})
+        attempt = TestAttempt.objects.get(user=self.user)
+        self.assertEqual((attempt.paper, attempt.time_limit, attempt.size), (paper['id'], 120, 100))
+        ordered = list(Question.objects.filter(track=track, paper=paper['id']).order_by('sort_order', 'id')
+                       .values_list('id', flat=True))
+        self.assertEqual(attempt.question_ids, ordered)
+        page = self.client.get(reverse('academy:test_take', args=[attempt.id])).content.decode()
+        self.assertIn('id="tTimer"', page)
+        qs = Question.objects.in_bulk(attempt.question_ids)
+        answers = {str(i): qs[qid].answer for i, qid in enumerate(attempt.question_ids[:62])}
+        self.post_json(reverse('academy:api_test_save', args=[attempt.id]), {'answers': answers})
+        self.client.post(reverse('academy:test_submit', args=[attempt.id]))
+        attempt.refresh_from_db()
+        self.assertEqual((attempt.correct_count, attempt.marks), (62, (124, 200)))
+        self.assertContains(self.client.get(reverse('academy:test_result', args=[attempt.id])), '124<small>/200</small>')
+
+    def test_answers_after_time_is_up_do_not_count(self):
+        from datetime import timedelta
+        from django.utils import timezone
+        paper = Track.objects.get(pk='net2').exam['papers'][1]
+        self.client.post(reverse('academy:test_start', args=['net2']), {'paper': paper['id']})
+        attempt = TestAttempt.objects.get(user=self.user)
+        qs = Question.objects.in_bulk(attempt.question_ids)
+        self.post_json(reverse('academy:api_test_save', args=[attempt.id]),
+                       {'answers': {'0': qs[attempt.question_ids[0]].answer}})
+        TestAttempt.objects.filter(pk=attempt.pk).update(started_at=timezone.now() - timedelta(minutes=130))
+        r = self.post_json(reverse('academy:api_test_save', args=[attempt.id]), {'answers': {'1': 0}})
+        self.assertEqual(r.status_code, 409)
+        late = {f'q{i}': str(qs[qid].answer) for i, qid in enumerate(attempt.question_ids)}
+        self.client.post(reverse('academy:test_submit', args=[attempt.id]), late)
+        attempt.refresh_from_db()
+        self.assertEqual(attempt.correct_count, 1)
+
+    def test_opening_an_expired_paper_submits_it(self):
+        from datetime import timedelta
+        from django.utils import timezone
+        paper = Track.objects.get(pk='net2').exam['papers'][2]
+        self.client.post(reverse('academy:test_start', args=['net2']), {'paper': paper['id']})
+        attempt = TestAttempt.objects.get(user=self.user)
+        TestAttempt.objects.filter(pk=attempt.pk).update(started_at=timezone.now() - timedelta(hours=3))
+        r = self.client.get(reverse('academy:test_take', args=[attempt.id]))
+        self.assertRedirects(r, reverse('academy:test_result', args=[attempt.id]))
+        attempt.refresh_from_db()
+        self.assertIsNotNone(attempt.submitted_at)
+
+    def test_full_random_paper_is_timed(self):
+        self.client.post(reverse('academy:test_start', args=['net2']), {'size': '100'})
+        attempt = TestAttempt.objects.get(user=self.user)
+        self.assertEqual((attempt.size, attempt.time_limit, attempt.paper), (100, 120, ''))
+
+    def test_catalog_lists_competitive_exams(self):
+        self.client.logout()
+        page = self.client.get(reverse('academy:catalog')).content.decode()
+        self.assertIn('Competitive exams', page)
+        self.assertIn('UGC NET Computer Science and Applications', page)
+
+
 class SanitizeTests(TestCase):
     def test_table_cells_keep_small_spans_only(self):
         from .sanitize import clean_html
@@ -634,6 +740,25 @@ class SanitizeTests(TestCase):
             html, _ = clean_html(bad + '</div>')
             self.assertNotIn('mock', html, bad)
             self.assertNotIn('onclick', html, bad)
+
+    def test_sub_sup_and_solver_placeholder_survive(self):
+        from .sanitize import check_solvers, clean_html
+        html, dropped = clean_html('<p>log<sub>2</sub> n and 2<sup>n</sup></p>'
+                                   '<div class="solver-slot" data-solver="3"></div>'
+                                   '<div class="solver-slot" data-solver="x" onclick="a()"></div>')
+        self.assertIn('log<sub>2</sub> n and 2<sup>n</sup>', html)
+        self.assertIn('<div class="solver-slot" data-solver="3">', html)
+        self.assertEqual(html.count('solver-slot'), 1)
+        self.assertEqual(check_solvers(['kmap', 'lr']), [])
+        self.assertTrue(check_solvers(['kmap"><script>']))
+
+    def test_question_stem_shape_is_checked(self):
+        from .sanitize import check_stem
+        self.assertEqual(check_stem({'stmts': ['A: x'], 'after': 'Choose',
+                                     'lists': {'h': ['L1', 'L2'], 'a': ['A. p'], 'b': ['I. q']},
+                                     'data': {'caption': '', 'note': '', 'head': ['x'], 'rows': [['1']]}}), [])
+        self.assertTrue(check_stem({'script': 'x'}))
+        self.assertTrue(check_stem({'lists': {'a': 'not a list', 'b': []}}))
 
     def test_only_the_exact_play_placeholder_survives(self):
         from .sanitize import clean_html

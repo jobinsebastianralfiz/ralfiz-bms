@@ -2,7 +2,7 @@
 {% block title %}Assessments · Ralfiz Academy{% endblock %}
 {% block page %}
 <div class="sec-h" style="margin-top:6px">
-  <div><h2 style="font-size:30px">Assessments</h2><p>Practice tests for each course, scored out of 1000. The Microsoft exams need {{ pass_mark }} to pass, and so do these tests. These scores are a guide, not Microsoft's scaled score.</p></div>
+  <div><h2 style="font-size:30px">Assessments</h2><p>Practice tests for each course, scored out of 1000. The Microsoft exams need {{ pass_mark }} to pass, and so do these tests. These scores are a guide, not Microsoft's scaled score.{% if has_exam_course %} UGC NET courses also have timed pattern papers, marked as in the NTA exam.{% endif %}</p></div>
 </div>
 
 <div class="cgrid">
@@ -24,12 +24,15 @@
     {% elif r.open_attempt %}
     <div class="cfoot"><a class="btn2" href="{% url 'academy:test_take' r.open_attempt.id %}"><i class="fa-solid fa-play"></i> Resume test ({{ r.open_attempt.answers|length }}/{{ r.open_attempt.size }})</a></div>
     {% else %}
+    {% if r.track.is_exam %}
+    <div class="cfoot"><a class="btn2" href="{% url 'academy:test_start' r.track.id %}"><i class="fa-regular fa-clock"></i> Pattern papers and practice sets</a></div>
+    {% else %}
     <form method="post" action="{% url 'academy:test_start' r.track.id %}" class="cfoot">
       {% csrf_token %}
       <button class="btn2" type="submit" name="size" value="30">Start 30-question test</button>
       {% if r.pool >= 50 %}<button class="btn2 ghost" type="submit" name="size" value="50" title="Full 50-question mock">50</button>{% endif %}
     </form>
-    {% endif %}
+    {% endif %}{% endif %}
   </article>
   {% empty %}
   <div class="card2" style="padding:24px"><p style="margin:0">Enrol in a course to take its practice tests.</p></div>

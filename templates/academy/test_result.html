@@ -4,15 +4,25 @@
 {% block content %}
 <div class="test-head">
   <div>
-    <div class="eyebrow">{{ track.code }} practice test · {{ attempt.submitted_at|date:"j M Y, g:i A" }}</div>
+    <div class="eyebrow">{{ track.code }} {% if paper %}{{ paper.title }}{% else %}practice test{% endif %} · {{ attempt.submitted_at|date:"j M Y, g:i A" }}</div>
     <h1 style="font-size:clamp(26px,4vw,36px)">Your result</h1>
   </div>
+  {% if paper %}<a class="btn" href="{% url 'academy:test_start' track.id %}">All pattern papers</a>{% else %}
   <form method="post" action="{% url 'academy:test_start' track.id %}">
     {% csrf_token %}
     <button class="btn" type="submit" name="size" value="{{ attempt.size }}">New {{ attempt.size }}-question test</button>
-  </form>
+  </form>{% endif %}
 </div>
 
+{% with m=attempt.marks %}
+<div class="score {% if m %}{% if attempt.score >= 400 %}pass{% else %}fail{% endif %}{% elif attempt.passed %}pass{% else %}fail{% endif %}">
+  {% if m %}<b class="marks">{{ m.0 }}<small>/{{ m.1 }}</small></b>{% else %}<b>{{ attempt.score }}</b>{% endif %}
+  <div>
+    {% if m %}<strong>{{ attempt.correct_count }} of {{ attempt.size }} correct · {% widthratio attempt.score 10 1 %}% of the marks</strong>
+    <p>{{ track.marks_each }} marks for each correct answer and no negative marking, as in the NTA exam. To qualify, you need at least 40% aggregate across Paper 1 and Paper 2 (35% for reserved categories). {% if attempt.score >= 400 %}You are above that line on this paper.{% else %}Review the lessons linked under each missed question, then try another paper.{% endif %}</p>
+  </div>
+</div>
+{% else %}
 <div class="score {% if attempt.passed %}pass{% else %}fail{% endif %}">
   <b>{{ attempt.score }}</b>
   <div>
@@ -20,6 +30,7 @@
     <p>{% if attempt.passed %}Good work.{% if attempt.track.is_certification %} Take Microsoft's free practice assessment next, where one exists.{% endif %}{% else %}Review the lessons linked under each missed question, then try a new test.{% endif %}</p>
   </div>
 </div>
+{% endif %}{% endwith %}
 
 {% if missed_lessons %}
 <section class="panel" style="max-width:760px;margin-bottom:22px">
@@ -35,7 +46,7 @@
 {% for it in items %}
 <div class="q review">
   <span class="qn">Question {{ forloop.counter }} of {{ items|length }}</span>
-  <p class="stem">{{ it.q.question }}</p>
+  {% include 'academy/_stem.html' with q=it.q %}
   <div class="opts">
     {% for j, opt in it.options %}
     <button class="opt {% if j == it.q.answer %}right{% elif j == it.chosen %}wrong{% endif %}" type="button" disabled><span class="k">{% cycle 'A' 'B' 'C' 'D' %}</span><span>{{ opt }}</span></button>
