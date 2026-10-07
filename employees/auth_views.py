@@ -4,6 +4,39 @@ from rest_framework import serializers
 from .models import Employee
 
 
+def create_admin_employee(user):
+    """Give a superuser/staff login the Employee profile the app needs.
+
+    Superusers become owners, other staff plain employees. Used by the mobile
+    app login and by the Claude connector, so the admin account works the same
+    way in both.
+    """
+    last_emp = Employee.objects.order_by('-employee_id').first()
+    if last_emp and last_emp.employee_id.startswith('EMP'):
+        try:
+            num = int(last_emp.employee_id[3:]) + 1
+        except ValueError:
+            num = 1
+    else:
+        num = 1
+    return Employee.objects.create(
+        user=user,
+        employee_id=f'EMP{num:03d}',
+        employment_type='fulltime',
+        role='owner' if user.is_superuser else 'employee',
+        department='operations',
+        designation='Admin',
+        status='active',
+    )
+
+
+def promote_superuser_to_owner(user, employee):
+    """A superuser's profile always carries the owner role."""
+    if user.is_superuser and employee.role == 'employee':
+        employee.role = 'owner'
+        employee.save(update_fields=['role'])
+
+
 class EmployeeTokenSerializer(TokenObtainPairSerializer):
     """Custom JWT token that includes employee info in response"""
 
@@ -69,31 +102,11 @@ class EmployeeTokenSerializer(TokenObtainPairSerializer):
         except Employee.DoesNotExist:
             employee = self._create_employee_from_team_member(user)
             if employee is None and (user.is_superuser or user.is_staff):
-                # Auto-create Employee for superusers/staff
-                last_emp = Employee.objects.order_by('-employee_id').first()
-                if last_emp and last_emp.employee_id.startswith('EMP'):
-                    try:
-                        num = int(last_emp.employee_id[3:]) + 1
-                    except ValueError:
-                        num = 1
-                else:
-                    num = 1
-                employee = Employee.objects.create(
-                    user=user,
-                    employee_id=f'EMP{num:03d}',
-                    employment_type='fulltime',
-                    role='owner' if user.is_superuser else 'employee',
-                    department='operations',
-                    designation='Admin',
-                    status='active',
-                )
+                employee = create_admin_employee(user)
             if employee is None:
                 raise serializers.ValidationError('No employee profile found for this user.')
 
-        # Auto-set role='owner' for superuser-created employees
-        if user.is_superuser and employee.role == 'employee':
-            employee.role = 'owner'
-            employee.save(update_fields=['role'])
+        promote_superuser_to_owner(user, employee)
 
         if employee.status != 'active':
             raise serializers.ValidationError('Your account is inactive. Contact admin.')

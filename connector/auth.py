@@ -3,8 +3,9 @@
 The connector exposes business-wide data (revenue, clients, salaries), so it is
 limited to the same people the owner API serves: active owner/partner
 employees. Django staff alone is not enough -- a staff login with no owner
-Employee profile (e.g. the `admin` superuser) is refused by every owner
-endpoint, so letting it connect only produces a page of 403s.
+Employee profile is refused by every owner endpoint, so letting it connect
+only produces a page of 403s. Superusers are the exception: like the mobile
+app login, connecting gives them an owner profile (ensure_superuser_owner).
 
 The same check runs twice -- on the OAuth consent page, so nobody else can
 mint a token, and on every MCP request, so a token outlives neither a role
@@ -14,6 +15,7 @@ change nor a deactivated account.
 from django.urls import reverse
 from oauth2_provider.oauth2_backends import get_oauthlib_core
 
+from employees.auth_views import create_admin_employee, promote_superuser_to_owner
 from employees.models import Employee
 
 OWNER_ROLES = ('owner', 'partner')
@@ -29,6 +31,17 @@ def can_use_connector(user) -> bool:
     return Employee.objects.filter(
         user=user, status='active', role__in=OWNER_ROLES,
     ).exists()
+
+
+def ensure_superuser_owner(user):
+    """Give a superuser the owner profile the mobile app login would create."""
+    if user is None or not user.is_authenticated or not user.is_superuser:
+        return
+    employee = Employee.objects.filter(user=user).first()
+    if employee is None:
+        create_admin_employee(user)
+    else:
+        promote_superuser_to_owner(user, employee)
 
 
 def authenticate_bearer(request):

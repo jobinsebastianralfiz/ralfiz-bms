@@ -286,11 +286,26 @@ class OAuthFlowTests(MCPClientMixin, TestCase):
         self.assertEqual(self.rpc('tools/list', token=reg_token.token).status_code, 403)
 
     def test_staff_without_owner_profile_cannot_authorize(self):
-        admin = User.objects.create_superuser('admin', 'a@x.in', 'pw-123456')
-        self.client.force_login(admin)
+        staff = User.objects.create_user('helpdesk', password='pw-123456', is_staff=True)
+        self.client.force_login(staff)
         page = self.client.get('/oauth/authorize/', self.authorize_params)
         self.assertEqual(page.status_code, 403)
         self.assertContains(page, 'no owner or partner profile', status_code=403)
+        self.assertFalse(Employee.objects.filter(user=staff).exists())
+
+    def test_superuser_gets_an_owner_profile_like_the_app_login(self):
+        admin = User.objects.create_superuser('admin', 'a@x.in', 'pw-123456')
+        self.client.force_login(admin)
+        page = self.client.get('/oauth/authorize/', self.authorize_params)
+        self.assertEqual(page.status_code, 200)
+        employee = Employee.objects.get(user=admin)
+        self.assertEqual((employee.role, employee.status), ('owner', 'active'))
+
+    def test_superuser_token_from_before_works_and_owner_tools_answer(self):
+        admin = User.objects.create_superuser('admin', 'a@x.in', 'pw-123456')
+        self.token = make_token(admin)
+        for name in ('list_projects', 'get_project_board', 'get_dashboard', 'list_leads'):
+            self.ok(name)
 
     def test_token_for_other_resource_is_rejected(self):
         token = make_token(self.owner, resource=['https://other.example/mcp'])

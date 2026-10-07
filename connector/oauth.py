@@ -18,7 +18,7 @@ from django.utils.decorators import method_decorator
 from django.views.decorators.csrf import csrf_exempt
 from oauth2_provider.views import AuthorizationView, DynamicClientRegistrationView
 
-from .auth import can_use_connector
+from .auth import can_use_connector, ensure_superuser_owner
 
 LOOPBACK_HOSTS = ('localhost', '127.0.0.1', '[::1]', '::1')
 
@@ -28,6 +28,7 @@ class ConnectorAuthorizationView(AuthorizationView):
 
     def dispatch(self, request, *args, **kwargs):
         # Anonymous users fall through to DOT, which redirects to the login page.
+        ensure_superuser_owner(request.user)
         if request.user.is_authenticated and not can_use_connector(request.user):
             return render(request, 'connector/authorize.html', {
                 'denied': True,

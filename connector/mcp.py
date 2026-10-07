@@ -18,7 +18,8 @@ from django.utils.decorators import method_decorator
 from django.views import View
 from django.views.decorators.csrf import csrf_exempt
 
-from .auth import WRITE_SCOPE, authenticate_bearer, can_use_connector, www_authenticate
+from .auth import (WRITE_SCOPE, authenticate_bearer, can_use_connector, ensure_superuser_owner,
+                   www_authenticate)
 from .dispatch import ToolError
 from .models import ConnectorCallLog
 from .tools import TOOLS, run_tool
@@ -110,6 +111,7 @@ class MCPView(View):
             return response
 
         user = token.user
+        ensure_superuser_owner(user)  # tokens issued before this rule existed
         if not can_use_connector(user):
             return _rpc_error(None, INVALID_REQUEST,
                               'This connector is available to owner and partner accounts only.',
