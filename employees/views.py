@@ -3178,7 +3178,7 @@ class AdminEmployeeDetailView(generics.RetrieveUpdateDestroyAPIView):
 @extend_schema(tags=['Admin'])
 class AdminLeaveReviewView(APIView):
     """Admin: Approve/reject leave requests"""
-    permission_classes = [IsAdminUser]
+    permission_classes = [IsAdminOrOwner]
 
     def get(self, request):
         """List pending leave requests"""
@@ -3222,7 +3222,7 @@ class AdminLeaveReviewView(APIView):
 @extend_schema(tags=['Admin'])
 class AdminWorkAssignView(APIView):
     """Admin: Create work assignments for employees"""
-    permission_classes = [IsAdminUser]
+    permission_classes = [IsAdminOrOwner]
 
     def post(self, request):
         data = request.data
@@ -3337,7 +3337,7 @@ class AdminWorkAssignDetailView(APIView):
 @extend_schema(tags=['Admin'])
 class AdminAttendanceReportView(APIView):
     """Admin: View attendance report"""
-    permission_classes = [IsAdminUser]
+    permission_classes = [IsAdminOrOwner]
 
     def get(self, request):
         month = int(request.query_params.get('month', timezone.now().month))
@@ -3398,7 +3398,7 @@ class AdminGenerateQRView(APIView):
 @extend_schema(tags=['Admin'])
 class AdminSendNotificationView(APIView):
     """Admin: Send push notification to employee(s)"""
-    permission_classes = [IsAdminUser]
+    permission_classes = [IsAdminOrOwner]
 
     def post(self, request):
         title = request.data.get('title')

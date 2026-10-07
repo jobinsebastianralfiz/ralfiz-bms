@@ -526,10 +526,16 @@ class ToolBehaviourTests(MCPClientMixin, TestCase):
         day = self.ok('list_daily_tasks')
         self.assertEqual(day['counts']['done'], 1)
 
-    def test_admin_tools_need_staff(self):
-        partner = make_employee('partner', 'partner')  # owner-role but not is_staff
+    def test_owner_without_staff_flag_can_use_admin_tools(self):
+        # Production owners are not Django staff; the admin endpoints the
+        # connector wraps must still let them in.
+        partner = make_employee('partner', 'partner')
         token = make_token(partner)
-        self.assertFalse(self.call('get_dashboard', token=token.token)[0])
-        is_error, message = self.call('list_pending_leave_requests', token=token.token)
-        self.assertTrue(is_error)
-        self.assertIn('403', message)
+        for name in ('get_dashboard', 'list_pending_leave_requests', 'get_attendance_report',
+                     'list_daily_reports', 'list_missing_daily_reports'):
+            is_error, data = self.call(name, token=token.token)
+            self.assertFalse(is_error, f'{name}: {data}')
+        intern_id = str(Employee.objects.get(user=self.intern).id)
+        self.ok('assign_work', {'employee_ids': [intern_id], 'title': 'Check'}, token=token.token)
+        self.ok('send_notification', {'title': 'Hi', 'body': 'Team lunch', 'employee_id': intern_id},
+                token=token.token)

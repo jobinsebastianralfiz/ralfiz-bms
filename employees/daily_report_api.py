@@ -25,7 +25,10 @@ def get_employee(user):
 
 
 def is_hr(user):
-    return bool(user.is_staff or user.is_superuser)
+    """Staff, or the business's owners/partners, see everyone's reports."""
+    if user.is_staff or user.is_superuser:
+        return True
+    return Employee.objects.filter(user=user, status='active', role__in=('owner', 'partner')).exists()
 
 
 def parse_date(value):
