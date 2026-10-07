@@ -7,6 +7,7 @@ from django.urls import re_path
 from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView, SpectacularRedocView
 
 from academy.public_views import robots as academy_robots
+from connector.mcp import MCPView
 from employees.views import CertificateVerifyView
 
 urlpatterns = [
@@ -32,6 +33,13 @@ urlpatterns = [
     # each one under half a millimetre on the printed page. The long path
     # stays so codes already in the wild keep working.
     path('v/<uuid:verification_id>/', CertificateVerifyView.as_view(), name='certificate_verify_short'),
+
+    # Claude connector: the MCP endpoint, plus OAuth discovery/login under
+    # /.well-known/ and /oauth/. Both /mcp and /mcp/ answer so a pasted URL
+    # works either way (APPEND_SLASH can't redirect a POST).
+    path('mcp', MCPView.as_view(), name='mcp'),
+    path('mcp/', MCPView.as_view()),
+    path('', include('connector.oauth_urls')),
 
     # API Documentation
     path('api/schema/', SpectacularAPIView.as_view(), name='schema'),

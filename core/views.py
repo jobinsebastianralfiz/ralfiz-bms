@@ -68,6 +68,11 @@ def login_view(request):
 
         if user is not None:
             login(request, user)
+            # Mid-OAuth (connecting Claude): finish that flow before any
+            # role-based landing page, or the consent screen is lost.
+            next_url = request.GET.get('next', '')
+            if next_url.startswith('/oauth/authorize/'):
+                return redirect(next_url)
             # Redirect team members to their dashboard
             if hasattr(user, 'team_profile'):
                 return redirect('team_dashboard')

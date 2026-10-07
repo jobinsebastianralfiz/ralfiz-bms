@@ -1,0 +1,106 @@
+{% load static %}<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Connect to Ralfiz BMS</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{% static 'css/pulse-auth.css' %}?v=2">
+  <style>
+    .cx-perms { margin: 0 0 18px; padding: 0; list-style: none; }
+    .cx-perms li {
+      display: flex; gap: 10px; align-items: flex-start;
+      padding: 10px 0; border-top: 1px solid var(--a-card-line);
+      font-size: 14px; line-height: 1.45; color: var(--a-ink);
+    }
+    .cx-perms li:last-child { border-bottom: 1px solid var(--a-card-line); }
+    .cx-perms svg { flex: none; width: 18px; height: 18px; margin-top: 1px;
+                    fill: none; stroke: var(--a-primary); stroke-width: 2; }
+    .cx-perms small { display: block; color: var(--a-ink-2); font-size: 12.5px; }
+    .cx-meta { margin: 0 0 18px; font-size: 12.5px; color: var(--a-ink-2); line-height: 1.5; }
+    .cx-meta strong { color: var(--a-ink); font-weight: 600; }
+    .cx-actions { display: flex; gap: 10px; }
+    .cx-cancel {
+      flex: 1; height: 44px; border: 1px solid var(--a-field-line); border-radius: 8px;
+      background: #FFFFFF; color: var(--a-ink); font: 600 14px Inter, sans-serif; cursor: pointer;
+    }
+    .cx-cancel:hover { background: var(--a-page); }
+    .cx-actions .auth-submit { flex: 1.4; }
+  </style>
+</head>
+<body class="auth-body">
+  <main class="auth-shell">
+
+    <div class="auth-brand">
+      <svg class="auth-brand__mark" viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M12 1.5 14.3 8 21 10.3 14.3 12.6 12 19.1 9.7 12.6 3 10.3 9.7 8Z"/>
+        <path class="auth-brand__spark" d="M18.5 15.2 19.6 18l2.9 1.1-2.9 1.1-1.1 2.8-1.1-2.8-2.9-1.1 2.9-1.1Z"/>
+      </svg>
+      <span class="auth-brand__text">
+        <span class="auth-brand__name">Ralfiz Technologies</span>
+        <span class="auth-brand__sub">Business Management</span>
+      </span>
+    </div>
+
+    <div class="auth-card">
+      {% if denied %}
+        <h1 class="auth-title">Not available</h1>
+        <div class="auth-alert" role="alert">
+          <span class="auth-alert__dot" aria-hidden="true"></span>
+          <span>The Claude connector is for owner and partner accounts. You are signed in as {{ username }}.</span>
+        </div>
+        <p class="auth-lede"><a href="{% url 'logout' %}">Sign out</a> and sign in with an owner account to connect.</p>
+
+      {% elif error %}
+        <h1 class="auth-title">Can't connect</h1>
+        <div class="auth-alert" role="alert">
+          <span class="auth-alert__dot" aria-hidden="true"></span>
+          <span>{{ error.description|default:error.error }}</span>
+        </div>
+        <p class="auth-lede">Remove the connector in Claude and add it again.</p>
+
+      {% else %}
+        <h1 class="auth-title">Allow {{ application.name|default:"Claude" }} to use Ralfiz BMS?</h1>
+        <p class="auth-lede">Signed in as {{ request.user.get_full_name|default:request.user.get_username }}.</p>
+
+        <ul class="cx-perms">
+          <li>
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M1.8 12S5.5 5 12 5s10.2 7 10.2 7-3.7 7-10.2 7S1.8 12 1.8 12Z"/><circle cx="12" cy="12" r="3"/></svg>
+            <span>Read clients, projects, invoices, quotes, expenses, leads, staff and attendance
+              <small>Stored passwords and keys are never shared.</small></span>
+          </li>
+          {% if can_write %}
+          <li>
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16v4Z"/><path d="m13.5 6.5 4 4"/></svg>
+            <span>Make changes you ask for
+              <small>Add leads, notes and follow-ups, approve leave, assign work, update tasks and project status. Nothing is deleted.</small></span>
+          </li>
+          {% endif %}
+        </ul>
+
+        <p class="cx-meta">
+          You'll return to <strong>{{ redirect_host }}</strong> after you allow access.
+          Everything Claude reads becomes part of your Claude conversation.
+          You can disconnect any time from Claude's connector settings.
+        </p>
+
+        <form method="post">
+          {% csrf_token %}
+          {% for field in form %}{% if field.is_hidden %}{{ field }}{% endif %}{% endfor %}
+          {% if form.non_field_errors %}
+            <div class="auth-alert" role="alert"><span class="auth-alert__dot" aria-hidden="true"></span><span>{{ form.non_field_errors|join:" " }}</span></div>
+          {% endif %}
+          <div class="cx-actions">
+            <button class="cx-cancel" type="submit">Cancel</button>
+            <button class="auth-submit" type="submit" name="allow" value="Authorize">Allow</button>
+          </div>
+        </form>
+      {% endif %}
+    </div>
+
+    <p class="auth-footer">&copy; 2026 <a href="/">Ralfiz Technologies</a></p>
+  </main>
+</body>
+</html>

@@ -3266,6 +3266,9 @@ class AdminWorkAssignView(APIView):
                 f'You have been assigned: {assignment.title}',
             )
 
+        # due_date arrived as a string; reload so is_overdue compares real dates
+        # instead of raising TypeError after the assignment was already saved.
+        assignment.refresh_from_db()
         return Response(WorkAssignmentSerializer(assignment).data, status=status.HTTP_201_CREATED)
 
 

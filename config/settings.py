@@ -37,6 +37,7 @@ INSTALLED_APPS = [
     'rest_framework',
     'corsheaders',
     'drf_spectacular',
+    'oauth2_provider',
     # Local apps
     'core',
     'licensing',
@@ -50,6 +51,7 @@ INSTALLED_APPS = [
     'client_portal',
     'pulse',
     'academy',
+    'connector',
 ]
 
 MIDDLEWARE = [
@@ -242,3 +244,40 @@ PULSE_EMBEDDING_DIM = int(os.getenv('PULSE_EMBEDDING_DIM', '1024'))
 # Weather via OpenWeather, surfaced through the PULSE get_weather tool.
 OPENWEATHER_API_KEY = os.getenv('OPENWEATHER_API_KEY', '')
 PULSE_WEATHER_CITY = os.getenv('PULSE_WEATHER_CITY', 'Kochi,IN')
+
+# Claude connector (MCP server at /mcp + OAuth via django-oauth-toolkit).
+# Railway terminates TLS at its proxy. Without this, request.is_secure() is
+# False in production, so OAuth metadata would advertise http:// URLs and
+# bearer tokens issued for https://.../mcp would fail the RFC 8707 audience check.
+if not DEBUG:
+    SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+
+OAUTH2_PROVIDER = {
+    'SCOPES': {
+        'bms:read': 'Read Ralfiz BMS data',
+        'bms:write': 'Create and update Ralfiz BMS records',
+    },
+    'DEFAULT_SCOPES': ['bms:read', 'bms:write'],
+    'ACCESS_TOKEN_EXPIRE_SECONDS': 60 * 60,
+    'REFRESH_TOKEN_EXPIRE_SECONDS': 30 * 24 * 60 * 60,
+    'ROTATE_REFRESH_TOKEN': True,
+    'PKCE_REQUIRED': True,
+    'COMPLIANT_BCP_RFC9700_PKCE_METHOD': True,      # S256 only
+    'COMPLIANT_BCP_RFC9700_IMPLICIT_GRANT': True,
+    'COMPLIANT_BCP_RFC9700_PASSWORD_GRANT': True,
+    'OAUTH2_RESPONSE_TYPES_SUPPORTED': ['code'],
+    'OAUTH2_GRANT_TYPES_SUPPORTED': ['authorization_code', 'refresh_token'],
+    'OAUTH2_TOKEN_ENDPOINT_AUTH_METHODS_SUPPORTED': ['none', 'client_secret_post', 'client_secret_basic'],
+    # Claude registers itself; connector.oauth limits who may register.
+    'DCR_ENABLED': True,
+    'DCR_REGISTRATION_PERMISSION_CLASSES': ('oauth2_provider.dcr.AllowAllDCRPermission',),
+    'OAUTH2_PROTECTED_RESOURCE_NAME': 'Ralfiz BMS',
+}
+
+# Redirect URIs a self-registering client may use (plus any loopback URI).
+CONNECTOR_REDIRECT_URIS = (
+    'https://claude.ai/api/mcp/auth_callback',
+    'https://claude.com/api/mcp/auth_callback',
+)
+# Browser origins allowed to call /mcp directly (server-side callers send none).
+CONNECTOR_ALLOWED_ORIGIN_HOSTS = ('claude.ai', 'claude.com', 'localhost', '127.0.0.1')
