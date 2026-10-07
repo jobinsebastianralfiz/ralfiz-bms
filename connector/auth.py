@@ -2,9 +2,13 @@
 
 The connector exposes business-wide data (revenue, clients, salaries), so it is
 limited to the same people the owner API serves: active owner/partner
-employees, plus Django staff. The same check runs twice -- on the OAuth consent
-page, so nobody else can mint a token, and on every MCP request, so a token
-outlives neither a role change nor a deactivated account.
+employees. Django staff alone is not enough -- a staff login with no owner
+Employee profile (e.g. the `admin` superuser) is refused by every owner
+endpoint, so letting it connect only produces a page of 403s.
+
+The same check runs twice -- on the OAuth consent page, so nobody else can
+mint a token, and on every MCP request, so a token outlives neither a role
+change nor a deactivated account.
 """
 
 from django.urls import reverse
@@ -22,8 +26,6 @@ ALL_SCOPES = (READ_SCOPE, WRITE_SCOPE)
 def can_use_connector(user) -> bool:
     if user is None or not user.is_authenticated or not user.is_active:
         return False
-    if user.is_staff:
-        return True
     return Employee.objects.filter(
         user=user, status='active', role__in=OWNER_ROLES,
     ).exists()

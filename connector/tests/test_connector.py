@@ -285,6 +285,13 @@ class OAuthFlowTests(MCPClientMixin, TestCase):
         reg_token = AccessToken.objects.get(user__isnull=True)
         self.assertEqual(self.rpc('tools/list', token=reg_token.token).status_code, 403)
 
+    def test_staff_without_owner_profile_cannot_authorize(self):
+        admin = User.objects.create_superuser('admin', 'a@x.in', 'pw-123456')
+        self.client.force_login(admin)
+        page = self.client.get('/oauth/authorize/', self.authorize_params)
+        self.assertEqual(page.status_code, 403)
+        self.assertContains(page, 'no owner or partner profile', status_code=403)
+
     def test_token_for_other_resource_is_rejected(self):
         token = make_token(self.owner, resource=['https://other.example/mcp'])
         self.assertEqual(self.rpc('tools/list', token=token.token).status_code, 401)
