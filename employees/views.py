@@ -2767,7 +2767,7 @@ class OwnerInvoiceCreateView(APIView):
             status=data.get('status', 'draft'),
             discount=data.get('discount', 0),
             tax_rate=data.get('tax_rate', 0),
-            issue_date=data.get('issue_date') or None,
+            issue_date=data.get('issue_date') or timezone.localdate(),
             due_date=data.get('due_date') or None,
             terms=data.get('terms', ''),
             client_notes=data.get('client_notes', ''),
@@ -2910,21 +2910,23 @@ class OwnerPaymentCreateView(APIView):
     """Owner/Partner: Record a payment against an invoice"""
     permission_classes = [IsAuthenticated, IsOwnerOrPartner]
 
-    def post(self, request):
+    def post(self, request, pk=None):
         from core.models import Payment, Invoice
         data = request.data
-        if not data.get('invoice_id') or not data.get('amount'):
+        # The route carries the invoice id; older callers also sent it in the body.
+        invoice_id = pk or data.get('invoice_id')
+        if not invoice_id or not data.get('amount'):
             return Response({'error': 'invoice_id and amount are required'}, status=status.HTTP_400_BAD_REQUEST)
 
         try:
-            invoice = Invoice.all_objects.get(pk=data['invoice_id'])
+            invoice = Invoice.all_objects.get(pk=invoice_id)
         except Invoice.DoesNotExist:
             return Response({'error': 'Invoice not found'}, status=status.HTTP_404_NOT_FOUND)
 
         payment = Payment.objects.create(
             invoice=invoice,
             amount=data['amount'],
-            payment_date=data.get('payment_date') or None,
+            payment_date=data.get('payment_date') or timezone.localdate(),
             payment_method=data.get('payment_method', 'bank_transfer'),
             transaction_id=data.get('transaction_id', ''),
             notes=data.get('notes', ''),
@@ -3065,7 +3067,7 @@ class OwnerExpenseCreateView(APIView):
         expense = Expense.objects.create(
             category=data['category'],
             amount=data['amount'],
-            date=data.get('date') or None,
+            date=data.get('date') or timezone.localdate(),
             vendor=data.get('vendor', ''),
             description=data.get('description', ''),
             receipt=request.FILES.get('receipt'),

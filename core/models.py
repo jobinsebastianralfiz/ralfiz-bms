@@ -632,7 +632,8 @@ class QuoteItem(models.Model):
         ordering = ['order']
 
     def save(self, *args, **kwargs):
-        self.amount = self.quantity * self.unit_price
+        # API payloads may hand over strings or floats; multiply as Decimals.
+        self.amount = Decimal(str(self.quantity)) * Decimal(str(self.unit_price))
         super().save(*args, **kwargs)
 
 
@@ -725,7 +726,7 @@ class Invoice(models.Model):
         GST and no-GST invoices are numbered in separate series, because the
         GST return needs the GST series to run without gaps.
         """
-        return (self.tax_rate or 0) > 0 and self.gst_filing_status != 'not_applicable'
+        return Decimal(str(self.tax_rate or 0)) > 0 and self.gst_filing_status != 'not_applicable'
 
     @staticmethod
     def series_number(invoice_number, prefix):
@@ -846,11 +847,12 @@ class Invoice(models.Model):
 
     def calculate_totals(self):
         from decimal import Decimal
-        self.subtotal = sum(item.amount for item in self.items.all()) or Decimal('0')
-        taxable_amount = self.subtotal - (self.discount or Decimal('0'))
-        # Use tax_rate as-is (0 means no tax), only default to 0 if None
-        tax_rate = self.tax_rate if self.tax_rate is not None else Decimal('0')
-        self.tax_amount = taxable_amount * (tax_rate / 100)
+        # Values assigned before save() may be int/float/str (e.g. from API
+        # payloads); coerce to Decimal so the arithmetic never mixes types.
+        self.subtotal = sum((item.amount for item in self.items.all()), Decimal('0'))
+        taxable_amount = self.subtotal - Decimal(str(self.discount or 0))
+        tax_rate = Decimal(str(self.tax_rate or 0))
+        self.tax_amount = taxable_amount * (tax_rate / Decimal('100'))
         self.total_amount = taxable_amount + self.tax_amount
         self.save()
 
@@ -879,7 +881,8 @@ class InvoiceItem(models.Model):
         ordering = ['order']
 
     def save(self, *args, **kwargs):
-        self.amount = self.quantity * self.unit_price
+        # API payloads may hand over strings or floats; multiply as Decimals.
+        self.amount = Decimal(str(self.quantity)) * Decimal(str(self.unit_price))
         super().save(*args, **kwargs)
 
 
