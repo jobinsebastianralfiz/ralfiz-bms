@@ -84,6 +84,11 @@ a { color: var(--en-red); }
 .en-field input:focus, .en-field select:focus, .en-field textarea:focus {
   outline: none; border-color: var(--en-red); box-shadow: 0 0 0 3px rgba(214, 31, 31, .14);
 }
+.en-fixed-label { font-size: 14px; font-weight: 600; color: var(--en-ink); margin-bottom: 6px; }
+.en-fixed {
+  min-height: 48px; padding: 12px 14px; border-radius: 10px;
+  background: var(--en-bg); border: 1px solid var(--en-line); color: var(--en-ink); font-weight: 500;
+}
 .en-hint { font-size: 13px; color: var(--en-muted); margin-top: 5px; }
 .en-error { font-size: 13px; color: var(--en-red); margin-top: 5px; font-weight: 500; }
 .en-field.has-error input, .en-field.has-error select, .en-field.has-error textarea { border-color: var(--en-red); }

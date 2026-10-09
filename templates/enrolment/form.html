@@ -22,8 +22,14 @@
     <div class="en-grid">
       {% for f in section.fields %}
       <div class="en-field{% if f.wide %} wide{% endif %}{% if f.error %} has-error{% endif %}"{% if f.name == 'track_other' %} id="track-other-field"{% endif %}>
+        {% if f.type == 'fixed' %}
+        <div class="en-fixed-label">{{ f.label }}</div>
+        <div class="en-fixed">{{ f.display }}</div>
+        {% else %}
         <label for="{{ f.name }}">{{ f.label }}{% if not f.required %} <span class="opt">(optional)</span>{% endif %}</label>
-        {% if f.type == 'textarea' %}
+        {% endif %}
+        {% if f.type == 'fixed' %}
+        {% elif f.type == 'textarea' %}
         <textarea id="{{ f.name }}" name="{{ f.name }}" rows="3" autocomplete="{{ f.autocomplete }}">{{ f.value }}</textarea>
         {% elif f.type == 'select' %}
         <select id="{{ f.name }}" name="{{ f.name }}">

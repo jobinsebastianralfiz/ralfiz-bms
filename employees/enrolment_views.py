@@ -36,8 +36,8 @@ def _digits(value):
 
 def _choices(settings):
     """Options per choice field. Area, duration and work mode come from
-    EnrolmentSettings; a field left with a single option is not asked at all
-    (e.g. onsite only) and that option is filled in for the student."""
+    EnrolmentSettings; a field left with a single option (e.g. onsite only) is
+    shown as a fixed line, and that option is filled in for the student."""
     return {
         'year_of_study': InternEnrolment.YEAR_CHOICES,
         'track': settings.track_choices(),
@@ -48,6 +48,10 @@ def _choices(settings):
 
 def _fixed(choices):
     return {name: opts[0][0] for name, opts in choices.items() if len(opts) == 1}
+
+
+#: How a single-option field is labelled when it is shown as a fact, not asked.
+FIXED_LABELS = {'work_mode': 'Work mode', 'duration_months': 'Duration', 'track': 'Internship area'}
 
 
 #: The form, section by section: (name, label, input type, autocomplete, hint).
@@ -104,7 +108,11 @@ def _context(enrolment, errors=None, posted=None):
     for title, fields in SECTIONS:
         rows = []
         for name, label, kind, autocomplete, hint in fields:
-            if name in fixed or (name == 'track_other' and not settings.allow_other_track):
+            if name == 'track_other' and not settings.allow_other_track:
+                continue
+            if name in fixed:
+                rows.append({'name': name, 'label': FIXED_LABELS.get(name, label), 'type': 'fixed',
+                             'display': choices[name][0][1], 'required': True})
                 continue
             rows.append({
                 'name': name, 'label': label, 'type': kind, 'autocomplete': autocomplete,

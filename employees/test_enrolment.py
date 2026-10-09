@@ -111,10 +111,12 @@ class EnrolmentTests(TestCase):
 
     # ---------------------------------------------------------- form options
 
-    def test_single_work_mode_is_not_asked(self):
-        # Default: onsite only.
+    def test_single_work_mode_is_shown_not_asked(self):
+        # Default: onsite only -- shown as a fact, with no dropdown to change it.
         page = self.client.get(self.url)
         self.assertNotContains(page, 'How you want to work')
+        self.assertContains(page, '<div class="en-fixed">Onsite (at our office)</div>', html=True)
+        self.assertNotContains(page, 'name="work_mode"')
         self.submit(work_mode='remote')  # ignored: the only option wins
         self.assertEqual(InternEnrolment.objects.get().work_mode, 'onsite')
 
