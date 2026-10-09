@@ -2,7 +2,8 @@
 
 Most tools are a thin description over one existing owner/admin/CRM API view
 (see dispatch.call_view). Only `search` and `list_work_assignments` query the
-ORM directly, because no existing endpoint answers them.
+ORM directly, because no existing endpoint answers them; the money tools read
+the ORM only to check their inputs before the view runs.
 
 Choice lists are read from the models at import time so they cannot drift from
 what the views accept.
@@ -10,16 +11,19 @@ what the views accept.
 
 import re
 from dataclasses import dataclass, field
-from datetime import date
+from datetime import date, timedelta
+from decimal import Decimal, InvalidOperation
 from typing import Callable
 
 from django.db.models import Q
 
-from core.models import AMCContract, Client, DailyTask, Expense, Invoice, Project, Quote, TeamMember
+from core.models import (PAYMENT_TERMS_CHOICES, AMCContract, AMCPayment, Client, CompanySettings,
+                         DailyTask, Expense, Invoice, Payment, Project, Quote, TeamMember)
 from crm.models import Demo, FollowUp, Lead
 from employees.models import Employee, Notification, WorkAssignment
 
 from .dispatch import ToolError, call_view, redact, shape
+from .files import PDF_LINK_MAX_AGE, pdf_link
 
 
 def _choices(model, field_name):
@@ -41,6 +45,17 @@ def s_int(description, minimum=None, maximum=None):
     schema = {'type': 'integer', 'description': description}
     if minimum is not None:
         schema['minimum'] = minimum
+    if maximum is not None:
+        schema['maximum'] = maximum
+    return schema
+
+
+def s_num(description, minimum=None, exclusive_minimum=None, maximum=None):
+    schema = {'type': 'number', 'description': description}
+    if minimum is not None:
+        schema['minimum'] = minimum
+    if exclusive_minimum is not None:
+        schema['exclusiveMinimum'] = exclusive_minimum
     if maximum is not None:
         schema['maximum'] = maximum
     return schema
@@ -139,6 +154,19 @@ UUID_RE = re.compile(r'^[0-9a-fA-F]{8}-?[0-9a-fA-F]{4}-?[0-9a-fA-F]{4}-?[0-9a-fA
 DATETIME_RE = re.compile(r'^\d{4}-\d{2}-\d{2}[T ]\d{2}:\d{2}')
 
 
+def to_decimal(value, name):
+    """A money or quantity argument as a Decimal; accepts 1500, 1500.5 or "1,500.50"."""
+    if isinstance(value, bool):
+        raise ToolError(f'{name} must be a number')
+    try:
+        number = Decimal(str(value).replace(',', '').replace('₹', '').strip())
+    except InvalidOperation:
+        raise ToolError(f'{name} must be a number') from None
+    if not number.is_finite():
+        raise ToolError(f'{name} must be a number')
+    return number
+
+
 def validate_arguments(tool, args):
     """Check arguments against the tool's schema before any view runs.
 
@@ -170,6 +198,14 @@ def validate_arguments(tool, args):
                     raise ToolError(f'{name} must be an integer')
             if 'minimum' in schema and value < schema['minimum']:
                 raise ToolError(f'{name} must be at least {schema["minimum"]}')
+            if 'maximum' in schema and value > schema['maximum']:
+                raise ToolError(f'{name} must be at most {schema["maximum"]}')
+        elif kind == 'number':
+            value = to_decimal(value, name)
+            if 'minimum' in schema and value < schema['minimum']:
+                raise ToolError(f'{name} must be at least {schema["minimum"]}')
+            if 'exclusiveMinimum' in schema and value <= schema['exclusiveMinimum']:
+                raise ToolError(f'{name} must be more than {schema["exclusiveMinimum"]}')
             if 'maximum' in schema and value > schema['maximum']:
                 raise ToolError(f'{name} must be at most {schema["maximum"]}')
         elif kind == 'boolean':
@@ -486,6 +522,404 @@ view_tool(
     'within 30 days, with renewal cost. Names and dates only -- never passwords.',
     'get', 'employees:owner_credentials_expiring',
 )
+
+
+# ======================================================================
+# Money (write) -- Phase 2
+#
+# Every tool here goes through the owner API view the mobile app uses, but
+# checks first what that view leaves unchecked: that the client, project or
+# invoice exists, that an invoice is in the GST series (the no-GST ledger is
+# never reachable from the connector), and that a payment does not exceed
+# what is owed. Created records are returned in full so Claude can read the
+# totals back to the user.
+# ======================================================================
+
+ITEMS = {
+    'type': 'array',
+    'description': 'Line items. Amount per line is quantity x unit_price; tax is added on the total.',
+    'items': {
+        'type': 'object',
+        'properties': {
+            'description': s_str('What is being billed, e.g. "Website design".'),
+            'details': s_str('Optional extra detail shown under the line.'),
+            'quantity': s_num('Quantity (default 1).', exclusive_minimum=0),
+            'unit_price': s_num('Price per unit in rupees, before tax.', minimum=0),
+        },
+        'required': ['description', 'unit_price'],
+        'additionalProperties': False,
+    },
+}
+
+PAYMENT_TERMS = [value for value, _ in PAYMENT_TERMS_CHOICES]
+
+
+def _clean_items(items):
+    if not items:
+        raise ToolError('Add at least one line item.')
+    clean = []
+    for n, item in enumerate(items, 1):
+        if not isinstance(item, dict):
+            raise ToolError(f'Item {n} must be an object with description and unit_price')
+        unknown = set(item) - {'description', 'details', 'quantity', 'unit_price'}
+        if unknown:
+            raise ToolError(f'Item {n}: unknown field(s) {", ".join(sorted(unknown))}')
+        description = str(item.get('description') or '').strip()
+        if not description:
+            raise ToolError(f'Item {n} needs a description')
+        if item.get('unit_price') in (None, ''):
+            raise ToolError(f'Item {n} needs a unit_price')
+        quantity = to_decimal(item.get('quantity', 1), f'item {n} quantity')
+        unit_price = to_decimal(item['unit_price'], f'item {n} unit_price')
+        if quantity <= 0:
+            raise ToolError(f'Item {n} quantity must be more than 0')
+        if unit_price < 0:
+            raise ToolError(f'Item {n} unit_price cannot be negative')
+        clean.append({'description': description[:500], 'details': str(item.get('details') or ''),
+                      'quantity': quantity, 'unit_price': unit_price})
+    return clean
+
+
+def _client(client_id):
+    client = Client.objects.filter(pk=client_id).first()
+    if client is None:
+        raise ToolError('No client with that id. Use `search` to find the client.')
+    return client
+
+
+def _project_for(project_id, client_id=None):
+    project = Project.objects.filter(pk=project_id).first()
+    if project is None:
+        raise ToolError('No project with that id. Use `search` to find the project.')
+    if client_id and str(project.client_id) != str(client_id):
+        raise ToolError(f'Project "{project.name}" belongs to another client.')
+    return project
+
+
+def _gst_invoice(invoice_id):
+    # Invoice.objects only sees the GST series, so a no-GST invoice is "not found" here.
+    invoice = Invoice.objects.filter(pk=invoice_id).first()
+    if invoice is None:
+        raise ToolError('No GST invoice with that id. Use `search` or list_invoices to find it.')
+    return invoice
+
+
+def _default_tax_rate():
+    return CompanySettings.get_settings().default_tax_rate or Decimal('0')
+
+
+view_tool(
+    'create_client', 'Create client',
+    'Add a new client. Search first so the same client is not added twice. To turn a CRM '
+    'lead into a client, use the lead\'s name, company, phone and email.',
+    'post', 'employees:owner_client_create',
+    body=('name', 'company_name', 'email', 'phone', 'whatsapp', 'address', 'gst_number',
+          'priority', 'notes'),
+    params={
+        'name': s_str('Contact person\'s name.'),
+        'company_name': s_str('Business name.'),
+        'email': s_str('Email address.'),
+        'phone': s_str('Phone number.'),
+        'whatsapp': s_str('WhatsApp number, if different.'),
+        'address': s_str('Billing address (printed on invoices).'),
+        'gst_number': s_str('Client GSTIN, if registered.'),
+        'priority': s_str('Priority (default medium).', _choices(Client, 'priority')),
+        'notes': s_str('Internal notes.'),
+    },
+    required=('name',), write=True,
+)
+
+
+def _create_project(ctx, args):
+    _client(args['client_id'])
+    created = call_view(ctx, 'post', 'employees:owner_project_create', data=args)
+    return call_view(ctx, 'get', 'employees:owner_project_detail', kwargs={'pk': created['id']})
+
+
+register(Tool(
+    'create_project', 'Create project',
+    'Start a project for an existing client. Budget amounts are in rupees.',
+    _create_project,
+    {
+        'client_id': s_uuid('client'),
+        'name': s_str('Project name.'),
+        'project_type': s_str('Kind of project (default web_app).', _choices(Project, 'project_type')),
+        'description': s_str('What the project is.'),
+        'status': s_str('Starting status (default lead).', PROJECT_STATUSES),
+        'estimated_budget': s_num('Estimated budget in rupees.', minimum=0),
+        'final_amount': s_num('Agreed price in rupees.', minimum=0),
+        'start_date': s_date('Start date.'),
+        'deadline': s_date('Deadline.'),
+        'tech_stack': s_str('Technologies, e.g. "Django, Flutter".'),
+        'live_url': s_str('Live site URL.'),
+        'notes': s_str('Internal notes.'),
+    },
+    required=('client_id', 'name'), write=True,
+))
+
+
+QUOTE_FIELDS = {
+    'title': s_str('Quote title, e.g. "E-commerce website".'),
+    'description': s_str('Scope summary shown on the quote.'),
+    'items': ITEMS,
+    'discount': s_num('Discount in rupees, taken off before tax.', minimum=0),
+    'tax_rate': s_num('GST percent. Defaults to the company rate (usually 18); pass 0 for '
+                      'no tax.', minimum=0, maximum=100),
+    'issue_date': s_date('Quote date (default today).'),
+    'valid_until': s_date('Valid until (default 30 days from today).'),
+    'duration': s_str('Delivery time, e.g. "6 weeks".'),
+    'start_date': s_date('Planned start date.'),
+    'deliverables': s_str('What will be delivered, one per line.'),
+    'payment_terms': s_str('Payment schedule (default 50-50).', PAYMENT_TERMS),
+    'terms': s_str('Terms and conditions.'),
+    'client_notes': s_str('Note printed for the client.'),
+    'notes': s_str('Internal notes (not printed).'),
+    'status': s_str('Status (default draft).', _choices(Quote, 'status')),
+}
+
+
+def _quote_body(args):
+    body = {k: v for k, v in args.items() if k != 'quote_id'}
+    if 'items' in body:
+        body['items'] = _clean_items(body['items'])
+    return body
+
+
+def _create_quote(ctx, args):
+    if not args.get('client_id') and not args.get('lead_id'):
+        raise ToolError('Give either client_id (an existing client) or lead_id (a CRM lead).')
+    if args.get('client_id'):
+        _client(args['client_id'])
+    if args.get('lead_id') and not Lead.objects.filter(pk=args['lead_id']).exists():
+        raise ToolError('No lead with that id. Use `search` to find the lead.')
+    if args.get('project_id'):
+        _project_for(args['project_id'], args.get('client_id'))
+    body = _quote_body(args)
+    body.setdefault('tax_rate', _default_tax_rate())
+    body.setdefault('valid_until', (date.today() + timedelta(days=30)).isoformat())
+    created = call_view(ctx, 'post', 'employees:owner_quote_create', data=body)
+    return call_view(ctx, 'get', 'employees:owner_quote_detail', kwargs={'pk': created['id']})
+
+
+register(Tool(
+    'create_quote', 'Create quote',
+    'Write a quote (estimate) for a client or a CRM lead, with line items. Totals and the '
+    'quote number are worked out by the BMS. Use get_quote_pdf afterwards for a PDF to send.',
+    _create_quote,
+    {
+        'client_id': s_uuid('client (give this or lead_id)'),
+        'lead_id': s_int('Numeric CRM lead id (give this or client_id).'),
+        'project_id': s_uuid('project the quote is for'),
+        **QUOTE_FIELDS,
+    },
+    required=('title', 'items'), write=True,
+))
+
+
+def _update_quote(ctx, args):
+    if not Quote.objects.filter(pk=args['quote_id']).exists():
+        raise ToolError('No quote with that id. Use `search` or list_quotes to find it.')
+    body = _quote_body(args)
+    if len(body) == 0:
+        raise ToolError('Nothing to change: pass at least one field.')
+    call_view(ctx, 'patch', 'employees:owner_quote_edit', kwargs={'pk': args['quote_id']}, data=body)
+    return call_view(ctx, 'get', 'employees:owner_quote_detail', kwargs={'pk': args['quote_id']})
+
+
+register(Tool(
+    'update_quote', 'Update quote',
+    'Change a quote: status (e.g. mark it sent or accepted), dates, terms, discount or tax. '
+    'Passing items REPLACES all line items, so include every line that should remain -- read '
+    'the quote with get_quote first.',
+    _update_quote,
+    {'quote_id': s_uuid('quote'), **QUOTE_FIELDS},
+    required=('quote_id',), write=True,
+))
+
+
+def _create_invoice(ctx, args):
+    _client(args['client_id'])
+    if args.get('project_id'):
+        _project_for(args['project_id'], args['client_id'])
+    body = dict(args)
+    body['items'] = _clean_items(body['items'])
+    body.setdefault('tax_rate', _default_tax_rate())
+    if body['tax_rate'] <= 0:
+        raise ToolError('Invoices made here are GST invoices, so tax_rate must be more than 0. '
+                        'Invoices without GST have to be made in the BMS web app.')
+    created = call_view(ctx, 'post', 'employees:owner_invoice_create', data=body)
+    return call_view(ctx, 'get', 'employees:owner_invoice_detail', kwargs={'pk': created['id']})
+
+
+register(Tool(
+    'create_invoice', 'Create GST invoice',
+    'Raise a GST invoice for a client, with line items. It takes the next number in the GST '
+    'series (e.g. INRT-16) -- that number goes on the GST return, so confirm the client, items '
+    'and amounts with the user before calling. Use get_invoice_pdf afterwards for a PDF.',
+    _create_invoice,
+    {
+        'client_id': s_uuid('client'),
+        'project_id': s_uuid('project the invoice is for'),
+        'title': s_str('Invoice title, e.g. "Website development - final payment".'),
+        'description': s_str('Description shown on the invoice.'),
+        'items': ITEMS,
+        'discount': s_num('Discount in rupees, taken off before tax.', minimum=0),
+        'tax_rate': s_num('GST percent (default: the company rate, usually 18).',
+                          exclusive_minimum=0, maximum=100),
+        'issue_date': s_date('Invoice date (default today).'),
+        'due_date': s_date('Payment due date.'),
+        'status': s_str('Status (default draft).', ['draft', 'sent']),
+        'terms': s_str('Terms printed on the invoice.'),
+        'client_notes': s_str('Note printed for the client.'),
+        'notes': s_str('Internal notes (not printed).'),
+    },
+    required=('client_id', 'title', 'items'), write=True,
+))
+
+
+def _record_payment(ctx, args):
+    invoice = _gst_invoice(args['invoice_id'])
+    balance = invoice.balance_due
+    if args['amount'] > balance and not args.get('allow_overpayment'):
+        raise ToolError(
+            f'{invoice.invoice_number} has ₹{balance} left to pay but the payment is '
+            f'₹{args["amount"]}. Check the amount, or call again with allow_overpayment=true.'
+        )
+    body = {k: v for k, v in args.items() if k not in ('invoice_id', 'allow_overpayment')}
+    body.setdefault('payment_date', date.today().isoformat())
+    result = call_view(ctx, 'post', 'employees:owner_payment_create',
+                       kwargs={'pk': args['invoice_id']}, data=body)
+    result['invoice_number'] = invoice.invoice_number
+    return result
+
+
+register(Tool(
+    'record_payment', 'Record invoice payment',
+    'Record money received against a GST invoice. The invoice\'s paid amount and status '
+    '(partial / paid) update automatically.',
+    _record_payment,
+    {
+        'invoice_id': s_uuid('invoice'),
+        'amount': s_num('Amount received in rupees.', exclusive_minimum=0),
+        'payment_date': s_date('Date received (default today).'),
+        'payment_method': s_str('How it was paid (default bank_transfer).',
+                                _choices(Payment, 'payment_method')),
+        'transaction_id': s_str('UTR, UPI reference or cheque number.'),
+        'notes': s_str('Notes.'),
+        'allow_overpayment': s_bool('Record it even though it is more than the balance due.'),
+    },
+    required=('invoice_id', 'amount'), write=True,
+))
+
+
+def _add_expense(ctx, args):
+    if args.get('project_id'):
+        _project_for(args['project_id'])
+    body = dict(args)
+    body.setdefault('date', date.today().isoformat())
+    return call_view(ctx, 'post', 'employees:owner_expense_create', data=body)
+
+
+register(Tool(
+    'add_expense', 'Add expense',
+    'Record a business expense: software, travel, hardware, marketing and so on. Receipts '
+    'cannot be attached from here.',
+    _add_expense,
+    {
+        'amount': s_num('Amount in rupees.', exclusive_minimum=0),
+        'vendor': s_str('Who was paid, e.g. "Hostinger".'),
+        'category': s_str('Expense category.', _choices(Expense, 'category')),
+        'date': s_date('Date paid (default today).'),
+        'description': s_str('What it was for.'),
+        'project_id': s_uuid('project the expense belongs to'),
+        'is_billable': s_bool('Will be billed back to the client.'),
+        'payment_method': s_str('How it was paid (default bank_transfer).',
+                                _choices(Expense, 'payment_method')),
+        'notes': s_str('Notes.'),
+    },
+    required=('amount', 'vendor', 'category'), write=True,
+))
+
+
+AMC_CYCLES = {'monthly': 1, 'quarterly': 3, 'half_yearly': 6, 'yearly': 12}
+
+
+def _record_amc_payment(ctx, args):
+    from dateutil.relativedelta import relativedelta
+
+    amc = AMCContract.objects.filter(pk=args['amc_id']).first()
+    if amc is None:
+        raise ToolError('No AMC contract with that id. Use list_amc_contracts to find it.')
+    body = {k: v for k, v in args.items() if k != 'amc_id'}
+    if 'period_start' not in body:
+        body['period_start'] = amc.next_due_date.isoformat()
+    if 'period_end' not in body:
+        start = date.fromisoformat(body['period_start'])
+        months = AMC_CYCLES.get(amc.billing_cycle, 12)
+        body['period_end'] = (start + relativedelta(months=months) - timedelta(days=1)).isoformat()
+    body.setdefault('payment_date', date.today().isoformat())
+    return call_view(ctx, 'post', 'employees:owner_amc_record_payment',
+                     kwargs={'pk': args['amc_id']}, data=body)
+
+
+register(Tool(
+    'record_amc_payment', 'Record AMC payment',
+    'Record a renewal payment on an AMC contract and move its next due date on by one billing '
+    'cycle. The period defaults to the cycle starting at the current due date.',
+    _record_amc_payment,
+    {
+        'amc_id': s_uuid('AMC contract'),
+        'amount': s_num('Amount received in rupees.', exclusive_minimum=0),
+        'payment_date': s_date('Date received (default today).'),
+        'period_start': s_date('Start of the period paid for (default: the current due date).'),
+        'period_end': s_date('End of the period paid for (default: one billing cycle later).'),
+        'payment_method': s_str('How it was paid (default bank_transfer).',
+                                _choices(AMCPayment, 'payment_method')),
+        'reference': s_str('UTR, UPI reference or cheque number.'),
+        'notes': s_str('Notes.'),
+    },
+    required=('amc_id', 'amount'), write=True,
+))
+
+
+def _invoice_pdf(ctx, args):
+    invoice = _gst_invoice(args['invoice_id'])
+    url = pdf_link(ctx.request, ctx.user, 'invoice', invoice.pk, with_gst=True)
+    return {'invoice_number': invoice.invoice_number, 'download_url': url,
+            'expires_in_minutes': PDF_LINK_MAX_AGE // 60}
+
+
+register(Tool(
+    'get_invoice_pdf', 'Invoice PDF link',
+    'A download link for a GST invoice\'s PDF, to open or forward to the client. The link '
+    'works for one hour; ask again for a fresh one.',
+    _invoice_pdf,
+    {'invoice_id': s_uuid('invoice')},
+    required=('invoice_id',),
+))
+
+
+def _quote_pdf(ctx, args):
+    quote = Quote.objects.filter(pk=args['quote_id']).first()
+    if quote is None:
+        raise ToolError('No quote with that id. Use `search` or list_quotes to find it.')
+    with_gst = args.get('with_gst', (quote.tax_rate or 0) > 0)
+    url = pdf_link(ctx.request, ctx.user, 'quote', quote.pk, with_gst=with_gst)
+    return {'quote_number': quote.quote_number, 'download_url': url,
+            'expires_in_minutes': PDF_LINK_MAX_AGE // 60}
+
+
+register(Tool(
+    'get_quote_pdf', 'Quote PDF link',
+    'A download link for a quote\'s PDF, to open or forward to the client. The link works for '
+    'one hour; ask again for a fresh one.',
+    _quote_pdf,
+    {
+        'quote_id': s_uuid('quote'),
+        'with_gst': s_bool('Show GST on the PDF (default: yes when the quote has a tax rate).'),
+    },
+    required=('quote_id',),
+))
 
 
 # ======================================================================

@@ -7,6 +7,8 @@ request would be -- so the view's own permission classes, validation and side
 effects (notifications, activity logs, GST-only managers) all run unchanged.
 """
 
+from decimal import Decimal
+
 from django.urls import resolve, reverse
 from rest_framework.test import APIRequestFactory, force_authenticate
 
@@ -42,6 +44,17 @@ def _error_message(status_code, data):
     return f'Request failed (HTTP {status_code})'
 
 
+def _plain(value):
+    """Decimals go to the views as exact strings, not via DRF's float encoding."""
+    if isinstance(value, Decimal):
+        return str(value)
+    if isinstance(value, dict):
+        return {k: _plain(v) for k, v in value.items()}
+    if isinstance(value, (list, tuple)):
+        return [_plain(v) for v in value]
+    return value
+
+
 def call_view(ctx, method, url_name, kwargs=None, query=None, data=None):
     """Call the view behind ``url_name`` and return its response data.
 
@@ -60,7 +73,7 @@ def call_view(ctx, method, url_name, kwargs=None, query=None, data=None):
                  if v is not None and v != '' and v is not False}
         request = factory.get(path, query, **extra)
     else:
-        request = getattr(factory, method)(path, data or {}, format='json', **extra)
+        request = getattr(factory, method)(path, _plain(data or {}), format='json', **extra)
     force_authenticate(request, user=ctx.user)
 
     match = resolve(path)

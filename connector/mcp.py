@@ -30,7 +30,7 @@ logger = logging.getLogger(__name__)
 #: anything else gets the newest, and the client decides whether to continue.
 SUPPORTED_PROTOCOL_VERSIONS = ('2025-11-25', '2025-06-18', '2025-03-26')
 
-SERVER_INFO = {'name': 'ralfiz-bms', 'title': 'Ralfiz BMS', 'version': '1.0.0'}
+SERVER_INFO = {'name': 'ralfiz-bms', 'title': 'Ralfiz BMS', 'version': '1.1.0'}
 
 INSTRUCTIONS = (
     "Ralfiz BMS is the business management system of Ralfiz Technologies, a software "
@@ -42,7 +42,11 @@ INSTRUCTIONS = (
     "- Amounts are Indian Rupees. Write them the Indian way: ₹3,06,950 not ₹306,950.\n"
     "- Dates are YYYY-MM-DD, India time.\n"
     "- Tools that change data tell the user what will change; confirm before calling them "
-    "unless the user has clearly asked for that exact change."
+    "unless the user has clearly asked for that exact change.\n"
+    "- Before create_invoice, record_payment or record_amc_payment, read back the client, "
+    "line items or amount and get a yes: invoice numbers go on the GST return and cannot be "
+    "taken back.\n"
+    "- Nothing can be deleted from here; mistakes are fixed in the BMS web app."
 )
 
 MAX_RESULT_CHARS = 150_000

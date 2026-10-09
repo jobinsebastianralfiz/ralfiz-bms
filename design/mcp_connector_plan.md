@@ -144,6 +144,15 @@ prompt. ~45 tools.
 
 ### Phase 2 — money writes
 
+**Built 2026-10-09.** All tools below, plus `create_client` / `create_project`.
+Inputs are checked before the view runs (client/project exist and match, invoice
+is in the GST series, payment not above balance unless `allow_overpayment`).
+PDF links: `connector/files.py`, signed with Django signing, 1 hour, re-checks
+owner access on download. Fixed on the way: the app's payment route crashed on
+its `pk` kwarg; invoice/payment/expense create passed `None` to non-null dates;
+line items and invoice totals broke on string/float numbers. Academy and
+licence read tools not done.
+
 | `create_quote` ✏️ / `update_quote` ✏️ | `owner/quotes/create/`, `…/edit/` |
 | `create_invoice` ✏️ | `owner/invoices/create/` (GST series only) |
 | `record_payment` ✏️ | `owner/invoices/<id>/payments/` |

@@ -7,6 +7,7 @@ from django.urls import re_path
 from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView, SpectacularRedocView
 
 from academy.public_views import robots as academy_robots
+from connector.files import pdf_download as connector_pdf_download
 from connector.mcp import MCPView
 from employees.views import CertificateVerifyView
 
@@ -39,6 +40,7 @@ urlpatterns = [
     # works either way (APPEND_SLASH can't redirect a POST).
     path('mcp', MCPView.as_view(), name='mcp'),
     path('mcp/', MCPView.as_view()),
+    path('mcp/pdf/<str:token>/', connector_pdf_download, name='connector_pdf'),
     path('', include('connector.oauth_urls')),
 
     # API Documentation
