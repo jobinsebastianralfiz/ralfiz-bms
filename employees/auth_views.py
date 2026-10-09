@@ -11,17 +11,9 @@ def create_admin_employee(user):
     app login and by the Claude connector, so the admin account works the same
     way in both.
     """
-    last_emp = Employee.objects.order_by('-employee_id').first()
-    if last_emp and last_emp.employee_id.startswith('EMP'):
-        try:
-            num = int(last_emp.employee_id[3:]) + 1
-        except ValueError:
-            num = 1
-    else:
-        num = 1
     return Employee.objects.create(
         user=user,
-        employee_id=f'EMP{num:03d}',
+        employee_id=Employee.next_employee_id(),
         employment_type='fulltime',
         role='owner' if user.is_superuser else 'employee',
         department='operations',

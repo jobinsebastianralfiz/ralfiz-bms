@@ -7387,16 +7387,7 @@ def emp_employee_create(request):
                 email=request.POST.get('email', ''),
             )
 
-        # Generate employee ID
-        last_emp = Employee.objects.order_by('-employee_id').first()
-        if last_emp and last_emp.employee_id.startswith('EMP'):
-            try:
-                num = int(last_emp.employee_id[3:]) + 1
-            except ValueError:
-                num = 1
-        else:
-            num = 1
-        employee_id = request.POST.get('employee_id') or f'EMP{num:03d}'
+        employee_id = request.POST.get('employee_id') or Employee.next_employee_id()
 
         Employee.objects.create(
             user=user,

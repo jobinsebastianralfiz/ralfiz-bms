@@ -117,6 +117,19 @@ class Employee(models.Model):
     def __str__(self):
         return f"{self.employee_id} - {self.user.get_full_name() or self.user.username}"
 
+    @classmethod
+    def next_employee_id(cls):
+        """The next EMP### id after the highest one in use.
+
+        Compared as numbers, and ids in any other format (hand-typed ones like
+        "RLF-07") are skipped: sorting the strings put those, or EMP1000 vs
+        EMP999, on top and handed out an id that already existed.
+        """
+        numbers = [int(eid[3:]) for eid in
+                   cls.objects.filter(employee_id__startswith='EMP').values_list('employee_id', flat=True)
+                   if eid[3:].isdigit()]
+        return f'EMP{max(numbers, default=0) + 1:03d}'
+
     @property
     def full_name(self):
         return self.user.get_full_name() or self.user.username
