@@ -1,0 +1,210 @@
+{% extends 'base.html' %}
+{% block title %}{{ enrolment.display_name }} - Enrolment - Ralfiz BMS{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title">{{ enrolment.display_name }}</h1>
+    <p class="page-subtitle mb-0">Internship enrolment &middot; <span class="badge" style="{{ enrolment.status_css }}">{{ enrolment.status_label }}</span></p>
+  </div>
+  <div class="page-actions d-flex gap-2">
+    <a href="{% url 'enrolment_list' %}" class="btn btn-ghost"><i class="fas fa-arrow-left"></i> Back</a>
+    {% if enrolment.status == 'sent' or enrolment.status == 'opened' %}
+    <form method="post" action="{% url 'enrolment_extend' enrolment.pk %}">
+      {% csrf_token %}
+      <button type="submit" class="btn btn-ghost"><i class="fas fa-clock"></i> Extend 14 days</button>
+    </form>
+    <form method="post" action="{% url 'enrolment_cancel' enrolment.pk %}"
+          onsubmit="return confirm('Cancel this link? The student will no longer be able to open it.')">
+      {% csrf_token %}
+      <button type="submit" class="btn btn-ghost text-danger"><i class="fas fa-ban"></i> Cancel link</button>
+    </form>
+    {% endif %}
+  </div>
+</div>
+
+{% if login %}
+<div class="card mb-4" style="border: 2px solid var(--success);">
+  <div class="card-body">
+    <h3 class="card-title mb-2"><i class="fas fa-key"></i> Staff-portal login &mdash; shown only once</h3>
+    <p class="mb-2">Username <strong>{{ login.username }}</strong> &middot; Password <strong>{{ login.password }}</strong></p>
+    {% if login.whatsapp %}
+    <a href="{{ login.whatsapp }}" target="_blank" rel="noopener" class="btn btn-primary"><i class="fab fa-whatsapp"></i> Send login on WhatsApp</a>
+    {% endif %}
+    <a href="{% url 'agreement_send' %}" class="btn btn-ghost"><i class="fas fa-file-signature"></i> Send internship agreement</a>
+  </div>
+</div>
+{% endif %}
+
+<div class="row">
+  <div class="col-8 col-md-12" style="padding: 0.75rem;">
+    {% if enrolment.status == 'sent' or enrolment.status == 'opened' or enrolment.status == 'cancelled' %}
+    <div class="card mb-4">
+      <div class="card-header"><h3 class="card-title"><i class="fas fa-link"></i> Enrolment link</h3></div>
+      <div class="card-body">
+        {% if enrolment.is_open %}
+        <p class="text-muted">Send this link to {{ enrolment.invite_name }}. It is personal to them and works until {{ enrolment.expires_at|date:"d M Y" }}.</p>
+        <div class="d-flex gap-2">
+          <input type="text" class="form-control" id="link-field" value="{{ url }}" readonly>
+          <button type="button" class="btn btn-ghost" id="btn-copy" title="Copy link"><i class="fas fa-copy"></i></button>
+          {% if whatsapp %}
+          <a href="{{ whatsapp }}" target="_blank" rel="noopener" class="btn btn-primary"><i class="fab fa-whatsapp"></i> WhatsApp</a>
+          {% endif %}
+        </div>
+        <p class="text-sm text-muted mt-2 mb-0">{% if enrolment.first_opened_at %}Opened {{ enrolment.first_opened_at|date:"d M, g:i a" }}, not submitted yet.{% else %}Not opened yet.{% endif %}</p>
+        {% elif enrolment.status == 'cancelled' %}
+        <p class="text-muted mb-0">This link was cancelled and no longer opens.</p>
+        {% else %}
+        <p class="text-muted mb-0">This link expired on {{ enrolment.expires_at|date:"d M Y" }} before the student filled it in. Use <strong>Extend 14 days</strong> to reopen the same link.</p>
+        {% endif %}
+      </div>
+    </div>
+    {% else %}
+    <div class="card mb-4">
+      <div class="card-header"><h3 class="card-title"><i class="fas fa-user"></i> Personal &amp; contact</h3></div>
+      <div class="card-body">
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem;">
+          <div><label class="text-muted text-sm">Full name</label><div class="fw-medium">{{ enrolment.full_name }}</div></div>
+          <div><label class="text-muted text-sm">Date of birth</label><div>{{ enrolment.date_of_birth|date:"d M Y" }}</div></div>
+          <div><label class="text-muted text-sm">Phone</label><div>{{ enrolment.phone }}</div></div>
+          <div><label class="text-muted text-sm">WhatsApp</label><div>{{ enrolment.whatsapp|default:"Same as phone" }}</div></div>
+          <div><label class="text-muted text-sm">Email</label><div>{{ enrolment.email }}</div></div>
+          <div><label class="text-muted text-sm">Parent / guardian</label><div>{{ enrolment.guardian_name }}<br>{{ enrolment.guardian_phone }}</div></div>
+          <div style="grid-column: 1 / -1;"><label class="text-muted text-sm">Address</label><div style="white-space: pre-line;">{{ enrolment.address }}</div></div>
+        </div>
+      </div>
+    </div>
+    <div class="card mb-4">
+      <div class="card-header"><h3 class="card-title"><i class="fas fa-graduation-cap"></i> Education &amp; internship</h3></div>
+      <div class="card-body">
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem;">
+          <div><label class="text-muted text-sm">College</label><div class="fw-medium">{{ enrolment.college_name }}</div></div>
+          <div><label class="text-muted text-sm">Course</label><div>{{ enrolment.course }}</div></div>
+          <div><label class="text-muted text-sm">Year</label><div>{{ enrolment.get_year_of_study_display }}</div></div>
+          <div><label class="text-muted text-sm">Register number</label><div>{{ enrolment.register_number|default:"-" }}</div></div>
+          <div><label class="text-muted text-sm">Track</label><div class="fw-medium">{{ enrolment.track_label }}</div></div>
+          <div><label class="text-muted text-sm">Preferred start</label><div>{{ enrolment.preferred_start_date|date:"d M Y" }}</div></div>
+          <div><label class="text-muted text-sm">Duration</label><div>{{ enrolment.get_duration_months_display }}</div></div>
+          <div><label class="text-muted text-sm">Work mode</label><div>{{ enrolment.get_work_mode_display }}</div></div>
+          {% if enrolment.skills %}
+          <div style="grid-column: 1 / -1;"><label class="text-muted text-sm">Already knows</label><div style="white-space: pre-line;">{{ enrolment.skills }}</div></div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+    <div class="card mb-4">
+      <div class="card-header"><h3 class="card-title"><i class="fas fa-paperclip"></i> Documents</h3></div>
+      <div class="card-body">
+        <div class="d-flex gap-3" style="flex-wrap: wrap; align-items: flex-start;">
+          {% if enrolment.photo %}
+          <a href="{% url 'enrolment_file' enrolment.pk 'photo' %}" target="_blank" rel="noopener">
+            <img src="{% url 'enrolment_file' enrolment.pk 'photo' %}" alt="Photo of {{ enrolment.full_name }}"
+                 style="width: 110px; height: 130px; object-fit: cover; border-radius: 8px; border: 1px solid var(--gray-200);">
+          </a>
+          {% endif %}
+          <div class="d-flex gap-2" style="flex-wrap: wrap;">
+            {% for name, label, file in enrolment.documents %}
+            {% if name != 'photo' %}
+            <a href="{% url 'enrolment_file' enrolment.pk name %}" target="_blank" rel="noopener" class="btn btn-ghost">
+              <i class="fas fa-file"></i> {{ label }}
+            </a>
+            {% endif %}
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+    </div>
+    {% endif %}
+  </div>
+
+  <div class="col-4 col-md-12" style="padding: 0.75rem;">
+    {% if enrolment.status == 'submitted' %}
+    <div class="card mb-4">
+      <div class="card-header"><h3 class="card-title"><i class="fas fa-user-check"></i> Approve</h3></div>
+      <div class="card-body">
+        <form method="post" action="{% url 'enrolment_approve' enrolment.pk %}">
+          {% csrf_token %}
+          <div class="mb-3">
+            <label class="form-label" for="username">Login username</label>
+            <input type="text" name="username" id="username" class="form-control" value="{{ suggested.username }}" required>
+          </div>
+          <div class="mb-3">
+            <label class="form-label" for="joining_date">Joining date</label>
+            <input type="date" name="joining_date" id="joining_date" class="form-control" value="{{ suggested.joining_date }}" required>
+          </div>
+          <div class="mb-3">
+            <label class="form-label" for="department">Department</label>
+            <select name="department" id="department" class="form-control">
+              {% for key, label in departments %}
+              <option value="{{ key }}"{% if key == suggested.department %} selected{% endif %}>{{ label }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="mb-3">
+            <label class="form-label" for="designation">Designation</label>
+            <input type="text" name="designation" id="designation" class="form-control" value="{{ suggested.designation }}">
+          </div>
+          <p class="text-sm text-muted">Creates the intern with a staff-portal login. A password is generated and shown once.</p>
+          <button type="submit" class="btn btn-primary w-100"><i class="fas fa-check"></i> Approve &amp; create intern</button>
+        </form>
+      </div>
+    </div>
+    <div class="card mb-4">
+      <div class="card-header"><h3 class="card-title"><i class="fas fa-times"></i> Reject</h3></div>
+      <div class="card-body">
+        <form method="post" action="{% url 'enrolment_reject' enrolment.pk %}"
+              onsubmit="return confirm('Reject this enrolment?')">
+          {% csrf_token %}
+          <textarea name="reason" class="form-control mb-2" rows="2" placeholder="Reason (internal)"></textarea>
+          <button type="submit" class="btn btn-ghost text-danger w-100">Reject</button>
+        </form>
+      </div>
+    </div>
+    {% elif enrolment.status == 'approved' and enrolment.employee %}
+    <div class="card mb-4">
+      <div class="card-header"><h3 class="card-title"><i class="fas fa-id-badge"></i> Intern</h3></div>
+      <div class="card-body">
+        <p class="mb-2"><strong>{{ enrolment.employee.employee_id }}</strong> &middot; {{ enrolment.employee.user.username }}</p>
+        <a href="{% url 'emp_employee_detail' enrolment.employee.pk %}" class="btn btn-ghost w-100">Open employee record</a>
+      </div>
+    </div>
+    {% elif enrolment.status == 'rejected' %}
+    <div class="card mb-4">
+      <div class="card-header"><h3 class="card-title"><i class="fas fa-times"></i> Rejected</h3></div>
+      <div class="card-body"><p class="mb-0">{{ enrolment.rejection_reason|default:"No reason recorded." }}</p></div>
+    </div>
+    {% endif %}
+
+    <div class="card mb-4">
+      <div class="card-header"><h3 class="card-title"><i class="fas fa-history"></i> History</h3></div>
+      <div class="card-body text-sm">
+        <div class="mb-2"><span class="text-muted">Link sent</span><br>{{ enrolment.sent_at|date:"d M Y, g:i a" }}{% if enrolment.created_by %} by {{ enrolment.created_by.get_full_name|default:enrolment.created_by.username }}{% endif %}</div>
+        {% if enrolment.first_opened_at %}<div class="mb-2"><span class="text-muted">Opened</span><br>{{ enrolment.first_opened_at|date:"d M Y, g:i a" }}</div>{% endif %}
+        {% if enrolment.submitted_at %}<div class="mb-2"><span class="text-muted">Submitted</span><br>{{ enrolment.submitted_at|date:"d M Y, g:i a" }}</div>{% endif %}
+        {% if enrolment.reviewed_at %}<div class="mb-2"><span class="text-muted">Reviewed</span><br>{{ enrolment.reviewed_at|date:"d M Y, g:i a" }}{% if enrolment.reviewed_by %} by {{ enrolment.reviewed_by.get_full_name|default:enrolment.reviewed_by.username }}{% endif %}</div>{% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+var copyBtn = document.getElementById('btn-copy');
+if (copyBtn) {
+  copyBtn.addEventListener('click', function () {
+    var field = document.getElementById('link-field');
+    field.select();
+    function done() {
+      copyBtn.innerHTML = '<i class="fas fa-check"></i>';
+      setTimeout(function () { copyBtn.innerHTML = '<i class="fas fa-copy"></i>'; }, 1600);
+    }
+    if (navigator.clipboard && window.isSecureContext) {
+      navigator.clipboard.writeText(field.value).then(done);
+    } else {
+      try { document.execCommand('copy'); done(); } catch (e) { /* user can copy manually */ }
+    }
+  });
+}
+</script>
+{% endblock %}

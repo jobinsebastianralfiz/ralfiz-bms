@@ -1,0 +1,27 @@
+{% extends 'agreements/_doc_base.html' %}
+
+{% block title %}Enrolment received - Ralfiz Technologies{% endblock %}
+
+{% block body %}
+<div class="status-card">
+  {% if enrolment.status == 'approved' %}
+  <div class="status-icon ok">&#10003;</div>
+  <h1>You're enrolled, {{ enrolment.display_name }}</h1>
+  <p>Your internship enrolment has been approved. Our team will share your staff-portal
+     login and joining details with you.</p>
+  {% elif enrolment.status == 'rejected' %}
+  <div class="status-icon info">&#8505;</div>
+  <h1>Thank you for applying</h1>
+  <p>We are unable to take your enrolment forward right now. Please contact us if you have
+     any questions.</p>
+  {% else %}
+  <div class="status-icon ok">&#10003;</div>
+  <h1>Thank you, {{ enrolment.display_name }}</h1>
+  <p>We have received your enrolment details. Our team will review them and contact you
+     with the next steps.</p>
+  {% endif %}
+  <p style="margin-top:18px;font-size:13px;color:var(--agr-muted);">
+    Ralfiz Technologies &middot; +91 98956 63498
+  </p>
+</div>
+{% endblock %}

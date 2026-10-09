@@ -1,0 +1,108 @@
+{% extends 'base.html' %}
+{% block title %}Intern Enrolments - Ralfiz BMS{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title">Intern Enrolments</h1>
+    <p class="page-subtitle mb-0">Send a student their enrolment link, then review and approve what they fill in</p>
+  </div>
+  <div class="page-actions">
+    <a href="{% url 'enrolment_send' %}" class="btn btn-primary"><i class="fas fa-paper-plane"></i> Send Enrolment Link</a>
+  </div>
+</div>
+
+<div class="row mb-4">
+  <div class="col-3 col-md-6 col-sm-12" style="padding: 0.75rem;">
+    <a href="?status=submitted" class="card stat-card" style="display: block; text-decoration: none;">
+      <div class="stat-card-header"><div class="stat-card-icon warning"><i class="fas fa-inbox"></i></div></div>
+      <div class="stat-card-value">{{ counters.to_review }}</div>
+      <div class="stat-card-label">To review</div>
+    </a>
+  </div>
+  <div class="col-3 col-md-6 col-sm-12" style="padding: 0.75rem;">
+    <a href="?status=open" class="card stat-card" style="display: block; text-decoration: none;">
+      <div class="stat-card-header"><div class="stat-card-icon info"><i class="fas fa-hourglass-half"></i></div></div>
+      <div class="stat-card-value">{{ counters.waiting }}</div>
+      <div class="stat-card-label">Waiting for student</div>
+    </a>
+  </div>
+  <div class="col-3 col-md-6 col-sm-12" style="padding: 0.75rem;">
+    <a href="?status=approved" class="card stat-card" style="display: block; text-decoration: none;">
+      <div class="stat-card-header"><div class="stat-card-icon success"><i class="fas fa-check"></i></div></div>
+      <div class="stat-card-value">{{ counters.approved }}</div>
+      <div class="stat-card-label">Approved</div>
+    </a>
+  </div>
+  <div class="col-3 col-md-6 col-sm-12" style="padding: 0.75rem;">
+    <a href="?status=expired" class="card stat-card" style="display: block; text-decoration: none;">
+      <div class="stat-card-header"><div class="stat-card-icon danger"><i class="fas fa-clock"></i></div></div>
+      <div class="stat-card-value">{{ counters.expired }}</div>
+      <div class="stat-card-label">Expired links</div>
+    </a>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header">
+    <h3 class="card-title"><i class="fas fa-user-plus"></i> All Enrolments</h3>
+    <div class="card-actions">
+      <form method="get" class="d-flex gap-2">
+        <input type="text" name="q" class="form-control" style="width: auto;" placeholder="Name, phone or college" value="{{ search }}">
+        <select name="status" class="form-control" style="width: auto;" onchange="this.form.submit()">
+          <option value="">All Status</option>
+          <option value="open" {% if status_filter == 'open' %}selected{% endif %}>Waiting for student</option>
+          <option value="expired" {% if status_filter == 'expired' %}selected{% endif %}>Expired</option>
+          {% for key, label in statuses %}
+          <option value="{{ key }}" {% if status_filter == key %}selected{% endif %}>{{ label }}</option>
+          {% endfor %}
+        </select>
+      </form>
+    </div>
+  </div>
+  <div class="card-body p-0">
+    {% if enrolments %}
+    <div class="table-responsive">
+      <table class="table table-hover mb-0">
+        <thead>
+          <tr>
+            <th>Student</th>
+            <th>College / course</th>
+            <th>Track</th>
+            <th>Sent</th>
+            <th>Status</th>
+            <th class="text-end">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for e in enrolments %}
+          <tr>
+            <td>
+              <div class="d-flex align-items-center gap-2">
+                <div class="avatar avatar-sm" style="background: var(--primary); color: white;">{{ e.display_name|slice:":1"|upper }}</div>
+                <div>
+                  <div class="fw-medium">{{ e.display_name }}</div>
+                  <div class="text-sm text-muted">{% firstof e.phone e.invite_phone e.invite_email %}</div>
+                </div>
+              </div>
+            </td>
+            <td class="text-sm">{% if e.college_name %}{{ e.college_name }}<div class="text-muted">{{ e.course }}</div>{% else %}<span class="text-muted">&mdash;</span>{% endif %}</td>
+            <td class="text-sm">{% if e.track %}{{ e.track_label }}{% else %}<span class="text-muted">&mdash;</span>{% endif %}</td>
+            <td class="text-sm text-muted">{{ e.sent_at|date:"d M Y" }}</td>
+            <td><span class="badge" style="{{ e.status_css }}">{{ e.status_label }}</span></td>
+            <td class="text-end"><a href="{% url 'enrolment_detail' e.pk %}" class="btn btn-sm btn-ghost">{% if e.status == 'submitted' %}Review{% else %}View{% endif %}</a></td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <div class="text-center text-muted" style="padding: 48px;">
+      <i class="fas fa-user-plus fa-2x mb-3 d-block"></i>
+      {% if search or status_filter %}No enrolments match this filter.
+      {% else %}No enrolment links sent yet. <a href="{% url 'enrolment_send' %}">Send the first one</a>.{% endif %}
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

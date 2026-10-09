@@ -5,6 +5,7 @@ from gympro_licensing import web_views as gympro_web_views
 from eduflow_licensing import web_views as eduflow_web_views
 from ralfpos_licensing import web_views as ralfpos_web_views
 from . import agreement_web_views
+from . import enrolment_web_views
 
 urlpatterns = [
     # Public Pages
@@ -314,6 +315,14 @@ urlpatterns = [
     path('hr/certificate-templates/<uuid:pk>/delete/', views.certificate_template_delete, name='certificate_template_delete'),
 
     # Agreements (e-signing)
+    path('hr/enrolments/', enrolment_web_views.enrolment_list, name='enrolment_list'),
+    path('hr/enrolments/send/', enrolment_web_views.enrolment_send, name='enrolment_send'),
+    path('hr/enrolments/<uuid:pk>/', enrolment_web_views.enrolment_detail, name='enrolment_detail'),
+    path('hr/enrolments/<uuid:pk>/approve/', enrolment_web_views.enrolment_approve, name='enrolment_approve'),
+    path('hr/enrolments/<uuid:pk>/reject/', enrolment_web_views.enrolment_reject, name='enrolment_reject'),
+    path('hr/enrolments/<uuid:pk>/cancel/', enrolment_web_views.enrolment_cancel, name='enrolment_cancel'),
+    path('hr/enrolments/<uuid:pk>/extend/', enrolment_web_views.enrolment_extend, name='enrolment_extend'),
+    path('hr/enrolments/<uuid:pk>/file/<str:field>/', enrolment_web_views.enrolment_file, name='enrolment_file'),
     path('hr/agreements/', agreement_web_views.agreement_list, name='agreement_list'),
     path('hr/agreements/send/', agreement_web_views.agreement_send, name='agreement_send'),
     path('hr/agreements/batch/<uuid:batch>/', agreement_web_views.agreement_batch, name='agreement_batch'),

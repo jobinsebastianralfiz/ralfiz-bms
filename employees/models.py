@@ -929,6 +929,7 @@ class Certificate(models.Model):
 
 # Agreement e-signing (templates + signable requests)
 from .agreement_models import AgreementTemplate, AgreementRequest  # noqa: E402,F401
+from .enrolment_models import InternEnrolment  # noqa: E402,F401
 
 
 class DailyReport(models.Model):

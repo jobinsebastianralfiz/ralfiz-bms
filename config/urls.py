@@ -1,4 +1,7 @@
+import posixpath
+
 from django.contrib import admin
+from django.http import Http404
 from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
@@ -27,6 +30,7 @@ urlpatterns = [
     path('portal/', include('client_portal.urls')),
     path('staff/', include('employees.portal_urls')),
     path('agreement/', include('employees.agreement_urls')),
+    path('enrol/', include('employees.enrolment_urls')),
     path('academy/', include('academy.urls')),
 
     # Short verification link. It is what the certificate QR encodes: the API
@@ -55,7 +59,19 @@ urlpatterns = [
 if settings.DEBUG:
     urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
 
+
+
+def public_media(request, path):
+    """Serve uploaded media, except media/private/ (enrolment ID proofs and
+    the like), which HR reads through login-protected views only. The path is
+    normalised first, as serve() does, so ./private/ or a/../private/ can't
+    slip past."""
+    if posixpath.normpath(path).lstrip('/').split('/')[0].lower() == 'private':
+        raise Http404
+    return serve(request, path, document_root=settings.MEDIA_ROOT)
+
+
 # Always serve media files (needed for uploaded logos, etc.)
 urlpatterns += [
-    re_path(r'^media/(?P<path>.*)$', serve, {'document_root': settings.MEDIA_ROOT}),
+    re_path(r'^media/(?P<path>.*)$', public_media),
 ]

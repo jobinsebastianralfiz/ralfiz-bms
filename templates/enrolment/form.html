@@ -1,0 +1,81 @@
+{% extends 'agreements/_doc_base.html' %}
+
+{% block title %}Internship Enrolment - Ralfiz Technologies{% endblock %}
+
+{% block body %}
+<main class="doc-main">
+  <p class="doc-eyebrow">RALFIZ TECHNOLOGIES INTERNSHIP</p>
+  <h1 class="doc-title">Internship Enrolment</h1>
+  <div class="doc-rule"></div>
+  <div class="doc-greeting">
+    <p class="greet-name">Hi {{ enrolment.invite_name }},</p>
+    <p>Welcome! Fill in your details below. It takes about five minutes. Keep a photo of
+       yourself and your ID proof ready to upload.</p>
+  </div>
+</main>
+
+<form class="doc-form" method="post" enctype="multipart/form-data" novalidate>
+  {% csrf_token %}
+  {% if errors %}
+  <div class="alert-error">Please check the highlighted fields below and try again.</div>
+  {% endif %}
+
+  {% for section in sections %}
+  <hr class="form-divider">
+  <h3 class="form-heading">{{ section.title }}</h3>
+  <div class="field-grid">
+    {% for f in section.fields %}
+    <div class="field{% if f.wide %} wide{% endif %}{% if f.error %} has-error{% endif %}"{% if f.name == 'track_other' %} id="track-other-field"{% endif %}>
+      <label for="{{ f.name }}">{{ f.label }}{% if not f.required %} <span class="opt">(optional)</span>{% endif %}</label>
+      {% if f.type == 'textarea' %}
+      <textarea id="{{ f.name }}" name="{{ f.name }}" rows="3" autocomplete="{{ f.autocomplete }}">{{ f.value }}</textarea>
+      {% elif f.type == 'select' %}
+      <select id="{{ f.name }}" name="{{ f.name }}">
+        <option value="">Choose&hellip;</option>
+        {% for key, label in f.choices %}
+        <option value="{{ key }}"{% if key == f.value %} selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+      {% else %}
+      <input type="{{ f.type }}" id="{{ f.name }}" name="{{ f.name }}" value="{{ f.value }}" autocomplete="{{ f.autocomplete }}"{% if f.type == 'tel' %} inputmode="tel"{% endif %}>
+      {% endif %}
+      {% if f.error %}<div class="field-error">{{ f.error }}</div>{% elif f.hint %}<div class="field-hint">{{ f.hint }}</div>{% endif %}
+    </div>
+    {% endfor %}
+  </div>
+  {% endfor %}
+
+  <hr class="form-divider">
+  <h3 class="form-heading">Documents</h3>
+  <div class="field-grid">
+    {% for u in uploads %}
+    <div class="field{% if u.error %} has-error{% endif %}">
+      <label for="{{ u.name }}">{{ u.label }}{% if not u.required %} <span class="opt">(optional)</span>{% endif %}</label>
+      {% if u.attached %}<div class="file-attached">&#10003; Attached. Choose a file only to replace it.</div>{% endif %}
+      <input type="file" id="{{ u.name }}" name="{{ u.name }}" accept="{{ u.accept }}">
+      {% if u.error %}<div class="field-error">{{ u.error }}</div>{% else %}<div class="field-hint">{{ u.hint }}</div>{% endif %}
+    </div>
+    {% endfor %}
+  </div>
+
+  <div class="confirm-check">
+    <input type="checkbox" id="confirm" name="confirm" value="1"{% if confirmed %} checked{% endif %}>
+    <label for="confirm">I confirm that the details above are correct.</label>
+  </div>
+  {% if errors.confirm %}<div class="field-error" style="margin-top:-8px;margin-bottom:14px;">{{ errors.confirm }}</div>{% endif %}
+
+  <button type="submit" class="btn-submit">Submit my enrolment</button>
+</form>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  (function () {
+    var track = document.getElementById('track');
+    var other = document.getElementById('track-other-field');
+    function sync() { other.style.display = track.value === 'other' ? '' : 'none'; }
+    track.addEventListener('change', sync);
+    sync();
+  })();
+</script>
+{% endblock %}
