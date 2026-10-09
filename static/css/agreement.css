@@ -424,21 +424,3 @@ body {
   .doc-footer { padding: 10px 0 0; }
 }
 
-/* ---- Enrolment form ---- */
-.field-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0 14px; }
-.field-grid .field.wide { grid-column: 1 / -1; }
-@media (max-width: 520px) { .field-grid { grid-template-columns: 1fr; } }
-.field input[type="email"], .field input[type="tel"], .field input[type="date"], .field select {
-  width: 100%; padding: 11px 13px;
-  border: 1px solid var(--agr-line); border-radius: 9px;
-  font-family: inherit; font-size: 15px; color: var(--agr-ink); background: #fff;
-  min-height: 46px;
-}
-.field select:focus { outline: none; border-color: var(--agr-blue); box-shadow: 0 0 0 3px rgba(37, 99, 235, .12); }
-.field input[type="file"] {
-  width: 100%; padding: 10px; font-family: inherit; font-size: 14px; color: var(--agr-body);
-  border: 1px dashed #cbd5e1; border-radius: 9px; background: #fff;
-}
-.field.has-error select, .field.has-error input[type="file"] { border-color: var(--agr-red); }
-.field-hint { color: var(--agr-muted); font-size: 12px; margin-top: 4px; }
-.file-attached { color: var(--agr-green); font-size: 13px; margin-bottom: 6px; }

@@ -12,7 +12,7 @@ from django.urls import reverse
 from django.utils import timezone
 from PIL import Image
 
-from employees.models import Employee, InternEnrolment
+from employees.models import EnrolmentSettings, Employee, InternEnrolment
 
 TMP_MEDIA = tempfile.mkdtemp(prefix='enrol-test-')
 
@@ -32,7 +32,7 @@ def form_data(**overrides):
         'full_name': 'Anjali Menon', 'phone': '9876543210', 'whatsapp': '', 'email': 'anjali@example.com',
         'date_of_birth': '2004-05-17', 'address': 'Kozhikode, Kerala', 'guardian_name': 'Ravi Menon',
         'guardian_phone': '9876500000', 'college_name': 'MES College', 'course': 'BCA',
-        'year_of_study': '3', 'register_number': 'MES21BCA07', 'track': 'development',
+        'year_of_study': '3', 'register_number': 'MES21BCA07', 'track': 'Software Development',
         'track_other': '', 'preferred_start_date': '2026-11-02', 'duration_months': '3',
         'work_mode': 'onsite', 'skills': 'Python basics', 'confirm': '1',
     }
@@ -77,7 +77,7 @@ class EnrolmentTests(TestCase):
         self.assertRedirects(response, reverse('enrolment_done', args=[self.enrolment.token]))
         e = InternEnrolment.objects.get()
         self.assertEqual((e.status, e.full_name, e.date_of_birth, e.track),
-                         ('submitted', 'Anjali Menon', date(2004, 5, 17), 'development'))
+                         ('submitted', 'Anjali Menon', date(2004, 5, 17), 'Software Development'))
         self.assertTrue(e.photo.name.startswith(f'enrolments/{e.pk}/photo'))
         # The link now shows the thank-you page, and cannot be resubmitted.
         self.assertRedirects(self.client.get(self.url), reverse('enrolment_done', args=[e.token]))
@@ -103,8 +103,54 @@ class EnrolmentTests(TestCase):
         self.assertContains(response, 'Upload a', status_code=400)
 
     def test_other_track_needs_a_name(self):
-        response = self.submit(track='other')
+        response = self.submit(track='__other__')
         self.assertContains(response, 'Tell us which area.', status_code=400)
+        self.submit(track='__other__', track_other='Cyber security')
+        e = InternEnrolment.objects.get()
+        self.assertEqual((e.track, e.track_label), ('Other', 'Cyber security'))
+
+    # ---------------------------------------------------------- form options
+
+    def test_single_work_mode_is_not_asked(self):
+        # Default: onsite only.
+        page = self.client.get(self.url)
+        self.assertNotContains(page, 'How you want to work')
+        self.submit(work_mode='remote')  # ignored: the only option wins
+        self.assertEqual(InternEnrolment.objects.get().work_mode, 'onsite')
+
+    def test_hr_configures_the_form(self):
+        self.client.force_login(self.hr)
+        response = self.client.post(reverse('enrolment_settings'), {
+            'work_mode_onsite': '1', 'work_mode_remote': '1',
+            'track_label': ['Flutter Development', '', 'flutter development', 'SEO'],
+            'track_department': ['engineering', 'engineering', 'design', 'marketing'],
+            'duration': ['2', '6', '99'],
+        })
+        self.assertRedirects(response, reverse('enrolment_settings'))
+        settings = EnrolmentSettings.get()
+        self.assertEqual(settings.work_modes, ['onsite', 'remote'])
+        self.assertEqual([t['label'] for t in settings.tracks], ['Flutter Development', 'SEO'])
+        self.assertEqual((settings.durations, settings.allow_other_track), ([2, 6], False))
+
+        self.client.logout()
+        page = self.client.get(self.url)
+        self.assertContains(page, 'How you want to work')
+        self.assertContains(page, 'Flutter Development')
+        self.assertNotContains(page, 'Software Development')
+        self.assertNotContains(page, 'Which area?')
+        # A removed area is refused; an offered one goes through and sets the department.
+        self.assertContains(self.submit(track='Software Development', duration_months='2',
+                                        work_mode='remote'), 'Choose one of the options.', status_code=400)
+        self.submit(track='SEO', duration_months='6', work_mode='remote')
+        e = InternEnrolment.objects.get()
+        self.assertEqual((e.track, e.duration_label, e.work_mode), ('SEO', '6 months', 'remote'))
+        self.assertEqual(EnrolmentSettings.get().department_for(e.track), 'marketing')
+
+    def test_settings_need_at_least_one_of_each(self):
+        self.client.force_login(self.hr)
+        response = self.client.post(reverse('enrolment_settings'), {}, follow=True)
+        self.assertContains(response, 'Tick at least one work mode.')
+        self.assertEqual(EnrolmentSettings.get().work_modes, ['onsite'])
 
     def test_expired_and_cancelled_links(self):
         InternEnrolment.objects.update(expires_at=timezone.now() - timedelta(minutes=1))

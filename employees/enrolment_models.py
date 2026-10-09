@@ -55,6 +55,83 @@ def enrolment_college_letter_path(instance, filename):
     return _document_path(instance, filename, 'college_letter')
 
 
+def duration_label(months):
+    if not months:
+        return ''
+    return f'{months} month' if str(months) == '1' else f'{months} months'
+
+
+WORK_MODE_CHOICES = [
+    ('onsite', 'Onsite (at our office)'),
+    ('hybrid', 'Hybrid'),
+    ('remote', 'Remote'),
+]
+
+
+def default_tracks():
+    return [
+        {'label': 'Software Development', 'department': 'engineering'},
+        {'label': 'UI/UX & Graphic Design', 'department': 'design'},
+        {'label': 'Digital Marketing', 'department': 'marketing'},
+        {'label': 'Data Analytics', 'department': 'engineering'},
+    ]
+
+
+def default_work_modes():
+    return ['onsite']
+
+
+def default_durations():
+    return [1, 2, 3, 6]
+
+
+class EnrolmentSettings(models.Model):
+    """What the enrolment form offers, set by HR at /hr/enrolments/settings/."""
+
+    work_modes = models.JSONField(default=default_work_modes,
+                                  help_text='Keys from WORK_MODE_CHOICES to offer')
+    tracks = models.JSONField(default=default_tracks,
+                              help_text='[{"label": ..., "department": Employee department}]')
+    allow_other_track = models.BooleanField(default=True,
+                                            help_text='Offer "Other" with a free-text area')
+    durations = models.JSONField(default=default_durations, help_text='Month counts to offer')
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = 'Enrolment settings'
+        verbose_name_plural = 'Enrolment settings'
+
+    def __str__(self):
+        return 'Enrolment settings'
+
+    @classmethod
+    def get(cls):
+        obj, _ = cls.objects.get_or_create(pk=1)
+        return obj
+
+    def work_mode_choices(self):
+        return [(k, label) for k, label in WORK_MODE_CHOICES if k in self.work_modes]
+
+    def track_choices(self):
+        choices = [(t['label'], t['label']) for t in self.tracks]
+        if self.allow_other_track:
+            choices.append((OTHER_TRACK, 'Other'))
+        return choices
+
+    def duration_choices(self):
+        return [(str(n), duration_label(n)) for n in sorted(self.durations)]
+
+    def department_for(self, track):
+        for t in self.tracks:
+            if t['label'].casefold() == (track or '').casefold():
+                return t['department']
+        return 'other'
+
+
+#: Form value of the "Other" area; the student's own text goes in track_other.
+OTHER_TRACK = '__other__'
+
+
 class InternEnrolment(models.Model):
     STATUS_SENT = 'sent'
     STATUS_OPENED = 'opened'
@@ -72,21 +149,6 @@ class InternEnrolment(models.Model):
     ]
     OPEN_STATUSES = (STATUS_SENT, STATUS_OPENED)
 
-    TRACK_CHOICES = [
-        ('development', 'Software Development'),
-        ('design', 'UI/UX & Graphic Design'),
-        ('digital_marketing', 'Digital Marketing'),
-        ('data', 'Data Analytics'),
-        ('other', 'Other'),
-    ]
-    #: Employee.department each track lands in on approval.
-    TRACK_DEPARTMENT = {
-        'development': 'engineering',
-        'design': 'design',
-        'digital_marketing': 'marketing',
-        'data': 'engineering',
-        'other': 'other',
-    }
     YEAR_CHOICES = [
         ('1', '1st year'),
         ('2', '2nd year'),
@@ -95,17 +157,7 @@ class InternEnrolment(models.Model):
         ('5', '5th year'),
         ('graduated', 'Graduated'),
     ]
-    DURATION_CHOICES = [
-        ('1', '1 month'),
-        ('2', '2 months'),
-        ('3', '3 months'),
-        ('6', '6 months'),
-    ]
-    WORK_MODE_CHOICES = [
-        ('onsite', 'Onsite (at our office)'),
-        ('hybrid', 'Hybrid'),
-        ('remote', 'Remote'),
-    ]
+    WORK_MODE_CHOICES = WORK_MODE_CHOICES
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     token = models.CharField(max_length=64, unique=True, db_index=True, default=generate_enrolment_token)
@@ -138,10 +190,12 @@ class InternEnrolment(models.Model):
     register_number = models.CharField(max_length=50, blank=True)
 
     # ---- Internship ----
-    track = models.CharField(max_length=20, choices=TRACK_CHOICES, blank=True)
+    #: The area's name as offered when the student applied (areas are set by HR
+    #: in EnrolmentSettings, so a later rename never rewrites old applications).
+    track = models.CharField(max_length=200, blank=True)
     track_other = models.CharField(max_length=200, blank=True)
     preferred_start_date = models.DateField(null=True, blank=True)
-    duration_months = models.CharField(max_length=2, choices=DURATION_CHOICES, blank=True)
+    duration_months = models.CharField(max_length=2, blank=True)
     work_mode = models.CharField(max_length=10, choices=WORK_MODE_CHOICES, blank=True)
     skills = models.TextField(blank=True, help_text='What the student already knows')
 
@@ -204,9 +258,11 @@ class InternEnrolment(models.Model):
 
     @property
     def track_label(self):
-        if self.track == 'other' and self.track_other:
-            return self.track_other
-        return self.get_track_display()
+        return self.track_other or self.track
+
+    @property
+    def duration_label(self):
+        return duration_label(self.duration_months)
 
     def mark_opened(self):
         if self.first_opened_at is None:
@@ -274,7 +330,7 @@ class InternEnrolment(models.Model):
             f'College: {self.college_name}',
             f'Course: {self.course} ({self.get_year_of_study_display()})',
             f'Register no: {self.register_number}' if self.register_number else '',
-            f'Track: {self.track_label}, {self.get_duration_months_display()}',
+            f'Track: {self.track_label}, {self.duration_label}',
             f'Guardian: {self.guardian_name} {self.guardian_phone}',
             f'WhatsApp: {self.whatsapp}' if self.whatsapp else '',
             f'Skills: {self.skills}' if self.skills else '',

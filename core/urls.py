@@ -317,6 +317,7 @@ urlpatterns = [
     # Agreements (e-signing)
     path('hr/enrolments/', enrolment_web_views.enrolment_list, name='enrolment_list'),
     path('hr/enrolments/send/', enrolment_web_views.enrolment_send, name='enrolment_send'),
+    path('hr/enrolments/settings/', enrolment_web_views.enrolment_settings, name='enrolment_settings'),
     path('hr/enrolments/<uuid:pk>/', enrolment_web_views.enrolment_detail, name='enrolment_detail'),
     path('hr/enrolments/<uuid:pk>/approve/', enrolment_web_views.enrolment_approve, name='enrolment_approve'),
     path('hr/enrolments/<uuid:pk>/reject/', enrolment_web_views.enrolment_reject, name='enrolment_reject'),

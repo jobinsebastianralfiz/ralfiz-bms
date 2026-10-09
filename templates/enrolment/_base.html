@@ -1,0 +1,39 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="robots" content="noindex, nofollow">
+  <meta name="theme-color" content="#ffffff">
+  <title>{% block title %}Internship Enrolment{% endblock %} - {{ company.company_name|default:"Ralfiz Technologies" }}</title>
+  <link rel="icon" type="image/svg+xml" href="{% static 'favicon.svg' %}">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{% static 'css/enrolment.css' %}?v=2">
+</head>
+<body>
+  <header class="en-header">
+    <div class="en-wrap en-brand">
+      <img class="en-logo" src="{% static 'brand/ralfiz-mark.svg' %}" alt="">
+      <div>
+        <div class="en-name">{{ company.company_name|default:"Ralfiz Technologies" }}</div>
+        <div class="en-tagline">{{ company.tagline|default:"Rise to Next Level" }}</div>
+      </div>
+    </div>
+  </header>
+
+  <main class="en-wrap">
+    {% block body %}{% endblock %}
+  </main>
+
+  <footer class="en-wrap en-footer">
+    <strong>{{ company.company_name|default:"Ralfiz Technologies" }}</strong><br>
+    KIMS Avenue, Perinthalmanna, Kerala
+    {% if company.phone %}<br><a href="tel:{{ company.phone }}">{{ company.phone }}</a>{% endif %}
+    {% if company.email %} &middot; <a href="mailto:{{ company.email }}">{{ company.email }}</a>{% endif %}
+  </footer>
+  {% block scripts %}{% endblock %}
+</body>
+</html>

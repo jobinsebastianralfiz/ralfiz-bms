@@ -1,0 +1,70 @@
+{% extends 'base.html' %}
+{% block title %}Enrolment Form Options - Ralfiz BMS{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title">Enrolment Form Options</h1>
+    <p class="page-subtitle mb-0">Choose what students can pick on the enrolment form</p>
+  </div>
+  <div class="page-actions">
+    <a href="{% url 'enrolment_list' %}" class="btn btn-ghost"><i class="fas fa-arrow-left"></i> Back</a>
+  </div>
+</div>
+
+<form method="post" style="max-width: 760px;">
+  {% csrf_token %}
+
+  <div class="card mb-4">
+    <div class="card-header"><h3 class="card-title"><i class="fas fa-building"></i> Work mode</h3></div>
+    <div class="card-body">
+      {% for key, label, on in work_modes %}
+      <label class="d-flex align-items-center gap-2 mb-2" style="cursor: pointer;">
+        <input type="checkbox" name="work_mode_{{ key }}" value="1"{% if on %} checked{% endif %}>
+        <span>{{ label }}</span>
+      </label>
+      {% endfor %}
+      <p class="text-sm text-muted mt-2 mb-0">With only one ticked, students are not asked; they all get that mode.</p>
+    </div>
+  </div>
+
+  <div class="card mb-4">
+    <div class="card-header"><h3 class="card-title"><i class="fas fa-layer-group"></i> Internship areas</h3></div>
+    <div class="card-body">
+      <p class="text-sm text-muted">The area a student picks sets their department when you approve them. Clear a name to remove an area.</p>
+      {% for row in track_rows %}
+      <div class="d-flex gap-2 mb-2">
+        <input type="text" name="track_label" class="form-control" value="{{ row.label }}" maxlength="200"
+               {% if not row.label %}placeholder="New area, e.g. Flutter Development"{% endif %}>
+        <select name="track_department" class="form-control" style="max-width: 220px;" aria-label="Department">
+          {% for key, label in departments %}
+          <option value="{{ key }}"{% if key == row.department %} selected{% endif %}>{{ label }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      {% endfor %}
+      <label class="d-flex align-items-center gap-2 mt-3" style="cursor: pointer;">
+        <input type="checkbox" name="allow_other_track" value="1"{% if settings.allow_other_track %} checked{% endif %}>
+        <span>Also offer <strong>Other</strong>, where the student types their own area</span>
+      </label>
+    </div>
+  </div>
+
+  <div class="card mb-4">
+    <div class="card-header"><h3 class="card-title"><i class="fas fa-calendar-alt"></i> Durations offered</h3></div>
+    <div class="card-body">
+      <div class="d-flex gap-3" style="flex-wrap: wrap;">
+        {% for months, on in durations %}
+        <label class="d-flex align-items-center gap-1" style="cursor: pointer; min-width: 90px;">
+          <input type="checkbox" name="duration" value="{{ months }}"{% if on %} checked{% endif %}>
+          <span>{{ months }} month{{ months|pluralize }}</span>
+        </label>
+        {% endfor %}
+      </div>
+      <p class="text-sm text-muted mt-2 mb-0">With only one ticked, students are not asked.</p>
+    </div>
+  </div>
+
+  <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> Save options</button>
+</form>
+{% endblock %}

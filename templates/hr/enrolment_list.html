@@ -7,7 +7,8 @@
     <h1 class="page-title">Intern Enrolments</h1>
     <p class="page-subtitle mb-0">Send a student their enrolment link, then review and approve what they fill in</p>
   </div>
-  <div class="page-actions">
+  <div class="page-actions d-flex gap-2">
+    <a href="{% url 'enrolment_settings' %}" class="btn btn-ghost"><i class="fas fa-sliders-h"></i> Form options</a>
     <a href="{% url 'enrolment_send' %}" class="btn btn-primary"><i class="fas fa-paper-plane"></i> Send Enrolment Link</a>
   </div>
 </div>
@@ -68,7 +69,7 @@
           <tr>
             <th>Student</th>
             <th>College / course</th>
-            <th>Track</th>
+            <th>Area</th>
             <th>Sent</th>
             <th>Status</th>
             <th class="text-end">Actions</th>

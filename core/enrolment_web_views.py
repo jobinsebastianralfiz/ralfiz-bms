@@ -15,7 +15,8 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 from django.views.decorators.http import require_POST
 
-from employees.enrolment_models import InternEnrolment, default_enrolment_expiry
+from employees.enrolment_models import (WORK_MODE_CHOICES, EnrolmentSettings, InternEnrolment,
+                                        default_enrolment_expiry)
 from employees.models import Employee
 
 DOCUMENT_FIELDS = ('photo', 'id_proof', 'resume', 'college_letter')
@@ -112,7 +113,7 @@ def enrolment_detail(request, pk):
         'suggested': {
             'username': enrolment.suggested_username() if enrolment.status == 'submitted' else '',
             'joining_date': (enrolment.preferred_start_date or timezone.localdate()).isoformat(),
-            'department': InternEnrolment.TRACK_DEPARTMENT.get(enrolment.track, 'other'),
+            'department': EnrolmentSettings.get().department_for(enrolment.track),
             'designation': f'{enrolment.track_label} Intern' if enrolment.track else 'Intern',
         },
     })
@@ -218,3 +219,57 @@ def enrolment_file(request, pk, field):
     response = FileResponse(document.open('rb'), content_type=content_type, filename=name)
     response['X-Content-Type-Options'] = 'nosniff'
     return response
+
+
+#: Rows offered on the settings page beyond the current areas, for adding new ones.
+BLANK_TRACK_ROWS = 3
+MAX_DURATION_MONTHS = 12
+
+
+@enrolment_admin
+def enrolment_settings(request):
+    """What the student form offers: work modes, internship areas, durations."""
+    settings = EnrolmentSettings.get()
+    departments = dict(Employee.DEPARTMENT_CHOICES)
+
+    if request.method == 'POST':
+        work_modes = [k for k, _ in WORK_MODE_CHOICES if request.POST.get(f'work_mode_{k}')]
+        tracks, seen = [], set()
+        for label, department in zip(request.POST.getlist('track_label'),
+                                     request.POST.getlist('track_department')):
+            label = label.strip()[:200]
+            if label and label.casefold() not in seen:
+                seen.add(label.casefold())
+                tracks.append({'label': label,
+                               'department': department if department in departments else 'other'})
+        durations = sorted({int(n) for n in request.POST.getlist('duration')
+                            if n.isdigit() and 1 <= int(n) <= MAX_DURATION_MONTHS})
+        allow_other = bool(request.POST.get('allow_other_track'))
+
+        problems = []
+        if not work_modes:
+            problems.append('Tick at least one work mode.')
+        if not tracks and not allow_other:
+            problems.append('Add at least one internship area, or allow "Other".')
+        if not durations:
+            problems.append('Tick at least one duration.')
+        if problems:
+            for problem in problems:
+                messages.error(request, problem)
+        else:
+            settings.work_modes = work_modes
+            settings.tracks = tracks
+            settings.durations = durations
+            settings.allow_other_track = allow_other
+            settings.save()
+            messages.success(request, 'Enrolment form options saved. New and open links use them right away.')
+            return redirect('enrolment_settings')
+
+    rows = list(settings.tracks) + [{'label': '', 'department': 'engineering'}] * BLANK_TRACK_ROWS
+    return render(request, 'hr/enrolment_settings.html', {
+        'settings': settings,
+        'work_modes': [(k, label, k in settings.work_modes) for k, label in WORK_MODE_CHOICES],
+        'track_rows': rows,
+        'departments': Employee.DEPARTMENT_CHOICES,
+        'durations': [(n, n in settings.durations) for n in range(1, MAX_DURATION_MONTHS + 1)],
+    })

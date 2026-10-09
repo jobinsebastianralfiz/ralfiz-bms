@@ -82,9 +82,9 @@
           <div><label class="text-muted text-sm">Course</label><div>{{ enrolment.course }}</div></div>
           <div><label class="text-muted text-sm">Year</label><div>{{ enrolment.get_year_of_study_display }}</div></div>
           <div><label class="text-muted text-sm">Register number</label><div>{{ enrolment.register_number|default:"-" }}</div></div>
-          <div><label class="text-muted text-sm">Track</label><div class="fw-medium">{{ enrolment.track_label }}</div></div>
+          <div><label class="text-muted text-sm">Area</label><div class="fw-medium">{{ enrolment.track_label }}</div></div>
           <div><label class="text-muted text-sm">Preferred start</label><div>{{ enrolment.preferred_start_date|date:"d M Y" }}</div></div>
-          <div><label class="text-muted text-sm">Duration</label><div>{{ enrolment.get_duration_months_display }}</div></div>
+          <div><label class="text-muted text-sm">Duration</label><div>{{ enrolment.duration_label }}</div></div>
           <div><label class="text-muted text-sm">Work mode</label><div>{{ enrolment.get_work_mode_display }}</div></div>
           {% if enrolment.skills %}
           <div style="grid-column: 1 / -1;"><label class="text-muted text-sm">Already knows</label><div style="white-space: pre-line;">{{ enrolment.skills }}</div></div>

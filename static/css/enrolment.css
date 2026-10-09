@@ -1,0 +1,141 @@
+/* Internship enrolment pages: mobile-first, in the Ralfiz mark's colours. */
+:root {
+  --en-red: #d61f1f;
+  --en-red-dark: #8f1d10;
+  --en-red-soft: #fef2f2;
+  --en-ink: #1f1b1b;
+  --en-body: #3f3a3a;
+  --en-muted: #6b6565;
+  --en-line: #e7e3e3;
+  --en-bg: #f6f4f4;
+  --en-card: #ffffff;
+  --en-green: #059669;
+  --en-radius: 14px;
+}
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0; background: var(--en-bg); color: var(--en-body);
+  font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  font-size: 16px; line-height: 1.55;
+}
+a { color: var(--en-red); }
+.en-wrap { max-width: 640px; margin: 0 auto; padding: 0 16px; }
+
+/* Header */
+.en-header {
+  background: #fff; border-bottom: 1px solid var(--en-line);
+  position: sticky; top: 0; z-index: 5;
+  padding-top: env(safe-area-inset-top);
+}
+.en-brand { display: flex; align-items: center; gap: 12px; padding-top: 12px; padding-bottom: 12px; }
+.en-logo { height: 34px; width: auto; flex: none; }
+.en-name { font-weight: 700; color: var(--en-ink); font-size: 16px; line-height: 1.2; }
+.en-tagline { font-size: 12px; color: var(--en-muted); }
+
+/* Intro */
+.en-intro { padding: 24px 0 8px; }
+.en-eyebrow {
+  font-size: 12px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase;
+  color: var(--en-red); margin: 0 0 6px;
+}
+.en-title { font-size: 26px; line-height: 1.2; color: var(--en-ink); margin: 0 0 12px; font-weight: 700; }
+.en-rule { width: 44px; height: 3px; border-radius: 2px; margin-bottom: 16px;
+  background: linear-gradient(90deg, var(--en-red-dark), var(--en-red)); }
+.en-intro p { margin: 0 0 8px; color: var(--en-body); }
+.en-intro .en-hi { font-weight: 600; color: var(--en-ink); }
+
+/* Cards */
+.en-card {
+  background: var(--en-card); border: 1px solid var(--en-line); border-radius: var(--en-radius);
+  padding: 18px 16px 4px; margin: 14px 0;
+}
+.en-card h2 {
+  font-size: 16px; color: var(--en-ink); margin: 0 0 14px;
+  display: flex; align-items: center; gap: 10px;
+}
+.en-card h2 .en-step {
+  width: 26px; height: 26px; border-radius: 50%; flex: none;
+  display: inline-grid; place-items: center; font-size: 13px; color: #fff;
+  background: linear-gradient(135deg, var(--en-red), var(--en-red-dark));
+}
+
+/* Fields */
+.en-grid { display: grid; grid-template-columns: 1fr; gap: 0 14px; }
+@media (min-width: 560px) {
+  .en-grid { grid-template-columns: 1fr 1fr; }
+  .en-field.wide { grid-column: 1 / -1; }
+}
+.en-field { margin-bottom: 16px; min-width: 0; }
+.en-field label { display: block; font-size: 14px; font-weight: 600; color: var(--en-ink); margin-bottom: 6px; }
+.en-field label .opt { font-weight: 400; color: var(--en-muted); }
+.en-field input, .en-field select, .en-field textarea {
+  width: 100%; min-height: 48px; padding: 12px 14px;
+  border: 1px solid #d9d3d3; border-radius: 10px; background: #fff;
+  font: inherit; font-size: 16px; color: var(--en-ink);
+  -webkit-appearance: none; appearance: none;
+}
+.en-field select {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='%236b6565' d='M6 8 0 0h12z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat; background-position: right 14px center; padding-right: 36px;
+}
+.en-field input[type="date"] { min-height: 48px; }
+.en-field textarea { min-height: 96px; resize: vertical; }
+.en-field input:focus, .en-field select:focus, .en-field textarea:focus {
+  outline: none; border-color: var(--en-red); box-shadow: 0 0 0 3px rgba(214, 31, 31, .14);
+}
+.en-hint { font-size: 13px; color: var(--en-muted); margin-top: 5px; }
+.en-error { font-size: 13px; color: var(--en-red); margin-top: 5px; font-weight: 500; }
+.en-field.has-error input, .en-field.has-error select, .en-field.has-error textarea { border-color: var(--en-red); }
+
+/* File pickers */
+.en-field label.en-file {
+  display: flex; margin: 0; font-size: 15px; font-weight: 400; position: relative; align-items: center; gap: 12px; padding: 12px 14px; min-height: 56px;
+  border: 1.5px dashed #d0c8c8; border-radius: 12px; background: #fcfbfb; cursor: pointer;
+}
+.en-file input { position: absolute; width: 1px; height: 1px; opacity: 0; }
+.en-file-icon {
+  width: 36px; height: 36px; border-radius: 10px; flex: none; display: grid; place-items: center;
+  background: var(--en-red-soft); color: var(--en-red); font-size: 18px; font-weight: 700;
+}
+.en-file-text { min-width: 0; }
+.en-file-name { font-weight: 600; color: var(--en-ink); font-size: 15px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.en-field label.en-file.is-set { border-style: solid; border-color: var(--en-green); background: #f0fdf7; }
+.en-file.is-set .en-file-icon { background: #d1fae5; color: var(--en-green); }
+.en-field.has-error label.en-file { border-color: var(--en-red); }
+
+/* Confirm + submit */
+.en-confirm {
+  display: flex; gap: 12px; align-items: flex-start; margin: 16px 0 8px;
+  background: #fff; border: 1px solid var(--en-line); border-radius: var(--en-radius); padding: 14px 16px;
+}
+.en-confirm input { width: 22px; height: 22px; margin: 1px 0 0; flex: none; accent-color: var(--en-red); }
+.en-confirm label { font-size: 15px; color: var(--en-ink); }
+.en-submit {
+  display: block; width: 100%; min-height: 54px; margin: 12px 0 8px; border: 0; border-radius: 12px;
+  background: linear-gradient(135deg, var(--en-red), var(--en-red-dark)); color: #fff;
+  font: inherit; font-size: 17px; font-weight: 600; cursor: pointer;
+}
+.en-submit:active { transform: translateY(1px); }
+.en-alert {
+  background: var(--en-red-soft); border: 1px solid #fecaca; color: #991b1b;
+  border-radius: 12px; padding: 12px 14px; margin: 14px 0; font-size: 15px;
+}
+
+/* Status pages */
+.en-status { text-align: center; padding: 48px 8px 24px; }
+.en-status-icon {
+  width: 64px; height: 64px; border-radius: 50%; margin: 0 auto 16px;
+  display: grid; place-items: center; font-size: 30px;
+}
+.en-status-icon.ok { background: #d1fae5; color: var(--en-green); }
+.en-status-icon.info { background: #f1eded; color: var(--en-muted); }
+.en-status h1 { font-size: 22px; color: var(--en-ink); margin: 0 0 8px; }
+.en-status p { margin: 0 auto 8px; max-width: 440px; }
+
+.en-footer {
+  font-size: 13px; color: var(--en-muted); text-align: center;
+  padding-top: 20px; padding-bottom: calc(28px + env(safe-area-inset-bottom));
+}
+.en-footer strong { color: var(--en-ink); }
+.en-footer a { color: var(--en-muted); }

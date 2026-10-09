@@ -10,7 +10,7 @@ from django.views.decorators.http import require_http_methods
 from PIL import Image, UnidentifiedImageError
 
 from .agreement_views import _client_ip
-from .enrolment_models import InternEnrolment
+from .enrolment_models import OTHER_TRACK, EnrolmentSettings, InternEnrolment
 
 MAX_UPLOAD_BYTES = 5 * 1024 * 1024
 IMAGE_EXTS = {'.jpg', '.jpeg', '.png', '.webp'}
@@ -18,12 +18,7 @@ DOCUMENT_EXTS = IMAGE_EXTS | {'.pdf'}
 
 TEXT_FIELDS = ('full_name', 'phone', 'whatsapp', 'email', 'address', 'guardian_name',
                'guardian_phone', 'college_name', 'course', 'register_number', 'track_other', 'skills')
-CHOICE_FIELDS = {
-    'year_of_study': InternEnrolment.YEAR_CHOICES,
-    'track': InternEnrolment.TRACK_CHOICES,
-    'duration_months': InternEnrolment.DURATION_CHOICES,
-    'work_mode': InternEnrolment.WORK_MODE_CHOICES,
-}
+CHOICE_FIELDS = ('year_of_study', 'track', 'duration_months', 'work_mode')
 DATE_FIELDS = ('date_of_birth', 'preferred_start_date')
 REQUIRED = ('full_name', 'phone', 'email', 'date_of_birth', 'address', 'guardian_name',
             'guardian_phone', 'college_name', 'course', 'year_of_study', 'track',
@@ -37,6 +32,22 @@ EMAIL_RE = re.compile(r'^[^@\s]+@[^@\s]+\.[^@\s]+$')
 
 def _digits(value):
     return ''.join(ch for ch in value if ch.isdigit())
+
+
+def _choices(settings):
+    """Options per choice field. Area, duration and work mode come from
+    EnrolmentSettings; a field left with a single option is not asked at all
+    (e.g. onsite only) and that option is filled in for the student."""
+    return {
+        'year_of_study': InternEnrolment.YEAR_CHOICES,
+        'track': settings.track_choices(),
+        'duration_months': settings.duration_choices(),
+        'work_mode': settings.work_mode_choices(),
+    }
+
+
+def _fixed(choices):
+    return {name: opts[0][0] for name, opts in choices.items() if len(opts) == 1}
 
 
 #: The form, section by section: (name, label, input type, autocomplete, hint).
@@ -69,7 +80,9 @@ SECTIONS = (
     )),
 )
 UPLOAD_LABELS = {
-    'photo': ('Passport-size photo', 'JPG or PNG, up to 5 MB'),
+    'photo': ('Photo of your face',
+              'A clear, recent photo with your face fully visible, looking at the camera. '
+              'JPG or PNG, up to 5 MB'),
     'id_proof': ('ID proof', 'Aadhaar, college ID or driving licence - PDF or photo, up to 5 MB'),
     'resume': ('Resume', 'PDF, up to 5 MB'),
     'college_letter': ('College letter / NOC', 'If your college gave you one'),
@@ -78,6 +91,9 @@ UPLOAD_LABELS = {
 
 def _context(enrolment, errors=None, posted=None):
     errors = errors or {}
+    settings = EnrolmentSettings.get()
+    choices = _choices(settings)
+    fixed = _fixed(choices)
     if posted is None:
         posted = {
             'full_name': enrolment.full_name or enrolment.invite_name,
@@ -88,10 +104,12 @@ def _context(enrolment, errors=None, posted=None):
     for title, fields in SECTIONS:
         rows = []
         for name, label, kind, autocomplete, hint in fields:
+            if name in fixed or (name == 'track_other' and not settings.allow_other_track):
+                continue
             rows.append({
                 'name': name, 'label': label, 'type': kind, 'autocomplete': autocomplete,
                 'hint': hint, 'value': posted.get(name, ''), 'error': errors.get(name, ''),
-                'required': name in REQUIRED, 'choices': CHOICE_FIELDS.get(name, ()),
+                'required': name in REQUIRED, 'choices': choices.get(name, ()),
                 'wide': kind == 'textarea',
             })
         sections.append({'title': title, 'fields': rows})
@@ -107,6 +125,7 @@ def _context(enrolment, errors=None, posted=None):
         'uploads': uploads,
         'errors': errors,
         'confirmed': bool(posted.get('confirm')),
+        'other_track': OTHER_TRACK,
         'doc': {'heading': 'Internship Enrolment'},
     }
 
@@ -130,16 +149,18 @@ def enrolment_form(request, token):
 
 def _submit(request, enrolment):
     posted = {k: (request.POST.get(k) or '').strip() for k in
-              TEXT_FIELDS + tuple(CHOICE_FIELDS) + DATE_FIELDS + ('confirm',)}
+              TEXT_FIELDS + CHOICE_FIELDS + DATE_FIELDS + ('confirm',)}
+    choices = _choices(EnrolmentSettings.get())
+    posted.update(_fixed(choices))
     errors = {}
 
     for name in REQUIRED:
         if not posted[name]:
             errors[name] = 'This is required.'
-    for name, choices in CHOICE_FIELDS.items():
-        if posted[name] and posted[name] not in dict(choices):
+    for name, options in choices.items():
+        if posted[name] and posted[name] not in dict(options):
             errors[name] = 'Choose one of the options.'
-    if posted['track'] == 'other' and not posted['track_other']:
+    if posted['track'] == OTHER_TRACK and not posted['track_other']:
         errors['track_other'] = 'Tell us which area.'
     for name in ('phone', 'whatsapp', 'guardian_phone'):
         if posted[name] and not 10 <= len(_digits(posted[name])) <= 13:
@@ -181,9 +202,11 @@ def _submit(request, enrolment):
     if errors:
         return render(request, 'enrolment/form.html', _context(enrolment, errors, posted), status=400)
 
-    for name in TEXT_FIELDS + tuple(CHOICE_FIELDS):
+    for name in TEXT_FIELDS + CHOICE_FIELDS:
         setattr(enrolment, name, posted[name])
-    if posted['track'] != 'other':
+    if posted['track'] == OTHER_TRACK:
+        enrolment.track = 'Other'
+    else:
         enrolment.track_other = ''
     enrolment.date_of_birth = dates['date_of_birth']
     enrolment.preferred_start_date = dates['preferred_start_date']
