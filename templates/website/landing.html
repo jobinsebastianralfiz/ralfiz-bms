@@ -15,7 +15,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700;12..96,800&family=Figtree:wght@400;500;600;700;800&display=swap">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-<link rel="stylesheet" href="{% static 'website/website.css' %}?v=3">
+<link rel="stylesheet" href="{% static 'website/website.css' %}?v=4">
 </head>
 <body class="lp">
 <div class="mesh" aria-hidden="true"><i class="b b1"></i><i class="b b2"></i><i class="b b3"></i><i class="b b4"></i><i class="grain"></i></div>
@@ -140,7 +140,8 @@
       {% for w in portfolio %}
       {% if w.url %}<a class="wcard reveal" href="{{ w.url }}" target="_blank" rel="noopener">{% else %}<div class="wcard reveal">{% endif %}
         <div class="wshot">
-          {% if w.img %}<img src="{% static 'website/img/pf/'|add:w.img|add:'.jpg' %}" alt="{{ w.name }} website" loading="lazy" width="960" height="600">
+          {% if w.image %}<img src="{{ w.image }}" alt="{{ w.name }}" loading="lazy" width="960" height="600" onerror="this.remove()">
+          {% elif w.img %}<img src="{% static 'website/img/pf/'|add:w.img|add:'.jpg' %}" alt="{{ w.name }} website" loading="lazy" width="960" height="600">
           {% else %}<div class="wtile" style="--c:{{ w.color }}"><i class="fas {{ w.icon }}"></i><span>{{ w.name }}</span></div>{% endif %}
           {% if w.recent %}<span class="wnew">New</span>{% endif %}
         </div>
@@ -148,11 +149,12 @@
           <span class="wtag">{{ w.tag }}</span>
           <h3>{{ w.name }}</h3>
           <p>{{ w.desc }}</p>
-          <span class="wlink">{% if w.url %}{{ w.url|cut:'https://'|truncatechars:34 }} <i class="fas fa-arrow-up-right-from-square"></i>{% else %}<i class="fas fa-lock"></i> Private business system{% endif %}</span>
+          <span class="wlink">{% if w.url %}{{ w.url|cut:'https://'|cut:'www.'|cut:'ralfiz.com/projects/'|truncatechars:34 }} <i class="fas fa-arrow-up-right-from-square"></i>{% else %}<i class="fas fa-lock"></i> Private business system{% endif %}</span>
         </div>
       {% if w.url %}</a>{% else %}</div>{% endif %}
       {% endfor %}
     </div>
+    <p class="see-all reveal"><a class="btn glass" href="https://ralfiz.com/projects/" target="_blank" rel="noopener">See every project on ralfiz.com <i class="fas fa-arrow-right"></i></a></p>
   </section>
 
   <!-- RALFIZ SOCIAL -->

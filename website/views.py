@@ -110,6 +110,43 @@ AMC = [
 ]
 PHONE_RE = re.compile(r'^\+?[\d\s\-()]{7,20}$')
 MAX_PER_HOUR = 5
+PROJECTS_FEED = 'https://ralfiz.com/projects/feed.json'
+FEED_CACHE = 'website:portfolio-feed'
+FEED_TTL = 30 * 60
+SPLIT = re.compile(r'\s+[–—-]\s+')
+
+
+def portfolio():
+    """Projects from ralfiz.com's admin (cached 30 min); the built-in list if the feed is down.
+
+    Add, edit or reorder projects in the ralfiz.com admin and they appear here.
+    """
+    cached = cache.get(FEED_CACHE)
+    if cached is not None:
+        return cached
+    try:
+        import requests
+        r = requests.get(PROJECTS_FEED, timeout=6)
+        r.raise_for_status()
+        items = []
+        for p in r.json().get('projects', []):
+            title = p.get('title', '').strip()
+            parts = SPLIT.split(title, maxsplit=1)
+            cats = p.get('categories') or []
+            items.append({
+                'name': parts[0], 'tag': parts[1] if len(parts) > 1 else (cats[0] if cats else 'Project'),
+                'desc': (p.get('summary') or '')[:160].rsplit(' ', 1)[0] + ('…' if len(p.get('summary') or '') > 160 else ''),
+                'url': p.get('url') or p.get('detail'), 'image': p.get('image', ''),
+                'recent': bool(p.get('featured')), 'detail': p.get('detail', ''),
+            })
+        if not items:
+            raise ValueError('empty feed')
+        cache.set(FEED_CACHE, items, FEED_TTL)
+        return items
+    except Exception:
+        log.warning('portfolio feed unavailable, using the built-in list', exc_info=True)
+        cache.set(FEED_CACHE, PORTFOLIO, 5 * 60)   # retry in 5 minutes
+        return PORTFOLIO
 
 
 def root(request):
@@ -127,7 +164,7 @@ def landing(request):
     return render(request, 'website/landing.html', {
         'company': company,
         'clients_label': f'{clients // 10 * 10}+' if clients >= 20 else str(clients),
-        'interests': INTERESTS, 'portfolio': PORTFOLIO, 'packages': PACKAGES, 'webapps': WEBAPPS, 'amc': AMC,
+        'interests': INTERESTS, 'portfolio': portfolio(), 'packages': PACKAGES, 'webapps': WEBAPPS, 'amc': AMC,
         'picked': request.GET.get('interest', ''),
         'whatsapp': WHATSAPP,
         'sent': request.GET.get('sent') == '1',
