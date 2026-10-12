@@ -143,31 +143,34 @@
       </a>
     </div>
 
-    {% with ns=request.resolver_match.namespace un=request.resolver_match.url_name %}
-    <div class="nav-section">
-      <div class="nav-section-title">Social Hub</div>
-      <a href="{% url 'social:calendar' %}" class="nav-item {% if ns == 'social' and un == 'calendar' or ns == 'social' and 'post' in un %}active{% endif %}">
+    {# Social Hub: styled like the hub itself (dark glass, pink-violet gradient). Its pages use their own layout, so no active states here. #}
+    <div class="nav-section nav-social">
+      <div class="nav-section-title"><span class="nav-social-mark">R</span> Social Hub</div>
+      <a href="{% url 'social:home' %}" class="nav-item">
+        <i class="fas fa-house"></i>
+        <span>Social Home</span>
+      </a>
+      <a href="{% url 'social:calendar' %}" class="nav-item">
         <i class="far fa-calendar"></i>
         <span>Content Calendar</span>
       </a>
-      <a href="{% url 'social:approvals' %}" class="nav-item {% if ns == 'social' and un == 'approvals' %}active{% endif %}">
+      <a href="{% url 'social:approvals' %}" class="nav-item">
         <i class="far fa-circle-check"></i>
         <span>Approvals</span>
       </a>
-      <a href="{% url 'social:inbox' %}" class="nav-item {% if ns == 'social' and un == 'inbox' %}active{% endif %}">
-        <i class="far fa-comments"></i>
+      <a href="{% url 'social:inbox' %}" class="nav-item">
+        <i class="fas fa-table-columns"></i>
         <span>Social Inbox</span>
       </a>
-      <a href="{% url 'social:analytics' %}" class="nav-item {% if ns == 'social' and un in 'analytics reports' %}active{% endif %}">
-        <i class="fas fa-chart-line"></i>
+      <a href="{% url 'social:analytics' %}" class="nav-item">
+        <i class="fas fa-chart-simple"></i>
         <span>Social Analytics</span>
       </a>
-      <a href="{% url 'social:accounts' %}" class="nav-item {% if ns == 'social' and un in 'accounts media activity workspaces connect_pick connect_manual' %}active{% endif %}">
+      <a href="{% url 'social:accounts' %}" class="nav-item">
         <i class="fas fa-plug"></i>
         <span>Accounts &amp; Media</span>
       </a>
     </div>
-    {% endwith %}
 
     <div class="nav-section">
       <div class="nav-section-title">Intern CRM</div>

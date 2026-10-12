@@ -957,3 +957,55 @@ a.inv-stat:hover { border-color: #bae6fd; }
   .ld-filter__grid { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
   .ld-bars { min-height: 180px; }
 }
+
+
+/* Social Hub section in the sidebar: a small panel in the hub's own look
+   (dark glass, pink-violet gradient) so it reads as the way into that app. */
+.nav-section.nav-social {
+  position: relative;
+  overflow: hidden;
+  margin: 10px 12px;
+  padding: 2px 0 8px;
+  border-radius: 16px;
+  background: radial-gradient(120% 90% at 100% 0%, #2A0F4D, #0F0824);
+  box-shadow: 0 12px 28px -14px rgba(255, 46, 136, .7), inset 0 0 0 1px rgba(255, 255, 255, .1);
+}
+.nav-section.nav-social::before,
+.nav-section.nav-social::after {
+  content: "";
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(26px);
+  pointer-events: none;
+}
+.nav-section.nav-social::before { width: 120px; height: 120px; left: -40px; top: -50px; background: #FF2E88; opacity: .45; }
+.nav-section.nav-social::after { width: 110px; height: 110px; right: -40px; bottom: -50px; background: #9B4DFF; opacity: .45; }
+.nav-social > * { position: relative; z-index: 1; }
+.nav-social .nav-section-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 14px 6px;
+  color: #fff;
+  letter-spacing: .1em;
+}
+.nav-social-mark {
+  display: inline-grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 6px;
+  background: linear-gradient(120deg, #FF7A3D, #FF2E88 45%, #9B4DFF);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0;
+  color: #fff;
+}
+.nav-social .nav-item { margin: 1px 8px; color: rgba(255, 255, 255, .82); }
+.nav-social .nav-item i {
+  background: linear-gradient(120deg, #FF7A3D, #FF2E88 50%, #9B4DFF);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+.nav-social .nav-item:hover { background: rgba(255, 255, 255, .12); color: #fff; }
