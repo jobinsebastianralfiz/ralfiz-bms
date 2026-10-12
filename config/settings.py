@@ -53,6 +53,7 @@ INSTALLED_APPS = [
     'academy',
     'connector',
     'social',
+    'website',
 ]
 
 MIDDLEWARE = [

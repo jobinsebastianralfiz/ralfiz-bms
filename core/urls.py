@@ -1,6 +1,7 @@
 from django.urls import path
 from pulse import views as pulse_views
 from . import views
+from website import views as website_views
 from gympro_licensing import web_views as gympro_web_views
 from eduflow_licensing import web_views as eduflow_web_views
 from ralfpos_licensing import web_views as ralfpos_web_views
@@ -36,7 +37,8 @@ urlpatterns = [
     # and the original widget dashboard at /dashboard/legacy/. Accounts that
     # cannot see business figures are sent to the legacy dashboard, never to
     # '/', which would loop.
-    path('', views.home_dashboard, name='dashboard'),
+    # Visitors get the public landing page here; signed-in staff get the dashboard.
+    path('', website_views.root, name='dashboard'),
     path('portfolio/', pulse_views.GraphDashboardView.as_view(), name='portfolio'),
     path('dashboard/legacy/', views.dashboard, name='dashboard-legacy'),
 

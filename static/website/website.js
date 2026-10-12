@@ -1,0 +1,45 @@
+/* Landing page: scroll reveals, mobile menu, product screenshot tabs, demo form preselect. */
+(function () {
+  'use strict';
+  var $$ = function (s) { return Array.prototype.slice.call(document.querySelectorAll(s)); };
+
+  // Reveal sections as they scroll in (everything shows at once without IntersectionObserver).
+  var items = $$('.reveal');
+  if ('IntersectionObserver' in window) {
+    var io = new IntersectionObserver(function (entries) {
+      entries.forEach(function (e) { if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); } });
+    }, { rootMargin: '0px 0px -8% 0px' });
+    items.forEach(function (el, i) { el.style.transitionDelay = (i % 3) * 80 + 'ms'; io.observe(el); });
+  } else {
+    items.forEach(function (el) { el.classList.add('in'); });
+  }
+
+  // Mobile menu
+  var burger = document.querySelector('.burger'), links = document.getElementById('navLinks');
+  if (burger) {
+    burger.addEventListener('click', function () {
+      var open = links.classList.toggle('open');
+      burger.setAttribute('aria-expanded', open);
+    });
+    links.addEventListener('click', function (e) { if (e.target.closest('a')) { links.classList.remove('open'); burger.setAttribute('aria-expanded', false); } });
+  }
+
+  // Ralfiz Social screenshot tabs, auto-advancing until someone picks one.
+  var tabs = $$('.tabs button'), shots = $$('.shots img'), timer;
+  function show(i) {
+    tabs.forEach(function (t, k) { t.classList.toggle('on', k === i); });
+    shots.forEach(function (s, k) { s.classList.toggle('on', k === i); });
+  }
+  tabs.forEach(function (t, i) { t.addEventListener('click', function () { clearInterval(timer); show(i); }); });
+  if (shots.length && !matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    var cur = 0;
+    timer = setInterval(function () { cur = (cur + 1) % shots.length; show(cur); }, 3500);
+  }
+
+  // "Book a demo" links preselect the product in the form.
+  var select = document.getElementById('interest');
+  document.addEventListener('click', function (e) {
+    var a = e.target.closest('[data-interest]');
+    if (a && select) select.value = a.getAttribute('data-interest');
+  });
+})();

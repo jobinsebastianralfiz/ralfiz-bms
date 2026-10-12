@@ -1,0 +1,217 @@
+{% load static %}<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Ralfiz Technologies · Websites, apps, business software and social media | Kerala</title>
+<meta name="description" content="Ralfiz Technologies builds websites, mobile apps and business software, runs social media for brands with Ralfiz Social, and trains developers at Ralfiz Academy. Perinthalmanna, Kerala.">
+<meta property="og:title" content="Ralfiz Technologies · Rise to Next Level">
+<meta property="og:description" content="Websites, apps, business software, social media management and training, from one team in Kerala.">
+<meta property="og:type" content="website">
+<meta property="og:image" content="{{ request.scheme }}://{{ request.get_host }}{% static 'website/img/hub-home.jpg' %}">
+<meta name="theme-color" content="#0F0824">
+<link rel="icon" type="image/svg+xml" href="{% static 'favicon.svg' %}">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700;12..96,800&family=Figtree:wght@400;500;600;700;800&display=swap">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<link rel="stylesheet" href="{% static 'website/website.css' %}?v=2">
+</head>
+<body class="lp">
+<div class="mesh" aria-hidden="true"><i class="b b1"></i><i class="b b2"></i><i class="b b3"></i><i class="b b4"></i><i class="grain"></i></div>
+
+<header class="nav" id="top">
+  <a class="brand" href="#top" aria-label="Ralfiz Technologies home"><img src="{% static 'website/img/rt-mark.png' %}" alt="" width="46" height="30"><span>Ralfiz<b>Technologies</b></span></a>
+  <nav class="links" id="navLinks" aria-label="Main">
+    <a href="#services">Services</a><a href="#social">Ralfiz Social</a><a href="#products">Products</a><a href="#academy">Academy</a><a href="#process">How we work</a><a class="m-only" href="{% url 'login' %}"><i class="fas fa-lock"></i> Staff login</a>
+  </nav>
+  <div class="nav-cta">
+    <a class="btn ghost" href="{% url 'login' %}"><i class="fas fa-lock"></i> Login</a>
+    <a class="btn grad" href="#demo">Book a free demo</a>
+    <button class="burger" type="button" aria-label="Menu" aria-expanded="false" aria-controls="navLinks"><i class="fas fa-bars"></i></button>
+  </div>
+</header>
+
+<main>
+  <!-- HERO -->
+  <section class="hero wrap">
+    <div class="hero-copy">
+      <span class="eyebrow"><i class="dot"></i> Ralfiz Technologies · Perinthalmanna, Kerala</span>
+      <h1>Software that helps your business <span class="g">rise to the next level.</span></h1>
+      <p class="lede">Websites, mobile apps and business software built for how you work. Social media run for you with Ralfiz Social. And a training academy that turns learners into developers. One team, from first idea to every update after launch.</p>
+      <div class="cta-row">
+        <a class="btn grad lg" href="#demo">Book a free demo <i class="fas fa-arrow-right"></i></a>
+        <a class="btn glass lg" href="https://wa.me/{{ whatsapp }}?text={{ 'Hi Ralfiz, I would like to know more about your services.'|urlencode }}" target="_blank" rel="noopener"><i class="fab fa-whatsapp"></i> WhatsApp us</a>
+      </div>
+      <div class="stats">
+        <div><b>{{ clients_label }}</b><span>clients served</span></div>
+        <div><b>7</b><span>social platforms, one hub</span></div>
+        <div><b>9</b><span>Academy courses</span></div>
+      </div>
+    </div>
+    <div class="hero-art" aria-hidden="true">
+      <div class="browser tilt"><div class="bar"><i></i><i></i><i></i><span>ralfizdigital.in/social</span></div><img src="{% static 'website/img/hub-home.jpg' %}" alt="" width="1600" height="1000"></div>
+      <div class="phone float"><img src="{% static 'website/img/phone-review.jpg' %}" alt="" loading="lazy"></div>
+      <div class="chip c1"><i class="fab fa-instagram"></i> Reel scheduled · 7:00 PM</div>
+      <div class="chip c2"><i class="fas fa-check"></i> Approved by client</div>
+    </div>
+  </section>
+
+  <!-- SERVICES -->
+  <section class="wrap sec" id="services">
+    <div class="sec-head reveal">
+      <span class="kicker">What we do</span>
+      <h2>Everything your business needs <span class="g">online.</span></h2>
+      <p>Pick one service or let us handle the whole journey. Either way, you get one team that knows your business.</p>
+    </div>
+    <div class="services">
+      <article class="card reveal"><i class="ic fas fa-globe"></i><h3>Websites &amp; web apps</h3><p>Business websites, customer portals and web applications that load fast, rank well and grow with you.</p><a href="#demo" data-interest="website">Talk to us <i class="fas fa-arrow-right"></i></a></article>
+      <article class="card reveal"><i class="ic fas fa-mobile-screen"></i><h3>Mobile apps</h3><p>Android and iOS apps built in Flutter from a single codebase, so you launch on both stores sooner.</p><a href="#demo" data-interest="mobile_app">Talk to us <i class="fas fa-arrow-right"></i></a></article>
+      <article class="card reveal"><i class="ic fas fa-cubes"></i><h3>Custom business software</h3><p>CRM, billing, inventory and management systems shaped around how your team actually works.</p><a href="#demo" data-interest="custom_software">Talk to us <i class="fas fa-arrow-right"></i></a></article>
+      <article class="card reveal"><i class="ic fas fa-bullhorn"></i><h3>Digital marketing &amp; social media</h3><p>Content, posting, replies and monthly reports across every platform, run by our team on Ralfiz Social.</p><a href="#demo" data-interest="marketing">Talk to us <i class="fas fa-arrow-right"></i></a></article>
+      <article class="card reveal"><i class="ic fas fa-shield-halved"></i><h3>AMC &amp; support</h3><p>Hosting, updates, backups and fixes under a clear annual maintenance contract, so your systems keep running.</p><a href="#demo" data-interest="custom_software">Talk to us <i class="fas fa-arrow-right"></i></a></article>
+      <article class="card accent reveal"><h3>Not sure where to start?</h3><p>Tell us what is slowing your business down. We will suggest the simplest thing that fixes it, even if that is not software.</p><a class="btn white" href="#demo">Get free advice</a></article>
+    </div>
+  </section>
+
+  <!-- RALFIZ SOCIAL -->
+  <section class="wrap sec social" id="social">
+    <div class="social-copy reveal">
+      <span class="kicker new">New</span>
+      <h2>Ralfiz Social: every client, <span class="g">every platform, one place.</span></h2>
+      <p>The hub we built to run social media for our clients, and now for yours. Plan, approve, publish, reply and report across Facebook, Instagram, LinkedIn, YouTube, X, WhatsApp and Google Business.</p>
+      <ul class="ticks">
+        <li><i class="fas fa-pen-nib"></i><div><b>Write once, post everywhere</b><span>One caption, tailored per platform, with a live phone preview.</span></div></li>
+        <li><i class="fas fa-mobile-screen-button"></i><div><b>Clients approve from a link</b><span>No logins. They tap Approve on their phone and the post is scheduled.</span></div></li>
+        <li><i class="fas fa-wand-magic-sparkles"></i><div><b>Replies drafted by Claude AI</b><span>Comments, DMs and reviews in one inbox. AI drafts, your team sends.</span></div></li>
+        <li><i class="fas fa-chart-simple"></i><div><b>Reports that write themselves</b><span>Reach, best times to post, top Reels and a branded monthly PDF.</span></div></li>
+      </ul>
+      <div class="platforms" aria-label="Supported platforms">
+        <i class="fab fa-facebook-f" style="--c:#1877F2"></i><i class="fab fa-instagram" style="--c:#E1306C"></i><i class="fab fa-linkedin-in" style="--c:#0A66C2"></i><i class="fab fa-youtube" style="--c:#FF0000"></i><i class="fab fa-x-twitter" style="--c:#E8E8F0;--f:#0F0824"></i><i class="fab fa-whatsapp" style="--c:#25D366"></i><i class="fab fa-google" style="--c:#F4B400"></i>
+      </div>
+      <a class="btn grad lg" href="#demo" data-interest="ralfiz_social">See Ralfiz Social live <i class="fas fa-arrow-right"></i></a>
+    </div>
+    <div class="social-art reveal" aria-hidden="true">
+      <div class="tabs" role="presentation"><button class="on" data-shot="0">Compose</button><button data-shot="1">Calendar</button><button data-shot="2">Inbox</button><button data-shot="3">Posts</button><button data-shot="4">Analytics</button></div>
+      <div class="browser"><div class="bar"><i></i><i></i><i></i><span>ralfizdigital.in/social</span></div>
+        <div class="shots">
+          <img class="on" src="{% static 'website/img/hub-compose.jpg' %}" alt="" loading="lazy">
+          <img src="{% static 'website/img/hub-calendar.jpg' %}" alt="" loading="lazy">
+          <img src="{% static 'website/img/hub-streams.jpg' %}" alt="" loading="lazy">
+          <img src="{% static 'website/img/hub-posts.jpg' %}" alt="" loading="lazy">
+          <img src="{% static 'website/img/hub-analytics.jpg' %}" alt="" loading="lazy">
+        </div>
+      </div>
+      <div class="phone small"><img src="{% static 'website/img/phone-posts.jpg' %}" alt="" loading="lazy"></div>
+    </div>
+  </section>
+
+  <!-- PRODUCTS -->
+  <section class="wrap sec" id="products">
+    <div class="sec-head reveal">
+      <span class="kicker">Ready-made products</span>
+      <h2>Software you can <span class="g">start using this week.</span></h2>
+      <p>Proven apps for specific businesses, set up and supported by us. Ask for a demo and we will show you around with your own data.</p>
+    </div>
+    <div class="products">
+      <article class="prod reveal" style="--p:#FF7A3D"><span class="pi"><i class="fas fa-cash-register"></i></span><h3>RalfPOS</h3><p>Point-of-sale billing for shops and restaurants, licensed per outlet.</p><a href="#demo" data-interest="ralfpos">Book a demo <i class="fas fa-arrow-right"></i></a></article>
+      <article class="prod reveal" style="--p:#3D8BFF"><span class="pi"><i class="fas fa-store"></i></span><h3>RetailEase</h3><p>Retail billing and stock management, with automatic cloud and local backups.</p><a href="#demo" data-interest="retailease">Book a demo <i class="fas fa-arrow-right"></i></a></article>
+      <article class="prod reveal" style="--p:#3EF0A0"><span class="pi"><i class="fas fa-dumbbell"></i></span><h3>GymPro</h3><p>Gym management for members, plans and payments, on your own domain.</p><a href="#demo" data-interest="gympro">Book a demo <i class="fas fa-arrow-right"></i></a></article>
+      <article class="prod reveal" style="--p:#FFC93D"><span class="pi"><i class="fas fa-graduation-cap"></i></span><h3>EduFlow</h3><p>Institute management for admissions, batches and fees.</p><a href="#demo" data-interest="eduflow">Book a demo <i class="fas fa-arrow-right"></i></a></article>
+      <article class="prod reveal" style="--p:#FF2E88"><span class="pi"><i class="fas fa-couch"></i></span><h3>InterioDesk</h3><p>Projects, clients and quotations for interior design firms.</p><a href="#demo" data-interest="interiodesk">Book a demo <i class="fas fa-arrow-right"></i></a></article>
+      <article class="prod reveal" style="--p:#9B4DFF"><span class="pi"><i class="fas fa-share-nodes"></i></span><h3>Ralfiz Social</h3><p>One hub for every client's social media, with client approvals and AI-drafted replies.</p><a href="#social">Learn more <i class="fas fa-arrow-right"></i></a></article>
+    </div>
+  </section>
+
+  <!-- ACADEMY -->
+  <section class="wrap sec" id="academy">
+    <div class="academy">
+      <div class="acad-card reveal">
+        <span class="kicker">Ralfiz Academy</span>
+        <h2>Learn the skills <span class="g">companies hire for.</span></h2>
+        <p>Self-paced courses with video lessons, hands-on labs, quizzes and exercise files.</p>
+        <div class="courses">
+          <span>Power Platform Fundamentals</span><span>Power BI Data Analyst</span><span>Power Platform Developer</span><span>Intelligent Applications Builder</span><span>Flutter &amp; Dart: Zero to Job-Ready</span><span>JavaScript: Zero to Job-Ready</span><span>DOM &amp; Browser</span><span>UGC NET Paper 1</span><span>UGC NET Computer Science</span>
+        </div>
+        <a class="btn grad" href="/academy/">Explore courses <i class="fas fa-arrow-right"></i></a>
+      </div>
+      <div class="acad-card intern reveal">
+        <span class="kicker">Internships</span>
+        <h2>Work on <span class="g">real projects.</span></h2>
+        <p>Join our team as an intern: real work with mentors, daily progress reviews, and a verified certificate you can share.</p>
+        <ul class="ticks small">
+          <li><i class="fas fa-code"></i><div><b>Real work, not exercises</b><span>Build alongside our developers.</span></div></li>
+          <li><i class="fas fa-user-check"></i><div><b>Mentored every day</b><span>Daily updates and feedback.</span></div></li>
+          <li><i class="fas fa-certificate"></i><div><b>Verified certificate</b><span>With a QR code anyone can check.</span></div></li>
+        </ul>
+        <a class="btn glass" href="#demo" data-interest="academy">Apply for an internship <i class="fas fa-arrow-right"></i></a>
+      </div>
+    </div>
+  </section>
+
+  <!-- PROCESS -->
+  <section class="wrap sec" id="process">
+    <div class="sec-head reveal">
+      <span class="kicker">How we work</span>
+      <h2>From first call to <span class="g">long after launch.</span></h2>
+    </div>
+    <ol class="steps">
+      <li class="reveal"><span>01</span><h3>Discover</h3><p>A free call to understand your business, your customers and what is slowing you down.</p></li>
+      <li class="reveal"><span>02</span><h3>Design &amp; build</h3><p>A clear quote, then regular demos so you see progress and shape it as we go.</p></li>
+      <li class="reveal"><span>03</span><h3>Launch</h3><p>We set it up, move your data, train your team and stay close in the first weeks.</p></li>
+      <li class="reveal"><span>04</span><h3>Support</h3><p>Updates, backups and fixes under an annual maintenance contract. One call reaches us.</p></li>
+    </ol>
+  </section>
+
+  <!-- DEMO -->
+  <section class="wrap sec" id="demo">
+    <div class="demo reveal">
+      <div class="demo-copy">
+        <span class="kicker">Book a free demo</span>
+        <h2>Let's see what we can <span class="g">build for you.</span></h2>
+        <p>Tell us a little about your business. We will call you within one working day to set up a demo or a free consultation.</p>
+        <ul class="contact">
+          <li><i class="fas fa-phone"></i><a href="tel:+91{{ company.phone }}">+91 {{ company.phone }}</a></li>
+          <li><i class="fab fa-whatsapp"></i><a href="https://wa.me/{{ whatsapp }}" target="_blank" rel="noopener">Chat on WhatsApp</a></li>
+          <li><i class="fas fa-envelope"></i><a href="mailto:{{ company.email }}">{{ company.email }}</a></li>
+          <li><i class="fas fa-location-dot"></i><span>{{ company.address|linebreaksbr }}</span></li>
+        </ul>
+      </div>
+      {% if sent %}
+      <div class="form done" role="status">
+        <i class="fas fa-circle-check"></i>
+        <h3>Thank you! We have your request.</h3>
+        <p>Someone from Ralfiz will call you within one working day. Need us sooner? <a href="https://wa.me/{{ whatsapp }}" target="_blank" rel="noopener">Message us on WhatsApp</a>.</p>
+      </div>
+      {% else %}
+      <form class="form" method="post" action="{% url 'book_demo' %}">
+        {% csrf_token %}
+        {% for m in messages %}<p class="err">{{ m }}</p>{% endfor %}
+        <div class="grid2">
+          <label>Your name<input name="name" required maxlength="200" autocomplete="name"></label>
+          <label>Phone<input name="phone" type="tel" required maxlength="20" autocomplete="tel" placeholder="+91"></label>
+          <label>Business name <small>(optional)</small><input name="business" maxlength="200" autocomplete="organization"></label>
+          <label>Email <small>(optional)</small><input name="email" type="email" maxlength="254" autocomplete="email"></label>
+        </div>
+        <label>I'm interested in<select name="interest" id="interest">{% for key, label in interests %}<option value="{{ key }}" {% if key == picked %}selected{% endif %}>{{ label }}</option>{% endfor %}</select></label>
+        <label>Anything we should know? <small>(optional)</small><textarea name="message" rows="3" maxlength="2000" placeholder="What does your business do, and what would you like to improve?"></textarea></label>
+        <label class="hp" aria-hidden="true">Website<input name="website_url" tabindex="-1" autocomplete="off"></label>
+        <button class="btn grad lg full" type="submit">Book my free demo <i class="fas fa-arrow-right"></i></button>
+        <p class="fine">We only use your details to contact you about your request.</p>
+      </form>
+      {% endif %}
+    </div>
+  </section>
+</main>
+
+<footer class="foot">
+  <div class="wrap foot-in">
+    <div><a class="brand" href="#top"><img src="{% static 'website/img/rt-mark.png' %}" alt="" width="46" height="30"><span>Ralfiz<b>Technologies</b></span></a><p class="tag">{{ company.tagline|default:'Rise to Next Level' }}</p></div>
+    <nav aria-label="Footer"><a href="#services">Services</a><a href="#social">Ralfiz Social</a><a href="#products">Products</a><a href="/academy/">Academy</a><a href="#demo">Contact</a><a href="{% url 'login' %}">Staff login</a></nav>
+    <p class="legal">© {% now 'Y' %} {{ company.company_name|default:'Ralfiz Technologies' }} · Perinthalmanna, Kerala{% if company.gst_number %} · GSTIN {{ company.gst_number }}{% endif %}</p>
+  </div>
+</footer>
+<a class="wa-float" href="https://wa.me/{{ whatsapp }}" target="_blank" rel="noopener" aria-label="Chat on WhatsApp"><i class="fab fa-whatsapp"></i></a>
+<script src="{% static 'website/website.js' %}?v=1"></script>
+</body>
+</html>

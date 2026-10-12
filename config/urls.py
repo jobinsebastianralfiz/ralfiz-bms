@@ -14,6 +14,7 @@ from connector.files import pdf_download as connector_pdf_download
 from connector.mcp import MCPView
 from employees.views import CertificateVerifyView
 from social.mcp_tools import report_download as social_report_download
+from website.views import book_demo as website_book_demo
 
 urlpatterns = [
     path('robots.txt', academy_robots),
@@ -33,6 +34,7 @@ urlpatterns = [
     path('agreement/', include('employees.agreement_urls')),
     path('enrol/', include('employees.enrolment_urls')),
     path('academy/', include('academy.urls')),
+    path('book-demo/', website_book_demo, name='book_demo'),
     path('social/report-link/<str:token>/', social_report_download, name='social_report_link'),
     path('social/', include('social.urls')),
 
