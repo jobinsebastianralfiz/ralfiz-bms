@@ -1,0 +1,20 @@
+{% extends 'social/_hub.html' %}
+{% load social_tags %}
+{% block hub_title %}Reports{% endblock %}
+{% block page_heading %}Client reports{% endblock %}
+{% block hub %}
+<p class="sh-hint">Monthly PDF reports are built from the stored daily metrics, with Ralfiz branding. This month's report covers the days so far.</p>
+<div class="sh-reports">
+  {% for w in in_view %}
+  <div class="card sh-rcard">
+    <div class="sh-rcover" style="--wc:{{ w.color }}"><span class="sh-av" style="background:{{ w.color }}">{{ w.initial }}</span><div><b>{{ w.name }}</b><small>Social media report</small></div></div>
+    <ul class="sh-months">
+      {% for m in months %}
+      <li><span>{{ m|date:'F Y' }}{% if m == this_month %} <em>(so far)</em>{% endif %}</span>
+        <a class="btn btn-sm btn-outline-secondary" href="{% url 'social:report_pdf' w.pk m|date:'Y-m' %}" target="_blank"><i class="far fa-file-pdf"></i> PDF</a></li>
+      {% endfor %}
+    </ul>
+  </div>
+  {% empty %}<div class="empty-state sh-empty"><p>No clients yet.</p></div>{% endfor %}
+</div>
+{% endblock %}

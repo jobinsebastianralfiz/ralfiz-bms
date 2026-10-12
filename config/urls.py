@@ -13,6 +13,7 @@ from academy.public_views import robots as academy_robots
 from connector.files import pdf_download as connector_pdf_download
 from connector.mcp import MCPView
 from employees.views import CertificateVerifyView
+from social.mcp_tools import report_download as social_report_download
 
 urlpatterns = [
     path('robots.txt', academy_robots),
@@ -32,6 +33,8 @@ urlpatterns = [
     path('agreement/', include('employees.agreement_urls')),
     path('enrol/', include('employees.enrolment_urls')),
     path('academy/', include('academy.urls')),
+    path('social/report-link/<str:token>/', social_report_download, name='social_report_link'),
+    path('social/', include('social.urls')),
 
     # Short verification link. It is what the certificate QR encodes: the API
     # path is 96 characters, which pushes the code to 49 modules and leaves

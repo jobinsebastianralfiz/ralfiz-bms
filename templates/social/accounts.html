@@ -1,0 +1,37 @@
+{% extends 'social/_hub.html' %}
+{% load social_tags %}
+{% block hub_title %}Accounts{% endblock %}
+{% block page_heading %}Connected accounts{% endblock %}
+{% block hub %}
+{% for w, accs in groups %}
+<div class="card sh-acc-group">
+  <div class="sh-acc-head"><span class="sh-av sm" style="background:{{ w.color }}">{{ w.initial }}</span><h3>{{ w.name }}</h3>
+    {% if is_manager %}<details class="sh-connect"><summary class="btn btn-sm btn-primary"><i class="fas fa-plus"></i> Connect</summary>
+      <div class="sh-connect-menu">
+        {% for c in connectors %}
+        {% if c.ready %}<a href="{% url 'social:connect' c.platform %}?ws={{ w.pk }}">{% picon c.platform %} {{ c.label }}{% if c.fake %} <em>demo</em>{% endif %}</a>
+        {% else %}<span class="is-off" title="Set {{ c.needs }} on the server">{% picon c.platform %} {{ c.label }} <em>not set up</em></span>{% endif %}
+        {% endfor %}
+      </div></details>{% endif %}
+  </div>
+  {% for a in accs %}
+  <div class="sh-acc">
+    {% picon a.platform 'lg' %}
+    <div class="sh-acc-name"><b>{{ a.name }}</b><small>{{ a.get_platform_display }}{% if a.handle %} · {{ a.handle }}{% endif %}{% if a.last_synced_at %} · synced {{ a.last_synced_at|timesince }} ago{% endif %}</small>
+      {% if a.last_error and a.status != 'active' %}<small class="sh-errtext">{{ a.last_error|truncatechars:140 }}</small>{% endif %}</div>
+    <span class="badge {% if a.status == 'active' %}badge-success{% elif a.status == 'expiring' %}badge-warning{% else %}badge-danger{% endif %}">{{ a.get_status_display }}{% if a.status == 'active' and a.expires_at %} · until {{ a.expires_at|date:'d M' }}{% elif a.status == 'expiring' %} · {{ a.expires_at|date:'d M' }}{% endif %}</span>
+    {% if a.quota %}<div class="sh-quota" title="Posts published in the last 24 hours"><div><i style="width:{{ a.quota.pct }}%"></i></div><small>{{ a.quota.used }}/{{ a.quota.limit }} in 24h</small></div>{% else %}<span></span>{% endif %}
+    <form method="post" action="{% url 'social:account_action' a.pk %}" class="sh-acts">{% csrf_token %}
+      {% if a.status != 'active' %}<a href="{% url 'social:connect' a.platform %}?ws={{ w.pk }}" class="btn btn-sm btn-primary">Reconnect</a>{% endif %}
+      {% if a.healthy %}<button name="action" value="sync" class="btn btn-sm btn-outline-secondary">Sync now</button>{% endif %}
+      {% if is_manager %}{% if a.status != 'disconnected' %}<button name="action" value="disconnect" class="btn btn-sm btn-ghost" onclick="return confirm('Disconnect {{ a.name|escapejs }}? Scheduled posts to it will fail.')">Disconnect</button>
+      {% else %}<button name="action" value="delete" class="btn btn-sm btn-ghost sh-danger" onclick="return confirm('Remove {{ a.name|escapejs }} and its history?')">Remove</button>{% endif %}{% endif %}
+    </form>
+  </div>
+  {% empty %}<p class="sh-muted">No accounts connected for {{ w.name }}.</p>{% endfor %}
+</div>
+{% empty %}
+<div class="empty-state sh-empty"><p>Add a client first, then connect its pages.</p>{% if is_manager %}<a href="{% url 'social:workspaces' %}" class="btn btn-sm btn-primary">Add client</a>{% endif %}</div>
+{% endfor %}
+<p class="sh-hint"><i class="fas fa-lock"></i> Tokens are stored encrypted. Sign-ins that expire are flagged 7 days ahead so scheduled posts don't fail silently.</p>
+{% endblock %}

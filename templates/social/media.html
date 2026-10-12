@@ -1,0 +1,30 @@
+{% extends 'social/_hub.html' %}
+{% load social_tags %}
+{% block hub_title %}Media{% endblock %}
+{% block page_heading %}Media library{% endblock %}
+{% block hub %}
+<form method="post" enctype="multipart/form-data" class="card sh-upload">
+  {% csrf_token %}
+  <select name="workspace" class="form-control" required>{% for w in in_view %}<option value="{{ w.pk }}" {% if current and current.pk == w.pk %}selected{% endif %}>{{ w.name }}</option>{% endfor %}</select>
+  <input type="file" name="files" accept="image/*,video/*" multiple class="form-control">
+  <input type="text" name="tags" class="form-control" placeholder="Tags, comma separated">
+  <button class="btn btn-primary"><i class="fas fa-upload"></i> Upload</button>
+  <details class="sh-fromurl"><summary>Add from a link (Canva share link, image or video URL)</summary>
+    <div class="sh-row-inline"><input type="url" name="url" class="form-control" placeholder="https://"><button class="btn btn-outline-secondary" formnovalidate>Add from link</button></div>
+  </details>
+</form>
+{% if tags %}<div class="sh-pf"><a href="?tag=" class="{% if not tag %}on{% endif %}">All</a>{% for t in tags %}<a href="?tag={{ t|urlencode }}" class="{% if tag == t %}on{% endif %}">#{{ t }}</a>{% endfor %}</div>{% endif %}
+<div class="sh-mgrid">
+  {% for a in assets %}
+  <figure class="card sh-mtile">
+    <div class="sh-mimg">{% if a.kind == 'video' %}<video src="{{ a.file.url }}" muted preload="metadata" controls></video>{% else %}<img src="{{ a.file.url }}" alt="{{ a.name }}" loading="lazy">{% endif %}</div>
+    <figcaption><b title="{{ a.name }}">{{ a.name|truncatechars:28 }}</b>
+      <small>{{ a.workspace.name }} · {{ a.get_kind_display }}{% if a.width %} · {{ a.width }}×{{ a.height }}{% endif %} · {{ a.size|filesizeformat }}</small>
+      <small>{% if a.uses %}Used in {{ a.uses }} post{{ a.uses|pluralize }}{% else %}Not used yet{% endif %}{% if a.tags %} · {{ a.tags }}{% endif %}</small>
+      <form method="post" action="{% url 'social:media_delete' a.pk %}" onsubmit="return confirm('Remove this file?')">{% csrf_token %}<button class="btn btn-sm btn-ghost sh-danger"><i class="far fa-trash-can"></i></button></form>
+    </figcaption>
+  </figure>
+  {% empty %}<div class="empty-state sh-empty"><p>No media yet. Upload images and videos to reuse them across posts.</p></div>{% endfor %}
+</div>
+{% if assets.has_other_pages %}<div class="sh-pager">{% if assets.has_previous %}<a class="btn btn-sm btn-outline-secondary" href="?page={{ assets.previous_page_number }}&tag={{ tag|urlencode }}">Newer</a>{% endif %}{% if assets.has_next %}<a class="btn btn-sm btn-outline-secondary" href="?page={{ assets.next_page_number }}&tag={{ tag|urlencode }}">Older</a>{% endif %}</div>{% endif %}
+{% endblock %}

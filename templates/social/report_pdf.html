@@ -1,0 +1,41 @@
+{% load humanize social_tags %}<!DOCTYPE html>
+<html><head><meta charset="utf-8"><style>
+@font-face { font-family: 'Inter'; src: url({{ font_dir }}/Inter-400.ttf); font-weight: 400; }
+@font-face { font-family: 'Inter'; src: url({{ font_dir }}/Inter-500.ttf); font-weight: 500; }
+@font-face { font-family: 'Inter'; src: url({{ font_dir }}/Inter-600.ttf); font-weight: 600; }
+@font-face { font-family: 'Inter'; src: url({{ font_dir }}/Inter-700.ttf); font-weight: 700; }
+@page { size: A4; margin: 18mm 16mm 18mm; @bottom-center { content: "{{ workspace.name }} · {{ start|date:'F Y' }} · page " counter(page); font: 8pt Inter; color: #94a3b8; } }
+body { font-family: Inter; color: #0f172a; font-size: 10pt; }
+.top { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid {{ workspace.color }}; padding-bottom: 10px; }
+.top img { height: 34px; }
+.top .co { font-size: 8.5pt; color: #64748b; text-align: right; }
+h1 { font-size: 22pt; margin: 22px 0 2px; letter-spacing: -0.02em; }
+.sub { color: #64748b; margin: 0 0 18px; }
+.kpis { display: flex; flex-wrap: wrap; gap: 10px; }
+.kpi { flex: 1 1 28%; border: 1px solid #e2e8f0; border-radius: 10px; padding: 10px 12px; }
+.kpi span { font-size: 8.5pt; color: #64748b; } .kpi b { display: block; font-size: 17pt; margin-top: 2px; }
+.kpi small { font-size: 8pt; } .up { color: #059669; } .down { color: #dc2626; }
+h2 { font-size: 12pt; margin: 22px 0 8px; }
+.bar { display: flex; align-items: center; gap: 8px; margin: 5px 0; } .bar span { width: 110px; font-size: 9pt; }
+.bar div { flex: 1; background: #f1f5f9; border-radius: 6px; height: 10px; } .bar i { display: block; height: 10px; border-radius: 6px; }
+.bar b { width: 60px; text-align: right; font-size: 9pt; }
+table { width: 100%; border-collapse: collapse; font-size: 9pt; } td, th { text-align: left; padding: 6px 4px; border-bottom: 1px solid #e2e8f0; } th { color: #64748b; font-weight: 600; }
+.note { color: #64748b; font-size: 8.5pt; }
+</style></head><body>
+<div class="top">{% if company.logo_data_uri %}<img src="{{ company.logo_data_uri }}" alt="">{% else %}<b>{{ company.company_name|default:'Ralfiz Technologies' }}</b>{% endif %}
+  <div class="co">{{ company.company_name|default:'Ralfiz Technologies' }}<br>Social media report</div></div>
+<h1>{{ workspace.name }}</h1>
+<p class="sub">{{ start|date:'j F' }} – {{ end|date:'j F Y' }} · {{ posts_count }} post{{ posts_count|pluralize }} published across {{ accounts|length }} account{{ accounts|length|pluralize }}</p>
+<div class="kpis">
+  {% for r in rows %}<div class="kpi"><span>{{ r.label }}</span><b>{{ r.value|intcomma }}</b>{% if r.change is not None %}<small class="{% if r.change >= 0 %}up{% else %}down{% endif %}">{% if r.change >= 0 %}▲{% else %}▼{% endif %} {{ r.change }}% vs last month</small>{% else %}<small class="note">no earlier data</small>{% endif %}</div>{% endfor %}
+  <div class="kpi"><span>Engagement rate</span><b>{{ data.engagement_rate }}%</b><small class="note">engagement ÷ reach</small></div>
+</div>
+<h2>Reach by platform</h2>
+{% for label, v, pct, color in by_platform %}<div class="bar"><span>{{ label }}</span><div><i style="width:{{ pct }}%;background:{{ color }}"></i></div><b>{{ v|intcomma }}</b></div>{% empty %}<p class="note">No reach data was recorded this month.</p>{% endfor %}
+<h2>Top posts</h2>
+<table><tr><th>Post</th><th>Platform</th><th>Date</th><th>Engagement</th></tr>
+{% for m in data.top_posts %}<tr><td>{{ m.target.post.base_text|default:m.target.post.title|truncatechars:80 }}</td><td>{{ m.target.account.get_platform_display }}</td><td>{{ m.target.published_at|date:'d M' }}</td><td>{{ m.value|intcomma }}</td></tr>
+{% empty %}<tr><td colspan="4" class="note">No post metrics yet.</td></tr>{% endfor %}</table>
+{% if best %}<h2>Best time to post</h2><p>{% for b in best.best %}{{ b.label }}{% if not forloop.last %}, {% endif %}{% endfor %}</p>{% endif %}
+<p class="note" style="margin-top:26px">Figures come from each platform's own analytics as recorded daily by Ralfiz. Platforms count reach differently, so totals across platforms are a guide, not unique people. Generated {{ generated|date:'j M Y, g:i A' }}.</p>
+</body></html>

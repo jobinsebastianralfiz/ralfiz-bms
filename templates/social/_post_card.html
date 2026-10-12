@@ -1,0 +1,48 @@
+{% load social_tags %}
+<article class="card sh-post" id="p{{ p.pk }}">
+  <div class="sh-post-when">
+    {% if p.scheduled_at %}<b>{{ p.scheduled_at|time:'g:i' }}</b><span>{{ p.scheduled_at|time:'A' }}</span>{% if show_date %}<small>{{ p.scheduled_at|date:'D d M' }}</small>{% endif %}{% else %}<b>—</b><span>No time</span>{% endif %}
+  </div>
+  <div class="sh-post-body">
+    <div class="sh-post-who">
+      <span class="sh-av sm" style="background:{{ p.workspace.color }}">{{ p.workspace.initial }}</span>
+      <div><b>{{ p.workspace.name }}</b><div class="sh-targets">{% for t in p.target_list %}<span class="sh-target t-{{ t.status }}" title="{{ t.get_status_display }}{% if t.error %}: {{ t.error }}{% endif %}">{% picon t.account.platform %} {{ t.account.handle|default:t.account.name|truncatechars:28 }}</span>{% endfor %}</div></div>
+    </div>
+    {% if p.title %}<p class="sh-post-title">{{ p.title }}</p>{% endif %}
+    <p class="sh-post-text">{{ p.base_text|default:'(no caption)'|linebreaksbr }}</p>
+    <div class="sh-tagrow">
+      <span class="badge badge-{{ p.tone }}">{{ p.get_status_display }}</span>
+      {% if p.source == 'mcp' %}<span class="badge sh-ai"><i class="fas fa-wand-magic-sparkles"></i> Claude draft</span>{% endif %}
+      {% if p.workspace.requires_approval and p.status == 'scheduled' and p.approved_by_name %}<span class="sh-muted">Approved by {{ p.approved_by_name }}</span>{% endif %}
+    </div>
+    {% if p.last_note %}<div class="sh-note"><b>{{ p.last_note.reviewer_name|default:'Reviewer' }}:</b> {{ p.last_note.comment }}</div>{% endif %}
+    {% for t in p.errors %}<div class="sh-err"><b>{{ t.account.name }}:</b> {{ t.error }}</div>{% endfor %}
+    <form method="post" action="{% url 'social:post_action' p.pk %}" class="sh-acts">
+      {% csrf_token %}<input type="hidden" name="next" value="{{ request.get_full_path }}">
+      {% if p.status == 'review' %}
+        {% if is_manager %}<button name="action" value="approve" class="btn btn-sm btn-primary"><i class="fas fa-check"></i> Approve</button>
+        <button type="button" class="btn btn-sm btn-outline-secondary" data-changes>Request changes</button>{% endif %}
+        <a href="{% url 'social:post_edit' p.pk %}" class="btn btn-sm btn-outline-secondary">Edit</a>
+      {% elif p.status == 'draft' or p.status == 'changes' %}
+        <a href="{% url 'social:post_edit' p.pk %}" class="btn btn-sm btn-outline-secondary">Edit</a>
+        <button name="action" value="submit" class="btn btn-sm btn-primary">{% if p.workspace.requires_approval %}Send for approval{% else %}Schedule{% endif %}</button>
+      {% elif p.status == 'scheduled' %}
+        <a href="{% url 'social:post_edit' p.pk %}" class="btn btn-sm btn-outline-secondary">Edit</a>
+        <button name="action" value="duplicate" class="btn btn-sm btn-outline-secondary">Duplicate</button>
+        {% if is_manager %}<button type="button" class="btn btn-sm btn-outline-secondary" data-changes>Pull back</button>{% endif %}
+      {% elif p.status == 'failed' or p.status == 'partial' %}
+        <button name="action" value="retry" class="btn btn-sm btn-primary"><i class="fas fa-rotate-right"></i> Retry</button>
+        <a href="{% url 'social:accounts' %}" class="btn btn-sm btn-outline-secondary">Check accounts</a>
+        <button name="action" value="duplicate" class="btn btn-sm btn-outline-secondary">Duplicate</button>
+      {% elif p.status == 'published' %}
+        {% for t in p.target_list %}{% if t.external_url %}<a href="{{ t.external_url }}" target="_blank" rel="noopener" class="btn btn-sm btn-outline-secondary">{% picon t.account.platform %} View</a>{% endif %}{% endfor %}
+        <button name="action" value="duplicate" class="btn btn-sm btn-outline-secondary">Duplicate</button>
+      {% endif %}
+      <div class="sh-changes" hidden>
+        <textarea name="comment" class="form-control" rows="2" placeholder="What should change?"></textarea>
+        <button name="action" value="changes" class="btn btn-sm btn-warning">Send back</button>
+      </div>
+    </form>
+  </div>
+  {% if p.first_media %}<div class="sh-thumb">{% if p.first_media.kind == 'video' %}<video src="{{ p.first_media.file.url }}" muted preload="metadata"></video><i class="fas fa-play"></i>{% else %}<img src="{{ p.first_media.file.url }}" alt="" loading="lazy">{% endif %}</div>{% endif %}
+</article>

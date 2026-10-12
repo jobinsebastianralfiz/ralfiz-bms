@@ -1,0 +1,105 @@
+{% extends 'social/_hub.html' %}
+{% load social_tags %}
+{% block hub_title %}{% if post %}Edit post{% else %}Create post{% endif %}{% endblock %}
+{% block page_heading %}{% if post %}Edit post{% else %}Create post{% endif %}{% endblock %}
+{% block create_button %}{% endblock %}
+{% block filters %}{% endblock %}
+{% block hub %}
+<form method="post" class="sh-compose" id="composer" autocomplete="off">
+  {% csrf_token %}
+  <input type="hidden" name="workspace" value="{{ workspace.pk }}">
+  <input type="hidden" name="media" id="mediaIds" value="{{ post_media_ids }}">
+
+  <div class="card sh-ed">
+    <div class="sh-row">
+      <label class="form-label">Client</label>
+      {% if post %}
+      <div class="sh-wspill"><span class="sh-av sm" style="background:{{ workspace.color }}">{{ workspace.initial }}</span> {{ workspace.name }}</div>
+      {% else %}
+      <div class="sh-wsrow">{% for w in all_workspaces %}<a href="?ws={{ w.pk }}{% if request.GET.day %}&day={{ request.GET.day }}{% endif %}" class="sh-wspill {% if w.pk == workspace.pk %}on{% endif %}"><span class="sh-av sm" style="background:{{ w.color }}">{{ w.initial }}</span> {{ w.name }}</a>{% endfor %}</div>
+      {% endif %}
+      {% if workspace.requires_approval %}<p class="form-text"><i class="fas fa-user-check"></i> {{ workspace.name }} approves posts{% if workspace.reviewer_name %} ({{ workspace.reviewer_name }}){% endif %} before they go out.</p>{% endif %}
+    </div>
+
+    <div class="sh-row">
+      <label class="form-label">Post to</label>
+      <div class="sh-picks" id="picks">
+        {% for a in accounts %}
+        <label class="sh-pick {% if not a.healthy %}is-off{% endif %}" title="{{ a.name }}{% if not a.healthy %} · reconnect first{% endif %}">
+          <input type="checkbox" name="accounts" value="{{ a.pk }}" {% if a.pk|stringformat:'s' in selected_ids %}checked{% endif %} {% if not a.healthy %}disabled{% endif %}>
+          {% picon a.platform %}<span>{{ a.handle|default:a.name|truncatechars:26 }}</span>
+        </label>
+        {% empty %}
+        <p class="sh-muted">{{ workspace.name }} has no connected accounts. <a href="{% url 'social:accounts' %}?ws={{ workspace.pk }}">Connect one</a>.</p>
+        {% endfor %}
+      </div>
+    </div>
+
+    <div class="sh-row">
+      <div class="sh-captabs" id="capTabs" role="tablist"><button type="button" class="on" data-tab="">Main caption</button></div>
+      <textarea name="text" id="caption" class="form-control sh-ta" rows="7" placeholder="Write the caption. Switch to a platform tab to adjust it just for that platform.">{{ post.base_text|default:'' }}</textarea>
+      <div id="overrides"></div>
+      <div class="sh-counts" id="counts"></div>
+      {% if workspace.brand_kit.hashtags %}<button type="button" class="btn btn-sm btn-ghost" id="addTags" data-tags="{{ workspace.brand_kit.hashtags }}"># Add brand hashtags</button>{% endif %}
+      {% if workspace.brand_kit.tone %}<p class="form-text"><b>Tone:</b> {{ workspace.brand_kit.tone }}</p>{% endif %}
+    </div>
+
+    <div class="sh-row" id="titleRow" hidden>
+      <label class="form-label" for="title">YouTube title</label>
+      <input type="text" name="title" id="title" maxlength="100" class="form-control" value="{{ post.title|default:'' }}">
+    </div>
+    <div class="sh-row" id="firstRow" hidden>
+      <label class="form-label" for="first_comment">First comment <small class="sh-muted">(Instagram, Facebook, LinkedIn)</small></label>
+      <input type="text" name="first_comment" id="first_comment" class="form-control" value="{{ post.first_comment|default:'' }}" placeholder="Hashtags or a link, posted as the first comment">
+    </div>
+    <div class="sh-row">
+      <label class="form-label" for="link">Link <small class="sh-muted">(optional)</small></label>
+      <input type="url" name="link" id="link" class="form-control" value="{{ post.link|default:'' }}" placeholder="https://">
+    </div>
+
+    <div class="sh-row">
+      <label class="form-label">Media</label>
+      <div class="sh-medrow" id="medRow"></div>
+      <div class="sh-medtools">
+        <label class="btn btn-sm btn-outline-secondary"><i class="fas fa-upload"></i> Upload<input type="file" id="upload" accept="image/*,video/*" multiple hidden data-url="{% url 'social:media' %}" data-ws="{{ workspace.pk }}"></label>
+        <button type="button" class="btn btn-sm btn-outline-secondary" id="libBtn"><i class="far fa-images"></i> From library</button>
+      </div>
+      <div class="sh-lib" id="lib" hidden>
+        {% for m in media_library %}<button type="button" class="sh-libitem" data-id="{{ m.pk }}" data-url="{{ m.file.url }}" data-kind="{{ m.kind }}" title="{{ m.name }}">{% if m.kind == 'video' %}<video src="{{ m.file.url }}" muted preload="metadata"></video><i class="fas fa-play"></i>{% else %}<img src="{{ m.file.url }}" alt="" loading="lazy">{% endif %}</button>{% empty %}<p class="sh-muted">The library is empty. Upload a file.</p>{% endfor %}
+      </div>
+    </div>
+
+    <div class="sh-row sh-when">
+      <div><label class="form-label" for="date">Date</label><input type="date" name="date" id="date" class="form-control" value="{{ when_date }}"></div>
+      <div><label class="form-label" for="time">Time</label><input type="time" name="time" id="time" class="form-control" value="{{ when_time }}"></div>
+      {% if best %}<button type="button" class="btn btn-sm btn-outline-secondary" id="bestBtn" data-weekday="{{ best.weekday }}" data-hour="{{ best.hour }}"><i class="far fa-clock"></i> Best time · {{ best.label }}</button>{% endif %}
+    </div>
+
+    {% if problems %}<div class="sh-err">{% for acc, ps in problems.items %}{% for pr in ps %}<div>{{ pr }}</div>{% endfor %}{% endfor %}</div>{% endif %}
+    <div class="sh-warn" id="warn" hidden></div>
+
+    <div class="sh-foot">
+      {% if post and post.is_editable %}<button type="submit" form="delForm" class="btn btn-ghost sh-danger" onclick="return confirm('Delete this post?')"><i class="far fa-trash-can"></i> Delete</button>{% endif %}
+      <span class="sh-sp"></span>
+      <button type="submit" name="intent" value="draft" class="btn btn-outline-secondary">Save draft</button>
+      <button type="submit" name="intent" value="submit" class="btn btn-primary" id="goBtn">{% if workspace.requires_approval %}Send for approval{% else %}Schedule{% endif %}</button>
+    </div>
+    {% if history %}
+    <details class="sh-history"><summary>Approval history</summary>
+      {% for h in history %}<div><b>{{ h.get_decision_display }}</b> by {{ h.reviewer_name|default:h.user|default:'—' }} · {{ h.created_at|date:'d M, g:i A' }}{% if h.comment %} · “{{ h.comment }}”{% endif %}</div>{% endfor %}
+    </details>
+    {% endif %}
+  </div>
+
+  <div class="sh-pv">
+    <div class="sh-pvtabs" id="pvTabs"></div>
+    <div class="sh-phone"><div class="sh-screen" id="preview"></div></div>
+    <p class="sh-hint">Previews are approximate. Each platform crops and trims in its own way.</p>
+  </div>
+</form>
+{% if post and post.is_editable %}<form method="post" action="{% url 'social:post_action' post.pk %}" id="delForm">{% csrf_token %}<input type="hidden" name="action" value="delete"></form>{% endif %}
+{{ caps|json_script:'capsData' }}
+{{ overrides|json_script:'overridesData' }}
+<script id="wsData" type="application/json">{"name": "{{ workspace.name|escapejs }}", "initial": "{{ workspace.initial|escapejs }}", "color": "{{ workspace.color }}"}</script>
+{% endblock %}
+{% block hub_js %}<script>window.SocialComposer && SocialComposer.init();</script>{% endblock %}

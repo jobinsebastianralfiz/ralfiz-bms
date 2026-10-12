@@ -1,0 +1,57 @@
+{% extends 'social/_hub.html' %}
+{% load social_tags %}
+{% block hub_title %}Inbox{% endblock %}
+{% block page_heading %}Inbox{% endblock %}
+{% block hub %}
+<div class="sh-seg sh-seg-lg" role="group" aria-label="Show">
+  <a href="?status=open" class="{% if status == 'open' %}on{% endif %}">Open <b>{{ counts.open }}</b></a>
+  <a href="?status=mine" class="{% if status == 'mine' %}on{% endif %}">Assigned to me <b>{{ counts.mine }}</b></a>
+  <a href="?status=done" class="{% if status == 'done' %}on{% endif %}">Done <b>{{ counts.done }}</b></a>
+</div>
+<p class="sh-hint"><i class="fas fa-shield-halved"></i> Comments and messages are written by the public. Claude can draft replies, but a person always sends them.</p>
+<div class="sh-inbox">
+  {% for it in items %}
+  <article class="card sh-item" id="i{{ it.pk }}">
+    <header>
+      {% picon it.account.platform %}
+      <div class="sh-item-who"><b>{{ it.author_name|default:'Someone' }}</b><small>{{ it.get_kind_display }} · {{ it.account.workspace.name }} · {{ it.account.handle|default:it.account.get_platform_display }}</small></div>
+      <time title="{{ it.received_at }}">{{ it.received_at|timesince }} ago</time>
+    </header>
+    {% if it.rating %}<div class="sh-stars" aria-label="{{ it.rating }} out of 5">{% for i in '12345' %}<i class="{% if forloop.counter <= it.rating %}fas{% else %}far{% endif %} fa-star"></i>{% endfor %}</div>{% endif %}
+    <p class="sh-item-text">{{ it.text|default:'(no text)'|linebreaksbr }}</p>
+    {% if it.permalink %}<a href="{{ it.permalink }}" target="_blank" rel="noopener" class="sh-muted small">Open on {{ it.account.get_platform_display }} <i class="fas fa-arrow-up-right-from-square"></i></a>{% endif %}
+    {% for r in it.sent %}<div class="sh-sent"><small>Replied{% if r.sent_by %} by {{ r.sent_by.get_full_name|default:r.sent_by.username }}{% endif %} · {{ r.sent_at|date:'d M, g:i A' }}</small>{{ r.text }}</div>{% endfor %}
+    {% if it.status == 'open' %}
+      {% if it.account.platform == 'whatsapp' %}
+        {% if it.reply_window_open %}<div class="sh-win">Free reply window closes in {{ it.reply_window_ends|timeuntil }}</div>
+        {% else %}<div class="sh-win is-bad">24-hour window closed. Only an approved template can be sent.</div>{% endif %}
+      {% endif %}
+      <form method="post" action="{% url 'social:inbox_action' it.pk %}" class="sh-replyform">
+        {% csrf_token %}
+        {% if it.draft %}<small class="sh-draftnote">{% if it.draft.source == 'mcp' %}<i class="fas fa-wand-magic-sparkles"></i> Claude drafted this reply{% else %}Saved draft{% endif %}: check it before sending.</small>{% endif %}
+        {% if it.reply_window_open %}
+        <textarea name="text" class="form-control" rows="2" placeholder="Write a reply">{{ it.draft.text|default:'' }}</textarea>
+        <div class="sh-acts">
+          <button name="action" value="send" class="btn btn-sm btn-primary"><i class="fas fa-paper-plane"></i> Send</button>
+          <button name="action" value="draft" class="btn btn-sm btn-outline-secondary">Save draft</button>
+          {% if it.draft %}<button name="action" value="discard" class="btn btn-sm btn-ghost">Discard draft</button>{% endif %}
+        {% else %}
+        <div class="sh-acts">
+          <input type="text" name="template" class="form-control sh-inline" placeholder="Template name, e.g. order_update">
+          <button name="action" value="template" class="btn btn-sm btn-primary">Send template</button>
+        {% endif %}
+          {% if it.assigned_to %}<button name="action" value="unassign" class="btn btn-sm btn-ghost" title="Assigned to {{ it.assigned_to.get_full_name|default:it.assigned_to.username }}"><i class="fas fa-user"></i> {{ it.assigned_to.get_full_name|default:it.assigned_to.username }} ✕</button>
+          {% else %}<button name="action" value="assign_me" class="btn btn-sm btn-ghost"><i class="far fa-user"></i> Assign to me</button>{% endif %}
+          <button name="action" value="done" class="btn btn-sm btn-ghost"><i class="fas fa-check"></i> Done</button>
+        </div>
+      </form>
+    {% else %}
+      <form method="post" action="{% url 'social:inbox_action' it.pk %}">{% csrf_token %}<button name="action" value="open" class="btn btn-sm btn-ghost">Reopen</button></form>
+    {% endif %}
+  </article>
+  {% empty %}
+  <div class="empty-state sh-empty"><p>{% if status == 'done' %}Nothing marked done yet.{% else %}All caught up. New comments, messages and reviews land here.{% endif %}</p></div>
+  {% endfor %}
+</div>
+{% if items.has_other_pages %}<div class="sh-pager">{% if items.has_previous %}<a class="btn btn-sm btn-outline-secondary" href="?status={{ status }}&page={{ items.previous_page_number }}">Newer</a>{% endif %}{% if items.has_next %}<a class="btn btn-sm btn-outline-secondary" href="?status={{ status }}&page={{ items.next_page_number }}">Older</a>{% endif %}</div>{% endif %}
+{% endblock %}

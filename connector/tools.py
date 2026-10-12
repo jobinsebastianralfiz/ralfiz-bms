@@ -1284,3 +1284,7 @@ view_tool(
     },
     required=('title', 'body'), write=True,
 )
+
+
+# Social Hub tools register themselves into TOOLS.
+import social.mcp_tools  # noqa: E402,F401

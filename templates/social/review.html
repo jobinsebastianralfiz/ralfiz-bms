@@ -1,0 +1,32 @@
+{% load static social_tags %}<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>{{ workspace.name }} · Posts to approve</title><meta name="robots" content="noindex">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<link rel="stylesheet" href="{% static 'css/social.css' %}?v=5"></head>
+<body class="sh-public">
+<header class="sh-rhead"><span class="sh-av" style="background:{{ workspace.color }}">{{ workspace.initial }}</span><div><h1>{{ workspace.name }}</h1><p>Posts prepared by Ralfiz Technologies, waiting for your approval</p></div></header>
+<main class="sh-rmain">
+  {% for m in messages %}<div class="sh-flash {{ m.tags }}">{{ m }}</div>{% endfor %}
+  {% for p in waiting %}
+  <article class="sh-rpost">
+    <div class="sh-rmeta"><span>{% for t in p.target_list %}{% picon t.account.platform %}{% endfor %}</span>
+      <b>{% if p.scheduled_at %}{{ p.scheduled_at|date:'l j F, g:i A' }}{% else %}Time not set yet{% endif %}</b></div>
+    {% if p.first_media %}<div class="sh-rmedia">{% if p.first_media.kind == 'video' %}<video src="{{ p.first_media.file.url }}" controls preload="metadata"></video>{% else %}<img src="{{ p.first_media.file.url }}" alt="">{% endif %}</div>{% endif %}
+    {% if p.title %}<h2>{{ p.title }}</h2>{% endif %}
+    <p class="sh-rtext">{{ p.base_text|linebreaksbr }}</p>
+    {% for t in p.target_list %}{% if t.text %}<details class="sh-rvar"><summary>Version for {{ t.account.get_platform_display }}</summary><p>{{ t.text|linebreaksbr }}</p></details>{% endif %}{% endfor %}
+    <form method="post" class="sh-rform">{% csrf_token %}<input type="hidden" name="post" value="{{ p.pk }}">
+      <input name="name" class="form-control" value="{{ reviewer }}" placeholder="Your name" required>
+      <textarea name="comment" class="form-control" rows="2" placeholder="Comments (needed if you want changes)"></textarea>
+      <div class="sh-racts"><button name="decision" value="approve" class="btn btn-primary"><i class="fas fa-check"></i> Approve</button><button name="decision" value="changes" class="btn btn-outline-secondary">Ask for changes</button></div>
+    </form>
+  </article>
+  {% empty %}
+  <div class="sh-rempty"><i class="far fa-circle-check"></i><p>Nothing to approve right now. Thank you!</p></div>
+  {% endfor %}
+  {% if recent %}<h3 class="sh-rsub">Recently</h3>
+  {% for p in recent %}<div class="sh-rrecent"><span class="badge badge-{{ p.tone }}">{{ p.get_status_display }}</span> {{ p.base_text|default:p.title|truncatechars:90 }} <small>{% if p.scheduled_at %}{{ p.scheduled_at|date:'d M' }}{% endif %}</small></div>{% endfor %}{% endif %}
+</main>
+<footer class="sh-rfoot">Ralfiz Technologies · This private link is only for {{ workspace.name }}.</footer>
+</body></html>

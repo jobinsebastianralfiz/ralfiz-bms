@@ -1,0 +1,71 @@
+{% extends 'base.html' %}
+{% load static social_tags %}
+{% block title %}{% block hub_title %}Social Hub{% endblock %} - Ralfiz BMS{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'css/social.css' %}?v=5">{% endblock %}
+{% block breadcrumb %}<a href="{% url 'social:calendar' %}" class="breadcrumb-item">Social Hub</a>{% endblock %}
+
+{% block content %}
+<div class="sh">
+  <div class="sh-top">
+    <div class="sh-titles">
+      <h1 class="page-title">{% block page_heading %}Social Hub{% endblock %}</h1>
+      <p class="page-subtitle">{% if current %}{{ current.name }}{% else %}All clients{% endif %}{% if platform %} · {{ platform|platform_label }}{% endif %}</p>
+    </div>
+    <div class="sh-top-actions">
+      {% block top_actions %}{% endblock %}
+      {% block create_button %}<a href="{% url 'social:post_new' %}{% if current %}?ws={{ current.pk }}{% endif %}" class="btn btn-primary"><i class="fas fa-plus"></i> Create post</a>{% endblock %}
+    </div>
+  </div>
+
+  <nav class="sh-tabs" aria-label="Social Hub">
+    <a href="{% url 'social:calendar' %}" class="{% if tab == 'calendar' %}on{% endif %}"><i class="far fa-calendar"></i> Calendar</a>
+    <a href="{% url 'social:approvals' %}" class="{% if tab == 'approvals' %}on{% endif %}"><i class="far fa-circle-check"></i> Approvals{% if attention.review %}<b class="sh-count">{{ attention.review }}</b>{% endif %}</a>
+    <a href="{% url 'social:inbox' %}" class="{% if tab == 'inbox' %}on{% endif %}"><i class="far fa-comments"></i> Inbox{% if attention.inbox %}<b class="sh-count">{{ attention.inbox }}</b>{% endif %}</a>
+    <a href="{% url 'social:analytics' %}" class="{% if tab == 'analytics' %}on{% endif %}"><i class="fas fa-chart-line"></i> Analytics</a>
+    <a href="{% url 'social:reports' %}" class="{% if tab == 'reports' %}on{% endif %}"><i class="far fa-file-pdf"></i> Reports</a>
+    <a href="{% url 'social:media' %}" class="{% if tab == 'media' %}on{% endif %}"><i class="far fa-images"></i> Media</a>
+    <a href="{% url 'social:accounts' %}" class="{% if tab == 'accounts' %}on{% endif %}"><i class="fas fa-plug"></i> Accounts{% if attention.accounts %}<b class="sh-count is-bad">{{ attention.accounts|length }}</b>{% endif %}</a>
+    <a href="{% url 'social:activity' %}" class="{% if tab == 'activity' %}on{% endif %}"><i class="fas fa-clock-rotate-left"></i> Activity</a>
+    {% if is_manager %}<a href="{% url 'social:workspaces' %}" class="{% if tab == 'clients' %}on{% endif %}"><i class="fas fa-users-gear"></i> Clients</a>{% endif %}
+  </nav>
+
+  <div class="sh-shell">
+    <aside class="sh-clients" aria-label="Clients">
+      <a href="?ws=all" class="sh-client {% if not current %}on{% endif %}">
+        <span class="sh-av" style="background:linear-gradient(135deg,#0ea5e9,#6366f1)"><i class="fas fa-layer-group"></i></span>
+        <span class="sh-cn"><b>All clients</b><small>{{ workspaces|length }} workspace{{ workspaces|length|pluralize }}</small></span>
+      </a>
+      {% for w in workspaces %}
+      <a href="?ws={{ w.pk }}" class="sh-client {% if current and current.pk == w.pk %}on{% endif %}">
+        <span class="sh-av" style="background:{{ w.color }}">{{ w.initial }}</span>
+        <span class="sh-cn"><b>{{ w.name }}</b>
+          <small class="sh-pbs">{% for p in w.platforms %}{% with m=platform_meta|get_item:p %}<i class="{{ m.icon }}" style="color:{{ m.color }}" title="{{ p }}"></i>{% endwith %}{% empty %}No accounts yet{% endfor %}</small>
+        </span>
+        {% if w.attention %}<span class="sh-q {% if w.alert %}is-bad{% endif %}" title="{{ w.n_review }} waiting for approval, {{ w.alert }} problem{{ w.alert|pluralize }}">{{ w.attention }}</span>{% endif %}
+      </a>
+      {% empty %}
+      <p class="sh-muted">No clients yet. {% if is_manager %}<a href="{% url 'social:workspaces' %}">Add one</a>.{% endif %}</p>
+      {% endfor %}
+      <div class="sh-claude">
+        <b><span class="sh-dot"></span> Claude via MCP</b>
+        <p>Claude can draft posts and replies from the Ralfiz connector. Nothing goes live until a person approves it.</p>
+      </div>
+    </aside>
+
+    <section class="sh-main">
+      {% block filters %}{% if platforms_present %}
+      <div class="sh-pf" role="group" aria-label="Platform filter">
+        <a href="?p=" class="{% if not platform %}on{% endif %}">All platforms</a>
+        {% for key, label, m in platforms_present %}
+        <a href="?p={{ key }}" class="{% if platform == key %}on{% endif %}"><i class="{{ m.icon }}" style="color:{{ m.color }}"></i> {{ label }}</a>
+        {% endfor %}
+      </div>
+      {% endif %}{% endblock %}
+      {% block hub %}{% endblock %}
+    </section>
+  </div>
+</div>
+<div class="sh-toast" id="shToast" role="status"></div>
+{% endblock %}
+
+{% block extra_js %}<script src="{% static 'js/social.js' %}?v=1"></script>{% block hub_js %}{% endblock %}{% endblock %}

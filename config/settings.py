@@ -52,6 +52,7 @@ INSTALLED_APPS = [
     'pulse',
     'academy',
     'connector',
+    'social',
 ]
 
 MIDDLEWARE = [
@@ -282,3 +283,29 @@ CONNECTOR_REDIRECT_URIS = (
 )
 # Browser origins allowed to call /mcp directly (server-side callers send none).
 CONNECTOR_ALLOWED_ORIGIN_HOSTS = ('claude.ai', 'claude.com', 'localhost', '127.0.0.1')
+
+
+# ---------------------------------------------------------------- Social Hub
+# Fernet key that encrypts platform tokens at rest. Generate one with
+#   python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"
+SOCIAL_TOKEN_KEY = os.getenv('SOCIAL_TOKEN_KEY', '')
+# 'auto' fakes a platform in DEBUG until its app keys are set; 'true'/'false' force it.
+SOCIAL_FAKE_ADAPTERS = os.getenv('SOCIAL_FAKE_ADAPTERS', 'auto')
+# Public origin platforms fetch media from and redirect back to after sign-in.
+SOCIAL_PUBLIC_BASE_URL = os.getenv('SOCIAL_PUBLIC_BASE_URL', 'http://localhost:8000')
+# Off: Claude drafts and submits; a person approves or schedules.
+SOCIAL_MCP_AUTO_PUBLISH = os.getenv('SOCIAL_MCP_AUTO_PUBLISH', 'False') == 'True'
+# X bills every API read, so its inbox and metrics are off unless switched on.
+SOCIAL_X_READS = os.getenv('SOCIAL_X_READS', 'False') == 'True'
+
+META_APP_ID = os.getenv('META_APP_ID', '')
+META_APP_SECRET = os.getenv('META_APP_SECRET', '')
+META_GRAPH_VERSION = os.getenv('META_GRAPH_VERSION', 'v23.0')
+META_WEBHOOK_VERIFY_TOKEN = os.getenv('META_WEBHOOK_VERIFY_TOKEN', '')
+GOOGLE_OAUTH_CLIENT_ID = os.getenv('GOOGLE_OAUTH_CLIENT_ID', '')
+GOOGLE_OAUTH_CLIENT_SECRET = os.getenv('GOOGLE_OAUTH_CLIENT_SECRET', '')
+LINKEDIN_CLIENT_ID = os.getenv('LINKEDIN_CLIENT_ID', '')
+LINKEDIN_CLIENT_SECRET = os.getenv('LINKEDIN_CLIENT_SECRET', '')
+LINKEDIN_API_VERSION = os.getenv('LINKEDIN_API_VERSION', '202609')
+X_CLIENT_ID = os.getenv('X_CLIENT_ID', '')
+X_CLIENT_SECRET = os.getenv('X_CLIENT_SECRET', '')

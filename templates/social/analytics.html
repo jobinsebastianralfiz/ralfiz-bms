@@ -1,0 +1,57 @@
+{% extends 'social/_hub.html' %}
+{% load social_tags humanize %}
+{% block hub_title %}Analytics{% endblock %}
+{% block page_heading %}Analytics{% endblock %}
+{% block top_actions %}
+<div class="sh-seg">{% for d in '7,30,90'|make_list %}{% endfor %}
+  <a href="?days=7" class="{% if days == 7 %}on{% endif %}">7 days</a><a href="?days=30" class="{% if days == 30 %}on{% endif %}">30 days</a><a href="?days=90" class="{% if days == 90 %}on{% endif %}">90 days</a>
+</div>
+<form method="post">{% csrf_token %}<button class="btn btn-outline-secondary" title="Pull the latest numbers from each platform"><i class="fas fa-rotate"></i> Refresh</button></form>
+{% endblock %}
+{% block hub %}
+{% if not has_accounts %}
+<div class="empty-state sh-empty"><p>Connect an account to see analytics.</p><a href="{% url 'social:accounts' %}" class="btn btn-sm btn-primary">Connect accounts</a></div>
+{% else %}
+<div class="sh-kpis">
+  {% for k in kpis %}
+  <div class="card sh-kpi"><span>{{ k.label }}</span><b>{{ k.value|intcomma }}</b>
+    {% if k.change is not None %}<small class="{% if k.change >= 0 %}up{% else %}down{% endif %}">{% if k.change >= 0 %}▲{% else %}▼{% endif %} {{ k.change }}% vs previous {{ days }} days</small>{% else %}<small>No earlier data</small>{% endif %}</div>
+  {% endfor %}
+  <div class="card sh-kpi"><span>Engagement rate</span><b>{{ engagement_rate }}%</b><small>Engagement ÷ reach</small></div>
+</div>
+
+<div class="sh-two">
+  <div class="card sh-panel">
+    <h3>Reach and engagement</h3>
+    <div class="sh-chart"><canvas id="trend" height="220" aria-label="Daily reach and engagement"></canvas></div>
+  </div>
+  <div class="card sh-panel">
+    <h3>Reach by platform</h3>
+    {% for key, label, v, pct, m in by_platform %}
+    <div class="sh-bar"><span>{% picon key %} {{ label }}</span><div><i style="width:{{ pct }}%;background:{{ m.color }}"></i></div><b>{{ v|compact }}</b></div>
+    {% empty %}<p class="sh-muted">No reach data yet. Press Refresh, or wait for the nightly sync.</p>{% endfor %}
+  </div>
+</div>
+
+<div class="sh-two">
+  <div class="card sh-panel">
+    <h3>Best time to post</h3>
+    {% if best %}
+    <div class="sh-heat">
+      <span></span>{% for s in slots %}<span class="hl">{{ s }}</span>{% endfor %}
+      {% for row in best.grid %}<span class="hl">{{ daynames|get_item:forloop.counter0|default:'' }}</span>{% for v in row %}<span class="hc" style="--v:{{ v|stringformat:'s' }}" title="{{ v }}"></span>{% endfor %}{% endfor %}
+    </div>
+    <p class="sh-best">Best slots: {% for b in best.best %}<b>{{ b.label }}</b>{% if not forloop.last %}, {% endif %}{% endfor %}</p>
+    {% else %}<p class="sh-muted">After a few posts have gone out, this shows which days and hours get the most engagement.</p>{% endif %}
+  </div>
+  <div class="card sh-panel">
+    <h3>Top posts</h3>
+    {% for m in data.top_posts %}
+    <div class="sh-top"><span class="rk">{{ forloop.counter }}</span>{% picon m.target.account.platform %}<div><b>{{ m.target.post.base_text|default:m.target.post.title|truncatechars:70 }}</b><small>{{ m.target.account.workspace.name }} · {{ m.target.published_at|date:'d M' }}</small></div><span class="v">{{ m.value|compact }} eng.</span></div>
+    {% empty %}<p class="sh-muted">Top posts appear once published posts have metrics.</p>{% endfor %}
+  </div>
+</div>
+{{ chart|json_script:'trendData' }}
+{% endif %}
+{% endblock %}
+{% block hub_js %}<script>window.SocialCharts && SocialCharts.trend('trend', 'trendData');</script>{% endblock %}

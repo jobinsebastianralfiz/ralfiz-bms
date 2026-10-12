@@ -1,0 +1,68 @@
+{% extends 'social/_hub.html' %}
+{% load social_tags %}
+{% block hub_title %}Calendar{% endblock %}
+{% block page_heading %}Content calendar{% endblock %}
+{% block hub %}
+{% if attention.failed or attention.accounts %}
+<div class="sh-attn">
+  {% for p in attention.failed %}
+  <div class="sh-attn-row"><i class="fas fa-circle-exclamation"></i>
+    <span><b>Post failed</b> · {{ p.workspace.name }} · “{{ p.base_text|default:p.title|truncatechars:60 }}”</span>
+    <a href="?day={{ p.scheduled_at|date:'Y-m-d' }}#p{{ p.pk }}" class="btn btn-sm btn-outline-secondary">Open</a>
+  </div>
+  {% endfor %}
+  {% for a in attention.accounts %}
+  <div class="sh-attn-row {% if a.status == 'expiring' %}is-warn{% endif %}"><i class="fas fa-plug-circle-exclamation"></i>
+    <span><b>{{ a.workspace.name }} · {{ a.get_platform_display }}{% if a.handle %} ({{ a.handle }}){% endif %}</b> {% if a.status == 'expiring' %}sign-in expires {{ a.expires_at|timeuntil }} from now{% else %}needs reconnecting{% if a.last_error %}: {{ a.last_error|truncatechars:90 }}{% endif %}{% endif %}</span>
+    <a href="{% url 'social:connect' a.platform %}?ws={{ a.workspace_id }}" class="btn btn-sm btn-primary">Reconnect</a>
+  </div>
+  {% endfor %}
+</div>
+{% endif %}
+
+<div class="card sh-cal">
+  <div class="sh-cal-head">
+    <a class="btn btn-sm btn-outline-secondary" href="?{% if mode == 'month' %}month={{ prev }}{% else %}day={{ prev }}{% endif %}" aria-label="Previous"><i class="fas fa-chevron-left"></i></a>
+    <h2>{% if mode == 'month' %}{{ month|date:'F Y' }}{% else %}Week of {{ weeks.0.0.date|date:'d M Y' }}{% endif %}</h2>
+    <a class="btn btn-sm btn-outline-secondary" href="?{% if mode == 'month' %}month={{ next }}{% else %}day={{ next }}{% endif %}" aria-label="Next"><i class="fas fa-chevron-right"></i></a>
+    <a class="btn btn-sm btn-ghost" href="?day={{ today|date:'Y-m-d' }}">Today</a>
+    <div class="sh-seg" role="group" aria-label="View">
+      <a href="?mode=month&day={{ selected|date:'Y-m-d' }}" class="{% if mode == 'month' %}on{% endif %}">Month</a>
+      <a href="?mode=week&day={{ selected|date:'Y-m-d' }}" class="{% if mode == 'week' %}on{% endif %}">Week</a>
+    </div>
+    <div class="sh-legend">
+      <span class="s-review">In review</span><span class="s-scheduled">Scheduled</span><span class="s-published">Published</span><span class="s-failed">Failed</span><span class="s-draft">Draft</span>
+    </div>
+  </div>
+  <div class="sh-grid {% if mode == 'week' %}is-week{% endif %}">
+    {% for d in weekdays %}<div class="sh-dow">{{ d }}</div>{% endfor %}
+    {% for week in weeks %}{% for d in week %}
+    <div class="sh-day {% if d.out %}out{% endif %} {% if d.today %}today{% endif %} {% if d.selected %}sel{% endif %} {% if d.past %}past{% endif %}" data-date="{{ d.date|date:'Y-m-d' }}">
+      <a class="sh-dn" href="?day={{ d.date|date:'Y-m-d' }}{% if mode == 'week' %}&mode=week{% endif %}">{% if mode == 'week' %}{{ d.date|date:'D' }} {% endif %}{{ d.date|date:'j' }}</a>
+      {% if mode == 'month' %}
+        {% for p in d.posts|slice:':3' %}{% include 'social/_chip.html' %}{% endfor %}
+        {% if d.posts|length > 3 %}<a class="sh-more" href="?day={{ d.date|date:'Y-m-d' }}">+{{ d.posts|length|add:'-3' }} more</a>{% endif %}
+      {% else %}
+        {% for p in d.posts %}{% include 'social/_chip.html' %}{% endfor %}
+      {% endif %}
+      {% if not d.past %}<a class="sh-add" href="{% url 'social:post_new' %}?day={{ d.date|date:'Y-m-d' }}{% if current %}&ws={{ current.pk }}{% endif %}" aria-label="New post on {{ d.date|date:'d M' }}"><i class="fas fa-plus"></i></a>{% endif %}
+    </div>
+    {% endfor %}{% endfor %}
+  </div>
+  <p class="sh-hint"><i class="fas fa-up-down-left-right"></i> Drag a post to another day to move it. In a client-approval workspace, moving an approved post sends it back for approval unless a manager moves it.</p>
+</div>
+
+<div class="sh-agenda" id="agenda">
+  <h2 class="sh-h2">{{ selected|date:'l, j F' }} <span>{{ agenda|length }} post{{ agenda|length|pluralize }}</span></h2>
+  {% for p in agenda %}{% include 'social/_post_card.html' %}{% empty %}
+  <div class="empty-state sh-empty"><p>Nothing planned for this day.</p>{% if selected >= today %}<a href="{% url 'social:post_new' %}?day={{ selected|date:'Y-m-d' }}{% if current %}&ws={{ current.pk }}{% endif %}" class="btn btn-sm btn-primary">Plan a post</a>{% endif %}</div>
+  {% endfor %}
+</div>
+
+{% if unscheduled %}
+<div class="sh-agenda">
+  <h2 class="sh-h2">Drafts without a time <span>{{ unscheduled|length }}</span></h2>
+  {% for p in unscheduled %}{% include 'social/_post_card.html' %}{% endfor %}
+</div>
+{% endif %}
+{% endblock %}

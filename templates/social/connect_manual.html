@@ -1,0 +1,14 @@
+{% extends 'social/_hub.html' %}
+{% block hub_title %}Connect {{ platform_label }}{% endblock %}
+{% block page_heading %}Connect {{ platform_label }} to {{ workspace.name }}{% endblock %}
+{% block hub %}
+<form method="post" class="card sh-panel sh-narrow">
+  {% csrf_token %}<input type="hidden" name="ws" value="{{ workspace.pk }}">
+  {% for name, label, help in fields %}
+  <div class="sh-row"><label class="form-label" for="f_{{ name }}">{{ label }}</label>
+    <input class="form-control" id="f_{{ name }}" name="{{ name }}" {% if 'token' in name %}type="password" autocomplete="off"{% endif %} required>
+    {% if help %}<p class="form-text">{{ help }}</p>{% endif %}</div>
+  {% empty %}<p>This is a demo connection; no details are needed.</p>{% endfor %}
+  <div class="sh-foot"><a href="{% url 'social:accounts' %}" class="btn btn-ghost">Cancel</a><span class="sh-sp"></span><button class="btn btn-primary">Check and continue</button></div>
+</form>
+{% endblock %}

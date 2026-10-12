@@ -1,0 +1,49 @@
+{% extends 'social/_hub.html' %}
+{% load social_tags %}
+{% block hub_title %}Clients{% endblock %}
+{% block page_heading %}Clients and team{% endblock %}
+{% block hub %}
+<details class="card sh-panel" {% if not all_ws %}open{% endif %}>
+  <summary class="sh-sum"><i class="fas fa-plus"></i> Add a client workspace</summary>
+  <form method="post" class="sh-wsform">{% csrf_token %}
+    <div><label class="form-label">BMS client</label><select name="client" class="form-control"><option value="">Ralfiz itself / not a BMS client</option>{% for c in clients %}<option value="{{ c.pk }}">{{ c.company_name|default:c.name }}</option>{% endfor %}</select></div>
+    <div><label class="form-label">Name</label><input name="name" class="form-control" placeholder="Leave empty to use the client's name"></div>
+    <div><label class="form-label">Colour</label><input type="color" name="color" value="#6D4AFF" class="form-control sh-color"></div>
+    <div><label class="form-label">Client reviewer</label><input name="reviewer_name" class="form-control" placeholder="e.g. Suresh (owner)"></div>
+    <div class="sh-wide"><label class="form-label">Brand hashtags</label><input name="hashtags" class="form-control" placeholder="#DemoCafe #Perinthalmanna"></div>
+    <div class="sh-wide"><label class="form-label">Tone notes</label><input name="tone" class="form-control" placeholder="Warm, short, Malayalam words welcome"></div>
+    <label class="sh-check"><input type="checkbox" name="requires_approval" checked> Posts need approval before they go out</label>
+    <div class="sh-foot"><span class="sh-sp"></span><button class="btn btn-primary">Add client</button></div>
+  </form>
+</details>
+
+{% for w in all_ws %}
+<div class="card sh-panel">
+  <form method="post" class="sh-wsform">{% csrf_token %}<input type="hidden" name="id" value="{{ w.pk }}">
+    <div class="sh-wide sh-wshead"><span class="sh-av" style="background:{{ w.color }}">{{ w.initial }}</span><h3>{{ w.name }}</h3><small class="sh-muted">{{ w.accounts.all|length }} account{{ w.accounts.all|length|pluralize }}{% if w.client %} · BMS client {{ w.client.name }}{% endif %}</small></div>
+    <div><label class="form-label">Name</label><input name="name" class="form-control" value="{{ w.name }}"></div>
+    <input type="hidden" name="client" value="{{ w.client_id|default:'' }}">
+    <div><label class="form-label">Colour</label><input type="color" name="color" value="{{ w.color }}" class="form-control sh-color"></div>
+    <div><label class="form-label">Client reviewer</label><input name="reviewer_name" class="form-control" value="{{ w.reviewer_name }}"></div>
+    <div class="sh-wide"><label class="form-label">Brand hashtags</label><input name="hashtags" class="form-control" value="{{ w.brand_kit.hashtags|default:'' }}"></div>
+    <div class="sh-wide"><label class="form-label">Tone notes</label><input name="tone" class="form-control" value="{{ w.brand_kit.tone|default:'' }}"></div>
+    <label class="sh-check"><input type="checkbox" name="requires_approval" {% if w.requires_approval %}checked{% endif %}> Posts need approval before they go out</label>
+    <div class="sh-foot"><span class="sh-sp"></span><button class="btn btn-sm btn-primary">Save</button></div>
+  </form>
+  {% if w.requires_approval %}
+  <div class="sh-reviewlink"><span><i class="fas fa-link"></i> Review link:</span><code>{{ review_base }}{% url 'social:review' w.review_token %}</code>
+    <button type="button" class="btn btn-sm btn-outline-secondary" data-copy="{{ review_base }}{% url 'social:review' w.review_token %}">Copy</button>
+    <form method="post">{% csrf_token %}<input type="hidden" name="id" value="{{ w.pk }}"><button name="action" value="new_link" class="btn btn-sm btn-ghost" onclick="return confirm('Make a new link? The old one stops working.')">New link</button></form></div>
+  {% endif %}
+  <div class="sh-members"><b>Team</b> <small class="sh-muted">Owners and partners see every client. Add others here.</small>
+    {% for m in w.memberships.all %}
+    <form method="post" class="sh-member">{% csrf_token %}<input type="hidden" name="id" value="{{ w.pk }}"><input type="hidden" name="member" value="{{ m.pk }}">
+      <span>{{ m.user.get_full_name|default:m.user.username }} · {{ m.get_role_display }}</span><button name="action" value="remove_member" class="btn btn-sm btn-ghost">Remove</button></form>
+    {% endfor %}
+    <form method="post" class="sh-member">{% csrf_token %}<input type="hidden" name="id" value="{{ w.pk }}">
+      <input name="who" class="form-control" placeholder="Username or email"><select name="role" class="form-control"><option value="editor">Editor (draft and schedule)</option><option value="manager">Manager (also approve)</option></select>
+      <button name="action" value="add_member" class="btn btn-sm btn-outline-secondary">Add</button></form>
+  </div>
+</div>
+{% endfor %}
+{% endblock %}

@@ -1,0 +1,26 @@
+{% extends 'social/_hub.html' %}
+{% load social_tags %}
+{% block hub_title %}Approvals{% endblock %}
+{% block page_heading %}Approvals{% endblock %}
+{% block hub %}
+{% if link_workspaces %}
+<div class="sh-links">
+  {% for w in link_workspaces %}
+  <div class="card sh-link">
+    <span class="sh-av sm" style="background:{{ w.color }}">{{ w.initial }}</span>
+    <div><b>{{ w.name }}</b><small>{% if w.reviewer_name %}{{ w.reviewer_name }} approves{% else %}Client approves{% endif %} through a private link, no login needed.</small></div>
+    <button type="button" class="btn btn-sm btn-outline-secondary" data-copy="{{ request.scheme }}://{{ request.get_host }}{% url 'social:review' w.review_token %}"><i class="far fa-copy"></i> Copy review link</button>
+  </div>
+  {% endfor %}
+</div>
+{% endif %}
+
+<h2 class="sh-h2">Waiting for approval <span>{{ review|length }}</span></h2>
+{% for p in review %}{% include 'social/_post_card.html' with show_date=1 %}{% empty %}<div class="empty-state sh-empty"><p>Nothing is waiting for approval.</p></div>{% endfor %}
+
+<h2 class="sh-h2">Changes requested <span>{{ changes|length }}</span></h2>
+{% for p in changes %}{% include 'social/_post_card.html' with show_date=1 %}{% empty %}<div class="empty-state sh-empty"><p>No posts were sent back.</p></div>{% endfor %}
+
+<h2 class="sh-h2">Approved, going out in the next 7 days <span>{{ upcoming|length }}</span></h2>
+{% for p in upcoming %}{% include 'social/_post_card.html' with show_date=1 %}{% empty %}<div class="empty-state sh-empty"><p>Nothing scheduled for the next week.</p></div>{% endfor %}
+{% endblock %}

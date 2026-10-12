@@ -1,0 +1,16 @@
+{% extends 'social/_hub.html' %}
+{% block hub_title %}Activity{% endblock %}
+{% block page_heading %}Activity log{% endblock %}
+{% block hub %}
+<div class="sh-seg sh-seg-lg"><a href="?via=" class="{% if not via %}on{% endif %}">Everything</a><a href="?via=web" class="{% if via == 'web' %}on{% endif %}">Team</a><a href="?via=mcp" class="{% if via == 'mcp' %}on{% endif %}">Claude</a><a href="?via=link" class="{% if via == 'link' %}on{% endif %}">Client reviewers</a><a href="?via=worker" class="{% if via == 'worker' %}on{% endif %}">Publisher</a></div>
+<div class="card sh-log">
+  {% for l in logs %}
+  <div class="sh-logrow">
+    <time>{{ l.created_at|date:'d M, g:i A' }}</time>
+    <span class="sh-via v-{{ l.via }}">{% if l.via == 'mcp' %}<i class="fas fa-wand-magic-sparkles"></i> Claude{% elif l.via == 'link' %}<i class="fas fa-link"></i> Review link{% elif l.via == 'worker' %}<i class="fas fa-gears"></i> Publisher{% else %}<i class="fas fa-user"></i> Web{% endif %}</span>
+    <div><b>{{ l.actor|default:'System' }}</b> {{ l.label }} <span class="sh-muted">· {{ l.workspace.name|default:'' }}</span><div class="sh-logsum">{{ l.summary }}</div></div>
+  </div>
+  {% empty %}<p class="sh-muted">Nothing has happened yet.</p>{% endfor %}
+</div>
+{% if logs.has_other_pages %}<div class="sh-pager">{% if logs.has_previous %}<a class="btn btn-sm btn-outline-secondary" href="?via={{ via }}&page={{ logs.previous_page_number }}">Newer</a>{% endif %}{% if logs.has_next %}<a class="btn btn-sm btn-outline-secondary" href="?via={{ via }}&page={{ logs.next_page_number }}">Older</a>{% endif %}</div>{% endif %}
+{% endblock %}
