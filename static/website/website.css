@@ -122,6 +122,18 @@ main, .nav, .foot { position: relative; z-index: 1; }
 .shots img.on { opacity: 1; transform: none; }
 .social-art .phone.small { width: 150px; right: -18px; bottom: -50px; }
 
+/* promo video */
+.social { grid-template-columns: minmax(0, .95fr) auto; }
+.social-art { grid-column: 1 / -1; }
+.social-video { display: flex; flex-direction: column; align-items: center; gap: 14px; }
+.vphone { position: relative; width: 300px; aspect-ratio: 9 / 16; padding: 9px; border-radius: 42px; background: #0B0618; border: 2px solid var(--stroke2); box-shadow: 0 40px 90px -26px rgba(255,46,136,.65), 0 0 0 8px rgba(255,255,255,.04); }
+.vphone video { width: 100%; height: 100%; object-fit: cover; border-radius: 33px; display: block; background: #170C35; }
+.vsound { position: absolute; left: 50%; top: 24px; transform: translateX(-50%); display: inline-flex; align-items: center; gap: 8px; height: 40px; padding: 0 16px; border: 0; border-radius: 999px; background: rgba(15,8,36,.72); backdrop-filter: blur(10px); color: #fff; font: 800 13px var(--body); cursor: pointer; white-space: nowrap; transition: opacity .3s; }
+.vsound.on { opacity: .55; }
+.vsound.on:hover { opacity: 1; }
+.vcap { margin: 0; font-size: 14px; font-weight: 700; color: var(--muted); }
+.vcap i { color: var(--pink); margin-right: 6px; }
+
 /* products */
 .products { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px; }
 .prod { position: relative; overflow: hidden; padding: 26px; transition: transform .45s var(--spring), border-color .3s; }
@@ -247,6 +259,7 @@ a.wcard:hover .wshot img { transform: scale(1.04); }
 
 @media (max-width: 1020px) {
   .hero, .social, .demo { grid-template-columns: minmax(0, 1fr); }
+  .social-video { order: -1; }
   .hero { padding-top: 50px; gap: 70px; }
   .hero-art { min-height: 0; margin-right: 10px; }
   .services, .products { grid-template-columns: repeat(2, minmax(0, 1fr)); }
@@ -281,6 +294,7 @@ a.wcard:hover .wshot img { transform: scale(1.04); }
   .form { padding: 20px; }
   .acad-card { padding: 26px; }
   .social-art .phone.small { width: 104px; right: -10px; bottom: -40px; }
+  .vphone { width: min(280px, 78vw); }
   .tabs button { padding: 0 10px; font-size: 12px; }
 }
 @media (prefers-reduced-motion: reduce) {

@@ -96,3 +96,19 @@ class LandingTests(TestCase):
         r = self.client.get('/')
         self.assertNotContains(r, 'javascript:alert')
         self.assertContains(r, 'href="https://ralfiz.com/projects/evil/"')
+
+    def test_promo_video_supports_range_requests(self, _get):
+        url = reverse('site_video', args=['ralfiz-social-promo.mp4'])
+        self.assertContains(self.client.get('/'), url)
+        r = self.client.get(url, HTTP_RANGE='bytes=0-1023')
+        self.assertEqual(r.status_code, 206)
+        self.assertEqual(len(r.content), 1024)
+        self.assertTrue(r['Content-Range'].startswith('bytes 0-1023/'))
+        self.assertEqual(r['Content-Type'], 'video/mp4')
+        full = self.client.get(url)
+        self.assertEqual(full.status_code, 200)
+        self.assertEqual(full['Accept-Ranges'], 'bytes')
+        self.assertEqual(self.client.get(url, HTTP_RANGE='bytes=999999999-').status_code, 416)
+        for bad in ('/v/site/../../config/settings.py', '/v/site/..%2F..%2Fconfig%2Fsettings.py',
+                    '/v/site/nope.mp4', '/v/site/ralfiz-social-promo.jpg'):
+            self.assertEqual(self.client.get(bad).status_code, 404, bad)

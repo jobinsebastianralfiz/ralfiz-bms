@@ -235,3 +235,48 @@ def _notify_owners(lead, interest):
                                    {'type': 'lead', 'lead_id': str(lead.pk)})
     except Exception:
         log.exception('demo request push failed')
+
+
+VIDEO_DIR = 'website/video'
+RANGE_RE = re.compile(r'bytes=(\d*)-(\d*)$')
+
+
+def video(request, name):
+    """Serve a landing-page video with HTTP Range support.
+
+    Safari and iOS only play <video> from servers that answer Range requests
+    with 206; whitenoise answers 200 with the whole file, so the clip would
+    never start on an iPhone. Only files that exist in static/website/video/
+    can be served (the name is matched against the folder listing).
+    """
+    import os
+    from django.conf import settings
+    from django.contrib.staticfiles import finders
+    from django.http import FileResponse, Http404, HttpResponse
+    folder = finders.find(VIDEO_DIR) or os.path.join(settings.STATIC_ROOT, VIDEO_DIR)
+    if not folder or name not in os.listdir(folder) or not name.endswith('.mp4'):
+        raise Http404
+    path = os.path.join(folder, name)
+    size = os.path.getsize(path)
+    m = RANGE_RE.match(request.headers.get('Range', '').strip())
+    if m and (m.group(1) or m.group(2)):
+        if m.group(1):
+            start = int(m.group(1))
+            end = min(int(m.group(2)) if m.group(2) else size - 1, size - 1)
+        else:  # suffix range: the last N bytes
+            start, end = max(0, size - int(m.group(2))), size - 1
+        if start > end or start >= size:
+            resp = HttpResponse(status=416)
+            resp['Content-Range'] = f'bytes */{size}'
+            return resp
+        with open(path, 'rb') as fh:
+            fh.seek(start)
+            body = fh.read(end - start + 1)
+        resp = HttpResponse(body, status=206, content_type='video/mp4')
+        resp['Content-Range'] = f'bytes {start}-{end}/{size}'
+    else:
+        resp = FileResponse(open(path, 'rb'), content_type='video/mp4')
+    resp['Accept-Ranges'] = 'bytes'
+    resp['Cache-Control'] = 'public, max-age=604800'
+    resp['X-Content-Type-Options'] = 'nosniff'
+    return resp

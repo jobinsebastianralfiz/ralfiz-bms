@@ -15,7 +15,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700;12..96,800&family=Figtree:wght@400;500;600;700;800&display=swap">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-<link rel="stylesheet" href="{% static 'website/website.css' %}?v=4">
+<link rel="stylesheet" href="{% static 'website/website.css' %}?v=6">
 </head>
 <body class="lp">
 <div class="mesh" aria-hidden="true"><i class="b b1"></i><i class="b b2"></i><i class="b b3"></i><i class="b b4"></i><i class="grain"></i></div>
@@ -174,6 +174,14 @@
       </div>
       <a class="btn grad lg" href="#demo" data-interest="ralfiz_social">See Ralfiz Social live <i class="fas fa-arrow-right"></i></a>
     </div>
+    <div class="social-video reveal">
+      <div class="vphone">
+        <video id="promoVideo" src="{% url 'site_video' 'ralfiz-social-promo.mp4' %}" poster="{% static 'website/video/ralfiz-social-promo.jpg' %}"
+               muted loop playsinline preload="metadata" aria-label="Ralfiz Social in 45 seconds"></video>
+        <button class="vsound" type="button" id="promoSound" aria-label="Turn sound on"><i class="fas fa-volume-xmark"></i> <span>Tap for sound</span></button>
+      </div>
+      <p class="vcap"><i class="fas fa-play"></i> Ralfiz Social in 45 seconds</p>
+    </div>
     <div class="social-art reveal" aria-hidden="true">
       <div class="tabs" role="presentation"><button class="on" data-shot="0">Compose</button><button data-shot="1">Calendar</button><button data-shot="2">Inbox</button><button data-shot="3">Posts</button><button data-shot="4">Analytics</button></div>
       <div class="browser"><div class="bar"><i></i><i></i><i></i><span>ralfizdigital.in/social</span></div>
@@ -295,6 +303,6 @@
   </div>
 </footer>
 <a class="wa-float" href="https://wa.me/{{ whatsapp }}" target="_blank" rel="noopener" aria-label="Chat on WhatsApp"><i class="fab fa-whatsapp"></i></a>
-<script src="{% static 'website/website.js' %}?v=1"></script>
+<script src="{% static 'website/website.js' %}?v=2"></script>
 </body>
 </html>

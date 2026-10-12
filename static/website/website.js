@@ -36,6 +36,30 @@
     timer = setInterval(function () { cur = (cur + 1) % shots.length; show(cur); }, 3500);
   }
 
+  // Promo video: plays muted while on screen (saves data), tap for sound.
+  var vid = document.getElementById('promoVideo'), snd = document.getElementById('promoSound');
+  if (vid) {
+    var reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if ('IntersectionObserver' in window && !reduce) {
+      new IntersectionObserver(function (es) {
+        es.forEach(function (e) { if (e.isIntersecting) { var p = vid.play(); if (p && p.catch) p.catch(function () {}); } else vid.pause(); });
+      }, { threshold: 0.35 }).observe(vid);
+    }
+    var setSound = function (on) {
+      vid.muted = !on;
+      snd.classList.toggle('on', on);
+      snd.innerHTML = on ? '<i class="fas fa-volume-high"></i> <span>Sound on</span>' : '<i class="fas fa-volume-xmark"></i> <span>Tap for sound</span>';
+      snd.setAttribute('aria-label', on ? 'Turn sound off' : 'Turn sound on');
+    };
+    snd.addEventListener('click', function () {
+      var on = vid.muted;
+      if (on) { vid.currentTime = 0; }
+      setSound(on);
+      var p = vid.play(); if (p && p.catch) p.catch(function () {});
+    });
+    vid.addEventListener('click', function () { snd.click(); });
+  }
+
   // "Book a demo" links preselect the product in the form.
   var select = document.getElementById('interest');
   document.addEventListener('click', function (e) {
