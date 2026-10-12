@@ -342,6 +342,15 @@ class ViewTests(HubTestCase):
         self.assertEqual(self.client.get(url.replace('https://hub.test', '')).status_code, 200)
         self.assertEqual(self.client.get(reverse('social:media_file', args=['forged'])).status_code, 404)
 
+    def test_worker_reads_media_over_http_without_the_volume(self):
+        asset = self.media(self.cafe)
+        asset.file.storage.delete(asset.file.name)  # as on the worker: no volume
+        fake = mock.Mock(raw=mock.Mock(read=lambda: b'bytes'))
+        with mock.patch('requests.get', return_value=fake) as get:
+            fh = S.media_input(asset).open()
+        self.assertEqual(fh.read(), b'bytes')
+        self.assertIn('/social/m/', get.call_args[0][0])
+
     def test_report_pdf(self):
         S.sync_insights(self.fb, days=10)
         r = self.client.get(reverse('social:report_pdf', args=[self.cafe.pk, timezone.localdate().strftime('%Y-%m')]))

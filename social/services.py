@@ -105,7 +105,23 @@ def media_input(asset):
     return MediaInput(kind=asset.kind, url=signed_media_url(asset),
                       content_type=asset.content_type or 'application/octet-stream',
                       size=asset.size, name=asset.name or os.path.basename(asset.file.name),
-                      open=lambda: asset.file.open('rb'))
+                      open=lambda: _open_media(asset))
+
+
+def _open_media(asset):
+    """The file's bytes. On Railway the media volume is mounted on the web
+    service only, so the worker falls back to fetching its own signed URL."""
+    if asset.file.storage.exists(asset.file.name):
+        return asset.file.open('rb')
+    import requests
+    try:
+        r = requests.get(signed_media_url(asset), stream=True, timeout=120)
+        r.raise_for_status()
+    except requests.RequestException as exc:
+        raise AdapterError(f'Could not read {asset.name or "the media file"}: {exc.__class__.__name__}',
+                           retryable=True)
+    r.raw.decode_content = True
+    return r.raw
 
 
 def _kind_for(content_type, name):
