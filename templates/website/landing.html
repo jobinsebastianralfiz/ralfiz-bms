@@ -23,10 +23,10 @@
 <header class="nav" id="top">
   <a class="brand" href="#top" aria-label="Ralfiz Technologies home"><img src="{% static 'website/img/rt-mark.png' %}" alt="" width="46" height="30"><span>Ralfiz<b>Technologies</b></span></a>
   <nav class="links" id="navLinks" aria-label="Main">
-    <a href="#services">Services</a><a href="#social">Ralfiz Social</a><a href="#products">Products</a><a href="#academy">Academy</a><a href="#process">How we work</a><a class="m-only" href="{% url 'login' %}"><i class="fas fa-lock"></i> Staff login</a>
+    <a href="#services">Services</a><a href="#social">Ralfiz Social</a><a href="#products">Products</a><a href="#academy">Academy</a><a href="#process">How we work</a><a class="m-only" href="{% url 'academy:login' %}"><i class="fas fa-graduation-cap"></i> Student login</a>
   </nav>
   <div class="nav-cta">
-    <a class="btn ghost" href="{% url 'login' %}"><i class="fas fa-lock"></i> Login</a>
+    <a class="btn ghost" href="{% url 'academy:login' %}"><i class="fas fa-graduation-cap"></i> Student login</a>
     <a class="btn grad" href="#demo">Book a free demo</a>
     <button class="burger" type="button" aria-label="Menu" aria-expanded="false" aria-controls="navLinks"><i class="fas fa-bars"></i></button>
   </div>
@@ -207,7 +207,7 @@
 <footer class="foot">
   <div class="wrap foot-in">
     <div><a class="brand" href="#top"><img src="{% static 'website/img/rt-mark.png' %}" alt="" width="46" height="30"><span>Ralfiz<b>Technologies</b></span></a><p class="tag">{{ company.tagline|default:'Rise to Next Level' }}</p></div>
-    <nav aria-label="Footer"><a href="#services">Services</a><a href="#social">Ralfiz Social</a><a href="#products">Products</a><a href="/academy/">Academy</a><a href="#demo">Contact</a><a href="{% url 'login' %}">Staff login</a></nav>
+    <nav aria-label="Footer"><a href="#services">Services</a><a href="#social">Ralfiz Social</a><a href="#products">Products</a><a href="/academy/">Academy</a><a href="#demo">Contact</a><a href="{% url 'academy:login' %}">Student login</a></nav>
     <p class="legal">© {% now 'Y' %} {{ company.company_name|default:'Ralfiz Technologies' }} · Perinthalmanna, Kerala{% if company.gst_number %} · GSTIN {{ company.gst_number }}{% endif %}</p>
   </div>
 </footer>

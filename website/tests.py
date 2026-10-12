@@ -16,6 +16,8 @@ class LandingTests(TestCase):
         self.assertTemplateUsed(r, 'website/landing.html')
         self.assertContains(r, 'Book a free demo')
         self.assertContains(r, 'Ralfiz Social')
+        self.assertContains(r, 'href="/academy/login/"')
+        self.assertNotContains(r, 'href="/login/"')  # the admin sign-in is not advertised
 
     def test_staff_still_get_the_dashboard(self):
         self.client.force_login(User.objects.create_superuser('boss', 'b@x.com', 'pw'))
