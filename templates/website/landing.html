@@ -15,7 +15,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700;12..96,800&family=Figtree:wght@400;500;600;700;800&display=swap">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-<link rel="stylesheet" href="{% static 'website/website.css' %}?v=2">
+<link rel="stylesheet" href="{% static 'website/website.css' %}?v=3">
 </head>
 <body class="lp">
 <div class="mesh" aria-hidden="true"><i class="b b1"></i><i class="b b2"></i><i class="b b3"></i><i class="b b4"></i><i class="grain"></i></div>
@@ -23,7 +23,7 @@
 <header class="nav" id="top">
   <a class="brand" href="#top" aria-label="Ralfiz Technologies home"><img src="{% static 'website/img/rt-mark.png' %}" alt="" width="46" height="30"><span>Ralfiz<b>Technologies</b></span></a>
   <nav class="links" id="navLinks" aria-label="Main">
-    <a href="#services">Services</a><a href="#social">Ralfiz Social</a><a href="#products">Products</a><a href="#academy">Academy</a><a href="#process">How we work</a><a class="m-only" href="{% url 'staff:login' %}"><i class="fas fa-id-badge"></i> Employee login</a>
+    <a href="#services">Services</a><a href="#pricing">Pricing</a><a href="#work">Our work</a><a href="#social">Ralfiz Social</a><a href="#products">Products</a><a href="#academy">Academy</a><a class="m-only" href="{% url 'staff:login' %}"><i class="fas fa-id-badge"></i> Employee login</a>
   </nav>
   <div class="nav-cta">
     <a class="btn ghost" href="{% url 'staff:login' %}"><i class="fas fa-id-badge"></i> Employee login</a>
@@ -45,7 +45,7 @@
       </div>
       <div class="stats">
         <div><b>{{ clients_label }}</b><span>clients served</span></div>
-        <div><b>7</b><span>social platforms, one hub</span></div>
+        <div><b>{{ portfolio|length }}+</b><span>projects live</span></div>
         <div><b>9</b><span>Academy courses</span></div>
       </div>
     </div>
@@ -65,12 +65,93 @@
       <p>Pick one service or let us handle the whole journey. Either way, you get one team that knows your business.</p>
     </div>
     <div class="services">
-      <article class="card reveal"><i class="ic fas fa-globe"></i><h3>Websites &amp; web apps</h3><p>Business websites, customer portals and web applications that load fast, rank well and grow with you.</p><a href="#demo" data-interest="website">Talk to us <i class="fas fa-arrow-right"></i></a></article>
+      <article class="card reveal"><i class="ic fas fa-globe"></i><h3>Business websites</h3><p>Fast, fully manageable Next.js websites with your own admin dashboard, Arabic RTL and GCC-ready compliance. From ₹25,000.</p><a href="#pricing">See packages <i class="fas fa-arrow-right"></i></a></article>
       <article class="card reveal"><i class="ic fas fa-mobile-screen"></i><h3>Mobile apps</h3><p>Android and iOS apps built in Flutter from a single codebase, so you launch on both stores sooner.</p><a href="#demo" data-interest="mobile_app">Talk to us <i class="fas fa-arrow-right"></i></a></article>
-      <article class="card reveal"><i class="ic fas fa-cubes"></i><h3>Custom business software</h3><p>CRM, billing, inventory and management systems shaped around how your team actually works.</p><a href="#demo" data-interest="custom_software">Talk to us <i class="fas fa-arrow-right"></i></a></article>
+      <article class="card reveal"><i class="ic fas fa-cubes"></i><h3>Custom web applications</h3><p>ERPs, CRMs, portals, booking systems and SaaS platforms, built around your workflow. From ₹1,50,000.</p><a href="#pricing" data-interest="web_app">Talk to us <i class="fas fa-arrow-right"></i></a></article>
       <article class="card reveal"><i class="ic fas fa-bullhorn"></i><h3>Digital marketing &amp; social media</h3><p>Content, posting, replies and monthly reports across every platform, run by our team on Ralfiz Social.</p><a href="#demo" data-interest="marketing">Talk to us <i class="fas fa-arrow-right"></i></a></article>
-      <article class="card reveal"><i class="ic fas fa-shield-halved"></i><h3>AMC &amp; support</h3><p>Hosting, updates, backups and fixes under a clear annual maintenance contract, so your systems keep running.</p><a href="#demo" data-interest="custom_software">Talk to us <i class="fas fa-arrow-right"></i></a></article>
+      <article class="card reveal"><i class="ic fas fa-shield-halved"></i><h3>Hosting, AMC &amp; support</h3><p>Domain, hosting, backups, security patches and content updates under a clear yearly plan. AMC from ₹6,000/yr.</p><a href="#demo" data-interest="custom_software">Talk to us <i class="fas fa-arrow-right"></i></a></article>
       <article class="card accent reveal"><h3>Not sure where to start?</h3><p>Tell us what is slowing your business down. We will suggest the simplest thing that fixes it, even if that is not software.</p><a class="btn white" href="#demo">Get free advice</a></article>
+    </div>
+  </section>
+
+
+  <!-- PRICING -->
+  <section class="wrap sec" id="pricing">
+    <div class="sec-head reveal">
+      <span class="kicker">Website packages 2026</span>
+      <h2>Pick the plan that fits <span class="g">your business.</span></h2>
+      <p>Every Ralfiz website is dynamic: add unlimited services, posts and gallery items yourself from the admin dashboard. Main pages are designed; content is unlimited.</p>
+    </div>
+    <div class="plans">
+      {% for p in packages %}
+      <article class="plan reveal {% if p.popular %}popular{% endif %}">
+        {% if p.popular %}<span class="badge-pop">Most popular</span>{% endif %}
+        <h3>{{ p.name }}</h3>
+        <p class="for">{{ p.for }}</p>
+        <div class="price"><small>{% if p.from %}Starting from{% else %}One-time{% endif %}</small><b>₹{{ p.price }}</b></div>
+        <div class="meta"><span><b>{{ p.pages }}</b> main pages</span><span><b>{{ p.langs }}</b> language{% if p.langs != '1' %}s{% endif %}</span></div>
+        <ul>{% for f in p.features %}<li><i class="fas fa-check"></i>{{ f }}</li>{% endfor %}</ul>
+        <div class="plan-foot"><span><i class="far fa-clock"></i> {{ p.days }}</span><span>{{ p.support }}</span></div>
+        <a class="btn {% if p.popular %}grad{% else %}glass{% endif %} full" href="#demo" data-interest="pkg_{{ p.name|lower }}">Choose {{ p.name }}</a>
+      </article>
+      {% endfor %}
+    </div>
+    <p class="price-note reveal"><i class="fas fa-circle-info"></i> Prices exclude 18% GST, domain, hosting and AMC. Extra designed pages ₹2,500 each. Privacy policy, terms, cookie policy, 404 and sitemap free on every plan.</p>
+
+    <div class="sub-head reveal"><span class="kicker">Custom web application development</span><h3 class="h3big">Software built around <span class="g">your workflow.</span></h3></div>
+    <div class="apps">
+      {% for a in webapps %}
+      <article class="app reveal {% if a.featured %}featured{% endif %}">
+        <h3>{{ a.name }}</h3><p class="for">{{ a.for }}</p>
+        <div class="price"><small>Starting from</small><b>₹{{ a.price }}</b></div>
+        <span class="time"><i class="far fa-clock"></i> {{ a.time }}</span>
+        <ul>{% for f in a.features %}<li><i class="fas fa-check"></i>{{ f }}</li>{% endfor %}</ul>
+        <a class="btn {% if a.featured %}grad{% else %}glass{% endif %} full" href="#demo" data-interest="web_app">Discuss your project</a>
+      </article>
+      {% endfor %}
+    </div>
+
+    <div class="sub-head reveal"><span class="kicker">Annual maintenance</span><h3 class="h3big">Keep it fast, safe <span class="g">and up to date.</span></h3></div>
+    <div class="amcs">
+      {% for m in amc %}
+      <article class="amc reveal {% if m.featured %}featured{% endif %}">
+        <div class="amc-top"><h3>{{ m.name }}</h3><b>₹{{ m.price }}<small>/yr</small></b></div>
+        <p class="for">{{ m.note }}</p>
+        <ul>{% for f in m.features %}<li><i class="fas fa-check"></i>{{ f }}</li>{% endfor %}</ul>
+      </article>
+      {% endfor %}
+    </div>
+    <div class="extras reveal">
+      <span><i class="fas fa-globe"></i> .in domain ₹1,000/yr · .com ₹1,500/yr</span>
+      <span><i class="fas fa-server"></i> Hosting from ₹4,000/yr, SSL included</span>
+      <span><i class="fas fa-language"></i> Arabic RTL · Malayalam · Hindi</span>
+      <span><i class="fas fa-shield-halved"></i> KSA, UAE, Qatar, Bahrain, Oman PDPL &amp; India DPDP aligned</span>
+    </div>
+  </section>
+
+  <!-- PORTFOLIO -->
+  <section class="wrap sec" id="work">
+    <div class="sec-head reveal">
+      <span class="kicker">Our work</span>
+      <h2>Live and working for <span class="g">real businesses.</span></h2>
+      <p>Universities, conferences, agencies, pharma, travel and cafés across India, the UAE, the UK and Canada.</p>
+    </div>
+    <div class="work">
+      {% for w in portfolio %}
+      {% if w.url %}<a class="wcard reveal" href="{{ w.url }}" target="_blank" rel="noopener">{% else %}<div class="wcard reveal">{% endif %}
+        <div class="wshot">
+          {% if w.img %}<img src="{% static 'website/img/pf/'|add:w.img|add:'.jpg' %}" alt="{{ w.name }} website" loading="lazy" width="960" height="600">
+          {% else %}<div class="wtile" style="--c:{{ w.color }}"><i class="fas {{ w.icon }}"></i><span>{{ w.name }}</span></div>{% endif %}
+          {% if w.recent %}<span class="wnew">New</span>{% endif %}
+        </div>
+        <div class="wbody">
+          <span class="wtag">{{ w.tag }}</span>
+          <h3>{{ w.name }}</h3>
+          <p>{{ w.desc }}</p>
+          <span class="wlink">{% if w.url %}{{ w.url|cut:'https://'|truncatechars:34 }} <i class="fas fa-arrow-up-right-from-square"></i>{% else %}<i class="fas fa-lock"></i> Private business system{% endif %}</span>
+        </div>
+      {% if w.url %}</a>{% else %}</div>{% endif %}
+      {% endfor %}
     </div>
   </section>
 
@@ -207,7 +288,7 @@
 <footer class="foot">
   <div class="wrap foot-in">
     <div><a class="brand" href="#top"><img src="{% static 'website/img/rt-mark.png' %}" alt="" width="46" height="30"><span>Ralfiz<b>Technologies</b></span></a><p class="tag">{{ company.tagline|default:'Rise to Next Level' }}</p></div>
-    <nav aria-label="Footer"><a href="#services">Services</a><a href="#social">Ralfiz Social</a><a href="#products">Products</a><a href="/academy/">Academy</a><a href="#demo">Contact</a><a href="{% url 'staff:login' %}">Employee login</a></nav>
+    <nav aria-label="Footer"><a href="#services">Services</a><a href="#pricing">Pricing</a><a href="#work">Our work</a><a href="#social">Ralfiz Social</a><a href="#products">Products</a><a href="/academy/">Academy</a><a href="#demo">Contact</a><a href="{% url 'staff:login' %}">Employee login</a></nav>
     <p class="legal">© {% now 'Y' %} {{ company.company_name|default:'Ralfiz Technologies' }} · Perinthalmanna, Kerala{% if company.gst_number %} · GSTIN {{ company.gst_number }}{% endif %}</p>
   </div>
 </footer>

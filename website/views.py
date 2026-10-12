@@ -18,7 +18,12 @@ log = logging.getLogger(__name__)
 
 INTERESTS = [
     ('ralfiz_social', 'Ralfiz Social (social media hub)'),
-    ('website', 'Website or web app'),
+    ('website', 'Business website'),
+    ('pkg_starter', 'Website · Starter package'),
+    ('pkg_business', 'Website · Business package'),
+    ('pkg_professional', 'Website · Professional package'),
+    ('pkg_enterprise', 'Website · Enterprise package'),
+    ('web_app', 'Custom web application'),
     ('mobile_app', 'Mobile app'),
     ('custom_software', 'Custom business software'),
     ('marketing', 'Digital marketing & social media management'),
@@ -31,6 +36,78 @@ INTERESTS = [
     ('other', 'Something else'),
 ]
 WHATSAPP = '919895663498'
+
+# From Ralfiz_Portfolio (2026). img = screenshot in static/website/img/pf/; url None = login-only system.
+PORTFOLIO = [
+    {'name': 'Vistgrow', 'url': 'https://vistgrow.com', 'img': 'vistgrow-com', 'tag': 'Agency website',
+     'desc': 'Website for a Kerala digital marketing and branding agency.', 'recent': True},
+    {'name': 'Backbone India', 'url': 'https://backboneindia.com', 'img': 'backboneindia-com', 'tag': 'Corporate website',
+     'desc': 'E-commerce consultancy helping brands grow on India\'s major marketplaces.', 'recent': True},
+    {'name': 'Novrik Technologies', 'url': 'https://novriktech.com', 'img': 'novriktech-com', 'tag': 'Corporate website',
+     'desc': 'Corporate site for a Canadian software development company.', 'recent': True},
+    {'name': 'iRAD 2027', 'url': 'https://irad2027.org', 'img': 'irad2027-org', 'tag': 'Conference platform',
+     'desc': 'Registrations, payments and delegate logistics for an international conference.'},
+    {'name': 'CUSAT · ACARR', 'url': 'https://acarr.cusat.ac.in', 'img': 'acarr-cusat-ac-in', 'tag': 'University website',
+     'desc': 'Advanced Centre for Atmospheric Radar Research, Cochin University.'},
+    {'name': 'CUSAT · DPO', 'url': 'https://dpo.cusat.ac.in', 'img': 'dpo-cusat-ac-in', 'tag': 'University portal',
+     'desc': 'Official web portal for a Cochin University of Science and Technology office.'},
+    {'name': 'Lecule Pharma', 'url': 'https://leculepharma.com', 'img': 'leculepharma-com', 'tag': 'Corporate website',
+     'desc': 'Corporate website and product catalogue for a pharmaceutical company.'},
+    {'name': 'Sunnok', 'url': 'https://sunnok.in', 'img': 'sunnok-in', 'tag': 'Corporate website',
+     'desc': 'Brand website with automated CI/CD deployment.'},
+    {'name': 'ICFHR-TECH of India', 'url': 'https://icfhrtechofindia.com', 'img': 'icfhrtechofindia-com', 'tag': 'Education portal',
+     'desc': 'Educational support services for institutes, colleges and universities.'},
+    {'name': 'Maicafe', 'url': 'https://apps.apple.com/us/app/maicafe/id6770197831', 'img': '', 'tag': 'iOS & Android app',
+     'desc': 'Café ordering app with coupons and profiles, live on the App Store and Google Play, plus the brand website.',
+     'icon': 'fa-mug-hot', 'color': '#FF7A3D'},
+    {'name': 'Gateway Tours', 'url': 'https://gatewaytours.ae', 'img': '', 'tag': 'UAE · Travel website',
+     'desc': 'Website for a UAE travel and visa services company.', 'icon': 'fa-plane-departure', 'color': '#3D8BFF'},
+    {'name': 'Lyceum Academy', 'url': 'https://lyceumacademy.info', 'img': '', 'tag': 'Education website',
+     'desc': 'Website for an education and training academy.', 'icon': 'fa-book-open', 'color': '#9B4DFF'},
+    {'name': 'Zoco Toys ERP', 'url': None, 'img': '', 'tag': 'ERP system',
+     'desc': 'ERP for a toy distribution business: stock, orders and billing.', 'icon': 'fa-boxes-stacked', 'color': '#FF2E88'},
+    {'name': 'Logitech Express', 'url': None, 'img': '', 'tag': 'Business system',
+     'desc': 'Business management system for a logistics company.', 'icon': 'fa-truck-fast', 'color': '#3EF0A0'},
+]
+
+# From Ralfiz-Website-Packages-2026 (prices exclude 18% GST, domain, hosting and AMC).
+PACKAGES = [
+    {'name': 'Starter', 'for': 'Shops, freelancers, small service businesses', 'price': '25,000', 'pages': '5', 'langs': '1',
+     'days': '10–12 days', 'support': '1 month support',
+     'features': ['Unlimited services & gallery', 'Admin dashboard', 'Enquiry form + WhatsApp button',
+                  'Google Map & click-to-call', 'Basic on-page SEO', 'Cookie banner & legal pages', 'SSL setup']},
+    {'name': 'Business', 'for': 'Clinics, institutes, agencies, growing SMEs', 'price': '40,000', 'pages': '8', 'langs': '2',
+     'days': '15–20 days', 'support': '2 months support', 'popular': True,
+     'features': ['Everything in Starter', 'Unlimited blog, testimonials, FAQs', 'Accessibility toolbar',
+                  'Google Analytics & Business Profile', 'Speed optimisation', 'Enquiries saved to dashboard',
+                  '3 revision rounds']},
+    {'name': 'Professional', 'for': 'Established companies & GCC businesses', 'price': '65,000', 'pages': '12',
+     'langs': '2 incl. Arabic', 'days': '25–35 days', 'support': '3 months support',
+     'features': ['Everything in Business', 'Unlimited team, projects, careers, branches', 'KSA & GCC compliance pack',
+                  'WCAG 2.1 AA accessibility', 'Arabic RTL layout', 'Advanced SEO & schema', 'Premium animations']},
+    {'name': 'Enterprise', 'for': 'Portals, bookings, multi-branch, integrations', 'price': '1,00,000', 'from': True,
+     'pages': '∞', 'langs': '3+', 'days': 'As per scope', 'support': '3 months support',
+     'features': ['Everything in Professional', 'Custom modules: booking, catalogue, portal',
+                  'Payment, CRM, ERP & WhatsApp API', 'Multi-branch support', 'Dedicated project manager',
+                  'Scoped after a requirement call']},
+]
+WEBAPPS = [
+    {'name': 'Web App MVP', 'for': 'Booking system, lead tracker, internal tool', 'price': '1,50,000', 'time': '4–8 weeks',
+     'features': ['Login & user roles', 'Dashboard & reports', '3–5 core modules', 'Custom admin panel']},
+    {'name': 'Business Application', 'for': 'ERP, CRM, LMS, clinic or multi-branch management, customer portal',
+     'price': '3,00,000', 'time': '2–4 months', 'featured': True,
+     'features': ['6–12 modules', 'Role-based access', 'Advanced reports & exports', 'Payment, SMS & WhatsApp integrations']},
+    {'name': 'SaaS Platform', 'for': 'Multi-tenant subscription product, white-label platform', 'price': '6,00,000',
+     'time': '4–6 months', 'features': ['Tenant management', 'Subscriptions & billing', 'Super-admin console', 'Public APIs']},
+]
+AMC = [
+    {'name': 'Basic', 'price': '6,000', 'note': 'Recommended for Starter',
+     'features': ['2 hrs content updates / month', 'Monthly backup', 'Security patches', '48-hour response']},
+    {'name': 'Standard', 'price': '12,000', 'note': 'Recommended for Business', 'featured': True,
+     'features': ['5 hrs content updates / month', 'Weekly backup', 'Uptime monitoring', '24-hour response']},
+    {'name': 'Premium', 'price': '24,000', 'note': 'Professional & Enterprise',
+     'features': ['10 hrs content updates / month', 'Daily backup', 'Monthly SEO health report', 'Same-day response']},
+]
 PHONE_RE = re.compile(r'^\+?[\d\s\-()]{7,20}$')
 MAX_PER_HOUR = 5
 
@@ -50,7 +127,7 @@ def landing(request):
     return render(request, 'website/landing.html', {
         'company': company,
         'clients_label': f'{clients // 10 * 10}+' if clients >= 20 else str(clients),
-        'interests': INTERESTS,
+        'interests': INTERESTS, 'portfolio': PORTFOLIO, 'packages': PACKAGES, 'webapps': WEBAPPS, 'amc': AMC,
         'picked': request.GET.get('interest', ''),
         'whatsapp': WHATSAPP,
         'sent': request.GET.get('sent') == '1',
