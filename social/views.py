@@ -690,7 +690,12 @@ def media_file(request, token):
     asset = S.asset_from_token(token)
     if asset is None:
         raise Http404
-    return FileResponse(asset.file.open('rb'), content_type=asset.content_type or None)
+    ct = asset.content_type if asset.content_type in {*S.IMAGE_TYPES.values(), *S.VIDEO_TYPES.values()} \
+        else 'application/octet-stream'
+    resp = FileResponse(asset.file.open('rb'), content_type=ct)
+    resp['X-Content-Type-Options'] = 'nosniff'
+    resp['Content-Security-Policy'] = "default-src 'none'; sandbox"
+    return resp
 
 
 # ================================================================ accounts & connecting

@@ -254,6 +254,13 @@ PULSE_WEATHER_CITY = os.getenv('PULSE_WEATHER_CITY', 'Kochi,IN')
 # bearer tokens issued for https://.../mcp would fail the RFC 8707 audience check.
 if not DEBUG:
     SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+    # Railway already redirects http -> https at its edge; these keep cookies off
+    # plain http and tell browsers to stay on https. No includeSubDomains: other
+    # subdomains are not ours to promise.
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
+    SECURE_HSTS_SECONDS = int(os.getenv('SECURE_HSTS_SECONDS', str(30 * 24 * 3600)))
+    SECURE_REFERRER_POLICY = 'strict-origin-when-cross-origin'
 
 OAUTH2_PROVIDER = {
     'SCOPES': {
@@ -268,6 +275,8 @@ OAUTH2_PROVIDER = {
     'COMPLIANT_BCP_RFC9700_PKCE_METHOD': True,      # S256 only
     'COMPLIANT_BCP_RFC9700_IMPLICIT_GRANT': True,
     'COMPLIANT_BCP_RFC9700_PASSWORD_GRANT': True,
+    'COMPLIANT_BCP_RFC9700_ACCESS_TOKEN_TRANSPORT': True,   # bearer header only, never ?access_token=
+    'COMPLIANT_BCP_RFC9700_AUTHZ_RESPONSE_ISS': True,       # RFC 9207 iss on the redirect back
     'OAUTH2_RESPONSE_TYPES_SUPPORTED': ['code'],
     'OAUTH2_GRANT_TYPES_SUPPORTED': ['authorization_code', 'refresh_token'],
     'OAUTH2_TOKEN_ENDPOINT_AUTH_METHODS_SUPPORTED': ['none', 'client_secret_post', 'client_secret_basic'],

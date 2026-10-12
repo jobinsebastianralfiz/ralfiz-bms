@@ -124,13 +124,43 @@ def _open_media(asset):
     return r.raw
 
 
+# Only formats the platforms accept. SVG is deliberately excluded: served from our
+# domain it can carry script.
+IMAGE_TYPES = {'.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.png': 'image/png', '.webp': 'image/webp',
+               '.gif': 'image/gif'}
+VIDEO_TYPES = {'.mp4': 'video/mp4', '.mov': 'video/quicktime', '.m4v': 'video/x-m4v', '.webm': 'video/webm'}
+
+
 def _kind_for(content_type, name):
-    ct = content_type or mimetypes.guess_type(name)[0] or ''
-    if ct.startswith('image/'):
-        return 'image', ct
-    if ct.startswith('video/'):
-        return 'video', ct
-    raise SocialError('Only images and videos can be added.')
+    """(kind, content type) from the file extension; the browser's claim is not trusted."""
+    ext = os.path.splitext(name or '')[1].lower()
+    if ext in IMAGE_TYPES:
+        return 'image', IMAGE_TYPES[ext]
+    if ext in VIDEO_TYPES:
+        return 'video', VIDEO_TYPES[ext]
+    ct = (content_type or '').split(';')[0].strip().lower()
+    for kind, table in (('image', IMAGE_TYPES), ('video', VIDEO_TYPES)):
+        if ct in table.values():
+            return kind, ct
+    raise SocialError('Use a JPG, PNG, WebP or GIF image, or an MP4, MOV or WebM video.')
+
+
+def _check_public_url(url):
+    """Refuse URLs that point inside our own network (SSRF): only public http(s) hosts."""
+    import ipaddress
+    import socket
+    from urllib.parse import urlsplit
+    parts = urlsplit(url)
+    if parts.scheme not in ('http', 'https') or not parts.hostname:
+        raise SocialError('Give an http(s) link to the image or video.')
+    try:
+        infos = socket.getaddrinfo(parts.hostname, parts.port or (443 if parts.scheme == 'https' else 80))
+    except OSError:
+        raise SocialError('That link\'s address could not be found.')
+    for info in infos:
+        ip = ipaddress.ip_address(info[4][0])
+        if not ip.is_global or ip.is_multicast:
+            raise SocialError('That link points to a private address and cannot be used.')
 
 
 def save_media(user, workspace, uploaded, *, tags='', source='upload', via='web'):
@@ -140,19 +170,32 @@ def save_media(user, workspace, uploaded, *, tags='', source='upload', via='web'
     limit = MAX_VIDEO if kind == 'video' else MAX_IMAGE
     if uploaded.size > limit:
         raise SocialError(f'That {kind} is larger than {limit // (1024 * 1024)} MB.')
-    ext = os.path.splitext(uploaded.name)[1].lower()[:10]
     asset = MediaAsset(workspace=workspace, name=os.path.basename(uploaded.name)[:255], kind=kind,
                        content_type=ct, size=uploaded.size, tags=tags[:255], source=source,
                        uploaded_by=user if user and user.is_authenticated else None)
     # Random file names: the original name never appears in a URL.
-    asset.file.save(f'{uuid.uuid4().hex}{ext}', uploaded, save=False)
     if kind == 'image':
+        # The bytes must really be a raster image, whatever the name or type claims.
+        from PIL import Image
         try:
-            from PIL import Image
-            with asset.file.open('rb') as fh:
-                asset.width, asset.height = Image.open(fh).size
+            uploaded.seek(0)
+            img = Image.open(uploaded)
+            img.verify()
+            if img.format not in ('JPEG', 'PNG', 'WEBP', 'GIF', 'MPO'):
+                raise ValueError(img.format)
+            asset.width, asset.height = img.size
         except Exception:
-            pass
+            raise SocialError('That file is not a valid JPG, PNG, WebP or GIF image.')
+        uploaded.seek(0)
+    else:
+        head = uploaded.read(16)
+        uploaded.seek(0)
+        # MP4/MOV have 'ftyp' at byte 4; WebM starts with the EBML magic.
+        if head[4:8] != b'ftyp' and not head.startswith(b'\x1a\x45\xdf\xa3'):
+            raise SocialError('That file is not a valid MP4, MOV or WebM video.')
+    ext = {'image/jpeg': '.jpg', 'image/png': '.png', 'image/webp': '.webp', 'image/gif': '.gif',
+           'video/mp4': '.mp4', 'video/quicktime': '.mov', 'video/x-m4v': '.m4v', 'video/webm': '.webm'}[ct]
+    asset.file.save(f'{uuid.uuid4().hex}{ext}', uploaded, save=False)
     asset.save()
     audit(workspace, 'media.upload', asset.name, user=user, via=via)
     return asset
@@ -160,12 +203,21 @@ def save_media(user, workspace, uploaded, *, tags='', source='upload', via='web'
 
 def save_media_from_url(user, workspace, url, *, via='web'):
     import requests
-    if not url.lower().startswith(('https://', 'http://')):
-        raise SocialError('Give an http(s) link to the image or video.')
-    try:
-        r = requests.get(url, stream=True, timeout=30)
-    except requests.RequestException:
-        raise SocialError('Could not download that file.')
+    # Follow redirects by hand so every hop is checked, not just the first URL.
+    for _ in range(5):
+        _check_public_url(url)
+        try:
+            r = requests.get(url, stream=True, timeout=30, allow_redirects=False)
+        except requests.RequestException:
+            raise SocialError('Could not download that file.')
+        if r.is_redirect and r.headers.get('location'):
+            from urllib.parse import urljoin
+            url = urljoin(url, r.headers['location'])
+            r.close()
+            continue
+        break
+    else:
+        raise SocialError('That link redirects too many times.')
     if r.status_code != 200:
         raise SocialError(f'Downloading the file failed (HTTP {r.status_code}).')
     ct = r.headers.get('content-type', '').split(';')[0].strip()

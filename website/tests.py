@@ -82,3 +82,17 @@ class LandingTests(TestCase):
         get.return_value = feed_response(status=500)
         r = self.client.get('/')
         self.assertContains(r, 'iRAD 2027')                    # built-in list
+
+    def test_spoofed_forwarded_for_does_not_reset_the_limit(self, _get):
+        for i in range(7):
+            self.client.post(reverse('book_demo'), {'name': f'P{i}', 'phone': '9895000000'},
+                             HTTP_X_FORWARDED_FOR=f'1.2.3.{i}, 203.0.113.9')
+        self.assertEqual(Lead.objects.count(), 5)
+
+    def test_feed_links_must_be_http(self, get):
+        get.return_value = feed_response({'projects': [
+            {'title': 'Evil', 'summary': 's', 'image': 'javascript:alert(1)', 'url': 'javascript:alert(1)',
+             'detail': 'https://ralfiz.com/projects/evil/', 'categories': [], 'featured': False}]})
+        r = self.client.get('/')
+        self.assertNotContains(r, 'javascript:alert')
+        self.assertContains(r, 'href="https://ralfiz.com/projects/evil/"')

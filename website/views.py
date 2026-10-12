@@ -136,7 +136,7 @@ def portfolio():
             items.append({
                 'name': parts[0], 'tag': parts[1] if len(parts) > 1 else (cats[0] if cats else 'Project'),
                 'desc': (p.get('summary') or '')[:160].rsplit(' ', 1)[0] + ('…' if len(p.get('summary') or '') > 160 else ''),
-                'url': p.get('url') or p.get('detail'), 'image': p.get('image', ''),
+                'url': _http(p.get('url')) or _http(p.get('detail')), 'image': _http(p.get('image')),
                 'recent': bool(p.get('featured')), 'detail': p.get('detail', ''),
             })
         if not items:
@@ -171,9 +171,18 @@ def landing(request):
     })
 
 
+MAX_ALL_PER_HOUR = 60   # all visitors together: a flood cannot fill the CRM
+
+
 def _client_ip(request):
-    fwd = request.META.get('HTTP_X_FORWARDED_FOR', '')
-    return (fwd.split(',')[0].strip() if fwd else request.META.get('REMOTE_ADDR', '')) or 'unknown'
+    """The address Railway's proxy saw. It appends the real client to X-Forwarded-For,
+    so the LAST entry is trustworthy; earlier entries are whatever the sender typed."""
+    fwd = [p.strip() for p in request.META.get('HTTP_X_FORWARDED_FOR', '').split(',') if p.strip()]
+    return (fwd[-1] if fwd else request.META.get('REMOTE_ADDR', '')) or 'unknown'
+
+
+def _http(url):
+    return url if isinstance(url, str) and url.lower().startswith(('https://', 'http://')) else ''
 
 
 @require_POST
@@ -194,11 +203,12 @@ def book_demo(request):
         messages.error(request, 'Please give your name and a phone number we can call.')
         return redirect(back)
     key = f'demo-requests:{_client_ip(request)}'
-    count = cache.get(key, 0)
-    if count >= MAX_PER_HOUR:
+    count, total = cache.get(key, 0), cache.get('demo-requests:all', 0)
+    if count >= MAX_PER_HOUR or total >= MAX_ALL_PER_HOUR:
         messages.error(request, 'We already have your request. We will call you soon.')
         return redirect(back)
     cache.set(key, count + 1, 3600)
+    cache.set('demo-requests:all', total + 1, 3600)
 
     message = f.get('message', '').strip()[:2000]
     notes = f'Website demo request: {labels[interest]}'

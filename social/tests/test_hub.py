@@ -17,9 +17,15 @@ from social.adapters.base import AdapterError, AuthError, FetchedItem, RateLimit
 from social.models import (Approval, AuditLog, InboxItem, InboxReply, Membership, MetricDaily, Post,
                            PostMetric, PostTarget, SocialAccount, Workspace)
 
-PNG = (b'\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR\x00\x00\x00\x01\x00\x00\x00\x01\x08\x06\x00\x00\x00\x1f'
-       b'\x15\xc4\x89\x00\x00\x00\rIDATx\x9cc\xf8\xff\xff?\x00\x05\xfe\x02\xfe\xa7\x8d\xc6\x1b\x00\x00'
-       b'\x00\x00IEND\xaeB`\x82')
+def _png():
+    import io
+    from PIL import Image
+    buf = io.BytesIO()
+    Image.new('RGB', (4, 4), (255, 46, 136)).save(buf, 'PNG')
+    return buf.getvalue()
+
+
+PNG = _png()
 
 
 @override_settings(SOCIAL_FAKE_ADAPTERS='true', SOCIAL_PUBLIC_BASE_URL='https://hub.test',
@@ -478,3 +484,60 @@ class ImportedPostsTests(HubTestCase):
         post = Post.objects.filter(source='import').first()
         with self.assertRaises(S.SocialError):
             S.reschedule(self.owner, post, self.soon())
+
+
+class SecurityTests(HubTestCase):
+    def test_svg_and_odd_types_are_refused(self):
+        svg = SimpleUploadedFile('x.svg', b'<svg onload="alert(1)"/>', content_type='image/svg+xml')
+        with self.assertRaises(S.SocialError):
+            S.save_media(self.owner, self.cafe, svg)
+        html = SimpleUploadedFile('x.html', b'<script>1</script>', content_type='image/png')
+        with self.assertRaises(S.SocialError):
+            S.save_media(self.owner, self.cafe, html)
+
+    def test_media_from_private_addresses_is_refused(self):
+        for url in ('http://127.0.0.1/x.png', 'http://169.254.169.254/latest/meta-data', 'http://10.0.0.5/a.jpg',
+                    'file:///etc/passwd', 'http://localhost:8000/x.png'):
+            with self.assertRaises(S.SocialError, msg=url):
+                S.save_media_from_url(self.owner, self.cafe, url)
+
+    def test_redirect_to_a_private_address_is_refused(self):
+        hop = mock.Mock(is_redirect=True, headers={'location': 'http://127.0.0.1/secret'})
+        with mock.patch('socket.getaddrinfo', side_effect=[[(2, 1, 6, '', ('93.184.216.34', 80))],
+                                                           [(2, 1, 6, '', ('127.0.0.1', 80))]]), \
+                mock.patch('requests.get', return_value=hop):
+            with self.assertRaisesMessage(S.SocialError, 'private address'):
+                S.save_media_from_url(self.owner, self.cafe, 'http://example.com/a.png')
+
+    def test_signed_media_is_served_sandboxed(self):
+        asset = self.media(self.cafe)
+        r = self.client.get(S.signed_media_url(asset).replace('https://hub.test', ''))
+        self.assertEqual(r['Content-Type'], 'image/png')
+        self.assertIn('sandbox', r['Content-Security-Policy'])
+
+    def test_editor_cannot_reach_another_clients_things(self):
+        """The editor belongs to Demo Cafe only; everything of Ralfiz must be refused."""
+        post = S.save_post(self.owner, self.ralfiz, account_ids=[self.li.pk], text='private', scheduled_at=self.soon())
+        item = InboxItem.objects.create(account=self.li, kind='comment', external_id='z', text='secret comment')
+        asset = self.media(self.ralfiz)
+        self.client.force_login(self.editor)
+        checks = [
+            ('get', reverse('social:post_edit', args=[post.pk]), {}),
+            ('post', reverse('social:post_action', args=[post.pk]), {'action': 'delete'}),
+            ('post', reverse('social:post_move', args=[post.pk]), {'date': '2030-01-01'}),
+            ('post', reverse('social:inbox_action', args=[item.pk]), {'action': 'send', 'text': 'hi'}),
+            ('post', reverse('social:media_delete', args=[asset.pk]), {}),
+            ('post', reverse('social:account_action', args=[self.li.pk]), {'action': 'disconnect'}),
+            ('get', reverse('social:report_pdf', args=[self.ralfiz.pk, '2026-10']), {}),
+            ('get', reverse('social:connect', args=['facebook']) + f'?ws={self.ralfiz.pk}', {}),
+        ]
+        for method, url, data in checks:
+            r = getattr(self.client, method)(url, data)
+            self.assertEqual(r.status_code, 403, url)
+        self.assertTrue(Post.objects.filter(pk=post.pk).exists())
+        self.assertFalse(item.replies.exists())
+        for page in ('calendar', 'inbox', 'posts', 'media', 'activity', 'analytics'):
+            r = self.client.get(reverse(f'social:{page}') + '?ws=all')
+            self.assertNotContains(r, 'secret comment')
+            self.assertNotContains(r, 'Ralfiz LI')
+        self.assertEqual(self.client.get(reverse('social:workspaces')).status_code, 403)
