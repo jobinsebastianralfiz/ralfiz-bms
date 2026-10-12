@@ -100,6 +100,19 @@ class FetchedItem:
     raw: dict = field(default_factory=dict)
 
 
+@dataclass
+class FetchedPost:
+    """A post already on the account (made in the platform's own app or by us)."""
+    external_id: str
+    text: str = ''
+    published_at: Optional[datetime] = None
+    url: str = ''
+    kind: str = 'post'              # post, reel, video, carousel, story
+    thumbnail_url: str = ''
+    title: str = ''
+    metrics: dict = field(default_factory=dict)   # likes, comments, shares, views, engagement
+
+
 # ---------------------------------------------------------------- adapter
 
 class Adapter:
@@ -175,6 +188,10 @@ class Adapter:
 
     def fetch_post_metrics(self, account, external_id):
         return {}
+
+    def fetch_posts(self, account, since=None, limit=50):
+        """Recent posts on the account, newest first, stopping at ``since``."""
+        return []
 
     def quota_status(self, account, published_last_24h):
         """(used, limit) for platforms that cap posts, else None."""

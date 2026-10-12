@@ -46,7 +46,8 @@
     {% for m in data.top_posts %}
     {% with post=m.target.post %}
     <div class="tp">
-      {% with media=post.ordered_media|first %}{% if media and media.kind == 'image' %}<img src="{{ media.file.url }}" alt="" loading="lazy">{% else %}<span class="art" style="--a:{{ post.workspace.color }}"></span>{% endif %}{% endwith %}
+      <span class="art" style="--a:{{ post.workspace.color }}"></span>
+      {% with media=post.ordered_media|first %}{% if media and media.kind == 'image' %}<img src="{{ media.file.url }}" alt="" loading="lazy">{% elif m.target.thumbnail_url %}<img src="{{ m.target.thumbnail_url }}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove()">{% endif %}{% endwith %}
       <div class="ov"><span class="rk">#{{ forloop.counter }}</span><div><b>{{ post.base_text|default:post.title|truncatechars:60 }}</b><div class="m">{% picon m.target.account.platform %} {{ m.value|intcomma }} eng. · {{ m.target.published_at|date:'d M' }}</div></div></div>
     </div>
     {% endwith %}

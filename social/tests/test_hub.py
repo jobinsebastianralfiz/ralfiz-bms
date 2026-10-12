@@ -433,3 +433,48 @@ class McpToolTests(HubTestCase):
         r = self.client.get(path)
         self.assertEqual(r.status_code, 200)
         self.assertTrue(r.content.startswith(b'%PDF'))
+
+
+class ImportedPostsTests(HubTestCase):
+    def test_import_creates_published_posts_once_and_updates_counts(self):
+        ig = self.ig
+        self.assertEqual(S.import_posts(ig), 8)
+        self.assertEqual(S.import_posts(ig), 0)  # same posts again: no duplicates
+        posts = Post.objects.filter(source='import', workspace=self.cafe)
+        self.assertEqual(posts.count(), 8)
+        self.assertTrue(all(p.status == 'published' for p in posts))
+        t = PostTarget.objects.filter(account=ig).first()
+        self.assertIn(t.kind, ('reel', 'post', 'carousel'))
+        PostMetric.objects.filter(target=t, metric='likes').update(value=1)
+        S.import_posts(ig)
+        self.assertGreater(PostMetric.objects.get(target=t, metric='likes').value, 1)
+
+    def test_since_limits_the_import(self):
+        n = S.import_posts(self.fb, since=timezone.now() - timedelta(days=5))
+        self.assertEqual(n, 2)  # fake posts are 1, 4, 7... days old
+
+    def test_posts_page_and_filters(self):
+        S.import_posts(self.ig)
+        self.client.force_login(self.owner)
+        r = self.client.get(reverse('social:posts') + '?ws=all')
+        self.assertContains(r, 'Sample Instagram post')
+        self.assertContains(r, 'Reels')
+        r = self.client.get(reverse('social:posts') + '?kind=reel&sort=top')
+        self.assertEqual(r.status_code, 200)
+        self.assertNotContains(r, '<i class="far fa-clone"></i> Carousel', html=False)
+
+    def test_connect_imports_history_and_sync_now(self):
+        self.client.force_login(self.owner)
+        self.client.get(reverse('social:connect', args=['instagram']) + f'?ws={self.ralfiz.pk}')
+        held = self.client.session['social_candidates']
+        self.client.post(reverse('social:connect_pick'), {'pick': [held['items'][0]['external_id']]})
+        acc = SocialAccount.objects.get(workspace=self.ralfiz, platform='instagram')
+        self.assertEqual(PostTarget.objects.filter(account=acc, post__source='import').count(), 8)
+        r = self.client.post(reverse('social:account_action', args=[acc.pk]), {'action': 'sync'}, follow=True)
+        self.assertContains(r, '0 new posts')
+
+    def test_imported_posts_are_not_editable(self):
+        S.import_posts(self.fb)
+        post = Post.objects.filter(source='import').first()
+        with self.assertRaises(S.SocialError):
+            S.reschedule(self.owner, post, self.soon())

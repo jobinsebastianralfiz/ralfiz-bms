@@ -44,5 +44,6 @@
       </div>
     </form>
   </div>
-  {% if p.first_media %}<div class="sh-thumb">{% if p.first_media.kind == 'video' %}<video src="{{ p.first_media.file.url }}" muted preload="metadata"></video><i class="fas fa-play"></i>{% else %}<img src="{{ p.first_media.file.url }}" alt="" loading="lazy">{% endif %}</div>{% endif %}
+  {% if p.first_media %}<div class="sh-thumb">{% if p.first_media.kind == 'video' %}<video src="{{ p.first_media.file.url }}" muted preload="metadata"></video><i class="fas fa-play"></i>{% else %}<img src="{{ p.first_media.file.url }}" alt="" loading="lazy">{% endif %}</div>
+  {% elif p.target_list.0.thumbnail_url %}<div class="sh-thumb"><img src="{{ p.target_list.0.thumbnail_url }}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.parentElement.remove()"></div>{% endif %}
 </article>

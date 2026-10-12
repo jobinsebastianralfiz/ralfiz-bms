@@ -29,7 +29,7 @@ from django.utils import timezone
 from django.utils.dateparse import parse_datetime
 
 from .base import (AccountCandidate, Adapter, AdapterError, AuthError, Capabilities, FetchedItem,
-                   PublishResult, RateLimited, call)
+                   FetchedPost, PublishResult, RateLimited, call)
 
 AUTH_URL = 'https://accounts.google.com/o/oauth2/v2/auth'
 TOKEN_URL = 'https://oauth2.googleapis.com/token'
@@ -284,6 +284,39 @@ class YouTubeAdapter(GoogleOAuthAdapter):
         st = data['items'][0].get('statistics', {})
         return {'reach': int(st.get('viewCount', 0)),
                 'engagement': int(st.get('likeCount', 0)) + int(st.get('commentCount', 0))}
+
+
+
+    def fetch_posts(self, account, since=None, limit=50):
+        """The channel's uploads with their view, like and comment counts (3 quota units)."""
+        ch = self._api('GET', f'{YT}/channels', account,
+                       params={'part': 'contentDetails', 'id': account.external_id}).json()
+        uploads = ((((ch.get('items') or [{}])[0].get('contentDetails') or {}).get('relatedPlaylists') or {})
+                   .get('uploads'))
+        if not uploads:
+            return []
+        items = self._api('GET', f'{YT}/playlistItems', account, params={
+            'part': 'contentDetails', 'playlistId': uploads, 'maxResults': min(limit, 50)}).json().get('items', [])
+        ids = [i['contentDetails']['videoId'] for i in items if (i.get('contentDetails') or {}).get('videoId')]
+        if not ids:
+            return []
+        videos = self._api('GET', f'{YT}/videos', account, params={
+            'part': 'snippet,statistics', 'id': ','.join(ids)}).json().get('items', [])
+        out = []
+        for v in sorted(videos, key=lambda v: v['snippet'].get('publishedAt', ''), reverse=True):
+            sn, st = v.get('snippet') or {}, v.get('statistics') or {}
+            when = _ts(sn.get('publishedAt'))
+            if since and when and when <= since:
+                break
+            likes, comments = int(st.get('likeCount', 0)), int(st.get('commentCount', 0))
+            thumbs = sn.get('thumbnails') or {}
+            out.append(FetchedPost(
+                external_id=v['id'], title=sn.get('title', ''), text=sn.get('description', ''), published_at=when,
+                url=f'https://youtu.be/{v["id"]}', kind='video',
+                thumbnail_url=(thumbs.get('high') or thumbs.get('medium') or thumbs.get('default') or {}).get('url', ''),
+                metrics={'views': int(st.get('viewCount', 0)), 'likes': likes, 'comments': comments,
+                         'engagement': likes + comments}))
+        return out
 
 
 # ================================================================ Business Profile

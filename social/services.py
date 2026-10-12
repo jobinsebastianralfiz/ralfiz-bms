@@ -607,6 +607,59 @@ def assign_item(user, item, assignee):
     item.save(update_fields=['assigned_to'])
 
 
+# ================================================================ imported posts
+
+IMPORT_DAYS = 90
+
+
+def import_posts(account, since=None, limit=50):
+    """Pull posts already on the account (made in the platform's app, or by us)
+    into the hub as published posts, so the Posts page, calendar and analytics
+    show the account's real history. Re-running updates counts and thumbnails
+    (Instagram's CDN links expire) and never duplicates a post.
+    Returns how many were new."""
+    adapter = get_adapter(account.platform)
+    if not account.healthy:
+        return 0
+    try:
+        items = adapter.fetch_posts(account, since=since, limit=limit)
+    except AuthError as exc:
+        account.status, account.last_error = 'reconnect', exc.message
+        account.save(update_fields=['status', 'last_error'])
+        return 0
+    new = 0
+    for it in items:
+        t = (PostTarget.objects.filter(account=account, external_id=it.external_id).select_related('post').first())
+        opts = {'kind': it.kind, 'thumb': it.thumbnail_url[:2000]}
+        if t is None:
+            with transaction.atomic():
+                post = Post.objects.create(
+                    workspace=account.workspace, base_text=it.text, title=it.title[:100], status='published',
+                    scheduled_at=it.published_at or timezone.now(), source='import')
+                t = PostTarget.objects.create(
+                    post=post, account=account, status='published', external_id=it.external_id[:300],
+                    external_url=it.url[:1000], published_at=it.published_at or timezone.now(), options=opts)
+            new += 1
+        else:
+            t.options = {**t.options, **opts}
+            if it.url and not t.external_url:
+                t.external_url = it.url[:1000]
+            t.save(update_fields=['options', 'external_url'])
+        for metric, value in it.metrics.items():
+            PostMetric.objects.update_or_create(target=t, metric=metric,
+                                                defaults={'value': int(value or 0), 'captured_at': timezone.now()})
+    return new
+
+
+def sync_account(account, *, first=False):
+    """Inbox, posts and stats for one account; ``first`` imports the last 90 days."""
+    since = timezone.now() - timedelta(days=IMPORT_DAYS) if first else None
+    n_inbox = sync_inbox(account)
+    n_posts = import_posts(account, since=since, limit=100 if first else 25)
+    sync_insights(account, days=30 if first else 3)
+    return n_inbox, n_posts
+
+
 # ================================================================ analytics
 
 METRICS = ('reach', 'impressions', 'engagement', 'followers', 'followers_gained', 'views', 'clicks')

@@ -415,6 +415,46 @@ def compose(request, pk=None):
     return render(request, 'social/compose.html', ctx)
 
 
+# ================================================================ posts library
+
+KIND_LABELS = {'post': 'Posts', 'reel': 'Reels', 'video': 'Videos', 'carousel': 'Carousels', 'story': 'Stories'}
+
+
+@hub_view
+def posts_library(request):
+    """Everything published on the connected accounts: imported history plus hub posts."""
+    from django.db.models import OuterRef, Subquery, Value
+    from django.db.models.functions import Coalesce
+    from .models import PostMetric, PostTarget
+    ctx = _ctx(request, 'posts')
+    qs = (PostTarget.objects.filter(account__in=_accounts_in_view(ctx), status='published')
+          .select_related('post__workspace', 'account').prefetch_related('metrics'))
+    counts = {}
+    for opts in qs.values_list('options', flat=True):
+        k = (opts or {}).get('kind', 'post')
+        counts[k] = counts.get(k, 0) + 1
+    kind = request.GET.get('kind', '')
+    if kind in KIND_LABELS:
+        qs = qs.filter(options__kind=kind) if kind != 'post' else \
+            qs.filter(Q(options__kind='post') | Q(options__kind__isnull=True))
+    sort = request.GET.get('sort', 'new')
+    if sort == 'top':
+        eng = PostMetric.objects.filter(target=OuterRef('pk'), metric='engagement').values('value')[:1]
+        qs = qs.annotate(eng=Coalesce(Subquery(eng), Value(0))).order_by('-eng', '-published_at')
+    else:
+        qs = qs.order_by('-published_at')
+    page = Paginator(qs, 36).get_page(request.GET.get('page'))
+    for t in page:
+        t.m = {m.metric: m.value for m in t.metrics.all()}
+        t.local = next(iter(t.post.ordered_media()), None) if t.post.source != 'import' else None
+    ctx.update({
+        'items': page, 'kind': kind, 'sort': sort, 'total': sum(counts.values()),
+        'kinds': [(k, label, counts.get(k, 0)) for k, label in KIND_LABELS.items() if counts.get(k)],
+        'has_accounts': _accounts_in_view(ctx).exists(),
+    })
+    return render(request, 'social/posts.html', ctx)
+
+
 # ================================================================ approvals
 
 @hub_view
@@ -764,7 +804,7 @@ def connect_pick(request):
         request.session.pop('social_candidates', None)
         for acc in saved:
             try:
-                S.sync_inbox(acc)
+                S.sync_account(acc, first=True)  # inbox, last 90 days of posts, 30 days of stats
             except AdapterError:
                 pass
         messages.success(request, f'Connected {", ".join(a.name for a in saved)}.')
@@ -805,9 +845,10 @@ def account_action(request, pk):
         messages.success(request, f'{acc.name} disconnected.')
     elif action == 'sync':
         S.require(request.user, acc.workspace)
-        n = S.sync_inbox(acc)
-        S.sync_insights(acc, days=30)
-        messages.success(request, f'Synced {acc.name}: {n} new inbox item{"s" if n != 1 else ""}.')
+        n, p = S.sync_account(acc, first=not acc.targets.filter(post__source='import').exists())
+        S.sync_post_metrics(acc)
+        messages.success(request, f'Synced {acc.name}: {p} new post{"s" if p != 1 else ""}, '
+                                  f'{n} new inbox item{"s" if n != 1 else ""}.')
     elif action == 'delete':
         S.require(request.user, acc.workspace, 'manager')
         if acc.targets.filter(status__in=('pending', 'publishing')).exists():

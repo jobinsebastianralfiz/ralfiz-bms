@@ -11,7 +11,7 @@ from datetime import timedelta
 
 from django.utils import timezone
 
-from .base import AccountCandidate, Adapter, AdapterError, Capabilities, FetchedItem, PublishResult
+from .base import AccountCandidate, Adapter, AdapterError, Capabilities, FetchedItem, FetchedPost, PublishResult
 
 
 class FakeAdapter(Adapter):
@@ -93,6 +93,24 @@ class FakeAdapter(Adapter):
     def fetch_post_metrics(self, account, external_id):
         rnd = random.Random(external_id)
         return {'reach': rnd.randint(200, 5000), 'engagement': rnd.randint(10, 400)}
+
+    def fetch_posts(self, account, since=None, limit=50):
+        rnd = random.Random(f'{account.pk}-posts')
+        now = timezone.now()
+        kinds = {'instagram': ['reel', 'post', 'carousel', 'post'], 'youtube': ['video'],
+                 'facebook': ['post', 'video', 'post']}.get(self.platform, ['post'])
+        out = []
+        for i in range(8):
+            when = now - timedelta(days=3 * i + 1, hours=rnd.randint(0, 10))
+            if since and when <= since:
+                break
+            likes, comments = rnd.randint(20, 900), rnd.randint(0, 80)
+            out.append(FetchedPost(
+                external_id=f'demo-post-{account.pk}-{i}', text=f'Sample {self.label} post #{i + 1}',
+                published_at=when, url=f'https://example.com/{self.platform}/p{i}', kind=kinds[i % len(kinds)],
+                metrics={'likes': likes, 'comments': comments, 'engagement': likes + comments,
+                         'views': rnd.randint(500, 20000)}))
+        return out
 
     def quota_status(self, account, published_last_24h):
         return self.real.quota_status(account, published_last_24h)

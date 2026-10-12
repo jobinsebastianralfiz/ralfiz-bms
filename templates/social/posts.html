@@ -1,0 +1,41 @@
+{% extends 'social/_hub.html' %}
+{% load social_tags humanize %}
+{% block hub_title %}Posts{% endblock %}
+{% block page_heading %}Posts &amp; Reels{% endblock %}
+{% block top_actions %}
+<div class="pills" aria-label="Sort"><a href="?sort=new{% if kind %}&kind={{ kind }}{% endif %}" aria-pressed="{% if sort != 'top' %}true{% else %}false{% endif %}">Newest</a><a href="?sort=top{% if kind %}&kind={{ kind }}{% endif %}" aria-pressed="{% if sort == 'top' %}true{% else %}false{% endif %}">Top performing</a></div>
+{% endblock %}
+{% block hub %}
+{% if not has_accounts %}
+<div class="glass empty"><p>Connect an account and its posts and Reels appear here.</p><a href="{% url 'social:accounts' %}" class="btn btn-sm btn-primary">Connect accounts</a></div>
+{% else %}
+{% if kinds %}<div class="pills kinds" aria-label="Type"><a href="?sort={{ sort }}" aria-pressed="{% if not kind %}true{% else %}false{% endif %}">All <b>{{ total }}</b></a>{% for k, label, n in kinds %}<a href="?kind={{ k }}&sort={{ sort }}" aria-pressed="{% if kind == k %}true{% else %}false{% endif %}">{{ label }} <b>{{ n }}</b></a>{% endfor %}</div>{% endif %}
+<div class="pgrid">
+  {% for t in items %}
+  <article class="pcard">
+    <a class="pthumb {% if t.kind == 'reel' or t.kind == 'story' %}tall{% endif %}" href="{{ t.external_url|default:'#' }}" target="_blank" rel="noopener" aria-label="Open on {{ t.account.get_platform_display }}">
+      {% if t.thumbnail_url %}<img src="{{ t.thumbnail_url }}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove()">
+      {% elif t.local %}{% if t.local.kind == 'video' %}<video src="{{ t.local.file.url }}" muted preload="metadata"></video>{% else %}<img src="{{ t.local.file.url }}" alt="" loading="lazy">{% endif %}{% endif %}
+      <span class="art" style="--a:{{ t.post.workspace.color }}"></span>
+      <span class="pkind k-{{ t.kind }}">{% if t.kind == 'reel' %}<i class="fas fa-clapperboard"></i> Reel{% elif t.kind == 'video' %}<i class="fas fa-play"></i> Video{% elif t.kind == 'carousel' %}<i class="far fa-clone"></i> Carousel{% elif t.kind == 'story' %}<i class="far fa-circle"></i> Story{% else %}<i class="far fa-image"></i> Post{% endif %}</span>
+      <span class="pplat">{% picon t.account.platform %}</span>
+    </a>
+    <div class="pbody">
+      <div class="pmeta"><span>{{ t.published_at|date:'d M Y' }}</span><span class="muted">{{ t.post.workspace.name }}</span></div>
+      <p>{{ t.post.title|default:t.post.base_text|default:'(no caption)'|truncatechars:140 }}</p>
+      <div class="pstats">
+        {% if t.m.reach %}<span title="Reach"><i class="far fa-eye"></i> {{ t.m.reach|compact }}</span>{% elif t.m.views %}<span title="Views"><i class="fas fa-play"></i> {{ t.m.views|compact }}</span>{% endif %}
+        <span title="Likes / reactions"><i class="far fa-heart"></i> {{ t.m.likes|default:0|compact }}</span>
+        <span title="Comments"><i class="far fa-comment"></i> {{ t.m.comments|default:0|compact }}</span>
+        {% if t.m.shares %}<span title="Shares"><i class="fas fa-share"></i> {{ t.m.shares|compact }}</span>{% endif %}
+      </div>
+      <div class="pact">{% if t.external_url %}<a class="btn btn-sm btn-glass" href="{{ t.external_url }}" target="_blank" rel="noopener">Open <i class="fas fa-arrow-up-right-from-square"></i></a>{% endif %}{% if t.post.source == 'import' %}<span class="src">From {{ t.account.get_platform_display }}</span>{% else %}<span class="src">Posted from the hub</span>{% endif %}</div>
+    </div>
+  </article>
+  {% empty %}
+  <div class="glass empty"><p>No posts yet. Click <b>Sync now</b> on the Accounts page to pull in the last 90 days.</p><a href="{% url 'social:accounts' %}" class="btn btn-sm btn-primary">Go to Accounts</a></div>
+  {% endfor %}
+</div>
+{% if items.has_other_pages %}<div class="pager">{% if items.has_previous %}<a class="btn btn-sm btn-glass" href="?page={{ items.previous_page_number }}&kind={{ kind }}&sort={{ sort }}">Newer</a>{% endif %}{% if items.has_next %}<a class="btn btn-sm btn-glass" href="?page={{ items.next_page_number }}&kind={{ kind }}&sort={{ sort }}">More</a>{% endif %}</div>{% endif %}
+{% endif %}
+{% endblock %}

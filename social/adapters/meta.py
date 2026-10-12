@@ -24,7 +24,7 @@ from django.conf import settings
 from django.utils.dateparse import parse_datetime
 
 from .base import (AccountCandidate, Adapter, AdapterError, AuthError, Capabilities, FetchedItem,
-                   NotSupported, PublishResult, RateLimited, call)
+                   FetchedPost, NotSupported, PublishResult, RateLimited, call)
 
 log = logging.getLogger(__name__)
 
@@ -332,6 +332,36 @@ class FacebookAdapter(_MetaAdapter):
                 out[names[row['name']]] = int(values[0]['value'])
         return out
 
+    def fetch_posts(self, account, since=None, limit=50):
+        """The Page's own posts, including ones made in Facebook itself.
+
+        Counts come from the post's fields (reactions, comments, shares) in the
+        same call; reach and views arrive later through fetch_post_metrics.
+        """
+        data = graph('GET', f'{self._page_id(account)}/published_posts', account.token, platform=self.label,
+                     params={'fields': 'id,message,created_time,permalink_url,full_picture,status_type,'
+                                       'attachments{media_type,type},'
+                                       'reactions.summary(total_count).limit(0),'
+                                       'comments.summary(total_count).limit(0),shares',
+                             'limit': min(limit, 100)})
+        out = []
+        for p in data.get('data', []):
+            when = _parse_time(p.get('created_time'))
+            if not _newer(when, since):
+                break
+            att = ((p.get('attachments') or {}).get('data') or [{}])[0]
+            media_type, url = (att.get('media_type') or '').lower(), p.get('permalink_url') or ''
+            kind = ('reel' if '/reel/' in url else 'video' if media_type == 'video'
+                    else 'carousel' if media_type == 'album' else 'post')
+            likes = ((p.get('reactions') or {}).get('summary') or {}).get('total_count', 0)
+            comments = ((p.get('comments') or {}).get('summary') or {}).get('total_count', 0)
+            shares = (p.get('shares') or {}).get('count', 0)
+            out.append(FetchedPost(external_id=p['id'], text=p.get('message', ''), published_at=when, url=url,
+                                   kind=kind, thumbnail_url=p.get('full_picture', ''),
+                                   metrics={'likes': likes, 'comments': comments, 'shares': shares,
+                                            'engagement': likes + comments + shares}))
+        return out
+
 
 # ---------------------------------------------------------------- instagram
 
@@ -485,6 +515,28 @@ class InstagramAdapter(_MetaAdapter):
             value = values[0].get('value', (row.get('total_value') or {}).get('value'))
             if row.get('name') in names and isinstance(value, (int, float)):
                 out[names[row['name']]] = int(value)
+        return out
+
+    def fetch_posts(self, account, since=None, limit=50):
+        """Feed posts, Reels, carousels and live Stories on the account."""
+        data = graph('GET', f'{account.external_id}/media', account.token, platform=self.label,
+                     params={'fields': 'id,caption,media_type,media_product_type,media_url,thumbnail_url,'
+                                       'permalink,timestamp,like_count,comments_count',
+                             'limit': min(limit, 100)})
+        out = []
+        for m in data.get('data', []):
+            when = _parse_time(m.get('timestamp'))
+            if not _newer(when, since):
+                break
+            product, media_type = m.get('media_product_type', ''), m.get('media_type', '')
+            kind = ('reel' if product == 'REELS' else 'story' if product == 'STORY'
+                    else 'carousel' if media_type == 'CAROUSEL_ALBUM' else 'video' if media_type == 'VIDEO'
+                    else 'post')
+            likes, comments = m.get('like_count') or 0, m.get('comments_count') or 0
+            out.append(FetchedPost(external_id=m['id'], text=m.get('caption', ''), published_at=when,
+                                   url=m.get('permalink', ''), kind=kind,
+                                   thumbnail_url=m.get('thumbnail_url') or m.get('media_url', ''),
+                                   metrics={'likes': likes, 'comments': comments, 'engagement': likes + comments}))
         return out
 
     def delete(self, account, external_id):

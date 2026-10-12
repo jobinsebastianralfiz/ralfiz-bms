@@ -159,7 +159,7 @@ class Post(models.Model):
         ('partial', 'Partly published'),
         ('failed', 'Failed'),
     ]
-    SOURCE_CHOICES = [('web', 'Dashboard'), ('mcp', 'Claude')]
+    SOURCE_CHOICES = [('web', 'Dashboard'), ('mcp', 'Claude'), ('import', 'Imported')]
     #: Statuses a person can still edit, reschedule or delete.
     EDITABLE = ('draft', 'review', 'changes', 'scheduled', 'failed')
 
@@ -174,7 +174,8 @@ class Post(models.Model):
     scheduled_at = models.DateTimeField(null=True, blank=True)
     created_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL,
                                    null=True, blank=True, related_name='+')
-    source = models.CharField(max_length=5, choices=SOURCE_CHOICES, default='web')
+    source = models.CharField(max_length=10, choices=SOURCE_CHOICES, default='web',
+                              help_text='Imported = already on the account, pulled in by sync')
     approved_at = models.DateTimeField(null=True, blank=True)
     approved_by_name = models.CharField(max_length=120, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
@@ -229,10 +230,19 @@ class PostTarget(models.Model):
 
     class Meta:
         unique_together = [('post', 'account')]
+        indexes = [models.Index(fields=['account', 'external_id'])]
 
     @property
     def effective_text(self):
         return self.text or self.post.base_text
+
+    @property
+    def kind(self):
+        return self.options.get('kind', 'post')
+
+    @property
+    def thumbnail_url(self):
+        return self.options.get('thumb', '')
 
 
 class Approval(models.Model):

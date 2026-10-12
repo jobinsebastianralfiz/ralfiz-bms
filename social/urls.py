@@ -11,6 +11,7 @@ urlpatterns = [
     path('post/<uuid:pk>/', views.compose, name='post_edit'),
     path('post/<uuid:pk>/action/', views.post_action, name='post_action'),
     path('post/<uuid:pk>/move/', views.post_move, name='post_move'),
+    path('posts/', views.posts_library, name='posts'),
     path('approvals/', views.approvals, name='approvals'),
     path('inbox/', views.inbox, name='inbox'),
     path('inbox/<uuid:pk>/action/', views.inbox_action, name='inbox_action'),

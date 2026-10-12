@@ -9,7 +9,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=Figtree:wght@400;500;600;700;800&family=DM+Mono:wght@500&display=swap">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-<link rel="stylesheet" href="{% static 'css/social.css' %}?v=12">
+<link rel="stylesheet" href="{% static 'css/social.css' %}?v=13">
 </head>
 <body class="shx">
 <div class="mesh" aria-hidden="true"><div class="blob b1"></div><div class="blob b2"></div><div class="blob b3"></div><div class="blob b4"></div><div class="grain"></div></div>
@@ -20,6 +20,7 @@
     <nav aria-label="Social Hub">
       <a class="rbtn {% if tab == 'home' %}on{% endif %}" href="{% url 'social:home' %}" aria-label="Home"><i class="fas fa-house"></i><span class="lbl">Home</span></a>
       <a class="rbtn {% if tab == 'calendar' %}on{% endif %}" href="{% url 'social:calendar' %}" aria-label="Calendar"><i class="far fa-calendar"></i><span class="lbl">Calendar</span>{% if attention.failed %}<span class="dot"></span>{% endif %}</a>
+      <a class="rbtn {% if tab == 'posts' %}on{% endif %}" href="{% url 'social:posts' %}" aria-label="Posts and Reels"><i class="fas fa-photo-film"></i><span class="lbl">Posts</span></a>
       <a class="rbtn {% if tab == 'approvals' %}on{% endif %}" href="{% url 'social:approvals' %}" aria-label="Approvals"><i class="far fa-circle-check"></i><span class="lbl">Approvals</span>{% if attention.review %}<span class="dot"></span>{% endif %}</a>
       <a class="rbtn {% if tab == 'inbox' %}on{% endif %}" href="{% url 'social:inbox' %}" aria-label="Streams and inbox"><i class="fas fa-table-columns"></i><span class="lbl">Streams</span>{% if attention.inbox %}<span class="dot"></span>{% endif %}</a>
       <a class="rbtn {% if tab == 'analytics' %}on{% endif %}" href="{% url 'social:analytics' %}" aria-label="Analytics"><i class="fas fa-chart-simple"></i><span class="lbl">Analytics</span></a>

@@ -3,7 +3,7 @@
 Run as its own Railway service:  python manage.py social_worker
 Or from cron once a minute:      python manage.py social_worker --once
 
-Every minute it publishes what is due. Inboxes sync every 10 minutes,
+Every minute it publishes what is due. Inboxes and new posts sync every 10 minutes,
 metrics and token checks every 6 hours. Webhooks (Meta) deliver comments
 and messages in between.
 """
@@ -39,6 +39,7 @@ class Command(BaseCommand):
             if once or now - last['inbox'] >= INBOX_EVERY:
                 last['inbox'] = now
                 self.each_account('inbox', services.sync_inbox)
+                self.each_account('posts', services.import_posts)
             if once or now - last['metrics'] >= METRICS_EVERY:
                 last['metrics'] = now
                 self.safely('tokens', services.refresh_tokens)
