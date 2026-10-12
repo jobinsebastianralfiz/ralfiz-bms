@@ -582,3 +582,35 @@ class MainLoginRoutingTests(StaffPortalTestBase):
             reverse('login') + '?next=' + reverse('staff:profile'),
             {'username': 'portal_intern', 'password': self.password})
         self.assertRedirects(res, reverse('staff:profile'))
+
+    def test_next_to_the_business_side_still_ends_in_the_portal(self):
+        # Opening the site root while signed out sends you to /login/?next=/,
+        # which used to drop interns on the legacy dashboard with income figures.
+        res = self.client.post(reverse('login') + '?next=/', {
+            'username': 'portal_intern', 'password': self.password}, follow=True)
+        self.assertEqual(res.redirect_chain[-1][0], reverse('staff:dashboard'))
+
+
+class StaffConfinementTests(StaffPortalTestBase):
+    """Interns/employees can't open business pages by typing the URL."""
+
+    def test_business_pages_redirect_to_the_portal(self):
+        for user in ('portal_intern', 'portal_employee'):
+            self.client.login(username=user, password=self.password)
+            for path in ('/', '/dashboard/legacy/', '/invoices/', '/clients/', '/payments/',
+                         '/expenses/', '/hr/', '/reports/'):
+                res = self.client.get(path)
+                self.assertRedirects(res, reverse('staff:dashboard'), fetch_redirect_response=False,
+                                     msg_prefix=f'{user} {path}')
+
+    def test_portal_and_intern_crm_stay_open(self):
+        self.client.login(username='portal_intern', password=self.password)
+        self.assertEqual(self.client.get(reverse('staff:dashboard')).status_code, 200)
+        self.assertEqual(self.client.get('/crm/leads/').status_code, 200)
+
+    def test_owner_and_admin_are_not_confined(self):
+        owner = User.objects.create_user(username='c_owner', password=self.password)
+        Employee.objects.create(user=owner, employee_id='EMPT06', employment_type='fulltime',
+                                role='owner', status='active')
+        self.client.login(username='c_owner', password=self.password)
+        self.assertEqual(self.client.get('/invoices/').status_code, 200)

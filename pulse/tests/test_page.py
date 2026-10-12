@@ -143,18 +143,18 @@ class DashboardRoutingTests(TestCase):
         self.client.force_login(self.worker)
         response = self.client.get(reverse('portfolio'), follow=True)
         self.assertEqual(len(response.redirect_chain), 1)
-        self.assertEqual(response.redirect_chain[0][0], '/dashboard/legacy/')
+        self.assertEqual(response.redirect_chain[0][0], '/staff/')
 
     def test_non_owner_at_root_does_not_loop(self):
         self.client.force_login(self.worker)
         response = self.client.get('/', follow=True)
         self.assertEqual(response.status_code, 200)
-        # One hop to the legacy dashboard, and it must not bounce again.
+        # Staff are confined to their portal: one hop, no bounce.
         self.assertEqual(len(response.redirect_chain), 1)
-        self.assertEqual(response.redirect_chain[0][0], '/dashboard/legacy/')
+        self.assertEqual(response.redirect_chain[0][0], '/staff/')
 
     def test_legacy_dashboard_still_serves_the_original_view(self):
-        self.client.force_login(self.worker)
+        self.client.force_login(self.owner)
         response = self.client.get(reverse('dashboard-legacy'))
         self.assertEqual(response.status_code, 200)
 
@@ -166,5 +166,5 @@ class DashboardRoutingTests(TestCase):
     def test_command_center_non_owner_does_not_loop(self):
         self.client.force_login(self.worker)
         response = self.client.get(reverse('pulse:command-center'), follow=True)
-        self.assertEqual(len(response.redirect_chain), 1)
-        self.assertEqual(response.redirect_chain[0][0], '/dashboard/legacy/')
+        # Via the legacy dashboard, which then confines staff to their portal.
+        self.assertEqual([url for url, _ in response.redirect_chain], ['/dashboard/legacy/', '/staff/'])

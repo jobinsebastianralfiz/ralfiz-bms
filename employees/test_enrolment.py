@@ -176,8 +176,10 @@ class EnrolmentTests(TestCase):
         intern = User.objects.create_user('meera', password='pw-123456')
         Employee.objects.create(user=intern, employee_id='EMP900', employment_type='intern', role='intern')
         self.client.force_login(intern)
-        self.assertEqual(self.client.get(file_url).status_code, 403)
-        self.assertEqual(self.client.get(reverse('enrolment_list')).status_code, 403)
+        # Staff are confined to /staff/ before the view's own 403 check.
+        self.assertRedirects(self.client.get(file_url), '/staff/', fetch_redirect_response=False)
+        self.assertRedirects(self.client.get(reverse('enrolment_list')), '/staff/',
+                             fetch_redirect_response=False)
 
         self.client.force_login(self.hr)
         response = self.client.get(file_url)
