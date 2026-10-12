@@ -37,7 +37,7 @@ PLATFORM_META = {
     'instagram': {'short': 'IG', 'color': '#E1306C', 'icon': 'fa-brands fa-instagram'},
     'linkedin': {'short': 'in', 'color': '#0A66C2', 'icon': 'fa-brands fa-linkedin-in'},
     'youtube': {'short': 'YT', 'color': '#FF0000', 'icon': 'fa-brands fa-youtube'},
-    'x': {'short': 'X', 'color': '#111111', 'icon': 'fa-brands fa-x-twitter'},
+    'x': {'short': 'X', 'color': '#E8E8F0', 'icon': 'fa-brands fa-x-twitter'},
     'whatsapp': {'short': 'WA', 'color': '#25D366', 'icon': 'fa-brands fa-whatsapp'},
     'google_business': {'short': 'G', 'color': '#F4B400', 'icon': 'fa-brands fa-google'},
 }
@@ -100,6 +100,7 @@ def _ctx(request, tab, **extra):
         'platforms_present': [(p, PLATFORM_LABELS[p], PLATFORM_META[p]) for p in platforms_present],
         'platform_meta': PLATFORM_META, 'attention': att,
         'is_manager': S.is_social_admin(request.user) or (current and S.role_for(request.user, current) == 'manager'),
+        'me_initial': (request.user.first_name or request.user.username or '?')[:1].upper(),
     }
     ctx.update(extra)
     return ctx
@@ -121,6 +122,87 @@ def _post_card(post):
     post.last_note = post.approvals.filter(decision='changes').first() if post.status == 'changes' else None
     post.errors = [t for t in targets if t.status == 'failed' and t.error]
     return post
+
+
+# ================================================================ home
+
+@hub_view
+def home(request):
+    """The prototype's dashboard: this week's reach, the posting goal, the
+    30-day trend, best times, the next posts out and what needs a person."""
+    ctx = _ctx(request, 'home')
+    accounts = list(_accounts_in_view(ctx))
+    today = timezone.localdate()
+    week_start = today - timedelta(days=today.weekday())
+    tz = timezone.get_current_timezone()
+    week = S.analytics(accounts, today - timedelta(days=6), today)
+    before = S.analytics(accounts, today - timedelta(days=13), today - timedelta(days=7))
+    reach, prev_reach = week['totals']['reach'], before['totals']['reach']
+    trend = S.analytics(accounts, today - timedelta(days=29), today)
+    top_platform = next(iter(week['by_platform']), None)
+
+    week_posts = Post.objects.filter(
+        workspace__in=ctx['in_view'], scheduled_at__gte=datetime.combine(week_start, time.min, tz),
+        scheduled_at__lt=datetime.combine(week_start + timedelta(days=7), time.min, tz))
+    if ctx['platform']:
+        week_posts = week_posts.filter(targets__account__platform=ctx['platform']).distinct()
+    planned = week_posts.exclude(status='draft').count()
+    published = week_posts.filter(status__in=('published', 'partial')).count()
+
+    queue = (Post.objects.filter(workspace__in=ctx['in_view'], status__in=('scheduled', 'review'),
+                                 scheduled_at__gte=timezone.now())
+             .select_related('workspace').prefetch_related('targets__account').order_by('scheduled_at'))
+    if ctx['platform']:
+        queue = queue.filter(targets__account__platform=ctx['platform']).distinct()
+
+    att = ctx['attention']
+    claude_replies = InboxItem.objects.filter(account__in=accounts, status='open',
+                                              replies__status='draft', replies__source='mcp').distinct().count()
+    claude_posts = Post.objects.filter(workspace__in=ctx['in_view'], source='mcp', status='review').count()
+    needs = []
+    if att['failed']:
+        p = att['failed'][0]
+        needs.append({'tone': 'bad', 'text': f"{len(att['failed'])} post{'s' if len(att['failed']) != 1 else ''} "
+                      f"failed to go out. “{(p.base_text or p.title)[:60]}” for {p.workspace.name} is one.",
+                      'action': 'Open', 'url': f"{reverse('social:calendar')}?day="
+                      f"{timezone.localdate(p.scheduled_at).isoformat()}#p{p.pk}"})
+    for a in att['accounts'][:2]:
+        needs.append({'tone': 'warn', 'text': f"{a.workspace.name}'s {a.get_platform_display()} "
+                      + ('sign-in expires soon.' if a.status == 'expiring' else 'needs reconnecting.'),
+                      'action': 'Reconnect', 'url': f"{reverse('social:connect', args=[a.platform])}?ws={a.workspace_id}"})
+    if att['review']:
+        needs.append({'tone': 'ai' if claude_posts else '', 'text': f"{att['review']} post{'s' if att['review'] != 1 else ''} "
+                      f"waiting for approval" + (f", {claude_posts} drafted by Claude." if claude_posts else '.'),
+                      'action': 'Review posts', 'url': reverse('social:approvals')})
+    if claude_replies:
+        needs.append({'tone': 'ai', 'text': f'Claude drafted {claude_replies} repl{"ies" if claude_replies != 1 else "y"} '
+                      'in the inbox. Check them before they go out.', 'action': 'Review replies',
+                      'url': reverse('social:inbox')})
+    elif att['inbox']:
+        needs.append({'tone': '', 'text': f"{att['inbox']} comment{'s' if att['inbox'] != 1 else ''} and messages are "
+                      'waiting for a reply.', 'action': 'Open inbox', 'url': reverse('social:inbox')})
+
+    new_followers = week['totals']['followers_gained']
+    if not new_followers:  # platforms that only report a running total
+        level = [v for v in week['series']['followers'] if v]
+        new_followers = max(0, level[-1] - level[0]) if len(level) > 1 else 0
+    ctx.update({
+        'reach': reach, 'new_followers': new_followers,
+        'reach_change': round(100 * (reach - prev_reach) / prev_reach, 1) if prev_reach else None,
+        'week_totals': week['totals'],
+        'headline': (f"{PLATFORM_LABELS[top_platform]} brought the most reach this week."
+                     if top_platform else 'Connect accounts and their numbers appear here after the first sync.'),
+        'planned': planned, 'published': published,
+        'goal_pct': round(100 * published / planned) if planned else 0,
+        'queue': [_post_card(p) for p in queue[:4]], 'needs': needs[:4],
+        'best': S.best_times(accounts), 'slots': ['6a', '9a', '12p', '3p', '6p', '9p'], 'daynames': S.DAYS,
+        'trend': {'labels': [d.strftime('%d %b') for d in trend['days']],
+                  'reach': trend['series']['reach'], 'engagement': trend['series']['engagement'],
+                  'followers': trend['series']['followers_gained'] if any(trend['series']['followers_gained'])
+                  else trend['series']['followers']},
+        'has_accounts': bool(accounts),
+    })
+    return render(request, 'social/home.html', ctx)
 
 
 # ================================================================ calendar
@@ -374,7 +456,15 @@ def inbox(request):
         it.draft = next((r for r in reversed(replies) if r.status == 'draft'), None)
         it.sent = [r for r in replies if r.status == 'sent']
         it.meta = PLATFORM_META[it.account.platform]
-    ctx.update({'items': page, 'status': status, 'counts': counts})
+    columns = {}
+    for it in page:
+        columns.setdefault(it.account.platform, []).append(it)
+    streams = [{'platform': p, 'label': PLATFORM_LABELS[p], 'meta': PLATFORM_META[p], 'items': columns[p],
+                'sub': {'facebook': 'Comments & Messenger', 'instagram': 'Comments & DMs', 'linkedin': 'Page comments',
+                        'youtube': 'Video comments', 'x': 'Mentions', 'whatsapp': 'Customer messages',
+                        'google_business': 'Reviews'}[p]}
+               for p in PLATFORM_ORDER if p in columns]
+    ctx.update({'items': page, 'streams': streams, 'status': status, 'counts': counts})
     return render(request, 'social/inbox.html', ctx)
 
 
@@ -434,7 +524,8 @@ def analytics(request):
                        ('clicks', 'Clicks')):
         now_v, before = data['totals'][key], prev['totals'][key]
         change = round(100 * (now_v - before) / before, 1) if before else None
-        kpis.append({'label': label, 'value': now_v, 'change': change})
+        kpis.append({'label': label, 'value': now_v, 'change': change, 'key': key,
+                     'spark': data['series'][key][-30:]})
     peak = max(data['by_platform'].values() or [0])
     ctx.update({
         'days': days, 'kpis': kpis, 'data': data, 'engagement_rate': data['engagement_rate'],
@@ -442,6 +533,7 @@ def analytics(request):
                   'reach': data['series']['reach'], 'engagement': data['series']['engagement']},
         'by_platform': [(p, PLATFORM_LABELS.get(p, p), v, round(100 * v / peak) if peak else 0,
                          PLATFORM_META.get(p, {})) for p, v in data['by_platform'].items()],
+        'sparks': {k['key']: k['spark'] for k in kpis},
         'best': S.best_times(accounts), 'slots': ['6am', '9am', '12pm', '3pm', '6pm', '9pm'],
         'daynames': S.DAYS, 'has_accounts': bool(accounts),
     })

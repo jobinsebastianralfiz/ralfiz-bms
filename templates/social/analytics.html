@@ -3,55 +3,58 @@
 {% block hub_title %}Analytics{% endblock %}
 {% block page_heading %}Analytics{% endblock %}
 {% block top_actions %}
-<div class="sh-seg">{% for d in '7,30,90'|make_list %}{% endfor %}
-  <a href="?days=7" class="{% if days == 7 %}on{% endif %}">7 days</a><a href="?days=30" class="{% if days == 30 %}on{% endif %}">30 days</a><a href="?days=90" class="{% if days == 90 %}on{% endif %}">90 days</a>
-</div>
-<form method="post">{% csrf_token %}<button class="btn btn-outline-secondary" title="Pull the latest numbers from each platform"><i class="fas fa-rotate"></i> Refresh</button></form>
+<div class="pills"><a href="?days=7" aria-pressed="{% if days == 7 %}true{% else %}false{% endif %}">7 days</a><a href="?days=30" aria-pressed="{% if days == 30 %}true{% else %}false{% endif %}">30 days</a><a href="?days=90" aria-pressed="{% if days == 90 %}true{% else %}false{% endif %}">90 days</a></div>
+<form method="post" class="inline">{% csrf_token %}<button class="btn btn-glass" title="Pull the latest numbers from each platform"><i class="fas fa-rotate"></i> Refresh</button></form>
 {% endblock %}
 {% block hub %}
 {% if not has_accounts %}
-<div class="empty-state sh-empty"><p>Connect an account to see analytics.</p><a href="{% url 'social:accounts' %}" class="btn btn-sm btn-primary">Connect accounts</a></div>
+<div class="glass empty"><p>Connect an account to see analytics.</p><a href="{% url 'social:accounts' %}" class="btn btn-sm btn-primary">Connect accounts</a></div>
 {% else %}
-<div class="sh-kpis">
+<div class="kgrid">
   {% for k in kpis %}
-  <div class="card sh-kpi"><span>{{ k.label }}</span><b>{{ k.value|intcomma }}</b>
-    {% if k.change is not None %}<small class="{% if k.change >= 0 %}up{% else %}down{% endif %}">{% if k.change >= 0 %}▲{% else %}▼{% endif %} {{ k.change }}% vs previous {{ days }} days</small>{% else %}<small>No earlier data</small>{% endif %}</div>
+  <div class="glass kt" style="--kc:{% cycle '#FF2E88' '#9B4DFF' '#FF7A3D' '#3D8BFF' %}">
+    <span class="kl">{{ k.label }}</span><b class="kv num">{{ k.value|compact }}</b>
+    {% if k.change is not None %}<span class="kd {% if k.change < 0 %}down{% endif %}">{% if k.change >= 0 %}▲{% else %}▼{% endif %} {{ k.change }}%</span>{% else %}<span class="kd flat">No earlier data</span>{% endif %}
+    <svg class="spark" data-key="{{ k.key }}" viewBox="0 0 200 46" preserveAspectRatio="none" aria-hidden="true"></svg>
+  </div>
   {% endfor %}
-  <div class="card sh-kpi"><span>Engagement rate</span><b>{{ engagement_rate }}%</b><small>Engagement ÷ reach</small></div>
 </div>
+<p class="hint">Engagement rate {{ engagement_rate }}% (engagement ÷ reach) over the last {{ days }} days{% if current %} for {{ current.name }}{% endif %}.</p>
 
-<div class="sh-two">
-  <div class="card sh-panel">
-    <h3>Reach and engagement</h3>
-    <div class="sh-chart"><canvas id="trend" height="220" aria-label="Daily reach and engagement"></canvas></div>
-  </div>
-  <div class="card sh-panel">
-    <h3>Reach by platform</h3>
-    {% for key, label, v, pct, m in by_platform %}
-    <div class="sh-bar"><span>{% picon key %} {{ label }}</span><div><i style="width:{{ pct }}%;background:{{ m.color }}"></i></div><b>{{ v|compact }}</b></div>
-    {% empty %}<p class="sh-muted">No reach data yet. Press Refresh, or wait for the nightly sync.</p>{% endfor %}
-  </div>
-</div>
-
-<div class="sh-two">
-  <div class="card sh-panel">
-    <h3>Best time to post</h3>
-    {% if best %}
-    <div class="sh-heat">
-      <span></span>{% for s in slots %}<span class="hl">{{ s }}</span>{% endfor %}
-      {% for row in best.grid %}<span class="hl">{{ daynames|get_item:forloop.counter0|default:'' }}</span>{% for v in row %}<span class="hc" style="--v:{{ v|stringformat:'s' }}" title="{{ v }}"></span>{% endfor %}{% endfor %}
+<div class="row">
+  <div class="glass card grow2">
+    <div class="head"><div class="grow"><h3>Reach by channel</h3><span class="sub">Last {{ days }} days</span></div></div>
+    <div class="cbars">
+      {% for key, label, v, pct, m in by_platform %}
+      <div class="bar" style="--pc:{{ m.color }}"><span class="bv num">{{ v|compact }}</span><span class="bf" style="--h:{{ pct }}%"></span><span class="bn">{{ label|truncatechars:10 }}</span></div>
+      {% empty %}<p class="muted">No reach data yet. Press Refresh, or wait for the next sync.</p>{% endfor %}
     </div>
-    <p class="sh-best">Best slots: {% for b in best.best %}<b>{{ b.label }}</b>{% if not forloop.last %}, {% endif %}{% endfor %}</p>
-    {% else %}<p class="sh-muted">After a few posts have gone out, this shows which days and hours get the most engagement.</p>{% endif %}
   </div>
-  <div class="card sh-panel">
-    <h3>Top posts</h3>
+  <div class="glass card grow1">
+    <div class="head"><div class="grow"><h3>Best time to post</h3><span class="sub">Engagement by day and hour</span></div></div>
+    {% if best %}
+    <div class="heat"><span></span>{% for s in slots %}<span class="ht">{{ s }}</span>{% endfor %}
+      {% for row in best.grid %}<span class="hl">{{ daynames|get_item:forloop.counter0 }}</span>{% for v in row %}<span class="hc {% if v == 1.0 %}best{% endif %}"><i style="--v:{{ v|stringformat:'s' }}"></i></span>{% endfor %}{% endfor %}</div>
+    <div class="best-note"><span class="sw"></span><span>Best: {% for b in best.best %}<b>{{ b.label }}</b>{% if not forloop.last %}, {% endif %}{% endfor %}</span></div>
+    {% else %}<p class="muted">After a few posts go out, this shows which days and hours get the most engagement.</p>{% endif %}
+  </div>
+</div>
+
+<div class="glass card">
+  <div class="head"><div class="grow"><h3>Top posts</h3><span class="sub">Ranked by engagement</span></div></div>
+  <div class="tops">
     {% for m in data.top_posts %}
-    <div class="sh-top"><span class="rk">{{ forloop.counter }}</span>{% picon m.target.account.platform %}<div><b>{{ m.target.post.base_text|default:m.target.post.title|truncatechars:70 }}</b><small>{{ m.target.account.workspace.name }} · {{ m.target.published_at|date:'d M' }}</small></div><span class="v">{{ m.value|compact }} eng.</span></div>
-    {% empty %}<p class="sh-muted">Top posts appear once published posts have metrics.</p>{% endfor %}
+    {% with post=m.target.post %}
+    <div class="tp">
+      {% with media=post.ordered_media|first %}{% if media and media.kind == 'image' %}<img src="{{ media.file.url }}" alt="" loading="lazy">{% else %}<span class="art" style="--a:{{ post.workspace.color }}"></span>{% endif %}{% endwith %}
+      <div class="ov"><span class="rk">#{{ forloop.counter }}</span><div><b>{{ post.base_text|default:post.title|truncatechars:60 }}</b><div class="m">{% picon m.target.account.platform %} {{ m.value|intcomma }} eng. · {{ m.target.published_at|date:'d M' }}</div></div></div>
+    </div>
+    {% endwith %}
+    {% empty %}<p class="muted">Top posts appear once published posts have metrics.</p>{% endfor %}
   </div>
 </div>
 {{ chart|json_script:'trendData' }}
+{{ sparks|json_script:'sparkData' }}
 {% endif %}
 {% endblock %}
-{% block hub_js %}<script>window.SocialCharts && SocialCharts.trend('trend', 'trendData');</script>{% endblock %}
+{% block hub_js %}<script>window.SocialCharts && SocialCharts.sparks('sparkData');</script>{% endblock %}

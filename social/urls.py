@@ -5,7 +5,8 @@ from . import views
 app_name = 'social'
 
 urlpatterns = [
-    path('', views.calendar_view, name='calendar'),
+    path('', views.home, name='home'),
+    path('calendar/', views.calendar_view, name='calendar'),
     path('post/new/', views.compose, name='post_new'),
     path('post/<uuid:pk>/', views.compose, name='post_edit'),
     path('post/<uuid:pk>/action/', views.post_action, name='post_action'),

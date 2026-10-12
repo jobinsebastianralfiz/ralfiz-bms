@@ -288,7 +288,7 @@ class ViewTests(HubTestCase):
     def test_pages_render(self):
         post = S.save_post(self.owner, self.cafe, account_ids=[self.fb.pk], text='Hello', scheduled_at=self.soon())
         self.item = InboxItem.objects.create(account=self.fb, kind='comment', external_id='z', text='hey')
-        for name, args in [('calendar', []), ('approvals', []), ('inbox', []), ('analytics', []),
+        for name, args in [('home', []), ('calendar', []), ('approvals', []), ('inbox', []), ('analytics', []),
                            ('reports', []), ('media', []), ('accounts', []), ('activity', []),
                            ('workspaces', []), ('post_new', []), ('post_edit', [post.pk])]:
             r = self.client.get(reverse(f'social:{name}', args=args))

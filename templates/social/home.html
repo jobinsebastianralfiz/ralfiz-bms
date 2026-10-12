@@ -1,0 +1,81 @@
+{% extends 'social/_hub.html' %}
+{% load social_tags humanize %}
+{% block hub_title %}Home{% endblock %}
+{% block page_heading %}Home{% endblock %}
+{% block filters %}{% endblock %}
+{% block hub %}
+<a class="glass cbar" href="{% url 'social:post_new' %}{% if current %}?ws={{ current.pk }}{% endif %}">
+  <span class="av sm"><i style="background:#2A1658">{{ me_initial }}</i></span>
+  <span class="ph">What would you like to share today, {{ request.user.first_name|default:request.user.username }}?<span class="caret"></span></span>
+  <span class="btn btn-sm btn-white">Compose</span>
+</a>
+
+<div class="glass hero">
+  <div>
+    <div class="eyebrow">Reach this week · {% if current %}{{ current.name }}{% else %}all clients{% endif %}</div>
+    <div class="big"><b class="num" data-count="{{ reach }}">{{ reach|compact }}</b>
+      {% if reach_change is not None %}<span class="chip-up {% if reach_change < 0 %}down{% endif %}">{% if reach_change >= 0 %}▲{% else %}▼{% endif %} {{ reach_change }}%</span>{% endif %}</div>
+    <p>{{ headline }}</p>
+    <div class="minis">
+      <div class="mini"><span>Engagement</span><b class="num">{{ week_totals.engagement|intcomma }}</b></div>
+      <div class="mini"><span>New followers</span><b class="num">{{ new_followers|intcomma }}</b></div>
+      <div class="mini"><span>Link clicks</span><b class="num">{{ week_totals.clicks|intcomma }}</b></div>
+    </div>
+  </div>
+  <div class="goal" style="--pct:{{ goal_pct }}">
+    <svg viewBox="0 0 200 200" aria-hidden="true"><defs><linearGradient id="gg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#FF7A3D"/><stop offset=".45" stop-color="#FF2E88"/><stop offset="1" stop-color="#9B4DFF"/></linearGradient></defs>
+      <circle cx="100" cy="100" r="80" fill="none" stroke="rgba(255,255,255,.14)" stroke-width="18"/>
+      <circle class="goal-arc" cx="100" cy="100" r="80" fill="none" stroke="url(#gg)" stroke-width="18" stroke-linecap="round" stroke-dasharray="502.7" stroke-dashoffset="502.7" data-pct="{{ goal_pct }}"/></svg>
+    <div class="gc"><b class="num">{{ published }}</b><span>of {{ planned }} post{{ planned|pluralize }} out this week</span></div>
+  </div>
+</div>
+
+<div class="row">
+  <div class="glass card grow2">
+    <div class="head"><div class="grow"><h3>Performance</h3><span class="sub">Last 30 days · {% if current %}{{ current.name }}{% else %}all clients{% endif %}</span></div>
+      <div class="pills" id="mpills"><button type="button" data-m="reach" aria-pressed="true">Reach</button><button type="button" data-m="engagement" aria-pressed="false">Engagement</button><button type="button" data-m="followers" aria-pressed="false">Followers</button></div></div>
+    {% if has_accounts %}<div class="chart" id="chartBox"><svg id="trendSvg" viewBox="0 0 800 260" preserveAspectRatio="none" role="img" aria-label="Performance over the last 30 days"></svg><div class="ctip" id="trendTip"></div></div>
+    {% else %}<p class="muted">Connect an account to see the trend. <a href="{% url 'social:accounts' %}">Connect accounts</a></p>{% endif %}
+  </div>
+  <div class="glass card grow1">
+    <div class="head"><div class="grow"><h3>Best time to post</h3><span class="sub">Engagement by day and hour</span></div></div>
+    {% if best %}
+    <div class="heat">
+      <span></span>{% for s in slots %}<span class="ht">{{ s }}</span>{% endfor %}
+      {% for row in best.grid %}<span class="hl">{{ daynames|get_item:forloop.counter0 }}</span>{% for v in row %}<span class="hc {% if v == 1.0 %}best{% endif %}" title="{{ v|floatformat:2 }} of peak"><i style="--v:{{ v|stringformat:'s' }}"></i></span>{% endfor %}{% endfor %}
+    </div>
+    <div class="best-note"><span class="sw"></span><span>Best slot: <b>{{ best.best.0.label }}</b></span></div>
+    {% else %}
+    <div class="heat is-empty">{% for i in '012345678901234567890123456789012345678901'|make_list %}<span class="hc"><i style="--v:.06"></i></span>{% endfor %}</div>
+    <p class="muted small">After a few posts go out, this shows the days and hours that get the most engagement.</p>
+    {% endif %}
+  </div>
+</div>
+
+<div class="row">
+  <div class="glass card grow2">
+    <div class="head"><div class="grow"><h3>Your queue</h3><span class="sub">Next posts going out</span></div><a class="btn btn-sm btn-glass" href="{% url 'social:calendar' %}">See all</a></div>
+    <div class="queue">
+      {% for p in queue %}
+      <a class="qi" href="{% url 'social:calendar' %}?day={{ p.scheduled_at|date:'Y-m-d' }}#p{{ p.pk }}">
+        <span class="av"><i style="background:{{ p.workspace.color }}">{{ p.workspace.initial }}</i>{% if p.platforms %}<span class="pb">{% picon p.platforms.0 %}</span>{% endif %}</span>
+        <div class="qbody"><span class="when">{{ p.scheduled_at|date:'D d M' }} · {{ p.scheduled_at|time:'g:i A' }}</span>
+          <p>{{ p.base_text|default:p.title }}</p>
+          <div class="tagrow"><span class="st st-{{ p.status }}">{% if p.status == 'review' %}Needs approval{% else %}{{ p.get_status_display }}{% endif %}</span>{% if p.source == 'mcp' %}<span class="st st-ai">✦ Claude draft</span>{% endif %}<span class="muted small">{{ p.workspace.name }}</span></div></div>
+        <div class="th">{% if p.first_media %}{% if p.first_media.kind == 'video' %}<video src="{{ p.first_media.file.url }}" muted preload="metadata"></video>{% else %}<img src="{{ p.first_media.file.url }}" alt="" loading="lazy">{% endif %}{% else %}<span class="art" style="--a:{{ p.workspace.color }}"></span>{% endif %}</div>
+      </a>
+      {% empty %}<p class="muted">Nothing queued. <a href="{% url 'social:post_new' %}">Plan a post</a></p>{% endfor %}
+    </div>
+  </div>
+  <div class="glass card grow1">
+    <div class="head"><div class="grow"><h3>Needs you</h3><span class="sub">From failed posts, approvals and Claude's drafts</span></div></div>
+    <div class="sugg">
+      {% for n in needs %}
+      <div class="sg {% if n.tone %}t-{{ n.tone }}{% endif %}"><p>{{ n.text }}</p><a class="btn btn-sm {% if n.tone == 'bad' or n.tone == 'warn' %}btn-white{% else %}btn-primary{% endif %}" href="{{ n.url }}">{% if n.tone == 'ai' %}✦ {% endif %}{{ n.action }}</a></div>
+      {% empty %}<div class="sg"><p class="ok"><i class="fas fa-check"></i> All clear. Nothing needs you right now.</p></div>{% endfor %}
+    </div>
+  </div>
+</div>
+{{ trend|json_script:'trendData' }}
+{% endblock %}
+{% block hub_js %}<script>window.SocialCharts && SocialCharts.home('trendSvg', 'trendTip', 'trendData', 'mpills');</script>{% endblock %}
