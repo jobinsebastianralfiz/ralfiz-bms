@@ -38,13 +38,15 @@
 
   // Promo video: plays muted while on screen (saves data), tap for sound.
   var vid = document.getElementById('promoVideo'), snd = document.getElementById('promoSound');
+  var reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var play = function (v) { var p = v.play(); if (p && p.catch) p.catch(function () {}); };
+  if ('IntersectionObserver' in window && !reduce) {
+    var vo = new IntersectionObserver(function (es) {
+      es.forEach(function (e) { if (e.isIntersecting) play(e.target); else e.target.pause(); });
+    }, { threshold: 0.35 });
+    $$('video.autoloop').forEach(function (v) { vo.observe(v); });
+  }
   if (vid) {
-    var reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
-    if ('IntersectionObserver' in window && !reduce) {
-      new IntersectionObserver(function (es) {
-        es.forEach(function (e) { if (e.isIntersecting) { var p = vid.play(); if (p && p.catch) p.catch(function () {}); } else vid.pause(); });
-      }, { threshold: 0.35 }).observe(vid);
-    }
     var setSound = function (on) {
       vid.muted = !on;
       snd.classList.toggle('on', on);
@@ -58,6 +60,14 @@
       var p = vid.play(); if (p && p.catch) p.catch(function () {});
     });
     vid.addEventListener('click', function () { snd.click(); });
+    // Hero "Watch the 45s video": scroll to the big player and start it with sound.
+    $$('[data-watch]').forEach(function (a) {
+      a.addEventListener('click', function (e) {
+        e.preventDefault();
+        vid.closest('.social-video').scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'center' });
+        vid.currentTime = 0; setSound(true); play(vid);
+      });
+    });
   }
 
   // "Book a demo" links preselect the product in the form.

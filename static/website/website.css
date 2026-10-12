@@ -75,6 +75,8 @@ main, .nav, .foot { position: relative; z-index: 1; }
 .phone { position: absolute; padding: 7px; border-radius: 30px; background: #0B0618; border: 2px solid var(--stroke2); box-shadow: 0 30px 70px -20px rgba(255,46,136,.6); overflow: hidden; }
 .phone img { border-radius: 23px; }
 .hero-art .phone { width: 190px; right: -14px; bottom: -40px; }
+.hero-art .hero-vid { width: 210px; aspect-ratio: 9 / 16; bottom: -70px; }
+.hero-vid video { width: 100%; height: 100%; object-fit: cover; border-radius: 23px; display: block; background: #170C35; }
 .float { animation: float 6s ease-in-out infinite; }
 .chip { position: absolute; display: inline-flex; align-items: center; gap: 8px; padding: 10px 15px; border-radius: 14px; background: rgba(255,255,255,.96); color: var(--base); font-size: 13px; font-weight: 800; box-shadow: 0 18px 40px -12px rgba(0,0,0,.5); animation: float 7s ease-in-out infinite; }
 .chip i { color: var(--pink); }
@@ -286,6 +288,7 @@ a.wcard:hover .wshot img { transform: scale(1.04); }
   .lede { font-size: 16.5px; }
   .stats { gap: 20px; } .stats b { font-size: 28px; }
   .hero-art .phone { width: 120px; right: -8px; bottom: -30px; }
+  .hero-art .hero-vid { width: 128px; bottom: -50px; }
   .chip { font-size: 11.5px; padding: 8px 11px; }
   .chip.c1 { left: -6px; top: 58%; } .chip.c2 { left: 6%; bottom: -36px; }
   .services, .products, .steps, .grid2 { grid-template-columns: minmax(0, 1fr); }

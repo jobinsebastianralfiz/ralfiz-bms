@@ -15,7 +15,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700;12..96,800&family=Figtree:wght@400;500;600;700;800&display=swap">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-<link rel="stylesheet" href="{% static 'website/website.css' %}?v=6">
+<link rel="stylesheet" href="{% static 'website/website.css' %}?v=7">
 </head>
 <body class="lp">
 <div class="mesh" aria-hidden="true"><i class="b b1"></i><i class="b b2"></i><i class="b b3"></i><i class="b b4"></i><i class="grain"></i></div>
@@ -41,7 +41,7 @@
       <p class="lede">Websites, mobile apps and business software built for how you work. Social media run for you with Ralfiz Social. And a training academy that turns learners into developers. One team, from first idea to every update after launch.</p>
       <div class="cta-row">
         <a class="btn grad lg" href="#demo">Book a free demo <i class="fas fa-arrow-right"></i></a>
-        <a class="btn glass lg" href="https://wa.me/{{ whatsapp }}?text={{ 'Hi Ralfiz, I would like to know more about your services.'|urlencode }}" target="_blank" rel="noopener"><i class="fab fa-whatsapp"></i> WhatsApp us</a>
+        <a class="btn glass lg" href="#social" data-watch><i class="fas fa-circle-play"></i> Watch the 45s video</a>
       </div>
       <div class="stats">
         <div><b>{{ clients_label }}</b><span>clients served</span></div>
@@ -51,7 +51,7 @@
     </div>
     <div class="hero-art" aria-hidden="true">
       <div class="browser tilt"><div class="bar"><i></i><i></i><i></i><span>ralfizdigital.in/social</span></div><img src="{% static 'website/img/hub-home.jpg' %}" alt="" width="1600" height="1000"></div>
-      <div class="phone float"><img src="{% static 'website/img/phone-review.jpg' %}" alt="" loading="lazy"></div>
+      <div class="phone float hero-vid"><video class="autoloop" src="{% url 'site_video' 'ralfiz-social-promo.mp4' %}" poster="{% static 'website/video/ralfiz-social-promo.jpg' %}" muted loop playsinline preload="metadata"></video></div>
       <div class="chip c1"><i class="fab fa-instagram"></i> Reel scheduled · 7:00 PM</div>
       <div class="chip c2"><i class="fas fa-check"></i> Approved by client</div>
     </div>
@@ -176,7 +176,7 @@
     </div>
     <div class="social-video reveal">
       <div class="vphone">
-        <video id="promoVideo" src="{% url 'site_video' 'ralfiz-social-promo.mp4' %}" poster="{% static 'website/video/ralfiz-social-promo.jpg' %}"
+        <video id="promoVideo" class="autoloop" src="{% url 'site_video' 'ralfiz-social-promo.mp4' %}" poster="{% static 'website/video/ralfiz-social-promo.jpg' %}"
                muted loop playsinline preload="metadata" aria-label="Ralfiz Social in 45 seconds"></video>
         <button class="vsound" type="button" id="promoSound" aria-label="Turn sound on"><i class="fas fa-volume-xmark"></i> <span>Tap for sound</span></button>
       </div>
@@ -303,6 +303,6 @@
   </div>
 </footer>
 <a class="wa-float" href="https://wa.me/{{ whatsapp }}" target="_blank" rel="noopener" aria-label="Chat on WhatsApp"><i class="fab fa-whatsapp"></i></a>
-<script src="{% static 'website/website.js' %}?v=2"></script>
+<script src="{% static 'website/website.js' %}?v=3"></script>
 </body>
 </html>
