@@ -153,7 +153,11 @@ def enrolment_approve(request, pk):
     if department not in dict(Employee.DEPARTMENT_CHOICES):
         department = 'other'
 
-    password = ''.join(secrets.choice(PASSWORD_ALPHABET) for _ in range(10))
+    password = request.POST.get('password') or ''
+    if password and len(password) < 6:
+        messages.error(request, 'The password must be at least 6 characters.')
+        return redirect('enrolment_detail', pk=pk)
+    password = password or ''.join(secrets.choice(PASSWORD_ALPHABET) for _ in range(10))
     try:
         employee = enrolment.approve(request.user, username=username, password=password,
                                      joining_date=joining_date, department=department,

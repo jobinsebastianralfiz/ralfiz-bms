@@ -233,6 +233,34 @@ class EnrolmentTests(TestCase):
         self.client.post(approve, {'username': 'anjali2', 'joining_date': '2026-11-02'})
         self.assertEqual(Employee.objects.filter(role='intern').count(), 1)
 
+    def test_hr_sets_password_at_approval_then_edits_login(self):
+        self.submit()
+        e = InternEnrolment.objects.get()
+        self.client.force_login(self.hr)
+        approve = reverse('enrolment_approve', args=[e.pk])
+        self.client.post(approve, {'username': 'anjali', 'password': '123', 'joining_date': '2026-11-02'})
+        e.refresh_from_db()
+        self.assertEqual(e.status, 'submitted')  # too short, refused
+
+        self.client.post(approve, {'username': 'anjali', 'password': 'chosen-pw', 'joining_date': '2026-11-02'})
+        e.refresh_from_db()
+        self.assertTrue(e.employee.user.check_password('chosen-pw'))
+
+        detail = reverse('emp_employee_detail', args=[e.employee.pk])
+        self.assertContains(self.client.get(detail), 'name="new_password"')
+        self.client.post(detail, {'action': 'edit_login', 'username': 'boss', 'new_password': ''})
+        e.employee.user.refresh_from_db()
+        self.assertEqual(e.employee.user.username, 'anjali')  # taken, refused
+
+        self.client.post(detail, {'action': 'edit_login', 'username': 'anjali.m', 'new_password': ''})
+        user = User.objects.get(pk=e.employee.user_id)
+        self.assertEqual(user.username, 'anjali.m')
+        self.assertTrue(user.check_password('chosen-pw'))  # blank keeps the password
+
+        self.client.post(detail, {'action': 'edit_login', 'username': 'anjali.m', 'new_password': 'fresh-pw'})
+        self.client.logout()
+        self.assertTrue(self.client.login(username='anjali.m', password='fresh-pw'))
+
     def test_next_employee_id_ignores_other_formats(self):
         for eid in ('EMP009', 'EMP010', 'SMOKE-OWNER', 'EMPX'):
             user = User.objects.create_user(f'u-{eid}')

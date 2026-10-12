@@ -7125,6 +7125,30 @@ def emp_employee_detail(request, pk):
         messages.success(request, 'Employee information updated.')
         return redirect('emp_employee_detail', pk=pk)
 
+    if request.method == 'POST' and request.POST.get('action') == 'edit_login':
+        from django.contrib.auth.models import User
+        user = employee.user
+        username = (request.POST.get('username') or '').strip()
+        new_password = request.POST.get('new_password') or ''
+        if not username or not username.replace('.', '').replace('_', '').replace('@', '').replace('-', '').isalnum():
+            messages.error(request, 'Usernames can use letters, numbers, dots, dashes, @ and underscores only.')
+            return redirect('emp_employee_detail', pk=pk)
+        if User.objects.filter(username__iexact=username).exclude(pk=user.pk).exists():
+            messages.error(request, f'The username "{username}" is already taken.')
+            return redirect('emp_employee_detail', pk=pk)
+        if new_password and len(new_password) < 6:
+            messages.error(request, 'The new password must be at least 6 characters.')
+            return redirect('emp_employee_detail', pk=pk)
+        user.username = username
+        if new_password:
+            user.set_password(new_password)
+        user.save()
+        if new_password:
+            messages.success(request, f'Login updated. Username: {username} / Password: {new_password}')
+        else:
+            messages.success(request, f'Username changed to {username}.')
+        return redirect('emp_employee_detail', pk=pk)
+
     if request.method == 'POST' and request.POST.get('action') == 'upload_profile_photo':
         profile_photo = request.FILES.get('profile_photo')
         if profile_photo:
