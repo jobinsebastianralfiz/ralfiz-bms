@@ -2,7 +2,10 @@
 builder = "DOCKERFILE"
 dockerfilePath = "Dockerfile"
 
+# Shared by every service in the project (web + social-worker), so nothing
+# service-specific lives here. The web service's /api/docs/ health check and
+# the worker's start command (python manage.py social_worker) are set in each
+# service's own Railway settings.
 [deploy]
-healthcheckPath = "/api/docs/"
 restartPolicyType = "ON_FAILURE"
 restartPolicyMaxRetries = 3

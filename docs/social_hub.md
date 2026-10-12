@@ -19,12 +19,13 @@ Locally, with no platform keys set, every platform uses a fake adapter (`SOCIAL_
 
 ## 2. Worker service
 
-Publishing runs in a separate process: a second Railway service from the same repo whose
-**Config-as-code path** is `railway.worker.toml`. That file runs `python manage.py social_worker`
-and has no health check, since the worker serves no HTTP. Give the worker the same variables as the
-web service (`DATABASE_URL`, `SECRET_KEY`, `SOCIAL_TOKEN_KEY`, the platform keys, `SOCIAL_PUBLIC_BASE_URL`).
-`SECRET_KEY` must match: the worker signs the media links that the web service checks. The worker has
-no media volume; it fetches files from the web service through those signed links.
+Publishing runs in a separate Railway service, `social-worker` (created 2026-10-12), built from the
+same repo. Its start command `python manage.py social_worker` and its lack of a health check are set
+in the service's own settings: Railway no longer accepts a per-service config file, and `railway.toml`
+is shared by every service, so the web service's `/api/docs/` health check now lives in its settings
+too. The worker has the web service's variables; `SECRET_KEY` and `SOCIAL_TOKEN_KEY` must match on both.
+The worker has no media volume; it fetches files from the web service through signed links. When you
+add a variable to the web service (e.g. a platform key), add it to social-worker as well.
 
 It publishes due posts every minute, syncs inboxes every 10 minutes, and syncs metrics and checks tokens every 6 hours. Without it, scheduled posts never go out.
 
