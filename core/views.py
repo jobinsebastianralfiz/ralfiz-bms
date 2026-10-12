@@ -3,6 +3,7 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.urls import reverse
 from django.core.exceptions import ValidationError
 from django.contrib.auth.decorators import login_required
+from .security import is_locked, safe_next
 from django.contrib.auth import login, logout, authenticate
 from django.contrib.auth.models import User
 from django.contrib import messages
@@ -70,7 +71,7 @@ def login_view(request):
             login(request, user)
             # Mid-OAuth (connecting Claude): finish that flow before any
             # role-based landing page, or the consent screen is lost.
-            next_url = request.GET.get('next', '')
+            next_url = safe_next(request, request.GET.get('next', ''), '')
             if next_url.startswith('/oauth/authorize/'):
                 return redirect(next_url)
             # Redirect team members to their dashboard
@@ -82,8 +83,9 @@ def login_view(request):
             # Academy students have their own portal
             if student_only(user):
                 return redirect('academy:home')
-            next_url = request.GET.get('next', 'dashboard')
-            return redirect(next_url)
+            return redirect(safe_next(request, request.GET.get('next', ''), 'dashboard'))
+        elif is_locked(username, request):
+            messages.error(request, 'Too many failed attempts. Try again in 15 minutes.')
         else:
             messages.error(request, 'Invalid username or password.')
 
@@ -5819,7 +5821,7 @@ def task_comment_add(request, pk):
         message=body[:140], is_visible_to_client=is_visible, related_comment=comment,
     )
     messages.success(request, 'Comment posted.')
-    return redirect(request.POST.get('next') or f"{reverse('task_detail', args=[pk])}#comments")
+    return redirect(safe_next(request, request.POST.get('next'), f"{reverse('task_detail', args=[pk])}#comments"))
 
 
 @login_required

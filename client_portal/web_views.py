@@ -66,8 +66,8 @@ def portal_login(request):
             return render(request, 'client_portal/login.html', {'error': 'Your account is inactive. Contact support.'})
 
         login(request, user)
-        next_url = request.GET.get('next', 'client_portal:portal_dashboard')
-        return redirect(next_url)
+        from core.security import safe_next
+        return redirect(safe_next(request, request.GET.get('next'), 'client_portal:portal_dashboard'))
 
     return render(request, 'client_portal/login.html')
 

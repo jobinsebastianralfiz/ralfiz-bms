@@ -175,10 +175,8 @@ MAX_ALL_PER_HOUR = 60   # all visitors together: a flood cannot fill the CRM
 
 
 def _client_ip(request):
-    """The address Railway's proxy saw. It appends the real client to X-Forwarded-For,
-    so the LAST entry is trustworthy; earlier entries are whatever the sender typed."""
-    fwd = [p.strip() for p in request.META.get('HTTP_X_FORWARDED_FOR', '').split(',') if p.strip()]
-    return (fwd[-1] if fwd else request.META.get('REMOTE_ADDR', '')) or 'unknown'
+    from core.security import client_ip
+    return client_ip(request) or 'unknown'
 
 
 def _http(url):

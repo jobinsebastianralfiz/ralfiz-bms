@@ -319,3 +319,17 @@ LINKEDIN_CLIENT_SECRET = os.getenv('LINKEDIN_CLIENT_SECRET', '')
 LINKEDIN_API_VERSION = os.getenv('LINKEDIN_API_VERSION', '202609')
 X_CLIENT_ID = os.getenv('X_CLIENT_ID', '')
 X_CLIENT_SECRET = os.getenv('X_CLIENT_SECRET', '')
+
+
+# Every login (BMS, admin, staff portal, Academy, client portal, mobile JWT) goes
+# through this backend, which locks a username or address after repeated failures.
+AUTHENTICATION_BACKENDS = ['core.security.LockoutModelBackend']
+
+# Shared by all server processes and kept across deploys (login lockouts, demo-form
+# limits, portfolio feed). Table made by `createcachetable` in the start command.
+CACHES = {
+    'default': {
+        'BACKEND': 'django.core.cache.backends.db.DatabaseCache',
+        'LOCATION': 'django_cache',
+    }
+}

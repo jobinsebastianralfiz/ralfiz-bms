@@ -112,7 +112,8 @@ def staff_login(request):
                           {'error': 'This account has no active staff profile.',
                            'asset_v': ASSET_V})
         login(request, user)
-        return redirect(request.GET.get('next') or 'staff:dashboard')
+        from core.security import safe_next
+        return redirect(safe_next(request, request.GET.get('next'), 'staff:dashboard'))
 
     return render(request, 'staff/login.html', {'asset_v': ASSET_V})
 

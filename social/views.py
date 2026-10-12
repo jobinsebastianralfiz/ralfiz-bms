@@ -59,7 +59,8 @@ def hub_view(fn):
             if request.headers.get('x-requested-with') == 'fetch':
                 return JsonResponse({'ok': False, 'error': str(exc)}, status=400)
             messages.error(request, str(exc))
-            return redirect(request.META.get('HTTP_REFERER') or reverse('social:calendar'))
+            from core.security import safe_next
+            return redirect(safe_next(request, request.META.get('HTTP_REFERER'), reverse('social:calendar')))
     wrapper.__name__ = fn.__name__
     return wrapper
 
@@ -325,7 +326,8 @@ def post_action(request, pk):
     else:
         raise S.SocialError('Unknown action.')
     messages.success(request, msg)
-    return redirect(request.POST.get('next') or request.META.get('HTTP_REFERER') or reverse('social:calendar'))
+    from core.security import safe_next
+    return redirect(safe_next(request, request.POST.get('next') or request.META.get('HTTP_REFERER'), reverse('social:calendar')))
 
 
 # ================================================================ composer
@@ -537,7 +539,8 @@ def inbox_action(request, pk):
             raise S.SocialError(getattr(exc, 'message', str(exc)))
         S.audit(item.account.workspace, 'reply.template', item.author_name, user=request.user)
         messages.success(request, 'Template sent.')
-    return redirect(request.META.get('HTTP_REFERER') or reverse('social:inbox'))
+    from core.security import safe_next
+    return redirect(safe_next(request, request.META.get('HTTP_REFERER'), reverse('social:inbox')))
 
 
 # ================================================================ analytics

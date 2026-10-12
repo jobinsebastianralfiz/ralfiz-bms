@@ -68,7 +68,8 @@ def academy_login(request):
             login(request, user)
             # Unticked: the session ends when the browser closes.
             request.session.set_expiry(REMEMBER_ME_SECONDS if request.POST.get('remember') else 0)
-            nxt = request.GET.get('next', '')
+            from core.security import safe_next
+            nxt = safe_next(request, request.GET.get('next', ''), '')
             return redirect(nxt if nxt.startswith('/academy/') else 'academy:home')
     return render(request, 'academy/login.html', {
         'error': error,
