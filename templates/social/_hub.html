@@ -9,7 +9,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=Figtree:wght@400;500;600;700;800&family=DM+Mono:wght@500&display=swap">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-<link rel="stylesheet" href="{% static 'css/social.css' %}?v=10">
+<link rel="stylesheet" href="{% static 'css/social.css' %}?v=11">
 </head>
 <body class="shx">
 <div class="mesh" aria-hidden="true"><div class="blob b1"></div><div class="blob b2"></div><div class="blob b3"></div><div class="blob b4"></div><div class="grain"></div></div>
@@ -28,6 +28,7 @@
       <a class="rbtn {% if tab == 'accounts' %}on{% endif %}" href="{% url 'social:accounts' %}" aria-label="Accounts"><i class="fas fa-plug"></i><span class="tip">Accounts</span>{% if attention.accounts %}<span class="dot"></span>{% endif %}</a>
       <a class="rbtn {% if tab == 'activity' %}on{% endif %}" href="{% url 'social:activity' %}" aria-label="Activity"><i class="fas fa-clock-rotate-left"></i><span class="tip">Activity log</span></a>
       {% if is_manager %}<a class="rbtn {% if tab == 'clients' %}on{% endif %}" href="{% url 'social:workspaces' %}" aria-label="Clients and team"><i class="fas fa-users-gear"></i><span class="tip">Clients &amp; team</span></a>{% endif %}
+      <a class="rbtn rbtn-home" href="{% url 'dashboard' %}" aria-label="Back to Ralfiz Digital"><i class="fas fa-arrow-left"></i></a>
       <a class="rbtn rbtn-add" href="{% url 'social:post_new' %}{% if current %}?ws={{ current.pk }}{% endif %}" aria-label="Create post"><i class="fas fa-plus"></i><span class="tip">Create post</span></a>
     </nav>
     <a class="rbtn rbtn-back" href="{% url 'dashboard' %}" aria-label="Back to Ralfiz BMS"><i class="fas fa-arrow-right-from-bracket fa-flip-horizontal"></i><span class="tip">Back to BMS</span></a>
@@ -35,7 +36,7 @@
   </aside>
 
   <aside class="chan" aria-label="Clients">
-    <div class="ws"><span class="av sm"><i style="background:#1A0F3A">R</i></span><div><b>Ralfiz Digital</b><br><span>Agency workspace · {{ workspaces|length }} client{{ workspaces|length|pluralize }}</span></div></div>
+    <a class="ws" href="{% url 'dashboard' %}" title="Back to the Ralfiz Digital dashboard"><span class="av sm"><i style="background:#1A0F3A">R</i></span><div><b>Ralfiz Digital</b><br><span>Agency workspace · {{ workspaces|length }} client{{ workspaces|length|pluralize }}</span></div><i class="fas fa-arrow-left ws-back" aria-hidden="true"></i></a>
     <h2>Clients</h2>
     <div class="clist">
       <a href="?ws=all" class="ch {% if not current %}on{% endif %}">
@@ -61,6 +62,7 @@
         <h1>{% block page_heading %}Social Hub{% endblock %}</h1>
         <span class="sub">{% if current %}{{ current.name }}{% else %}All clients{% endif %}{% if platform %} · {{ platform|platform_label }}{% endif %}</span>
       </div>
+      <a class="btn btn-glass btn-back" href="{% url 'dashboard' %}" title="Back to the Ralfiz Digital dashboard"><i class="fas fa-arrow-left"></i> <span>Ralfiz Digital</span></a>
       {% block top_actions %}{% endblock %}
       {% block create_button %}<a class="btn btn-primary" href="{% url 'social:post_new' %}{% if current %}?ws={{ current.pk }}{% endif %}"><i class="fas fa-plus"></i> Create post</a>{% endblock %}
     </div>
