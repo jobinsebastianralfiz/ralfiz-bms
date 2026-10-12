@@ -333,3 +333,9 @@ CACHES = {
         'LOCATION': 'django_cache',
     }
 }
+
+
+# Django's admin lives at a private path set on the server (e.g. "rz-console-x7k2q/").
+# Locally it stays at /admin/; in production with no ADMIN_PATH the admin is off,
+# never silently back at the guessable /admin/.
+ADMIN_PATH = os.getenv('ADMIN_PATH', 'admin/' if DEBUG else '').strip('/')

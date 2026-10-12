@@ -18,7 +18,7 @@ from website.views import book_demo as website_book_demo, video as website_video
 
 urlpatterns = [
     path('robots.txt', academy_robots),
-    path('admin/', admin.site.urls),
+    *([path(f'{settings.ADMIN_PATH}/', admin.site.urls)] if settings.ADMIN_PATH else []),
     path('api/license/', include('licensing.urls')),
     path('api/gympro/', include('gympro_licensing.urls')),
     path('api/eduflow/', include('eduflow_licensing.urls')),

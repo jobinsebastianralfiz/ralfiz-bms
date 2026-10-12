@@ -198,6 +198,5 @@ def robots(request):
     return HttpResponse(
         'User-agent: *\n'
         'Allow: /academy/catalog/\n'
-        'Disallow: /admin/\n'
         f'\nSitemap: {base}/academy/sitemap.xml\n',
         content_type='text/plain')
