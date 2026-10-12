@@ -26,36 +26,74 @@
   <link rel="stylesheet" href="{% static 'css/staff.css' %}?v={{ asset_v }}">
   <script>window.SF_CSRF = "";</script>
 </head>
-<body>
-  <div class="sf-auth">
-    <img class="sf-auth-mark" src="{% static 'staff/icon-192.png' %}?v={{ asset_v }}" alt="Ralfiz" width="60" height="60">
-    <h1>Staff sign in</h1>
-    <p class="sf-auth-sub">Attendance, leave, work and classes — from your phone browser.</p>
-
-    {% if error %}<div class="sf-alert sf-alert-error">{{ error }}</div>{% endif %}
-    {% if messages %}{% for message in messages %}
-      <div class="sf-alert sf-alert-{{ message.tags }}">{{ message }}</div>
-    {% endfor %}{% endif %}
-
-    <form method="post" autocomplete="on">
-      {% csrf_token %}
-      <div class="sf-field">
-        <label class="sf-label" for="username">Username</label>
-        <input class="sf-input" type="text" id="username" name="username"
-               autocapitalize="none" autocorrect="off" autocomplete="username" required>
-      </div>
-      <div class="sf-field">
-        <label class="sf-label" for="password">Password</label>
-        <input class="sf-input" type="password" id="password" name="password"
-               autocomplete="current-password" required>
-      </div>
-      <button type="submit" class="sf-btn"><i class="fas fa-arrow-right-to-bracket"></i> Sign in</button>
-    </form>
-
-    <button type="button" class="sf-btn sf-btn-ghost" id="sfInstallOpen" style="margin-top:26px">
-      <i class="fas fa-mobile-screen-button"></i> Add to Home Screen
-    </button>
+<body class="sf-login-body">
+  <div class="sf-login-bg" aria-hidden="true">
+    <span class="sf-blob sf-blob-a"></span>
+    <span class="sf-blob sf-blob-b"></span>
+    <span class="sf-arc sf-arc-a"></span>
+    <span class="sf-arc sf-arc-b"></span>
+    <span class="sf-orb sf-orb-a"></span>
+    <span class="sf-orb sf-orb-b"></span>
+    <span class="sf-dot"></span>
   </div>
+
+  <main class="sf-auth">
+    <div class="sf-auth-card">
+      <div class="sf-auth-brand">
+        <img class="sf-auth-mark" src="{% static 'staff/icon-192.png' %}?v={{ asset_v }}" alt="Ralfiz" width="56" height="56">
+        <span class="sf-auth-brand-name">Ralfiz Staff</span>
+      </div>
+      <h1>Staff sign in</h1>
+      <p class="sf-auth-sub">Attendance, leave, work and classes — from your phone browser.</p>
+
+      {% if error %}<div class="sf-alert sf-alert-error">{{ error }}</div>{% endif %}
+      {% if messages %}{% for message in messages %}
+        <div class="sf-alert sf-alert-{{ message.tags }}">{{ message }}</div>
+      {% endfor %}{% endif %}
+
+      <form method="post" autocomplete="on">
+        {% csrf_token %}
+        <div class="sf-field">
+          <label class="sf-label" for="username">Username</label>
+          <div class="sf-auth-input">
+            <i class="far fa-user" aria-hidden="true"></i>
+            <input class="sf-input" type="text" id="username" name="username" placeholder="Enter your username"
+                   autocapitalize="none" autocorrect="off" autocomplete="username" required>
+          </div>
+        </div>
+        <div class="sf-field">
+          <label class="sf-label" for="password">Password</label>
+          <div class="sf-auth-input">
+            <i class="fas fa-lock" aria-hidden="true"></i>
+            <input class="sf-input" type="password" id="password" name="password" placeholder="Enter your password"
+                   autocomplete="current-password" required>
+            <button type="button" class="sf-auth-eye" id="sfPwToggle" aria-label="Show password" aria-pressed="false">
+              <i class="far fa-eye"></i>
+            </button>
+          </div>
+        </div>
+        <button type="submit" class="sf-btn sf-auth-submit"><i class="fas fa-arrow-right-to-bracket"></i> Sign in</button>
+      </form>
+
+      <button type="button" class="sf-btn sf-btn-ghost sf-auth-install" id="sfInstallOpen">
+        <i class="fas fa-mobile-screen-button"></i> Add to Home Screen
+      </button>
+
+      <p class="sf-auth-foot">Secure staff access · Ralfiz Digital</p>
+    </div>
+  </main>
+  <script>
+    (function () {
+      var btn = document.getElementById('sfPwToggle'), pw = document.getElementById('password');
+      btn.addEventListener('click', function () {
+        var show = pw.type === 'password';
+        pw.type = show ? 'text' : 'password';
+        btn.setAttribute('aria-pressed', show);
+        btn.setAttribute('aria-label', show ? 'Hide password' : 'Show password');
+        btn.firstElementChild.className = show ? 'far fa-eye-slash' : 'far fa-eye';
+      });
+    })();
+  </script>
   <script src="{% static 'js/staff.js' %}?v={{ asset_v }}"></script>
 </body>
 </html>
