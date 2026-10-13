@@ -78,6 +78,9 @@ class Employee(models.Model):
                                    help_text='Reference photo for face recognition')
     face_encoding = models.JSONField(null=True, blank=True,
                                      help_text='Face encoding/embedding data for server-side verification')
+    face_check_required = models.BooleanField(
+        default=True, help_text='Off: check-in skips matching the selfie against the face photo '
+                                '(for someone whose selfie keeps failing). QR and location still apply.')
 
     # Office location for geo-fenced attendance
     office_latitude = models.DecimalField(max_digits=10, decimal_places=7, null=True, blank=True)

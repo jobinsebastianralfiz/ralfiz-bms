@@ -39,7 +39,7 @@
 </div>
 
 {# --- Blockers --- #}
-{% if not has_face %}
+{% if face_required and not has_face %}
   <div class="sf-alert sf-alert-warning">
     <strong>Register your face first.</strong> Check-in matches a selfie against your
     registered photo. <a href="{% url 'staff:profile' %}" style="text-decoration:underline">Register now →</a>
@@ -54,12 +54,12 @@
 
 {# --- Actions --- #}
 {% if not record %}
-  <button type="button" class="sf-btn" id="sfCheckIn" {% if not has_face %}disabled{% endif %}>
+  <button type="button" class="sf-btn" id="sfCheckIn" {% if face_required and not has_face %}disabled{% endif %}>
     <i class="fas fa-right-to-bracket"></i> Check in
   </button>
   {% if can_remote %}
     <button type="button" class="sf-btn sf-btn-ghost" id="sfCheckInRemote" style="margin-top:10px"
-            {% if not has_face %}disabled{% endif %}>
+            {% if face_required and not has_face %}disabled{% endif %}>
       <i class="fas fa-house-laptop"></i> Check in remotely
     </button>
   {% endif %}
@@ -173,6 +173,8 @@
   // Remote check-ins are closed without an office QR; onsite ones must rescan.
   var NEEDS_QR  = {% if record and record.is_remote %}false{% else %}true{% endif %};
   var secondsLeft = {{ seconds_until_eligible|default:0 }};
+  // HR can turn the selfie match off for one person; then office check-in is QR + location only.
+  var FACE_REQUIRED = {% if face_required %}true{% else %}false{% endif %};
 
   function busy(btn, label) {
     btn.dataset.html = btn.innerHTML;
@@ -213,6 +215,7 @@
         if (cancelled) throw new Error('cancelled');
         payload.qr_code = code;
         modal.onClose = null;
+        if (!FACE_REQUIRED) return null;
         modal.setTitle('Take a selfie');
         return SF.captureSelfie(modal, 'Look at the camera. This is matched against your registered photo.');
       })
@@ -229,11 +232,11 @@
         showProgress(modal, 'Submitting your check-in…');
 
         var fd = new FormData();
-        fd.append('verification_method', 'face_qr');
+        fd.append('verification_method', payload.face_photo ? 'face_qr' : 'qr');
         fd.append('qr_code', payload.qr_code);
         fd.append('latitude', loc.latitude);
         fd.append('longitude', loc.longitude);
-        fd.append('face_photo', payload.face_photo, 'selfie.jpg');
+        if (payload.face_photo) fd.append('face_photo', payload.face_photo, 'selfie.jpg');
         return SF.api(CHECK_IN, { method: 'POST', body: fd });
       })
       .then(function (res) {
@@ -261,7 +264,8 @@
       unbusy(btn);
     });
 
-    SF.captureSelfie(modal, 'Remote check-in needs a selfie only.')
+    SF.captureSelfie(modal, FACE_REQUIRED ? 'Remote check-in needs a selfie only.'
+                                          : 'Take a quick selfie for the record. It is not matched.')
       .then(function (blob) {
         modal.onClose = null;
         showProgress(modal, 'Submitting your check-in…');

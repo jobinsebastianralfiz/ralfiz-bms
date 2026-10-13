@@ -207,6 +207,7 @@ class FacePhotoUploadView(APIView):
             'face_photo': request.build_absolute_uri(employee.face_photo.url) if employee.face_photo else None,
             'face_encoding': employee.face_encoding,
             'has_face_registered': bool(employee.face_photo),
+            'face_check_required': employee.face_check_required,
         })
 
 
@@ -293,22 +294,26 @@ class CheckInView(APIView):
                 return Response({'error': 'Remote check-in is only allowed for hybrid/remote employees.'},
                                 status=status.HTTP_403_FORBIDDEN)
             face_photo = data.get('face_photo')
-            if not face_photo:
-                return Response({'error': 'Face photo (selfie) is required for remote check-in.'},
-                                status=status.HTTP_400_BAD_REQUEST)
-            if not employee.face_photo:
-                return Response({'error': 'No reference face photo registered. Please register your face first.'},
-                                status=status.HTTP_400_BAD_REQUEST)
-            is_match, face_confidence, error_msg = compare_faces(
-                employee.face_photo.path, face_photo
-            )
-            if error_msg:
-                return Response({'error': error_msg}, status=status.HTTP_400_BAD_REQUEST)
-            if not is_match:
-                return Response({
-                    'error': 'Face verification failed. The selfie does not match your registered face.',
-                    'confidence': face_confidence,
-                }, status=status.HTTP_403_FORBIDDEN)
+            face_verified, face_confidence = False, None
+            # HR can turn the selfie match off for one person; a selfie sent anyway is kept as a record.
+            if employee.face_check_required:
+                if not face_photo:
+                    return Response({'error': 'Face photo (selfie) is required for remote check-in.'},
+                                    status=status.HTTP_400_BAD_REQUEST)
+                if not employee.face_photo:
+                    return Response({'error': 'No reference face photo registered. Please register your face first.'},
+                                    status=status.HTTP_400_BAD_REQUEST)
+                is_match, face_confidence, error_msg = compare_faces(
+                    employee.face_photo.path, face_photo
+                )
+                if error_msg:
+                    return Response({'error': error_msg}, status=status.HTTP_400_BAD_REQUEST)
+                if not is_match:
+                    return Response({
+                        'error': 'Face verification failed. The selfie does not match your registered face.',
+                        'confidence': face_confidence,
+                    }, status=status.HTTP_403_FORBIDDEN)
+                face_verified = True
 
             attendance = Attendance.objects.create(
                 employee=employee,
@@ -318,7 +323,7 @@ class CheckInView(APIView):
                 verification_method='remote',
                 check_in_latitude=data.get('latitude'),
                 check_in_longitude=data.get('longitude'),
-                face_verified=True,
+                face_verified=face_verified,
                 face_confidence=face_confidence,
                 face_photo=face_photo,
                 qr_verified=False,
@@ -365,8 +370,17 @@ class CheckInView(APIView):
         face_verified = False
         face_confidence = None
 
+        if not employee.face_check_required:
+            # Selfie match turned off by HR for this person: the office QR is what proves presence.
+            if not qr_verified:
+                return Response({'error': 'Scan the office QR code to check in.'},
+                                status=status.HTTP_400_BAD_REQUEST)
+        elif method in ('qr', 'location'):
+            return Response({'error': 'A selfie is required to check in.'},
+                            status=status.HTTP_400_BAD_REQUEST)
+
         # On-device face verification (ML Kit on mobile) - QR + location still verified server-side
-        if method == 'face_local':
+        elif method == 'face_local':
             if not employee.face_photo:
                 return Response({'error': 'No reference face photo registered. Please register your face first.'},
                                 status=status.HTTP_400_BAD_REQUEST)
@@ -2261,6 +2275,7 @@ class OwnerEmployeeDetailView(APIView):
             'hourly_rate': str(emp.hourly_rate) if emp.hourly_rate else None,
             'profile_photo': photo_url,
             'has_face_registered': bool(emp.face_photo),
+            'face_check_required': emp.face_check_required,
             'supervisor': emp.supervisor.get_full_name() if emp.supervisor else None,
             'attendance_summary': {
                 'month': today.strftime('%B %Y'),

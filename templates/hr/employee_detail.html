@@ -43,6 +43,8 @@
   .emp-photo-cards { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
   .emp-photo-cards .card { height: 100%; }
   .emp-photo-upload { display: flex; flex-wrap: wrap; gap: 8px; }
+  .emp-facecheck { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 10px 12px; border-radius: 10px; background: var(--bg-soft, #f4f7fb); }
+  .emp-facecheck small { font-size: 12px; }
   .emp-photo-upload .form-control { flex: 1 1 170px; min-width: 0; }
   .emp-photo-upload .btn { flex: 1 1 auto; }
   .emp-remove { display: inline-flex; align-items: center; gap: 6px; padding: 4px 12px; border: 1px solid #fecaca;
@@ -480,6 +482,21 @@
             <h3 class="card-title"><i class="fas fa-camera me-2 text-primary"></i> Face Recognition</h3>
           </div>
           <div class="card-body emp-photo-body">
+            <form method="post" class="emp-facecheck">
+              {% csrf_token %}
+              <input type="hidden" name="action" value="toggle_face_check">
+              <input type="hidden" name="required" value="{% if employee.face_check_required %}0{% else %}1{% endif %}">
+              <div>
+                <b>Selfie check at check-in:</b>
+                {% if employee.face_check_required %}<span class="badge badge-success">On</span>
+                <small class="d-block text-muted">The selfie must match this face photo.</small>
+                {% else %}<span class="badge badge-warning">Off</span>
+                <small class="d-block text-muted">No selfie match. QR and location are still checked.</small>{% endif %}
+              </div>
+              <button type="submit" class="btn btn-sm {% if employee.face_check_required %}btn-outline-secondary{% else %}btn-primary{% endif %}">
+                {% if employee.face_check_required %}Turn off{% else %}Turn on{% endif %}
+              </button>
+            </form>
             {% if employee.face_photo %}
             <div class="emp-photo-view">
               <a href="{{ employee.face_photo.url }}" target="_blank" title="Open full size"><img src="{{ employee.face_photo.url }}" alt="Face recognition photo"></a>

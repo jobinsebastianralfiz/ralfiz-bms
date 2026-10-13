@@ -183,6 +183,7 @@ def attendance(request):
         'config': cfg,
         'office_configured': bool(cfg),
         'has_face': bool(employee.face_photo),
+        'face_required': employee.face_check_required,
         'can_remote': employee.work_mode in ('hybrid', 'remote'),
         'checkout_allowed': record.is_checkout_allowed() if record and record.check_in else False,
         'seconds_until_eligible': (record.seconds_until_eligible()

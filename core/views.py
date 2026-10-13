@@ -7190,6 +7190,13 @@ def emp_employee_detail(request, pk):
             messages.error(request, 'Please select a photo to upload.')
         return redirect('emp_employee_detail', pk=pk)
 
+    if request.method == 'POST' and request.POST.get('action') == 'toggle_face_check':
+        employee.face_check_required = request.POST.get('required') == '1'
+        employee.save(update_fields=['face_check_required'])
+        messages.success(request, f'Selfie check turned {"on" if employee.face_check_required else "off"} '
+                                  f'for {employee.user.get_full_name() or employee.user.username if employee.user else "this person"}.')
+        return redirect('emp_employee_detail', pk=pk)
+
     if request.method == 'POST' and request.POST.get('action') == 'remove_face':
         employee.face_photo = None
         employee.face_encoding = None

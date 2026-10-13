@@ -119,6 +119,7 @@ class EmployeeTokenSerializer(TokenObtainPairSerializer):
             'status': employee.status,
             'profile_photo': profile_photo_url,
             'has_face_registered': bool(employee.face_photo),
+            'face_check_required': employee.face_check_required,
         }
 
         return data
