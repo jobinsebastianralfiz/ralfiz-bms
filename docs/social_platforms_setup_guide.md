@@ -6,6 +6,7 @@ Contents
 1. [The big picture: why platforms "review" our app](#1-the-big-picture)
 2. [Meta (Facebook + Instagram), step by step](#2-meta-facebook--instagram)
 2b. [WhatsApp (keep the phone app + use the hub)](#2b-whatsapp)
+2c. [Gmail inbox (ralfiztechnologies@gmail.com)](#2c-gmail-inbox)
 3. [Google Business Profile + YouTube](#3-google-business-profile--youtube)
 4. [LinkedIn](#4-linkedin)
 5. [SEO for ralfiz.com](#5-seo-for-ralfizcom)
@@ -272,6 +273,42 @@ Your own number works as soon as the steps above are done. For **clients'** numb
 ### Not yet verified
 - This has only been tested against simulated Meta responses. The **first real connection** is the real test, so do it while I can watch.
 - Bringing in old chat history (if you agree to share it) is **not** imported into the hub yet. Only new messages from the moment of connecting appear.
+
+---
+
+## 2c. Gmail inbox
+
+### What you get
+Emails to **ralfiztechnologies@gmail.com** show up in the hub's **Inbox**, in an "Email" column next to Facebook, Instagram and WhatsApp.
+- You can reply from the hub. The reply is sent from the Gmail address, appears in Gmail's **Sent** folder, and lands in the same email thread.
+- Only the **Primary** tab is brought in, so promotions and social-network emails stay out.
+- Reading in the hub **does not mark emails as read** in Gmail.
+- New emails arrive within about 10 minutes. The first connection brings in the last 7 days.
+- Claude can draft replies to emails too (through the connector), but a person sends them.
+
+It is **built and live**. No Google Cloud setup and no review are needed.
+
+### Step 1: Turn on 2-Step Verification (if it isn't already)
+Google only allows app passwords when 2-Step Verification is on.
+1. Sign in to Google as ralfiztechnologies@gmail.com and open https://myaccount.google.com/security
+2. **2-Step Verification** → turn it on. It uses your phone.
+
+### Step 2: Make an app password
+An **app password** is a separate 16-letter password just for the hub. Your normal password stays private, and you can cancel the app password at any time without changing anything else.
+1. Open https://myaccount.google.com/apppasswords. Or search "App passwords" at the top of your Google Account page.
+2. App name: `Ralfiz Social` → **Create**.
+3. Google shows 16 letters in 4 groups. **Copy them now**, because Google shows them only once. Spaces don't matter.
+
+### Step 3: Connect in the hub
+1. https://ralfizdigital.in/social/ → **Accounts** → **Connect** → **Email**.
+2. Gmail address: `ralfiztechnologies@gmail.com`. App password: the 16 letters.
+3. Click **Check and continue**, then pick the mailbox. It shows under Accounts.
+4. Click **Sync now** to pull the last 7 days straight away.
+
+### If something goes wrong
+- **"Gmail refused the sign-in"**: you used the normal password, the app password has a typo, or 2-Step Verification is off. Make a new app password and try again.
+- **To stop it**: Accounts → **Disconnect**. Also delete the app password at https://myaccount.google.com/apppasswords.
+- **Changed your Google password?** Google cancels app passwords when the main password changes. Make a new one, then click **Reconnect** in the hub.
 
 ---
 
