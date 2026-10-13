@@ -243,10 +243,6 @@ GOOGLE_SERVICE_ACCOUNT_JSON = os.getenv('GOOGLE_SERVICE_ACCOUNT_JSON', '')
 WEBSITE_GA4_PROPERTY_ID = os.getenv('WEBSITE_GA4_PROPERTY_ID', '')        # the number, e.g. 512345678
 WEBSITE_SEARCH_CONSOLE_SITE = os.getenv('WEBSITE_SEARCH_CONSOLE_SITE', '')  # e.g. https://ralfiz.com/
 WEBSITE_LABEL = os.getenv('WEBSITE_LABEL', 'ralfiz.com')
-# Google reviews on the Website page: a Maps Platform key with "Places API (New)" enabled.
-GOOGLE_MAPS_API_KEY = os.getenv('GOOGLE_MAPS_API_KEY', '')
-WEBSITE_PLACE_ID = os.getenv('WEBSITE_PLACE_ID', '')
-WEBSITE_PLACE_QUERY = os.getenv('WEBSITE_PLACE_QUERY', 'Ralfiz Technologies Perinthalmanna')
 
 # Embeddings for PULSE document search.
 # Read but NOT yet used -- the RAG phase is not built. Anthropic has no

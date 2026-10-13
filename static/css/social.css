@@ -717,19 +717,3 @@
 .ws-ideas { margin: 6px 0 4px; padding-left: 22px; display: flex; flex-direction: column; gap: 10px; }
 .ws-ideas li { padding: 12px 14px; border-radius: 14px; background: linear-gradient(135deg, rgba(155,77,255,.16), rgba(255,46,136,.08)); border: 1px solid rgba(155,77,255,.35); }
 .ws-ideas b { display: block; margin-bottom: 3px; } .ws-ideas span { font-size: 13px; color: var(--soft); line-height: 1.55; }
-
-/* google reviews */
-.gr-score { display: flex; align-items: center; gap: 10px; }
-.gr-score b { font: 800 34px/1 var(--display); }
-.gr-score small { color: var(--muted); font-size: 12px; }
-.gr-stars { --r: 0; display: inline-block; font-size: 17px; line-height: 1; letter-spacing: 2px; background: linear-gradient(90deg, #FFC93D calc(var(--r) / 5 * 100%), rgba(255,255,255,.22) 0); -webkit-background-clip: text; background-clip: text; color: transparent; }
-.gr-stars::before { content: '★★★★★'; }
-.gr-stars.sm { font-size: 12px; letter-spacing: 1px; }
-.gr-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 12px; margin-top: 6px; }
-.gr { padding: 14px; border-radius: 16px; background: rgba(255,255,255,.05); border: 1px solid var(--stroke); display: flex; flex-direction: column; gap: 8px; }
-.gr header { display: flex; gap: 10px; align-items: center; }
-.gr header img { width: 34px; height: 34px; border-radius: 50%; object-fit: cover; }
-.gr header b, .gr header b a { color: #fff; text-decoration: none; font-size: 13.5px; }
-.gr header small { display: block; color: var(--muted); font-size: 11.5px; }
-.gr p { margin: 0; font-size: 13px; line-height: 1.55; color: var(--soft); overflow-wrap: anywhere; }
-#reviews .sub a { color: var(--soft); }
