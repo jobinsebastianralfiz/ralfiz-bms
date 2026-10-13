@@ -549,9 +549,12 @@ class ClaudeDraftVisibilityTests(HubTestCase):
                     scheduled_at=self.soon(), source='mcp')
         self.client.force_login(self.owner)
         page = self.client.get(reverse('social:approvals')).content.decode()
-        self.assertEqual(page.count('Drafts, not sent for approval yet'), 1)
+        # Nothing else is pending, so the page opens on the Drafts tab.
+        self.assertIn('class="on" aria-current="page">Drafts <span>1</span>', page)
         self.assertEqual(page.count('Drafted by Claude here'), 2)  # tile preview + details dialog
-        self.assertIn('Drafted by Claude here', page)
         self.assertIn('Send for approval', page)
+        other = self.client.get(reverse('social:approvals') + '?tab=review').content.decode()
+        self.assertNotIn('Drafted by Claude here', other)
+        self.assertIn('Nothing is waiting for approval.', other)
         home = self.client.get(reverse('social:home')).content.decode()
         self.assertIn('Claude drafted 1 post that nobody has sent for approval yet.', home)

@@ -407,9 +407,21 @@
 .sh-dlg-x:focus { outline: none; box-shadow: 0 0 0 2px var(--stroke2); }
 
 /* approvals */
-.sh-links { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 12px; }
-.shx .sh-link { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; padding: 14px; }
-.sh-link > div { flex: 1 1 200px; min-width: 0; } .sh-link small { display: block; color: var(--muted); font-size: 12px; }
+/* approvals: one list at a time behind tabs */
+.sh-apbar { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; justify-content: space-between; margin-bottom: 18px; }
+.sh-tabs { display: flex; flex-wrap: wrap; gap: 4px; padding: 4px; border-radius: 999px; background: var(--glass); border: 1px solid var(--stroke); }
+.sh-tabs a { display: inline-flex; align-items: center; gap: 7px; height: 34px; padding: 0 14px; border-radius: 999px; color: var(--soft); font-size: 13px; font-weight: 700; text-decoration: none; transition: background .2s, color .2s; }
+.sh-tabs a:hover { background: var(--glass2); color: #fff; }
+.sh-tabs a span { min-width: 20px; height: 20px; padding: 0 6px; border-radius: 999px; display: inline-grid; place-items: center; font-size: 11px; background: var(--glass2); }
+.sh-tabs a.has span { background: var(--pink); color: #fff; }
+.sh-tabs a.on { background: #fff; color: var(--base); }
+.sh-tabs a.on span { background: var(--base); color: #fff; }
+.sh-revlink { display: inline-flex; align-items: center; gap: 10px; padding: 5px 5px 5px 8px; border-radius: 999px; background: var(--glass); border: 1px solid var(--stroke); font-size: 12.5px; color: var(--soft); }
+.sh-revlink .btn { border-radius: 999px; }
+.sh-apempty { display: flex; flex-direction: column; align-items: center; gap: 10px; padding: 48px 20px; }
+.sh-apempty i { font-size: 28px; color: var(--good); }
+.sh-apempty p { margin: 0; }
+
 
 /* composer */
 .sh-compose { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); gap: 20px; align-items: start; }

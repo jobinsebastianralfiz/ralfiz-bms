@@ -179,7 +179,7 @@ def home(request):
     if claude_drafts:
         needs.append({'tone': 'ai', 'text': f"Claude drafted {claude_drafts} post{'s' if claude_drafts != 1 else ''} "
                       'that nobody has sent for approval yet.', 'action': 'Open drafts',
-                      'url': reverse('social:approvals') + '#drafts'})
+                      'url': reverse('social:approvals') + '?tab=drafts'})
     if claude_replies:
         needs.append({'tone': 'ai', 'text': f'Claude drafted {claude_replies} repl{"ies" if claude_replies != 1 else "y"} '
                       'in the inbox. Check them before they go out.', 'action': 'Review replies',
@@ -472,13 +472,26 @@ def approvals(request):
     if ctx['platform']:
         base = base.filter(targets__account__platform=ctx['platform']).distinct()
     soon = timezone.now() + timedelta(days=7)
-    ctx.update({
-        'review': [_post_card(p) for p in base.filter(status='review').order_by('scheduled_at')],
-        'changes': [_post_card(p) for p in base.filter(status='changes').order_by('scheduled_at')],
-        'upcoming': [_post_card(p) for p in base.filter(status='scheduled', scheduled_at__lte=soon)
-                     .order_by('scheduled_at')[:20]],
+    lists = {
+        'review': base.filter(status='review').order_by('scheduled_at'),
+        'changes': base.filter(status='changes').order_by('scheduled_at'),
         # Claude only ever drafts, so its posts sit here until someone sends them on.
-        'drafts': [_post_card(p) for p in base.filter(status='draft').order_by('scheduled_at')[:30]],
+        'drafts': base.filter(status='draft').order_by('scheduled_at')[:30],
+        'upcoming': base.filter(status='scheduled', scheduled_at__lte=soon).order_by('scheduled_at')[:20],
+    }
+    lists = {k: [_post_card(p) for p in qs] for k, qs in lists.items()}
+    labels = {'review': 'Waiting for approval', 'changes': 'Changes requested',
+              'drafts': 'Drafts', 'upcoming': 'Going out this week'}
+    empty = {'review': 'Nothing is waiting for approval.', 'changes': 'No posts were sent back.',
+             'drafts': 'No drafts. Posts Claude writes land here until someone sends them for approval.',
+             'upcoming': 'Nothing approved for the next 7 days.'}
+    # Open on the tab asked for, else the first one with something in it.
+    tab = request.GET.get('tab')
+    if tab not in lists:
+        tab = next((k for k in lists if lists[k]), 'review')
+    ctx.update({
+        'tabs': [{'key': k, 'label': labels[k], 'count': len(v), 'on': k == tab} for k, v in lists.items()],
+        'posts': lists[tab], 'empty_text': empty[tab],
         'link_workspaces': [w for w in ctx['in_view'] if w.requires_approval],
     })
     return render(request, 'social/approvals.html', ctx)
