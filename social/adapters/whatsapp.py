@@ -56,12 +56,18 @@ class WhatsAppAdapter(Adapter):
         missing = [label for name, label, _ in self.manual_fields if not values[name]]
         if missing:
             raise AdapterError(f'Fill in: {", ".join(missing)}.')
-        phone = graph('GET', values['phone_number_id'], values['access_token'], platform=self.label,
-                      params={'fields': 'verified_name,display_phone_number'})
+        phone = _ok(graph('GET', values['phone_number_id'], values['access_token'], platform=self.label,
+                          params={'fields': 'verified_name,display_phone_number'}), 'Could not read the number')
+        try:   # so incoming messages reach the hub's webhook (already subscribed is fine)
+            _ok(graph('POST', f"{values['waba_id']}/subscribed_apps", values['access_token'], platform=self.label),
+                'Could not subscribe to WhatsApp messages')
+        except AdapterError:
+            log.warning('WhatsApp manual connect: subscribing the app to the WABA failed', exc_info=True)
         number = phone.get('display_phone_number', '')
         return [AccountCandidate(
             external_id=values['phone_number_id'], name=phone.get('verified_name') or number,
-            handle=number, token=values['access_token'], extra={'waba_id': values['waba_id']})]
+            handle=number, token=values['access_token'], extra={'waba_id': values['waba_id']},
+            expires_at=self._token_expiry(values['access_token']))]
 
     # ------------------------------------------------------------ Embedded Signup
     # Meta's "Connect WhatsApp" popup. With coexistence the business keeps using the

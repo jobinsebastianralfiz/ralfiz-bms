@@ -341,12 +341,14 @@ class WebhookTests(MetaTestCase):
 
 class WhatsAppTests(MetaTestCase):
     def test_manual_connect(self):
-        fake, patch = graph({'verified_name': 'Acme Store', 'display_phone_number': '+91 98000 00000', 'id': 'PN1'})
+        fake, patch = graph({'verified_name': 'Acme Store', 'display_phone_number': '+91 98000 00000', 'id': 'PN1'},
+                            {'success': True}, {'data': {'expires_at': 0}})
         with patch:
             [c] = WhatsAppAdapter().manual_connect(
                 {'phone_number_id': 'PN1', 'waba_id': 'W1', 'access_token': 'sys-token'})
         self.assertEqual((c.external_id, c.name, c.token, c.extra), ('PN1', 'Acme Store', 'sys-token', {'waba_id': 'W1'}))
-        self.assertEqual(fake.paths(), [('GET', '/PN1')])
+        self.assertIsNone(c.expires_at)                     # a System User token never expires
+        self.assertEqual(fake.paths(), [('GET', '/PN1'), ('POST', '/W1/subscribed_apps'), ('GET', '/debug_token')])
         self.assertEqual(fake.calls[0][2]['headers']['Authorization'], 'Bearer sys-token')
 
     def test_manual_connect_bad_token(self):
