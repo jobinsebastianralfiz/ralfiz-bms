@@ -13,6 +13,7 @@ from django.contrib.auth import get_user_model
 from django.contrib.auth.decorators import login_required
 from django.core import signing
 from django.core.exceptions import PermissionDenied
+from django.core.cache import cache
 from django.core.paginator import Paginator
 from django.db.models import Count, Q
 from django.http import FileResponse, Http404, HttpResponse, JsonResponse
@@ -601,12 +602,62 @@ def website(request):
     ctx = _ctx(request, 'website')
     days = int(request.GET.get('days', 30)) if request.GET.get('days', '30').isdigit() else 30
     days = days if days in (7, 30, 90) else 30
-    data = W.report(days, refresh=request.method == 'POST') if W.is_configured() else None
+    action = request.POST.get('action') if request.method == 'POST' else None
+    data = W.report(days, refresh=action == 'refresh') if W.is_configured() else None
     kpis = (data['ga']['kpis'] if data and data['ga'] else []) + (data['gsc']['kpis'] if data and data['gsc'] else [])
+    ideas_key = f'social:website:ideas:{days}'
+    if action == 'ideas' and data:
+        from .ai import website_ideas
+        cache.set(ideas_key, website_ideas(W.summary_text(data, days), settings.WEBSITE_LABEL), 24 * 3600)
+        return redirect(f"{reverse('social:website')}?days={days}#ideas")
+    chart = {}
+    if data and data['ga']:
+        chart.update(labels=data['ga']['labels'], users=data['ga']['series'], views=data['ga']['views_series'])
+    if data and data['gsc']:
+        chart.setdefault('labels', data['gsc']['labels'])
+        chart.update(clicks=data['gsc']['clicks_series'], shown=data['gsc']['shown_series'])
+    chart['units'] = {'users': 'visitors', 'views': 'page views', 'clicks': 'clicks from Google',
+                      'shown': 'times shown in Google'}
     ctx.update({'days': days, 'data': data, 'kpis': kpis, 'site_label': settings.WEBSITE_LABEL,
-                'sparks': {k['key']: k['spark'] for k in kpis},
-                'sa_email': (W.service_account() or {}).get('client_email', '') if settings.GOOGLE_SERVICE_ACCOUNT_JSON else ''})
+                'sparks': {k['key']: k['spark'] for k in kpis}, 'chart': chart,
+                'ga_has_visits': bool(data and data['ga'] and data['ga']['sessions']),
+                'tips': W.tips(data) if data else [], 'ideas': _md_list(cache.get(ideas_key) or ''),
+                'donut': _donut(data['ga']['channels']) if data and data['ga'] else None})
     return render(request, 'social/website.html', ctx)
+
+
+DONUT_COLORS = ('#FF2E88', '#9B4DFF', '#3D8BFF', '#FF7A3D', '#3EF0A0', '#2EE6D6', '#FFC93D', '#94A3B8')
+
+
+def _donut(channels):
+    """A conic-gradient donut: each channel's share of visits."""
+    total = sum(c['sessions'] for c in channels)
+    if not total:
+        return None
+    stops, at, legend = [], 0.0, []
+    for i, c in enumerate(channels[:8]):
+        share = 100 * c['sessions'] / total
+        color = DONUT_COLORS[i % len(DONUT_COLORS)]
+        stops.append(f'{color} {at:.2f}% {at + share:.2f}%')
+        legend.append({**c, 'color': color, 'share': round(share)})
+        at += share
+    return {'gradient': ', '.join(stops), 'legend': legend, 'total': total}
+
+
+def _md_list(text):
+    """The AI's numbered Markdown list as safe items: [(title, body)]. Everything is escaped."""
+    import re
+    from django.utils.html import escape
+    items = []
+    for block in re.split(r'\n\s*(?=\d+[.)]\s)', '\n' + (text or '').strip()):
+        block = re.sub(r'^\s*\d+[.)]\s*', '', block).strip()
+        if not block:
+            continue
+        m = re.match(r'\*\*(.+?)\*\*[:.\s-]*(.*)', block, re.S)
+        title, body = (m.group(1), m.group(2)) if m else ('', block)
+        body = re.sub(r'\*\*(.+?)\*\*', r'\1', body)
+        items.append((escape(title.strip().rstrip(':')), escape(' '.join(body.split()))))
+    return items
 
 
 # ================================================================ analytics

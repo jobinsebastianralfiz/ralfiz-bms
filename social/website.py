@@ -113,7 +113,8 @@ def analytics(days):
     reqs = [
         {'dateRanges': rng, 'metrics': [{'name': n} for n in ('activeUsers', 'sessions', 'screenPageViews',
                                                                'averageSessionDuration')]},
-        {'dateRanges': rng[:1], 'dimensions': [{'name': 'date'}], 'metrics': [{'name': 'activeUsers'}],
+        {'dateRanges': rng[:1], 'dimensions': [{'name': 'date'}],
+         'metrics': [{'name': 'activeUsers'}, {'name': 'screenPageViews'}],
          'orderBys': [{'dimension': {'dimensionName': 'date'}}]},
         {'dateRanges': rng[:1], 'dimensions': [{'name': 'pagePath'}], 'metrics': [{'name': 'screenPageViews'}],
          'orderBys': [{'metric': {'metricName': 'screenPageViews'}, 'desc': True}], 'limit': 8},
@@ -127,22 +128,26 @@ def analytics(days):
     t = {d[-1] if d else 'date_range_0': v for d, v in _rows(totals)}
     now, before = t.get('date_range_0', [0, 0, 0, 0]), t.get('date_range_1', [0, 0, 0, 0])
     ld = {d[-1]: v[0] for d, v in _rows(leads)}
-    by_day = {d[0]: v[0] for d, v in _rows(daily)}
+    by_day = {d[0]: v for d, v in _rows(daily)}
     today = timezone.localdate()
-    series = [by_day.get((today - timedelta(days=i)).strftime('%Y%m%d'), 0) for i in range(days - 1, -1, -1)]
+    keys = [(today - timedelta(days=i)).strftime('%Y%m%d') for i in range(days - 1, -1, -1)]
+    series = [by_day.get(k, [0, 0])[0] for k in keys]
+    views_series = [by_day.get(k, [0, 0])[1] for k in keys]
     ch = _rows(channels)
     ch_total = sum(v[0] for _, v in ch) or 1
     return {
         'kpis': [
             _kpi('users', 'Visitors', now[0], before[0], series),
             _kpi('sessions', 'Visits', now[1], before[1]),
-            _kpi('views', 'Page views', now[2], before[2]),
+            _kpi('views', 'Page views', now[2], before[2], views_series),
             _kpi('leads', 'Contact-form leads', ld.get('date_range_0', 0), ld.get('date_range_1', 0)),
         ],
         'avg_minutes': round(now[3] / 60, 1),
         'pages': [{'path': d[0], 'views': int(v[0])} for d, v in _rows(pages)],
         'channels': [{'name': d[0], 'sessions': int(v[0]), 'pct': round(100 * v[0] / ch_total)} for d, v in ch],
-        'series': series,
+        'series': series, 'views_series': views_series,
+        'labels': [(today - timedelta(days=i)).strftime('%d %b') for i in range(days - 1, -1, -1)],
+        'sessions': int(now[1]), 'leads': int(ld.get('date_range_0', 0)),
     }
 
 
@@ -160,18 +165,68 @@ def search(days):
         return _post(url, {'startDate': s.isoformat(), 'endDate': e.isoformat(), **extra}).get('rows') or []
 
     now, before = (q(start, end) or [{}])[0], (q(prev_start, prev_end) or [{}])[0]
-    queries = q(start, end, dimensions=['query'], rowLimit=10)
+    all_queries = q(start, end, dimensions=['query'], rowLimit=200)
+    queries = all_queries[:10]
+    by_date = {r['keys'][0]: r for r in q(start, end, dimensions=['date'], rowLimit=500)}
+    dates = [start + timedelta(days=i) for i in range(days)]
+    clicks = [by_date.get(d.isoformat(), {}).get('clicks', 0) for d in dates]
+    shown = [by_date.get(d.isoformat(), {}).get('impressions', 0) for d in dates]
+    pages = q(start, end, dimensions=['page'], rowLimit=8)
+    # "Almost page one": people see you, but you sit below the top results.
+    opportunities = sorted((r for r in all_queries if r['impressions'] >= 10 and 3.5 < r['position'] <= 20),
+                           key=lambda r: -r['impressions'])[:8]
     return {
         'kpis': [
-            _kpi('clicks', 'Clicks from Google', now.get('clicks', 0), before.get('clicks', 0)),
-            _kpi('impressions', 'Shown in Google', now.get('impressions', 0), before.get('impressions', 0)),
+            _kpi('clicks', 'Clicks from Google', now.get('clicks', 0), before.get('clicks', 0), clicks),
+            _kpi('impressions', 'Shown in Google', now.get('impressions', 0), before.get('impressions', 0), shown),
         ],
+        'labels': [d.strftime('%d %b') for d in dates], 'clicks_series': clicks, 'shown_series': shown,
+        'pages': [{'url': r['keys'][0], 'clicks': int(r['clicks']), 'impressions': int(r['impressions'])}
+                  for r in pages],
+        'opportunities': [{'query': r['keys'][0], 'clicks': int(r['clicks']), 'impressions': int(r['impressions']),
+                           'position': round(r['position'], 1)} for r in opportunities],
+        'low_ctr': [{'query': r['keys'][0], 'impressions': int(r['impressions']), 'ctr': round(100 * r['ctr'], 1),
+                     'position': round(r['position'], 1)}
+                    for r in all_queries if r['position'] <= 3 and r['impressions'] >= 20 and r['ctr'] < 0.05][:5],
         'ctr': round(100 * now.get('ctr', 0), 1),
         'position': round(now.get('position', 0), 1) if now.get('position') else None,
         'queries': [{'query': r['keys'][0], 'clicks': int(r['clicks']), 'impressions': int(r['impressions']),
                      'position': round(r['position'], 1)} for r in queries],
         'through': end,
     }
+
+
+def tips(data):
+    """Plain-English suggestions worked out from the numbers (no AI needed)."""
+    out = []
+    ga, gsc = data.get('ga'), data.get('gsc')
+    if gsc:
+        for o in gsc['opportunities'][:3]:
+            out.append(('fa-arrow-trend-up', f'You are #{o["position"]:g} for "{o["query"]}"',
+                        f'Google showed you {o["impressions"]} times but you got {o["clicks"]} clicks. A page or blog '
+                        f'post aimed at exactly this phrase (in the title and first heading) can move you into the top 3, '
+                        f'where most clicks go.'))
+        for o in gsc['low_ctr'][:2]:
+            out.append(('fa-heading', f'Rewrite the Google title for "{o["query"]}"',
+                        f'You are already #{o["position"]:g}, but only {o["ctr"]}% of people click. A clearer title and '
+                        f'description (what you offer, Perinthalmanna / Kerala, a reason to click) usually doubles that.'))
+    if ga:
+        names = {c['name'] for c in ga['channels'] if c['sessions']}
+        if ga['sessions'] and 'Organic Social' not in names:
+            out.append(('fa-share-nodes', 'No visits from social media yet',
+                        'Put ralfiz.com in your Instagram and Facebook bio, add link stickers to stories, and end posts '
+                        'with the page link. Every post you publish from the hub can carry a link.'))
+        if ga['sessions'] >= 30 and not ga['leads']:
+            out.append(('fa-envelope-open-text', 'Visitors, but no contact-form leads',
+                        'Add a clear "Get a free quote" button and a WhatsApp button near the top of the home and '
+                        'services pages, so people can ask without scrolling.'))
+    out.append(('fa-gauge-high', 'Keep the site fast on phones',
+                'Test it at pagespeed.web.dev and aim for 90+ on mobile. Oversized images are the usual cause of a '
+                'slow page. Faster pages rank higher and fewer visitors leave before it loads.'))
+    out.append(('fa-pen-nib', 'Publish one useful post a month',
+                'Short guides people in Kerala search for (e.g. "website cost for small business in Kerala", '
+                '"billing software for shops") bring steady free visitors and leads.'))
+    return out[:6]
 
 
 def _kpi(key, label, now, before, spark=None):
@@ -195,3 +250,24 @@ def report(days, refresh=False):
                 data['errors'].append(f'Google sent back {name.upper()} data in an unexpected shape.')
         cache.set(key, data, CACHE_SECONDS if not data['errors'] else 300)
     return data
+
+
+def summary_text(data, days):
+    """The report as compact text for the AI (numbers and phrases only)."""
+    lines = [f'Period: last {days} days.']
+    ga, gsc = data.get('ga'), data.get('gsc')
+    if ga:
+        lines.append('Google Analytics: ' + ', '.join(f"{k['label']} {k['value']}"
+                     + (f" ({k['change']:+}% vs previous period)" if k['change'] is not None else '') for k in ga['kpis'])
+                     + f", average visit {ga['avg_minutes']} min.")
+        lines.append('Visits by channel: ' + (', '.join(f"{c['name']} {c['sessions']}" for c in ga['channels']) or 'none yet'))
+        lines.append('Top pages: ' + (', '.join(f"{p['path']} {p['views']} views" for p in ga['pages']) or 'none yet'))
+    if gsc:
+        lines.append('Google Search: ' + ', '.join(f"{k['label']} {k['value']}" for k in gsc['kpis'])
+                     + f", click rate {gsc['ctr']}%, average position {gsc['position']}.")
+        lines.append('Top searches (clicks/impressions/position): ' + '; '.join(
+            f"\"{q['query']}\" {q['clicks']}/{q['impressions']}/#{q['position']}" for q in gsc['queries']))
+        lines.append('Searches where we are on page 1-2 but not top 3: ' + ('; '.join(
+            f"\"{q['query']}\" #{q['position']} shown {q['impressions']}" for q in gsc['opportunities']) or 'none'))
+        lines.append('Top pages in Google: ' + '; '.join(f"{p['url']} {p['clicks']} clicks" for p in gsc['pages']))
+    return '\n'.join(lines)

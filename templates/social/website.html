@@ -4,7 +4,7 @@
 {% block page_heading %}Website · {{ site_label }}{% endblock %}
 {% block top_actions %}
 <div class="pills"><a href="?days=7" aria-pressed="{% if days == 7 %}true{% else %}false{% endif %}">7 days</a><a href="?days=30" aria-pressed="{% if days == 30 %}true{% else %}false{% endif %}">30 days</a><a href="?days=90" aria-pressed="{% if days == 90 %}true{% else %}false{% endif %}">90 days</a></div>
-{% if data %}<form method="post" class="inline">{% csrf_token %}<button class="btn btn-glass" title="Fetch fresh numbers from Google (otherwise they refresh every hour)"><i class="fas fa-rotate"></i> Refresh</button></form>{% endif %}
+{% if data %}<form method="post" class="inline">{% csrf_token %}<input type="hidden" name="action" value="refresh"><button class="btn btn-glass" title="Fetch fresh numbers from Google (otherwise they refresh every hour)"><i class="fas fa-rotate"></i> Refresh</button></form>{% endif %}
 {% endblock %}
 {% block hub %}
 {% if not data %}
@@ -32,29 +32,67 @@
   {% endfor %}
 </div>
 {% endif %}
-{% if data.ga %}<p class="hint">Average visit {{ data.ga.avg_minutes }} min · last {{ days }} days · from Google Analytics{% if data.gsc %}. Search numbers run to {{ data.gsc.through|date:'d M' }} (Google reports them about 3 days late){% if data.gsc.position %}, average position {{ data.gsc.position }}, {{ data.gsc.ctr }}% of people who saw you clicked{% endif %}{% endif %}.</p>{% endif %}
+{% if data.ga or data.gsc %}<p class="hint">{% if ga_has_visits %}Average visit {{ data.ga.avg_minutes }} min · {% endif %}last {{ days }} days{% if data.gsc %} · Google search figures run to {{ data.gsc.through|date:'d M' }} (Google reports them about 3 days late){% if data.gsc.position %}, average position <b>{{ data.gsc.position }}</b>, <b>{{ data.gsc.ctr }}%</b> of people who saw you clicked{% endif %}{% endif %}.</p>{% endif %}
+
+{% if chart.labels %}
+<div class="glass card">
+  <div class="head"><div class="grow"><h3>Traffic over time</h3><span class="sub">Last {{ days }} days · hover the line for each day</span></div>
+    <div class="pills" id="wpills">
+      {% if chart.users %}<button type="button" data-m="users" aria-pressed="{% if ga_has_visits or not chart.clicks %}true{% else %}false{% endif %}">Visitors</button><button type="button" data-m="views" aria-pressed="false">Page views</button>{% endif %}
+      {% if chart.clicks %}<button type="button" data-m="clicks" aria-pressed="{% if ga_has_visits and chart.users %}false{% else %}true{% endif %}">Google clicks</button><button type="button" data-m="shown" aria-pressed="false">Shown in Google</button>{% endif %}
+    </div></div>
+  <div class="chart"><svg id="wSvg" viewBox="0 0 800 260" preserveAspectRatio="none" role="img" aria-label="Website traffic over time"></svg><div class="ctip" id="wTip"></div></div>
+</div>
+{% endif %}
 
 <div class="row">
   {% if data.ga %}
   <div class="glass card grow1">
-    <div class="head"><div class="grow"><h3>Where visitors come from</h3><span class="sub">Visits by channel</span></div></div>
-    {% for c in data.ga.channels %}
-    <div class="ws-bar"><span>{{ c.name }}</span><i style="--w:{{ c.pct }}%"></i><b class="num">{{ c.sessions|intcomma }}</b></div>
-    {% empty %}<p class="muted">No visits yet. Numbers appear a few hours after the first visitors.</p>{% endfor %}
+    <div class="head"><div class="grow"><h3>Where visitors come from</h3><span class="sub">Share of visits</span></div></div>
+    {% if donut %}
+    <div class="ws-donut-wrap">
+      <div class="ws-donut" style="background:conic-gradient({{ donut.gradient }})"><div><b class="num">{{ donut.total|compact }}</b><span>visits</span></div></div>
+      <ul class="ws-legend">{% for c in donut.legend %}<li><i style="background:{{ c.color }}"></i><span>{{ c.name }}</span><b>{{ c.share }}%</b></li>{% endfor %}</ul>
+    </div>
+    {% else %}<p class="muted">No visits recorded yet. Google Analytics started collecting today; give it a day or two.</p>{% endif %}
   </div>
   <div class="glass card grow1">
     <div class="head"><div class="grow"><h3>Most viewed pages</h3><span class="sub">Page views</span></div></div>
-    <table class="ws-table">{% for p in data.ga.pages %}<tr><td><a href="https://{{ site_label }}{{ p.path }}" target="_blank" rel="noopener">{{ p.path|truncatechars:48 }}</a></td><td class="num">{{ p.views|intcomma }}</td></tr>{% empty %}<tr><td class="muted">No page views yet.</td></tr>{% endfor %}</table>
-  </div>
-  {% endif %}
-  {% if data.gsc %}
-  <div class="glass card grow1">
-    <div class="head"><div class="grow"><h3>What people search to find you</h3><span class="sub">Google searches · clicks / shown / position</span></div></div>
-    <table class="ws-table">{% for q in data.gsc.queries %}<tr><td>{{ q.query|truncatechars:40 }}</td><td class="num">{{ q.clicks }}</td><td class="num muted">{{ q.impressions|intcomma }}</td><td class="num muted">#{{ q.position }}</td></tr>{% empty %}<tr><td class="muted">Google has no search data yet. It usually takes a few days after verifying.</td></tr>{% endfor %}</table>
+    {% for p in data.ga.pages %}{% with top=data.ga.pages.0.views %}
+    <div class="ws-bar"><a href="https://{{ site_label }}{{ p.path }}" target="_blank" rel="noopener">{{ p.path|truncatechars:34 }}</a><i style="--w:{% widthratio p.views top 100 %}%"></i><b class="num">{{ p.views|intcomma }}</b></div>
+    {% endwith %}{% empty %}<p class="muted">No page views yet.</p>{% endfor %}
   </div>
   {% endif %}
 </div>
+
+{% if data.gsc %}
+<div class="row">
+  <div class="glass card grow1">
+    <div class="head"><div class="grow"><h3>What people search to find you</h3><span class="sub">Clicks · times shown · your position</span></div></div>
+    <table class="ws-table"><tr class="th"><td>Search</td><td class="num">Clicks</td><td class="num">Shown</td><td class="num">Position</td></tr>
+    {% for q in data.gsc.queries %}<tr><td>{{ q.query|truncatechars:42 }}</td><td class="num"><b>{{ q.clicks }}</b></td><td class="num muted">{{ q.impressions|intcomma }}</td><td class="num"><span class="ws-pos {% if q.position <= 3 %}top{% elif q.position <= 10 %}p1{% endif %}">#{{ q.position }}</span></td></tr>
+    {% empty %}<tr><td class="muted">No search data yet.</td></tr>{% endfor %}</table>
+  </div>
+  <div class="glass card grow1">
+    <div class="head"><div class="grow"><h3><i class="fas fa-bullseye"></i> Almost on top</h3><span class="sub">Searches where Google shows you, but below the top 3</span></div></div>
+    <table class="ws-table"><tr class="th"><td>Search</td><td class="num">Shown</td><td class="num">Clicks</td><td class="num">Position</td></tr>
+    {% for q in data.gsc.opportunities %}<tr><td>{{ q.query|truncatechars:42 }}</td><td class="num">{{ q.impressions|intcomma }}</td><td class="num muted">{{ q.clicks }}</td><td class="num"><span class="ws-pos p1">#{{ q.position }}</span></td></tr>
+    {% empty %}<tr><td class="muted">None right now: you are either top 3 or not shown yet.</td></tr>{% endfor %}</table>
+  </div>
+</div>
+{% endif %}
+
+<div class="glass card" id="ideas">
+  <div class="head"><div class="grow"><h3><i class="fas fa-lightbulb"></i> How to get more visitors</h3><span class="sub">Worked out from your numbers above</span></div>
+    <form method="post" class="inline">{% csrf_token %}<input type="hidden" name="action" value="ideas"><button class="btn btn-sm btn-primary"><i class="fas fa-wand-magic-sparkles"></i> {% if ideas %}Ask AI again{% else %}Get AI suggestions{% endif %}</button></form></div>
+  {% if ideas %}
+  <ol class="ws-ideas ai">{% for title, body in ideas %}<li>{% if title %}<b>{{ title }}</b>{% endif %}<span>{{ body }}</span></li>{% endfor %}</ol>
+  <p class="sh-hint">✦ Written by AI from this page's numbers. Kept for 24 hours.</p>
+  {% endif %}
+  <ul class="ws-tips">{% for icon, title, body in tips %}<li><i class="fas {{ icon }}"></i><div><b>{{ title }}</b><span>{{ body }}</span></div></li>{% endfor %}</ul>
+</div>
+{{ chart|json_script:'wData' }}
 {{ sparks|json_script:'sparkData' }}
 {% endif %}
 {% endblock %}
-{% block hub_js %}<script>window.SocialCharts && SocialCharts.sparks('sparkData');</script>{% endblock %}
+{% block hub_js %}<script>window.SocialCharts && (SocialCharts.sparks('sparkData'), SocialCharts.home('wSvg', 'wTip', 'wData', 'wpills'));</script>{% endblock %}

@@ -328,7 +328,7 @@
       var svg = document.getElementById(svgId), src = document.getElementById(dataId);
       if (!svg || !src) return;
       var d = JSON.parse(src.textContent), tip = document.getElementById(tipId);
-      var units = { reach: 'people reached', engagement: 'engagements', followers: 'followers' };
+      var units = d.units || { reach: 'people reached', engagement: 'engagements', followers: 'followers' };
       var draw = function (m) { lineChart(svg, tip, d.labels, d[m] || [], units[m]); };
       $$('#' + pillsId + ' button').forEach(function (b) {
         b.addEventListener('click', function () {
@@ -336,7 +336,8 @@
           draw(b.getAttribute('data-m'));
         });
       });
-      draw('reach');
+      var first = $('#' + pillsId + ' button[aria-pressed="true"]');
+      draw(first ? first.getAttribute('data-m') : 'reach');
     },
     sparks: function (dataId) {
       var src = document.getElementById(dataId); if (!src) return;

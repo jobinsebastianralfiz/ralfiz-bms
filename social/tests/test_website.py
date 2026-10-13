@@ -22,7 +22,7 @@ def ga_reports():
                           'metricValues': [{'value': str(v)} for v in vals]} for dims, vals in rows]}
     return {'reports': [
         r([(['date_range_0'], [120, 150, 400, 95]), (['date_range_1'], [100, 130, 300, 80])]),
-        r([(['20261012'], [10]), (['20261013'], [14])]),
+        r([(['20261012'], [10, 30]), (['20261013'], [14, 41])]),
         r([(['/'], [200]), (['/services/'], [80])]),
         r([(['Organic Search'], [90]), (['Direct'], [60])]),
         r([(['generate_lead', 'date_range_0'], [4]), (['generate_lead', 'date_range_1'], [2])]),
@@ -35,6 +35,15 @@ def fake_post(url, **kw):
         resp.json.return_value = {'access_token': 'tok'}
     elif 'analyticsdata' in url:
         resp.json.return_value = ga_reports()
+    elif kw['json'].get('dimensions') == ['date']:
+        resp.json.return_value = {'rows': [{'keys': ['2026-10-05'], 'clicks': 3, 'impressions': 70}]}
+    elif kw['json'].get('dimensions') == ['page']:
+        resp.json.return_value = {'rows': [{'keys': ['https://ralfiz.com/'], 'clicks': 20, 'impressions': 500}]}
+    elif kw['json'].get('dimensions') == ['query'] and kw['json'].get('rowLimit') == 200:
+        resp.json.return_value = {'rows': [
+            {'keys': ['ralfiz technologies'], 'clicks': 12, 'impressions': 90, 'ctr': 0.13, 'position': 1.4},
+            {'keys': ['software company kerala'], 'clicks': 1, 'impressions': 140, 'ctr': 0.007, 'position': 7.8},
+            {'keys': ['ralfiz'], 'clicks': 0, 'impressions': 40, 'ctr': 0.0, 'position': 2.0}]}
     elif kw['json'].get('dimensions') == ['query']:
         resp.json.return_value = {'rows': [{'keys': ['ralfiz technologies'], 'clicks': 12, 'impressions': 90,
                                             'position': 1.4}]}
@@ -92,3 +101,39 @@ class WebsitePageTests(TestCase):
     def test_setup_steps_without_a_key(self):
         self.client.force_login(self.owner)
         self.assertContains(self.client.get(reverse('social:website')), 'service account')
+
+
+@override_settings(GOOGLE_SERVICE_ACCOUNT_JSON=SA, WEBSITE_GA4_PROPERTY_ID='512345678',
+                   WEBSITE_SEARCH_CONSOLE_SITE='sc-domain:ralfiz.com', ANTHROPIC_API_KEY='k',
+                   SOCIAL_TOKEN_KEY='ad-qsvn0nNwwkeZWx4ms_kfGauKcOxV6390X4U2rYAE=')
+class WebsiteChartsAndTipsTests(TestCase):
+    def setUp(self):
+        cache.clear()
+        self.client.force_login(User.objects.create_superuser('boss2', 'b2@x.com', 'pw'))
+
+    def test_opportunities_low_ctr_and_tips(self):
+        from social import website as W
+        with mock.patch('social.website.requests.post', side_effect=fake_post):
+            data = W.report(30)
+        self.assertEqual([o['query'] for o in data['gsc']['opportunities']], ['software company kerala'])
+        self.assertEqual([o['query'] for o in data['gsc']['low_ctr']], ['ralfiz'])
+        titles = [t[1] for t in W.tips(data)]
+        self.assertIn('You are #7.8 for "software company kerala"', titles)
+        self.assertIn('Rewrite the Google title for "ralfiz"', titles)
+        self.assertIn('No visits from social media yet', titles)
+        self.assertIn('"software company kerala" #7.8 shown 140', W.summary_text(data, 30))
+
+    def test_page_has_chart_donut_and_ai_ideas(self):
+        claude = mock.MagicMock()
+        claude.beta.messages.create.return_value = mock.Mock(stop_reason='end_turn', content=[mock.Mock(
+            type='text', text='1. **Write a Kerala pricing page**: Target "software company kerala".\n2. **Fix <b>titles</b>**: x')])
+        with mock.patch('social.website.requests.post', side_effect=fake_post):
+            page = self.client.get(reverse('social:website')).content.decode()
+            self.assertIn('id="wSvg"', page)
+            self.assertIn('conic-gradient(', page)
+            self.assertIn('Almost on top', page)
+            with mock.patch('social.ai._client', return_value=claude):
+                self.client.post(reverse('social:website') + '?days=30', {'action': 'ideas'})
+            page = self.client.get(reverse('social:website')).content.decode()
+        self.assertIn('<b>Write a Kerala pricing page</b>', page)
+        self.assertIn('&lt;b&gt;titles&lt;/b&gt;', page)   # AI text is escaped

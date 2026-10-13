@@ -81,3 +81,35 @@ def draft_reply_text(item):
         raise SocialError('The AI declined to answer this message. Write this one yourself.')
     text = ''.join(b.text for b in resp.content if b.type == 'text').strip()
     return '' if text == 'NO_REPLY_NEEDED' else text
+
+
+WEBSITE_SYSTEM = """You are a practical growth advisor for {business}, a software company in Perinthalmanna, Kerala, India (websites, mobile apps, business software like POS/ERP/LMS, digital marketing, and developer training through Ralfiz Academy).
+
+From the website numbers you are given (Google Analytics and Google Search Console for {site}), write the 5 most useful things to do in the next 30 days to get more visitors and more enquiries.
+- Each item: a short bold title, then one or two plain sentences saying exactly what to do and why, using the real numbers or search phrases from the data.
+- Be specific to this business and region. Prefer free actions they can do this week (pages, blog posts, titles, Google Business Profile, social posts, WhatsApp) over paid ads.
+- Do not invent numbers that are not in the data. If data is thin (a new site or a few days), say so in one item and suggest what to set up.
+- Plain English, no jargon. Output a numbered Markdown list only."""
+
+
+def website_ideas(summary, site):
+    """Claude's five suggestions for growing website traffic, from a text summary of the report."""
+    from core.models import CompanySettings
+    business = CompanySettings.get_settings().company_name or 'Ralfiz Technologies'
+    try:
+        resp = _client().beta.messages.create(
+            model=settings.SOCIAL_AI_MODEL, max_tokens=8000,
+            betas=['server-side-fallback-2026-07-01'], fallbacks='default',
+            output_config={'effort': 'medium'},
+            system=WEBSITE_SYSTEM.format(business=business, site=site),
+            messages=[{'role': 'user', 'content': f'<website_data>\n{summary}\n</website_data>\n\nWhat should we do?'}],
+        )
+    except anthropic.RateLimitError:
+        raise SocialError('The AI is busy right now. Try again in a minute.')
+    except anthropic.APIConnectionError:
+        raise SocialError('Could not reach the AI service. Try again.')
+    except anthropic.APIStatusError as exc:
+        raise SocialError(f'The AI could not write suggestions ({exc.status_code}).')
+    if resp.stop_reason == 'refusal':
+        raise SocialError('The AI declined this request.')
+    return ''.join(b.text for b in resp.content if b.type == 'text').strip()
