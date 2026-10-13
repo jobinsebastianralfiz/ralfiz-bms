@@ -5,6 +5,7 @@ A plain-language guide. It covers what each platform wants from us, why, and exa
 Contents
 1. [The big picture: why platforms "review" our app](#1-the-big-picture)
 2. [Meta (Facebook + Instagram), step by step](#2-meta-facebook--instagram)
+2b. [WhatsApp (keep the phone app + use the hub)](#2b-whatsapp)
 3. [Google Business Profile + YouTube](#3-google-business-profile--youtube)
 4. [LinkedIn](#4-linkedin)
 5. [SEO for ralfiz.com](#5-seo-for-ralfizcom)
@@ -199,6 +200,81 @@ When all 13 are approved:
 
 ---
 
+## 2b. WhatsApp
+
+### What you get
+The hub connects to WhatsApp with **coexistence**: the number **keeps working in the WhatsApp Business app on your phone**, and the same chats also appear in the hub's **Inbox**.
+- Messages customers send show in the Inbox.
+- You can reply from the hub **or** the phone.
+- Messages you send from the phone also appear in the hub, marked "Replied from the WhatsApp app".
+
+The hub side is **built and live**. It stays hidden until you finish the steps below.
+
+### Before you start
+- Update the **WhatsApp Business app** on the phone. Meta needs version 2.24.17 or newer.
+- The number should have been in use on the app for at least about a week.
+- You need the Facebook account that manages the Ralfiz business portfolio. It is already verified ✅.
+
+### Step 1: Add WhatsApp to the Meta app (5 minutes)
+1. Open https://developers.facebook.com/apps and choose **Ralfiz Social Dashboard**.
+2. Left menu → **Add product** → **WhatsApp** → **Set up**.
+3. Pick the Ralfiz Technologies business portfolio when asked.
+
+### Step 2: Create the "Connect WhatsApp" configuration (5 minutes)
+This tells Meta what the popup should ask for. Meta gives you a **Configuration ID**, which is the only new value the hub needs.
+1. Left menu → **Facebook Login for Business** → **Configurations** → **Create configuration**.
+2. Name: `WhatsApp signup`.
+3. Login variation: **WhatsApp Embedded Signup**.
+4. Permissions: tick `whatsapp_business_management` and `whatsapp_business_messaging`, plus `business_management` if offered.
+5. Click **Create**, then copy the **Configuration ID** (a long number).
+6. Still under Facebook Login for Business → **Settings**:
+   - **Login with the JavaScript SDK**: turn **On**.
+   - **Allowed domains for the JavaScript SDK**: add `https://ralfizdigital.in`.
+   - **Valid OAuth redirect URIs**: make sure `https://ralfizdigital.in/` is listed.
+   - Click **Save**.
+
+### Step 3: Put the Configuration ID in Railway
+In Railway, add `META_WHATSAPP_CONFIG_ID` = the number you copied, on **both** services (`ralfiz-bms` and `social-worker`).
+
+### Step 4: Turn on WhatsApp webhooks (how messages reach the hub)
+1. Meta app → **WhatsApp** → **Configuration** → **Webhook** → **Edit**:
+   - Callback URL: `https://ralfizdigital.in/social/webhooks/meta/`
+   - Verify token: the same value as `META_WEBHOOK_VERIFY_TOKEN` in Railway.
+2. **Webhook fields** → **Subscribe** to:
+   - `messages`: customers' messages.
+   - `smb_message_echoes`: messages you send from the phone app.
+
+### Step 5: Connect
+1. Hub → **Accounts** → **Connect** → **WhatsApp**.
+2. Choose **"A number already on the WhatsApp Business app"**.
+3. Click **Connect with Facebook** and follow Meta's popup. It asks you to confirm on the phone, so keep it close. It may also offer to share your chat history.
+4. When the popup closes, pick the number. It now shows under Accounts.
+
+**A new number (no phone app):** choose **"A new number, used only here"** instead. That number then works only in the hub.
+
+**Fallback:** the page also has **"Enter details by hand"**, which takes the phone number ID, WhatsApp account ID and a System User token.
+
+### For clients' WhatsApp numbers
+Your own number works as soon as the steps above are done. For **clients'** numbers, add two more permissions to the App Review request in section 2.6:
+
+| Permission | Paste this |
+| --- | --- |
+| `whatsapp_business_management` | When a business connects WhatsApp through Embedded Signup, we read its WhatsApp Business Account and phone number and subscribe to its message webhooks so its customer chats appear in the Ralfiz Social inbox. |
+| `whatsapp_business_messaging` | We send the replies the business writes in the Ralfiz Social inbox to its customers on WhatsApp, and receive the customers' messages. |
+
+**Recording for these:** Accounts → Connect → WhatsApp → the popup end to end → the number listed. Then send a WhatsApp message from another phone, show it in the Inbox, reply, and show the reply arriving on that phone.
+
+### Costs and limits
+- **Replies within 24 hours** of a customer's last message are free and can say anything.
+- **After 24 hours**, or when **you** start the conversation, you must use a **message template** that Meta has approved. Meta charges per template message, in rupees, by category: marketing, utility or authentication.
+- Some WhatsApp Business app features may change on a coexistence number (Meta lists them in the popup). Reported examples are disappearing messages and view-once messages.
+
+### Not yet verified
+- This has only been tested against simulated Meta responses. The **first real connection** is the real test, so do it while I can watch.
+- Bringing in old chat history (if you agree to share it) is **not** imported into the hub yet. Only new messages from the moment of connecting appear.
+
+---
+
 ## 3. Google Business Profile + YouTube
 
 One Google setup covers both.
@@ -309,6 +385,7 @@ Railway → project **rafizbms** → add each variable to **both** services, **r
 | `META_APP_ID`, `META_APP_SECRET` | Meta app → App settings → Basic | ✅ already set |
 | `GOOGLE_OAUTH_CLIENT_ID`, `GOOGLE_OAUTH_CLIENT_SECRET` | Google Cloud → Credentials (section 3.2, step 4) | ⬜ |
 | `LINKEDIN_CLIENT_ID`, `LINKEDIN_CLIENT_SECRET` | LinkedIn app → Auth tab | ⬜ |
+| `META_WHATSAPP_CONFIG_ID` | Meta app → Facebook Login for Business → Configurations (section 2b, step 2) | ⬜ |
 
 ---
 
