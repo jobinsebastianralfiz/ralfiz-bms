@@ -32,6 +32,8 @@ from .models import (PLATFORM_CHOICES, PLATFORM_LABELS, AuditLog, InboxItem, Med
                      Post, SocialAccount, Workspace)
 
 PLATFORM_ORDER = [p for p, _ in PLATFORM_CHOICES]
+#: No feed to post to: these only feed the inbox.
+INBOX_ONLY = ('whatsapp', 'email')
 PLATFORM_META = {
     'facebook': {'short': 'f', 'color': '#1877F2', 'icon': 'fa-brands fa-facebook-f'},
     'instagram': {'short': 'IG', 'color': '#E1306C', 'icon': 'fa-brands fa-instagram'},
@@ -40,6 +42,7 @@ PLATFORM_META = {
     'x': {'short': 'X', 'color': '#E8E8F0', 'icon': 'fa-brands fa-x-twitter'},
     'whatsapp': {'short': 'WA', 'color': '#25D366', 'icon': 'fa-brands fa-whatsapp'},
     'google_business': {'short': 'G', 'color': '#F4B400', 'icon': 'fa-brands fa-google'},
+    'email': {'short': '@', 'color': '#EA4335', 'icon': 'fas fa-envelope'},
 }
 STATUS_TONE = {
     'draft': 'secondary', 'review': 'warning', 'changes': 'danger', 'scheduled': 'info',
@@ -396,7 +399,7 @@ def compose(request, pk=None):
         return redirect(f"{reverse('social:calendar')}?day={day.isoformat()}")
 
     # WhatsApp has no feed to post to; it lives in the inbox.
-    accounts = list(workspace.accounts.exclude(status='disconnected').exclude(platform='whatsapp'))
+    accounts = list(workspace.accounts.exclude(status='disconnected').exclude(platform__in=INBOX_ONLY))
     when = timezone.localtime(post.scheduled_at) if post and post.scheduled_at else None
     if not when and request.GET.get('day'):
         try:
@@ -525,7 +528,7 @@ def inbox(request):
     streams = [{'platform': p, 'label': PLATFORM_LABELS[p], 'meta': PLATFORM_META[p], 'items': columns[p],
                 'sub': {'facebook': 'Comments & Messenger', 'instagram': 'Comments & DMs', 'linkedin': 'Page comments',
                         'youtube': 'Video comments', 'x': 'Mentions', 'whatsapp': 'Customer messages',
-                        'google_business': 'Reviews'}[p]}
+                        'google_business': 'Reviews', 'email': 'Emails'}[p]}
                for p in PLATFORM_ORDER if p in columns]
     ctx.update({'items': page, 'streams': streams, 'status': status, 'counts': counts})
     return render(request, 'social/inbox.html', ctx)

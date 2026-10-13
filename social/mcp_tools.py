@@ -228,7 +228,8 @@ def _draft_post(ctx, args):
         post = Post.objects.filter(pk=args['post_id'], workspace=ws).first()
         if post is None:
             raise ToolError('No post with that id for this client.')
-    accounts = args.get('account_ids') or [str(a.pk) for a in ws.accounts.filter(status__in=('active', 'expiring'))]
+    accounts = args.get('account_ids') or [str(a.pk) for a in ws.accounts.filter(status__in=('active', 'expiring'))
+                                            .exclude(platform__in=('whatsapp', 'email'))]  # inbox-only
     overrides = args.get('platform_text') or {}
     if not isinstance(overrides, dict):
         raise ToolError('platform_text maps a platform or account id to its own caption.')

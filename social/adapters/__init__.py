@@ -7,6 +7,7 @@ credentials are not set, so the hub can be tried locally with no keys.
 from django.conf import settings
 
 from .fake import FakeAdapter
+from .gmail import GmailAdapter
 from .google import GoogleBusinessAdapter, YouTubeAdapter
 from .linkedin import LinkedInAdapter
 from .meta import FacebookAdapter, InstagramAdapter
@@ -15,7 +16,7 @@ from .x import XAdapter
 
 REAL = {a.platform: a for a in (
     FacebookAdapter(), InstagramAdapter(), LinkedInAdapter(), YouTubeAdapter(), XAdapter(),
-    WhatsAppAdapter(), GoogleBusinessAdapter(),
+    WhatsAppAdapter(), GoogleBusinessAdapter(), GmailAdapter(),
 )}
 _FAKES = {}
 

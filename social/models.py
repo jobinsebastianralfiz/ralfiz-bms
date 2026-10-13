@@ -22,6 +22,7 @@ PLATFORM_CHOICES = [
     ('x', 'X'),
     ('whatsapp', 'WhatsApp'),
     ('google_business', 'Google Business'),
+    ('email', 'Email'),
 ]
 PLATFORM_LABELS = dict(PLATFORM_CHOICES)
 
@@ -262,7 +263,7 @@ class Approval(models.Model):
 
 class InboxItem(models.Model):
     KIND_CHOICES = [('comment', 'Comment'), ('dm', 'Message'), ('review', 'Review'),
-                    ('mention', 'Mention')]
+                    ('mention', 'Mention'), ('email', 'Email')]
     STATUS_CHOICES = [('open', 'Open'), ('done', 'Done')]
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     account = models.ForeignKey(SocialAccount, on_delete=models.CASCADE, related_name='inbox')
