@@ -621,6 +621,7 @@ def website(request):
     ctx.update({'days': days, 'data': data, 'kpis': kpis, 'site_label': settings.WEBSITE_LABEL,
                 'sparks': {k['key']: k['spark'] for k in kpis}, 'chart': chart,
                 'ga_has_visits': bool(data and data['ga'] and data['ga']['sessions']),
+                'reviews': W.google_reviews(refresh=action == 'refresh'),
                 'tips': W.tips(data) if data else [], 'ideas': _md_list(cache.get(ideas_key) or ''),
                 'donut': _donut(data['ga']['channels']) if data and data['ga'] else None})
     return render(request, 'social/website.html', ctx)

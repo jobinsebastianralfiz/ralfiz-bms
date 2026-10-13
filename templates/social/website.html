@@ -82,6 +82,24 @@
 </div>
 {% endif %}
 
+{% if reviews %}
+<div class="glass card" id="reviews">
+  <div class="head"><div class="grow"><h3><i class="fab fa-google"></i> Google reviews</h3><span class="sub">{% if reviews.url %}<a href="{{ reviews.url }}" target="_blank" rel="noopener">{{ reviews.name|default:'Your Business Profile' }} on Google Maps</a>{% endif %} · newest 5 · refreshed twice a day</span></div>
+    {% if reviews.rating %}<div class="gr-score"><b class="num">{{ reviews.rating|floatformat:1 }}</b><span class="gr-stars" style="--r:{{ reviews.rating|stringformat:'s' }}" aria-label="{{ reviews.rating }} out of 5"></span><small>{{ reviews.count }} review{{ reviews.count|pluralize }}</small></div>{% endif %}</div>
+  {% if reviews.error %}<div class="sh-err">{{ reviews.error }}</div>{% endif %}
+  <div class="gr-list">
+    {% for r in reviews.reviews %}
+    <article class="gr">
+      <header>{% if r.photo %}<img src="{{ r.photo }}" alt="" referrerpolicy="no-referrer" loading="lazy">{% else %}<span class="av sm"><i style="background:#2A1658">{{ r.author|slice:':1'|upper }}</i></span>{% endif %}
+        <div><b>{% if r.author_url %}<a href="{{ r.author_url }}" target="_blank" rel="noopener">{{ r.author }}</a>{% else %}{{ r.author }}{% endif %}</b><small><span class="gr-stars sm" style="--r:{{ r.rating }}"></span> {{ r.when }}</small></div></header>
+      {% if r.text %}<p>{{ r.text|truncatechars:420 }}</p>{% else %}<p class="muted">(Rating only, no text)</p>{% endif %}
+    </article>
+    {% empty %}{% if not reviews.error %}<p class="muted">No reviews yet.</p>{% endif %}{% endfor %}
+  </div>
+  <p class="sh-hint">Reviews from Google. To reply, open them on Google Maps, or connect Google Business in Accounts once Google approves API access.</p>
+</div>
+{% endif %}
+
 <div class="glass card" id="ideas">
   <div class="head"><div class="grow"><h3><i class="fas fa-lightbulb"></i> How to get more visitors</h3><span class="sub">Worked out from your numbers above</span></div>
     <form method="post" class="inline">{% csrf_token %}<input type="hidden" name="action" value="ideas"><button class="btn btn-sm btn-primary"><i class="fas fa-wand-magic-sparkles"></i> {% if ideas %}Ask AI again{% else %}Get AI suggestions{% endif %}</button></form></div>

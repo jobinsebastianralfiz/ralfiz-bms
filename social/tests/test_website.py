@@ -147,3 +147,52 @@ class OldCacheTests(TestCase):
                                WEBSITE_SEARCH_CONSOLE_SITE='sc-domain:x.com'), \
                 mock.patch('social.website.requests.post', side_effect=fake_post):
             self.assertIn('labels', W.report(30)['ga'])
+
+
+@override_settings(GOOGLE_SERVICE_ACCOUNT_JSON=SA, WEBSITE_GA4_PROPERTY_ID='1', WEBSITE_SEARCH_CONSOLE_SITE='sc-domain:x.com',
+                   GOOGLE_MAPS_API_KEY='maps-key', WEBSITE_PLACE_ID='', WEBSITE_PLACE_QUERY='Ralfiz Technologies Perinthalmanna',
+                   SOCIAL_TOKEN_KEY='ad-qsvn0nNwwkeZWx4ms_kfGauKcOxV6390X4U2rYAE=')
+class GoogleReviewsTests(TestCase):
+    def setUp(self):
+        cache.clear()
+
+    def places(self, method, url, **kw):
+        resp = mock.Mock(status_code=200)
+        self.calls.append((method, url, kw['headers']['X-Goog-FieldMask']))
+        if url.endswith('places:searchText'):
+            resp.json.return_value = {'places': [{'id': 'PLACE1'}]}
+        else:
+            resp.json.return_value = {
+                'displayName': {'text': 'Ralfiz Technologies'}, 'rating': 4.9, 'userRatingCount': 37,
+                'googleMapsUri': 'https://maps.google.com/?cid=1',
+                'reviews': [
+                    {'rating': 5, 'publishTime': '2026-09-01T00:00:00Z', 'relativePublishTimeDescription': 'a month ago',
+                     'text': {'text': 'Great team'}, 'authorAttribution': {'displayName': 'Asha'}},
+                    {'rating': 4, 'publishTime': '2026-10-01T00:00:00Z', 'relativePublishTimeDescription': '2 weeks ago',
+                     'originalText': {'text': 'നല്ല സേവനം <script>x</script>'}, 'authorAttribution': {'displayName': 'Rahul'}},
+                ]}
+        return resp
+
+    def test_finds_place_once_and_shows_newest_first(self):
+        from social import website as W
+        self.calls = []
+        with mock.patch('social.website.requests.request', side_effect=self.places):
+            data = W.google_reviews()
+            W.google_reviews()                       # cached: no new calls
+        self.assertEqual(len(self.calls), 2)
+        self.assertEqual(self.calls[1][1], 'https://places.googleapis.com/v1/places/PLACE1')
+        self.assertIn('reviews', self.calls[1][2])
+        self.assertEqual((data['rating'], data['count']), (4.9, 37))
+        self.assertEqual([r['author'] for r in data['reviews']], ['Rahul', 'Asha'])
+        self.assertEqual(data['reviews'][0]['text'], 'നല്ല സേവനം <script>x</script>')
+
+    def test_card_on_the_page_is_escaped(self):
+        self.calls = []
+        self.client.force_login(User.objects.create_superuser('boss3', 'b3@x.com', 'pw'))
+        with mock.patch('social.website.requests.request', side_effect=self.places), \
+                mock.patch('social.website.requests.post', side_effect=fake_post):
+            page = self.client.get(reverse('social:website')).content.decode()
+        self.assertIn('Google reviews', page)
+        self.assertIn('4.9', page)
+        self.assertIn('&lt;script&gt;x&lt;/script&gt;', page)
+        self.assertNotIn('<script>x</script>', page)
