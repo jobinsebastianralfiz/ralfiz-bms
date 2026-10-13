@@ -323,6 +323,9 @@ META_GRAPH_VERSION = os.getenv('META_GRAPH_VERSION', 'v23.0')
 META_WEBHOOK_VERIFY_TOKEN = os.getenv('META_WEBHOOK_VERIFY_TOKEN', '')
 # Facebook Login for Business configuration id for WhatsApp Embedded Signup (the Connect WhatsApp popup).
 META_WHATSAPP_CONFIG_ID = os.getenv('META_WHATSAPP_CONFIG_ID', '')
+# Optional: a separate Meta app (type Business) for WhatsApp. Blank = use META_APP_ID / META_APP_SECRET.
+META_WHATSAPP_APP_ID = os.getenv('META_WHATSAPP_APP_ID', '')
+META_WHATSAPP_APP_SECRET = os.getenv('META_WHATSAPP_APP_SECRET', '')
 GOOGLE_OAUTH_CLIENT_ID = os.getenv('GOOGLE_OAUTH_CLIENT_ID', '')
 GOOGLE_OAUTH_CLIENT_SECRET = os.getenv('GOOGLE_OAUTH_CLIENT_SECRET', '')
 LINKEDIN_CLIENT_ID = os.getenv('LINKEDIN_CLIENT_ID', '')

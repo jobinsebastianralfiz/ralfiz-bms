@@ -47,11 +47,15 @@ def meta_webhook(request):
 
 
 def _signature_ok(body, header):
-    secret = getattr(settings, 'META_APP_SECRET', '')
-    if not secret or not header.startswith('sha256='):
+    """Signed by the main Meta app, or by the separate WhatsApp app when there is one."""
+    if not header.startswith('sha256='):
         return False
-    digest = hmac.new(secret.encode(), body, hashlib.sha256).hexdigest()
-    return hmac.compare_digest(digest, header[len('sha256='):])
+    for name in ('META_APP_SECRET', 'META_WHATSAPP_APP_SECRET'):
+        secret = getattr(settings, name, '')
+        if secret and hmac.compare_digest(hmac.new(secret.encode(), body, hashlib.sha256).hexdigest(),
+                                          header[len('sha256='):]):
+            return True
+    return False
 
 
 PARSERS = {}

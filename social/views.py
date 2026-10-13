@@ -28,6 +28,7 @@ from core.models import Client
 from . import services as S
 from .adapters import REAL, get_adapter
 from .adapters.base import AdapterError, NotSupported
+from .adapters.whatsapp import wa_app
 from .crypto import decrypt, encrypt
 from .models import (PLATFORM_CHOICES, PLATFORM_LABELS, AuditLog, InboxItem, MediaAsset, Membership,
                      Post, SocialAccount, Workspace)
@@ -987,7 +988,7 @@ def connect_whatsapp(request):
         _hold_candidates(request, workspace, 'whatsapp', cands)
         return JsonResponse({'ok': True, 'next': reverse('social:connect_pick')})
     resp = render(request, 'social/connect_whatsapp.html', _ctx(
-        request, 'accounts', workspace=workspace, app_id=settings.META_APP_ID,
+        request, 'accounts', workspace=workspace, app_id=wa_app()[0],
         config_id=settings.META_WHATSAPP_CONFIG_ID, graph_version=settings.META_GRAPH_VERSION or 'v23.0'))
     # Facebook's login popup talks back to this page; the default same-origin policy cuts it off.
     resp['Cross-Origin-Opener-Policy'] = 'same-origin-allow-popups'

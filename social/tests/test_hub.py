@@ -697,3 +697,28 @@ class WhatsAppEchoTests(HubTestCase):
         from social.webhooks import handle
         handle(self.payload(to='919811111111'))
         self.assertFalse(InboxReply.objects.exists())
+
+
+@override_settings(META_APP_ID='main', META_APP_SECRET='main-secret', META_WHATSAPP_APP_ID='wa',
+                   META_WHATSAPP_APP_SECRET='wa-secret', META_WHATSAPP_CONFIG_ID='cfg')
+class SeparateWhatsAppAppTests(HubTestCase):
+    def test_signup_uses_the_whatsapp_app_and_webhooks_accept_either_secret(self):
+        import hashlib
+        import hmac as _hmac
+        from social.adapters import REAL
+        from social.webhooks import _signature_ok
+        seen = {}
+
+        def graph(method, path, token='', **kw):
+            if path == 'oauth/access_token':
+                seen.update(kw['params'])
+                return {'access_token': 't'}
+            return {'display_phone_number': '+91', 'verified_name': 'X'}
+        with mock.patch('social.adapters.whatsapp.graph', side_effect=graph):
+            REAL['whatsapp'].embedded_connect('c', 'PN', 'WABA')
+        self.assertEqual((seen['client_id'], seen['client_secret']), ('wa', 'wa-secret'))
+        body = b'{"x":1}'
+        for secret in (b'main-secret', b'wa-secret'):
+            sig = 'sha256=' + _hmac.new(secret, body, hashlib.sha256).hexdigest()
+            self.assertTrue(_signature_ok(body, sig))
+        self.assertFalse(_signature_ok(body, 'sha256=' + _hmac.new(b'other', body, hashlib.sha256).hexdigest()))

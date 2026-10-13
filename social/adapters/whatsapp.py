@@ -20,6 +20,13 @@ from .meta import graph
 log = logging.getLogger(__name__)
 
 
+def wa_app():
+    """(app id, app secret) of the Meta app that runs WhatsApp: its own, or the main one."""
+    if getattr(settings, 'META_WHATSAPP_APP_ID', '') and getattr(settings, 'META_WHATSAPP_APP_SECRET', ''):
+        return settings.META_WHATSAPP_APP_ID, settings.META_WHATSAPP_APP_SECRET
+    return settings.META_APP_ID, settings.META_APP_SECRET
+
+
 def _ok(data, what):
     """Graph returns most failures as a 400 with an ``error`` body; turn that into a message."""
     if isinstance(data, dict) and data.get('error'):
@@ -61,8 +68,8 @@ class WhatsAppAdapter(Adapter):
     # WhatsApp Business app on its phone; the same number also works here.
 
     def embedded_ready(self):
-        return bool(settings.META_APP_ID and settings.META_APP_SECRET
-                    and getattr(settings, 'META_WHATSAPP_CONFIG_ID', ''))
+        app_id, secret = wa_app()
+        return bool(app_id and secret and getattr(settings, 'META_WHATSAPP_CONFIG_ID', ''))
 
     def embedded_connect(self, code, phone_number_id, waba_id, *, coexistence=True):
         """Finish Embedded Signup: swap the popup's code for a business token, read the
@@ -70,7 +77,7 @@ class WhatsAppAdapter(Adapter):
         if not (code and phone_number_id and waba_id):
             raise AdapterError('Meta did not send the WhatsApp details back. Try connecting again.')
         token = _ok(graph('GET', 'oauth/access_token', platform=self.label, params={
-            'client_id': settings.META_APP_ID, 'client_secret': settings.META_APP_SECRET, 'code': code,
+            'client_id': wa_app()[0], 'client_secret': wa_app()[1], 'code': code,
         }), 'Could not finish the WhatsApp sign-in').get('access_token')
         if not token:
             raise AdapterError('Meta did not return an access token. Try connecting again.')
