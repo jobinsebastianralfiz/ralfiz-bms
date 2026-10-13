@@ -522,6 +522,17 @@ def inbox(request):
         it.draft = next((r for r in reversed(replies) if r.status == 'draft'), None)
         it.sent = [r for r in replies if r.status == 'sent']
         it.meta = PLATFORM_META[it.account.platform]
+        if it.kind == 'email':
+            it.subject = (it.raw or {}).get('subject') or it.text.split('\n', 1)[0]
+            body = it.text[len(it.subject):] if it.text.startswith(it.subject) else it.text
+            it.body = body.strip()
+            it.snippet = ' '.join(it.body.split())[:140]
+    if ctx['platform'] == 'email':
+        # Mail layout: a list on the left, the open email on the right.
+        chosen = request.GET.get('item')
+        selected = next((it for it in page if str(it.pk) == chosen), None) or (page[0] if page else None)
+        ctx.update({'items': page, 'status': status, 'counts': counts, 'selected': selected})
+        return render(request, 'social/inbox_email.html', ctx)
     columns = {}
     for it in page:
         columns.setdefault(it.account.platform, []).append(it)
@@ -548,6 +559,17 @@ def inbox_action(request, pk):
     elif action == 'discard':
         S.require(request.user, item.account.workspace)
         item.replies.filter(status='draft').delete()
+    elif action == 'ai_draft':
+        from .ai import draft_reply_text
+        S.require(request.user, item.account.workspace)
+        text = draft_reply_text(item)
+        if text:
+            item.replies.filter(status='draft').delete()
+            S.draft_reply(request.user, item, text, source='ai')
+            messages.success(request, 'AI reply written. Read it, edit if needed, then Send.')
+        else:
+            messages.info(request, 'The AI thinks this one needs no reply (spam or an automatic notice). '
+                                   'Mark it Done, or write a reply yourself.')
     elif action in ('done', 'open'):
         S.set_item_status(request.user, item, action)
     elif action == 'assign_me':

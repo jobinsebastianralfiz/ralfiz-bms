@@ -235,6 +235,8 @@ YOUTUBE_API_KEY = os.getenv('YOUTUBE_API_KEY', '')
 # PULSE command center
 ANTHROPIC_API_KEY = os.getenv('ANTHROPIC_API_KEY', '')
 PULSE_MODEL = os.getenv('PULSE_MODEL', 'claude-opus-4-8')
+# Social Hub: the model that drafts inbox replies (a person always sends them).
+SOCIAL_AI_MODEL = os.getenv('SOCIAL_AI_MODEL', 'claude-opus-5-5')
 
 # Embeddings for PULSE document search.
 # Read but NOT yet used -- the RAG phase is not built. Anthropic has no

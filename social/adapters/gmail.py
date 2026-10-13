@@ -27,6 +27,9 @@ MAX_PER_SYNC = 50
 MAX_BODY = 20000
 TIMEOUT = 30
 
+# Senders nobody can reply to (security alerts, receipts, bounces).
+AUTOMATED_SENDER = re.compile(r'^(no-?reply|do-?not-?reply|donotreply|mailer-daemon|postmaster|bounces?)([+._-].*)?@')
+
 SIGN_IN_HELP = ('Gmail refused the sign-in. Use the full address and an app password (16 letters from '
                 'Google Account → Security → 2-Step Verification → App passwords), not the normal password.')
 
@@ -50,6 +53,14 @@ def _body(msg):
         text = html.unescape(re.sub(r'<[^>]+>', ' ', text))
     text = re.sub(r'[ \t]+', ' ', text)
     return re.sub(r'\n\s*\n\s*\n+', '\n\n', text).strip()[:MAX_BODY]
+
+
+def is_automated(address, msg=None):
+    """Machine-sent mail: a no-reply sender, or an Auto-Submitted header (RFC 3834)."""
+    if AUTOMATED_SENDER.match(address or ''):
+        return True
+    auto = str((msg or {}).get('Auto-Submitted', '') or '').strip().lower()
+    return bool(auto) and auto != 'no'
 
 
 class GmailAdapter(Adapter):
@@ -131,6 +142,8 @@ class GmailAdapter(Adapter):
         name, address = parseaddr(str(msg.get('From', '')))
         address = address.strip().lower()
         if not address or address == account.external_id:     # skip mail we sent ourselves
+            return None
+        if is_automated(address, msg):
             return None
         subject = _one_line(msg.get('Subject', '')) or '(no subject)'
         message_id = _one_line(msg.get('Message-ID', ''))

@@ -27,6 +27,7 @@ qrcode[pil]>=7.4
 # PULSE command center (AI query supervisor)
 langgraph>=1.2
 langchain-anthropic>=1.4
+anthropic>=0.117
 
 # Production dependencies
 gunicorn>=21.0

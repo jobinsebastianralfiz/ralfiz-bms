@@ -1,0 +1,69 @@
+{% extends 'social/_hub.html' %}
+{% load social_tags %}
+{% block hub_title %}Email{% endblock %}
+{% block page_heading %}Email{% endblock %}
+{% block top_actions %}
+<div class="pills" role="group" aria-label="Show">
+  <a href="?p=email&status=open" aria-pressed="{% if status == 'open' %}true{% else %}false{% endif %}">Open <b>{{ counts.open }}</b></a>
+  <a href="?p=email&status=mine" aria-pressed="{% if status == 'mine' %}true{% else %}false{% endif %}">Mine <b>{{ counts.mine }}</b></a>
+  <a href="?p=email&status=done" aria-pressed="{% if status == 'done' %}true{% else %}false{% endif %}">Done <b>{{ counts.done }}</b></a>
+</div>
+{% endblock %}
+{% block hub %}
+{% if not items %}
+<div class="glass empty"><p>{% if status == 'done' %}Nothing marked done yet.{% else %}No emails waiting. New mail arrives every 10 minutes.{% endif %}</p></div>
+{% else %}
+<div class="mail">
+  <aside class="glass mail-list" aria-label="Emails">
+    {% for it in items %}
+    <a class="mi{% if it == selected %} on{% endif %}{% if it.status == 'open' and not it.sent %} unread{% endif %}" href="?p=email&status={{ status }}&item={{ it.pk }}{% if items.number > 1 %}&page={{ items.number }}{% endif %}">
+      <div class="mi-top"><b>{{ it.author_name|default:it.author_id }}</b><time>{{ it.received_at|ago }}</time></div>
+      <div class="mi-sub">{{ it.subject }}</div>
+      <div class="mi-snip">{% if it.draft %}<span class="mi-draft">Draft</span> {% elif it.sent %}<i class="fas fa-reply"></i> {% endif %}{{ it.snippet }}</div>
+    </a>
+    {% endfor %}
+    {% if items.has_other_pages %}<div class="mail-pager">{% if items.has_previous %}<a href="?p=email&status={{ status }}&page={{ items.previous_page_number }}">← Newer</a>{% endif %}{% if items.has_next %}<a href="?p=email&status={{ status }}&page={{ items.next_page_number }}">Older →</a>{% endif %}</div>{% endif %}
+  </aside>
+
+  {% with it=selected %}
+  <article class="glass mail-read" id="i{{ it.pk }}">
+    <header class="mail-head">
+      <h2>{{ it.subject }}</h2>
+      <div class="mail-from">
+        <span class="av"><i style="background:#2A1658">{{ it.author_name|default:it.author_id|slice:':1'|upper }}</i></span>
+        <div><b>{{ it.author_name|default:it.author_id }}</b> <span class="sh-muted">&lt;{{ it.author_id }}&gt;</span>
+          <small>to {{ it.account.external_id }} · {{ it.received_at|date:'D d M Y, g:i A' }}</small></div>
+      </div>
+    </header>
+    <div class="mail-body">{{ it.body|default:'(no text)'|linebreaksbr|urlize }}</div>
+
+    {% for r in it.sent %}
+    <div class="mail-sent"><small><i class="fas fa-reply"></i> You replied{% if r.sent_by %} ({{ r.sent_by.get_full_name|default:r.sent_by.username }}){% endif %} · {{ r.sent_at|date:'d M, g:i A' }}</small>{{ r.text|linebreaksbr }}</div>
+    {% endfor %}
+
+    {% if it.status == 'open' %}
+    <form method="post" action="{% url 'social:inbox_action' it.pk %}" class="mail-compose">{% csrf_token %}
+      <div class="mail-compose-h">
+        <b>Reply to {{ it.author_name|default:it.author_id }}</b>
+        {% if it.draft %}<span class="sh-muted">{% if it.draft.source == 'ai' or it.draft.source == 'mcp' %}✦ Written by AI · read and edit before sending{% else %}Your saved draft{% endif %}</span>{% endif %}
+        <button name="action" value="ai_draft" class="btn btn-sm btn-glass mail-ai" formnovalidate><i class="fas fa-wand-magic-sparkles"></i> {% if it.draft %}Rewrite with AI{% else %}Write reply with AI{% endif %}</button>
+      </div>
+      <textarea name="text" rows="9" placeholder="Write your reply, or click “Write reply with AI”.">{% if it.draft %}{{ it.draft.text }}{% endif %}</textarea>
+      <div class="mail-acts">
+        <button name="action" value="send" class="btn btn-primary"><i class="fas fa-paper-plane"></i> Send</button>
+        <button name="action" value="draft" class="btn btn-glass">Save draft</button>
+        {% if it.draft %}<button name="action" value="discard" class="btn btn-ghost" formnovalidate>Discard draft</button>{% endif %}
+        <span class="sh-sp"></span>
+        {% if it.assigned_to %}<button name="action" value="unassign" class="btn btn-ghost" formnovalidate>✕ {{ it.assigned_to.first_name|default:it.assigned_to.username }}</button>{% else %}<button name="action" value="assign_me" class="btn btn-ghost" formnovalidate>Assign to me</button>{% endif %}
+        <button name="action" value="done" class="btn btn-ghost" formnovalidate><i class="fas fa-check"></i> Done</button>
+      </div>
+      <p class="sh-hint">Sent from {{ it.account.external_id }} as a reply in the same thread. It also shows in Gmail's Sent folder.</p>
+    </form>
+    {% else %}
+    <form method="post" action="{% url 'social:inbox_action' it.pk %}" class="mail-acts">{% csrf_token %}<span class="sent-ok">✓ Done</span><button name="action" value="open" class="btn btn-sm btn-ghost">Reopen</button></form>
+    {% endif %}
+  </article>
+  {% endwith %}
+</div>
+{% endif %}
+{% endblock %}
