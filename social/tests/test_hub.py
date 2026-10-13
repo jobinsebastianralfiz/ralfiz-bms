@@ -611,6 +611,8 @@ class WhatsAppEmbeddedSignupTests(HubTestCase):
                 return {'access_token': 'biz-token'}
             if path == 'PN1':
                 return {'verified_name': 'Demo Cafe', 'display_phone_number': '+91 98956 63498'}
+            if path == 'debug_token':
+                return {'data': {'expires_at': 1765000000}}
             return {'success': True}
         return graph
 
@@ -622,6 +624,7 @@ class WhatsAppEmbeddedSignupTests(HubTestCase):
         self.assertEqual(c.external_id, 'PN1')
         self.assertEqual(c.token, 'biz-token')
         self.assertTrue(c.extra['coexistence'])
+        self.assertEqual(int(c.expires_at.timestamp()), 1765000000)   # 60-day token: hub warns before it lapses
         self.assertIn(('POST', 'WABA1/subscribed_apps'), calls)
         self.assertNotIn(('POST', 'PN1/register'), calls)
 

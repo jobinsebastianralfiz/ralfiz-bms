@@ -97,7 +97,23 @@ class WhatsAppAdapter(Adapter):
             extra['pin_encrypted'] = encrypt(pin)   # Meta asks for it again if the number is re-registered
         number = phone.get('display_phone_number', '')
         return [AccountCandidate(external_id=str(phone_number_id), name=phone.get('verified_name') or number,
-                                 handle=number, token=token, extra=extra)]
+                                 handle=number, token=token, extra=extra, expires_at=self._token_expiry(token))]
+
+    def _token_expiry(self, token):
+        """When the signup token runs out (the 60-day template), so the hub warns a week ahead.
+        None means it never expires, or Meta would not say."""
+        app_id, secret = wa_app()
+        try:
+            info = graph('GET', 'debug_token', platform=self.label,
+                         params={'input_token': token, 'access_token': f'{app_id}|{secret}'}).get('data') or {}
+        except AdapterError:
+            log.warning('Could not read the WhatsApp token expiry', exc_info=True)
+            return None
+        when = int(info.get('expires_at') or 0)
+        if not when:
+            return None
+        from datetime import datetime, timezone as dt_timezone
+        return datetime.fromtimestamp(when, tz=dt_timezone.utc)
 
     def validate(self, text, media, title='', first_comment=''):
         return ['WhatsApp posts are not supported: WhatsApp has no feed. '
