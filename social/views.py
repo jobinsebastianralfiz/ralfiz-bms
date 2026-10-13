@@ -160,6 +160,7 @@ def home(request):
     claude_replies = InboxItem.objects.filter(account__in=accounts, status='open',
                                               replies__status='draft', replies__source='mcp').distinct().count()
     claude_posts = Post.objects.filter(workspace__in=ctx['in_view'], source='mcp', status='review').count()
+    claude_drafts = Post.objects.filter(workspace__in=ctx['in_view'], source='mcp', status='draft').count()
     needs = []
     if att['failed']:
         p = att['failed'][0]
@@ -175,6 +176,10 @@ def home(request):
         needs.append({'tone': 'ai' if claude_posts else '', 'text': f"{att['review']} post{'s' if att['review'] != 1 else ''} "
                       f"waiting for approval" + (f", {claude_posts} drafted by Claude." if claude_posts else '.'),
                       'action': 'Review posts', 'url': reverse('social:approvals')})
+    if claude_drafts:
+        needs.append({'tone': 'ai', 'text': f"Claude drafted {claude_drafts} post{'s' if claude_drafts != 1 else ''} "
+                      'that nobody has sent for approval yet.', 'action': 'Open drafts',
+                      'url': reverse('social:approvals') + '#drafts'})
     if claude_replies:
         needs.append({'tone': 'ai', 'text': f'Claude drafted {claude_replies} repl{"ies" if claude_replies != 1 else "y"} '
                       'in the inbox. Check them before they go out.', 'action': 'Review replies',
@@ -472,6 +477,8 @@ def approvals(request):
         'changes': [_post_card(p) for p in base.filter(status='changes').order_by('scheduled_at')],
         'upcoming': [_post_card(p) for p in base.filter(status='scheduled', scheduled_at__lte=soon)
                      .order_by('scheduled_at')[:20]],
+        # Claude only ever drafts, so its posts sit here until someone sends them on.
+        'drafts': [_post_card(p) for p in base.filter(status='draft').order_by('scheduled_at')[:30]],
         'link_workspaces': [w for w in ctx['in_view'] if w.requires_approval],
     })
     return render(request, 'social/approvals.html', ctx)

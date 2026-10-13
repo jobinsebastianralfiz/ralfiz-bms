@@ -541,3 +541,16 @@ class SecurityTests(HubTestCase):
             self.assertNotContains(r, 'secret comment')
             self.assertNotContains(r, 'Ralfiz LI')
         self.assertEqual(self.client.get(reverse('social:workspaces')).status_code, 403)
+
+
+class ClaudeDraftVisibilityTests(HubTestCase):
+    def test_claude_draft_shows_on_approvals_and_home(self):
+        S.save_post(self.owner, self.cafe, account_ids=[self.fb.pk], text='Drafted by Claude here',
+                    scheduled_at=self.soon(), source='mcp')
+        self.client.force_login(self.owner)
+        page = self.client.get(reverse('social:approvals')).content.decode()
+        self.assertIn('Drafts, not sent for approval yet', page)
+        self.assertIn('Drafted by Claude here', page)
+        self.assertIn('Send for approval', page)
+        home = self.client.get(reverse('social:home')).content.decode()
+        self.assertIn('Claude drafted 1 post that nobody has sent for approval yet.', home)
