@@ -29,6 +29,8 @@ GSC_URL = 'https://www.googleapis.com/webmasters/v3/sites/{site}/searchAnalytics
 SCOPES = ('https://www.googleapis.com/auth/analytics.readonly',
           'https://www.googleapis.com/auth/webmasters.readonly')
 CACHE_SECONDS = 3600
+#: Bump when the report's shape changes, so a deploy never reads an old cached report.
+REPORT_VERSION = 2
 TIMEOUT = 30
 
 
@@ -236,7 +238,7 @@ def _kpi(key, label, now, before, spark=None):
 
 def report(days, refresh=False):
     """Everything the Website page shows, cached for an hour. Errors are returned, not raised."""
-    key = f'social:website:{days}'
+    key = f'social:website:v{REPORT_VERSION}:{days}'
     data = None if refresh else cache.get(key)
     if data is None:
         data = {'ga': None, 'gsc': None, 'errors': []}

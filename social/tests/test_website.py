@@ -137,3 +137,13 @@ class WebsiteChartsAndTipsTests(TestCase):
             page = self.client.get(reverse('social:website')).content.decode()
         self.assertIn('<b>Write a Kerala pricing page</b>', page)
         self.assertIn('&lt;b&gt;titles&lt;/b&gt;', page)   # AI text is escaped
+
+
+class OldCacheTests(TestCase):
+    def test_a_report_cached_by_older_code_is_not_reused(self):
+        from social import website as W
+        cache.set('social:website:30', {'ga': {'kpis': []}, 'gsc': None, 'errors': []})   # old key and shape
+        with override_settings(GOOGLE_SERVICE_ACCOUNT_JSON=SA, WEBSITE_GA4_PROPERTY_ID='1',
+                               WEBSITE_SEARCH_CONSOLE_SITE='sc-domain:x.com'), \
+                mock.patch('social.website.requests.post', side_effect=fake_post):
+            self.assertIn('labels', W.report(30)['ga'])
