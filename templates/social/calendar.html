@@ -54,15 +54,15 @@
 
 <div class="sh-agenda" id="agenda">
   <h2 class="sh-h2">{{ selected|date:'l, j F' }} <span>{{ agenda|length }} post{{ agenda|length|pluralize }}</span></h2>
-  {% for p in agenda %}{% include 'social/_post_card.html' %}{% empty %}
+  {% if agenda %}<div class="sh-ptgrid">{% for p in agenda %}{% include 'social/_post_card.html' %}{% endfor %}</div>{% else %}
   <div class="empty-state sh-empty"><p>Nothing planned for this day.</p>{% if selected >= today %}<a href="{% url 'social:post_new' %}?day={{ selected|date:'Y-m-d' }}{% if current %}&ws={{ current.pk }}{% endif %}" class="btn btn-sm btn-primary">Plan a post</a>{% endif %}</div>
-  {% endfor %}
+  {% endif %}
 </div>
 
 {% if unscheduled %}
 <div class="sh-agenda">
   <h2 class="sh-h2">Drafts without a time <span>{{ unscheduled|length }}</span></h2>
-  {% for p in unscheduled %}{% include 'social/_post_card.html' %}{% endfor %}
+  <div class="sh-ptgrid">{% for p in unscheduled %}{% include 'social/_post_card.html' %}{% endfor %}</div>
 </div>
 {% endif %}
 {% endblock %}

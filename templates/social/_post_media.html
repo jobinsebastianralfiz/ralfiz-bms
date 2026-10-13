@@ -1,0 +1,3 @@
+{% if p.first_media %}<div class="pv-img" style="aspect-ratio:{{ ratio }}">{% if p.first_media.kind == 'video' %}<video src="{{ p.first_media.file.url }}" muted preload="metadata"{% if full %} controls{% endif %}></video>{% if not full %}<i class="fas fa-play pv-play"></i>{% endif %}{% else %}<img src="{{ p.first_media.file.url }}" alt="" loading="lazy">{% endif %}</div>
+{% elif t.thumbnail_url %}<div class="pv-img" style="aspect-ratio:{{ ratio }}"><img src="{{ t.thumbnail_url }}" alt="" loading="lazy" referrerpolicy="no-referrer"></div>
+{% elif need %}<div class="pv-img pv-noimg" style="aspect-ratio:{{ ratio }}"><i class="far fa-image"></i><span>No image yet. Instagram needs one.</span></div>{% endif %}

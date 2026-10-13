@@ -549,7 +549,8 @@ class ClaudeDraftVisibilityTests(HubTestCase):
                     scheduled_at=self.soon(), source='mcp')
         self.client.force_login(self.owner)
         page = self.client.get(reverse('social:approvals')).content.decode()
-        self.assertIn('Drafts, not sent for approval yet', page)
+        self.assertEqual(page.count('Drafts, not sent for approval yet'), 1)
+        self.assertEqual(page.count('Drafted by Claude here'), 2)  # tile preview + details dialog
         self.assertIn('Drafted by Claude here', page)
         self.assertIn('Send for approval', page)
         home = self.client.get(reverse('social:home')).content.decode()

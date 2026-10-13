@@ -1,0 +1,26 @@
+{% load social_tags %}{% with pf=t.account.platform who=t.account.handle|default:t.account.name %}
+<div class="pv-post pv-{{ pf }}{% if full %} is-full{% endif %}">
+  {% if pf == 'youtube' %}
+    {% include 'social/_post_media.html' with ratio='16/9' %}
+    <div class="pv-title">{{ p.title|default:'(no title)' }}</div>
+    <div class="pv-head"><span class="sh-av" style="background:{{ p.workspace.color }}">{{ p.workspace.initial }}</span><small>{{ t.account.name }}</small>{% picon pf %}</div>
+    <div class="pv-text{% if not full %} clamp{% endif %}">{{ t.effective_text }}</div>
+  {% else %}
+    <div class="pv-head">
+      <span class="sh-av" style="background:{{ p.workspace.color }}">{{ p.workspace.initial }}</span>
+      <div><b>{% if pf == 'instagram' %}{{ who|cut:'@' }}{% else %}{{ t.account.name }}{% endif %}</b>
+        {% if pf != 'instagram' %}<small>{% if p.scheduled_at %}{{ p.scheduled_at|date:'d M' }} · {{ p.scheduled_at|time:'g:i A' }}{% else %}Not scheduled{% endif %} · <i class="fas fa-earth-asia"></i></small>{% endif %}</div>
+      {% picon pf %}
+    </div>
+    {% if pf == 'instagram' %}
+      {% include 'social/_post_media.html' with ratio='1' need=1 %}
+      <div class="pv-icons"><i class="far fa-heart"></i><i class="far fa-comment"></i><i class="far fa-paper-plane"></i><i class="far fa-bookmark"></i></div>
+      <div class="pv-text{% if not full %} clamp{% endif %}"><b>{{ who|cut:'@' }}</b> {{ t.effective_text|default:'(no caption)' }}</div>
+      {% if full and p.first_comment %}<div class="pv-first"><b>{{ who|cut:'@' }}</b> {{ p.first_comment }}</div>{% endif %}
+    {% else %}
+      <div class="pv-text{% if not full %} clamp{% endif %}">{{ t.effective_text|default:'(no caption)' }}</div>
+      {% include 'social/_post_media.html' with ratio='1.91' %}
+      <div class="pv-bar"><span><i class="far fa-thumbs-up"></i> Like</span><span><i class="far fa-comment"></i> Comment</span><span><i class="fas fa-share"></i> Share</span></div>
+    {% endif %}
+  {% endif %}
+</div>{% endwith %}

@@ -29,6 +29,22 @@
     box.hidden = !box.hidden; if (!box.hidden) box.querySelector('textarea').focus();
   });
 
+  // Post tiles open their details in a dialog
+  document.addEventListener('click', function (e) {
+    var open = e.target.closest('[data-open-post]');
+    if (open) { var d = document.getElementById(open.getAttribute('data-open-post')); if (d && d.showModal) d.showModal(); return; }
+    if (e.target.closest('[data-close-post]')) { e.target.closest('dialog').close(); return; }
+    if (e.target.matches && e.target.matches('dialog.sh-dlg')) { e.target.close(); return; }  // backdrop click
+    var tab = e.target.closest('[data-pvt]'); if (!tab) return;
+    var box = tab.closest('.sh-dlg-pv'), n = tab.getAttribute('data-pvt');
+    $$('[data-pvt]', box).forEach(function (b) { b.classList.toggle('on', b === tab); });
+    $$('[data-pv]', box).forEach(function (v) { v.hidden = v.getAttribute('data-pv') !== n; });
+  });
+  if (/^#p[0-9a-f-]{36}$/.test(location.hash)) {
+    var linked = document.getElementById('dlg' + location.hash.slice(2));
+    if (linked && linked.showModal) linked.showModal();
+  }
+
   // ---------------------------------------------------------------- calendar drag & drop
   var dragged = null;
   document.addEventListener('dragstart', function (e) {
