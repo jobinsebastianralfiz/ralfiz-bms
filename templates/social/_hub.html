@@ -77,8 +77,8 @@
 
     {% block filters %}{% if platforms_present %}
     <div class="sh-pf" role="group" aria-label="Platform filter">
-      <a href="?p=" class="{% if not platform %}on{% endif %}">All platforms</a>
-      {% for key, label, m in platforms_present %}<a href="?p={{ key }}" class="{% if platform == key %}on{% endif %}"><i class="{{ m.icon }}"></i> {{ label }}</a>{% endfor %}
+      <a href="?p={% if tab == 'inbox' and status and status != 'open' %}&status={{ status }}{% endif %}" class="{% if not platform %}on{% endif %}">All platforms</a>
+      {% for key, label, m in platforms_present %}<a href="?p={{ key }}{% if tab == 'inbox' and status and status != 'open' %}&status={{ status }}{% endif %}" class="{% if platform == key %}on{% endif %}"><i class="{{ m.icon }}"></i> {{ label }}</a>{% endfor %}
     </div>
     {% endif %}{% endblock %}
 

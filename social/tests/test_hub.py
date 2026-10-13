@@ -302,6 +302,13 @@ class ViewTests(HubTestCase):
         r = self.client.get(reverse('social:calendar') + '?mode=week')
         self.assertContains(r, 'Hello')
 
+    def test_inbox_filters_survive_status_tabs(self):
+        InboxItem.objects.create(account=self.fb, kind='comment', external_id='z', text='hey', status='done')
+        r = self.client.get(reverse('social:inbox') + '?p=facebook&status=done')
+        self.assertContains(r, 'href="?status=open&p=facebook"')
+        self.assertContains(r, 'href="?p=facebook&status=done"')
+        self.assertContains(r, 'hey')
+
     def test_stranger_is_refused(self):
         self.client.force_login(self.stranger)
         self.assertEqual(self.client.get(reverse('social:calendar')).status_code, 403)

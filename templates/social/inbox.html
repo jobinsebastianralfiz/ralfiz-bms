@@ -4,9 +4,9 @@
 {% block page_heading %}Streams{% endblock %}
 {% block top_actions %}
 <div class="pills" role="group" aria-label="Show">
-  <a href="?status=open" aria-pressed="{% if status == 'open' %}true{% else %}false{% endif %}">Open <b>{{ counts.open }}</b></a>
-  <a href="?status=mine" aria-pressed="{% if status == 'mine' %}true{% else %}false{% endif %}">Mine <b>{{ counts.mine }}</b></a>
-  <a href="?status=done" aria-pressed="{% if status == 'done' %}true{% else %}false{% endif %}">Done <b>{{ counts.done }}</b></a>
+  <a href="?status=open{% if platform %}&p={{ platform }}{% endif %}" aria-pressed="{% if status == 'open' %}true{% else %}false{% endif %}">Open <b>{{ counts.open }}</b></a>
+  <a href="?status=mine{% if platform %}&p={{ platform }}{% endif %}" aria-pressed="{% if status == 'mine' %}true{% else %}false{% endif %}">Mine <b>{{ counts.mine }}</b></a>
+  <a href="?status=done{% if platform %}&p={{ platform }}{% endif %}" aria-pressed="{% if status == 'done' %}true{% else %}false{% endif %}">Done <b>{{ counts.done }}</b></a>
 </div>
 {% endblock %}
 {% block hub %}
@@ -52,5 +52,5 @@
   <div class="glass empty"><p>{% if status == 'done' %}Nothing marked done yet.{% else %}All caught up. Comments, messages and reviews land here.{% endif %}</p></div>
   {% endfor %}
 </div>
-{% if items.has_other_pages %}<div class="pager">{% if items.has_previous %}<a class="btn btn-sm btn-glass" href="?status={{ status }}&page={{ items.previous_page_number }}">Newer</a>{% endif %}{% if items.has_next %}<a class="btn btn-sm btn-glass" href="?status={{ status }}&page={{ items.next_page_number }}">Older</a>{% endif %}</div>{% endif %}
+{% if items.has_other_pages %}<div class="pager">{% if items.has_previous %}<a class="btn btn-sm btn-glass" href="?status={{ status }}&page={{ items.previous_page_number }}{% if platform %}&p={{ platform }}{% endif %}">Newer</a>{% endif %}{% if items.has_next %}<a class="btn btn-sm btn-glass" href="?status={{ status }}&page={{ items.next_page_number }}{% if platform %}&p={{ platform }}{% endif %}">Older</a>{% endif %}</div>{% endif %}
 {% endblock %}
