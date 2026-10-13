@@ -684,3 +684,15 @@
   .mail-list { position: static; max-height: 40vh; }
   .mail-read { padding: 18px; }
 }
+
+/* website (GA4 + Search Console) */
+.ws-setup ol { margin: 12px 0 0; padding-left: 20px; display: flex; flex-direction: column; gap: 8px; color: var(--soft); font-size: 13.5px; line-height: 1.55; }
+.ws-setup code { font-size: 12.5px; background: rgba(0,0,0,.3); padding: 1px 6px; border-radius: 6px; }
+.ws-bar { display: grid; grid-template-columns: 130px minmax(0, 1fr) auto; gap: 10px; align-items: center; font-size: 13px; margin: 8px 0; }
+.ws-bar span { color: var(--soft); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ws-bar i { height: 8px; border-radius: 99px; background: linear-gradient(90deg, var(--pink), var(--violet)); width: var(--w); min-width: 4px; }
+.ws-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.ws-table td { padding: 7px 4px; border-bottom: 1px solid var(--stroke); }
+.ws-table td.num { text-align: right; white-space: nowrap; }
+.ws-table a { color: #fff; text-decoration: none; }
+.ws-table .muted, .ws-table td.muted { color: var(--muted); }

@@ -1,0 +1,60 @@
+{% extends 'social/_hub.html' %}
+{% load social_tags humanize %}
+{% block hub_title %}Website{% endblock %}
+{% block page_heading %}Website · {{ site_label }}{% endblock %}
+{% block top_actions %}
+<div class="pills"><a href="?days=7" aria-pressed="{% if days == 7 %}true{% else %}false{% endif %}">7 days</a><a href="?days=30" aria-pressed="{% if days == 30 %}true{% else %}false{% endif %}">30 days</a><a href="?days=90" aria-pressed="{% if days == 90 %}true{% else %}false{% endif %}">90 days</a></div>
+{% if data %}<form method="post" class="inline">{% csrf_token %}<button class="btn btn-glass" title="Fetch fresh numbers from Google (otherwise they refresh every hour)"><i class="fas fa-rotate"></i> Refresh</button></form>{% endif %}
+{% endblock %}
+{% block hub %}
+{% if not data %}
+<div class="glass card ws-setup">
+  <h3><i class="fas fa-plug"></i> Connect Google Analytics and Search Console</h3>
+  <p class="muted">This page shows {{ site_label }}'s visitors, contact-form leads and Google searches. It reads them with a Google Cloud <b>service account</b>, a read-only robot login, so no Google app review is needed.</p>
+  <ol>
+    <li>Google Cloud console → your project → <b>IAM &amp; Admin → Service accounts → Create</b> (name: <code>ralfiz-website-reader</code>, no roles needed) → open it → <b>Keys → Add key → JSON</b>.</li>
+    <li>Enable <b>Google Analytics Data API</b> and <b>Google Search Console API</b> under APIs &amp; Services → Library.</li>
+    <li>Google Analytics → Admin → <b>Property access management</b> → add the service account's email as <b>Viewer</b>. Note the <b>Property ID</b> (Admin → Property details, a number).</li>
+    <li>Search Console → {{ site_label }} → Settings → <b>Users and permissions → Add user</b> → the same email, <b>Restricted</b>.</li>
+    <li>Railway (ralfiz-bms): <code>GOOGLE_SERVICE_ACCOUNT_JSON</code> = the key file's contents, <code>WEBSITE_GA4_PROPERTY_ID</code> = the number, <code>WEBSITE_SEARCH_CONSOLE_SITE</code> = <code>sc-domain:ralfiz.com</code> (or <code>https://ralfiz.com/</code> for a URL-prefix property).</li>
+  </ol>
+</div>
+{% else %}
+{% for e in data.errors %}<div class="sh-err">{{ e }}</div>{% endfor %}
+{% if kpis %}
+<div class="kgrid">
+  {% for k in kpis %}
+  <div class="glass kt" style="--kc:{% cycle '#FF2E88' '#9B4DFF' '#FF7A3D' '#3EF0A0' '#3D8BFF' '#2EE6D6' %}">
+    <span class="kl">{{ k.label }}</span><b class="kv num">{{ k.value|compact }}</b>
+    {% if k.change is not None %}<span class="kd {% if k.change < 0 %}down{% endif %}">{% if k.change >= 0 %}▲{% else %}▼{% endif %} {{ k.change }}% vs previous {{ days }} days</span>{% else %}<span class="kd flat">No earlier data</span>{% endif %}
+    <svg class="spark" data-key="{{ k.key }}" viewBox="0 0 200 46" preserveAspectRatio="none" aria-hidden="true"></svg>
+  </div>
+  {% endfor %}
+</div>
+{% endif %}
+{% if data.ga %}<p class="hint">Average visit {{ data.ga.avg_minutes }} min · last {{ days }} days · from Google Analytics{% if data.gsc %}. Search numbers run to {{ data.gsc.through|date:'d M' }} (Google reports them about 3 days late){% if data.gsc.position %}, average position {{ data.gsc.position }}, {{ data.gsc.ctr }}% of people who saw you clicked{% endif %}{% endif %}.</p>{% endif %}
+
+<div class="row">
+  {% if data.ga %}
+  <div class="glass card grow1">
+    <div class="head"><div class="grow"><h3>Where visitors come from</h3><span class="sub">Visits by channel</span></div></div>
+    {% for c in data.ga.channels %}
+    <div class="ws-bar"><span>{{ c.name }}</span><i style="--w:{{ c.pct }}%"></i><b class="num">{{ c.sessions|intcomma }}</b></div>
+    {% empty %}<p class="muted">No visits yet. Numbers appear a few hours after the first visitors.</p>{% endfor %}
+  </div>
+  <div class="glass card grow1">
+    <div class="head"><div class="grow"><h3>Most viewed pages</h3><span class="sub">Page views</span></div></div>
+    <table class="ws-table">{% for p in data.ga.pages %}<tr><td><a href="https://{{ site_label }}{{ p.path }}" target="_blank" rel="noopener">{{ p.path|truncatechars:48 }}</a></td><td class="num">{{ p.views|intcomma }}</td></tr>{% empty %}<tr><td class="muted">No page views yet.</td></tr>{% endfor %}</table>
+  </div>
+  {% endif %}
+  {% if data.gsc %}
+  <div class="glass card grow1">
+    <div class="head"><div class="grow"><h3>What people search to find you</h3><span class="sub">Google searches · clicks / shown / position</span></div></div>
+    <table class="ws-table">{% for q in data.gsc.queries %}<tr><td>{{ q.query|truncatechars:40 }}</td><td class="num">{{ q.clicks }}</td><td class="num muted">{{ q.impressions|intcomma }}</td><td class="num muted">#{{ q.position }}</td></tr>{% empty %}<tr><td class="muted">Google has no search data yet. It usually takes a few days after verifying.</td></tr>{% endfor %}</table>
+  </div>
+  {% endif %}
+</div>
+{{ sparks|json_script:'sparkData' }}
+{% endif %}
+{% endblock %}
+{% block hub_js %}<script>window.SocialCharts && SocialCharts.sparks('sparkData');</script>{% endblock %}

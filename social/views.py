@@ -106,6 +106,7 @@ def _ctx(request, tab, **extra):
         'is_manager': S.is_social_admin(request.user) or (current and S.role_for(request.user, current) == 'manager'),
         'me_initial': (request.user.first_name or request.user.username or '?')[:1].upper(),
         'hub_only': S.social_only(request.user),  # no BMS behind the hub for this login
+        'is_admin': S.is_social_admin(request.user),
     }
     ctx.update(extra)
     return ctx
@@ -587,6 +588,25 @@ def inbox_action(request, pk):
         messages.success(request, 'Template sent.')
     from core.security import safe_next
     return redirect(safe_next(request, request.META.get('HTTP_REFERER'), reverse('social:inbox')))
+
+
+# ================================================================ website (GA4 + Search Console)
+
+@hub_view
+def website(request):
+    """ralfiz.com visitors, leads and Google searches. Owners only: it is Ralfiz's own site."""
+    from . import website as W
+    if not S.is_social_admin(request.user):
+        raise PermissionDenied
+    ctx = _ctx(request, 'website')
+    days = int(request.GET.get('days', 30)) if request.GET.get('days', '30').isdigit() else 30
+    days = days if days in (7, 30, 90) else 30
+    data = W.report(days, refresh=request.method == 'POST') if W.is_configured() else None
+    kpis = (data['ga']['kpis'] if data and data['ga'] else []) + (data['gsc']['kpis'] if data and data['gsc'] else [])
+    ctx.update({'days': days, 'data': data, 'kpis': kpis, 'site_label': settings.WEBSITE_LABEL,
+                'sparks': {k['key']: k['spark'] for k in kpis},
+                'sa_email': (W.service_account() or {}).get('client_email', '') if settings.GOOGLE_SERVICE_ACCOUNT_JSON else ''})
+    return render(request, 'social/website.html', ctx)
 
 
 # ================================================================ analytics

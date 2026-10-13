@@ -237,6 +237,12 @@ ANTHROPIC_API_KEY = os.getenv('ANTHROPIC_API_KEY', '')
 PULSE_MODEL = os.getenv('PULSE_MODEL', 'claude-opus-4-8')
 # Social Hub: the model that drafts inbox replies (a person always sends them).
 SOCIAL_AI_MODEL = os.getenv('SOCIAL_AI_MODEL', 'claude-opus-5-5')
+# Social Hub > Website: ralfiz.com numbers from Google Analytics 4 and Search Console, read by a
+# Google Cloud service account (key JSON, or base64 of it) that has Viewer access on both.
+GOOGLE_SERVICE_ACCOUNT_JSON = os.getenv('GOOGLE_SERVICE_ACCOUNT_JSON', '')
+WEBSITE_GA4_PROPERTY_ID = os.getenv('WEBSITE_GA4_PROPERTY_ID', '')        # the number, e.g. 512345678
+WEBSITE_SEARCH_CONSOLE_SITE = os.getenv('WEBSITE_SEARCH_CONSOLE_SITE', '')  # e.g. https://ralfiz.com/
+WEBSITE_LABEL = os.getenv('WEBSITE_LABEL', 'ralfiz.com')
 
 # Embeddings for PULSE document search.
 # Read but NOT yet used -- the RAG phase is not built. Anthropic has no

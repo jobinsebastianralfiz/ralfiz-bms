@@ -16,6 +16,7 @@ urlpatterns = [
     path('inbox/', views.inbox, name='inbox'),
     path('inbox/<uuid:pk>/action/', views.inbox_action, name='inbox_action'),
     path('analytics/', views.analytics, name='analytics'),
+    path('website/', views.website, name='website'),
     path('reports/', views.reports, name='reports'),
     path('reports/<uuid:ws>/<str:month>.pdf', views.report_pdf, name='report_pdf'),
     path('media/', views.media_library, name='media'),
