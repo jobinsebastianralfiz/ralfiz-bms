@@ -1,4 +1,4 @@
-# Meta App Review: Ralfiz Social Dashboard
+# Meta App Review: Ralfiz Social
 
 App ID `2618682961963846`. Business verification: done (2026-10-12).
 

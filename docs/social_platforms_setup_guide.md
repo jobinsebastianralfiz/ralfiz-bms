@@ -38,7 +38,7 @@ Every platform also asks for three public pages. They are live now:
 
 ## 2. Meta (Facebook + Instagram)
 
-Our Meta app: **Ralfiz Social Dashboard**, App ID `2618682961963846`.
+Our Meta app: **Ralfiz Social**, App ID `2618682961963846`.
 Open it at https://developers.facebook.com/apps → click the app.
 
 ### 2.1 Where we are now
@@ -217,7 +217,7 @@ The hub side is **built and live**. It stays hidden until you finish the steps b
 - You need the Facebook account that manages the Ralfiz business portfolio. It is already verified ✅.
 
 ### Step 1: Add WhatsApp to the Meta app (5 minutes)
-1. Open https://developers.facebook.com/apps and choose **Ralfiz Social Dashboard**.
+1. Open https://developers.facebook.com/apps and choose **Ralfiz Social**.
 2. Left menu → **Add product** → **WhatsApp** → **Set up**.
 3. Pick the Ralfiz Technologies business portfolio when asked.
 
