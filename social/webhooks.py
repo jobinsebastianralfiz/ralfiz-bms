@@ -77,6 +77,8 @@ def handle(payload):
                 .exclude(status='disconnected')
             for account in accounts:
                 ingest(account, items)
+        if platform == 'whatsapp':
+            _store_echoes(entry)
 
 
 def _messaging(entry):
@@ -151,6 +153,32 @@ def _whatsapp(entry):
             received_at=_parse_time(m.get('timestamp')), raw=m) for m in v['messages']]
         out.append((str(v['metadata']['phone_number_id']), items))
     return out
+
+
+def _whatsapp_echoes(entry):
+    """Coexistence: messages the business sent from the WhatsApp Business app on its phone
+    arrive as ``smb_message_echoes``. Yields (phone_number_id, echo) pairs."""
+    for change in entry.get('changes') or []:
+        v = change.get('value') or {}
+        if change.get('field') != 'smb_message_echoes':
+            continue
+        number_id = str((v.get('metadata') or {}).get('phone_number_id', ''))
+        for m in v.get('message_echoes') or []:
+            yield number_id, {'id': m.get('id', ''), 'to': m.get('to', ''), 'text': _wa_text(m),
+                              'sent_at': _parse_time(m.get('timestamp'))}
+
+
+def _store_echoes(entry):
+    from .services import record_echo
+    try:
+        echoes = list(_whatsapp_echoes(entry))
+    except (KeyError, TypeError, ValueError, AttributeError):
+        log.warning('Unreadable WhatsApp echo skipped', exc_info=True)
+        return
+    for number_id, echo in echoes:
+        for account in SocialAccount.objects.filter(platform='whatsapp', external_id=number_id) \
+                .exclude(status='disconnected'):
+            record_echo(account, echo)
 
 
 PARSERS.update(facebook=_page, instagram=_instagram, whatsapp=_whatsapp)

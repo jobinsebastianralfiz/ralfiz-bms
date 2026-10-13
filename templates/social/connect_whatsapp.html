@@ -1,0 +1,94 @@
+{% extends 'social/_hub.html' %}
+{% block hub_title %}Connect WhatsApp{% endblock %}
+{% block page_heading %}Connect WhatsApp to {{ workspace.name }}{% endblock %}
+{% block hub %}
+<div class="card sh-panel sh-narrow sh-wa">
+  <h2 class="sh-h2">Which number?</h2>
+  <label class="sh-wa-opt">
+    <input type="radio" name="wa_mode" value="coex" checked>
+    <span><b>A number already on the WhatsApp Business app</b>
+      <small>Keep using the app on your phone. The same chats also show in the hub inbox, and messages you send from the phone appear here too.</small></span>
+  </label>
+  <label class="sh-wa-opt">
+    <input type="radio" name="wa_mode" value="api">
+    <span><b>A new number, used only here</b>
+      <small>For a number that is not on any WhatsApp app. It will work in the hub only.</small></span>
+  </label>
+
+  <ol class="sh-wa-steps">
+    <li>Update the WhatsApp Business app on the phone first (Play Store / App Store).</li>
+    <li>Click <b>Connect with Facebook</b>. Sign in with the Facebook account that manages the business.</li>
+    <li>Follow Meta's steps in the popup. For an existing app number, it asks you to confirm on the phone: keep the phone close.</li>
+    <li>When the popup closes, pick the number and it is connected.</li>
+  </ol>
+
+  <div class="sh-wa-msg" id="waMsg" hidden></div>
+  <div class="sh-foot">
+    <a href="{% url 'social:accounts' %}" class="btn btn-ghost">Cancel</a>
+    <a href="{% url 'social:connect_manual' 'whatsapp' %}?ws={{ workspace.pk }}" class="btn btn-ghost" title="Paste a phone number id, WhatsApp account id and System User token instead">Enter details by hand</a>
+    <span class="sh-sp"></span>
+    <button type="button" class="btn btn-primary" id="waGo" disabled><i class="fa-brands fa-facebook"></i> Connect with Facebook</button>
+  </div>
+</div>
+{% endblock %}
+{% block hub_js %}
+<script>
+(function () {
+  'use strict';
+  var FINISH_URL = '{% url "social:connect_whatsapp" %}?ws={{ workspace.pk }}';
+  var CSRF = '{{ csrf_token }}';
+  var btn = document.getElementById('waGo'), msg = document.getElementById('waMsg');
+  var session = null, code = null, sent = false;
+
+  function say(text, bad) { msg.hidden = false; msg.textContent = text; msg.classList.toggle('bad', !!bad); }
+  function reset() { session = null; code = null; sent = false; btn.disabled = false; }
+
+  window.fbAsyncInit = function () {
+    FB.init({ appId: '{{ app_id }}', autoLogAppEvents: true, xfbml: false, version: '{{ graph_version }}' });
+    btn.disabled = false;
+  };
+
+  // The popup reports the chosen WhatsApp account and number by postMessage.
+  window.addEventListener('message', function (event) {
+    if (!/(^|\.)facebook\.com$/.test(new URL(event.origin).hostname)) return;
+    var data;
+    try { data = JSON.parse(event.data); } catch (e) { return; }
+    if (!data || data.type !== 'WA_EMBEDDED_SIGNUP') return;
+    if (String(data.event || '').indexOf('FINISH') === 0) { session = data.data || {}; finish(); }
+    else if (data.event === 'CANCEL') { say('The popup was closed before the end' + (data.data && data.data.current_step ? ' (at "' + data.data.current_step + '")' : '') + '. Nothing was connected.', true); reset(); }
+    else if (data.event === 'ERROR') { say('Meta reported an error: ' + ((data.data && data.data.error_message) || 'unknown') + '.', true); reset(); }
+  });
+
+  function finish() {
+    if (sent || !session || !code) return;   // wait for both the code and the number details
+    sent = true;
+    say('Finishing the connection…');
+    fetch(FINISH_URL, {
+      method: 'POST', credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/json', 'X-CSRFToken': CSRF },
+      body: JSON.stringify({ code: code, phone_number_id: session.phone_number_id, waba_id: session.waba_id,
+                             coexistence: document.querySelector('input[name=wa_mode]:checked').value === 'coex' })
+    }).then(function (r) { return r.json(); }).then(function (res) {
+      if (res.ok) { location.href = res.next; return; }
+      say(res.error || 'The connection could not be finished.', true); reset();
+    }).catch(function () { say('Network error. Try again.', true); reset(); });
+  }
+
+  btn.addEventListener('click', function () {
+    reset(); btn.disabled = true; msg.hidden = true;
+    var coex = document.querySelector('input[name=wa_mode]:checked').value === 'coex';
+    var extras = { setup: {}, sessionInfoVersion: '3' };
+    if (coex) extras.featureType = 'whatsapp_business_app_onboarding';
+    FB.login(function (response) {
+      if (response.authResponse && response.authResponse.code) {
+        code = response.authResponse.code;
+        finish();
+        // The number details can arrive a moment after the code.
+        setTimeout(function () { if (!sent) { say('Meta did not send the number details. Try again.', true); reset(); } }, 15000);
+      } else if (!session) { say('Facebook sign-in was cancelled.', true); reset(); }
+    }, { config_id: '{{ config_id }}', response_type: 'code', override_default_response_type: true, extras: extras });
+  });
+})();
+</script>
+<script async defer crossorigin="anonymous" src="https://connect.facebook.net/en_US/sdk.js"></script>
+{% endblock %}

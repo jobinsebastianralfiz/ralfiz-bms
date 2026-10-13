@@ -303,7 +303,7 @@ class InboxReply(models.Model):
     item = models.ForeignKey(InboxItem, on_delete=models.CASCADE, related_name='replies')
     text = models.TextField()
     status = models.CharField(max_length=6, choices=STATUS_CHOICES, default='draft')
-    source = models.CharField(max_length=5, default='web')  # web, mcp
+    source = models.CharField(max_length=5, default='web')  # web, mcp, phone (sent from the WhatsApp app)
     created_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL,
                                    null=True, blank=True, related_name='+')
     sent_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL,

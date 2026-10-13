@@ -605,6 +605,23 @@ def ingest(account, items):
     return new
 
 
+def record_echo(account, echo):
+    """A message sent from the WhatsApp Business app on the phone (coexistence). It shows in
+    the hub as a sent reply on that customer's latest conversation, so the team sees it."""
+    if not echo.get('id') or not echo.get('to'):
+        return None
+    item = account.inbox.filter(author_id=echo['to']).order_by('-received_at').first()
+    if item is None or item.replies.filter(external_id=echo['id']).exists():
+        return None
+    reply = InboxReply.objects.create(item=item, text=echo.get('text') or '[message]', status='sent',
+                                      source='phone', external_id=echo['id'],
+                                      sent_at=echo.get('sent_at') or timezone.now())
+    if item.status == 'open':
+        item.status = 'done'
+        item.save(update_fields=['status'])
+    return reply
+
+
 def sync_inbox(account):
     adapter = get_adapter(account.platform)
     if not adapter.caps.inbox or not account.healthy:

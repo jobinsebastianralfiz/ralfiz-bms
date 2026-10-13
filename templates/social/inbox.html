@@ -22,7 +22,7 @@
         <div class="ctx">{{ it.get_kind_display }} · {{ it.account.workspace.name }}{% if it.account.handle %} · {{ it.account.handle }}{% endif %}</div>
         {% if it.rating %}<div class="stars" aria-label="{{ it.rating }} out of 5">{% for i in '12345' %}<i class="{% if forloop.counter <= it.rating %}fas{% else %}far{% endif %} fa-star"></i>{% endfor %}</div>{% endif %}
         <p>{{ it.text|default:'(no text)'|linebreaksbr }}</p>
-        {% for r in it.sent %}<div class="rep sent"><small>Replied{% if r.sent_by %} by {{ r.sent_by.get_full_name|default:r.sent_by.username }}{% endif %}</small>{{ r.text }}</div>{% endfor %}
+        {% for r in it.sent %}<div class="rep sent"><small>{% if r.source == 'phone' %}Replied from the WhatsApp app{% else %}Replied{% if r.sent_by %} by {{ r.sent_by.get_full_name|default:r.sent_by.username }}{% endif %}{% endif %}</small>{{ r.text }}</div>{% endfor %}
         {% if it.status == 'open' %}
           {% if it.account.platform == 'whatsapp' %}
             {% if it.reply_window_open %}<div class="win">Free reply window: {{ it.reply_window_ends|timeuntil }} left</div>

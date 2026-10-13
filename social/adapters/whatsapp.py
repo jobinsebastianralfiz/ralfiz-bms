@@ -9,8 +9,23 @@ by webhook (social/webhooks.py). Free-form replies are allowed for 24 hours
 after the customer's last message; outside that window only approved
 templates can be sent (``send_template``).
 """
+import logging
+import secrets
+
+from django.conf import settings
+
 from .base import AccountCandidate, Adapter, AdapterError, Capabilities, NotSupported
 from .meta import graph
+
+log = logging.getLogger(__name__)
+
+
+def _ok(data, what):
+    """Graph returns most failures as a 400 with an ``error`` body; turn that into a message."""
+    if isinstance(data, dict) and data.get('error'):
+        err = data['error']
+        raise AdapterError(f"{what}: {err.get('error_user_msg') or err.get('message') or err}")
+    return data
 
 
 class WhatsAppAdapter(Adapter):
@@ -40,6 +55,42 @@ class WhatsAppAdapter(Adapter):
         return [AccountCandidate(
             external_id=values['phone_number_id'], name=phone.get('verified_name') or number,
             handle=number, token=values['access_token'], extra={'waba_id': values['waba_id']})]
+
+    # ------------------------------------------------------------ Embedded Signup
+    # Meta's "Connect WhatsApp" popup. With coexistence the business keeps using the
+    # WhatsApp Business app on its phone; the same number also works here.
+
+    def embedded_ready(self):
+        return bool(settings.META_APP_ID and settings.META_APP_SECRET
+                    and getattr(settings, 'META_WHATSAPP_CONFIG_ID', ''))
+
+    def embedded_connect(self, code, phone_number_id, waba_id, *, coexistence=True):
+        """Finish Embedded Signup: swap the popup's code for a business token, read the
+        number, and subscribe this app to the WhatsApp account's webhooks."""
+        if not (code and phone_number_id and waba_id):
+            raise AdapterError('Meta did not send the WhatsApp details back. Try connecting again.')
+        token = _ok(graph('GET', 'oauth/access_token', platform=self.label, params={
+            'client_id': settings.META_APP_ID, 'client_secret': settings.META_APP_SECRET, 'code': code,
+        }), 'Could not finish the WhatsApp sign-in').get('access_token')
+        if not token:
+            raise AdapterError('Meta did not return an access token. Try connecting again.')
+        phone = _ok(graph('GET', phone_number_id, token, platform=self.label,
+                          params={'fields': 'verified_name,display_phone_number'}),
+                    'Could not read the WhatsApp number')
+        _ok(graph('POST', f'{waba_id}/subscribed_apps', token, platform=self.label),
+            'Could not subscribe to WhatsApp messages')
+        extra = {'waba_id': waba_id, 'coexistence': coexistence, 'via': 'embedded_signup'}
+        if not coexistence:
+            # A number that lives only on the API has to be registered, with a two-step PIN.
+            pin = f'{secrets.randbelow(10 ** 6):06d}'
+            _ok(graph('POST', f'{phone_number_id}/register', token, platform=self.label,
+                      json={'messaging_product': 'whatsapp', 'pin': pin}),
+                'Could not register the WhatsApp number')
+            from social.crypto import encrypt
+            extra['pin_encrypted'] = encrypt(pin)   # Meta asks for it again if the number is re-registered
+        number = phone.get('display_phone_number', '')
+        return [AccountCandidate(external_id=str(phone_number_id), name=phone.get('verified_name') or number,
+                                 handle=number, token=token, extra=extra)]
 
     def validate(self, text, media, title='', first_comment=''):
         return ['WhatsApp posts are not supported: WhatsApp has no feed. '

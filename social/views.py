@@ -758,6 +758,8 @@ def connect_start(request, platform):
     adapter = get_adapter(platform)
     if adapter.connect_mode == 'fake':
         return _hold_candidates(request, workspace, platform, [adapter.demo_candidate(workspace.name)])
+    if platform == 'whatsapp' and REAL['whatsapp'].embedded_ready():
+        return redirect(f"{reverse('social:connect_whatsapp')}?ws={workspace.pk}")
     if adapter.connect_mode == 'manual':
         return redirect(f"{reverse('social:connect_manual', args=[platform])}?ws={workspace.pk}")
     if not adapter.is_configured():
@@ -862,6 +864,38 @@ def connect_manual(request, platform):
     return render(request, 'social/connect_manual.html',
                   _ctx(request, 'accounts', fields=fields, workspace=workspace,
                        platform_label=PLATFORM_LABELS[platform], platform_key=platform))
+
+
+@hub_view
+def connect_whatsapp(request):
+    """WhatsApp Embedded Signup: Meta's popup, then the popup's code is finished here.
+
+    Coexistence keeps the number working in the WhatsApp Business app on the phone.
+    """
+    adapter = REAL['whatsapp']
+    if not adapter.embedded_ready():
+        raise Http404
+    workspace = get_object_or_404(Workspace, pk=request.GET.get('ws') or request.POST.get('ws'))
+    S.require(request.user, workspace, 'manager')
+    if request.method == 'POST':
+        try:
+            body = json.loads(request.body or b'{}')
+        except ValueError:
+            return JsonResponse({'ok': False, 'error': 'Bad request.'}, status=400)
+        try:
+            cands = adapter.embedded_connect(body.get('code', ''), str(body.get('phone_number_id', '')),
+                                             str(body.get('waba_id', '')),
+                                             coexistence=bool(body.get('coexistence', True)))
+        except AdapterError as exc:
+            return JsonResponse({'ok': False, 'error': exc.message}, status=400)
+        _hold_candidates(request, workspace, 'whatsapp', cands)
+        return JsonResponse({'ok': True, 'next': reverse('social:connect_pick')})
+    resp = render(request, 'social/connect_whatsapp.html', _ctx(
+        request, 'accounts', workspace=workspace, app_id=settings.META_APP_ID,
+        config_id=settings.META_WHATSAPP_CONFIG_ID, graph_version=settings.META_GRAPH_VERSION or 'v23.0'))
+    # Facebook's login popup talks back to this page; the default same-origin policy cuts it off.
+    resp['Cross-Origin-Opener-Policy'] = 'same-origin-allow-popups'
+    return resp
 
 
 @hub_view

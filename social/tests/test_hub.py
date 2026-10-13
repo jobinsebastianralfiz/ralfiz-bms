@@ -597,3 +597,103 @@ class LegalPagesTests(TestCase):
             r = self.client.get(reverse(name))
             self.assertContains(r, text, msg_prefix=name)
         self.assertContains(self.client.get('/'), reverse('privacy'))
+
+
+WA_SETTINGS = dict(META_APP_ID='app1', META_APP_SECRET='sec', META_WHATSAPP_CONFIG_ID='cfg1')
+
+
+@override_settings(**WA_SETTINGS)
+class WhatsAppEmbeddedSignupTests(HubTestCase):
+    def fake_graph(self, calls):
+        def graph(method, path, token='', **kw):
+            calls.append((method, path))
+            if path == 'oauth/access_token':
+                return {'access_token': 'biz-token'}
+            if path == 'PN1':
+                return {'verified_name': 'Demo Cafe', 'display_phone_number': '+91 98956 63498'}
+            return {'success': True}
+        return graph
+
+    def test_coexistence_connect_subscribes_and_does_not_register(self):
+        from social.adapters import REAL
+        calls = []
+        with mock.patch('social.adapters.whatsapp.graph', self.fake_graph(calls)):
+            [c] = REAL['whatsapp'].embedded_connect('code1', 'PN1', 'WABA1', coexistence=True)
+        self.assertEqual(c.external_id, 'PN1')
+        self.assertEqual(c.token, 'biz-token')
+        self.assertTrue(c.extra['coexistence'])
+        self.assertIn(('POST', 'WABA1/subscribed_apps'), calls)
+        self.assertNotIn(('POST', 'PN1/register'), calls)
+
+    def test_api_only_number_is_registered_with_a_stored_pin(self):
+        from social.adapters import REAL
+        calls = []
+        with mock.patch('social.adapters.whatsapp.graph', self.fake_graph(calls)):
+            [c] = REAL['whatsapp'].embedded_connect('code1', 'PN1', 'WABA1', coexistence=False)
+        self.assertIn(('POST', 'PN1/register'), calls)
+        self.assertTrue(c.extra['pin_encrypted'])
+
+    def test_graph_error_becomes_a_message(self):
+        from social.adapters import REAL
+        from social.adapters.base import AdapterError
+        with mock.patch('social.adapters.whatsapp.graph', return_value={'error': {'message': 'Invalid code'}}):
+            with self.assertRaisesMessage(AdapterError, 'Invalid code'):
+                REAL['whatsapp'].embedded_connect('bad', 'PN1', 'WABA1')
+
+    @override_settings(SOCIAL_FAKE_ADAPTERS='false')
+    def test_connect_goes_to_the_popup_page_and_finishes(self):
+        self.client.force_login(self.owner)
+        r = self.client.get(reverse('social:connect', args=['whatsapp']) + f'?ws={self.cafe.pk}')
+        self.assertRedirects(r, reverse('social:connect_whatsapp') + f'?ws={self.cafe.pk}',
+                             fetch_redirect_response=False)
+        page = self.client.get(r['Location'])
+        self.assertContains(page, "config_id: 'cfg1'")
+        self.assertEqual(page['Cross-Origin-Opener-Policy'], 'same-origin-allow-popups')
+        with mock.patch('social.adapters.whatsapp.graph', self.fake_graph([])):
+            res = self.client.post(r['Location'], data=json.dumps(
+                {'code': 'c', 'phone_number_id': 'PN1', 'waba_id': 'WABA1', 'coexistence': True}),
+                content_type='application/json')
+        self.assertEqual(res.json(), {'ok': True, 'next': reverse('social:connect_pick')})
+        self.assertEqual(self.client.session['social_candidates']['items'][0]['external_id'], 'PN1')
+
+    def test_editor_cannot_connect(self):
+        self.client.force_login(self.editor)
+        r = self.client.get(reverse('social:connect_whatsapp') + f'?ws={self.cafe.pk}')
+        self.assertNotEqual(r.status_code, 200)
+
+    def test_manual_form_is_used_without_the_config_id(self):
+        self.client.force_login(self.owner)
+        with self.settings(META_WHATSAPP_CONFIG_ID='', SOCIAL_FAKE_ADAPTERS='false'):
+            r = self.client.get(reverse('social:connect', args=['whatsapp']) + f'?ws={self.cafe.pk}')
+        self.assertIn('/manual/', r['Location'])
+
+
+class WhatsAppEchoTests(HubTestCase):
+    def setUp(self):
+        super().setUp()
+        self.wa = self.account(self.cafe, 'whatsapp', 'Cafe WA')
+        self.wa.external_id = 'PN1'
+        self.wa.save()
+        self.item = InboxItem.objects.create(account=self.wa, kind='dm', external_id='wamid.in1',
+                                             author_id='919800000001', author_name='Asha', text='Open today?')
+
+    def payload(self, echo_id='wamid.out1', to='919800000001'):
+        return {'object': 'whatsapp_business_account', 'entry': [{'id': 'WABA1', 'changes': [{
+            'field': 'smb_message_echoes', 'value': {
+                'messaging_product': 'whatsapp', 'metadata': {'phone_number_id': 'PN1'},
+                'message_echoes': [{'from': '919895663498', 'to': to, 'id': echo_id, 'timestamp': '1760000000',
+                                    'type': 'text', 'text': {'body': 'Yes, till 10pm'}}]}}]}]}
+
+    def test_phone_message_shows_as_a_sent_reply_once(self):
+        from social.webhooks import handle
+        handle(self.payload())
+        handle(self.payload())   # Meta retries; no duplicate
+        [reply] = self.item.replies.all()
+        self.assertEqual((reply.text, reply.status, reply.source), ('Yes, till 10pm', 'sent', 'phone'))
+        self.item.refresh_from_db()
+        self.assertEqual(self.item.status, 'done')
+
+    def test_echo_to_someone_without_a_conversation_is_ignored(self):
+        from social.webhooks import handle
+        handle(self.payload(to='919811111111'))
+        self.assertFalse(InboxReply.objects.exists())

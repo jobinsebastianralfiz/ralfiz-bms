@@ -24,6 +24,7 @@ urlpatterns = [
     path('accounts/', views.accounts, name='accounts'),
     path('accounts/<uuid:pk>/action/', views.account_action, name='account_action'),
     path('connect/pick/', views.connect_pick, name='connect_pick'),
+    path('connect/whatsapp/signup/', views.connect_whatsapp, name='connect_whatsapp'),
     path('connect/<str:platform>/', views.connect_start, name='connect'),
     path('connect/<str:platform>/manual/', views.connect_manual, name='connect_manual'),
     path('oauth/callback/<str:platform>/', views.oauth_callback, name='oauth_callback'),
