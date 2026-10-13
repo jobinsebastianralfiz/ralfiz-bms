@@ -7,6 +7,7 @@ OPEN_PREFIXES = (
     '/staff/', '/crm/', '/api/', '/static/', '/media/', '/login/', '/logout/',
     '/agreement/', '/enrol/', '/academy/', '/portal/', '/v/', '/social/report-link/',
     '/oauth/', '/.well-known/', '/mcp', '/favicon', '/robots.txt',
+    '/privacy/', '/terms/', '/data-deletion/',
 )
 
 

@@ -1,0 +1,19 @@
+{% extends 'website/legal/_base.html' %}
+{% block title %}Data Deletion{% endblock %}
+{% block heading %}Data deletion instructions{% endblock %}
+{% block body %}
+<p>You can remove Ralfiz Social's access to your accounts and have your data deleted at any time.</p>
+
+<h2>1. Remove our access</h2>
+<p>This stops us reading or posting straight away.</p>
+<ul>
+  <li><b>Facebook and Instagram</b>: open Facebook, go to <a href="https://www.facebook.com/settings?tab=business_tools" target="_blank" rel="noopener">Settings &amp; privacy → Settings → Business integrations</a>, find <b>Ralfiz Social Dashboard</b> and click <b>Remove</b>.</li>
+  <li><b>YouTube and Google Business Profile</b>: go to <a href="https://myaccount.google.com/permissions" target="_blank" rel="noopener">Google account → Third-party apps</a> and remove access.</li>
+  <li><b>LinkedIn</b>: go to <a href="https://www.linkedin.com/psettings/permitted-services" target="_blank" rel="noopener">Settings → Data privacy → Permitted services</a> and remove the app.</li>
+  <li>If you have a Ralfiz Social login, a manager can also click <b>Disconnect</b> on the Accounts page. This deletes the stored access token at once.</li>
+</ul>
+
+<h2>2. Ask us to delete your data</h2>
+<p>Email <a href="mailto:{{ email }}?subject=Data%20deletion%20request">{{ email }}</a> with the subject <b>"Data deletion request"</b> and the name or link of the Page, Instagram account or channel. Send it from an email address connected with the account, or tell us how we can confirm you manage it.</p>
+<p>Within 30 days we delete the account's access tokens, the posts, comments, messages, reviews and statistics we stored for it, and its uploaded media, then email you to confirm. We keep only what the law requires us to keep, such as invoices.</p>
+{% endblock %}

@@ -47,6 +47,22 @@ def can_use_hub(user):
         user is not None and user.is_authenticated and Membership.objects.filter(user=user).exists())
 
 
+def social_only(user):
+    """True for a login whose only role is Social Hub member (a client's
+    reviewer, a freelancer, Meta's app reviewer). Most BMS pages only check
+    login, so the middleware keeps such a login inside /social/."""
+    if user is None or not user.is_authenticated or user.is_staff or user.is_superuser:
+        return False
+    if not Membership.objects.filter(user=user).exists():
+        return False
+    if hasattr(user, 'team_profile') or hasattr(user, 'client_profile'):
+        return False
+    from academy.models import Student
+    from employees.models import Employee
+    return not (Employee.objects.filter(user=user, status='active').exists()
+                or Student.objects.filter(user=user).exists())
+
+
 def workspaces_for(user):
     qs = Workspace.objects.filter(is_active=True)
     if is_social_admin(user):

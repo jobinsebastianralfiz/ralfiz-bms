@@ -15,7 +15,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700;12..96,800&family=Figtree:wght@400;500;600;700;800&display=swap">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-<link rel="stylesheet" href="{% static 'website/website.css' %}?v=7">
+<link rel="stylesheet" href="{% static 'website/website.css' %}?v=8">
 </head>
 <body class="lp">
 <div class="mesh" aria-hidden="true"><i class="b b1"></i><i class="b b2"></i><i class="b b3"></i><i class="b b4"></i><i class="grain"></i></div>
@@ -298,7 +298,7 @@
 <footer class="foot">
   <div class="wrap foot-in">
     <div><a class="brand" href="#top"><img src="{% static 'website/img/rt-mark.png' %}" alt="" width="46" height="30"><span>Ralfiz<b>Technologies</b></span></a><p class="tag">{{ company.tagline|default:'Rise to Next Level' }}</p></div>
-    <nav aria-label="Footer"><a href="#services">Services</a><a href="#pricing">Pricing</a><a href="#work">Our work</a><a href="#social">Ralfiz Social</a><a href="#products">Products</a><a href="/academy/">Academy</a><a href="#demo">Contact</a><a href="{% url 'staff:login' %}">Employee login</a></nav>
+    <nav aria-label="Footer"><a href="#services">Services</a><a href="#pricing">Pricing</a><a href="#work">Our work</a><a href="#social">Ralfiz Social</a><a href="#products">Products</a><a href="/academy/">Academy</a><a href="#demo">Contact</a><a href="{% url 'staff:login' %}">Employee login</a><a href="{% url 'privacy' %}">Privacy</a><a href="{% url 'terms' %}">Terms</a></nav>
     <p class="legal">© {% now 'Y' %} {{ company.company_name|default:'Ralfiz Technologies' }} · Perinthalmanna, Kerala{% if company.gst_number %} · GSTIN {{ company.gst_number }}{% endif %}</p>
   </div>
 </footer>

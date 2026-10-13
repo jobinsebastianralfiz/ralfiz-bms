@@ -558,3 +558,42 @@ class ClaudeDraftVisibilityTests(HubTestCase):
         self.assertIn('Nothing is waiting for approval.', other)
         home = self.client.get(reverse('social:home')).content.decode()
         self.assertIn('Claude drafted 1 post that nobody has sent for approval yet.', home)
+
+
+class HubOnlyLoginTests(HubTestCase):
+    def test_hub_only_login_is_kept_inside_the_hub(self):
+        self.assertTrue(S.social_only(self.editor))
+        self.client.force_login(self.editor)
+        for path in ('/', '/clients/', '/portfolio/', '/dashboard/legacy/'):
+            r = self.client.get(path)
+            self.assertRedirects(r, reverse('social:home'), fetch_redirect_response=False, msg_prefix=path)
+        self.assertEqual(self.client.get('/api/employees/').status_code, 403)
+        page = self.client.get(reverse('social:home'))
+        self.assertEqual(page.status_code, 200)
+        self.assertContains(page, 'Sign out')
+        self.assertNotContains(page, 'Back to Ralfiz BMS')
+
+    def test_owner_is_not_confined(self):
+        self.assertFalse(S.social_only(self.owner))
+        self.client.force_login(self.owner)
+        self.assertContains(self.client.get(reverse('social:home')), 'Back to Ralfiz BMS')
+
+    def test_review_login_command(self):
+        out = __import__('io').StringIO()
+        call_command('social_review_login', stdout=out)
+        user = User.objects.get(username='meta_reviewer')
+        self.assertTrue(S.social_only(user))
+        self.assertEqual(S.role_for(user, Workspace.objects.get(name='App Review Test Client')), 'manager')
+        self.assertIn('Password: ', out.getvalue())
+        call_command('social_review_login', '--disable', stdout=out)
+        user.refresh_from_db()
+        self.assertFalse(user.is_active)
+
+
+class LegalPagesTests(TestCase):
+    def test_public_and_linked_from_landing(self):
+        for name, text in (('privacy', 'Limited Use'), ('terms', 'Terms of Service'),
+                           ('data_deletion', 'Data deletion request')):
+            r = self.client.get(reverse(name))
+            self.assertContains(r, text, msg_prefix=name)
+        self.assertContains(self.client.get('/'), reverse('privacy'))

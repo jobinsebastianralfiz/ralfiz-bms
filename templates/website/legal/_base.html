@@ -1,0 +1,32 @@
+{% load static %}<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>{% block title %}{% endblock %} · Ralfiz Technologies</title>
+<meta name="theme-color" content="#0F0824">
+<link rel="icon" type="image/svg+xml" href="{% static 'favicon.svg' %}">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,700;12..96,800&family=Figtree:wght@400;500;600;700;800&display=swap">
+<link rel="stylesheet" href="{% static 'website/website.css' %}?v=8">
+</head>
+<body class="lp legal">
+<div class="mesh" aria-hidden="true"><i class="b b1"></i><i class="b b2"></i></div>
+<header class="nav">
+  <a class="brand" href="/" aria-label="Ralfiz Technologies home"><img src="{% static 'website/img/rt-mark.png' %}" alt="" width="46" height="30"><span>Ralfiz<b>Technologies</b></span></a>
+  <nav class="legal-nav" aria-label="Policies">
+    <a href="{% url 'privacy' %}"{% if page == 'privacy' %} aria-current="page"{% endif %}>Privacy</a>
+    <a href="{% url 'terms' %}"{% if page == 'terms' %} aria-current="page"{% endif %}>Terms</a>
+    <a href="{% url 'data_deletion' %}"{% if page == 'deletion' %} aria-current="page"{% endif %}>Data deletion</a>
+  </nav>
+</header>
+<main class="wrap legal-doc">
+  <h1>{% block heading %}{% endblock %}</h1>
+  <p class="legal-updated">Last updated {{ updated }}</p>
+  {% block body %}{% endblock %}
+  <h2>Contact</h2>
+  <p>{{ company_name }}, Perinthalmanna, Malappuram, Kerala, India.<br>
+    Email <a href="mailto:{{ email }}">{{ email }}</a>{% if phone %} · Phone {{ phone }}{% endif %}</p>
+</main>
+<footer class="foot"><div class="wrap foot-in"><p class="legal">© {% now 'Y' %} {{ company_name }} · Perinthalmanna, Kerala</p></div></footer>
+</body>
+</html>

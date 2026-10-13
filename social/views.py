@@ -102,6 +102,7 @@ def _ctx(request, tab, **extra):
         'platform_meta': PLATFORM_META, 'attention': att,
         'is_manager': S.is_social_admin(request.user) or (current and S.role_for(request.user, current) == 'manager'),
         'me_initial': (request.user.first_name or request.user.username or '?')[:1].upper(),
+        'hub_only': S.social_only(request.user),  # no BMS behind the hub for this login
     }
     ctx.update(extra)
     return ctx

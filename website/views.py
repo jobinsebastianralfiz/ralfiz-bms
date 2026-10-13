@@ -157,6 +157,21 @@ def root(request):
     return landing(request)
 
 
+LEGAL_PAGES = {'privacy': 'website/legal/privacy.html', 'terms': 'website/legal/terms.html',
+               'deletion': 'website/legal/data_deletion.html'}
+
+
+def legal(request, page):
+    """Privacy policy, terms and data-deletion pages, public (platform app reviews link to them)."""
+    from core.models import CompanySettings
+    company = CompanySettings.get_settings()
+    return render(request, LEGAL_PAGES[page], {
+        'page': page, 'updated': '13 October 2026',
+        'company_name': company.company_name or 'Ralfiz Technologies',
+        'email': company.email or 'info@ralfiz.com', 'phone': company.phone,
+    })
+
+
 def landing(request):
     from core.models import Client, CompanySettings
     company = CompanySettings.get_settings()

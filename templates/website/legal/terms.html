@@ -1,0 +1,31 @@
+{% extends 'website/legal/_base.html' %}
+{% block title %}Terms of Service{% endblock %}
+{% block heading %}Terms of Service{% endblock %}
+{% block body %}
+<p>These terms apply to the use of Ralfiz Social and the other online tools {{ company_name }} ("we") provides. Using them means you accept these terms. A signed agreement or quote with us takes priority over these terms where the two differ.</p>
+
+<h2>1. The service</h2>
+<p>Ralfiz Social lets a business plan, approve, publish and track social media posts, and answer comments, messages and reviews, on the accounts it connects. Posts are only published after a person approves them.</p>
+
+<h2>2. Your accounts and content</h2>
+<ul>
+  <li>Only connect accounts you own or are authorised to manage.</li>
+  <li>You are responsible for what is published from your accounts and for having the rights to the text, images, music and video you use.</li>
+  <li>You keep ownership of your content. You let us store, process and publish it only to provide the service.</li>
+</ul>
+
+<h2>3. Platform rules</h2>
+<p>Each platform's own terms still apply, including the <a href="https://www.facebook.com/terms.php" target="_blank" rel="noopener">Meta Terms</a>, <a href="https://help.instagram.com/581066165581870" target="_blank" rel="noopener">Instagram Terms of Use</a>, <a href="https://www.youtube.com/t/terms" target="_blank" rel="noopener">YouTube Terms of Service</a> and <a href="https://www.linkedin.com/legal/user-agreement" target="_blank" rel="noopener">LinkedIn User Agreement</a>. Platforms can change their features, limits or approvals, and some posts may be refused by a platform; we will tell you when that happens.</p>
+
+<h2>4. Acceptable use</h2>
+<p>Do not use the service for spam, misleading or unlawful content, harassment, or to break a platform's rules. We may suspend access that puts accounts, people or the service at risk.</p>
+
+<h2>5. Availability</h2>
+<p>We work to keep the service running and your data safe, but we cannot promise it will always be available or that every post will go out at the exact minute scheduled. Our total liability for any claim is limited to the fees you paid us for the service in the three months before the claim.</p>
+
+<h2>6. Ending the service</h2>
+<p>You can stop using the service and disconnect your accounts at any time. Your data is then deleted as described in our <a href="{% url 'privacy' %}">Privacy Policy</a> and <a href="{% url 'data_deletion' %}">Data deletion</a> page.</p>
+
+<h2>7. Law</h2>
+<p>These terms are governed by the laws of India, and the courts of Kerala have jurisdiction.</p>
+{% endblock %}

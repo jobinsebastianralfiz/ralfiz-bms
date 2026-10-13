@@ -39,6 +39,9 @@ urlpatterns = [
     # '/', which would loop.
     # Visitors get the public landing page here; signed-in staff get the dashboard.
     path('', website_views.root, name='dashboard'),
+    path('privacy/', website_views.legal, {'page': 'privacy'}, name='privacy'),
+    path('terms/', website_views.legal, {'page': 'terms'}, name='terms'),
+    path('data-deletion/', website_views.legal, {'page': 'deletion'}, name='data_deletion'),
     path('portfolio/', pulse_views.GraphDashboardView.as_view(), name='portfolio'),
     path('dashboard/legacy/', views.dashboard, name='dashboard-legacy'),
 

@@ -29,15 +29,16 @@
       <a class="rbtn {% if tab == 'accounts' %}on{% endif %}" href="{% url 'social:accounts' %}" aria-label="Accounts"><i class="fas fa-plug"></i><span class="lbl">Accounts</span>{% if attention.accounts %}<span class="dot"></span>{% endif %}</a>
       <a class="rbtn {% if tab == 'activity' %}on{% endif %}" href="{% url 'social:activity' %}" aria-label="Activity"><i class="fas fa-clock-rotate-left"></i><span class="lbl">Activity</span></a>
       {% if is_manager %}<a class="rbtn {% if tab == 'clients' %}on{% endif %}" href="{% url 'social:workspaces' %}" aria-label="Clients and team"><i class="fas fa-users-gear"></i><span class="lbl">Clients</span></a>{% endif %}
-      <a class="rbtn rbtn-home" href="{% url 'dashboard' %}" aria-label="Back to Ralfiz Digital"><i class="fas fa-arrow-left"></i><span class="lbl">BMS</span></a>
+      {% if not hub_only %}<a class="rbtn rbtn-home" href="{% url 'dashboard' %}" aria-label="Back to Ralfiz Digital"><i class="fas fa-arrow-left"></i><span class="lbl">BMS</span></a>{% endif %}
       <a class="rbtn rbtn-add" href="{% url 'social:post_new' %}{% if current %}?ws={{ current.pk }}{% endif %}" aria-label="Create post"><i class="fas fa-plus"></i><span class="lbl">Create</span></a>
     </nav>
-    <a class="rbtn rbtn-back" href="{% url 'dashboard' %}" aria-label="Back to Ralfiz BMS"><i class="fas fa-arrow-right-from-bracket fa-flip-horizontal"></i><span class="lbl">BMS</span></a>
+    {% if hub_only %}<a class="rbtn rbtn-back" href="{% url 'logout' %}" aria-label="Sign out"><i class="fas fa-arrow-right-from-bracket"></i><span class="lbl">Sign out</span></a>
+    {% else %}<a class="rbtn rbtn-back" href="{% url 'dashboard' %}" aria-label="Back to Ralfiz BMS"><i class="fas fa-arrow-right-from-bracket fa-flip-horizontal"></i><span class="lbl">BMS</span></a>{% endif %}
     <span class="me" title="{{ request.user.get_full_name|default:request.user.username }}"><span>{{ me_initial }}</span></span>
   </aside>
 
   <aside class="chan" aria-label="Clients">
-    <a class="ws" href="{% url 'dashboard' %}" title="Back to the Ralfiz Digital dashboard"><span class="av sm"><i style="background:#1A0F3A">R</i></span><div><b>Ralfiz Digital</b><br><span>Agency workspace · {{ workspaces|length }} client{{ workspaces|length|pluralize }}</span></div><i class="fas fa-arrow-left ws-back" aria-hidden="true"></i></a>
+    <a class="ws" href="{% if hub_only %}{% url 'social:home' %}{% else %}{% url 'dashboard' %}{% endif %}" title="Back to the Ralfiz Digital dashboard"><span class="av sm"><i style="background:#1A0F3A">R</i></span><div><b>Ralfiz Digital</b><br><span>Agency workspace · {{ workspaces|length }} client{{ workspaces|length|pluralize }}</span></div><i class="fas fa-arrow-left ws-back" aria-hidden="true"></i></a>
     <h2>Clients</h2>
     <div class="clist">
       <a href="?ws=all" class="ch {% if not current %}on{% endif %}">
@@ -63,7 +64,7 @@
         <h1>{% block page_heading %}Social Hub{% endblock %}</h1>
         <span class="sub">{% if current %}{{ current.name }}{% else %}All clients{% endif %}{% if platform %} · {{ platform|platform_label }}{% endif %}</span>
       </div>
-      <a class="btn btn-glass btn-back" href="{% url 'dashboard' %}" title="Back to the Ralfiz Digital dashboard"><i class="fas fa-arrow-left"></i> <span>Ralfiz Digital</span></a>
+      {% if not hub_only %}<a class="btn btn-glass btn-back" href="{% url 'dashboard' %}" title="Back to the Ralfiz Digital dashboard"><i class="fas fa-arrow-left"></i> <span>Ralfiz Digital</span></a>{% endif %}
       {% block top_actions %}{% endblock %}
       {% block create_button %}<a class="btn btn-primary" href="{% url 'social:post_new' %}{% if current %}?ws={{ current.pk }}{% endif %}"><i class="fas fa-plus"></i> Create post</a>{% endblock %}
     </div>

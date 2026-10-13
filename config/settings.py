@@ -66,6 +66,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'academy.middleware.StudentConfinementMiddleware',
     'employees.middleware.StaffConfinementMiddleware',
+    'social.middleware.SocialConfinementMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
