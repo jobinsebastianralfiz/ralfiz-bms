@@ -69,6 +69,14 @@
   <div class="sf-field">
     <textarea class="sf-textarea" id="wkMessage" placeholder="What did you get done?"></textarea>
   </div>
+  <div class="sf-field">
+    <label for="wkFile" class="sf-btn sf-btn-ghost" style="cursor:pointer">
+      <i class="fas fa-paperclip"></i> <span id="wkFileName">Attach file (ZIP, PDF, image)</span>
+    </label>
+    <input type="file" id="wkFile" hidden
+           accept=".zip,.rar,.7z,.pdf,image/*,.heic,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.csv">
+    <div class="sf-dim" style="font-size:12px;margin-top:4px">Up to 25 MB.</div>
+  </div>
   <button type="button" class="sf-btn sf-btn-ghost" id="wkUpdateSend">
     <i class="fas fa-paper-plane"></i> Post update
   </button>
@@ -84,7 +92,7 @@
           <span>{{ u.created_at|date:"d M Y, h:i A" }}</span>
         </div>
         {% if u.attachment %}
-          <a href="{{ u.attachment.url }}" class="sf-dim"><i class="fas fa-paperclip"></i> Attachment</a>
+          <a href="{{ u.attachment.url }}" target="_blank" rel="noopener" style="color:var(--sf-teal)"><i class="fas fa-paperclip"></i> {{ u.attachment.name|cut:"employees/work_updates/" }}</a>
         {% endif %}
       </div>
     {% endfor %}
@@ -119,13 +127,29 @@
     });
   });
 
+  var MAX_BYTES = 25 * 1024 * 1024;
+  var fileInput = document.getElementById('wkFile');
+  fileInput.addEventListener('change', function () {
+    var f = fileInput.files[0];
+    if (f && f.size > MAX_BYTES) {
+      SF.toast('File is too large. The limit is 25 MB.', 'warning');
+      fileInput.value = '';
+      f = null;
+    }
+    document.getElementById('wkFileName').textContent = f ? f.name : 'Attach file (ZIP, PDF, image)';
+  });
+
   document.getElementById('wkUpdateSend').addEventListener('click', function () {
     var btn = this;
     var msg = document.getElementById('wkMessage').value.trim();
-    if (!msg) { SF.toast('Write an update first.', 'warning'); return; }
+    var file = fileInput.files[0];
+    if (!msg && !file) { SF.toast('Write an update or attach a file first.', 'warning'); return; }
+    var fd = new FormData();
+    fd.append('message', msg);
+    if (file) fd.append('attachment', file);
     btn.disabled = true;
-    btn.innerHTML = '<span class="sf-spinner"></span> Posting…';
-    SF.api(BASE + 'update/', { method: 'POST', body: { message: msg } }).then(function (res) {
+    btn.innerHTML = '<span class="sf-spinner"></span> ' + (file ? 'Uploading…' : 'Posting…');
+    SF.api(BASE + 'update/', { method: 'POST', body: fd }).then(function (res) {
       if (res.ok) {
         SF.toast('Update posted.', 'success');
         setTimeout(function () { location.reload(); }, 700);

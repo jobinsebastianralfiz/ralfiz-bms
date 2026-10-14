@@ -753,6 +753,27 @@ class WorkAssignmentDetailView(APIView):
         return Response(WorkAssignmentSerializer(assignment).data)
 
 
+WORK_FILE_MAX_BYTES = 25 * 1024 * 1024
+WORK_FILE_EXTS = {
+    '.zip', '.rar', '.7z', '.pdf',
+    '.jpg', '.jpeg', '.png', '.webp', '.gif', '.heic',
+    '.doc', '.docx', '.xls', '.xlsx', '.ppt', '.pptx', '.txt', '.csv',
+}
+
+
+def check_work_file(upload):
+    """Error message for a work-update attachment, or None when it is acceptable."""
+    if upload is None:
+        return None
+    import os
+    ext = os.path.splitext(upload.name)[1].lower()
+    if ext not in WORK_FILE_EXTS:
+        return f'{ext or "This file type"} is not allowed. Upload a ZIP, PDF, image or office document.'
+    if upload.size > WORK_FILE_MAX_BYTES:
+        return 'File is too large. The limit is 25 MB.'
+    return None
+
+
 @extend_schema(tags=['Work'], request=WorkStatusUpdateSerializer)
 class WorkStatusUpdateView(APIView):
     """Update status of a work assignment"""
@@ -773,6 +794,9 @@ class WorkStatusUpdateView(APIView):
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
         data = serializer.validated_data
+        file_error = check_work_file(data.get('attachment'))
+        if file_error:
+            return Response({'error': file_error}, status=status.HTTP_400_BAD_REQUEST)
         assignment.status = data['status']
         if data['status'] == 'completed':
             assignment.completed_at = timezone.now()
@@ -825,15 +849,19 @@ class WorkUpdateCreateView(APIView):
         except WorkAssignment.DoesNotExist:
             return Response({'error': 'Assignment not found'}, status=status.HTTP_404_NOT_FOUND)
 
-        message = request.data.get('message')
-        if not message:
+        message = (request.data.get('message') or '').strip()
+        attachment = request.FILES.get('attachment')
+        if not message and not attachment:
             return Response({'error': 'message is required'}, status=status.HTTP_400_BAD_REQUEST)
+        file_error = check_work_file(attachment)
+        if file_error:
+            return Response({'error': file_error}, status=status.HTTP_400_BAD_REQUEST)
 
         update = WorkUpdate.objects.create(
             assignment=assignment,
             employee=employee,
-            message=message,
-            attachment=request.FILES.get('attachment'),
+            message=message or f'Uploaded {attachment.name}',
+            attachment=attachment,
         )
 
         return Response(WorkUpdateSerializer(update).data, status=status.HTTP_201_CREATED)

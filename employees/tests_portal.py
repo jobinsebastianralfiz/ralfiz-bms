@@ -614,3 +614,67 @@ class StaffConfinementTests(StaffPortalTestBase):
                                 role='owner', status='active')
         self.client.login(username='c_owner', password=self.password)
         self.assertEqual(self.client.get('/invoices/').status_code, 200)
+
+
+class StaffPortalWorkFileTests(StaffPortalTestBase):
+    """Interns attach ZIPs, PDFs and images to work updates from /staff/work/<id>/."""
+
+    def setUp(self):
+        import shutil
+        import tempfile
+        from django.test import override_settings
+        media = tempfile.mkdtemp()
+        self.addCleanup(shutil.rmtree, media, ignore_errors=True)
+        settings_override = override_settings(MEDIA_ROOT=media)
+        settings_override.enable()
+        self.addCleanup(settings_override.disable)
+
+        self.login_intern()
+        self.work = WorkAssignment.objects.create(title='Build landing page')
+        self.work.assigned_to.add(self.intern)
+        self.url = f'/api/employees/work/{self.work.pk}/update/'
+
+    def upload(self, name, content=b'data', **extra):
+        from django.core.files.uploadedfile import SimpleUploadedFile
+        return self.client.post(self.url, {'attachment': SimpleUploadedFile(name, content), **extra})
+
+    def test_page_offers_a_file_picker(self):
+        res = self.client.get(reverse('staff:work_detail', args=[self.work.pk]))
+        self.assertContains(res, 'id="wkFile"')
+        self.assertContains(res, '.zip')
+
+    def test_zip_pdf_and_image_upload(self):
+        for name in ('site.zip', 'report.pdf', 'screen.PNG'):
+            res = self.upload(name, message='Done')
+            self.assertEqual(res.status_code, 201, res.content)
+        self.assertEqual(self.work.updates.exclude(attachment='').count(), 3)
+
+    def test_file_without_message_gets_a_default_message(self):
+        res = self.upload('site.zip')
+        self.assertEqual(res.status_code, 201, res.content)
+        self.assertEqual(self.work.updates.get().message, 'Uploaded site.zip')
+
+    def test_disallowed_type_is_rejected(self):
+        res = self.upload('run.exe')
+        self.assertEqual(res.status_code, 400)
+        self.assertFalse(self.work.updates.exists())
+
+    def test_oversized_file_is_rejected(self):
+        from employees import views
+        original = views.WORK_FILE_MAX_BYTES
+        views.WORK_FILE_MAX_BYTES = 10
+        self.addCleanup(setattr, views, 'WORK_FILE_MAX_BYTES', original)
+        res = self.upload('big.zip', b'x' * 11)
+        self.assertEqual(res.status_code, 400)
+
+    def test_empty_update_is_still_rejected(self):
+        res = self.client.post(self.url, {'message': '  '})
+        self.assertEqual(res.status_code, 400)
+
+    def test_upload_shows_on_hr_work_page(self):
+        self.upload('site.zip', message='Final build')
+        admin = User.objects.create_superuser('hr_admin', 'hr@example.com', 'pw')
+        self.client.force_login(admin)
+        res = self.client.get(reverse('emp_work_detail', args=[self.work.pk]))
+        self.assertContains(res, 'Final build')
+        self.assertContains(res, 'site')
