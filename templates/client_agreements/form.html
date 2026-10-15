@@ -93,7 +93,7 @@
                 <input type="number" min="0" step="1" class="form-control" name="maint_amount" placeholder="&#8377; per month" value="{{ form.maint_amount|default:'' }}" style="max-width: 180px;">
                 <select class="form-control" name="maint_mode" style="max-width: 220px;">
                 <option value="optional" {% if form.maint_mode != 'included' %}selected{% endif %}>Optional - client chooses</option>
-                <option value="included" {% if form.maint_mode == 'included' %}selected{% endif %}>Included - part of the agreement</option>
+                <option value="included" {% if form.maint_mode == 'included' %}selected{% endif %}>Part of the agreement - client must take it</option>
               </select>
               </div>
               <input type="text" class="form-control mt-2" name="maint_note" placeholder="What it covers (blank = bug fixes, minor changes, updates, monitoring, backups)" value="{{ form.maint_note|default:'' }}">
@@ -122,16 +122,13 @@
             <label class="d-flex gap-2" style="align-items:center; font-weight:600;">
               <input type="checkbox" name="amc_on" class="js-toggle" data-target="amc-fields" {% if form.amc_on %}checked{% endif %}> AMC (annual maintenance contract)
             </label>
+            <div class="text-sm text-muted">Always part of the agreement - the client can't opt out of it.</div>
             <div id="amc-fields" class="svc-fields">
               <div class="d-flex gap-2" style="flex-wrap: wrap;">
                 <input type="number" min="0" step="1" class="form-control" name="amc_amount" placeholder="&#8377; amount" value="{{ form.amc_amount|default:'' }}" style="max-width: 160px;">
                 <select class="form-control" name="amc_cycle" style="max-width: 150px;">
                   {% for v, l in amc_cycles %}<option value="{{ v }}" {% if form.amc_cycle == v %}selected{% endif %}>{{ l }}</option>{% endfor %}
                 </select>
-                <select class="form-control" name="amc_mode" style="max-width: 220px;">
-                <option value="optional" {% if form.amc_mode != 'included' %}selected{% endif %}>Optional - client chooses</option>
-                <option value="included" {% if form.amc_mode == 'included' %}selected{% endif %}>Included - part of the agreement</option>
-              </select>
               </div>
               <input type="text" class="form-control mt-2" name="amc_note" placeholder="What it covers (blank = standard AMC wording)" value="{{ form.amc_note|default:'' }}">
               {% if errors.amc %}<div class="text-danger text-sm">{{ errors.amc }}</div>{% endif %}

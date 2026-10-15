@@ -97,7 +97,7 @@
             <td class="text-end">{{ s.amount_display }} {{ s.cycle_suffix }}</td>
             <td class="text-end">
               {% if agreement.status == 'accepted' %}{% if s.key in agreement.selected_services %}<span class="badge" style="background: var(--success-bg); color: var(--success);">Chosen</span>{% else %}Not chosen{% endif %}
-              {% else %}{% if s.mode == 'included' %}Included{% elif s.group == 'cloud' %}Pick one{% else %}Optional{% endif %}{% endif %}
+              {% else %}{% if s.mode == 'included' %}Part of agreement{% elif s.group == 'cloud' %}Pick one{% else %}Optional{% endif %}{% endif %}
             </td>
           </tr>
           {% endfor %}

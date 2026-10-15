@@ -55,7 +55,7 @@ signing page and the signed copy so the two can never drift.
           <td class="r">
             {% if agreement.status == 'accepted' %}
               {% if s.key in chosen_keys %}<span class="svc-tag yes">&#10003; Yes</span>{% else %}<span class="svc-tag">No</span>{% endif %}
-            {% elif s.mode == 'included' %}<span class="svc-tag inc">Included</span>
+            {% elif s.mode == 'included' %}<span class="svc-tag inc">Part of agreement</span>
             {% elif s.group == 'cloud' %}<span class="svc-tag">Pick one</span>
             {% else %}<span class="svc-tag">Optional</span>{% endif %}
           </td>

@@ -265,7 +265,8 @@ def build_services(form):
         else:
             services.append(_service(
                 'amc', 'amc', 'Annual Maintenance Contract (AMC)', amount,
-                _cycle(form.get('amc_cycle') or 'yearly'), form.get('amc_mode'),
+                # AMC is always part of the agreement; the client never chooses it.
+                _cycle(form.get('amc_cycle') or 'yearly'), MODE_INCLUDED,
                 (form.get('amc_note') or '').strip()
                 or 'Starts after the warranty ends. Covers support, bug fixes and updates for the '
                    'year; renewed yearly. A separate AMC agreement is issued.'))

@@ -68,7 +68,6 @@ def client_agreement_new(request, pk):
         'amc_on': 'on' if project.amc_amount else '',
         'amc_amount': project.amc_amount or '',
         'amc_cycle': project.amc_billing_cycle or 'yearly',
-        'amc_mode': 'optional',
         'other_services': '',
     }
     if previous:  # a revision starts from what was last sent, not from scratch
@@ -136,7 +135,7 @@ def client_agreement_new(request, pk):
                 'scope', 'deliverables', 'start_date', 'end_date', 'total',
                 'warranty_months', 'support_note', 'extra_terms', 'expiry_days', 'exclusions',
                 'maint_on', 'maint_amount', 'maint_mode', 'maint_note', 'cloud_on', 'cloud_mode',
-                'cloud_plans', 'cloud_note', 'late_interest', 'amc_on', 'amc_amount', 'amc_cycle', 'amc_mode', 'amc_note',
+                'cloud_plans', 'cloud_note', 'late_interest', 'amc_on', 'amc_amount', 'amc_cycle', 'amc_note',
                 'other_services')}
             revision = (previous.revision + 1) if previous else 1
             snapshot['version'] = f'v{revision}.0'

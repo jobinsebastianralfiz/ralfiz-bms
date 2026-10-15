@@ -150,7 +150,7 @@ class ClientAgreementServicesTests(ClientAgreementFlowTests):
         'maint_on': 'on', 'maint_amount': '2500', 'maint_mode': 'optional',
         'cloud_on': 'on', 'cloud_mode': 'required',
         'cloud_plans': 'Basic | 999 | 2 GB RAM\nStandard | 1,999 | 4 GB RAM',
-        'amc_on': 'on', 'amc_amount': '15000', 'amc_cycle': 'yearly', 'amc_mode': 'included',
+        'amc_on': 'on', 'amc_amount': '15000', 'amc_cycle': 'yearly', 'amc_mode': 'optional',  # ignored: AMC is always part of the agreement
         'other_services': 'SEO package | 5000 | monthly | optional',
     }
 
@@ -177,6 +177,9 @@ class ClientAgreementServicesTests(ClientAgreementFlowTests):
         self.client.logout()
         url = agreement.public_path()
         self.assertContains(self.client.get(url), 'Add Monthly Maintenance')
+        page = self.client.get(url)
+        self.assertNotContains(page, 'value="amc"')  # AMC is never a client choice
+        self.assertContains(page, 'Part of agreement')
         base = {'decision': 'accept', 'signer_name': 'Anil', 'signed_name': 'Anil',
                 'agreed_to_terms': 'on', 'svc': ['maint']}
         # Cloud is required here, so accepting without a plan is refused.
