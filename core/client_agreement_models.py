@@ -139,6 +139,119 @@ def default_milestone_text():
     return '\n'.join(f'{label} | {pct}' for label, pct in DEFAULT_MILESTONES)
 
 
+DEFAULT_EXCLUSIONS = [
+    'Domain registration and renewal',
+    'Hosting / cloud server charges, unless taken from us below',
+    'Third-party paid plugins, themes, APIs, SMS and payment-gateway fees',
+    'Content writing, translation, photography and video',
+    'Play Store / App Store developer account fees',
+    'Support and changes after the warranty, unless covered by a maintenance plan or AMC',
+]
+
+
+def default_exclusions_text():
+    return '\n'.join(DEFAULT_EXCLUSIONS)
+
+
+CYCLES = {
+    'monthly': ('/ month', 'Monthly'),
+    'quarterly': ('/ quarter', 'Quarterly'),
+    'half_yearly': ('/ 6 months', 'Half-yearly'),
+    'yearly': ('/ year', 'Yearly'),
+    'one_time': ('one-time', 'One-time'),
+}
+
+MODE_INCLUDED = 'included'  # part of the agreement, the client can't untick it
+MODE_OPTIONAL = 'optional'  # the client chooses on the signing page
+
+
+def _cycle(raw):
+    raw = (raw or '').strip().lower().replace('-', '_').replace(' ', '_')
+    aliases = {'month': 'monthly', 'year': 'yearly', 'annual': 'yearly', 'annually': 'yearly',
+               'onetime': 'one_time', 'once': 'one_time', 'quarter': 'quarterly',
+               'half_year': 'half_yearly', 'halfyearly': 'half_yearly'}
+    raw = aliases.get(raw, raw)
+    return raw if raw in CYCLES else 'monthly'
+
+
+def _amount(raw):
+    try:
+        value = Decimal(str(raw).replace(',', '').replace('₹', '').strip())
+    except (InvalidOperation, ValueError):
+        return None
+    return value if value >= 0 else None
+
+
+def _service(key, group, name, amount, cycle, mode, description=''):
+    suffix, label = CYCLES[cycle]
+    return {
+        'key': key, 'group': group, 'name': name, 'description': description,
+        'amount': str(amount), 'amount_display': _money(amount),
+        'cycle': cycle, 'cycle_suffix': suffix, 'cycle_label': label,
+        'mode': mode if mode in (MODE_INCLUDED, MODE_OPTIONAL) else MODE_OPTIONAL,
+    }
+
+
+def build_services(form):
+    """Recurring services from the staff form: (services, cloud_mode, errors).
+
+    Monthly maintenance and AMC are single services. Cloud hosting is a list
+    of plans the client picks one of - required means they must pick a plan,
+    optional means they may also say no. Anything else goes in 'other
+    services', one per line: Name | amount | cycle | included/optional.
+    """
+    services, errors = [], {}
+
+    if form.get('maint_on'):
+        amount = _amount(form.get('maint_amount'))
+        if not amount:
+            errors['maint'] = 'Enter the monthly maintenance charge.'
+        else:
+            services.append(_service(
+                'maint', 'maintenance', 'Monthly Maintenance', amount, 'monthly',
+                form.get('maint_mode'), (form.get('maint_note') or '').strip()
+                or 'Bug fixes, minor content/text changes, security and software updates, '
+                   'uptime monitoring and backups.'))
+
+    cloud_mode = ''
+    if form.get('cloud_on'):
+        cloud_mode = 'required' if form.get('cloud_mode') == 'required' else 'optional'
+        for i, line in enumerate(l for l in (form.get('cloud_plans') or '').splitlines() if l.strip()):
+            parts = [p.strip() for p in line.split('|')]
+            amount = _amount(parts[1]) if len(parts) > 1 else None
+            if not parts[0] or amount is None:
+                errors['cloud'] = f'Cloud plan line {i + 1} needs a name and a monthly price: Name | price | details'
+                continue
+            services.append(_service(f'cloud-{i + 1}', 'cloud', parts[0], amount, 'monthly',
+                                     MODE_OPTIONAL, parts[2] if len(parts) > 2 else ''))
+        if not any(s['group'] == 'cloud' for s in services) and 'cloud' not in errors:
+            errors['cloud'] = 'Add at least one cloud plan, or switch cloud hosting off.'
+
+    if form.get('amc_on'):
+        amount = _amount(form.get('amc_amount'))
+        if not amount:
+            errors['amc'] = 'Enter the AMC amount.'
+        else:
+            services.append(_service(
+                'amc', 'amc', 'Annual Maintenance Contract (AMC)', amount,
+                _cycle(form.get('amc_cycle') or 'yearly'), form.get('amc_mode'),
+                (form.get('amc_note') or '').strip()
+                or 'Starts after the warranty ends. Covers support, bug fixes and updates for the '
+                   'year; renewed yearly. A separate AMC agreement is issued.'))
+
+    for i, line in enumerate(l for l in (form.get('other_services') or '').splitlines() if l.strip()):
+        parts = [p.strip() for p in line.split('|')]
+        amount = _amount(parts[1]) if len(parts) > 1 else None
+        if not parts[0] or amount is None:
+            errors['other'] = f'Other service line {i + 1} needs: Name | amount | cycle | included/optional'
+            continue
+        mode = MODE_INCLUDED if len(parts) > 3 and parts[3].lower().startswith('incl') else MODE_OPTIONAL
+        services.append(_service(f'other-{i + 1}', 'other', parts[0], amount,
+                                 _cycle(parts[2] if len(parts) > 2 else ''), mode))
+
+    return services, cloud_mode, errors
+
+
 class ClientAgreement(models.Model):
     """One signable agreement link for one project."""
 
@@ -195,6 +308,9 @@ class ClientAgreement(models.Model):
     signature_image = models.ImageField(upload_to='client_agreements/signatures/',
                                         null=True, blank=True)
     agreed_to_terms = models.BooleanField(default=False)
+    selected_services = models.JSONField(
+        default=list, blank=True,
+        help_text='Keys of the recurring services in force: included ones plus what the client chose')
     change_notes = models.TextField(blank=True, help_text='What the client asked to change')
 
     # ---- Evidence ----
@@ -242,6 +358,17 @@ class ClientAgreement(models.Model):
             self.STATUS_ACCEPTED: 'background: var(--success-bg); color: var(--success);',
             self.STATUS_CHANGES: 'background: var(--danger-bg); color: var(--danger);',
         }.get(self.status, muted)
+
+    @property
+    def chosen_services(self):
+        keys = set(self.selected_services or [])
+        return [s for s in self.snapshot_json.get('services', []) if s['key'] in keys]
+
+    @property
+    def chosen_monthly_total(self):
+        total = sum((Decimal(s['amount']) for s in self.chosen_services if s['cycle'] == 'monthly'),
+                    Decimal('0'))
+        return _money(total) if total else ''
 
     # ---- Links ----
     def public_path(self):
@@ -307,7 +434,8 @@ class ClientAgreement(models.Model):
 
 
 def build_snapshot(project, *, scope, deliverables, start_date, end_date, total,
-                   milestones, warranty_months, support_note, extra_terms):
+                   milestones, warranty_months, support_note, extra_terms,
+                   exclusions=(), services=(), cloud_mode=''):
     """Freeze the agreement for one project. Section numbers are assigned here
     so the page and the signed copy always number the same way."""
     client = project.client
@@ -319,12 +447,21 @@ def build_snapshot(project, *, scope, deliverables, start_date, end_date, total,
     add('Scope of Work', body=scope or project.description or '')
     if deliverables:
         add('Deliverables', bullets=deliverables)
+    if exclusions:
+        add('Exclusions', body='The following are not part of this project fee:', bullets=list(exclusions))
     add('Timeline', kind='timeline',
         body='Dates assume inputs and approvals arrive on time (see Client Responsibilities).')
     add('Project Fee & Payment Schedule', kind='payment',
         body='Amounts are exclusive of GST, which is added at the applicable rate on each invoice. '
              'Each instalment is invoiced when its milestone is reached and is payable within '
              '7 days of the invoice.')
+    if services:
+        add('Recurring Services & Charges', kind='services',
+            body='These are billed separately from the project fee, plus GST, from go-live (or from '
+                 'the end of the warranty for AMC). Services marked Optional apply only if you '
+                 'choose them when accepting. Either party may stop a monthly service with 30 '
+                 'days\' written notice.'
+                 + (' Cloud hosting: please choose one plan.' if cloud_mode == 'required' else ''))
     warranty_body = (f'We fix defects in the delivered work free of charge for {warranty_months} '
                      f'month{"s" if warranty_months != 1 else ""} after go-live. '
                      if warranty_months else 'No free warranty period applies to this project. ')
@@ -355,6 +492,8 @@ def build_snapshot(project, *, scope, deliverables, start_date, end_date, total,
         'total_in_words': rupees_in_words(total),
         'milestones': milestones,
         'warranty_months': warranty_months,
+        'services': list(services),
+        'cloud_mode': cloud_mode,
         'sections': sections,
         'confirmation_no': len(sections) + 1,
     }

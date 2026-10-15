@@ -18,8 +18,8 @@ from employees.agreement_views import (
 )
 
 from .client_agreement_models import (
-    ClientAgreement, build_snapshot, default_milestone_text, milestones_total_percent,
-    parse_milestones,
+    MODE_INCLUDED, ClientAgreement, build_services, build_snapshot, default_exclusions_text,
+    default_milestone_text, milestones_total_percent, parse_milestones,
 )
 from .models import Project
 
@@ -59,6 +59,15 @@ def client_agreement_new(request, pk):
         'support_note': '',
         'extra_terms': '',
         'expiry_days': 14,
+        'exclusions': default_exclusions_text(),
+        'maint_mode': 'optional',
+        'cloud_mode': 'optional',
+        'cloud_plans': '',
+        'amc_on': 'on' if project.amc_amount else '',
+        'amc_amount': project.amc_amount or '',
+        'amc_cycle': project.amc_billing_cycle or 'yearly',
+        'amc_mode': 'optional',
+        'other_services': '',
     }
     if previous:  # a revision starts from what was last sent, not from scratch
         snap = previous.snapshot_json
@@ -82,6 +91,8 @@ def client_agreement_new(request, pk):
         elif milestones_total_percent(milestones) != 100:
             errors['milestones'] = (f'Milestones add up to {milestones_total_percent(milestones):f}%, '
                                     'they must add up to 100%.')
+        services, cloud_mode, service_errors = build_services(form)
+        errors.update(service_errors)
         if not (form.get('scope') or '').strip():
             errors['scope'] = 'Describe the scope of work.'
         try:
@@ -105,11 +116,17 @@ def client_agreement_new(request, pk):
                 warranty_months=warranty,
                 support_note=form.get('support_note', '').strip(),
                 extra_terms=_lines(form.get('extra_terms')),
+                exclusions=_lines(form.get('exclusions')),
+                services=services,
+                cloud_mode=cloud_mode,
             )
             # Kept so a revision can prefill the form; not shown to the client.
             snapshot['_form'] = {k: form.get(k, '') for k in (
                 'scope', 'deliverables', 'start_date', 'end_date', 'total',
-                'warranty_months', 'support_note', 'extra_terms', 'expiry_days')}
+                'warranty_months', 'support_note', 'extra_terms', 'expiry_days', 'exclusions',
+                'maint_on', 'maint_amount', 'maint_mode', 'maint_note', 'cloud_on', 'cloud_mode',
+                'cloud_plans', 'amc_on', 'amc_amount', 'amc_cycle', 'amc_mode', 'amc_note',
+                'other_services')}
             revision = (previous.revision + 1) if previous else 1
             snapshot['version'] = f'v{revision}.0'
             agreement = ClientAgreement.objects.create(
@@ -124,9 +141,12 @@ def client_agreement_new(request, pk):
             messages.success(request, f'Agreement {agreement.reference} is ready. Send the link to the client.')
             return redirect('client_agreement_detail', pk=agreement.pk)
         initial.update(request.POST.dict())
+        for box in ('maint_on', 'cloud_on', 'amc_on'):  # unticked boxes are absent from POST
+            initial[box] = request.POST.get(box, '')
 
     return render(request, 'client_agreements/form.html', {
         'project': project, 'form': initial, 'errors': errors, 'previous': previous,
+        'amc_cycles': [(k, v) for k, v in Project.AMC_BILLING_CHOICES],
     })
 
 
@@ -173,7 +193,15 @@ def _get_or_404(token):
 
 def _sign_context(agreement, errors=None, posted=None):
     doc = agreement.snapshot_json or {}
+    services = doc.get('services', [])
+    posted = posted or {}
     return {
+        'included_services': [s for s in services if s['mode'] == MODE_INCLUDED],
+        'optional_services': [s for s in services
+                              if s['mode'] != MODE_INCLUDED and s['group'] != 'cloud'],
+        'cloud_plans': [s for s in services if s['group'] == 'cloud'],
+        'posted_services': posted.get('_services', []),
+        'chosen_keys': agreement.selected_services or [],
         'agreement': agreement, 'doc': doc, 'client': agreement.project.client,
         'sections': doc.get('sections', []), 'today': timezone.localdate(),
         'errors': errors or {}, 'posted': posted or {},
@@ -196,8 +224,11 @@ def client_agreement_sign(request, token):
         return render(request, 'client_agreements/sign.html', _sign_context(agreement))
 
     posted = request.POST.dict()
+    posted['_services'] = request.POST.getlist('svc')
     decision = posted.get('decision')
     errors = {}
+    services = agreement.snapshot_json.get('services', [])
+    by_key = {s['key']: s for s in services}
     if decision == 'accept':
         for field, msg in (('signer_name', 'Please enter your full name.'),
                            ('signed_name', 'Please type your name to sign.')):
@@ -205,6 +236,10 @@ def client_agreement_sign(request, token):
                 errors[field] = msg
         if posted.get('agreed_to_terms') != 'on':
             errors['agreed_to_terms'] = 'Please confirm that you accept the terms.'
+        cloud_pick = posted.get('cloud_plan', '')
+        if (agreement.snapshot_json.get('cloud_mode') == 'required'
+                and not (cloud_pick in by_key and by_key[cloud_pick]['group'] == 'cloud')):
+            errors['cloud_plan'] = 'Please choose a cloud hosting plan.'
     elif decision == 'changes':
         if not posted.get('change_notes', '').strip():
             errors['change_notes'] = 'Please tell us what you would like changed.'
@@ -224,6 +259,12 @@ def client_agreement_sign(request, token):
         agreement.status = ClientAgreement.STATUS_ACCEPTED
         agreement.signed_name = posted['signed_name'].strip()
         agreement.agreed_to_terms = True
+        chosen = [s['key'] for s in services if s['mode'] == MODE_INCLUDED]
+        chosen += [k for k in posted['_services']
+                   if k in by_key and by_key[k]['group'] != 'cloud' and k not in chosen]
+        if posted.get('cloud_plan') in by_key and by_key[posted['cloud_plan']]['group'] == 'cloud':
+            chosen.append(posted['cloud_plan'])
+        agreement.selected_services = chosen
         signature = _decode_signature(posted.get('signature_data', ''))
         if signature:
             agreement.signature_image.save(f'sig-{agreement.id}.png', ContentFile(signature), save=False)

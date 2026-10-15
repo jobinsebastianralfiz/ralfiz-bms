@@ -87,6 +87,25 @@
       <div class="card-header"><h3 class="card-title"><i class="fas fa-indian-rupee-sign"></i> Terms sent</h3></div>
       <div class="card-body">
         <p class="mb-2"><strong>{{ doc.total_display }}</strong> + GST &middot; {{ doc.start_date }} &rarr; {{ doc.end_date }} &middot; warranty {{ doc.warranty_months }} month{{ doc.warranty_months|pluralize }}</p>
+        {% if doc.services %}
+        <h4 class="text-sm text-muted mb-2">Recurring services{% if agreement.status == 'accepted' %} &middot; client chose{% endif %}</h4>
+        <table class="table mb-4">
+          <tbody>
+          {% for s in doc.services %}
+          <tr{% if agreement.status == 'accepted' and s.key not in agreement.selected_services %} style="opacity: .45;"{% endif %}>
+            <td>{% if s.group == 'cloud' %}Cloud &middot; {% endif %}{{ s.name }}</td>
+            <td class="text-end">{{ s.amount_display }} {{ s.cycle_suffix }}</td>
+            <td class="text-end">
+              {% if agreement.status == 'accepted' %}{% if s.key in agreement.selected_services %}<span class="badge" style="background: var(--success-bg); color: var(--success);">Chosen</span>{% else %}Not chosen{% endif %}
+              {% else %}{% if s.mode == 'included' %}Included{% elif s.group == 'cloud' %}Pick one{% else %}Optional{% endif %}{% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+          </tbody>
+        </table>
+        {% if agreement.chosen_monthly_total %}<p class="text-sm mb-4">Monthly recurring: <strong>{{ agreement.chosen_monthly_total }}</strong> + GST</p>{% endif %}
+        <h4 class="text-sm text-muted mb-2">Payment schedule</h4>
+        {% endif %}
         <table class="table mb-0">
           <tbody>
           {% for m in doc.milestones %}

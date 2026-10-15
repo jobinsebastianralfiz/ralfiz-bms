@@ -23,6 +23,9 @@
       {% if agreement.status == 'accepted' %}<span class="pill ok">Accepted</span>{% else %}<span class="pill stop">Changes requested</span>{% endif %}
     </span></div>
     <div class="receipt-row"><span>Total fee</span><span>{{ doc.total_display }} + GST</span></div>
+    {% if agreement.status == 'accepted' %}{% for s in agreement.chosen_services %}
+    <div class="receipt-row"><span>{% if s.group == 'cloud' %}Cloud &middot; {% endif %}{{ s.name }}</span><span>{{ s.amount_display }} {{ s.cycle_suffix }}</span></div>
+    {% endfor %}{% endif %}
     <div class="receipt-row"><span>Responded on</span><span>{{ agreement.responded_at|date:"d M Y, g:i a" }}</span></div>
   </div>
 

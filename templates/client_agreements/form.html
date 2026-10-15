@@ -46,6 +46,10 @@
             <textarea class="form-control" id="deliverables" name="deliverables" rows="5">{{ form.deliverables }}</textarea>
           </div>
           <div class="form-group">
+            <label class="form-label" for="exclusions">Exclusions <span class="text-muted text-sm">(not covered by the project fee, one per line)</span></label>
+            <textarea class="form-control" id="exclusions" name="exclusions" rows="6">{{ form.exclusions }}</textarea>
+          </div>
+          <div class="form-group">
             <label class="form-label" for="extra_terms">Additional terms <span class="text-muted text-sm">(optional, one per line)</span></label>
             <textarea class="form-control" id="extra_terms" name="extra_terms" rows="3" placeholder="e.g. Hosting for the first year is included">{{ form.extra_terms }}</textarea>
           </div>
@@ -65,6 +69,72 @@
             <textarea class="form-control" id="milestones" name="milestones" rows="4" style="font-family: monospace;">{{ form.milestones }}</textarea>
             {% if errors.milestones %}<div class="text-danger text-sm">{{ errors.milestones }}</div>{% endif %}
             <div class="text-sm text-muted mt-1" id="ms-preview"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card mb-4">
+        <div class="card-header"><h3 class="card-title"><i class="fas fa-rotate"></i> Recurring services</h3></div>
+        <div class="card-body">
+          <p class="text-sm text-muted">Billed separately from the project fee. <strong>Optional</strong> services appear as tick boxes for the client when they accept.</p>
+
+          <div class="svc-block">
+            <label class="d-flex gap-2" style="align-items:center; font-weight:600;">
+              <input type="checkbox" name="maint_on" class="js-toggle" data-target="maint-fields" {% if form.maint_on %}checked{% endif %}> Monthly maintenance charge
+            </label>
+            <div id="maint-fields" class="svc-fields">
+              <div class="d-flex gap-2" style="flex-wrap: wrap;">
+                <input type="number" min="0" step="1" class="form-control" name="maint_amount" placeholder="&#8377; per month" value="{{ form.maint_amount|default:'' }}" style="max-width: 180px;">
+                <select class="form-control" name="maint_mode" style="max-width: 220px;">
+                <option value="optional" {% if form.maint_mode != 'included' %}selected{% endif %}>Optional - client chooses</option>
+                <option value="included" {% if form.maint_mode == 'included' %}selected{% endif %}>Included - part of the agreement</option>
+              </select>
+              </div>
+              <input type="text" class="form-control mt-2" name="maint_note" placeholder="What it covers (blank = bug fixes, minor changes, updates, monitoring, backups)" value="{{ form.maint_note|default:'' }}">
+              {% if errors.maint %}<div class="text-danger text-sm">{{ errors.maint }}</div>{% endif %}
+            </div>
+          </div>
+
+          <div class="svc-block">
+            <label class="d-flex gap-2" style="align-items:center; font-weight:600;">
+              <input type="checkbox" name="cloud_on" class="js-toggle" data-target="cloud-fields" {% if form.cloud_on %}checked{% endif %}> Monthly cloud hosting options
+            </label>
+            <div id="cloud-fields" class="svc-fields">
+              <select class="form-control" name="cloud_mode" style="max-width: 320px;">
+                <option value="optional" {% if form.cloud_mode != 'required' %}selected{% endif %}>Optional - client may pick a plan or none</option>
+                <option value="required" {% if form.cloud_mode == 'required' %}selected{% endif %}>Required - client must pick one plan</option>
+              </select>
+              <textarea class="form-control mt-2" name="cloud_plans" rows="3" style="font-family: monospace;" placeholder="Basic | 999 | 1 vCPU, 2 GB RAM, 50 GB SSD, daily backup&#10;Standard | 1999 | 2 vCPU, 4 GB RAM, 80 GB SSD, daily backup&#10;Pro | 3999 | 4 vCPU, 8 GB RAM, 160 GB SSD, CDN">{{ form.cloud_plans|default:'' }}</textarea>
+              <div class="text-sm text-muted">One plan per line: <code>Name | price per month | what's included</code></div>
+              {% if errors.cloud %}<div class="text-danger text-sm">{{ errors.cloud }}</div>{% endif %}
+            </div>
+          </div>
+
+          <div class="svc-block">
+            <label class="d-flex gap-2" style="align-items:center; font-weight:600;">
+              <input type="checkbox" name="amc_on" class="js-toggle" data-target="amc-fields" {% if form.amc_on %}checked{% endif %}> AMC (annual maintenance contract)
+            </label>
+            <div id="amc-fields" class="svc-fields">
+              <div class="d-flex gap-2" style="flex-wrap: wrap;">
+                <input type="number" min="0" step="1" class="form-control" name="amc_amount" placeholder="&#8377; amount" value="{{ form.amc_amount|default:'' }}" style="max-width: 160px;">
+                <select class="form-control" name="amc_cycle" style="max-width: 150px;">
+                  {% for v, l in amc_cycles %}<option value="{{ v }}" {% if form.amc_cycle == v %}selected{% endif %}>{{ l }}</option>{% endfor %}
+                </select>
+                <select class="form-control" name="amc_mode" style="max-width: 220px;">
+                <option value="optional" {% if form.amc_mode != 'included' %}selected{% endif %}>Optional - client chooses</option>
+                <option value="included" {% if form.amc_mode == 'included' %}selected{% endif %}>Included - part of the agreement</option>
+              </select>
+              </div>
+              <input type="text" class="form-control mt-2" name="amc_note" placeholder="What it covers (blank = standard AMC wording)" value="{{ form.amc_note|default:'' }}">
+              {% if errors.amc %}<div class="text-danger text-sm">{{ errors.amc }}</div>{% endif %}
+            </div>
+          </div>
+
+          <div class="form-group mb-0">
+            <label class="form-label" for="other_services">Other services <span class="text-muted text-sm">(optional, one per line)</span></label>
+            <textarea class="form-control" id="other_services" name="other_services" rows="3" style="font-family: monospace;" placeholder="Google Workspace email (5 users) | 700 | monthly | optional&#10;SEO package | 5000 | monthly | optional&#10;SSL certificate | 1500 | yearly | included">{{ form.other_services|default:'' }}</textarea>
+            <div class="text-sm text-muted"><code>Name | amount | monthly / quarterly / yearly / one-time | included / optional</code></div>
+            {% if errors.other %}<div class="text-danger text-sm">{{ errors.other }}</div>{% endif %}
           </div>
         </div>
       </div>
@@ -104,8 +174,21 @@
 </form>
 {% endblock %}
 
+{% block extra_css %}
+<style>
+  .svc-block { border: 1px solid var(--border-color); border-radius: 10px; padding: 12px 14px; margin-bottom: 12px; }
+  .svc-fields { margin-top: 10px; }
+  .svc-fields[hidden] { display: none; }
+</style>
+{% endblock %}
+
 {% block extra_js %}
 <script>
+document.querySelectorAll('.js-toggle').forEach(function (box) {
+  var target = document.getElementById(box.dataset.target);
+  function sync() { target.hidden = !box.checked; }
+  box.addEventListener('change', sync); sync();
+});
 (function () {
   var total = document.getElementById('total'), ms = document.getElementById('milestones'), out = document.getElementById('ms-preview');
   function fmt(n) { return '₹' + Math.round(n).toLocaleString('en-IN'); }

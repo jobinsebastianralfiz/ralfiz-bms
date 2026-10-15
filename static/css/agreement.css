@@ -438,3 +438,15 @@ body {
 .pay-table tfoot td { font-weight: 700; border-bottom: 0; }
 .pay-table .r { text-align: right; white-space: nowrap; }
 .pre-line { white-space: pre-line; }
+.svc-table td { vertical-align: top; }
+.svc-desc { display: block; font-size: 12px; color: var(--agr-muted); font-weight: 400; margin-top: 2px; }
+.svc-cycle { font-size: 11px; color: var(--agr-muted); }
+.svc-tag { display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: 11px; font-weight: 600; background: #f1f5f9; color: var(--agr-muted); white-space: nowrap; }
+.svc-tag.inc { background: var(--agr-blue-soft); color: var(--agr-blue); }
+.svc-tag.yes { background: #ecfdf5; color: var(--agr-green); }
+.svc-pick { display: flex; gap: 10px; align-items: flex-start; border: 1px solid var(--agr-line); border-radius: 9px; padding: 10px 12px; margin-bottom: 8px; background: #fff; cursor: pointer; font-size: 14px; color: var(--agr-ink); text-transform: none; letter-spacing: 0; font-weight: 400; }
+.field label.svc-pick { display: flex; margin-bottom: 8px; font-size: 14px; font-weight: 400; letter-spacing: 0; text-transform: none; color: var(--agr-ink); }
+.svc-pick input { margin-top: 3px; width: 18px; height: 18px; flex: none; accent-color: var(--agr-blue); }
+.svc-pick.is-fixed { cursor: default; background: #f8fafc; }
+.svc-pick:has(input:checked):not(.is-fixed) { border-color: var(--agr-blue); background: var(--agr-blue-soft); }
+.svc-price { display: block; font-weight: 600; color: var(--agr-ink); }

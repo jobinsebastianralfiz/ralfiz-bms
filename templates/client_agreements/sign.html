@@ -83,6 +83,46 @@
   </div>
 
   <div id="panel-yes" hidden>
+    {% if doc.services %}
+    <h3 class="form-heading">Recurring Services</h3>
+    {% for s in included_services %}
+    <div class="svc-pick is-fixed">
+      <input type="checkbox" checked disabled>
+      <div><strong>{{ s.name }}</strong> <span class="svc-tag inc">Included</span>
+        <span class="svc-price">{{ s.amount_display }} {{ s.cycle_suffix }}</span></div>
+    </div>
+    {% endfor %}
+    {% for s in optional_services %}
+    <label class="svc-pick">
+      <input type="checkbox" name="svc" value="{{ s.key }}" {% if s.key in posted_services %}checked{% endif %}>
+      <div><strong>Add {{ s.name }}</strong>
+        <span class="svc-price">{{ s.amount_display }} {{ s.cycle_suffix }}</span>
+        {% if s.description %}<span class="svc-desc">{{ s.description }}</span>{% endif %}</div>
+    </label>
+    {% endfor %}
+    {% if cloud_plans %}
+    <div class="field {% if errors.cloud_plan %}has-error{% endif %}" style="margin-top:14px;">
+      <label>Cloud hosting plan{% if doc.cloud_mode != 'required' %} <span class="opt">(optional)</span>{% endif %}</label>
+      {% for s in cloud_plans %}
+      <label class="svc-pick">
+        <input type="radio" name="cloud_plan" value="{{ s.key }}" {% if posted.cloud_plan == s.key %}checked{% endif %}>
+        <div><strong>{{ s.name }}</strong>
+          <span class="svc-price">{{ s.amount_display }} {{ s.cycle_suffix }}</span>
+          {% if s.description %}<span class="svc-desc">{{ s.description }}</span>{% endif %}</div>
+      </label>
+      {% endfor %}
+      {% if doc.cloud_mode != 'required' %}
+      <label class="svc-pick">
+        <input type="radio" name="cloud_plan" value="" {% if not posted.cloud_plan %}checked{% endif %}>
+        <div><strong>No, we will arrange our own hosting</strong></div>
+      </label>
+      {% endif %}
+      {% if errors.cloud_plan %}<div class="field-error">{{ errors.cloud_plan }}</div>{% endif %}
+    </div>
+    {% endif %}
+    <hr class="form-divider">
+    {% endif %}
+
     <div class="field">
       <label for="signed_date_display">Date</label>
       <input type="text" id="signed_date_display" value="{{ today|date:'d M Y' }}" readonly>
@@ -111,7 +151,8 @@
       <input type="checkbox" id="agreed_to_terms" name="agreed_to_terms" {% if posted.agreed_to_terms %}checked{% endif %}>
       <label for="agreed_to_terms">
         I confirm I am authorised to sign for {{ doc.client_company|default:doc.client_name }}, and I accept this
-        agreement for {{ doc.project_name }}, including the total fee of {{ doc.total_display }} plus GST and its payment schedule.
+        agreement for {{ doc.project_name }}, including the total fee of {{ doc.total_display }} plus GST and its payment schedule{% if doc.services %},
+        and the recurring services selected above{% endif %}.
       </label>
     </div>
     {% if errors.agreed_to_terms %}<div class="field-error" style="margin-top:-8px;margin-bottom:14px;">{{ errors.agreed_to_terms }}</div>{% endif %}

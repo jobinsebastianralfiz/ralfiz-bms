@@ -140,3 +140,62 @@ class ClientAgreementFlowTests(TestCase):
         res = self.client.get(reverse('client_agreement_new', args=[self.project.pk]))
         self.assertEqual(res.status_code, 302)
         self.assertIn('login', res['Location'])
+
+
+class ClientAgreementServicesTests(ClientAgreementFlowTests):
+    """Exclusions and recurring services (maintenance, cloud, AMC, other)."""
+
+    SERVICES = {
+        'exclusions': 'Domain registration\nContent writing',
+        'maint_on': 'on', 'maint_amount': '2500', 'maint_mode': 'optional',
+        'cloud_on': 'on', 'cloud_mode': 'required',
+        'cloud_plans': 'Basic | 999 | 2 GB RAM\nStandard | 1,999 | 4 GB RAM',
+        'amc_on': 'on', 'amc_amount': '15000', 'amc_cycle': 'yearly', 'amc_mode': 'included',
+        'other_services': 'SEO package | 5000 | monthly | optional',
+    }
+
+    def test_snapshot_carries_exclusions_and_services(self):
+        self._create(**self.SERVICES)
+        doc = ClientAgreement.objects.get().snapshot_json
+        titles = [s['title'] for s in doc['sections']]
+        self.assertIn('Exclusions', titles)
+        self.assertIn('Recurring Services & Charges', titles)
+        self.assertEqual([s['key'] for s in doc['services']],
+                         ['maint', 'cloud-1', 'cloud-2', 'amc', 'other-1'])
+        self.assertEqual(doc['services'][2]['amount_display'], '₹1,999')
+        self.assertEqual(doc['cloud_mode'], 'required')
+
+    def test_bad_service_lines_are_rejected(self):
+        res = self._create(maint_on='on', maint_amount='', cloud_on='on', cloud_plans='Basic')
+        self.assertContains(res, 'Enter the monthly maintenance charge.')
+        self.assertContains(res, 'needs a name and a monthly price')
+        self.assertFalse(ClientAgreement.objects.exists())
+
+    def test_client_choices_are_recorded(self):
+        self._create(**self.SERVICES)
+        agreement = ClientAgreement.objects.get()
+        self.client.logout()
+        url = agreement.public_path()
+        self.assertContains(self.client.get(url), 'Add Monthly Maintenance')
+        base = {'decision': 'accept', 'signer_name': 'Anil', 'signed_name': 'Anil',
+                'agreed_to_terms': 'on', 'svc': ['maint']}
+        # Cloud is required here, so accepting without a plan is refused.
+        res = self.client.post(url, base)
+        self.assertContains(res, 'Please choose a cloud hosting plan.', status_code=400)
+
+        self.client.post(url, {**base, 'cloud_plan': 'cloud-2', 'svc': ['maint', 'amc', 'bogus']})
+        agreement.refresh_from_db()
+        self.assertEqual(agreement.status, ClientAgreement.STATUS_ACCEPTED)
+        # AMC is included regardless; the unknown key is dropped; SEO wasn't picked.
+        self.assertEqual(agreement.selected_services, ['amc', 'maint', 'cloud-2'])
+        self.assertEqual(agreement.chosen_monthly_total, '₹4,499')
+        self.assertContains(self.client.get(f'{url}done/'), 'Standard')
+
+    def test_optional_cloud_can_be_declined(self):
+        self._create(**{**self.SERVICES, 'cloud_mode': 'optional'})
+        agreement = ClientAgreement.objects.get()
+        self.client.post(agreement.public_path(), {
+            'decision': 'accept', 'signer_name': 'A', 'signed_name': 'A',
+            'agreed_to_terms': 'on', 'cloud_plan': ''})
+        agreement.refresh_from_db()
+        self.assertEqual(agreement.selected_services, ['amc'])

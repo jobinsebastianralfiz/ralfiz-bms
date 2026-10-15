@@ -43,6 +43,28 @@ signing page and the signed copy so the two can never drift.
 
     {% if section.body %}<p class="pre-line">{{ section.body }}</p>{% endif %}
 
+    {% if section.kind == 'services' %}
+    <table class="pay-table svc-table">
+      <thead><tr><th>Service</th><th class="r">Charge</th><th class="r">{% if agreement.status == 'accepted' %}Chosen{% else %}Type{% endif %}</th></tr></thead>
+      <tbody>
+        {% for s in doc.services %}
+        <tr>
+          <td><strong>{% if s.group == 'cloud' %}Cloud hosting &middot; {% endif %}{{ s.name }}</strong>
+            {% if s.description %}<div class="svc-desc">{{ s.description }}</div>{% endif %}</td>
+          <td class="r">{{ s.amount_display }} <span class="svc-cycle">{{ s.cycle_suffix }}</span></td>
+          <td class="r">
+            {% if agreement.status == 'accepted' %}
+              {% if s.key in chosen_keys %}<span class="svc-tag yes">&#10003; Yes</span>{% else %}<span class="svc-tag">No</span>{% endif %}
+            {% elif s.mode == 'included' %}<span class="svc-tag inc">Included</span>
+            {% elif s.group == 'cloud' %}<span class="svc-tag">Pick one</span>
+            {% else %}<span class="svc-tag">Optional</span>{% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% endif %}
+
     {% if section.bullets %}
     <ul class="agr-list">
       {% for bullet in section.bullets %}<li>{{ bullet }}</li>{% endfor %}
@@ -64,6 +86,7 @@ signing page and the signed copy so the two can never drift.
       By accepting, <strong>{{ doc.client_company|default:doc.client_name }}</strong> agrees to engage
       Ralfiz Technologies for <strong>{{ doc.project_name }}</strong> on the terms above, for a total
       project fee of <strong>{{ doc.total_display }}</strong> plus GST, payable as per the schedule in
-      this agreement. An electronic acceptance is as binding as a signature on paper.
+      this agreement{% if doc.services %}, together with the recurring services marked included and
+      those chosen when accepting{% endif %}. An electronic acceptance is as binding as a signature on paper.
     </div>
   </section>
