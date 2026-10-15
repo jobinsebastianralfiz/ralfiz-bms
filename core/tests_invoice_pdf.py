@@ -59,3 +59,11 @@ class InvoicePdfTests(TestCase):
         c = CompanySettings.objects.get(pk=1)
         self.assertEqual(c.ng_bank_account_number, 'OWN-333')
         self.assertEqual(c.account_holder_name, 'Ralfiz Technologies')
+
+
+class OnelineFilterTests(TestCase):
+    def test_joins_lines_and_keeps_the_pin_with_the_town(self):
+        from .templatetags.money import oneline
+        self.assertEqual(oneline('KIMS Avenue\nPattambi Road, Perinthalmanna\n679322'),
+                         'KIMS Avenue, Pattambi Road, Perinthalmanna\u00a0679322')
+        self.assertEqual(oneline('Riyadh,\n\nSaudi Arabia'), 'Riyadh, Saudi Arabia')

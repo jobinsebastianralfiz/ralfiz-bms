@@ -1,4 +1,4 @@
-{% comment %}
+{% load money %}{% comment %}
 Blue letterhead header and footer. Include inside .sheet with
 doc_title (e.g. "INVOICE") and doc_number. Shapes are drawn in millimetres
 on an A4-wide canvas so they bleed to the paper edge.
@@ -7,8 +7,8 @@ fixed block that lies below the content area and drops every line but the
 first.
 {% endcomment %}
 <div class="lh-head">
-  <svg width="210mm" height="44mm" viewBox="0 0 210 44" preserveAspectRatio="none">
-    <polygon points="121,17 210,17 210,35 115.5,35" fill="#3a82e4"/>
+  <svg width="210mm" height="36mm" viewBox="0 0 210 36" preserveAspectRatio="none">
+    <polygon points="121,10 210,10 210,27 115.5,27" fill="#3a82e4"/>
   </svg>
   <div class="lh-brand">
     {% if company.logo_data_uri %}
@@ -28,9 +28,9 @@ first.
 </div>
 
 <div class="lh-foot">
-  <svg width="210mm" height="38mm" viewBox="0 0 210 38" preserveAspectRatio="none">
-    <polygon points="0,22 116,22 116,38 0,38" fill="#004aad"/>
-    <polygon points="121,2 210,2 210,38 109,38" fill="#3a82e4"/>
+  <svg width="210mm" height="26mm" viewBox="0 0 210 26" preserveAspectRatio="none">
+    <polygon points="0,14 118,14 118,26 0,26" fill="#004aad"/>
+    <polygon points="124,0 210,0 210,26 115,26" fill="#3a82e4"/>
   </svg>
   <div class="lh-ids"><div class="lh-stack">
     {% if company.gst_number %}<span>GSTIN {{ company.gst_number }}</span>{% endif %}
@@ -38,8 +38,7 @@ first.
     {% if company.hsn_code %}<span>HSN/SAC {{ company.hsn_code }}</span>{% endif %}
   </div></div>
   <div class="lh-contact"><div class="lh-stack">
-    {% if company.phone %}<div>{{ company.phone }}</div>{% endif %}
-    {% if company.email %}<div>{{ company.email }}</div>{% endif %}
-    {% if company.address %}<div>{{ company.address|linebreaksbr }}</div>{% endif %}
+    {% if company.phone or company.email %}<div>{{ company.phone }}{% if company.phone and company.email %} &middot; {% endif %}{{ company.email }}</div>{% endif %}
+    {% if company.address %}<div>{{ company.address|oneline }}</div>{% endif %}
   </div></div>
 </div>

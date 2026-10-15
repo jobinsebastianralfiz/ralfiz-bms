@@ -32,4 +32,8 @@ def inr(value, places=2):
 def oneline(value):
     """A multi-line address as one comma-separated line: 'A\\nB,\\nC' -> 'A, B, C'."""
     parts = [p.strip().rstrip(',') for p in str(value or '').splitlines()]
-    return ', '.join(p for p in parts if p)
+    parts = [p for p in parts if p]
+    # A PIN code on its own line stays with the town, never wrapped apart.
+    if len(parts) > 1 and parts[-1].replace(' ', '').isdigit():
+        parts[-2:] = [f'{parts[-2]}\u00a0{parts[-1]}']
+    return ', '.join(parts)
