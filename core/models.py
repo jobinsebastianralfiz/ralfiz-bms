@@ -728,6 +728,11 @@ class Invoice(models.Model):
         """
         return Decimal(str(self.tax_rate or 0)) > 0 and self.gst_filing_status != 'not_applicable'
 
+    @cached_property
+    def pay_to(self):
+        """Bank and UPI details for this invoice's series (see CompanySettings.payment_details)."""
+        return CompanySettings.get_settings().payment_details(gst=self.is_gst)
+
     @staticmethod
     def series_number(invoice_number, prefix):
         """The running number of `invoice_number` in the `prefix` series, else None."""
@@ -966,6 +971,16 @@ class CompanySettings(models.Model):
     bank_ifsc = models.CharField(max_length=20, blank=True, verbose_name='IFSC Code')
     bank_branch = models.CharField(max_length=100, blank=True)
     upi_id = models.CharField(max_length=100, blank=True, verbose_name='UPI ID')
+    account_holder_name = models.CharField(max_length=200, blank=True)
+
+    # Where payments for no-GST invoices go. Left blank, those invoices show
+    # the bank details above.
+    ng_account_holder_name = models.CharField(max_length=200, blank=True, verbose_name='No-GST account holder name')
+    ng_bank_name = models.CharField(max_length=100, blank=True, verbose_name='No-GST bank name')
+    ng_bank_account_number = models.CharField(max_length=50, blank=True, verbose_name='No-GST account number')
+    ng_bank_ifsc = models.CharField(max_length=20, blank=True, verbose_name='No-GST IFSC code')
+    ng_bank_branch = models.CharField(max_length=100, blank=True, verbose_name='No-GST branch')
+    ng_upi_id = models.CharField(max_length=100, blank=True, verbose_name='No-GST UPI ID')
 
     # Default settings
     invoice_prefix = models.CharField(max_length=10, default='INVRT', help_text='Prefix for invoice numbers (e.g., INVRT)')
@@ -1100,6 +1115,23 @@ class CompanySettings(models.Model):
             raw = re.sub(rb'<\?xml[^>]*\?>', b'', raw).strip()
 
         return 'data:%s;base64,%s' % (mime, base64.b64encode(raw).decode('ascii'))
+
+    def payment_details(self, gst=True):
+        """Bank and UPI details to print on an invoice.
+
+        No-GST invoices use the separate no-GST account when one is entered.
+        """
+        if not gst and (self.ng_bank_account_number or self.ng_upi_id):
+            return {
+                'holder': self.ng_account_holder_name, 'bank': self.ng_bank_name,
+                'account': self.ng_bank_account_number, 'ifsc': self.ng_bank_ifsc,
+                'branch': self.ng_bank_branch, 'upi': self.ng_upi_id,
+            }
+        return {
+            'holder': self.account_holder_name, 'bank': self.bank_name,
+            'account': self.bank_account_number, 'ifsc': self.bank_ifsc,
+            'branch': self.bank_branch, 'upi': self.upi_id,
+        }
 
     @classmethod
     def get_settings(cls):

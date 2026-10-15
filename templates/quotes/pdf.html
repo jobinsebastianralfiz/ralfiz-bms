@@ -29,6 +29,7 @@
     {% include "pdf/_letterhead.html" with doc_title="QUOTATION" doc_number=quote.quote_number %}
 
     <div class="doc-row">
+      {% include "pdf/_billed_by.html" with label="Prepared By" %}
       <div class="doc-col">
         <div class="label">Prepared For</div>
         <div class="party-name">{{ quote.recipient_company|default:quote.recipient_name }}</div>

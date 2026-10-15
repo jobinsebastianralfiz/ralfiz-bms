@@ -3516,6 +3516,10 @@ def settings_view(request):
         company.bank_ifsc = request.POST.get('bank_ifsc', '')
         company.bank_branch = request.POST.get('bank_branch', '')
         company.upi_id = request.POST.get('upi_id', '')
+        company.account_holder_name = request.POST.get('account_holder_name', '')
+        for f in ('ng_account_holder_name', 'ng_bank_name', 'ng_bank_account_number',
+                  'ng_bank_ifsc', 'ng_bank_branch', 'ng_upi_id'):
+            setattr(company, f, request.POST.get(f, '').strip())
 
         # Safe default_tax_rate conversion - default to 0 if empty
         from decimal import Decimal, InvalidOperation

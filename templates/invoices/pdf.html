@@ -29,6 +29,7 @@
     {% include "pdf/_letterhead.html" with doc_title="INVOICE" doc_number=invoice.invoice_number %}
 
     <div class="doc-row">
+      {% include "pdf/_billed_by.html" with label="Billed By" %}
       <div class="doc-col">
         <div class="label">Bill To</div>
         <div class="party-name">{{ invoice.client.company_name|default:invoice.client.name }}</div>
@@ -105,28 +106,31 @@
       </div>
     </div>
 
-    {% if company.bank_name or company.upi_id %}
+    {% with pay=invoice.pay_to %}
+    {% if pay.account or pay.upi %}
     <div class="pay-box">
-      {% if company.bank_name %}
+      {% if pay.account %}
       <div>
         <div class="label">Bank Details</div>
         <div class="kv">
-          <span>Bank</span>{{ company.bank_name }}<br>
-          {% if company.bank_account_number %}<span>Account No.</span>{{ company.bank_account_number }}<br>{% endif %}
-          {% if company.bank_ifsc %}<span>IFSC</span>{{ company.bank_ifsc }}<br>{% endif %}
-          {% if company.bank_branch %}<span>Branch</span>{{ company.bank_branch }}{% endif %}
+          {% if pay.holder %}<span>Account Name</span>{{ pay.holder }}<br>{% endif %}
+          {% if pay.bank %}<span>Bank</span>{{ pay.bank }}<br>{% endif %}
+          <span>Account No.</span>{{ pay.account }}<br>
+          {% if pay.ifsc %}<span>IFSC</span>{{ pay.ifsc }}<br>{% endif %}
+          {% if pay.branch %}<span>Branch</span>{{ pay.branch }}{% endif %}
         </div>
       </div>
       {% endif %}
-      {% if company.upi_id %}
+      {% if pay.upi %}
       <div>
         <div class="label">UPI Payment</div>
-        <div class="upi">{{ company.upi_id }}</div>
+        <div class="upi">{{ pay.upi }}</div>
         <div class="block-body" style="margin-top:2mm;">Please quote the invoice number in the payment reference.</div>
       </div>
       {% endif %}
     </div>
     {% endif %}
+    {% endwith %}
 
     {% if invoice.terms %}
     <div class="block">
