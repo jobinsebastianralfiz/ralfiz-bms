@@ -159,7 +159,7 @@ class ClientAgreementServicesTests(ClientAgreementFlowTests):
         doc = ClientAgreement.objects.get().snapshot_json
         titles = [s['title'] for s in doc['sections']]
         self.assertIn('Exclusions', titles)
-        self.assertIn('Recurring Services & Charges', titles)
+        self.assertIn('Additional Services & Charges', titles)
         self.assertEqual([s['key'] for s in doc['services']],
                          ['maint', 'cloud-1', 'cloud-2', 'amc', 'other-1'])
         self.assertEqual(doc['services'][2]['amount_display'], '₹1,999')
@@ -257,3 +257,23 @@ class RailwayCloudAndInterestTests(TestCase):
         res = self._create(late_interest='12')
         self.assertContains(res, 'between 0 and 5%')
         self.assertFalse(ClientAgreement.objects.exists())
+
+
+class ContentUploadTests(RailwayCloudAndInterestTests):
+    def test_per_item_and_one_time_pricing(self):
+        self._create(content_on='on', content_amount='50', content_unit='product',
+                     content_mode='optional')
+        svc = ClientAgreement.objects.get().snapshot_json['services'][0]
+        self.assertEqual((svc['name'], svc['amount_display'], svc['cycle_suffix']),
+                         ('Initial Content Upload', '\u20b950', 'per product'))
+        agreement = ClientAgreement.objects.get()
+        self.assertContains(self.client.get(agreement.public_path()), 'Add Initial Content Upload')
+
+        ClientAgreement.objects.all().delete()
+        self._create(content_on='on', content_amount='8000', content_mode='included')
+        svc = ClientAgreement.objects.get().snapshot_json['services'][0]
+        self.assertEqual((svc['cycle_suffix'], svc['mode']), ('one-time', 'included'))
+
+    def test_content_needs_a_price(self):
+        res = self._create(content_on='on', content_amount='')
+        self.assertContains(res, 'Enter the content upload price.')

@@ -80,7 +80,7 @@
       </div>
 
       <div class="card mb-4">
-        <div class="card-header"><h3 class="card-title"><i class="fas fa-rotate"></i> Recurring services</h3></div>
+        <div class="card-header"><h3 class="card-title"><i class="fas fa-rotate"></i> Additional &amp; recurring services</h3></div>
         <div class="card-body">
           <p class="text-sm text-muted">Billed separately from the project fee. <strong>Optional</strong> services appear as tick boxes for the client when they accept.</p>
 
@@ -98,6 +98,25 @@
               </div>
               <input type="text" class="form-control mt-2" name="maint_note" placeholder="What it covers (blank = bug fixes, minor changes, updates, monitoring, backups)" value="{{ form.maint_note|default:'' }}">
               {% if errors.maint %}<div class="text-danger text-sm">{{ errors.maint }}</div>{% endif %}
+            </div>
+          </div>
+
+          <div class="svc-block">
+            <label class="d-flex gap-2" style="align-items:center; font-weight:600;">
+              <input type="checkbox" name="content_on" class="js-toggle" data-target="content-fields" {% if form.content_on %}checked{% endif %}> Initial content upload
+            </label>
+            <div id="content-fields" class="svc-fields">
+              <div class="d-flex gap-2" style="flex-wrap: wrap; align-items: center;">
+                <input type="number" min="0" step="1" class="form-control" name="content_amount" placeholder="&#8377; price" value="{{ form.content_amount|default:'' }}" style="max-width: 140px;">
+                <input type="text" class="form-control" name="content_unit" placeholder="per... (blank = one-time)" value="{{ form.content_unit|default:'' }}" style="max-width: 200px;">
+                <select class="form-control" name="content_mode" style="max-width: 220px;">
+                  <option value="optional" {% if form.content_mode != 'included' %}selected{% endif %}>Optional - client chooses</option>
+                  <option value="included" {% if form.content_mode == 'included' %}selected{% endif %}>Part of the agreement - client must take it</option>
+                </select>
+              </div>
+              <div class="text-sm text-muted mt-1">Leave "per" blank for a one-time fixed price, or type e.g. <code>product</code>, <code>page</code>, <code>50 products</code>.</div>
+              <input type="text" class="form-control mt-2" name="content_note" placeholder="What it covers (blank = loading the client's text, images, products and prices before go-live)" value="{{ form.content_note|default:'' }}">
+              {% if errors.content %}<div class="text-danger text-sm">{{ errors.content }}</div>{% endif %}
             </div>
           </div>
 

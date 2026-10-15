@@ -88,7 +88,7 @@
       <div class="card-body">
         <p class="mb-2"><strong>{{ doc.total_display }}</strong> + GST &middot; {{ doc.start_date }} &rarr; {{ doc.end_date }} &middot; warranty {{ doc.warranty_months }} month{{ doc.warranty_months|pluralize }}</p>
         {% if doc.services %}
-        <h4 class="text-sm text-muted mb-2">Recurring services{% if agreement.status == 'accepted' %} &middot; client chose{% endif %}</h4>
+        <h4 class="text-sm text-muted mb-2">Additional services{% if agreement.status == 'accepted' %} &middot; client chose{% endif %}</h4>
         <table class="table mb-4">
           <tbody>
           {% for s in doc.services %}

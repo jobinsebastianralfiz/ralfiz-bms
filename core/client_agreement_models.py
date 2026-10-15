@@ -258,6 +258,21 @@ def build_services(form):
         if not any(s['group'] == 'cloud' for s in services) and 'cloud' not in errors:
             errors['cloud'] = 'Add at least one cloud plan, or switch cloud hosting off.'
 
+    if form.get('content_on'):
+        amount = _amount(form.get('content_amount'))
+        unit = (form.get('content_unit') or '').strip()
+        if not amount:
+            errors['content'] = 'Enter the content upload price.'
+        else:
+            service = _service(
+                'content', 'content', 'Initial Content Upload', amount, 'one_time',
+                form.get('content_mode'), (form.get('content_note') or '').strip()
+                or 'We load the content you provide - text, images, products and prices - into '
+                   'the website/app before go-live. Writing or creating new content is not included.')
+            if unit:  # priced per item, e.g. per product or per page
+                service['cycle_suffix'] = f'per {unit.removeprefix("per ").strip()}'
+            services.append(service)
+
     if form.get('amc_on'):
         amount = _amount(form.get('amc_amount'))
         if not amount:
@@ -495,9 +510,10 @@ def build_snapshot(project, *, scope, deliverables, start_date, end_date, total,
                 f'attracts interest at {late_interest.normalize():f}% per month on the overdue amount, '
                 f'from the due date until it is paid in full.' if late_interest else ''))
     if services:
-        add('Recurring Services & Charges', kind='services',
-            body='These are billed separately from the project fee, plus GST, from go-live (or from '
-                 'the end of the warranty for AMC). Services marked Optional apply only if you '
+        add('Additional Services & Charges', kind='services',
+            body='These are billed separately from the project fee, plus GST. One-time services are '
+                 'invoiced when delivered; recurring ones from go-live (or from the end of the '
+                 'warranty for AMC). Services marked Optional apply only if you '
                  'choose them when accepting. Either party may stop a monthly service with 30 '
                  'days\' written notice.'
                  + (' Cloud hosting: please choose one plan.' if cloud_mode == 'required' else ''))
