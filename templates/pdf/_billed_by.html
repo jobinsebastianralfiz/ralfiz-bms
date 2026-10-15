@@ -1,10 +1,9 @@
-<div class="doc-col">
+{% load money %}<div class="doc-col">
   <div class="label">{{ label }}</div>
   <div class="party-name">{{ company.company_name|default:"Ralfiz Technologies" }}</div>
   <div class="party-details">
-    {% if company.address %}{{ company.address|linebreaksbr }}<br>{% endif %}
-    {% if company.phone %}{{ company.phone }}<br>{% endif %}
-    {% if company.email %}{{ company.email }}<br>{% endif %}
-    {% if company.gst_number %}GSTIN: {{ company.gst_number }}{% endif %}
+    {% if company.address %}<div>{{ company.address|oneline }}</div>{% endif %}
+    {% if company.phone or company.email %}<div>{{ company.phone }}{% if company.phone and company.email %} &middot; {% endif %}{{ company.email }}</div>{% endif %}
+    {% if company.gst_number %}<div>GSTIN: {{ company.gst_number }}</div>{% endif %}
   </div>
 </div>

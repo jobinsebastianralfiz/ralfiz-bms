@@ -30,15 +30,14 @@
 
     <div class="doc-row">
       {% include "pdf/_billed_by.html" with label="Prepared By" %}
-      <div class="doc-col">
+      <div class="doc-col wide">
         <div class="label">Prepared For</div>
         <div class="party-name">{{ quote.recipient_company|default:quote.recipient_name }}</div>
         <div class="party-details">
-          {% if quote.recipient_company and quote.recipient_name %}{{ quote.recipient_name }}<br>{% endif %}
-          {% if quote.client.address %}{{ quote.client.address|linebreaksbr }}<br>{% endif %}
-          {% if quote.recipient_email %}{{ quote.recipient_email }}<br>{% endif %}
-          {% if quote.recipient_phone %}{{ quote.recipient_phone }}<br>{% endif %}
-          {% if with_gst and quote.recipient_gst %}GSTIN: {{ quote.recipient_gst }}{% endif %}
+          {% if quote.recipient_company and quote.recipient_name %}<div>{{ quote.recipient_name }}</div>{% endif %}
+          {% if quote.client.address %}<div>{{ quote.client.address|oneline }}</div>{% endif %}
+          {% if quote.recipient_email or quote.recipient_phone %}<div>{{ quote.recipient_email }}{% if quote.recipient_email and quote.recipient_phone %} &middot; {% endif %}{{ quote.recipient_phone }}</div>{% endif %}
+          {% if with_gst and quote.recipient_gst %}<div>GSTIN: {{ quote.recipient_gst }}</div>{% endif %}
         </div>
       </div>
       <div class="meta">

@@ -26,3 +26,10 @@ def inr(value, places=2):
         groups.insert(0, head)
     grouped = ','.join(groups + [tail])
     return f'{sign}{grouped}.{fraction}' if places else f'{sign}{grouped}'
+
+
+@register.filter
+def oneline(value):
+    """A multi-line address as one comma-separated line: 'A\\nB,\\nC' -> 'A, B, C'."""
+    parts = [p.strip().rstrip(',') for p in str(value or '').splitlines()]
+    return ', '.join(p for p in parts if p)

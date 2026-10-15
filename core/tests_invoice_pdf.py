@@ -29,7 +29,7 @@ class InvoicePdfTests(TestCase):
     def test_shows_who_billed_and_who_is_billed(self):
         html = self._pdf_html('18')
         self.assertIn('Billed By', html)
-        self.assertIn('KIMS Avenue<br>Perinthalmanna', html)
+        self.assertIn('KIMS Avenue, Perinthalmanna', html)
         self.assertIn('Bill To', html)
         self.assertIn('Riyadh', html)
 

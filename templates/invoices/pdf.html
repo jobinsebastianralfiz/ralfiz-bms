@@ -30,15 +30,14 @@
 
     <div class="doc-row">
       {% include "pdf/_billed_by.html" with label="Billed By" %}
-      <div class="doc-col">
+      <div class="doc-col wide">
         <div class="label">Bill To</div>
         <div class="party-name">{{ invoice.client.company_name|default:invoice.client.name }}</div>
         <div class="party-details">
-          {% if invoice.client.company_name %}{{ invoice.client.name }}<br>{% endif %}
-          {% if invoice.client.address %}{{ invoice.client.address|linebreaksbr }}<br>{% endif %}
-          {% if invoice.client.email %}{{ invoice.client.email }}<br>{% endif %}
-          {% if invoice.client.phone %}{{ invoice.client.phone }}<br>{% endif %}
-          {% if with_gst and invoice.client.gst_number %}GSTIN: {{ invoice.client.gst_number }}{% endif %}
+          {% if invoice.client.company_name %}<div>{{ invoice.client.name }}</div>{% endif %}
+          {% if invoice.client.address %}<div>{{ invoice.client.address|oneline }}</div>{% endif %}
+          {% if invoice.client.email or invoice.client.phone %}<div>{{ invoice.client.email }}{% if invoice.client.email and invoice.client.phone %} &middot; {% endif %}{{ invoice.client.phone }}</div>{% endif %}
+          {% if with_gst and invoice.client.gst_number %}<div>GSTIN: {{ invoice.client.gst_number }}</div>{% endif %}
         </div>
       </div>
       <div class="meta">

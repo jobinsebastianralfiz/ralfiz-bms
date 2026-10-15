@@ -67,20 +67,22 @@ a paper-sized .sheet; in print (WeasyPrint) they are fixed to each page.
     .lh-stack { display: inline-block; width: 100%; }
 
     /* Document body */
-    .doc-row { display: flex; gap: 6mm; margin-bottom: 7mm; }
-    .doc-col { flex: 1; }
+    .doc-row { display: flex; gap: 6mm; margin-bottom: 5mm; }
+    .doc-col { flex: 1; min-width: 0; }
+    .doc-col.wide { flex: 1.45; }
     .label {
       font-size: 7.5pt; font-weight: 700; letter-spacing: .08em; text-transform: uppercase;
       color: #004aad; margin-bottom: 1.5mm;
     }
-    .party-name { font-size: 11pt; font-weight: 700; color: #111827; margin-bottom: 1mm; }
-    .party-details { font-size: 8.5pt; color: #4b5563; line-height: 1.55; }
+    .party-name { font-size: 10pt; font-weight: 700; color: #111827; line-height: 1.3; margin-bottom: .8mm; }
+    .party-details { font-size: 8pt; color: #4b5563; line-height: 1.45; }
+    .party-details div + div { margin-top: .4mm; }
 
     .meta {
-      width: 60mm; flex: none; align-self: flex-start; border-left: 1mm solid #3a82e4;
-      background: #f3f7fd; padding: 3mm 4mm;
+      width: 54mm; flex: none; align-self: flex-start; border-left: 1mm solid #3a82e4;
+      background: #f3f7fd; padding: 2.2mm 3.5mm;
     }
-    .meta-row { display: flex; justify-content: space-between; gap: 4mm; font-size: 8.5pt; padding: .6mm 0; }
+    .meta-row { display: flex; justify-content: space-between; gap: 3mm; font-size: 8pt; padding: .4mm 0; }
     .meta-row span:first-child { color: #64748b; }
     .meta-row span:last-child { font-weight: 600; color: #111827; text-align: right; }
 
@@ -95,7 +97,7 @@ a paper-sized .sheet; in print (WeasyPrint) they are fixed to each page.
     .status-badge.partial { background: #dbeafe; color: #1d4ed8; }
     .status-badge.overdue, .status-badge.rejected { background: #fee2e2; color: #dc2626; }
 
-    .subject { margin-bottom: 6mm; }
+    .subject { margin-bottom: 5mm; }
     .subject-title { font-size: 11pt; font-weight: 700; color: #111827; }
     .subject-desc { font-size: 8.5pt; color: #4b5563; margin-top: 1mm; white-space: pre-line; }
 
