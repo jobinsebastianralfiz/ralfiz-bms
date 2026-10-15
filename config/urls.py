@@ -32,6 +32,7 @@ urlpatterns = [
     path('portal/', include('client_portal.urls')),
     path('staff/', include('employees.portal_urls')),
     path('agreement/', include('employees.agreement_urls')),
+    path('client-agreement/', include('core.client_agreement_urls')),
     path('enrol/', include('employees.enrolment_urls')),
     path('academy/', include('academy.urls')),
     path('book-demo/', website_book_demo, name='book_demo'),

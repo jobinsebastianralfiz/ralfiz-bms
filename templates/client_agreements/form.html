@@ -1,0 +1,125 @@
+{% extends 'base.html' %}
+{% block title %}Client agreement - {{ project.name }} - Ralfiz BMS{% endblock %}
+
+{% block breadcrumb %}
+<a href="{% url 'project_list' %}" class="breadcrumb-item">Projects</a>
+<span class="breadcrumb-separator">/</span>
+<a href="{% url 'project_detail' project.pk %}" class="breadcrumb-item">{{ project.name }}</a>
+<span class="breadcrumb-separator">/</span>
+<span class="breadcrumb-item active">Client agreement</span>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title">{% if previous %}Revise{% else %}Prepare{% endif %} client agreement</h1>
+    <p class="page-subtitle mb-0">{{ project.name }} &middot; {{ project.client.name }}{% if project.client.company_name %} ({{ project.client.company_name }}){% endif %}</p>
+  </div>
+  <div class="page-actions">
+    <a href="{% url 'project_detail' project.pk %}" class="btn btn-ghost"><i class="fas fa-arrow-left"></i> Back</a>
+  </div>
+</div>
+
+{% if previous %}
+<div class="card mb-4"><div class="card-body text-sm">
+  Prefilled from <a href="{% url 'client_agreement_detail' previous.pk %}">{{ previous.reference }} {{ previous.snapshot_json.version }}</a>
+  (<span class="badge" style="{{ previous.status_css }}">{{ previous.status_label }}</span>).
+  {% if previous.change_notes %}<div class="mt-2"><strong>Client asked:</strong> {{ previous.change_notes|linebreaksbr }}</div>{% endif %}
+  {% if previous.status != 'accepted' %}<div class="text-muted mt-2">Sending this replaces the old link.</div>{% endif %}
+</div></div>
+{% endif %}
+
+<form method="post">
+  {% csrf_token %}
+  <div class="row">
+    <div class="col-8 col-md-12" style="padding: 0.75rem;">
+      <div class="card mb-4">
+        <div class="card-header"><h3 class="card-title"><i class="fas fa-list-check"></i> Scope</h3></div>
+        <div class="card-body">
+          <div class="form-group">
+            <label class="form-label" for="scope">Scope of work</label>
+            <textarea class="form-control" id="scope" name="scope" rows="5">{{ form.scope }}</textarea>
+            {% if errors.scope %}<div class="text-danger text-sm">{{ errors.scope }}</div>{% endif %}
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="deliverables">Deliverables <span class="text-muted text-sm">(one per line)</span></label>
+            <textarea class="form-control" id="deliverables" name="deliverables" rows="5">{{ form.deliverables }}</textarea>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="extra_terms">Additional terms <span class="text-muted text-sm">(optional, one per line)</span></label>
+            <textarea class="form-control" id="extra_terms" name="extra_terms" rows="3" placeholder="e.g. Hosting for the first year is included">{{ form.extra_terms }}</textarea>
+          </div>
+        </div>
+      </div>
+
+      <div class="card mb-4">
+        <div class="card-header"><h3 class="card-title"><i class="fas fa-indian-rupee-sign"></i> Fee &amp; payment schedule</h3></div>
+        <div class="card-body">
+          <div class="form-group">
+            <label class="form-label" for="total">Total project fee (&#8377;, before GST)</label>
+            <input type="number" step="0.01" min="0" class="form-control" id="total" name="total" value="{{ form.total }}">
+            {% if errors.total %}<div class="text-danger text-sm">{{ errors.total }}</div>{% endif %}
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="milestones">Milestones <span class="text-muted text-sm">(one per line: <code>Label | percent</code>, must total 100)</span></label>
+            <textarea class="form-control" id="milestones" name="milestones" rows="4" style="font-family: monospace;">{{ form.milestones }}</textarea>
+            {% if errors.milestones %}<div class="text-danger text-sm">{{ errors.milestones }}</div>{% endif %}
+            <div class="text-sm text-muted mt-1" id="ms-preview"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-4 col-md-12" style="padding: 0.75rem;">
+      <div class="card mb-4">
+        <div class="card-header"><h3 class="card-title"><i class="fas fa-calendar"></i> Timeline &amp; warranty</h3></div>
+        <div class="card-body">
+          <div class="form-group">
+            <label class="form-label" for="start_date">Start date</label>
+            <input type="date" class="form-control" id="start_date" name="start_date" value="{{ form.start_date }}">
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="end_date">Target delivery</label>
+            <input type="date" class="form-control" id="end_date" name="end_date" value="{{ form.end_date }}">
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="warranty_months">Free warranty (months)</label>
+            <input type="number" min="0" class="form-control" id="warranty_months" name="warranty_months" value="{{ form.warranty_months }}">
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="support_note">Support note <span class="text-muted text-sm">(optional)</span></label>
+            <textarea class="form-control" id="support_note" name="support_note" rows="3" placeholder="Leave blank for the standard AMC wording">{{ form.support_note }}</textarea>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="expiry_days">Link valid for (days)</label>
+            <input type="number" min="1" max="90" class="form-control" id="expiry_days" name="expiry_days" value="{{ form.expiry_days }}">
+          </div>
+        </div>
+      </div>
+      <p class="text-sm text-muted">Change requests, client responsibilities, ownership, confidentiality,
+        termination and governing-law clauses are added automatically.</p>
+      <button type="submit" class="btn btn-primary w-100"><i class="fas fa-file-signature"></i> Create agreement link</button>
+    </div>
+  </div>
+</form>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function () {
+  var total = document.getElementById('total'), ms = document.getElementById('milestones'), out = document.getElementById('ms-preview');
+  function fmt(n) { return '₹' + Math.round(n).toLocaleString('en-IN'); }
+  function render() {
+    var t = parseFloat(total.value) || 0, sum = 0, parts = [];
+    ms.value.split('\n').forEach(function (line) {
+      if (!line.trim()) return;
+      var bits = line.split('|'), pct = parseFloat((bits[1] || '').replace('%', ''));
+      if (isNaN(pct)) { parts.push(bits[0].trim() + ': ?'); return; }
+      sum += pct; parts.push(bits[0].trim() + ': ' + fmt(t * pct / 100));
+    });
+    out.innerHTML = parts.join(' &middot; ') + ' &mdash; <strong style="color:' + (Math.abs(sum - 100) < 0.001 ? 'var(--success)' : 'var(--danger)') + '">' + sum + '%</strong>';
+  }
+  total.addEventListener('input', render); ms.addEventListener('input', render); render();
+})();
+</script>
+{% endblock %}

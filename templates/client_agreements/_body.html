@@ -1,0 +1,69 @@
+{% comment %}
+The agreement itself, rendered from the frozen snapshot. Shared by the
+signing page and the signed copy so the two can never drift.
+{% endcomment %}
+  <section class="agr-section">
+    <div class="kv-grid">
+      <div><label>Client</label><div>{{ doc.client_name }}{% if doc.client_company %}<br><span class="kv-sub">{{ doc.client_company }}</span>{% endif %}</div></div>
+      <div><label>Service provider</label><div>Ralfiz Technologies<br><span class="kv-sub">Perinthalmanna, Kerala</span></div></div>
+      <div><label>Project</label><div>{{ doc.project_name }}<br><span class="kv-sub">{{ doc.project_type }}{% if doc.tech_stack %} &middot; {{ doc.tech_stack }}{% endif %}</span></div></div>
+      <div><label>Reference</label><div>{{ agreement.reference }}<br><span class="kv-sub">{{ doc.version }} &middot; issued {{ agreement.sent_at|date:"d M Y" }}</span></div></div>
+    </div>
+  </section>
+
+  {% for section in sections %}
+  <section class="agr-section">
+    <div class="agr-section-head">
+      <span class="agr-no">{{ section.no }}</span>
+      <h2>{{ section.title }}</h2>
+    </div>
+
+    {% if section.kind == 'timeline' %}
+    <div class="kv-grid two">
+      <div><label>Start</label><div>{{ doc.start_date }}</div></div>
+      <div><label>Target delivery</label><div>{{ doc.end_date }}</div></div>
+    </div>
+    {% endif %}
+
+    {% if section.kind == 'payment' %}
+    <div class="agr-fee">
+      <div class="agr-fee-amount">{{ doc.total_display }}</div>
+      <div class="agr-fee-note">{{ doc.total_in_words }} &middot; total project fee, plus GST</div>
+    </div>
+    <table class="pay-table">
+      <thead><tr><th>#</th><th>Milestone</th><th class="r">Share</th><th class="r">Amount</th></tr></thead>
+      <tbody>
+        {% for m in doc.milestones %}
+        <tr><td>{{ forloop.counter }}</td><td>{{ m.label }}</td><td class="r">{{ m.percent }}%</td><td class="r">{{ m.amount_display }}</td></tr>
+        {% endfor %}
+      </tbody>
+      <tfoot><tr><td></td><td>Total</td><td class="r">100%</td><td class="r">{{ doc.total_display }}</td></tr></tfoot>
+    </table>
+    {% endif %}
+
+    {% if section.body %}<p class="pre-line">{{ section.body }}</p>{% endif %}
+
+    {% if section.bullets %}
+    <ul class="agr-list">
+      {% for bullet in section.bullets %}<li>{{ bullet }}</li>{% endfor %}
+    </ul>
+    {% endif %}
+
+    {% if section.callout %}
+    <div class="agr-callout {{ section.callout.style }}">{{ section.callout.text }}</div>
+    {% endif %}
+  </section>
+  {% endfor %}
+
+  <section class="agr-section">
+    <div class="agr-section-head">
+      <span class="agr-no">{{ doc.confirmation_no }}</span>
+      <h2>Acceptance</h2>
+    </div>
+    <div class="agr-callout dark">
+      By accepting, <strong>{{ doc.client_company|default:doc.client_name }}</strong> agrees to engage
+      Ralfiz Technologies for <strong>{{ doc.project_name }}</strong> on the terms above, for a total
+      project fee of <strong>{{ doc.total_display }}</strong> plus GST, payable as per the schedule in
+      this agreement. An electronic acceptance is as binding as a signature on paper.
+    </div>
+  </section>

@@ -1,0 +1,21 @@
+{% extends 'agreements/_doc_base.html' %}
+
+{% block title %}Link closed - Ralfiz Technologies{% endblock %}
+
+{% block body %}
+<div class="status-card">
+  <div class="status-icon info">!</div>
+  {% if expired %}
+  <h1>This link has expired</h1>
+  <p>The agreement for {{ doc.project_name }} was open until {{ agreement.expires_at|date:"d M Y" }}.
+     Please ask us for a fresh link.</p>
+  {% elif agreement.status == 'superseded' %}
+  <h1>A newer version was sent</h1>
+  <p>This agreement for {{ doc.project_name }} has been replaced by a revised one. Please use the latest link we sent you.</p>
+  {% else %}
+  <h1>This link is no longer active</h1>
+  <p>Please contact Ralfiz Technologies if you think this is a mistake.</p>
+  {% endif %}
+  <p style="margin-top:18px;font-size:13px;color:var(--agr-muted);">+91 98956 63498</p>
+</div>
+{% endblock %}

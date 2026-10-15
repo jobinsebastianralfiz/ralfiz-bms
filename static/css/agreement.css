@@ -424,3 +424,17 @@ body {
   .doc-footer { padding: 10px 0 0; }
 }
 
+
+/* ---- Client project agreement ---- */
+.kv-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.kv-grid > div { border: 1px solid var(--agr-line); border-radius: 9px; padding: 10px 12px; background: #fff; color: var(--agr-ink); font-weight: 500; }
+.kv-grid label { display: block; font-size: 10px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: var(--agr-muted); margin-bottom: 2px; }
+.kv-grid .kv-sub { font-size: 12px; font-weight: 400; color: var(--agr-muted); }
+.kv-grid.two { margin-bottom: 10px; }
+@media (max-width: 520px) { .kv-grid { grid-template-columns: 1fr; } }
+.pay-table { width: 100%; border-collapse: collapse; margin: 0 0 12px; font-size: 14px; }
+.pay-table th { text-align: left; font-size: 10px; letter-spacing: .1em; text-transform: uppercase; color: var(--agr-muted); padding: 6px 8px; border-bottom: 1px solid var(--agr-line); }
+.pay-table td { padding: 8px; border-bottom: 1px solid var(--agr-line); color: var(--agr-ink); }
+.pay-table tfoot td { font-weight: 700; border-bottom: 0; }
+.pay-table .r { text-align: right; white-space: nowrap; }
+.pre-line { white-space: pre-line; }

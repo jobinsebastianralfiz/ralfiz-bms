@@ -118,6 +118,18 @@
       <a href="{% url 'invoice_create' %}?project={{ project.pk }}" class="btn btn-outline-primary btn-sm">
         <i class="fas fa-file-invoice-dollar"></i> Invoice
       </a>
+      {% with ca=project.client_agreements.first %}
+      {% if ca %}
+      <a href="{% url 'client_agreement_detail' ca.pk %}" class="btn btn-outline-primary btn-sm" title="{{ ca.reference }}">
+        <i class="fas fa-file-signature"></i> Agreement
+        <span class="badge" style="{{ ca.status_css }} margin-left: 4px;">{{ ca.status_label }}</span>
+      </a>
+      {% else %}
+      <a href="{% url 'client_agreement_new' project.pk %}" class="btn btn-outline-primary btn-sm">
+        <i class="fas fa-file-signature"></i> Agreement
+      </a>
+      {% endif %}
+      {% endwith %}
       {% if project.status == 'completed' %}
       <a href="{% url 'project_completion_certificate' project.pk %}" class="btn btn-outline-primary btn-sm">
         <i class="fas fa-certificate"></i> Certificate

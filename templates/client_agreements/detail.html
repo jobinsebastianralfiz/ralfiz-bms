@@ -1,0 +1,155 @@
+{% extends 'base.html' %}
+{% block title %}{{ agreement.reference }} - Ralfiz BMS{% endblock %}
+
+{% block breadcrumb %}
+<a href="{% url 'project_list' %}" class="breadcrumb-item">Projects</a>
+<span class="breadcrumb-separator">/</span>
+<a href="{% url 'project_detail' project.pk %}" class="breadcrumb-item">{{ project.name }}</a>
+<span class="breadcrumb-separator">/</span>
+<span class="breadcrumb-item active">{{ agreement.reference }}</span>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title">Client agreement {{ agreement.reference }}</h1>
+    <p class="page-subtitle mb-0">{{ project.name }} &middot; {{ project.client.name }} &middot; {{ doc.version }}</p>
+  </div>
+  <div class="page-actions d-flex gap-2">
+    <a href="{% url 'project_detail' project.pk %}" class="btn btn-ghost"><i class="fas fa-arrow-left"></i> Project</a>
+    <a href="{% url 'client_agreement_staff_pdf' agreement.pk %}" class="btn btn-ghost"><i class="fas fa-file-pdf"></i> {% if agreement.status == 'accepted' %}Signed copy{% else %}Preview PDF{% endif %}</a>
+    {% if agreement.status != 'cancelled' and agreement.status != 'superseded' %}
+    <a href="{% url 'client_agreement_new' project.pk %}" class="btn btn-ghost"><i class="fas fa-pen"></i> Revise</a>
+    {% endif %}
+    {% if agreement.is_open %}
+    <form method="post" action="{% url 'client_agreement_cancel' agreement.pk %}"
+          onsubmit="return confirm('Cancel this link? The client will no longer be able to open it.')">
+      {% csrf_token %}
+      <button type="submit" class="btn btn-ghost text-danger"><i class="fas fa-ban"></i> Cancel link</button>
+    </form>
+    {% endif %}
+  </div>
+</div>
+
+<div class="row">
+  <div class="col-8 col-md-12" style="padding: 0.75rem;">
+    <div class="card mb-4">
+      <div class="card-header">
+        <h3 class="card-title"><i class="fas fa-file-signature"></i> Client response</h3>
+        <span class="badge" style="{{ agreement.status_css }}">{{ agreement.status_label }}</span>
+      </div>
+      <div class="card-body">
+        {% if agreement.has_responded %}
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1rem;">
+          <div><label class="text-muted text-sm">Name</label><div class="fw-medium">{{ agreement.signer_name }}</div></div>
+          {% if agreement.signer_designation %}<div><label class="text-muted text-sm">Designation</label><div class="fw-medium">{{ agreement.signer_designation }}</div></div>{% endif %}
+          {% if agreement.signer_company %}<div><label class="text-muted text-sm">Company</label><div class="fw-medium">{{ agreement.signer_company }}</div></div>{% endif %}
+          {% if agreement.signer_email %}<div><label class="text-muted text-sm">Email</label><div class="fw-medium">{{ agreement.signer_email }}</div></div>{% endif %}
+          {% if agreement.signed_name %}<div><label class="text-muted text-sm">Typed signature</label><div class="fw-medium">{{ agreement.signed_name }}</div></div>{% endif %}
+          <div><label class="text-muted text-sm">Responded at</label><div class="fw-medium">{{ agreement.responded_at|date:"d M Y, g:i a" }}</div></div>
+        </div>
+        {% if agreement.change_notes %}
+        <div class="mt-4" style="padding: 12px; border-radius: 8px; background: var(--danger-bg);">
+          <label class="text-muted text-sm">Changes requested</label>
+          <div>{{ agreement.change_notes|linebreaksbr }}</div>
+          <a href="{% url 'client_agreement_new' project.pk %}" class="btn btn-primary btn-sm mt-3"><i class="fas fa-pen"></i> Send a revised agreement</a>
+        </div>
+        {% endif %}
+        {% if agreement.signature_image %}
+        <div class="mt-4"><label class="text-muted text-sm">Drawn signature</label>
+          <div style="border: 1px solid var(--border); border-radius: 8px; padding: 10px; background: #fff; max-width: 340px;">
+            <img src="{{ agreement.signature_image.url }}" alt="Signature" style="max-width: 100%; display: block;">
+          </div></div>
+        {% endif %}
+        {% else %}
+        <p class="text-muted mb-3">
+          {% if agreement.is_expired %}This link expired on {{ agreement.expires_at|date:"d M Y" }} without a response.
+          {% elif agreement.status == 'cancelled' %}This link was cancelled.
+          {% elif agreement.status == 'superseded' %}Replaced by {% if agreement.superseded_by %}<a href="{% url 'client_agreement_detail' agreement.superseded_by.pk %}">{{ agreement.superseded_by.reference }}</a>{% else %}a newer version{% endif %}.
+          {% elif agreement.first_viewed_at %}Opened {{ agreement.view_count }} time{{ agreement.view_count|pluralize }}, last on {{ agreement.last_viewed_at|date:"d M Y, g:i a" }}, not answered yet.
+          {% else %}Not opened yet.{% endif %}
+        </p>
+        {% if agreement.is_open %}
+        <label class="form-label">Client link</label>
+        <div class="d-flex gap-2" style="flex-wrap: wrap;">
+          <input type="text" class="form-control" id="link-field" value="{{ url }}" readonly style="flex: 1; min-width: 220px;">
+          <button type="button" class="btn btn-ghost" id="btn-copy" title="Copy link"><i class="fas fa-copy"></i></button>
+          <a href="{{ url }}" target="_blank" rel="noopener" class="btn btn-ghost" title="Open as the client sees it"><i class="fas fa-external-link-alt"></i></a>
+          {% if whatsapp_url %}<a href="{{ whatsapp_url }}" target="_blank" rel="noopener" class="btn btn-primary"><i class="fab fa-whatsapp"></i> WhatsApp</a>{% endif %}
+          {% if mailto_url %}<a href="{{ mailto_url }}" class="btn btn-ghost"><i class="fas fa-envelope"></i> Email</a>{% endif %}
+        </div>
+        {% endif %}
+        {% endif %}
+      </div>
+    </div>
+
+    <div class="card mb-4">
+      <div class="card-header"><h3 class="card-title"><i class="fas fa-indian-rupee-sign"></i> Terms sent</h3></div>
+      <div class="card-body">
+        <p class="mb-2"><strong>{{ doc.total_display }}</strong> + GST &middot; {{ doc.start_date }} &rarr; {{ doc.end_date }} &middot; warranty {{ doc.warranty_months }} month{{ doc.warranty_months|pluralize }}</p>
+        <table class="table mb-0">
+          <tbody>
+          {% for m in doc.milestones %}
+          <tr><td>{{ m.label }}</td><td class="text-end">{{ m.percent }}%</td><td class="text-end">{{ m.amount_display }}</td></tr>
+          {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-4 col-md-12" style="padding: 0.75rem;">
+    <div class="card mb-4">
+      <div class="card-header"><h3 class="card-title"><i class="fas fa-shield-alt"></i> Audit trail</h3></div>
+      <div class="card-body">
+        <div style="display: grid; gap: 0.75rem;">
+          <div><label class="text-muted text-sm">Sent by</label><div>{% if agreement.sent_by %}{{ agreement.sent_by.get_full_name|default:agreement.sent_by.username }}{% else %}&mdash;{% endif %}</div></div>
+          <div><label class="text-muted text-sm">Sent at</label><div>{{ agreement.sent_at|date:"d M Y, g:i a" }}</div></div>
+          <div><label class="text-muted text-sm">Expires</label><div>{{ agreement.expires_at|date:"d M Y" }}</div></div>
+          <div><label class="text-muted text-sm">Opened</label><div>{{ agreement.view_count }} time{{ agreement.view_count|pluralize }}</div></div>
+          {% if agreement.ip_address %}<div><label class="text-muted text-sm">Responded from IP</label><div>{{ agreement.ip_address }}</div></div>{% endif %}
+        </div>
+        {% if agreement.body_hash %}
+        <div class="mt-3"><label class="text-muted text-sm">Document fingerprint (SHA-256)</label>
+          <div class="text-sm" style="font-family: monospace; word-break: break-all;">{{ agreement.body_hash }}</div></div>
+        {% endif %}
+      </div>
+    </div>
+
+    {% if history %}
+    <div class="card">
+      <div class="card-header"><h3 class="card-title"><i class="fas fa-history"></i> Other versions</h3></div>
+      <div class="card-body p-0">
+        <table class="table table-hover mb-0"><tbody>
+          {% for h in history %}
+          <tr>
+            <td><a href="{% url 'client_agreement_detail' h.pk %}">{{ h.reference }}</a> <span class="text-muted text-sm">{{ h.snapshot_json.version }}</span></td>
+            <td class="text-sm text-muted">{{ h.sent_at|date:"d M Y" }}</td>
+            <td><span class="badge" style="{{ h.status_css }}">{{ h.status_label }}</span></td>
+          </tr>
+          {% endfor %}
+        </tbody></table>
+      </div>
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+var copyBtn = document.getElementById('btn-copy');
+if (copyBtn) {
+  copyBtn.addEventListener('click', function () {
+    var field = document.getElementById('link-field');
+    field.select(); field.setSelectionRange(0, 99999);
+    var done = function () {
+      copyBtn.innerHTML = '<i class="fas fa-check"></i>';
+      setTimeout(function () { copyBtn.innerHTML = '<i class="fas fa-copy"></i>'; }, 1600);
+    };
+    if (navigator.clipboard && window.isSecureContext) { navigator.clipboard.writeText(field.value).then(done); }
+    else { try { document.execCommand('copy'); done(); } catch (e) {} }
+  });
+}
+</script>
+{% endblock %}

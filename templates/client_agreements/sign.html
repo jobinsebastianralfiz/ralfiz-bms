@@ -1,0 +1,225 @@
+{% extends 'agreements/_doc_base.html' %}
+
+{% block title %}{{ doc.heading }} - {{ doc.project_name }}{% endblock %}
+
+{% block body %}
+<main class="doc-main">
+  <p class="doc-eyebrow">{{ doc.eyebrow }}</p>
+  <h1 class="doc-title">{{ doc.heading }}</h1>
+  <div class="doc-rule"></div>
+
+  <div class="doc-greeting">
+    <p class="greet-name">Hi {{ client.name }},</p>
+    <p>Thank you for choosing Ralfiz Technologies. This agreement sets out what we will build for
+       <strong>{{ doc.project_name }}</strong>, when, and how payments work.</p>
+    <p>Please read it through. At the end you can accept it online, or tell us what you would like changed.</p>
+  </div>
+
+  {% include "client_agreements/_body.html" %}
+
+  <div id="read-sentinel" aria-hidden="true"></div>
+</main>
+
+<form class="doc-form" method="post" id="agreement-form" novalidate>
+  {% csrf_token %}
+  <input type="hidden" name="decision" id="decision-field" value="{{ posted.decision|default:'' }}">
+  <input type="hidden" name="signature_data" id="signature-data">
+
+  <hr class="form-divider">
+
+  {% if errors %}
+  <div class="alert-error">Please check the highlighted fields below and try again.</div>
+  {% endif %}
+
+  <div class="read-gate is-locked" id="read-gate">
+    <input type="checkbox" id="has-read" disabled>
+    <div>
+      <label for="has-read">I have read and understood the agreement above.</label>
+      <div class="gate-hint" id="gate-hint">Please scroll through the full agreement to continue.</div>
+    </div>
+  </div>
+
+  <h3 class="form-heading">Your Response</h3>
+  <div class="decision-grid">
+    <button type="button" class="decision-btn yes" id="btn-yes" disabled>
+      <strong>ACCEPT</strong>
+      <span>I agree to these terms</span>
+    </button>
+    <button type="button" class="decision-btn no" id="btn-no" disabled>
+      <strong>REQUEST CHANGES</strong>
+      <span>Something needs to be different</span>
+    </button>
+  </div>
+  {% if errors.decision %}<div class="field-error">{{ errors.decision }}</div>{% endif %}
+
+  <div id="panel-common" hidden>
+    <hr class="form-divider">
+    <h3 class="form-heading">Signatory Details</h3>
+    <div class="field-row">
+      <div class="field {% if errors.signer_name %}has-error{% endif %}">
+        <label for="signer_name">Full Name</label>
+        <input type="text" id="signer_name" name="signer_name" autocomplete="name"
+               value="{{ posted.signer_name|default:client.name }}">
+        {% if errors.signer_name %}<div class="field-error">{{ errors.signer_name }}</div>{% endif %}
+      </div>
+      <div class="field">
+        <label for="signer_designation">Designation <span class="opt">(optional)</span></label>
+        <input type="text" id="signer_designation" name="signer_designation"
+               value="{{ posted.signer_designation|default:'' }}" placeholder="e.g. Managing Director">
+      </div>
+    </div>
+    <div class="field-row">
+      <div class="field">
+        <label for="signer_company">Company <span class="opt">(optional)</span></label>
+        <input type="text" id="signer_company" name="signer_company"
+               value="{{ posted.signer_company|default:client.company_name }}">
+      </div>
+      <div class="field">
+        <label for="signer_email">Email <span class="opt">(optional)</span></label>
+        <input type="text" id="signer_email" name="signer_email" inputmode="email"
+               value="{{ posted.signer_email|default:client.email }}">
+      </div>
+    </div>
+  </div>
+
+  <div id="panel-yes" hidden>
+    <div class="field">
+      <label for="signed_date_display">Date</label>
+      <input type="text" id="signed_date_display" value="{{ today|date:'d M Y' }}" readonly>
+    </div>
+
+    <div class="field">
+      <label>Signature <span class="opt">(draw below - optional)</span></label>
+      <div class="sig-pad-wrap">
+        <canvas class="sig-pad" id="sig-pad"></canvas>
+        <div class="sig-placeholder" id="sig-placeholder">Sign here with your finger or mouse</div>
+      </div>
+      <div class="sig-actions">
+        <span class="sig-hint">Your typed name below is your signature.</span>
+        <button type="button" class="btn-link" id="sig-clear">Clear</button>
+      </div>
+    </div>
+
+    <div class="field {% if errors.signed_name %}has-error{% endif %}">
+      <label for="signed_name">Type your full name to sign</label>
+      <input type="text" id="signed_name" name="signed_name" value="{{ posted.signed_name|default:'' }}"
+             placeholder="e.g. {{ client.name }}">
+      {% if errors.signed_name %}<div class="field-error">{{ errors.signed_name }}</div>{% endif %}
+    </div>
+
+    <div class="confirm-check {% if errors.agreed_to_terms %}has-error{% endif %}">
+      <input type="checkbox" id="agreed_to_terms" name="agreed_to_terms" {% if posted.agreed_to_terms %}checked{% endif %}>
+      <label for="agreed_to_terms">
+        I confirm I am authorised to sign for {{ doc.client_company|default:doc.client_name }}, and I accept this
+        agreement for {{ doc.project_name }}, including the total fee of {{ doc.total_display }} plus GST and its payment schedule.
+      </label>
+    </div>
+    {% if errors.agreed_to_terms %}<div class="field-error" style="margin-top:-8px;margin-bottom:14px;">{{ errors.agreed_to_terms }}</div>{% endif %}
+
+    <button type="submit" class="btn-submit">Accept &amp; sign agreement</button>
+    <div class="btn-back"><button type="button" class="btn-link js-reset">Change my choice</button></div>
+  </div>
+
+  <div id="panel-no" hidden>
+    <div class="field {% if errors.change_notes %}has-error{% endif %}">
+      <label for="change_notes">What would you like changed?</label>
+      <textarea id="change_notes" name="change_notes" rows="4"
+                placeholder="e.g. Please split the advance into two parts, or add the mobile app to the deliverables">{{ posted.change_notes|default:'' }}</textarea>
+      {% if errors.change_notes %}<div class="field-error">{{ errors.change_notes }}</div>{% endif %}
+    </div>
+    <p class="agr-footnote">We will review your note and send you a revised agreement on a new link.</p>
+    <button type="submit" class="btn-submit">Send my change request</button>
+    <div class="btn-back"><button type="button" class="btn-link js-reset">Change my choice</button></div>
+  </div>
+</form>
+{% endblock %}
+
+{% block scripts %}
+<script>
+(function () {
+  var gate = document.getElementById('read-gate');
+  var hasRead = document.getElementById('has-read');
+  var hint = document.getElementById('gate-hint');
+  var btnYes = document.getElementById('btn-yes');
+  var btnNo = document.getElementById('btn-no');
+  var decisionField = document.getElementById('decision-field');
+  var common = document.getElementById('panel-common');
+  var panelYes = document.getElementById('panel-yes');
+  var panelNo = document.getElementById('panel-no');
+
+  function unlock() {
+    hasRead.disabled = false;
+    gate.classList.remove('is-locked');
+    hint.textContent = 'Thanks for reading. Tick the box to enable your response.';
+  }
+  if ('IntersectionObserver' in window) {
+    var io = new IntersectionObserver(function (entries) {
+      entries.forEach(function (e) { if (e.isIntersecting) { unlock(); io.disconnect(); } });
+    });
+    io.observe(document.getElementById('read-sentinel'));
+  } else { unlock(); }
+
+  hasRead.addEventListener('change', function () {
+    btnYes.disabled = btnNo.disabled = !hasRead.checked;
+    if (hasRead.checked) hint.textContent = 'Choose an option below.';
+  });
+
+  function choose(value) {
+    var yes = value === 'accept';
+    decisionField.value = value;
+    common.hidden = false;
+    panelYes.hidden = !yes;
+    panelNo.hidden = yes;
+    btnYes.classList.toggle('is-active', yes);
+    btnNo.classList.toggle('is-active', !yes);
+    common.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    if (yes) window.setTimeout(sizeCanvas, 50);
+  }
+  btnYes.addEventListener('click', function () { choose('accept'); });
+  btnNo.addEventListener('click', function () { choose('changes'); });
+  Array.prototype.forEach.call(document.querySelectorAll('.js-reset'), function (b) {
+    b.addEventListener('click', function () {
+      decisionField.value = '';
+      common.hidden = panelYes.hidden = panelNo.hidden = true;
+      btnYes.classList.remove('is-active'); btnNo.classList.remove('is-active');
+      gate.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    });
+  });
+
+  // Optional drawn signature; the typed name is the binding one.
+  var canvas = document.getElementById('sig-pad');
+  var placeholder = document.getElementById('sig-placeholder');
+  var dataField = document.getElementById('signature-data');
+  var drawing = false, dirty = false, ctx = null;
+  function sizeCanvas() {
+    var ratio = window.devicePixelRatio || 1, rect = canvas.getBoundingClientRect();
+    if (!rect.width) return;
+    canvas.width = rect.width * ratio; canvas.height = rect.height * ratio;
+    ctx = canvas.getContext('2d'); ctx.scale(ratio, ratio);
+    ctx.lineWidth = 2; ctx.lineCap = 'round'; ctx.lineJoin = 'round'; ctx.strokeStyle = '#0f172a';
+  }
+  function pos(e) {
+    var r = canvas.getBoundingClientRect(), s = e.touches ? e.touches[0] : e;
+    return { x: s.clientX - r.left, y: s.clientY - r.top };
+  }
+  function start(e) { if (!ctx) sizeCanvas(); if (!ctx) return; drawing = true; var p = pos(e); ctx.beginPath(); ctx.moveTo(p.x, p.y); e.preventDefault(); }
+  function move(e) { if (!drawing) return; var p = pos(e); ctx.lineTo(p.x, p.y); ctx.stroke(); if (!dirty) { dirty = true; placeholder.style.display = 'none'; } e.preventDefault(); }
+  function end() { drawing = false; }
+  canvas.addEventListener('mousedown', start); canvas.addEventListener('mousemove', move); window.addEventListener('mouseup', end);
+  canvas.addEventListener('touchstart', start, { passive: false }); canvas.addEventListener('touchmove', move, { passive: false }); canvas.addEventListener('touchend', end);
+  window.addEventListener('resize', function () { if (!dirty) sizeCanvas(); });
+  document.getElementById('sig-clear').addEventListener('click', function () {
+    if (ctx) ctx.clearRect(0, 0, canvas.width, canvas.height);
+    dirty = false; placeholder.style.display = ''; dataField.value = '';
+  });
+  document.getElementById('agreement-form').addEventListener('submit', function () {
+    if (dirty) { try { dataField.value = canvas.toDataURL('image/png'); } catch (err) { dataField.value = ''; } }
+  });
+
+  if (decisionField.value) {  // reopen the right panel after a validation error
+    unlock(); hasRead.checked = true; btnYes.disabled = btnNo.disabled = false;
+    choose(decisionField.value);
+  }
+})();
+</script>
+{% endblock %}

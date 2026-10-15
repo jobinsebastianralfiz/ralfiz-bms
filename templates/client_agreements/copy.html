@@ -1,0 +1,71 @@
+{% extends 'agreements/_doc_base.html' %}
+
+{% block title %}{{ doc.heading }} - {{ agreement.reference }}{% endblock %}
+
+{% block body %}
+<main class="doc-main">
+  {% if not for_pdf %}
+  <div class="copy-toolbar no-print">
+    <div>
+      <strong>{% if agreement.status == 'accepted' %}Signed copy{% else %}Agreement preview{% endif %}</strong>
+      <span class="text-sm">{{ agreement.reference }} {{ doc.version }}</span>
+    </div>
+    <div class="copy-toolbar-actions">
+      {% if agreement.status == 'accepted' %}<a href="{{ pdf_url }}" class="copy-btn primary">Download PDF</a>{% endif %}
+      <button type="button" class="copy-btn" onclick="window.print()">Print</button>
+    </div>
+  </div>
+  {% endif %}
+
+  <p class="doc-eyebrow">{{ doc.eyebrow }}</p>
+  <h1 class="doc-title">{{ doc.heading }}</h1>
+  <div class="doc-rule"></div>
+
+  {% if agreement.status == 'accepted' %}
+  <div class="signed-stamp ok"><div>
+    <strong>Accepted &amp; signed</strong>
+    <span>{{ agreement.reference }} &middot; {{ agreement.responded_at|date:"d M Y, g:i a" }}</span>
+  </div></div>
+  {% endif %}
+
+  {% include "client_agreements/_body.html" %}
+
+  <section class="sign-blocks">
+    <div class="sign-block">
+      <div class="sign-area">
+        {% if signature_src %}<img class="sign-image" src="{{ signature_src }}" alt="Signature">
+        {% elif agreement.signed_name %}<div class="sign-typed">{{ agreement.signed_name }}</div>{% endif %}
+      </div>
+      <div class="sign-line"></div>
+      <strong>For {{ agreement.signer_company|default:doc.client_company|default:doc.client_name }}</strong>
+      <span>{{ agreement.signer_name|default:"&nbsp;" }}{% if agreement.signer_designation %} &middot; {{ agreement.signer_designation }}{% endif %}</span>
+      <span>{{ agreement.responded_at|date:"d M Y" }}</span>
+      {% if signature_src %}<span class="sign-note">Signed as: {{ agreement.signed_name }}</span>{% endif %}
+    </div>
+    <div class="sign-block">
+      <div class="sign-area company-sign">
+        {% if company.signature_src %}<img class="sign-image" src="{{ company.signature_src }}" alt="Authorized signature">{% endif %}
+        {% if company.seal_src %}<img class="seal-image" src="{{ company.seal_src }}" alt="Company seal">{% endif %}
+      </div>
+      <div class="sign-line"></div>
+      <strong>For {{ company.company_name }}</strong>
+      <span>{% if company.signatory_name %}{{ company.signatory_name }} &middot; {% endif %}{{ company.signatory_designation }}</span>
+      <span>{{ agreement.sent_at|date:"d M Y" }}</span>
+    </div>
+  </section>
+
+  {% if agreement.status == 'accepted' %}
+  <section class="verify-block">
+    <strong>Electronic signature record</strong>
+    <div class="verify-grid">
+      <div><span>Reference</span>{{ agreement.reference }} {{ doc.version }}</div>
+      <div><span>Signed by</span>{{ agreement.signed_name }}</div>
+      <div><span>Signed at</span>{{ agreement.responded_at|date:"d M Y, g:i a" }}</div>
+      {% if agreement.ip_address %}<div><span>Signed from IP</span>{{ agreement.ip_address }}</div>{% endif %}
+    </div>
+    <div class="verify-hash"><span>Document fingerprint (SHA-256)</span><code>{{ agreement.body_hash }}</code></div>
+    <p>This copy was generated from Ralfiz Technologies' records. The fingerprint above identifies the exact wording that was accepted.</p>
+  </section>
+  {% endif %}
+</main>
+{% endblock %}

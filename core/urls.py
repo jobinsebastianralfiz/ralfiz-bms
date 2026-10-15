@@ -6,6 +6,7 @@ from gympro_licensing import web_views as gympro_web_views
 from eduflow_licensing import web_views as eduflow_web_views
 from ralfpos_licensing import web_views as ralfpos_web_views
 from . import agreement_web_views
+from . import client_agreement_views
 from . import enrolment_web_views
 
 urlpatterns = [
@@ -69,6 +70,10 @@ urlpatterns = [
     path('projects/<uuid:pk>/delete-update/<uuid:update_pk>/', views.project_delete_update, name='project_delete_update'),
     path('projects/<uuid:pk>/reply-comment/', views.project_reply_comment, name='project_reply_comment'),
     path('projects/<uuid:pk>/completion-certificate/', views.project_completion_certificate, name='project_completion_certificate'),
+    path('projects/<uuid:pk>/agreement/new/', client_agreement_views.client_agreement_new, name='client_agreement_new'),
+    path('client-agreements/<uuid:pk>/', client_agreement_views.client_agreement_detail, name='client_agreement_detail'),
+    path('client-agreements/<uuid:pk>/cancel/', client_agreement_views.client_agreement_cancel, name='client_agreement_cancel'),
+    path('client-agreements/<uuid:pk>/pdf/', client_agreement_views.client_agreement_staff_pdf, name='client_agreement_staff_pdf'),
 
     # Credentials
     path('credentials/', views.credential_list, name='credential_list'),

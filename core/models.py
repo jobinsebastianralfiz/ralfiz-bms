@@ -1905,3 +1905,4 @@ class DailyTask(models.Model):
 
     def __str__(self):
         return self.title
+from .client_agreement_models import ClientAgreement  # noqa: E402,F401

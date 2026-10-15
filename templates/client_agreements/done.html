@@ -1,0 +1,44 @@
+{% extends 'agreements/_doc_base.html' %}
+
+{% block title %}Response recorded - Ralfiz Technologies{% endblock %}
+
+{% block body %}
+<div class="status-card">
+  {% if agreement.status == 'accepted' %}
+  <div class="status-icon ok">&#10003;</div>
+  <h1>Thank you, {{ agreement.signer_name }}</h1>
+  <p>Your acceptance of the agreement for <strong>{{ doc.project_name }}</strong> is recorded.
+     We will send the advance invoice shortly and get started.</p>
+  {% else %}
+  <div class="status-icon info">&#9998;</div>
+  <h1>Change request received</h1>
+  <p>Thanks, {{ agreement.signer_name }}. We will review your note and send you a revised
+     agreement for <strong>{{ doc.project_name }}</strong> on a new link.</p>
+  {% endif %}
+
+  <div class="receipt">
+    <div class="receipt-row"><span>Reference</span><span>{{ agreement.reference }} {{ doc.version }}</span></div>
+    <div class="receipt-row"><span>Project</span><span>{{ doc.project_name }}</span></div>
+    <div class="receipt-row"><span>Response</span><span>
+      {% if agreement.status == 'accepted' %}<span class="pill ok">Accepted</span>{% else %}<span class="pill stop">Changes requested</span>{% endif %}
+    </span></div>
+    <div class="receipt-row"><span>Total fee</span><span>{{ doc.total_display }} + GST</span></div>
+    <div class="receipt-row"><span>Responded on</span><span>{{ agreement.responded_at|date:"d M Y, g:i a" }}</span></div>
+  </div>
+
+  {% if agreement.status == 'accepted' %}
+  <div style="margin-top:26px; display:flex; gap:10px; justify-content:center; flex-wrap:wrap;">
+    <a href="{% url 'client_agreement_copy_pdf' agreement.token %}" class="copy-btn primary">Download signed copy (PDF)</a>
+    <a href="{% url 'client_agreement_copy' agreement.token %}" class="copy-btn">View copy</a>
+  </div>
+  {% else %}
+  <div class="receipt" style="text-align:left;"><div class="receipt-row" style="display:block;">
+    <span>Your note</span><p class="pre-line" style="margin:6px 0 0;color:var(--agr-ink);">{{ agreement.change_notes }}</p>
+  </div></div>
+  {% endif %}
+
+  <p style="margin-top:22px;font-size:13px;color:var(--agr-muted);">
+    Questions? Call or WhatsApp us on +91 98956 63498.
+  </p>
+</div>
+{% endblock %}
