@@ -47,20 +47,20 @@
           </div>
           <div class="form-group">
             <label class="form-label" for="scope">Scope of work</label>
-            <textarea class="form-control" id="scope" name="scope" rows="5">{{ form.scope }}</textarea>
+            <textarea class="form-control js-autogrow" id="scope" name="scope" rows="5">{{ form.scope }}</textarea>
             {% if errors.scope %}<div class="text-danger text-sm">{{ errors.scope }}</div>{% endif %}
           </div>
           <div class="form-group">
-            <label class="form-label" for="deliverables">Deliverables <span class="text-muted text-sm">(one per line)</span></label>
-            <textarea class="form-control" id="deliverables" name="deliverables" rows="5">{{ form.deliverables }}</textarea>
+            <label class="form-label" for="deliverables">Deliverables <span class="text-muted text-sm">(click an item to edit, &times; to remove)</span></label>
+            <textarea class="form-control" id="deliverables" name="deliverables" rows="5" data-list="Add a deliverable">{{ form.deliverables }}</textarea>
           </div>
           <div class="form-group">
-            <label class="form-label" for="exclusions">Exclusions <span class="text-muted text-sm">(not covered by the project fee, one per line)</span></label>
-            <textarea class="form-control" id="exclusions" name="exclusions" rows="6">{{ form.exclusions }}</textarea>
+            <label class="form-label" for="exclusions">Exclusions <span class="text-muted text-sm">(not covered by the project fee)</span></label>
+            <textarea class="form-control" id="exclusions" name="exclusions" rows="6" data-list="Add an exclusion">{{ form.exclusions }}</textarea>
           </div>
           <div class="form-group">
-            <label class="form-label" for="extra_terms">Additional terms <span class="text-muted text-sm">(optional, one per line)</span></label>
-            <textarea class="form-control" id="extra_terms" name="extra_terms" rows="3" placeholder="e.g. Hosting for the first year is included">{{ form.extra_terms }}</textarea>
+            <label class="form-label" for="extra_terms">Additional terms <span class="text-muted text-sm">(optional)</span></label>
+            <textarea class="form-control" id="extra_terms" name="extra_terms" rows="3" data-list="Add a term">{{ form.extra_terms }}</textarea>
           </div>
         </div>
       </div>
@@ -215,10 +215,110 @@
   .ai-box { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; padding: 12px 14px; margin-bottom: 1rem;
             border: 1px dashed var(--primary); border-radius: 10px; background: var(--primary-bg); }
   .ai-filled { outline: 2px solid var(--success); transition: outline-color 2s; }
+  /* Bulleted list editor over a one-item-per-line textarea */
+  .le { border: 1px solid var(--border-color); border-radius: 10px; background: var(--bg-card, #fff); }
+  .le-item { display: flex; align-items: flex-start; gap: 8px; padding: 6px 8px 6px 12px; border-bottom: 1px solid var(--border-color); }
+  .le-item::before { content: ''; flex: none; width: 6px; height: 6px; margin-top: 11px; border-radius: 50%; background: var(--primary); }
+  .le-item textarea, .le-add textarea { flex: 1; border: 0; background: transparent; resize: none; overflow: hidden; padding: 3px 4px;
+      font: inherit; font-size: 0.875rem; line-height: 1.5; color: var(--text-primary); border-radius: 6px; min-height: 0; }
+  .le-item textarea:focus, .le-add textarea:focus { outline: none; background: var(--primary-bg); }
+  .le-del { flex: none; border: 0; background: none; color: var(--text-muted); width: 28px; height: 28px; border-radius: 6px; cursor: pointer; font-size: 18px; line-height: 1; }
+  .le-del:hover { background: var(--danger-bg); color: var(--danger); }
+  .le-add { display: flex; align-items: flex-start; gap: 8px; padding: 6px 8px 6px 10px; }
+  .le-add i { margin-top: 8px; color: var(--primary); font-size: 12px; }
+  .le-empty { padding: 10px 12px; color: var(--text-muted); font-size: 0.8125rem; border-bottom: 1px solid var(--border-color); }
+  .js-autogrow { overflow: hidden; resize: none; }
 </style>
 {% endblock %}
 
 {% block extra_js %}
+<script>
+// Bulleted list editor: each line of a [data-list] textarea becomes an item you
+// can edit in place or remove. The textarea stays the form field (hidden) and
+// is rewritten on every change, so the server still receives one item per line.
+(function () {
+  function grow(t) { t.style.height = 'auto'; t.style.height = t.scrollHeight + 'px'; }
+
+  function build(source) {
+    var box = document.createElement('div'); box.className = 'le';
+    source.style.display = 'none';
+    source.parentNode.insertBefore(box, source.nextSibling);
+    source._le = box;
+
+    function sync() {
+      source.value = Array.prototype.map.call(box.querySelectorAll('.le-item textarea'), function (t) {
+        return t.value.replace(/\s*\n\s*/g, ' ').trim();
+      }).filter(Boolean).join('\n');
+    }
+
+    function item(text, before) {
+      var row = document.createElement('div'); row.className = 'le-item';
+      var t = document.createElement('textarea'); t.rows = 1; t.value = text;
+      var del = document.createElement('button'); del.type = 'button'; del.className = 'le-del';
+      del.title = 'Remove'; del.innerHTML = '&times;';
+      row.appendChild(t); row.appendChild(del);
+      box.insertBefore(row, before || add);
+      t.addEventListener('input', function () { grow(t); sync(); });
+      t.addEventListener('keydown', function (e) {
+        if (e.key === 'Enter') {  // Enter starts a new item below instead of a line break
+          e.preventDefault();
+          var next = item('', row.nextSibling); next.focus();
+        } else if (e.key === 'Backspace' && !t.value) {
+          e.preventDefault();
+          var prev = row.previousElementSibling; row.remove(); sync(); empty();
+          if (prev && prev.querySelector('textarea')) prev.querySelector('textarea').focus();
+        }
+      });
+      t.addEventListener('blur', function () { if (!t.value.trim()) { row.remove(); sync(); empty(); } });
+      del.addEventListener('click', function () { row.remove(); sync(); empty(); });
+      requestAnimationFrame(function () { grow(t); });
+      empty();
+      return t;
+    }
+
+    var note = document.createElement('div'); note.className = 'le-empty'; note.textContent = 'Nothing added yet.';
+    function empty() { note.style.display = box.querySelector('.le-item') ? 'none' : ''; }
+
+    var add = document.createElement('div'); add.className = 'le-add';
+    add.innerHTML = '<i class="fas fa-plus"></i>';
+    var input = document.createElement('textarea'); input.rows = 1;
+    input.placeholder = source.dataset.list + ' and press Enter';
+    add.appendChild(input);
+    box.appendChild(note); box.appendChild(add);
+    input.addEventListener('input', function () { grow(input); });
+    input.addEventListener('keydown', function (e) {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        if (input.value.trim()) { item(input.value.trim()); input.value = ''; grow(input); sync(); }
+      }
+    });
+    // Text typed in the add box but not entered still counts on submit.
+    source.form.addEventListener('submit', function () {
+      if (input.value.trim()) { item(input.value.trim()); input.value = ''; }
+      sync();
+    });
+
+    source.refreshList = function () {
+      Array.prototype.forEach.call(box.querySelectorAll('.le-item'), function (r) { r.remove(); });
+      source.value.split('\n').forEach(function (line) {
+        line = line.replace(/^\s*[-*\u2022]\s*/, '').trim();
+        if (line) item(line);
+      });
+      sync(); empty();
+    };
+    source.refreshList();
+  }
+
+  document.querySelectorAll('textarea[data-list]').forEach(build);
+  document.querySelectorAll('.js-autogrow').forEach(function (t) {
+    t.addEventListener('input', function () { grow(t); }); grow(t);
+  });
+  window.refreshFormLists = function () {
+    document.querySelectorAll('textarea[data-list]').forEach(function (t) { t.refreshList(); });
+    document.querySelectorAll('.js-autogrow').forEach(grow);
+  };
+})();
+</script>
 <script>
 (function () {
   var btn = document.getElementById('btn-ai-fill'), file = document.getElementById('proposal-file'),
@@ -244,8 +344,9 @@
           var extra = res.exclusions.split('\n').filter(function (l) { return l && have.indexOf(l.toLowerCase()) === -1; });
           if (extra.length) { ex.value = (ex.value.trim() ? ex.value.trim() + '\n' : '') + extra.join('\n'); filled.push('exclusions'); }
         }
+        if (window.refreshFormLists) window.refreshFormLists();
         filled.forEach(function (id) {
-          var el = document.getElementById(id); el.classList.add('ai-filled');
+          var el = document.getElementById(id); el = el._le || el; el.classList.add('ai-filled');
           setTimeout(function () { el.classList.remove('ai-filled'); }, 2500);
         });
         say('Filled from the proposal. Read it through and edit anything before creating the link.', 'var(--success)');
