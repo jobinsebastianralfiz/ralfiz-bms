@@ -71,6 +71,7 @@ urlpatterns = [
     path('projects/<uuid:pk>/reply-comment/', views.project_reply_comment, name='project_reply_comment'),
     path('projects/<uuid:pk>/completion-certificate/', views.project_completion_certificate, name='project_completion_certificate'),
     path('projects/<uuid:pk>/agreement/new/', client_agreement_views.client_agreement_new, name='client_agreement_new'),
+    path('projects/<uuid:pk>/agreement/from-proposal/', client_agreement_views.client_agreement_from_proposal, name='client_agreement_from_proposal'),
     path('client-agreements/<uuid:pk>/', client_agreement_views.client_agreement_detail, name='client_agreement_detail'),
     path('client-agreements/<uuid:pk>/cancel/', client_agreement_views.client_agreement_cancel, name='client_agreement_cancel'),
     path('client-agreements/<uuid:pk>/pdf/', client_agreement_views.client_agreement_staff_pdf, name='client_agreement_staff_pdf'),

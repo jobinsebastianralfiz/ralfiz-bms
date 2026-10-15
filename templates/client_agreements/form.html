@@ -36,6 +36,15 @@
       <div class="card mb-4">
         <div class="card-header"><h3 class="card-title"><i class="fas fa-list-check"></i> Scope</h3></div>
         <div class="card-body">
+          <div class="ai-box">
+            <div style="flex: 1; min-width: 220px;">
+              <strong><i class="fas fa-wand-magic-sparkles"></i> Fill from the proposal</strong>
+              <div class="text-sm text-muted">Upload the proposal (.md) and AI drafts the scope, deliverables and exclusions below. Check them before creating the link.</div>
+            </div>
+            <input type="file" id="proposal-file" accept=".md,.markdown,.txt" class="form-control" style="max-width: 260px;">
+            <button type="button" class="btn btn-primary" id="btn-ai-fill"><i class="fas fa-wand-magic-sparkles"></i> Fill with AI</button>
+            <div class="text-sm" id="ai-status" style="width: 100%;"></div>
+          </div>
           <div class="form-group">
             <label class="form-label" for="scope">Scope of work</label>
             <textarea class="form-control" id="scope" name="scope" rows="5">{{ form.scope }}</textarea>
@@ -203,10 +212,50 @@
   .svc-block { border: 1px solid var(--border-color); border-radius: 10px; padding: 12px 14px; margin-bottom: 12px; }
   .svc-fields { margin-top: 10px; }
   .svc-fields[hidden] { display: none; }
+  .ai-box { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; padding: 12px 14px; margin-bottom: 1rem;
+            border: 1px dashed var(--primary); border-radius: 10px; background: var(--primary-bg); }
+  .ai-filled { outline: 2px solid var(--success); transition: outline-color 2s; }
 </style>
 {% endblock %}
 
 {% block extra_js %}
+<script>
+(function () {
+  var btn = document.getElementById('btn-ai-fill'), file = document.getElementById('proposal-file'),
+      status = document.getElementById('ai-status'), label = btn.innerHTML;
+  function say(msg, colour) { status.textContent = msg; status.style.color = colour || ''; }
+  btn.addEventListener('click', function () {
+    if (!file.files.length) { say('Choose the proposal file first.', 'var(--danger)'); return; }
+    var hasText = ['scope', 'deliverables'].some(function (id) { return document.getElementById(id).value.trim(); });
+    if (hasText && !window.confirm('Replace the current scope and deliverables with the AI draft?')) return;
+    var data = new FormData();
+    data.append('proposal', file.files[0]);
+    data.append('csrfmiddlewaretoken', document.querySelector('[name=csrfmiddlewaretoken]').value);
+    btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Reading proposal...';
+    say('This usually takes 20-60 seconds.');
+    fetch('{% url "client_agreement_from_proposal" project.pk %}', { method: 'POST', body: data, credentials: 'same-origin' })
+      .then(function (r) { return r.json().catch(function () { return { error: 'The server returned an error (' + r.status + ').' }; }); })
+      .then(function (res) {
+        if (res.error) { say(res.error, 'var(--danger)'); return; }
+        ['scope', 'deliverables'].forEach(function (id) { document.getElementById(id).value = res[id]; });
+        var filled = ['scope', 'deliverables'];
+        if (res.exclusions) {  // keep the standard exclusions; add the proposal's own on top
+          var ex = document.getElementById('exclusions'), have = ex.value.toLowerCase();
+          var extra = res.exclusions.split('\n').filter(function (l) { return l && have.indexOf(l.toLowerCase()) === -1; });
+          if (extra.length) { ex.value = (ex.value.trim() ? ex.value.trim() + '\n' : '') + extra.join('\n'); filled.push('exclusions'); }
+        }
+        filled.forEach(function (id) {
+          var el = document.getElementById(id); el.classList.add('ai-filled');
+          setTimeout(function () { el.classList.remove('ai-filled'); }, 2500);
+        });
+        say('Filled from the proposal. Read it through and edit anything before creating the link.', 'var(--success)');
+        document.getElementById('scope').scrollIntoView({ behavior: 'smooth', block: 'center' });
+      })
+      .catch(function () { say('Could not reach the server. Try again.', 'var(--danger)'); })
+      .finally(function () { btn.disabled = false; btn.innerHTML = label; });
+  });
+})();
+</script>
 <script>
 document.querySelectorAll('.js-toggle').forEach(function (box) {
   var target = document.getElementById(box.dataset.target);

@@ -277,3 +277,64 @@ class ContentUploadTests(RailwayCloudAndInterestTests):
     def test_content_needs_a_price(self):
         res = self._create(content_on='on', content_amount='')
         self.assertContains(res, 'Enter the content upload price.')
+
+
+class ProposalAITests(TestCase):
+    def setUp(self):
+        self.staff = User.objects.create_user('owner3', password='pw', is_superuser=True)
+        client = Client.objects.create(name='Riya', email='riya@example.com')
+        self.project = Project.objects.create(client=client, name='Shop', description='Shop site')
+        self.client.force_login(self.staff)
+        self.url = reverse('client_agreement_from_proposal', args=[self.project.pk])
+
+    def _upload(self, name='proposal.md', body=b'# Proposal\nWe will build an online shop.'):
+        from django.core.files.uploadedfile import SimpleUploadedFile
+        return self.client.post(self.url, {'proposal': SimpleUploadedFile(name, body)})
+
+    def test_fills_scope_deliverables_and_exclusions(self):
+        from unittest import mock
+        draft = {'scope': 'We will build an online shop.', 'deliverables': ['Storefront', 'Admin panel'],
+                 'exclusions': ['Product photography']}
+        with mock.patch('core.client_agreement_ai.draft_from_proposal', return_value=draft) as fake:
+            res = self._upload()
+        self.assertEqual(res.status_code, 200)
+        self.assertEqual(res.json(), {'scope': 'We will build an online shop.',
+                                      'deliverables': 'Storefront\nAdmin panel',
+                                      'exclusions': 'Product photography'})
+        self.assertIn('online shop', fake.call_args.args[0])
+
+    def test_rejects_wrong_files(self):
+        self.assertEqual(self.client.post(self.url).status_code, 400)
+        self.assertIn('.md', self._upload(name='proposal.pdf').json()['error'])
+        self.assertIn('plain text', self._upload(body=b'\xff\xfe\x00bad').json()['error'])
+
+    def test_ai_errors_are_shown_plainly(self):
+        from unittest import mock
+        from core.client_agreement_ai import ProposalAIError
+        with mock.patch('core.client_agreement_ai.draft_from_proposal',
+                        side_effect=ProposalAIError('The AI is busy right now. Try again in a minute.')):
+            res = self._upload()
+        self.assertEqual(res.status_code, 502)
+        self.assertEqual(res.json()['error'], 'The AI is busy right now. Try again in a minute.')
+
+    def test_needs_login(self):
+        self.client.logout()
+        self.assertEqual(self._upload().status_code, 302)
+
+    def test_draft_parses_structured_reply(self):
+        import json
+        from types import SimpleNamespace
+        from unittest import mock
+        from core.client_agreement_ai import draft_from_proposal
+        reply = SimpleNamespace(stop_reason='end_turn', content=[SimpleNamespace(type='text', text=json.dumps({
+            'scope': ' An online shop. ', 'deliverables': ['- Storefront', '', 'Admin panel'],
+            'exclusions': []}))])
+        fake = mock.MagicMock()
+        fake.beta.messages.create.return_value = reply
+        with mock.patch('core.client_agreement_ai._client', return_value=fake):
+            out = draft_from_proposal('# Proposal', self.project)
+        self.assertEqual(out, {'scope': 'An online shop.', 'deliverables': ['Storefront', 'Admin panel'],
+                               'exclusions': []})
+        kwargs = fake.beta.messages.create.call_args.kwargs
+        self.assertEqual(kwargs['output_config']['format']['type'], 'json_schema')
+        self.assertIn('<proposal>\n# Proposal\n</proposal>', kwargs['messages'][0]['content'])

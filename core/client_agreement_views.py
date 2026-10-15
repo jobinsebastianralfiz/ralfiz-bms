@@ -7,7 +7,7 @@ from decimal import Decimal, InvalidOperation
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.files.base import ContentFile
-from django.http import HttpResponse
+from django.http import HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.template.loader import render_to_string
 from django.utils import timezone
@@ -159,6 +159,40 @@ def client_agreement_new(request, pk):
     return render(request, 'client_agreements/form.html', {
         'project': project, 'form': initial, 'errors': errors, 'previous': previous,
         'amc_cycles': [(k, v) for k, v in Project.AMC_BILLING_CHOICES],
+    })
+
+
+MAX_PROPOSAL_BYTES = 512 * 1024
+
+
+@login_required
+@require_POST
+def client_agreement_from_proposal(request, pk):
+    """Read an uploaded proposal (.md) and return AI-drafted scope, deliverables
+    and exclusions for the form to fill in. Nothing is saved here."""
+    from .client_agreement_ai import ProposalAIError, draft_from_proposal
+
+    project = get_object_or_404(Project.objects.select_related('client'), pk=pk)
+    upload = request.FILES.get('proposal')
+    if not upload:
+        return JsonResponse({'error': 'Choose the proposal file first.'}, status=400)
+    if not upload.name.lower().endswith(('.md', '.markdown', '.txt')):
+        return JsonResponse({'error': 'Upload the proposal as a .md (Markdown) or .txt file.'}, status=400)
+    if upload.size > MAX_PROPOSAL_BYTES:
+        return JsonResponse({'error': 'That file is over 500 KB. Upload just the proposal text.'}, status=400)
+    try:
+        text = upload.read().decode('utf-8-sig')
+    except UnicodeDecodeError:
+        return JsonResponse({'error': 'The file is not plain text. Save it as Markdown (.md) and try again.'},
+                            status=400)
+    try:
+        draft = draft_from_proposal(text, project)
+    except ProposalAIError as exc:
+        return JsonResponse({'error': str(exc)}, status=502)
+    return JsonResponse({
+        'scope': draft['scope'],
+        'deliverables': '\n'.join(draft['deliverables']),
+        'exclusions': '\n'.join(draft['exclusions']),
     })
 
 
