@@ -83,6 +83,12 @@
     </table>
 
     <div class="totals-wrap">
+      {% if quote.payment_terms_display %}
+      <div class="totals-side">
+        <div class="label">Payment Terms</div>
+        <div class="block-body">{{ quote.payment_terms_display|linebreaksbr }}</div>
+      </div>
+      {% endif %}
       <div class="totals">
         <div class="t-row"><span>Subtotal</span><span>&#8377;{{ quote.subtotal|inr }}</span></div>
         {% if quote.discount %}
@@ -96,18 +102,8 @@
         <div class="t-row grand"><span>Total</span><span>&#8377;{{ taxable_amount|inr }}</span></div>
         <div class="t-row note"><span>GST extra as applicable</span><span></span></div>
         {% endif %}
-        {% if quote.valid_until %}
-        <div class="t-row note"><span>Prices valid until {{ quote.valid_until|date:"d M Y" }}</span><span></span></div>
-        {% endif %}
       </div>
     </div>
-
-    {% if quote.payment_terms_display %}
-    <div class="block">
-      <div class="label">Payment Terms</div>
-      <div class="block-body">{{ quote.payment_terms_display|linebreaksbr }}</div>
-    </div>
-    {% endif %}
 
     {% if quote.terms %}
     <div class="block">
@@ -128,10 +124,7 @@
       <div>Client Acceptance</div>
     </div>
 
-    <div class="thanks">
-      Thank you for considering {{ company.company_name|default:"Ralfiz Technologies" }}!
-      <small>Questions about this quote? Write to {{ company.email|default:"us" }}{% if company.phone %} or call {{ company.phone }}{% endif %}.</small>
-    </div>
+    {% if not quote.client_notes %}<div class="thanks">Thank you for considering {{ company.company_name|default:"Ralfiz Technologies" }}!</div>{% endif %}
   </div>
 </body>
 </html>

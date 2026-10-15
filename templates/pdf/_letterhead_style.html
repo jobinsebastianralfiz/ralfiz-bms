@@ -108,7 +108,7 @@ a paper-sized .sheet; in print (WeasyPrint) they are fixed to each page.
       font-size: 7.5pt; font-weight: 700; letter-spacing: .06em; text-transform: uppercase;
       padding: 2.4mm 3mm;
     }
-    .items td { padding: 2.6mm 3mm; border-bottom: .3mm solid #e5e7eb; vertical-align: top; font-size: 9pt; }
+    .items td { padding: 2.2mm 3mm; border-bottom: .3mm solid #e5e7eb; vertical-align: top; font-size: 9pt; }
     .items tbody tr:nth-child(even) td { background: #f7f9fc; }
     .items tr { page-break-inside: avoid; }
     .items .r { text-align: right; white-space: nowrap; }
@@ -117,7 +117,8 @@ a paper-sized .sheet; in print (WeasyPrint) they are fixed to each page.
     .item-details { font-size: 8pt; color: #64748b; margin-top: .5mm; white-space: pre-line; }
 
     .totals-wrap { display: flex; justify-content: flex-end; margin-bottom: 5mm; page-break-inside: avoid; }
-    .totals { width: 76mm; }
+    .totals { width: 76mm; flex: none; }
+    .totals-side { flex: 1; padding: 1mm 8mm 0 0; }
     .t-row { display: flex; justify-content: space-between; padding: .9mm 3mm; font-size: 9pt; }
     .t-row span:first-child { color: #4b5563; }
     .t-row span:last-child { font-weight: 600; color: #111827; }
@@ -136,7 +137,7 @@ a paper-sized .sheet; in print (WeasyPrint) they are fixed to each page.
     .kv span { display: inline-block; width: 26mm; color: #64748b; }
     .upi { display: inline-block; font-weight: 700; font-size: 9.5pt; color: #004aad; border: .3mm solid #3a82e4; background: #fff; padding: 1mm 3mm; }
 
-    .signs { display: flex; gap: 20mm; margin: 12mm 0 6mm; page-break-inside: avoid; }
+    .signs { display: flex; gap: 20mm; margin: 8mm 0 3mm; page-break-inside: avoid; }
     .signs > div { flex: 1; border-top: .3mm solid #9ca3af; padding-top: 1.5mm; font-size: 8pt; color: #4b5563; }
 
     .thanks { font-size: 10pt; font-weight: 700; color: #004aad; margin-top: 2mm; page-break-inside: avoid; }
