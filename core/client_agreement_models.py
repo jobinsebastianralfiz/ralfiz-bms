@@ -182,11 +182,42 @@ def _amount(raw):
     return value if value >= 0 else None
 
 
-def _service(key, group, name, amount, cycle, mode, description=''):
+def _price(raw):
+    """'1999', '₹1,999', '$20' or '20 USD' -> (amount, currency).
+
+    Cloud hosting runs on Railway, which bills in US dollars, so a price may
+    be in USD; everything else defaults to rupees."""
+    raw = str(raw or '').strip()
+    currency = 'USD' if ('$' in raw or 'usd' in raw.lower()) else 'INR'
+    amount = _amount(raw.replace('$', '').lower().replace('usd', ''))
+    return amount, currency
+
+
+def _usd(amount):
+    return f'${amount:,.2f}'.replace('.00', '')
+
+
+def _display(amount, currency):
+    return _usd(amount) if currency == 'USD' else _money(amount)
+
+
+DEFAULT_CLOUD_PLANS = (
+    'Railway Standard | $20 | Managed cloud hosting on Railway, SSL, automatic deploys\n'
+    'Railway Premium | $30 | More compute and memory for higher traffic, SSL, automatic deploys'
+)
+
+DEFAULT_CLOUD_NOTE = (
+    'Hosting is on Railway. The plan price is the base monthly charge; extra usage beyond the '
+    'plan (compute, memory, bandwidth, storage) is billed at actuals as per the Railway invoice. '
+    'US dollar amounts are billed in rupees at the exchange rate on the invoice date.'
+)
+
+
+def _service(key, group, name, amount, cycle, mode, description='', currency='INR'):
     suffix, label = CYCLES[cycle]
     return {
         'key': key, 'group': group, 'name': name, 'description': description,
-        'amount': str(amount), 'amount_display': _money(amount),
+        'amount': str(amount), 'amount_display': _display(amount, currency), 'currency': currency,
         'cycle': cycle, 'cycle_suffix': suffix, 'cycle_label': label,
         'mode': mode if mode in (MODE_INCLUDED, MODE_OPTIONAL) else MODE_OPTIONAL,
     }
@@ -218,12 +249,12 @@ def build_services(form):
         cloud_mode = 'required' if form.get('cloud_mode') == 'required' else 'optional'
         for i, line in enumerate(l for l in (form.get('cloud_plans') or '').splitlines() if l.strip()):
             parts = [p.strip() for p in line.split('|')]
-            amount = _amount(parts[1]) if len(parts) > 1 else None
+            amount, currency = _price(parts[1]) if len(parts) > 1 else (None, 'INR')
             if not parts[0] or amount is None:
                 errors['cloud'] = f'Cloud plan line {i + 1} needs a name and a monthly price: Name | price | details'
                 continue
             services.append(_service(f'cloud-{i + 1}', 'cloud', parts[0], amount, 'monthly',
-                                     MODE_OPTIONAL, parts[2] if len(parts) > 2 else ''))
+                                     MODE_OPTIONAL, parts[2] if len(parts) > 2 else '', currency))
         if not any(s['group'] == 'cloud' for s in services) and 'cloud' not in errors:
             errors['cloud'] = 'Add at least one cloud plan, or switch cloud hosting off.'
 
@@ -241,13 +272,13 @@ def build_services(form):
 
     for i, line in enumerate(l for l in (form.get('other_services') or '').splitlines() if l.strip()):
         parts = [p.strip() for p in line.split('|')]
-        amount = _amount(parts[1]) if len(parts) > 1 else None
+        amount, currency = _price(parts[1]) if len(parts) > 1 else (None, 'INR')
         if not parts[0] or amount is None:
             errors['other'] = f'Other service line {i + 1} needs: Name | amount | cycle | included/optional'
             continue
         mode = MODE_INCLUDED if len(parts) > 3 and parts[3].lower().startswith('incl') else MODE_OPTIONAL
         services.append(_service(f'other-{i + 1}', 'other', parts[0], amount,
-                                 _cycle(parts[2] if len(parts) > 2 else ''), mode))
+                                 _cycle(parts[2] if len(parts) > 2 else ''), mode, '', currency))
 
     return services, cloud_mode, errors
 
@@ -366,9 +397,13 @@ class ClientAgreement(models.Model):
 
     @property
     def chosen_monthly_total(self):
-        total = sum((Decimal(s['amount']) for s in self.chosen_services if s['cycle'] == 'monthly'),
-                    Decimal('0'))
-        return _money(total) if total else ''
+        """'₹2,500 + $20' - rupee and dollar services are totalled apart."""
+        totals = {}
+        for s in self.chosen_services:
+            if s['cycle'] == 'monthly':
+                cur = s.get('currency', 'INR')
+                totals[cur] = totals.get(cur, Decimal('0')) + Decimal(s['amount'])
+        return ' + '.join(_display(totals[c], c) for c in ('INR', 'USD') if totals.get(c))
 
     # ---- Links ----
     def public_path(self):
@@ -435,7 +470,7 @@ class ClientAgreement(models.Model):
 
 def build_snapshot(project, *, scope, deliverables, start_date, end_date, total,
                    milestones, warranty_months, support_note, extra_terms,
-                   exclusions=(), services=(), cloud_mode=''):
+                   exclusions=(), services=(), cloud_mode='', cloud_note='', late_interest=None):
     """Freeze the agreement for one project. Section numbers are assigned here
     so the page and the signed copy always number the same way."""
     client = project.client
@@ -454,7 +489,10 @@ def build_snapshot(project, *, scope, deliverables, start_date, end_date, total,
     add('Project Fee & Payment Schedule', kind='payment',
         body='Amounts are exclusive of GST, which is added at the applicable rate on each invoice. '
              'Each instalment is invoiced when its milestone is reached and is payable within '
-             '7 days of the invoice.')
+             '7 days of the invoice.'
+             + (f' Any invoice not paid by its due date, including invoices for recurring services, '
+                f'attracts interest at {late_interest.normalize():f}% per month on the overdue amount, '
+                f'from the due date until it is paid in full.' if late_interest else ''))
     if services:
         add('Recurring Services & Charges', kind='services',
             body='These are billed separately from the project fee, plus GST, from go-live (or from '
@@ -493,7 +531,9 @@ def build_snapshot(project, *, scope, deliverables, start_date, end_date, total,
         'milestones': milestones,
         'warranty_months': warranty_months,
         'services': list(services),
+        'late_interest': f'{late_interest.normalize():f}' if late_interest else '',
         'cloud_mode': cloud_mode,
+        'cloud_note': cloud_note if any(sv['group'] == 'cloud' for sv in services) else '',
         'sections': sections,
         'confirmation_no': len(sections) + 1,
     }

@@ -18,7 +18,7 @@ from employees.agreement_views import (
 )
 
 from .client_agreement_models import (
-    MODE_INCLUDED, ClientAgreement, build_services, build_snapshot, default_exclusions_text,
+    DEFAULT_CLOUD_NOTE, DEFAULT_CLOUD_PLANS, MODE_INCLUDED, ClientAgreement, build_services, build_snapshot, default_exclusions_text,
     default_milestone_text, milestones_total_percent, parse_milestones,
 )
 from .models import Project
@@ -62,7 +62,9 @@ def client_agreement_new(request, pk):
         'exclusions': default_exclusions_text(),
         'maint_mode': 'optional',
         'cloud_mode': 'optional',
-        'cloud_plans': '',
+        'late_interest': '1.5',
+        'cloud_plans': DEFAULT_CLOUD_PLANS,
+        'cloud_note': DEFAULT_CLOUD_NOTE,
         'amc_on': 'on' if project.amc_amount else '',
         'amc_amount': project.amc_amount or '',
         'amc_cycle': project.amc_billing_cycle or 'yearly',
@@ -91,6 +93,13 @@ def client_agreement_new(request, pk):
         elif milestones_total_percent(milestones) != 100:
             errors['milestones'] = (f'Milestones add up to {milestones_total_percent(milestones):f}%, '
                                     'they must add up to 100%.')
+        try:
+            late_interest = Decimal(form.get('late_interest') or '0')
+            if not 0 <= late_interest <= 5:
+                raise InvalidOperation
+        except InvalidOperation:
+            late_interest = None
+            errors['late_interest'] = 'Enter a monthly interest rate between 0 and 5%.'
         services, cloud_mode, service_errors = build_services(form)
         errors.update(service_errors)
         if not (form.get('scope') or '').strip():
@@ -119,13 +128,15 @@ def client_agreement_new(request, pk):
                 exclusions=_lines(form.get('exclusions')),
                 services=services,
                 cloud_mode=cloud_mode,
+                cloud_note=(form.get('cloud_note') or '').strip(),
+                late_interest=late_interest or None,
             )
             # Kept so a revision can prefill the form; not shown to the client.
             snapshot['_form'] = {k: form.get(k, '') for k in (
                 'scope', 'deliverables', 'start_date', 'end_date', 'total',
                 'warranty_months', 'support_note', 'extra_terms', 'expiry_days', 'exclusions',
                 'maint_on', 'maint_amount', 'maint_mode', 'maint_note', 'cloud_on', 'cloud_mode',
-                'cloud_plans', 'amc_on', 'amc_amount', 'amc_cycle', 'amc_mode', 'amc_note',
+                'cloud_plans', 'cloud_note', 'late_interest', 'amc_on', 'amc_amount', 'amc_cycle', 'amc_mode', 'amc_note',
                 'other_services')}
             revision = (previous.revision + 1) if previous else 1
             snapshot['version'] = f'v{revision}.0'

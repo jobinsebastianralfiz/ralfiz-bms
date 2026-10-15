@@ -199,3 +199,58 @@ class ClientAgreementServicesTests(ClientAgreementFlowTests):
             'agreed_to_terms': 'on', 'cloud_plan': ''})
         agreement.refresh_from_db()
         self.assertEqual(agreement.selected_services, ['amc'])
+
+
+class RailwayCloudAndInterestTests(TestCase):
+    def setUp(self):
+        self.staff = User.objects.create_user('owner2', password='pw', is_superuser=True)
+        client = Client.objects.create(name='Riya', email='riya@example.com')
+        self.project = Project.objects.create(client=client, name='Shop', description='Shop site',
+                                              final_amount=Decimal('50000'))
+        self.client.force_login(self.staff)
+
+    def _create(self, **extra):
+        data = {'scope': 'Shop', 'total': '50000', 'milestones': 'Advance | 100',
+                'warranty_months': '3', 'expiry_days': '14', **extra}
+        return self.client.post(reverse('client_agreement_new', args=[self.project.pk]), data)
+
+    def test_form_prefills_railway_plans_and_interest(self):
+        res = self.client.get(reverse('client_agreement_new', args=[self.project.pk]))
+        self.assertContains(res, 'Railway Standard | $20')
+        self.assertContains(res, 'Railway Premium | $30')
+        self.assertContains(res, 'billed at actuals')
+        self.assertContains(res, 'value="1.5"')
+
+    def test_dollar_plans_and_mixed_totals(self):
+        from core.client_agreement_views import DEFAULT_CLOUD_NOTE, DEFAULT_CLOUD_PLANS
+        self._create(cloud_on='on', cloud_mode='required', cloud_plans=DEFAULT_CLOUD_PLANS,
+                     cloud_note=DEFAULT_CLOUD_NOTE, maint_on='on', maint_amount='2000',
+                     maint_mode='included', late_interest='1.5')
+        agreement = ClientAgreement.objects.get()
+        doc = agreement.snapshot_json
+        plans = [s for s in doc['services'] if s['group'] == 'cloud']
+        self.assertEqual([(p['amount_display'], p['currency']) for p in plans],
+                         [('$20', 'USD'), ('$30', 'USD')])
+        self.assertIn('Railway invoice', doc['cloud_note'])
+        payment = next(s for s in doc['sections'] if s.get('kind') == 'payment')
+        self.assertIn('interest at 1.5% per month', payment['body'])
+
+        page = self.client.get(agreement.public_path())
+        self.assertContains(page, '$30')
+        self.assertContains(page, '+ usage')
+        self.client.post(agreement.public_path(), {
+            'decision': 'accept', 'signer_name': 'Riya', 'signed_name': 'Riya',
+            'agreed_to_terms': 'on', 'cloud_plan': 'cloud-1'})
+        agreement.refresh_from_db()
+        self.assertEqual(agreement.chosen_monthly_total, '₹2,000 + $20')
+
+    def test_zero_interest_leaves_the_clause_out(self):
+        self._create(late_interest='0')
+        payment = next(s for s in ClientAgreement.objects.get().snapshot_json['sections']
+                       if s.get('kind') == 'payment')
+        self.assertNotIn('interest', payment['body'])
+
+    def test_interest_rate_is_bounded(self):
+        res = self._create(late_interest='12')
+        self.assertContains(res, 'between 0 and 5%')
+        self.assertFalse(ClientAgreement.objects.exists())

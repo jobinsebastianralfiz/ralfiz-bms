@@ -107,10 +107,11 @@
       <label class="svc-pick">
         <input type="radio" name="cloud_plan" value="{{ s.key }}" {% if posted.cloud_plan == s.key %}checked{% endif %}>
         <div><strong>{{ s.name }}</strong>
-          <span class="svc-price">{{ s.amount_display }} {{ s.cycle_suffix }}</span>
+          <span class="svc-price">{{ s.amount_display }} {{ s.cycle_suffix }}{% if doc.cloud_note %} + usage{% endif %}</span>
           {% if s.description %}<span class="svc-desc">{{ s.description }}</span>{% endif %}</div>
       </label>
       {% endfor %}
+      {% if doc.cloud_note %}<p class="agr-footnote" style="font-size:12px;margin:0 0 8px;">{{ doc.cloud_note }}</p>{% endif %}
       {% if doc.cloud_mode != 'required' %}
       <label class="svc-pick">
         <input type="radio" name="cloud_plan" value="" {% if not posted.cloud_plan %}checked{% endif %}>

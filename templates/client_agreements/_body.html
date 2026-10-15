@@ -51,7 +51,7 @@ signing page and the signed copy so the two can never drift.
         <tr>
           <td><strong>{% if s.group == 'cloud' %}Cloud hosting &middot; {% endif %}{{ s.name }}</strong>
             {% if s.description %}<div class="svc-desc">{{ s.description }}</div>{% endif %}</td>
-          <td class="r">{{ s.amount_display }} <span class="svc-cycle">{{ s.cycle_suffix }}</span></td>
+          <td class="r">{{ s.amount_display }} <span class="svc-cycle">{{ s.cycle_suffix }}</span>{% if s.group == 'cloud' and doc.cloud_note %}<span class="svc-desc">+ usage at actuals</span>{% endif %}</td>
           <td class="r">
             {% if agreement.status == 'accepted' %}
               {% if s.key in chosen_keys %}<span class="svc-tag yes">&#10003; Yes</span>{% else %}<span class="svc-tag">No</span>{% endif %}
@@ -63,6 +63,7 @@ signing page and the signed copy so the two can never drift.
         {% endfor %}
       </tbody>
     </table>
+    {% if doc.cloud_note %}<div class="agr-callout warn">{{ doc.cloud_note }}</div>{% endif %}
     {% endif %}
 
     {% if section.bullets %}
