@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+{% load money %}<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
@@ -6,632 +6,131 @@
   <title>{{ quote.quote_number }} - {{ company.company_name|default:"Ralfiz Technologies" }}</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <style>
-    @page {
-      size: A4;
-      margin: 15mm;
-    }
-
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-    }
-
-    body {
-      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-      font-size: 11px;
-      line-height: 1.4;
-      color: #1e293b;
-      background: #f1f5f9;
-    }
-
-    .quote-container {
-      max-width: 800px;
-      margin: 60px auto 40px;
-      padding: 25px;
-      background: white;
-      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
-      border-radius: 8px;
-    }
-
-    /* Download Bar */
-    .download-bar {
-      position: fixed;
-      top: 0;
-      left: 0;
-      right: 0;
-      background: #0f172a;
-      padding: 12px 40px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      z-index: 100;
-    }
-
-    .download-bar-title {
-      color: white;
-      font-weight: 600;
-    }
-
-    .download-bar-actions {
-      display: flex;
-      gap: 12px;
-    }
-
-    .download-btn {
-      background: #0d9488;
-      color: white;
-      border: none;
-      padding: 10px 20px;
-      border-radius: 6px;
-      font-weight: 500;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      text-decoration: none;
-      font-size: 14px;
-    }
-
-    .download-btn:hover {
-      background: #0f766e;
-    }
-
-    .download-btn.secondary {
-      background: #475569;
-    }
-
-    .download-btn.secondary:hover {
-      background: #334155;
-    }
-
-    /* Header */
-    .quote-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: flex-start;
-      margin-bottom: 20px;
-      padding-bottom: 15px;
-      border-bottom: 2px solid #0d9488;
-    }
-
-    .company-info {
-      max-width: 280px;
-    }
-
-    .company-logo {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      margin-bottom: 8px;
-    }
-
-    .logo-icon {
-      width: 36px;
-      height: 36px;
-      background: linear-gradient(135deg, #0d9488, #14b8a6);
-      border-radius: 6px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      color: white;
-      font-weight: 700;
-      font-size: 18px;
-    }
-
-    .company-name {
-      font-size: 16px;
-      font-weight: 700;
-      color: #0f172a;
-      white-space: nowrap;
-    }
-
-    .company-name span {
-      color: #0d9488;
-    }
-
-    .company-details {
-      font-size: 10px;
-      color: #64748b;
-      line-height: 1.5;
-    }
-
-    .quote-title-section {
-      text-align: right;
-    }
-
-    .quote-title {
-      font-size: 24px;
-      font-weight: 700;
-      color: #0d9488;
-      margin-bottom: 4px;
-    }
-
-    .quote-number {
-      font-size: 12px;
-      color: #64748b;
-      margin-bottom: 8px;
-    }
-
-    .quote-meta {
-      font-size: 10px;
-      color: #64748b;
-    }
-
-    .quote-meta div {
-      margin-bottom: 2px;
-    }
-
-    .quote-meta strong {
-      color: #1e293b;
-    }
-
-    .status-badge {
-      display: inline-block;
-      padding: 4px 10px;
-      font-size: 9px;
-      font-weight: 600;
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-      border-radius: 12px;
-      margin-top: 6px;
-    }
-
-    .status-badge.draft {
-      background: #f1f5f9;
-      color: #64748b;
-    }
-
-    .status-badge.sent {
-      background: #dbeafe;
-      color: #1d4ed8;
-    }
-
-    .status-badge.accepted {
-      background: #dcfce7;
-      color: #15803d;
-    }
-
-    .status-badge.rejected {
-      background: #fef2f2;
-      color: #dc2626;
-    }
-
-    .status-badge.expired {
-      background: #fef3c7;
-      color: #d97706;
-    }
-
-    /* Billing Section */
-    .billing-section {
-      display: flex;
-      gap: 30px;
-      margin-bottom: 15px;
-    }
-
-    .billing-block {
-      flex: 1;
-    }
-
-    .billing-label {
-      font-size: 9px;
-      font-weight: 600;
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-      color: #0d9488;
-      margin-bottom: 4px;
-    }
-
-    .billing-name {
-      font-size: 12px;
-      font-weight: 600;
-      color: #1e293b;
-      margin-bottom: 4px;
-    }
-
-    .billing-details {
-      font-size: 10px;
-      color: #64748b;
-      line-height: 1.5;
-    }
-
-    /* Project Description */
-    .project-section {
-      background: #f8fafc;
-      padding: 10px 12px;
-      border-radius: 6px;
-      margin-bottom: 15px;
-    }
-
-    .project-title {
-      font-size: 12px;
-      font-weight: 600;
-      color: #1e293b;
-      margin-bottom: 4px;
-    }
-
-    .project-description {
-      font-size: 10px;
-      color: #64748b;
-    }
-
-    /* Items Table */
-    .items-section {
-      margin-bottom: 15px;
-    }
-
-    .items-table {
-      width: 100%;
-      border-collapse: collapse;
-    }
-
-    .items-table th {
-      background: #f1f5f9;
-      padding: 6px 10px;
-      text-align: left;
-      font-size: 9px;
-      font-weight: 600;
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-      color: #64748b;
-      border-bottom: 1px solid #e2e8f0;
-    }
-
-    .items-table th:last-child,
-    .items-table td:last-child {
-      text-align: right;
-    }
-
-    .items-table td {
-      padding: 8px 10px;
-      border-bottom: 1px solid #e2e8f0;
-      vertical-align: top;
-      font-size: 10px;
-    }
-
-    .item-description {
-      font-weight: 500;
-      color: #1e293b;
-      margin-bottom: 2px;
-    }
-
-    .item-details {
-      font-size: 9px;
-      color: #64748b;
-    }
-
-    .items-table tbody tr:last-child td {
-      border-bottom: 1px solid #e2e8f0;
-    }
-
-    /* Totals */
-    .totals-section {
-      display: flex;
-      justify-content: flex-end;
-      margin-bottom: 15px;
-    }
-
-    .totals-table {
-      width: 220px;
-    }
-
-    .totals-row {
-      display: flex;
-      justify-content: space-between;
-      padding: 4px 0;
-      font-size: 10px;
-    }
-
-    .totals-row.subtotal {
-      border-bottom: 1px solid #e2e8f0;
-    }
-
-    .totals-row.total {
-      border-top: 2px solid #0d9488;
-      padding-top: 8px;
-      margin-top: 4px;
-    }
-
-    .totals-row.total .label,
-    .totals-row.total .value {
-      font-size: 12px;
-      font-weight: 700;
-      color: #0d9488;
-    }
-
-    .totals-row .label {
-      color: #64748b;
-    }
-
-    .totals-row .value {
-      font-weight: 600;
-      color: #1e293b;
-    }
-
-    /* Terms */
-    .terms-section {
-      margin-bottom: 12px;
-    }
-
-    .terms-label {
-      font-size: 9px;
-      font-weight: 600;
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-      color: #0d9488;
-      margin-bottom: 4px;
-    }
-
-    .terms-content {
-      font-size: 9px;
-      color: #64748b;
-      line-height: 1.5;
-    }
-
-    /* Signature Section */
-    .signature-section {
-      display: flex;
-      gap: 40px;
-      margin-bottom: 15px;
-    }
-
-    .signature-block {
-      flex: 1;
-      padding-top: 30px;
-      border-top: 1px solid #e2e8f0;
-    }
-
-    .signature-label {
-      font-size: 9px;
-      color: #64748b;
-    }
-
-    /* Footer */
-    .quote-footer {
-      text-align: center;
-      padding-top: 12px;
-      border-top: 1px solid #e2e8f0;
-    }
-
-    .thank-you {
-      font-size: 12px;
-      font-weight: 600;
-      color: #0d9488;
-      margin-bottom: 4px;
-    }
-
-    .footer-note {
-      font-size: 9px;
-      color: #94a3b8;
-    }
-
-    /* Print Styles */
-    @media print {
-      body {
-        background: white;
-        print-color-adjust: exact;
-        -webkit-print-color-adjust: exact;
-      }
-
-      .quote-container {
-        margin: 0;
-        padding: 15px;
-        box-shadow: none;
-        border-radius: 0;
-      }
-
-      .no-print {
-        display: none !important;
-      }
-    }
-  
-    /* Inlined logo for PDFs. max-width/height rather than object-fit, which
-       WeasyPrint does not reliably honour. */
-    .company-logo-img {
-      max-width: 36px;
-      max-height: 36px;
-      width: auto;
-      height: auto;
-      border-radius: 6px;
-    }
+{% include "pdf/_letterhead_style.html" %}
   </style>
 </head>
 <body>
-  <!-- Download Bar -->
   <div class="download-bar no-print">
     <div class="download-bar-title">Quote Preview - {{ quote.quote_number }}</div>
     <div class="download-bar-actions">
       {% if with_gst %}
       <a href="{% url 'quote_pdf' quote.pk %}" class="download-btn secondary">Without GST</a>
+      <a href="{% url 'quote_pdf' quote.pk %}?gst=1&download=1" class="download-btn">Download PDF</a>
       {% else %}
       <a href="{% url 'quote_pdf' quote.pk %}?gst=1" class="download-btn secondary">With GST</a>
+      <a href="{% url 'quote_pdf' quote.pk %}?download=1" class="download-btn">Download PDF</a>
       {% endif %}
-      <button class="download-btn" onclick="window.print()">
-        <svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
-          <path d="M.5 9.9a.5.5 0 0 1 .5.5v2.5a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-2.5a.5.5 0 0 1 1 0v2.5a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2v-2.5a.5.5 0 0 1 .5-.5z"/>
-          <path d="M7.646 11.854a.5.5 0 0 0 .708 0l3-3a.5.5 0 0 0-.708-.708L8.5 10.293V1.5a.5.5 0 0 0-1 0v8.793L5.354 8.146a.5.5 0 1 0-.708.708l3 3z"/>
-        </svg>
-        Download PDF
-      </button>
     </div>
   </div>
 
-  <div class="quote-container">
-    <!-- Header -->
-    <div class="quote-header">
-      <div class="company-info" style="flex: 1;">
-        <div class="company-logo">
-          {% if company.logo_data_uri %}
-          <img src="{{ company.logo_data_uri }}" alt="{{ company.company_name }}" class="company-logo-img">
-          {% elif company.logo %}
-          <img src="{{ company.logo.url }}" alt="{{ company.company_name }}" style="width: 36px; height: 36px; object-fit: contain; border-radius: 6px;">
-          {% else %}
-          <div class="logo-icon">{{ company.company_name|slice:":1"|upper|default:"R" }}</div>
-          {% endif %}
-          <div>
-            <div class="company-name">{{ company.company_name|default:"Ralfiz Technologies" }}</div>
-            {% if company.tagline %}<div style="font-size: 9px; color: #64748b;">{{ company.tagline }}</div>{% endif %}
-          </div>
-        </div>
-        <div class="company-details">
-          {{ company.address|linebreaksbr|default:"" }}
-          {% if company.phone %}<br>Phone: {{ company.phone }}{% endif %}
-          {% if company.email %}<br>Email: {{ company.email }}{% endif %}
-          {% if company.gst_number %}<br>GSTIN: {{ company.gst_number }}{% endif %}
-          {% if company.hsn_code %}<br>HSN/SAC: {{ company.hsn_code }}{% endif %}
+  <div class="sheet">
+    {% include "pdf/_letterhead.html" with doc_title="QUOTATION" doc_number=quote.quote_number %}
+
+    <div class="doc-row">
+      <div class="doc-col">
+        <div class="label">Prepared For</div>
+        <div class="party-name">{{ quote.recipient_company|default:quote.recipient_name }}</div>
+        <div class="party-details">
+          {% if quote.recipient_company and quote.recipient_name %}{{ quote.recipient_name }}<br>{% endif %}
+          {% if quote.client.address %}{{ quote.client.address|linebreaksbr }}<br>{% endif %}
+          {% if quote.recipient_email %}{{ quote.recipient_email }}<br>{% endif %}
+          {% if quote.recipient_phone %}{{ quote.recipient_phone }}<br>{% endif %}
+          {% if with_gst and quote.recipient_gst %}GSTIN: {{ quote.recipient_gst }}{% endif %}
         </div>
       </div>
-      <div class="quote-title-section" style="flex-shrink: 0; margin-left: 30px;">
-        <div class="quote-title">QUOTATION</div>
-        <div class="quote-number">#{{ quote.quote_number }}</div>
-        <div class="quote-meta">
-          <div><strong>Issue Date:</strong> {{ quote.issue_date|date:"d F Y" }}</div>
-          <div><strong>Valid Until:</strong> {{ quote.valid_until|date:"d F Y" }}</div>
-        </div>
-        <div class="status-badge {{ quote.status }}">{{ quote.get_status_display }}</div>
+      <div class="meta">
+        <div class="meta-row"><span>Quote No.</span><span>{{ quote.quote_number }}</span></div>
+        <div class="meta-row"><span>Issue Date</span><span>{{ quote.issue_date|date:"d M Y" }}</span></div>
+        <div class="meta-row"><span>Valid Until</span><span>{{ quote.valid_until|date:"d M Y" }}</span></div>
+        <div class="meta-row"><span>Status</span><span><span class="status-badge {{ quote.status }}">{{ quote.get_status_display }}</span></span></div>
       </div>
     </div>
 
-    <!-- Billing Section -->
-    <div class="billing-section">
-      <div class="billing-block">
-        <div class="billing-label">Prepared For</div>
-        <div class="billing-name">{{ quote.recipient_company|default:quote.recipient_name }}</div>
-        <div class="billing-details">
-          {% if quote.client.address %}{{ quote.client.address }} | {% endif %}{{ quote.recipient_email }}{% if quote.recipient_phone %} | {{ quote.recipient_phone }}{% endif %}{% if with_gst and quote.recipient_gst %}<br>GSTIN: {{ quote.recipient_gst }}{% endif %}
-        </div>
-      </div>
+    <div class="subject">
+      <div class="label">Proposal</div>
+      <div class="subject-title">{{ quote.title }}</div>
+      {% if quote.description %}<div class="subject-desc">{{ quote.description }}</div>{% endif %}
     </div>
 
-    <!-- Project Description -->
-    <div class="project-section">
-      <div class="project-title">{{ quote.title }}</div>
-      {% if quote.description %}
-      <div class="project-description">{{ quote.description }}</div>
-      {% endif %}
-    </div>
+    <table class="items">
+      <thead>
+        <tr>
+          <th class="n">#</th>
+          <th>Description</th>
+          <th class="r">Qty</th>
+          <th class="r">Unit Price</th>
+          <th class="r">Amount</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for item in quote.items.all %}
+        <tr>
+          <td class="n">{{ forloop.counter }}</td>
+          <td>
+            <div class="item-desc">{{ item.description }}</div>
+            {% if item.details %}<div class="item-details">{{ item.details }}</div>{% endif %}
+          </td>
+          <td class="r">{{ item.quantity|floatformat:0 }}</td>
+          <td class="r">&#8377;{{ item.unit_price|inr }}</td>
+          <td class="r">&#8377;{{ item.amount|inr }}</td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="5" style="text-align:center; padding:10mm; color:#64748b;">No line items</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
 
-    <!-- Items Table -->
-    <div class="items-section">
-      <table class="items-table">
-        <thead>
-          <tr>
-            <th style="width: 50%;">Description</th>
-            <th style="width: 15%;">Qty</th>
-            <th style="width: 17%;">Unit Price</th>
-            <th style="width: 18%;">Amount</th>
-          </tr>
-        </thead>
-        <tbody>
-          {% for item in quote.items.all %}
-          <tr>
-            <td>
-              <div class="item-description">{{ item.description }}</div>
-              {% if item.details %}
-              <div class="item-details">{{ item.details }}</div>
-              {% endif %}
-            </td>
-            <td>{{ item.quantity|floatformat:0 }}</td>
-            <td>&#8377;{{ item.unit_price|floatformat:2 }}</td>
-            <td>&#8377;{{ item.amount|floatformat:2 }}</td>
-          </tr>
-          {% empty %}
-          <tr>
-            <td colspan="4" style="text-align: center; padding: 20px; color: #64748b;">No line items</td>
-          </tr>
-          {% endfor %}
-        </tbody>
-      </table>
-    </div>
-
-    <!-- Totals -->
-    <div class="totals-section">
-      <div class="totals-table">
-        <div class="totals-row subtotal">
-          <span class="label">Subtotal</span>
-          <span class="value">&#8377;{{ quote.subtotal|floatformat:2 }}</span>
-        </div>
+    <div class="totals-wrap">
+      <div class="totals">
+        <div class="t-row"><span>Subtotal</span><span>&#8377;{{ quote.subtotal|inr }}</span></div>
         {% if quote.discount %}
-        <div class="totals-row">
-          <span class="label">Discount</span>
-          <span class="value">-&#8377;{{ quote.discount|floatformat:2 }}</span>
-        </div>
+        <div class="t-row"><span>Discount</span><span>-&#8377;{{ quote.discount|inr }}</span></div>
         {% endif %}
         {% if with_gst %}
-        <div class="totals-row">
-          <span class="label">CGST ({{ cgst_rate|floatformat:0 }}%)</span>
-          <span class="value">&#8377;{{ cgst_amount|floatformat:2 }}</span>
-        </div>
-        <div class="totals-row">
-          <span class="label">SGST ({{ sgst_rate|floatformat:0 }}%)</span>
-          <span class="value">&#8377;{{ sgst_amount|floatformat:2 }}</span>
-        </div>
-        <div class="totals-row total">
-          <span class="label">Total (incl. GST)</span>
-          <span class="value">&#8377;{{ total_with_gst|floatformat:2 }}</span>
-        </div>
+        <div class="t-row"><span>CGST ({{ cgst_rate|floatformat:0 }}%)</span><span>&#8377;{{ cgst_amount|inr }}</span></div>
+        <div class="t-row"><span>SGST ({{ sgst_rate|floatformat:0 }}%)</span><span>&#8377;{{ sgst_amount|inr }}</span></div>
+        <div class="t-row grand"><span>Total (incl. GST)</span><span>&#8377;{{ total_with_gst|inr }}</span></div>
         {% else %}
-        <div class="totals-row total">
-          <span class="label">Total</span>
-          <span class="value">&#8377;{{ taxable_amount|floatformat:2 }}</span>
-        </div>
-        <div class="totals-row" style="font-size: 9px;">
-          <span class="label">GST Extra as applicable</span>
-          <span class="value"></span>
-        </div>
+        <div class="t-row grand"><span>Total</span><span>&#8377;{{ taxable_amount|inr }}</span></div>
+        <div class="t-row note"><span>GST extra as applicable</span><span></span></div>
+        {% endif %}
+        {% if quote.valid_until %}
+        <div class="t-row note"><span>Prices valid until {{ quote.valid_until|date:"d M Y" }}</span><span></span></div>
         {% endif %}
       </div>
     </div>
 
-    <!-- Validity Notice -->
-    {% if quote.valid_until %}
-    <div style="font-size: 9px; color: #92400e; text-align: right; margin-bottom: 12px;">
-      <strong>Valid until {{ quote.valid_until|date:"d F Y" }}</strong> - Prices may change after this date.
-    </div>
-    {% endif %}
-
-    <!-- Payment Terms -->
     {% if quote.payment_terms_display %}
-    <div class="terms-section">
-      <div class="terms-label">Payment Terms</div>
-      <div class="terms-content">{{ quote.payment_terms_display|linebreaksbr }}</div>
+    <div class="block">
+      <div class="label">Payment Terms</div>
+      <div class="block-body">{{ quote.payment_terms_display|linebreaksbr }}</div>
     </div>
     {% endif %}
 
-    <!-- Terms -->
     {% if quote.terms %}
-    <div class="terms-section">
-      <div class="terms-label">Terms & Conditions</div>
-      <div class="terms-content">{{ quote.terms|linebreaksbr }}</div>
+    <div class="block">
+      <div class="label">Terms &amp; Conditions</div>
+      <div class="block-body">{{ quote.terms|linebreaksbr }}</div>
     </div>
     {% endif %}
 
     {% if quote.client_notes %}
-    <div class="terms-section">
-      <div class="terms-label">Notes</div>
-      <div class="terms-content">{{ quote.client_notes|linebreaksbr }}</div>
+    <div class="block">
+      <div class="label">Notes</div>
+      <div class="block-body">{{ quote.client_notes|linebreaksbr }}</div>
     </div>
     {% endif %}
 
-    <!-- Signature Section -->
-    <div class="signature-section">
-      <div class="signature-block">
-        <div class="signature-label">For {{ company.company_name|default:"Ralfiz Technologies" }}</div>
-      </div>
-      <div class="signature-block">
-        <div class="signature-label">Client Acceptance</div>
-      </div>
+    <div class="signs">
+      <div>For {{ company.company_name|default:"Ralfiz Technologies" }}</div>
+      <div>Client Acceptance</div>
     </div>
 
-    <!-- Footer -->
-    <div class="quote-footer">
-      <div class="thank-you">Thank you for considering {{ company.company_name|default:"Ralfiz Technologies" }}!</div>
-      <div class="footer-note">
-        If you have any questions about this quote, please contact<br>
-        {{ company.email|default:"" }}{% if company.email and company.phone %} | {% endif %}{{ company.phone|default:"" }}
-      </div>
+    <div class="thanks">
+      Thank you for considering {{ company.company_name|default:"Ralfiz Technologies" }}!
+      <small>Questions about this quote? Write to {{ company.email|default:"us" }}{% if company.phone %} or call {{ company.phone }}{% endif %}.</small>
     </div>
   </div>
 </body>

@@ -1,0 +1,45 @@
+{% comment %}
+Blue letterhead header and footer. Include inside .sheet with
+doc_title (e.g. "INVOICE") and doc_number. Shapes are drawn in millimetres
+on an A4-wide canvas so they bleed to the paper edge.
+The footer lines sit in an inline-block: WeasyPrint otherwise splits a
+fixed block that lies below the content area and drops every line but the
+first.
+{% endcomment %}
+<div class="lh-head">
+  <svg width="210mm" height="44mm" viewBox="0 0 210 44" preserveAspectRatio="none">
+    <polygon points="121,17 210,17 210,35 115.5,35" fill="#3a82e4"/>
+  </svg>
+  <div class="lh-brand">
+    {% if company.logo_data_uri %}
+    <img src="{{ company.logo_data_uri }}" alt="{{ company.company_name }}">
+    {% else %}
+    <div class="logo-icon">{{ company.company_name|slice:":1"|upper|default:"R" }}</div>
+    {% endif %}
+    <div>
+      <div class="lh-name">{{ company.company_name|default:"Ralfiz Technologies" }}</div>
+      {% if company.tagline %}<div class="lh-tagline">{{ company.tagline }}</div>{% endif %}
+    </div>
+  </div>
+  <div class="lh-title">
+    <div class="lh-title-main">{{ doc_title }}</div>
+    <div class="lh-title-no">#{{ doc_number }}</div>
+  </div>
+</div>
+
+<div class="lh-foot">
+  <svg width="210mm" height="38mm" viewBox="0 0 210 38" preserveAspectRatio="none">
+    <polygon points="0,22 116,22 116,38 0,38" fill="#004aad"/>
+    <polygon points="121,2 210,2 210,38 109,38" fill="#3a82e4"/>
+  </svg>
+  <div class="lh-ids"><div class="lh-stack">
+    {% if company.gst_number %}<span>GSTIN {{ company.gst_number }}</span>{% endif %}
+    {% if company.pan_number %}<span>PAN {{ company.pan_number }}</span>{% endif %}
+    {% if company.hsn_code %}<span>HSN/SAC {{ company.hsn_code }}</span>{% endif %}
+  </div></div>
+  <div class="lh-contact"><div class="lh-stack">
+    {% if company.phone %}<div>{{ company.phone }}</div>{% endif %}
+    {% if company.email %}<div>{{ company.email }}</div>{% endif %}
+    {% if company.address %}<div>{{ company.address|linebreaksbr }}</div>{% endif %}
+  </div></div>
+</div>

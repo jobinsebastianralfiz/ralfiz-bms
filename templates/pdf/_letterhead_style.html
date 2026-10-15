@@ -1,0 +1,164 @@
+{% comment %}
+Shared styles for the blue letterhead used by the invoice and quote PDFs.
+Included inside a <style> tag. The page is A4; the header and footer bands
+bleed to the paper edge and repeat on every page. On screen they sit inside
+a paper-sized .sheet; in print (WeasyPrint) they are fixed to each page.
+{% endcomment %}
+    @page { size: A4; margin: 44mm 18mm 42mm 18mm; }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Helvetica Neue', Arial, sans-serif;
+      font-size: 9.5pt;
+      line-height: 1.45;
+      color: #1f2937;
+      background: #e8edf4;
+    }
+
+    /* Paper sheet (screen preview) */
+    .sheet {
+      position: relative;
+      width: 210mm;
+      min-height: 297mm;
+      margin: 72px auto 40px;
+      padding: 44mm 18mm 42mm;
+      background: #fff;
+      box-shadow: 0 10px 30px rgba(15, 23, 42, .15);
+    }
+
+    /* Letterhead header: logo left, blue band with the document title right */
+    .lh-head { position: absolute; top: 0; left: 0; width: 210mm; height: 44mm; }
+    .lh-head svg, .lh-foot svg { position: absolute; top: 0; left: 0; display: block; }
+    .lh-brand {
+      position: absolute; top: 14mm; left: 18mm; height: 22mm;
+      display: flex; align-items: center; gap: 3.5mm;
+    }
+    .lh-brand img { height: 14mm; width: auto; display: block; }
+    .logo-icon {
+      width: 14mm; height: 14mm; border-radius: 2mm;
+      background: #004aad; color: #fff; font-weight: 700; font-size: 20pt;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .lh-name {
+      font-size: 14pt; font-weight: 800; letter-spacing: .04em;
+      text-transform: uppercase; color: #1f2937; line-height: 1.1; white-space: nowrap;
+    }
+    .lh-tagline { font-size: 8pt; color: #64748b; margin-top: 1mm; letter-spacing: .02em; }
+    .lh-title {
+      position: absolute; top: 17mm; right: 18mm; height: 18mm;
+      display: flex; flex-direction: column; justify-content: center;
+      text-align: right; color: #fff;
+    }
+    .lh-title-main { font-size: 17pt; font-weight: 800; letter-spacing: .14em; line-height: 1.1; }
+    .lh-title-no { font-size: 8.5pt; font-weight: 500; opacity: .92; letter-spacing: .03em; }
+
+    /* Letterhead footer: dark strip with tax ids, blue panel with contacts */
+    .lh-foot { position: absolute; bottom: 0; left: 0; width: 210mm; height: 38mm; }
+    .lh-ids {
+      position: absolute; left: 18mm; bottom: 0; width: 95mm; height: 16mm; line-height: 16mm;
+      color: #fff; font-size: 7.5pt; letter-spacing: .03em;
+    }
+    .lh-ids span + span::before { content: '\00B7'; margin: 0 2mm; opacity: .7; }
+    .lh-contact {
+      position: absolute; right: 18mm; top: 7mm; width: 72mm;
+      text-align: right; color: #fff; font-size: 8pt; font-weight: 600; line-height: 1.65;
+    }
+    .lh-stack { display: inline-block; width: 100%; }
+
+    /* Document body */
+    .doc-row { display: flex; gap: 8mm; margin-bottom: 7mm; }
+    .doc-col { flex: 1; }
+    .label {
+      font-size: 7.5pt; font-weight: 700; letter-spacing: .08em; text-transform: uppercase;
+      color: #004aad; margin-bottom: 1.5mm;
+    }
+    .party-name { font-size: 11pt; font-weight: 700; color: #111827; margin-bottom: 1mm; }
+    .party-details { font-size: 8.5pt; color: #4b5563; line-height: 1.55; }
+
+    .meta {
+      width: 70mm; flex: none; border-left: 1mm solid #3a82e4;
+      background: #f3f7fd; padding: 3mm 4mm;
+    }
+    .meta-row { display: flex; justify-content: space-between; gap: 4mm; font-size: 8.5pt; padding: .6mm 0; }
+    .meta-row span:first-child { color: #64748b; }
+    .meta-row span:last-child { font-weight: 600; color: #111827; text-align: right; }
+
+    .status-badge {
+      display: inline-block; padding: .4mm 2.2mm; border-radius: 3mm;
+      font-size: 7pt; font-weight: 700; letter-spacing: .05em; text-transform: uppercase;
+      background: #e5e7eb; color: #4b5563;
+    }
+    .status-badge.paid, .status-badge.accepted { background: #dcfce7; color: #15803d; }
+    .status-badge.sent { background: #dbeafe; color: #1d4ed8; }
+    .status-badge.pending, .status-badge.expired { background: #fef3c7; color: #b45309; }
+    .status-badge.partial { background: #dbeafe; color: #1d4ed8; }
+    .status-badge.overdue, .status-badge.rejected { background: #fee2e2; color: #dc2626; }
+
+    .subject { margin-bottom: 6mm; }
+    .subject-title { font-size: 11pt; font-weight: 700; color: #111827; }
+    .subject-desc { font-size: 8.5pt; color: #4b5563; margin-top: 1mm; white-space: pre-line; }
+
+    .items { width: 100%; border-collapse: collapse; margin-bottom: 5mm; }
+    .items thead tr { background: #004aad; }
+    .items th {
+      background: #004aad; border: 0; color: #fff; text-align: left;
+      font-size: 7.5pt; font-weight: 700; letter-spacing: .06em; text-transform: uppercase;
+      padding: 2.4mm 3mm;
+    }
+    .items td { padding: 2.6mm 3mm; border-bottom: .3mm solid #e5e7eb; vertical-align: top; font-size: 9pt; }
+    .items tbody tr:nth-child(even) td { background: #f7f9fc; }
+    .items tr { page-break-inside: avoid; }
+    .items .r { text-align: right; white-space: nowrap; }
+    .items .n { color: #94a3b8; width: 8mm; }
+    .item-desc { font-weight: 600; color: #111827; }
+    .item-details { font-size: 8pt; color: #64748b; margin-top: .5mm; white-space: pre-line; }
+
+    .totals-wrap { display: flex; justify-content: flex-end; margin-bottom: 7mm; page-break-inside: avoid; }
+    .totals { width: 76mm; }
+    .t-row { display: flex; justify-content: space-between; padding: 1.2mm 3mm; font-size: 9pt; }
+    .t-row span:first-child { color: #4b5563; }
+    .t-row span:last-child { font-weight: 600; color: #111827; }
+    .t-row.grand { background: #004aad; margin-top: 1.5mm; padding: 2.6mm 3mm; }
+    .t-row.grand span { color: #fff !important; font-size: 10.5pt; font-weight: 800; }
+    .t-row.note span { font-size: 7.5pt; color: #64748b !important; font-weight: 500; }
+    .t-row .good { color: #15803d !important; }
+    .t-row .due { color: #b45309 !important; }
+
+    .block { margin-bottom: 5mm; page-break-inside: avoid; }
+    .block-body { font-size: 8.5pt; color: #4b5563; line-height: 1.6; }
+
+    .pay-box { display: flex; gap: 8mm; background: #f3f7fd; padding: 4mm 5mm; margin-bottom: 6mm; page-break-inside: avoid; }
+    .pay-box > div { flex: 1; }
+    .kv { font-size: 8.5pt; line-height: 1.7; color: #111827; }
+    .kv span { display: inline-block; width: 24mm; color: #64748b; }
+    .upi { display: inline-block; font-weight: 700; font-size: 9.5pt; color: #004aad; border: .3mm solid #3a82e4; background: #fff; padding: 1mm 3mm; }
+
+    .signs { display: flex; gap: 20mm; margin: 12mm 0 6mm; page-break-inside: avoid; }
+    .signs > div { flex: 1; border-top: .3mm solid #9ca3af; padding-top: 1.5mm; font-size: 8pt; color: #4b5563; }
+
+    .thanks { font-size: 10pt; font-weight: 700; color: #004aad; margin-top: 2mm; page-break-inside: avoid; }
+    .thanks small { display: block; font-size: 8pt; font-weight: 400; color: #64748b; margin-top: .5mm; }
+
+    /* Preview toolbar */
+    .download-bar {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+      display: flex; justify-content: space-between; align-items: center;
+      background: #0f172a; padding: 12px 32px;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    }
+    .download-bar-title { color: #fff; font-weight: 600; font-size: 14px; }
+    .download-bar-actions { display: flex; gap: 12px; }
+    .download-btn {
+      background: #004aad; color: #fff; border: 0; border-radius: 6px;
+      padding: 9px 18px; font-size: 14px; font-weight: 500; text-decoration: none; cursor: pointer;
+    }
+    .download-btn.secondary { background: #475569; }
+
+    @media print {
+      body { background: #fff; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+      .no-print { display: none !important; }
+      .sheet { position: static; width: auto; min-height: 0; margin: 0; padding: 0; box-shadow: none; }
+      .lh-head { position: fixed; top: -44mm; left: -18mm; }
+      .lh-foot { position: fixed; top: auto; bottom: -42mm; left: -18mm; }
+    }
