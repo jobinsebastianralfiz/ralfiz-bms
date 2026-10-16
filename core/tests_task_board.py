@@ -94,3 +94,15 @@ class PortalTaskBoardTests(TestCase):
         self.assertEqual(review['tasks'][0].open_issue_total, 0)
         self.assertContains(r, '80% complete')
         self.assertNotContains(r, 'draggable="true"')
+
+
+class ProjectDetailBoardLinkTests(TestCase):
+    def test_project_page_links_to_its_board(self):
+        admin = User.objects.create_superuser('boss', 'boss@example.com', 'pw-12345')
+        client = Client.objects.create(name='Acme', email='acme@example.com')
+        project = Project.objects.create(client=client, name='Acme Website', status='in_progress')
+        Task.objects.create(project=project, title='One')
+        self.client.force_login(admin)
+        r = self.client.get(reverse('project_detail', args=[project.pk]))
+        self.assertContains(r, f'{reverse("task_board")}?project={project.pk}')
+        self.assertContains(r, 'Task Board (1)')

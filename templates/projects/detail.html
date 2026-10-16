@@ -112,6 +112,9 @@
       <a href="{% url 'project_update' project.pk %}" class="btn btn-primary btn-sm">
         <i class="fas fa-edit"></i> Edit
       </a>
+      <a href="{% url 'task_board' %}?project={{ project.pk }}" class="btn btn-outline-primary btn-sm">
+        <i class="fas fa-table-columns"></i> Task Board{% with tc=project.tasks.count %}{% if tc %} ({{ tc }}){% endif %}{% endwith %}
+      </a>
       <a href="{% url 'credential_create' %}?project={{ project.pk }}" class="btn btn-outline-primary btn-sm">
         <i class="fas fa-key"></i> Credential
       </a>
