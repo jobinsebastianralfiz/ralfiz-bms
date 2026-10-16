@@ -63,8 +63,7 @@ def _base_context(request, active_nav=''):
 def _login_context(**extra):
     from core.models import CompanySettings
     company = CompanySettings.get_settings()
-    return {'company_name': company.company_name, 'company_email': company.email,
-            'company_phone': company.phone, **extra}
+    return {'company_name': company.company_name, 'company_email': company.email, **extra}
 
 
 def _portal_username(login_name):
