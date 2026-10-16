@@ -5852,6 +5852,7 @@ def task_board(request):
     search = request.GET.get('q', '').strip()
     priority = request.GET.get('priority', '')
     assignee = request.GET.get('assignee', '')
+    label = request.GET.get('label', '').strip()[:60]
 
     team_member = getattr(request.user, 'team_profile', None)
     tasks = Task.objects.select_related('project', 'assigned_to').annotate(
@@ -5878,9 +5879,12 @@ def task_board(request):
 
     # Filter options come from the unfiltered set, so they never vanish.
     assignees = TeamMember.objects.filter(pk__in=tasks.values('assigned_to')).order_by('name')
+    labels = sorted(set(tasks.exclude(category='').values_list('category', flat=True)), key=str.lower)
 
     if search:
         tasks = tasks.filter(Q(title__icontains=search) | Q(description__icontains=search) | Q(category__icontains=search))
+    if label:
+        tasks = tasks.filter(category__iexact=label)
     if priority in dict(Task.PRIORITY_CHOICES):
         tasks = tasks.filter(priority=priority)
     else:
@@ -5916,7 +5920,9 @@ def task_board(request):
         'search': search,
         'priority': priority,
         'assignee': assignee,
-        'filters_on': bool(search or priority or assignee),
+        'labels': labels,
+        'label': label,
+        'filters_on': bool(search or priority or assignee or label),
         'is_team_member': team_member is not None,
     }
     return render(request, 'tasks/board.html', context)

@@ -15,7 +15,7 @@
   {% if task.description %}<p class="vk-desc">{{ task.description }}</p>{% endif %}
 
   {% if col.key == 'completed' %}
-    <div class="vk-meta"><i class="far fa-calendar"></i> Completed {% if task.completed_date %}{{ task.completed_date|naturalday:"d/m/Y"|capfirst }}{% endif %}<i class="fas fa-circle-check vk-ok"></i></div>
+    <div class="vk-meta vk-due-line"><i class="far fa-calendar"></i> Completed {% if task.completed_date %}{{ task.completed_date|naturalday:"d/m/Y"|capfirst }}{% endif %}<i class="fas fa-circle-check vk-ok"></i></div>
   {% else %}
     {% with pct=task.progress_percent %}
     <div class="vk-prog-row">
@@ -31,7 +31,7 @@
     </div>
     {% endif %}
     {% if task.due_date %}
-    <div class="vk-meta{% if task.is_overdue %} late{% endif %}"><i class="far fa-calendar"></i> Due: {{ task.due_date|date:"d/m/Y" }}{% if task.is_overdue %} · overdue{% endif %}</div>
+    <div class="vk-meta vk-due-line{% if task.is_overdue %} late{% endif %}"><i class="far fa-calendar"></i> Due: {{ task.due_date|date:"d/m/Y" }}{% if task.is_overdue %} · overdue{% endif %}</div>
     {% endif %}
   {% endif %}
 

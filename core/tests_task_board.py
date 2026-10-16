@@ -45,6 +45,11 @@ class TaskBoardTests(TestCase):
         r = self.board(assignee='none')
         self.assertEqual(r.context['task_count'], 2)
 
+    def test_label_filter(self):
+        r = self.board(project=self.project.pk, label='website design')
+        self.assertEqual(r.context['task_count'], 1)
+        self.assertEqual(r.context['labels'], ['Website Design'])
+
     def test_all_projects_and_bad_project_id(self):
         self.assertEqual(self.board().context['task_count'], 3)
         r = self.board(project='nope')

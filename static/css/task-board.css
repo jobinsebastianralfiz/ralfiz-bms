@@ -151,3 +151,25 @@
 [data-theme="dark"] .vk .tone-teal   { background: rgba(45,212,191,.15); color: #5EEAD4; }
 [data-theme="dark"] .vk .pri-high    { background: rgba(248,113,113,.16); color: #FCA5A5; }
 [data-theme="dark"] .vk .vk-meta.late, [data-theme="dark"] .vk .vk-meta.late i { color: #F87171; }
+
+/* Columns scroll on their own so a long To Do never pushes the board off screen. */
+.vk-col { max-height: calc(100vh - 150px); overflow-y: auto; overscroll-behavior: contain; padding-top: 0; }
+.vk-col-head { position: sticky; top: 0; z-index: 2; background: var(--vk-card); margin: 0 -12px; padding: 14px 18px 10px; }
+.vk-col.drop .vk-col-head { background: var(--vk-drop); }
+.vk-col::-webkit-scrollbar { width: 8px; }
+.vk-col::-webkit-scrollbar-thumb { background: #DCDBE3; border-radius: 8px; border: 2px solid var(--vk-card); }
+
+/* Compact cards: label, priority, title, due date and assignee only. */
+.vk-compact .vk-card { padding: 9px 11px; gap: 6px; border-radius: 11px; }
+.vk-compact .vk-desc, .vk-compact .vk-prog-row, .vk-compact .vk-proj,
+.vk-compact .vk-meta:not(.vk-due-line):not(.late) { display: none; }
+.vk-compact .vk-track { height: 3px; margin-top: 0; }
+.vk-compact .vk-card:not(:has(.vk-track i[style*="width: 0%"])) .vk-track { display: block; }
+.vk-compact .vk-card:has(.vk-track i[style*="width: 0%"]) .vk-track { display: none; }
+.vk-compact .vk-title { font-size: 14px; }
+.vk-compact .vk-chip { font-size: 10.5px; padding: 2px 6px; }
+.vk-compact .vk-foot { border-top: 0; padding-top: 0; }
+.vk-compact .vk-who span:last-child { display: none; }
+.vk-compact .vk-card .vk-av { width: 22px; height: 22px; font-size: 9px; }
+.vk-compact .vk-meta { font-size: 12px; }
+.vk-compact .vk-col { gap: 7px; }

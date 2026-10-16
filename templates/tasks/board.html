@@ -4,11 +4,11 @@
 {% block title %}{% if project %}{{ project.name }} · {% endif %}Task Board - Ralfiz BMS{% endblock %}
 
 {% block extra_css %}
-<link rel="stylesheet" href="{% static 'css/task-board.css' %}?v=1">
+<link rel="stylesheet" href="{% static 'css/task-board.css' %}?v=3">
 {% endblock %}
 
 {% block content %}
-<div class="vk">
+<div class="vk" id="vk-root" data-total="{{ task_count }}">
   <div class="vk-top">
     <div class="vk-crumbs">
       <label for="vk-project">Project</label>
@@ -59,6 +59,7 @@
         <a class="vk-tab" href="{% url 'task_list' %}{% if project %}?project={{ project.pk }}{% endif %}"><i class="fas fa-list"></i> List View</a>
       </nav>
       <div class="vk-actions">
+        <button type="button" class="vk-btn" id="vk-density" aria-pressed="false" title="Switch between compact and detailed cards"><i class="fas fa-bars-staggered"></i> <span>Compact</span></button>
         <button type="button" class="vk-btn{% if filters_on %} on{% endif %}" id="vk-filter-btn" aria-expanded="{% if filters_on %}true{% else %}false{% endif %}" aria-controls="vk-filters">
           <i class="fas fa-sliders"></i> Filter
         </button>
@@ -81,6 +82,12 @@
         <option value="">Anyone</option>
         <option value="none" {% if assignee == 'none' %}selected{% endif %}>Unassigned</option>
         {% for m in assignees %}<option value="{{ m.pk }}" {% if assignee == m.pk|slugify %}selected{% endif %}>{{ m.name }}</option>{% endfor %}
+      </select>
+      {% endif %}
+      {% if labels %}
+      <select name="label" aria-label="Label">
+        <option value="">Any label</option>
+        {% for l in labels %}<option value="{{ l }}" {% if label|lower == l|lower %}selected{% endif %}>{{ l }}</option>{% endfor %}
       </select>
       {% endif %}
       <button type="submit" class="vk-btn dark">Apply</button>
@@ -112,6 +119,20 @@
 {% block extra_js %}
 <script>
 (function () {
+  // Compact / detailed cards. Starts compact on big boards; remembers the choice.
+  var root = document.getElementById('vk-root'), dens = document.getElementById('vk-density');
+  var saved = null;
+  try { saved = localStorage.getItem('bms.board.density'); } catch (e) {}
+  function setDensity(compact, remember) {
+    root.classList.toggle('vk-compact', compact);
+    dens.setAttribute('aria-pressed', compact ? 'true' : 'false');
+    dens.querySelector('span').textContent = compact ? 'Detailed' : 'Compact';
+    dens.querySelector('i').className = compact ? 'fas fa-table-list' : 'fas fa-bars-staggered';
+    if (remember) { try { localStorage.setItem('bms.board.density', compact ? 'compact' : 'detailed'); } catch (e) {} }
+  }
+  setDensity(saved ? saved === 'compact' : Number(root.dataset.total) > 12, false);
+  dens.addEventListener('click', function () { setDensity(!root.classList.contains('vk-compact'), true); });
+
   var btn = document.getElementById('vk-filter-btn');
   var panel = document.getElementById('vk-filters');
   if (btn && panel) btn.addEventListener('click', function () {
