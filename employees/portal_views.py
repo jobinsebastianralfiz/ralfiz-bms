@@ -368,6 +368,28 @@ def work_list(request):
 
 
 @staff_required
+def board_task_detail(request, pk):
+    """One of your project-board tasks: details, attached files and comments."""
+    from core.models import Task, TaskComment
+    task = get_object_or_404(board_tasks_for(request.employee, open_only=False), pk=pk)
+    if request.method == 'POST':
+        body = request.POST.get('body', '').strip()[:4000]
+        if body:
+            TaskComment.objects.create(task=task, author=request.user, body=body)
+            messages.success(request, 'Comment added.')
+        return redirect('staff:board_task_detail', pk=task.pk)
+    ctx = _base_context(request, 'work')
+    ctx.update({
+        'task': task,
+        'attachments': task.attachments.all(),
+        'comments': task.comments.filter(is_deleted=False, parent__isnull=True)
+                        .select_related('author').prefetch_related('replies__author'),
+        'task_status_choices': Task.STATUS_CHOICES,
+    })
+    return render(request, 'staff/board_task_detail.html', ctx)
+
+
+@staff_required
 def board_task_update(request, pk):
     """Move one of your own project-board tasks along, or set its progress."""
     from core.models import Task, TaskActivity

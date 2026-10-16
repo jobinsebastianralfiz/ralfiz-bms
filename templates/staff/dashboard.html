@@ -41,6 +41,8 @@
   </a>
 </section>
 
+<div class="sv-cols">
+<div class="sv-col">
 <section class="sv-card">
   <a href="{% url 'staff:attendance' %}" class="sv-action">
     <span class="sv-ico green"><i class="fas fa-fingerprint"></i></span>
@@ -61,23 +63,8 @@
   </a>
 </section>
 
-<section class="sv-card">
-  <header class="sv-card-head"><h2><span class="sv-head-ico"><i class="fas fa-table-columns"></i></span>Your project tasks</h2><a href="{% url 'staff:work_list' %}">View all</a></header>
-  {% for t in board_tasks %}
-  <div class="sv-row">
-    <div class="sv-chips">{% if t.category %}<span class="sv-chip">{{ t.category }}</span>{% endif %}<span class="sv-chip pri-{{ t.priority }}">{{ t.get_priority_display }}</span></div>
-    <div class="sv-row-top"><span class="sv-row-title">{{ t.title }}</span>
-      <span class="sf-badge {% if t.status == 'in_progress' %}sf-badge-info{% elif t.status == 'review' %}sf-badge-warn{% else %}sf-badge-muted{% endif %}">{{ t.get_status_display }}</span></div>
-    <div class="sv-meta">
-      <span><i class="fas fa-folder"></i> {{ t.project.name }}</span>
-      {% if t.due_date %}<span class="{% if t.is_overdue %}late{% endif %}"><i class="far fa-calendar"></i> Due {{ t.due_date|date:"d M" }}{% if t.is_overdue %} · overdue{% endif %}</span>{% endif %}
-    </div>
-    {% if t.progress %}<div class="sv-bar"><i style="width: {{ t.progress }}%"></i></div>{% endif %}
-  </div>
-  {% empty %}
-  <p class="sv-empty">No project tasks assigned to you yet.</p>
-  {% endfor %}
-</section>
+
+
 
 {% if open_work %}
 <section class="sv-card">
@@ -118,5 +105,28 @@
   {% endfor %}
 </section>
 {% endif %}
+
+</div>
+<div class="sv-col">
+<section class="sv-card">
+  <header class="sv-card-head"><h2><span class="sv-head-ico"><i class="fas fa-table-columns"></i></span>Your project tasks</h2><a href="{% url 'staff:work_list' %}">View all</a></header>
+  {% for t in board_tasks %}
+  <a class="sv-row" href="{% url 'staff:board_task_detail' t.pk %}">
+    <div class="sv-chips">{% if t.category %}<span class="sv-chip">{{ t.category }}</span>{% endif %}<span class="sv-chip pri-{{ t.priority }}">{{ t.get_priority_display }}</span></div>
+    <div class="sv-row-top"><span class="sv-row-title">{{ t.title }}</span>
+      <span class="sf-badge {% if t.status == 'in_progress' %}sf-badge-info{% elif t.status == 'review' %}sf-badge-warn{% else %}sf-badge-muted{% endif %}">{{ t.get_status_display }}</span></div>
+    <div class="sv-meta">
+      <span><i class="fas fa-folder"></i> {{ t.project.name }}</span>
+      {% if t.due_date %}<span class="{% if t.is_overdue %}late{% endif %}"><i class="far fa-calendar"></i> Due {{ t.due_date|date:"d M" }}{% if t.is_overdue %} · overdue{% endif %}</span>{% endif %}
+      {% with n=t.attachments.count %}{% if n %}<span><i class="fas fa-paperclip"></i> {{ n }} file{{ n|pluralize }}</span>{% endif %}{% endwith %}
+    </div>
+    {% if t.progress %}<div class="sv-bar"><i style="width: {{ t.progress }}%"></i></div>{% endif %}
+  </a>
+  {% empty %}
+  <p class="sv-empty">No project tasks assigned to you yet.</p>
+  {% endfor %}
+</section>
+</div>
+</div>
 
 {% endblock %}

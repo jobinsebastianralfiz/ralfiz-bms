@@ -63,3 +63,24 @@ class StaffBoardTaskTests(TestCase):
         r = self.client.get('/invoices/')
         self.assertEqual(r.status_code, 302)
         self.assertIn('/staff/', r['Location'])
+
+
+class StaffTaskPageTests(StaffBoardTaskTests):
+    def test_task_page_shows_files_and_takes_comments(self):
+        import tempfile
+        from django.core.files.uploadedfile import SimpleUploadedFile
+        from django.test import override_settings
+        from core.models import TaskAttachment
+        with override_settings(MEDIA_ROOT=tempfile.mkdtemp()):
+            TaskAttachment.objects.create(task=self.task, name='brief.pdf',
+                                          file=SimpleUploadedFile('brief.pdf', b'%PDF-1.4'))
+            r = self.client.get(reverse('staff:board_task_detail', args=[self.task.pk]))
+            self.assertContains(r, 'brief.pdf')
+            self.client.post(reverse('staff:board_task_detail', args=[self.task.pk]), {'body': 'Which font?'})
+            self.assertTrue(self.task.comments.filter(body='Which font?', author=self.user).exists())
+            r = self.client.get(reverse('staff:dashboard'))
+            self.assertContains(r, '1 file')
+
+    def test_cannot_open_someone_elses_task(self):
+        other = Task.objects.get(title='Someone else')
+        self.assertEqual(self.client.get(reverse('staff:board_task_detail', args=[other.pk])).status_code, 404)

@@ -34,6 +34,37 @@
 </head>
 <body>
 
+{# Wide screens: a left sidebar like the client portal; phones keep the bottom tab bar. #}
+<aside class="sv-side" aria-label="Menu">
+  <a href="{% url 'staff:dashboard' %}" class="sv-side-brand">
+    <img src="{% static 'staff/icon-192.png' %}?v={{ asset_v }}" alt="" width="40" height="40">
+    <span>Ralfiz Technologies<small>Staff Portal</small></span>
+  </a>
+  <nav class="sv-side-menu">
+    <a href="{% url 'staff:dashboard' %}" class="{% if active_nav == 'dashboard' %}active{% endif %}"><i class="fas fa-house"></i> Home</a>
+    <a href="{% url 'staff:attendance' %}" class="{% if active_nav == 'attendance' %}active{% endif %}"><i class="fas fa-fingerprint"></i> Attendance</a>
+    <a href="{% url 'staff:work_list' %}" class="{% if active_nav == 'work' %}active{% endif %}"><i class="fas fa-list-check"></i> Work</a>
+    <a href="{% url 'staff:daily_report' %}" class="{% if active_nav == 'daily_report' %}active{% endif %}"><i class="fas fa-pen-to-square"></i> Daily updates</a>
+    <a href="{% url 'staff:leave' %}" class="{% if active_nav == 'leave' %}active{% endif %}"><i class="fas fa-plane-departure"></i> Leave</a>
+    {% if is_intern %}
+    <a href="{% url 'staff:class_list' %}" class="{% if active_nav == 'classes' %}active{% endif %}"><i class="fas fa-chalkboard-user"></i> Classes</a>
+    <a href="{% url 'staff:assessment_list' %}" class="{% if active_nav == 'assessments' %}active{% endif %}"><i class="fas fa-file-pen"></i> Assessments</a>
+    <a href="{% url 'staff:lead_list' %}" class="{% if active_nav == 'leads' %}active{% endif %}"><i class="fas fa-bullseye"></i> My Leads</a>
+    {% endif %}
+    <a href="{% url 'staff:notification_list' %}" class="{% if active_nav == 'notifications' %}active{% endif %}"><i class="fas fa-bell"></i> Notifications{% if unread_count %}<span class="sv-count">{{ unread_count }}</span>{% endif %}</a>
+    <hr>
+    <a href="{% url 'staff:payslip_list' %}" class="{% if active_nav == 'payslips' %}active{% endif %}"><i class="fas fa-receipt"></i> Payslips</a>
+    <a href="{% url 'staff:attendance_history' %}"><i class="fas fa-calendar-days"></i> Attendance history</a>
+    <a href="{% url 'staff:profile' %}" class="{% if active_nav == 'profile' %}active{% endif %}"><i class="fas fa-user-gear"></i> Profile &amp; face</a>
+    <a href="#" onclick="document.getElementById('sfThemeToggle').click(); return false;"><i class="fas fa-circle-half-stroke"></i> Light / dark</a>
+    <a href="{% url 'staff:logout' %}"><i class="fas fa-right-from-bracket"></i> Sign out</a>
+  </nav>
+  <div class="sv-side-user">
+    {% if photo_url %}<img class="sf-avatar" src="{{ photo_url }}" alt="">{% else %}<div class="sf-avatar">{{ employee.full_name|slice:":1"|upper }}</div>{% endif %}
+    <div><strong>{{ employee.full_name }}</strong><span>{{ employee.designation|default:employee.get_role_display }}</span></div>
+  </div>
+</aside>
+
 <header class="sf-appbar">
   {% block appbar %}
   <div class="sf-appbar-main">

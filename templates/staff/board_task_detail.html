@@ -1,0 +1,75 @@
+{% extends 'staff/base.html' %}
+
+{% block title %}{{ task.title|truncatechars:40 }}{% endblock %}
+{% block heading %}Task{% endblock %}
+
+{% block content %}
+<a href="{% url 'staff:work_list' %}" class="sv-back"><i class="fas fa-arrow-left"></i> Work</a>
+
+<div class="sv-cols">
+<div class="sv-col">
+<section class="sv-card">
+  <div class="sv-row" style="border-bottom:0;">
+    <div class="sv-chips">{% if task.category %}<span class="sv-chip">{{ task.category }}</span>{% endif %}<span class="sv-chip pri-{{ task.priority }}">{{ task.get_priority_display }}</span></div>
+    <h1 class="sv-task-title">{{ task.title }}</h1>
+    <div class="sv-meta">
+      <span><i class="fas fa-folder"></i> {{ task.project.name }}</span>
+      {% if task.due_date %}<span class="{% if task.is_overdue %}late{% endif %}"><i class="far fa-calendar"></i> Due {{ task.due_date|date:"d M Y" }}{% if task.is_overdue %} · overdue{% endif %}</span>{% endif %}
+      <span class="sf-badge {% if task.status == 'completed' %}sf-badge-ok{% elif task.status == 'in_progress' %}sf-badge-info{% elif task.status == 'review' %}sf-badge-warn{% else %}sf-badge-muted{% endif %}">{{ task.get_status_display }}</span>
+    </div>
+    {% if task.description %}<div class="sv-desc">{{ task.description|linebreaksbr }}</div>{% endif %}
+    {% if task.notes %}<div class="sv-meta"><span><i class="far fa-note-sticky"></i> {{ task.notes }}</span></div>{% endif %}
+    <div class="sv-bar"><i style="width: {{ task.progress_percent }}%"></i></div>
+    <form method="post" action="{% url 'staff:board_task_update' task.pk %}" class="sv-move">
+      {% csrf_token %}
+      <input type="hidden" name="back" value="{{ request.get_full_path }}">
+      <select name="status" aria-label="Status">
+        {% for value, label in task_status_choices %}<option value="{{ value }}" {% if task.status == value %}selected{% endif %}>{{ label }}</option>{% endfor %}
+      </select>
+      <input type="number" name="progress" min="0" max="100" step="5" value="{{ task.progress }}" aria-label="Progress %" title="Progress %">
+      <button type="submit">Save</button>
+    </form>
+  </div>
+</section>
+
+<section class="sv-card">
+  <header class="sv-card-head"><h2><span class="sv-head-ico"><i class="fas fa-paperclip"></i></span>Files</h2><span class="sv-meta" style="margin:0;">{{ attachments|length }}</span></header>
+  {% if attachments %}
+  <div class="sv-files">
+    {% for a in attachments %}
+    <a class="sv-file" href="{{ a.file.url }}" target="_blank" rel="noopener">
+      {% if a.is_image %}<img src="{{ a.file.url }}" alt="" loading="lazy">{% else %}<span class="sv-file-ico"><i class="far fa-file-lines"></i><small>{{ a.file_extension|upper }}</small></span>{% endif %}
+      <span class="sv-file-name">{{ a.name|default:a.file.name|truncatechars:40 }}</span>
+    </a>
+    {% endfor %}
+  </div>
+  {% else %}
+  <p class="sv-empty">No files attached to this task.</p>
+  {% endif %}
+</section>
+</div>
+
+<div class="sv-col">
+<section class="sv-card">
+  <header class="sv-card-head"><h2><span class="sv-head-ico"><i class="far fa-message"></i></span>Comments</h2></header>
+  {% for c in comments %}
+  <div class="sv-row">
+    <div class="sv-row-top"><span class="sv-row-title" style="font-size:13.5px;">{{ c.author.get_full_name|default:c.author.username }}</span><span class="sv-meta" style="margin:0;">{{ c.created_at|date:"d M, h:i A" }}</span></div>
+    <div class="sv-desc" style="margin-top:4px;">{{ c.body|linebreaksbr }}</div>
+    {% if c.attachment %}<div class="sv-meta"><a href="{{ c.attachment.url }}" target="_blank" rel="noopener"><i class="fas fa-paperclip"></i> Attachment</a></div>{% endif %}
+    {% for r in c.replies.all %}{% if not r.is_deleted %}
+    <div class="sv-reply"><strong>{{ r.author.get_full_name|default:r.author.username }}</strong> · {{ r.created_at|date:"d M" }}<br>{{ r.body|linebreaksbr }}</div>
+    {% endif %}{% endfor %}
+  </div>
+  {% empty %}
+  <p class="sv-empty">No comments yet.</p>
+  {% endfor %}
+  <form method="post" class="sv-comment">
+    {% csrf_token %}
+    <textarea name="body" rows="3" maxlength="4000" placeholder="Write a comment or a question for the team…" required></textarea>
+    <button type="submit">Post comment</button>
+  </form>
+</section>
+</div>
+</div>
+{% endblock %}
