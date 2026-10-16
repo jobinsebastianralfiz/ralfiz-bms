@@ -1429,6 +1429,8 @@ class Task(models.Model):
     priority = models.CharField(max_length=10, choices=PRIORITY_CHOICES, default='medium')
     due_date = models.DateField(null=True, blank=True)
     completed_date = models.DateField(null=True, blank=True)
+    category = models.CharField(max_length=60, blank=True, help_text='Board label, e.g. "Website Design" or "Mobile App".')
+    progress = models.PositiveSmallIntegerField(default=0, help_text='Percent done, 0-100.')
     notes = models.TextField(blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -1438,6 +1440,13 @@ class Task(models.Model):
 
     def __str__(self):
         return self.title
+
+    @property
+    def progress_percent(self):
+        """Progress for the board: a finished task always reads 100%."""
+        if self.status == 'completed':
+            return 100
+        return max(0, min(100, self.progress or 0))
 
     @property
     def is_overdue(self):

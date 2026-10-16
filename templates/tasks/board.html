@@ -1,641 +1,342 @@
 {% extends 'base.html' %}
-{% load static %}
+{% load static humanize %}
 
-{% block title %}Task Board - Ralfiz BMS{% endblock %}
+{% block title %}{% if project %}{{ project.name }} · {% endif %}Task Board - Ralfiz BMS{% endblock %}
 
 {% block extra_css %}
 <style>
-  /* Slack-inspired Task Board - Theme Aware */
-  .slack-board-container {
-    background: var(--bg-body);
-    min-height: calc(100vh - 120px);
-    margin: -1.5rem;
-    padding: 0;
+  /* Task board, laid out after the Velora kanban design. */
+  .vk {
+    --vk-ink: #17171B; --vk-ink-2: #55565C; --vk-ink-3: #6B6C75;
+    --vk-line: #E6E6EA; --vk-line-2: #EEEEF1; --vk-soft: #F6F6F8; --vk-card: #fff;
+    --vk-accent: #6D3DF2;
+    color: var(--vk-ink);
+    display: flex; flex-direction: column; gap: 12px;
   }
-
-  /* Slack-style Header */
-  .slack-header {
-    background: var(--primary);
-    padding: 12px 20px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    position: sticky;
-    top: 0;
-    z-index: 100;
+  .vk-top { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px; }
+  .vk-crumbs { display: flex; align-items: center; gap: 8px; font-size: 14px; color: var(--vk-ink-3); flex-wrap: wrap; }
+  .vk-crumbs a { color: var(--vk-ink-3); text-decoration: none; }
+  .vk-crumbs a:hover { color: var(--vk-ink); }
+  .vk-switch { position: relative; }
+  .vk-switch select {
+    appearance: none; -webkit-appearance: none; border: 1px solid var(--vk-line); background: #fff;
+    border-radius: 10px; height: 38px; padding: 0 34px 0 12px; font: inherit; font-size: 14px; font-weight: 600;
+    color: var(--vk-ink); cursor: pointer; max-width: 320px;
   }
-
-  .slack-header-left {
-    display: flex;
-    align-items: center;
-    gap: 12px;
+  .vk-switch::after {
+    content: "\f107"; font-family: "Font Awesome 6 Free"; font-weight: 900; font-size: 12px;
+    position: absolute; right: 13px; top: 50%; transform: translateY(-50%); pointer-events: none; color: var(--vk-ink-3);
   }
-
-  .slack-header-left h1 {
-    color: white;
-    font-size: 18px;
-    font-weight: 700;
-    margin: 0;
-    display: flex;
-    align-items: center;
-    gap: 8px;
+  .vk-btn {
+    display: inline-flex; align-items: center; gap: 8px; height: 42px; padding: 0 16px; border-radius: 10px;
+    border: 1px solid var(--vk-line); background: #fff; color: var(--vk-ink); font-size: 14px; font-weight: 600;
+    text-decoration: none; cursor: pointer; white-space: nowrap; font-family: inherit;
   }
+  .vk-btn:hover { background: var(--vk-soft); color: var(--vk-ink); text-decoration: none; }
+  .vk-btn.dark { background: var(--vk-ink); border-color: var(--vk-ink); color: #fff; }
+  .vk-btn.dark:hover { background: #2a2a31; color: #fff; }
+  .vk-btn.on { border-color: var(--vk-accent); color: var(--vk-accent); }
+  .vk-btn .vk-dot-count { background: var(--vk-accent); color: #fff; border-radius: 6px; font-size: 11px; padding: 1px 6px; }
 
-  .slack-header-left h1 i {
-    font-size: 16px;
-    opacity: 0.9;
+  .vk-panel { background: var(--vk-card); border: 1px solid var(--vk-line); border-radius: 18px; overflow: hidden; }
+  .vk-head { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: flex-start; gap: 14px; padding: 20px 20px 0; }
+  .vk-head-main { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+  .vk-name { display: flex; align-items: center; gap: 12px; }
+  .vk-logo {
+    width: 40px; height: 40px; border-radius: 10px; background: #1F3B2D; color: #F7C948; flex: none;
+    display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 15px; letter-spacing: -0.02em;
   }
+  .vk-logo.all { background: var(--vk-accent); color: #fff; }
+  .vk-name h1 { margin: 0; font-size: 28px; font-weight: 700; letter-spacing: -0.02em; line-height: 1.15; }
+  .vk-sub { margin: 0; font-size: 14px; color: var(--vk-ink-2); max-width: 720px; }
+  .vk-head-side { display: flex; align-items: center; gap: 12px; }
+  .vk-team { display: flex; }
+  .vk-team .vk-av { width: 34px; height: 34px; font-size: 12px; border: 2px solid #fff; margin-left: -8px; }
+  .vk-team .vk-av:first-child { margin-left: 0; }
 
-  .slack-channel-info {
-    color: rgba(255,255,255,0.85);
-    font-size: 13px;
-    display: flex;
-    align-items: center;
-    gap: 6px;
+  .vk-bar { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 10px; padding: 14px 20px 0; border-bottom: 1px solid var(--vk-line); }
+  .vk-tabs { display: flex; gap: 6px; }
+  .vk-tab {
+    display: inline-flex; align-items: center; gap: 8px; padding: 0 12px 12px; font-size: 14px; color: var(--vk-ink-3);
+    text-decoration: none; border-bottom: 2px solid transparent; margin-bottom: -1px;
   }
+  .vk-tab:hover { color: var(--vk-ink); text-decoration: none; }
+  .vk-tab.active { color: var(--vk-ink); font-weight: 600; border-bottom-color: var(--vk-ink); }
+  .vk-actions { display: flex; gap: 8px; padding-bottom: 12px; }
 
-  .slack-header-actions {
-    display: flex;
-    gap: 8px;
-    align-items: center;
+  .vk-filters { display: none; flex-wrap: wrap; gap: 8px; align-items: center; padding: 12px 20px; border-bottom: 1px solid var(--vk-line); background: #FBFBFC; }
+  .vk-filters.open { display: flex; }
+  .vk-filters input, .vk-filters select {
+    height: 38px; border: 1px solid var(--vk-line); border-radius: 9px; padding: 0 10px; font: inherit; font-size: 13.5px; background: #fff; color: var(--vk-ink);
   }
+  .vk-filters input[type=search] { flex: 1 1 220px; min-width: 0; }
+  .vk-filters .vk-btn { height: 38px; }
+  .vk-clear { font-size: 13px; color: var(--vk-ink-3); }
 
-  .slack-filter-select {
-    background: rgba(255,255,255,0.15);
-    border: 1px solid rgba(255,255,255,0.3);
-    color: white;
-    padding: 6px 12px;
-    border-radius: 6px;
-    font-size: 13px;
-    cursor: pointer;
-    transition: all 0.15s;
+  .vk-board { display: grid; grid-template-columns: repeat(4, minmax(250px, 1fr)); overflow-x: auto; }
+  .vk-col { display: flex; flex-direction: column; gap: 10px; padding: 14px 12px 18px; border-right: 1px solid var(--vk-line); min-height: 420px; transition: background .12s; }
+  .vk-col:last-child { border-right: 0; }
+  .vk-col.drop { background: #F4F0FF; }
+  .vk-col-head { display: flex; align-items: center; gap: 8px; padding: 2px 6px 4px; font-size: 15px; font-weight: 600; }
+  .vk-col-head .vk-count { font-size: 12px; font-weight: 600; background: #F0F0F3; border-radius: 6px; padding: 2px 8px; color: var(--vk-ink); }
+  .vk-col-head .vk-add { margin-left: auto; color: var(--vk-ink-3); width: 28px; height: 28px; border-radius: 7px; display: inline-flex; align-items: center; justify-content: center; text-decoration: none; }
+  .vk-col-head .vk-add:hover { background: var(--vk-soft); color: var(--vk-ink); }
+  .vk-pie { width: 15px; height: 15px; border-radius: 50%; flex: none; }
+  .vk-pie.todo { background: conic-gradient(#2F7BF5 0 25%, transparent 0); box-shadow: inset 0 0 0 1.6px #2F7BF5; }
+  .vk-pie.in_progress { background: conic-gradient(#F59E0B 0 50%, transparent 0); box-shadow: inset 0 0 0 1.6px #F59E0B; }
+  .vk-pie.review { background: conic-gradient(var(--vk-accent) 0 75%, transparent 0); box-shadow: inset 0 0 0 1.6px var(--vk-accent); }
+  .vk-pie.completed { background: #16A34A; color: #fff; font-size: 8px; display: inline-flex; align-items: center; justify-content: center; }
+
+  .vk-card {
+    background: #fff; border: 1px solid var(--vk-line); border-radius: 14px; padding: 13px 13px 11px;
+    display: flex; flex-direction: column; gap: 9px; cursor: grab; transition: box-shadow .12s, border-color .12s;
   }
-
-  .slack-filter-select:hover {
-    background: rgba(255,255,255,0.25);
+  .vk-card:hover { border-color: #D6D6DD; box-shadow: 0 4px 14px rgba(23,23,27,.06); }
+  .vk-card.dragging { opacity: .45; }
+  .vk-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+  .vk-chip { font-size: 11.5px; font-weight: 500; border-radius: 6px; padding: 3px 7px; line-height: 1.3; }
+  .tone-violet { background: #EFEBFE; color: #5B3FD0; }
+  .tone-green  { background: #E7F6EC; color: #1A7A47; }
+  .tone-orange { background: #FDEFE3; color: #B4541A; }
+  .tone-blue   { background: #E6F0FE; color: #2160C4; }
+  .tone-pink   { background: #FDE8F0; color: #B4245E; }
+  .tone-teal   { background: #E3F5F4; color: #11706A; }
+  .pri-low    { background: #E6F0FE; color: #2160C4; }
+  .pri-medium { background: #F0F0F3; color: #55565C; }
+  .pri-high   { background: #FDE8E8; color: #C02626; }
+  .pri-urgent { background: #C02626; color: #fff; }
+  .vk-title-row { display: flex; align-items: flex-start; gap: 8px; }
+  .vk-title { flex: 1; font-size: 15px; font-weight: 600; color: var(--vk-ink); text-decoration: none; line-height: 1.3; }
+  .vk-title:hover { color: var(--vk-accent); text-decoration: none; }
+  .vk-more { color: var(--vk-ink-3); width: 24px; height: 22px; border-radius: 6px; display: inline-flex; align-items: center; justify-content: center; text-decoration: none; flex: none; }
+  .vk-more:hover { background: var(--vk-soft); color: var(--vk-ink); }
+  .vk-proj { font-size: 12px; color: var(--vk-ink-3); margin-top: -5px; }
+  .vk-desc { margin: 0; font-size: 13px; line-height: 1.45; color: var(--vk-ink-2); display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+  .vk-prog-row { display: flex; justify-content: space-between; font-size: 12.5px; color: var(--vk-ink); }
+  .vk-prog-row span:last-child { color: var(--vk-ink-2); }
+  .vk-track { height: 5px; border-radius: 99px; background: #EDEDF1; overflow: hidden; margin-top: -3px; }
+  .vk-track i { display: block; height: 100%; background: var(--vk-accent); border-radius: 99px; }
+  .vk-meta { display: flex; align-items: center; gap: 8px; font-size: 12.5px; color: var(--vk-ink-2); }
+  .vk-meta i { width: 14px; text-align: center; color: var(--vk-ink-3); }
+  .vk-meta.late, .vk-meta.late i { color: #C02626; }
+  .vk-meta .vk-ok { margin-left: auto; color: #16A34A; }
+  .vk-foot { display: flex; align-items: center; justify-content: space-between; border-top: 1px solid var(--vk-line-2); padding-top: 9px; }
+  .vk-av {
+    width: 26px; height: 26px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center;
+    font-size: 10px; font-weight: 700; flex: none;
   }
+  .vk-av.unassigned { background: #F0F0F3; color: var(--vk-ink-3); font-weight: 500; }
+  .vk-who { display: flex; align-items: center; gap: 7px; font-size: 12.5px; color: var(--vk-ink-2); min-width: 0; }
+  .vk-who span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .vk-stats { display: flex; gap: 12px; font-size: 12.5px; color: var(--vk-ink-2); }
+  .vk-stats i { color: var(--vk-ink-3); margin-right: 3px; }
+  .vk-stats .warn i, .vk-stats .warn { color: #B4541A; }
+  .vk-empty { border: 1.5px dashed var(--vk-line); border-radius: 14px; padding: 22px 12px; text-align: center; font-size: 13px; color: var(--vk-ink-3); }
+  .vk-col:has(.vk-card) .vk-empty { display: none; }
 
-  .slack-filter-select option {
-    color: var(--text-primary);
-    background: var(--bg-card);
-  }
-
-  .slack-btn {
-    background: rgba(255,255,255,0.15);
-    border: 1px solid rgba(255,255,255,0.3);
-    color: white;
-    padding: 6px 12px;
-    border-radius: 6px;
-    font-size: 13px;
-    font-weight: 500;
-    cursor: pointer;
-    transition: all 0.15s;
-    text-decoration: none;
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-  }
-
-  .slack-btn:hover {
-    background: rgba(255,255,255,0.25);
-    color: white;
-    text-decoration: none;
-  }
-
-  .slack-btn-primary {
-    background: white;
-    color: var(--primary);
-    border: none;
-  }
-
-  .slack-btn-primary:hover {
-    background: rgba(255,255,255,0.9);
-    color: var(--primary-hover);
-  }
-
-  /* Kanban Board Layout */
-  .slack-kanban {
-    display: flex;
-    gap: 12px;
-    padding: 16px 20px;
-    overflow-x: auto;
-    min-height: calc(100vh - 180px);
-  }
-
-  /* Slack-style Columns */
-  .slack-column {
-    background: var(--bg-card);
-    border-radius: 8px;
-    min-width: 300px;
-    max-width: 300px;
-    display: flex;
-    flex-direction: column;
-    box-shadow: var(--shadow);
-    border: 1px solid var(--border-color);
-  }
-
-  .slack-column-header {
-    padding: 12px 16px;
-    border-bottom: 1px solid var(--border-color);
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-  }
-
-  .slack-column-title {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    font-weight: 700;
-    font-size: 14px;
-    color: var(--text-primary);
-  }
-
-  .slack-status-dot {
-    width: 10px;
-    height: 10px;
-    border-radius: 3px;
-  }
-
-  .slack-status-dot.todo { background: var(--text-muted); }
-  .slack-status-dot.progress { background: var(--info); }
-  .slack-status-dot.review { background: var(--warning); }
-  .slack-status-dot.done { background: var(--success); }
-
-  .slack-column-count {
-    background: var(--bg-hover);
-    color: var(--text-secondary);
-    padding: 2px 8px;
-    border-radius: 10px;
-    font-size: 12px;
-    font-weight: 600;
-  }
-
-  .slack-column-body {
-    padding: 8px;
-    overflow-y: auto;
-    flex: 1;
-    max-height: calc(100vh - 240px);
-  }
-
-  /* Slack-style Task Cards */
-  .slack-task-card {
-    background: var(--bg-card);
-    border: 1px solid var(--border-color);
-    border-radius: 8px;
-    padding: 12px;
-    margin-bottom: 8px;
-    cursor: pointer;
-    transition: all 0.1s ease;
-    position: relative;
-  }
-
-  .slack-task-card:hover {
-    border-color: var(--primary);
-    box-shadow: 0 0 0 1px var(--primary);
-  }
-
-  .slack-task-card:last-child {
-    margin-bottom: 0;
-  }
-
-  .slack-card-priority-bar {
-    position: absolute;
-    left: 0;
-    top: 12px;
-    bottom: 12px;
-    width: 3px;
-    border-radius: 0 2px 2px 0;
-  }
-
-  .slack-card-priority-bar.urgent { background: var(--danger); }
-  .slack-card-priority-bar.high { background: #ff8c00; }
-  .slack-card-priority-bar.medium { background: var(--warning); }
-  .slack-card-priority-bar.low { background: var(--success); }
-
-  .slack-card-content {
-    padding-left: 8px;
-  }
-
-  .slack-card-title {
-    font-weight: 600;
-    font-size: 14px;
-    color: var(--text-primary);
-    margin-bottom: 8px;
-    line-height: 1.4;
-  }
-
-  .slack-card-title:hover {
-    color: var(--primary);
-  }
-
-  .slack-card-meta {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 6px;
-    margin-bottom: 10px;
-  }
-
-  .slack-tag {
-    display: inline-flex;
-    align-items: center;
-    gap: 4px;
-    padding: 3px 8px;
-    border-radius: 4px;
-    font-size: 11px;
-    font-weight: 500;
-  }
-
-  .slack-tag-project {
-    background: var(--primary-bg);
-    color: var(--primary);
-  }
-
-  .slack-tag-due {
-    background: var(--bg-hover);
-    color: var(--text-secondary);
-  }
-
-  .slack-tag-overdue {
-    background: var(--danger-bg);
-    color: var(--danger);
-  }
-
-  .slack-tag-completed {
-    background: var(--success-bg);
-    color: var(--success);
-  }
-
-  .slack-card-footer {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding-top: 10px;
-    border-top: 1px solid var(--border-color);
-  }
-
-  .slack-assignee {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-  }
-
-  .slack-avatar {
-    width: 24px;
-    height: 24px;
-    border-radius: 4px;
-    background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
-    color: white;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 11px;
-    font-weight: 700;
-  }
-
-  .slack-assignee-name {
-    font-size: 12px;
-    color: var(--text-secondary);
-    font-weight: 500;
-  }
-
-  .slack-priority-label {
-    font-size: 10px;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    padding: 3px 6px;
-    border-radius: 3px;
-  }
-
-  .slack-priority-label.urgent {
-    background: var(--danger-bg);
-    color: var(--danger);
-  }
-
-  .slack-priority-label.high {
-    background: var(--warning-bg);
-    color: #ff8c00;
-  }
-
-  .slack-priority-label.medium {
-    background: var(--warning-bg);
-    color: var(--warning);
-  }
-
-  .slack-priority-label.low {
-    background: var(--success-bg);
-    color: var(--success);
-  }
-
-  /* Empty State */
-  .slack-empty {
-    text-align: center;
-    padding: 32px 16px;
-    color: var(--text-secondary);
-  }
-
-  .slack-empty-icon {
-    width: 48px;
-    height: 48px;
-    background: var(--bg-hover);
-    border-radius: 8px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    margin: 0 auto 12px;
-    font-size: 20px;
-    color: var(--text-muted);
-  }
-
-  .slack-empty p {
-    margin: 0;
-    font-size: 13px;
-  }
-
-  /* Responsive */
-  @media (max-width: 1200px) {
-    .slack-column {
-      min-width: 280px;
-      max-width: 280px;
-    }
-  }
-
-  @media (max-width: 768px) {
-    .slack-header {
-      flex-direction: column;
-      gap: 12px;
-      align-items: flex-start;
-    }
-
-    .slack-header-actions {
-      width: 100%;
-      flex-wrap: wrap;
-    }
-
-    .slack-kanban {
-      padding: 12px;
-    }
-
-    .slack-column {
-      min-width: 260px;
-      max-width: 260px;
-    }
+  @media (max-width: 720px) {
+    .vk-name h1 { font-size: 22px; }
+    .vk-head, .vk-bar, .vk-filters { padding-left: 14px; padding-right: 14px; }
+    .vk-board { grid-template-columns: repeat(4, 82vw); scroll-snap-type: x mandatory; }
+    .vk-col { scroll-snap-align: start; }
   }
 </style>
 {% endblock %}
 
 {% block content %}
-<div class="slack-board-container">
-  <!-- Slack-style Header -->
-  <div class="slack-header">
-    <div class="slack-header-left">
-      <h1><i class="fas fa-th-large"></i> Task Board</h1>
-      <span class="slack-channel-info">
-        <i class="fas fa-hashtag"></i> {{ todo_tasks|length|add:in_progress_tasks|length|add:review_tasks|length|add:completed_tasks|length }} tasks
-      </span>
-    </div>
-    <div class="slack-header-actions">
-      <form method="get" style="display: inline;">
-        <select name="project" class="slack-filter-select" onchange="this.form.submit()">
-          <option value="">All Projects</option>
-          {% for project in projects %}
-          <option value="{{ project.pk }}" {% if selected_project == project.pk|slugify %}selected{% endif %}>{{ project.name }}</option>
+<div class="vk">
+  <div class="vk-top">
+    <div class="vk-crumbs">
+      <label for="vk-project">Project</label>
+      <form method="get" class="vk-switch">
+        <select id="vk-project" name="project" onchange="this.form.submit()">
+          <option value="">All projects</option>
+          {% for p in projects %}
+          <option value="{{ p.pk }}" {% if selected_project == p.pk|slugify %}selected{% endif %}>{{ p.name }}{% if p.open_task_total %} ({{ p.open_task_total }} open){% endif %}</option>
           {% endfor %}
         </select>
       </form>
-      <a href="{% url 'task_list' %}" class="slack-btn">
-        <i class="fas fa-list"></i> List View
-      </a>
-      {% if not is_team_member %}
-      <a href="{% url 'task_create' %}?next=board" class="slack-btn slack-btn-primary">
-        <i class="fas fa-plus"></i> Add Task
-      </a>
+    </div>
+    {% if project %}
+    <a class="vk-btn" href="{% url 'project_detail' project.pk %}"><i class="fas fa-arrow-up-right-from-square"></i> Open project</a>
+    {% endif %}
+  </div>
+
+  <section class="vk-panel">
+    <div class="vk-head">
+      <div class="vk-head-main">
+        <div class="vk-name">
+          {% if project %}
+          <span class="vk-logo" aria-hidden="true">{{ project_initials }}</span>
+          <h1>{{ project.name }}</h1>
+          {% else %}
+          <span class="vk-logo all" aria-hidden="true"><i class="fas fa-table-columns"></i></span>
+          <h1>All projects</h1>
+          {% endif %}
+        </div>
+        <p class="vk-sub">
+          {% if project %}{% firstof project.description|truncatechars:160 "Organise tasks, assign teammates, and follow the project from start to finish." %}{% if project.client %} · {{ project.client.name }}{% endif %}
+          {% elif is_team_member %}The tasks assigned to you, across every project.
+          {% else %}Every task across active projects. Pick a project above to focus on one.{% endif %}
+        </p>
+      </div>
+      {% if team %}
+      <div class="vk-head-side">
+        <div class="vk-team" aria-label="Team">
+          {% for m in team %}<span class="vk-av tone-{{ m.avatar_tone }}" title="{{ m.name }}">{{ m.name|slice:":2"|upper }}</span>{% endfor %}
+        </div>
+      </div>
       {% endif %}
     </div>
-  </div>
 
-  <!-- Slack-style Kanban Board -->
-  <div class="slack-kanban">
-    <!-- To Do Column -->
-    <div class="slack-column">
-      <div class="slack-column-header">
-        <div class="slack-column-title">
-          <span class="slack-status-dot todo"></span>
-          To Do
-        </div>
-        <span class="slack-column-count">{{ todo_tasks|length }}</span>
-      </div>
-      <div class="slack-column-body">
-        {% for task in todo_tasks %}
-        <div class="slack-task-card" onclick="window.location='{% url 'task_detail' task.pk %}'">
-          <div class="slack-card-priority-bar {{ task.priority }}"></div>
-          <div class="slack-card-content">
-            <div class="slack-card-title">{{ task.title }}</div>
-            <div class="slack-card-meta">
-              <span class="slack-tag slack-tag-project">
-                <i class="fas fa-folder"></i> {{ task.project.name|truncatechars:15 }}
-              </span>
-              {% if task.due_date %}
-              <span class="slack-tag {% if task.is_overdue %}slack-tag-overdue{% else %}slack-tag-due{% endif %}">
-                <i class="fas fa-calendar-alt"></i> {{ task.due_date|date:"M d" }}
-              </span>
-              {% endif %}
-              {% with cc=task.comments.count ic=task.issues.count %}
-              {% if cc or ic %}
-              <span class="slack-tag slack-tag-due" title="Comments / Issues">
-                {% if cc %}<i class="far fa-comment"></i> {{ cc }}{% endif %}
-                {% if ic %}<i class="fas fa-exclamation-triangle" style="color:#f59e0b; margin-left:.35rem;"></i> {{ ic }}{% endif %}
-              </span>
-              {% endif %}
-              {% endwith %}
-            </div>
-            <div class="slack-card-footer">
-              {% if task.assigned_to %}
-              <div class="slack-assignee">
-                <div class="slack-avatar">{{ task.assigned_to.name|slice:":2"|upper }}</div>
-                <span class="slack-assignee-name">{{ task.assigned_to.name|truncatechars:12 }}</span>
-              </div>
-              {% else %}
-              <span class="slack-assignee-name" style="color: #b4b4b4;">Unassigned</span>
-              {% endif %}
-              <span class="slack-priority-label {{ task.priority }}">{{ task.get_priority_display }}</span>
-            </div>
-          </div>
-        </div>
-        {% empty %}
-        <div class="slack-empty">
-          <div class="slack-empty-icon"><i class="fas fa-inbox"></i></div>
-          <p>No tasks to do</p>
-        </div>
-        {% endfor %}
+    <div class="vk-bar">
+      <nav class="vk-tabs" aria-label="Views">
+        <a class="vk-tab active" href="#" aria-current="page"><i class="fas fa-table-columns"></i> Kanban</a>
+        <a class="vk-tab" href="{% url 'task_list' %}{% if project %}?project={{ project.pk }}{% endif %}"><i class="fas fa-list"></i> List View</a>
+      </nav>
+      <div class="vk-actions">
+        <button type="button" class="vk-btn{% if filters_on %} on{% endif %}" id="vk-filter-btn" aria-expanded="{% if filters_on %}true{% else %}false{% endif %}" aria-controls="vk-filters">
+          <i class="fas fa-sliders"></i> Filter
+        </button>
+        {% if not is_team_member %}
+        <a class="vk-btn dark" href="{% url 'task_create' %}?next=board{% if project %}&project={{ project.pk }}{% endif %}"><i class="fas fa-plus"></i> New Task</a>
+        {% endif %}
       </div>
     </div>
 
-    <!-- In Progress Column -->
-    <div class="slack-column">
-      <div class="slack-column-header">
-        <div class="slack-column-title">
-          <span class="slack-status-dot progress"></span>
-          In Progress
-        </div>
-        <span class="slack-column-count">{{ in_progress_tasks|length }}</span>
-      </div>
-      <div class="slack-column-body">
-        {% for task in in_progress_tasks %}
-        <div class="slack-task-card" onclick="window.location='{% url 'task_detail' task.pk %}'">
-          <div class="slack-card-priority-bar {{ task.priority }}"></div>
-          <div class="slack-card-content">
-            <div class="slack-card-title">{{ task.title }}</div>
-            <div class="slack-card-meta">
-              <span class="slack-tag slack-tag-project">
-                <i class="fas fa-folder"></i> {{ task.project.name|truncatechars:15 }}
-              </span>
-              {% if task.due_date %}
-              <span class="slack-tag {% if task.is_overdue %}slack-tag-overdue{% else %}slack-tag-due{% endif %}">
-                <i class="fas fa-calendar-alt"></i> {{ task.due_date|date:"M d" }}
-              </span>
-              {% endif %}
-              {% with cc=task.comments.count ic=task.issues.count %}
-              {% if cc or ic %}
-              <span class="slack-tag slack-tag-due" title="Comments / Issues">
-                {% if cc %}<i class="far fa-comment"></i> {{ cc }}{% endif %}
-                {% if ic %}<i class="fas fa-exclamation-triangle" style="color:#f59e0b; margin-left:.35rem;"></i> {{ ic }}{% endif %}
-              </span>
-              {% endif %}
-              {% endwith %}
-            </div>
-            <div class="slack-card-footer">
-              {% if task.assigned_to %}
-              <div class="slack-assignee">
-                <div class="slack-avatar">{{ task.assigned_to.name|slice:":2"|upper }}</div>
-                <span class="slack-assignee-name">{{ task.assigned_to.name|truncatechars:12 }}</span>
-              </div>
-              {% else %}
-              <span class="slack-assignee-name" style="color: #b4b4b4;">Unassigned</span>
-              {% endif %}
-              <span class="slack-priority-label {{ task.priority }}">{{ task.get_priority_display }}</span>
-            </div>
-          </div>
-        </div>
-        {% empty %}
-        <div class="slack-empty">
-          <div class="slack-empty-icon"><i class="fas fa-play-circle"></i></div>
-          <p>No tasks in progress</p>
-        </div>
-        {% endfor %}
-      </div>
-    </div>
+    <form method="get" class="vk-filters{% if filters_on %} open{% endif %}" id="vk-filters">
+      {% if project %}<input type="hidden" name="project" value="{{ project.pk }}">{% endif %}
+      <input type="search" name="q" value="{{ search }}" placeholder="Search tasks…" aria-label="Search tasks">
+      <select name="priority" aria-label="Priority">
+        <option value="">Any priority</option>
+        {% for key, label in priority_choices %}<option value="{{ key }}" {% if priority == key %}selected{% endif %}>{{ label }}</option>{% endfor %}
+      </select>
+      {% if not is_team_member %}
+      <select name="assignee" aria-label="Assignee">
+        <option value="">Anyone</option>
+        <option value="none" {% if assignee == 'none' %}selected{% endif %}>Unassigned</option>
+        {% for m in assignees %}<option value="{{ m.pk }}" {% if assignee == m.pk|slugify %}selected{% endif %}>{{ m.name }}</option>{% endfor %}
+      </select>
+      {% endif %}
+      <button type="submit" class="vk-btn dark">Apply</button>
+      {% if filters_on %}<a class="vk-clear" href="?{% if project %}project={{ project.pk }}{% endif %}">Clear filters</a>{% endif %}
+    </form>
 
-    <!-- In Review Column -->
-    <div class="slack-column">
-      <div class="slack-column-header">
-        <div class="slack-column-title">
-          <span class="slack-status-dot review"></span>
-          In Review
+    <div class="vk-board">
+      {% for col in columns %}
+      <div class="vk-col" data-status="{{ col.key }}">
+        <div class="vk-col-head">
+          {% if col.key == 'completed' %}<span class="vk-pie completed"><i class="fas fa-check"></i></span>{% else %}<span class="vk-pie {{ col.key }}"></span>{% endif %}
+          {{ col.label }} <span class="vk-count">{{ col.tasks|length }}</span>
+          {% if not is_team_member %}
+          <a class="vk-add" href="{% url 'task_create' %}?next=board&status={{ col.key }}{% if project %}&project={{ project.pk }}{% endif %}" aria-label="Add a task to {{ col.label }}"><i class="fas fa-plus"></i></a>
+          {% endif %}
         </div>
-        <span class="slack-column-count">{{ review_tasks|length }}</span>
-      </div>
-      <div class="slack-column-body">
-        {% for task in review_tasks %}
-        <div class="slack-task-card" onclick="window.location='{% url 'task_detail' task.pk %}'">
-          <div class="slack-card-priority-bar {{ task.priority }}"></div>
-          <div class="slack-card-content">
-            <div class="slack-card-title">{{ task.title }}</div>
-            <div class="slack-card-meta">
-              <span class="slack-tag slack-tag-project">
-                <i class="fas fa-folder"></i> {{ task.project.name|truncatechars:15 }}
-              </span>
-              {% if task.due_date %}
-              <span class="slack-tag {% if task.is_overdue %}slack-tag-overdue{% else %}slack-tag-due{% endif %}">
-                <i class="fas fa-calendar-alt"></i> {{ task.due_date|date:"M d" }}
-              </span>
-              {% endif %}
-              {% with cc=task.comments.count ic=task.issues.count %}
-              {% if cc or ic %}
-              <span class="slack-tag slack-tag-due" title="Comments / Issues">
-                {% if cc %}<i class="far fa-comment"></i> {{ cc }}{% endif %}
-                {% if ic %}<i class="fas fa-exclamation-triangle" style="color:#f59e0b; margin-left:.35rem;"></i> {{ ic }}{% endif %}
-              </span>
-              {% endif %}
-              {% endwith %}
-            </div>
-            <div class="slack-card-footer">
-              {% if task.assigned_to %}
-              <div class="slack-assignee">
-                <div class="slack-avatar">{{ task.assigned_to.name|slice:":2"|upper }}</div>
-                <span class="slack-assignee-name">{{ task.assigned_to.name|truncatechars:12 }}</span>
-              </div>
-              {% else %}
-              <span class="slack-assignee-name" style="color: #b4b4b4;">Unassigned</span>
-              {% endif %}
-              <span class="slack-priority-label {{ task.priority }}">{{ task.get_priority_display }}</span>
-            </div>
-          </div>
-        </div>
-        {% empty %}
-        <div class="slack-empty">
-          <div class="slack-empty-icon"><i class="fas fa-eye"></i></div>
-          <p>No tasks in review</p>
-        </div>
-        {% endfor %}
-      </div>
-    </div>
 
-    <!-- Completed Column -->
-    <div class="slack-column">
-      <div class="slack-column-header">
-        <div class="slack-column-title">
-          <span class="slack-status-dot done"></span>
-          Completed
-        </div>
-        <span class="slack-column-count">{{ completed_tasks|length }}</span>
-      </div>
-      <div class="slack-column-body">
-        {% for task in completed_tasks %}
-        <div class="slack-task-card" onclick="window.location='{% url 'task_detail' task.pk %}'">
-          <div class="slack-card-priority-bar {{ task.priority }}"></div>
-          <div class="slack-card-content">
-            <div class="slack-card-title">{{ task.title }}</div>
-            <div class="slack-card-meta">
-              <span class="slack-tag slack-tag-project">
-                <i class="fas fa-folder"></i> {{ task.project.name|truncatechars:15 }}
-              </span>
-              {% if task.completed_date %}
-              <span class="slack-tag slack-tag-completed">
-                <i class="fas fa-check-circle"></i> {{ task.completed_date|date:"M d" }}
-              </span>
-              {% endif %}
-              {% with cc=task.comments.count ic=task.issues.count %}
-              {% if cc or ic %}
-              <span class="slack-tag slack-tag-due" title="Comments / Issues">
-                {% if cc %}<i class="far fa-comment"></i> {{ cc }}{% endif %}
-                {% if ic %}<i class="fas fa-exclamation-triangle" style="color:#f59e0b; margin-left:.35rem;"></i> {{ ic }}{% endif %}
-              </span>
-              {% endif %}
-              {% endwith %}
+        {% for task in col.tasks %}
+        <article class="vk-card" draggable="true" data-id="{{ task.pk }}" data-url="{% url 'task_status_update' task.pk %}">
+          {% if task.tag or task.priority %}
+          <div class="vk-chips">
+            {% if task.tag %}<span class="vk-chip tone-{{ task.tag_tone }}">{{ task.tag }}</span>{% endif %}
+            <span class="vk-chip pri-{{ task.priority }}">{{ task.get_priority_display }}</span>
+          </div>
+          {% endif %}
+          <div class="vk-title-row">
+            <a class="vk-title" href="{% url 'task_detail' task.pk %}">{{ task.title }}</a>
+            <a class="vk-more" href="{% url 'task_update' task.pk %}" aria-label="Edit {{ task.title }}" title="Edit"><i class="fas fa-ellipsis"></i></a>
+          </div>
+          {% if not project %}<div class="vk-proj"><i class="far fa-folder"></i> {{ task.project.name }}</div>{% endif %}
+          {% if task.description %}<p class="vk-desc">{{ task.description }}</p>{% endif %}
+
+          {% if col.key == 'completed' %}
+            <div class="vk-meta"><i class="far fa-calendar"></i> Completed {% if task.completed_date %}{{ task.completed_date|naturalday:"d/m/Y"|capfirst }}{% endif %}<i class="fas fa-circle-check vk-ok"></i></div>
+          {% else %}
+            {% with pct=task.progress_percent %}
+            <div class="vk-prog-row">
+              {% if pct %}<span>{{ pct }}% complete</span><span>{{ task.progress_left }}% left</span>
+              {% else %}<span>Progress</span><span>0%</span>{% endif %}
             </div>
-            <div class="slack-card-footer">
-              {% if task.assigned_to %}
-              <div class="slack-assignee">
-                <div class="slack-avatar">{{ task.assigned_to.name|slice:":2"|upper }}</div>
-                <span class="slack-assignee-name">{{ task.assigned_to.name|truncatechars:12 }}</span>
-              </div>
-              {% else %}
-              <span class="slack-assignee-name" style="color: #b4b4b4;">Unassigned</span>
-              {% endif %}
-              <span class="slack-priority-label {{ task.priority }}">{{ task.get_priority_display }}</span>
+            <div class="vk-track" role="progressbar" aria-valuenow="{{ pct }}" aria-valuemin="0" aria-valuemax="100" aria-label="Progress"><i style="width: {{ pct }}%"></i></div>
+            {% endwith %}
+            {% if col.key == 'review' %}
+            <div class="vk-meta{% if task.open_issue_total %} late{% endif %}">
+              <i class="fas {% if task.open_issue_total %}fa-circle-exclamation{% else %}fa-circle-notch{% endif %}"></i>
+              {% if task.open_issue_total %}{{ task.open_issue_total }} open issue{{ task.open_issue_total|pluralize }}{% else %}Waiting for review{% endif %}
+            </div>
+            {% endif %}
+            {% if task.due_date %}
+            <div class="vk-meta{% if task.is_overdue %} late{% endif %}"><i class="far fa-calendar"></i> Due: {{ task.due_date|date:"d/m/Y" }}{% if task.is_overdue %} · overdue{% endif %}</div>
+            {% endif %}
+          {% endif %}
+
+          <div class="vk-foot">
+            {% if task.assigned_to %}
+            <div class="vk-who"><span class="vk-av tone-{{ task.avatar_tone }}">{{ task.assigned_to.name|slice:":2"|upper }}</span><span>{{ task.assigned_to.name }}</span></div>
+            {% else %}
+            <div class="vk-who"><span class="vk-av unassigned"><i class="fas fa-user"></i></span><span>Unassigned</span></div>
+            {% endif %}
+            <div class="vk-stats">
+              {% if task.open_issue_total and col.key != 'review' %}<span class="warn" title="Open issues"><i class="fas fa-circle-exclamation"></i>{{ task.open_issue_total }}</span>{% endif %}
+              <span title="Attachments"><i class="fas fa-paperclip"></i>{{ task.attachment_total }}</span>
+              <span title="Comments"><i class="far fa-message"></i>{{ task.comment_total }}</span>
             </div>
           </div>
-        </div>
-        {% empty %}
-        <div class="slack-empty">
-          <div class="slack-empty-icon"><i class="fas fa-trophy"></i></div>
-          <p>No completed tasks</p>
-        </div>
+        </article>
         {% endfor %}
+        <div class="vk-empty">{% if filters_on %}No matching tasks{% else %}Drop a task here{% endif %}</div>
       </div>
+      {% endfor %}
     </div>
-  </div>
+  </section>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function () {
+  var btn = document.getElementById('vk-filter-btn');
+  var panel = document.getElementById('vk-filters');
+  if (btn && panel) btn.addEventListener('click', function () {
+    var open = panel.classList.toggle('open');
+    btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+    if (open) { var q = panel.querySelector('input[type=search]'); if (q) q.focus(); }
+  });
+
+  // Drag a card to another column to change its status.
+  var csrf = (document.cookie.match(/(?:^|; )csrftoken=([^;]+)/) || [])[1] || '';
+  var dragged = null;
+  document.querySelectorAll('.vk-card').forEach(function (card) {
+    card.addEventListener('dragstart', function (e) {
+      dragged = card; card.classList.add('dragging');
+      e.dataTransfer.effectAllowed = 'move';
+      e.dataTransfer.setData('text/plain', card.dataset.id);
+    });
+    card.addEventListener('dragend', function () { card.classList.remove('dragging'); dragged = null; });
+  });
+  function recount() {
+    document.querySelectorAll('.vk-col').forEach(function (col) {
+      col.querySelector('.vk-count').textContent = col.querySelectorAll('.vk-card').length;
+    });
+  }
+  document.querySelectorAll('.vk-col').forEach(function (col) {
+    col.addEventListener('dragover', function (e) { if (dragged) { e.preventDefault(); col.classList.add('drop'); } });
+    col.addEventListener('dragleave', function (e) { if (!col.contains(e.relatedTarget)) col.classList.remove('drop'); });
+    col.addEventListener('drop', function (e) {
+      e.preventDefault(); col.classList.remove('drop');
+      if (!dragged || dragged.closest('.vk-col') === col) return;
+      var card = dragged;
+      col.insertBefore(card, col.querySelector('.vk-empty'));
+      recount();
+      var body = new URLSearchParams({ status: col.dataset.status });
+      fetch(card.dataset.url, {
+        method: 'POST', body: body, credentials: 'same-origin',
+        headers: { 'X-CSRFToken': decodeURIComponent(csrf), 'X-Requested-With': 'XMLHttpRequest' }
+      }).finally(function () {
+        // Reload so the card picks up its new column's layout (or snaps back if the move failed).
+        window.location.reload();
+      });
+    });
+  });
+})();
+</script>
 {% endblock %}

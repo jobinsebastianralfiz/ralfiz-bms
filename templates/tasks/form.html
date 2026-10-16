@@ -32,7 +32,7 @@
               <select class="form-control" name="project" required>
                 <option value="">Select Project</option>
                 {% for project in projects %}
-                <option value="{{ project.pk }}" {% if task.project_id == project.pk %}selected{% endif %}>{{ project.name }}</option>
+                <option value="{{ project.pk }}" {% if task.project_id == project.pk or prefill_project == project.pk|slugify %}selected{% endif %}>{{ project.name }}</option>
                 {% endfor %}
               </select>
             </div>
@@ -52,7 +52,7 @@
               <label class="form-label">Status</label>
               <select class="form-control" name="status">
                 {% for key, value in status_choices %}
-                <option value="{{ key }}" {% if task.status == key %}selected{% endif %}>{{ value }}</option>
+                <option value="{{ key }}" {% if task.status == key or prefill_status == key %}selected{% endif %}>{{ value }}</option>
                 {% endfor %}
               </select>
             </div>
@@ -67,6 +67,22 @@
             <div class="col-4" style="padding: 0.5rem;">
               <label class="form-label">Due Date</label>
               <input type="date" class="form-control" name="due_date" value="{{ task.due_date|date:'Y-m-d'|default:'' }}">
+            </div>
+          </div>
+          <div class="row">
+            <div class="col-6" style="padding: 0.5rem;">
+              <label class="form-label">Label</label>
+              <input type="text" class="form-control" name="category" maxlength="60" list="task-category-options" value="{{ task.category|default:'' }}" placeholder="e.g. Website Design">
+              <datalist id="task-category-options">
+                <option value="Website Design"><option value="Frontend Developer"><option value="Backend Developer">
+                <option value="Mobile Design"><option value="Mobile App"><option value="Content"><option value="Testing">
+              </datalist>
+              <small class="text-muted">Shown as the tag on the task board.</small>
+            </div>
+            <div class="col-6" style="padding: 0.5rem;">
+              <label class="form-label">Progress: <span id="task-progress-out">{{ task.progress|default:0 }}</span>%</label>
+              <input type="range" class="form-control" name="progress" min="0" max="100" step="5" value="{{ task.progress|default:0 }}" oninput="document.getElementById('task-progress-out').textContent=this.value" style="padding: 0;">
+              <small class="text-muted">Completed tasks always show 100%.</small>
             </div>
           </div>
           <div class="row">

@@ -5735,35 +5735,108 @@ def task_list(request):
 
 @login_required
 def task_board(request):
-    """Kanban board view (filtered for team members)"""
+    """Kanban board for one project (or all), laid out like the Velora design.
+
+    Team members only ever see the tasks assigned to them.
+    """
     project_id = request.GET.get('project', '')
+    search = request.GET.get('q', '').strip()
+    priority = request.GET.get('priority', '')
+    assignee = request.GET.get('assignee', '')
 
-    tasks = Task.objects.select_related('project', 'assigned_to').all()
-
-    # Team members only see their assigned tasks
     team_member = getattr(request.user, 'team_profile', None)
+    tasks = Task.objects.select_related('project', 'assigned_to').annotate(
+        comment_total=Count('comments', filter=Q(comments__is_deleted=False), distinct=True),
+        attachment_total=Count('attachments', distinct=True),
+        open_issue_total=Count('issues', filter=Q(issues__status__in=['open', 'in_progress']), distinct=True),
+    )
     if team_member:
         tasks = tasks.filter(assigned_to=team_member)
-
-    if project_id:
-        tasks = tasks.filter(project_id=project_id)
-
-    # Filter projects for team members
-    if team_member:
         projects = Project.objects.filter(tasks__assigned_to=team_member).distinct()
     else:
         projects = Project.objects.filter(status__in=['in_progress', 'confirmed'])
+    projects = projects.annotate(
+        open_task_total=Count('tasks', filter=~Q(tasks__status='completed'), distinct=True),
+    ).order_by('name')
+
+    project = None
+    if project_id:
+        project = Project.objects.filter(pk=project_id).first() if _is_uuid(project_id) else None
+        if project is None:
+            project_id = ''
+        else:
+            tasks = tasks.filter(project=project)
+
+    # Filter options come from the unfiltered set, so they never vanish.
+    assignees = TeamMember.objects.filter(pk__in=tasks.values('assigned_to')).order_by('name')
+
+    if search:
+        tasks = tasks.filter(Q(title__icontains=search) | Q(description__icontains=search) | Q(category__icontains=search))
+    if priority in dict(Task.PRIORITY_CHOICES):
+        tasks = tasks.filter(priority=priority)
+    else:
+        priority = ''
+    if assignee == 'none':
+        tasks = tasks.filter(assigned_to__isnull=True)
+    elif assignee and _is_uuid(assignee):
+        tasks = tasks.filter(assigned_to_id=assignee)
+    else:
+        assignee = ''
+
+    tasks = list(tasks)
+    for t in tasks:
+        t.tag = t.category or (t.assigned_to.get_role_display() if t.assigned_to else '')
+        t.progress_left = 100 - t.progress_percent
+        t.tag_tone = _BOARD_TONES[sum(map(ord, t.tag)) % len(_BOARD_TONES)] if t.tag else ''
+        if t.assigned_to:
+            t.avatar_tone = _BOARD_TONES[sum(map(ord, t.assigned_to.name)) % len(_BOARD_TONES)]
+
+    columns = []
+    for key, label in Task.STATUS_CHOICES:
+        columns.append({
+            'key': key,
+            'label': label,
+            'tasks': [t for t in tasks if t.status == key],
+        })
+
+    if project:
+        team = list(project.team_members.all()[:6])
+        if not team:
+            team = list(TeamMember.objects.filter(tasks__project=project).distinct()[:6])
+    else:
+        team = list(assignees[:6])
+    for m in team:
+        m.avatar_tone = _BOARD_TONES[sum(map(ord, m.name)) % len(_BOARD_TONES)]
 
     context = {
-        'todo_tasks': tasks.filter(status='todo'),
-        'in_progress_tasks': tasks.filter(status='in_progress'),
-        'review_tasks': tasks.filter(status='review'),
-        'completed_tasks': tasks.filter(status='completed'),
+        'columns': columns,
+        'task_count': len(tasks),
+        'project': project,
+        'project_initials': ''.join(w[0] for w in (project.name.split() if project else [])[:2] if w[0].isalnum()).upper(),
         'projects': projects,
         'selected_project': project_id,
+        'team': team,
+        'assignees': assignees,
+        'priority_choices': Task.PRIORITY_CHOICES,
+        'search': search,
+        'priority': priority,
+        'assignee': assignee,
+        'filters_on': bool(search or priority or assignee),
         'is_team_member': team_member is not None,
     }
     return render(request, 'tasks/board.html', context)
+
+
+# Soft tag / avatar colours on the board, picked by a stable hash of the text.
+_BOARD_TONES = ['violet', 'green', 'orange', 'blue', 'pink', 'teal']
+
+
+def _is_uuid(value):
+    try:
+        uuid.UUID(str(value))
+    except ValueError:
+        return False
+    return True
 
 
 @login_required
@@ -5907,6 +5980,15 @@ def task_issue_update(request, pk, issue_id):
     return redirect(f"{reverse('task_detail', args=[pk])}#issues")
 
 
+def _task_board_fields(task, post):
+    """Category label and progress % from the task form."""
+    task.category = post.get('category', '').strip()[:60]
+    try:
+        task.progress = max(0, min(100, int(post.get('progress') or 0)))
+    except ValueError:
+        task.progress = 0
+
+
 @login_required
 def task_create(request):
     """Create a new task"""
@@ -5918,6 +6000,7 @@ def task_create(request):
             priority=request.POST.get('priority', 'medium'),
             notes=request.POST.get('notes', ''),
         )
+        _task_board_fields(task, request.POST)
 
         project_id = request.POST.get('project')
         if project_id:
@@ -5941,7 +6024,7 @@ def task_create(request):
         messages.success(request, 'Task created successfully.')
 
         if request.GET.get('next') == 'board':
-            return redirect('task_board')
+            return redirect(f"{reverse('task_board')}?project={task.project_id}")
         return redirect('task_list')
 
     context = {
@@ -5949,6 +6032,9 @@ def task_create(request):
         'status_choices': Task.STATUS_CHOICES,
         'priority_choices': Task.PRIORITY_CHOICES,
         'team_members': TeamMember.objects.filter(is_active=True),
+        # The board's "+" buttons open this form for one project and column.
+        'prefill_project': request.GET.get('project', ''),
+        'prefill_status': request.GET.get('status', ''),
     }
     return render(request, 'tasks/form.html', context)
 
@@ -5964,6 +6050,7 @@ def task_update(request, pk):
         task.status = request.POST.get('status', 'todo')
         task.priority = request.POST.get('priority', 'medium')
         task.notes = request.POST.get('notes', '')
+        _task_board_fields(task, request.POST)
 
         project_id = request.POST.get('project')
         task.project = Project.objects.get(pk=project_id) if project_id else None
