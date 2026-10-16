@@ -67,6 +67,7 @@ MIDDLEWARE = [
     'academy.middleware.StudentConfinementMiddleware',
     'employees.middleware.StaffConfinementMiddleware',
     'social.middleware.SocialConfinementMiddleware',
+    'client_portal.middleware.ClientConfinementMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
