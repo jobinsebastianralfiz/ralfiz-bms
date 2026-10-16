@@ -137,7 +137,7 @@
               <input type="checkbox" name="cloud_on" class="js-toggle" data-target="cloud-fields" {% if form.cloud_on %}checked{% endif %}> Monthly cloud hosting options
             </label>
             <div id="cloud-fields" class="svc-fields">
-              <select class="form-control" name="cloud_mode" style="max-width: 320px;">
+              <select class="form-control" name="cloud_mode" id="cloud_mode" style="max-width: 320px;">
                 <option value="optional" {% if form.cloud_mode != 'required' %}selected{% endif %}>Optional - client may pick a plan or none</option>
                 <option value="required" {% if form.cloud_mode == 'required' %}selected{% endif %}>Required - client must pick one plan</option>
               </select>
@@ -145,9 +145,11 @@
               <div class="text-sm text-muted">One plan per line: <code>Name | price per month | what's included</code>. Prefix the price with <code>$</code> for US dollars.</div>
               <label class="form-label mt-2" for="cloud_note">Usage / billing note</label>
               <textarea class="form-control" id="cloud_note" name="cloud_note" rows="3">{{ form.cloud_note|default:'' }}</textarea>
-              <label class="form-label mt-2" for="own_hosting">If the client uses their own hosting, it must have <span class="text-muted text-sm">(one per line, optional mode only)</span></label>
+              <div id="own-hosting-fields">
+              <label class="form-label mt-2" for="own_hosting">If the client uses their own hosting, it must have <span class="text-muted text-sm">(one per line)</span></label>
               <textarea class="form-control" id="own_hosting" name="own_hosting" rows="5">{{ form.own_hosting|default:'' }}</textarea>
               <div class="text-sm text-muted">Shown to the client if they skip your plans; they must confirm it before signing. Their hosting not meeting it is their risk, and fixing it is billed as a change request. Choose <strong>Required</strong> above to make them take your hosting.</div>
+              </div>
               {% if errors.cloud %}<div class="text-danger text-sm">{{ errors.cloud }}</div>{% endif %}
             </div>
           </div>
@@ -377,6 +379,11 @@ document.querySelectorAll('.js-toggle').forEach(function (box) {
     document.getElementById('content-price').style.display = inFee ? 'none' : '';
     document.getElementById('content-price-hint').style.display = inFee ? 'none' : '';
   }
+  mode.addEventListener('change', sync); sync();
+})();
+(function () {  // own-hosting requirements only matter when the client may skip our plans
+  var mode = document.getElementById('cloud_mode'), box = document.getElementById('own-hosting-fields');
+  function sync() { box.style.display = mode.value === 'required' ? 'none' : ''; }
   mode.addEventListener('change', sync); sync();
 })();
 (function () {
