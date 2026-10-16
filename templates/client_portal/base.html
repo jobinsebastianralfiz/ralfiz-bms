@@ -12,6 +12,7 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
   <link rel="stylesheet" href="{% static 'css/styles.css' %}">
   <link rel="stylesheet" href="{% static 'css/client_portal.css' %}">
+  <link rel="stylesheet" href="{% static 'css/portal-velora.css' %}?v=1">
   {% block extra_css %}{% endblock %}
 </head>
 <body>
@@ -24,7 +25,7 @@
         </button>
         <a href="{% url 'client_portal:portal_dashboard' %}" class="portal-nav-brand">
           <div class="portal-nav-brand-icon">R</div>
-          <div class="portal-nav-brand-text">Client<span>Portal</span></div>
+          <div class="portal-nav-brand-text">{{ company_name|default:"Ralfiz Technologies" }} <span>Client Portal</span></div>
         </a>
       </div>
 

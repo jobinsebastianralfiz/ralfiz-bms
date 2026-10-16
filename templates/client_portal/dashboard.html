@@ -4,10 +4,12 @@
 
 {% block content %}
 <!-- Welcome Header -->
-<div style="background: linear-gradient(135deg, var(--primary) 0%, #0f766e 100%); border-radius: var(--border-radius-lg); padding: 1.75rem 2rem; margin-bottom: 1.5rem; color: white; position: relative; overflow: hidden;">
-  <div style="position: absolute; top: -40%; right: -5%; width: 250px; height: 250px; background: rgba(255,255,255,0.1); border-radius: 50%;"></div>
-  <h1 style="font-size: 1.5rem; font-weight: 700; margin: 0 0 0.375rem;">Welcome back, {{ client.name }}</h1>
-  <p style="margin: 0; opacity: 0.9; font-size: 0.9375rem;">{% if client.company_name %}{{ client.company_name }} &mdash; {% endif %}Here's an overview of your projects</p>
+<div class="pv-hero">
+  <span class="pv-hero-mark" aria-hidden="true">{{ client.name|make_list|first|upper }}</span>
+  <div>
+    <h1>Welcome back, {{ client.name }}</h1>
+    <p>{% if client.company_name %}{{ client.company_name }} &middot; {% endif %}Here's an overview of your projects</p>
+  </div>
 </div>
 
 <!-- Stats -->
