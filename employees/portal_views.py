@@ -31,7 +31,7 @@ from .models import (
 # changes. Whitenoise serves these unhashed, and the service worker is
 # cache-first for static assets, so an unversioned URL is served from the old
 # cache forever -- which is exactly how the app icon got stuck.
-ASSET_V = '10'
+ASSET_V = '11'
 
 MONTHS = [
     '', 'January', 'February', 'March', 'April', 'May', 'June',
@@ -79,6 +79,38 @@ def _unread_count(employee):
     return Notification.objects.filter(
         Q(employee=employee) | Q(employee__isnull=True), is_read=False
     ).count()
+
+
+def board_member_for(employee):
+    """The delivery TeamMember that project-board tasks are assigned to.
+
+    Staff logins are Employees; board tasks point at TeamMembers, and the two
+    are separate records. Linking the login to the TeamMember would let it out
+    of the staff portal, so match instead: same login, else same email, else
+    the one TeamMember with exactly the same name.
+    """
+    from core.models import TeamMember
+    active = TeamMember.objects.filter(is_active=True)
+    member = active.filter(user=employee.user).first()
+    email = (employee.user.email or '').strip()
+    if member is None and email:
+        member = active.filter(email__iexact=email).first()
+    if member is None:
+        by_name = list(active.filter(name__iexact=employee.full_name.strip())[:2])
+        if len(by_name) == 1:
+            member = by_name[0]
+    return member
+
+
+def board_tasks_for(employee, open_only=True):
+    from core.models import Task
+    member = board_member_for(employee)
+    if member is None:
+        return Task.objects.none()
+    tasks = Task.objects.filter(assigned_to=member).select_related('project')
+    if open_only:
+        tasks = tasks.exclude(status='completed')
+    return tasks
 
 
 def _base_context(request, active_nav=''):
@@ -140,6 +172,10 @@ def dashboard(request):
                  .exclude(status__in=['completed', 'cancelled'])
                  .order_by('due_date', '-created_at')[:5])
     pending_leave = LeaveRequest.objects.filter(employee=employee, status='pending').count()
+    board_tasks = list(board_tasks_for(employee).order_by('due_date', '-created_at')[:6])
+    open_board_count = board_tasks_for(employee).count()
+    open_work_count = (WorkAssignment.objects.filter(assigned_to=employee)
+                       .exclude(status__in=['completed', 'cancelled']).count())
 
     upcoming_classes = [c for c in ScheduledClass.objects.filter(
         Q(interns=employee) | Q(interns__isnull=True),
@@ -154,6 +190,10 @@ def dashboard(request):
         'today': today,
         'record': record,
         'open_work': open_work,
+        'board_tasks': board_tasks,
+        'open_task_total': open_work_count + open_board_count,
+        'greeting': ('Good morning' if timezone.localtime().hour < 12
+                     else 'Good afternoon' if timezone.localtime().hour < 17 else 'Good evening'),
         'pending_leave': pending_leave,
         'upcoming_classes': upcoming_classes,
         'days_present': month_attendance.exclude(status='absent').count(),
@@ -306,13 +346,49 @@ def work_list(request):
     if status_filter:
         assignments = assignments.filter(status=status_filter)
 
+    from core.models import Task
+    board_tasks = board_tasks_for(employee, open_only=False)
+    board_filter = {'assigned': 'todo', 'in_progress': 'in_progress', 'completed': 'completed'}.get(status_filter)
+    if status_filter and board_filter:
+        board_tasks = board_tasks.filter(status=board_filter)
+    elif status_filter:
+        board_tasks = board_tasks.none()
+    else:
+        board_tasks = board_tasks.exclude(status='completed')
+
     ctx = _base_context(request, 'work')
     ctx.update({
         'assignments': assignments,
+        'board_tasks': board_tasks.order_by('due_date', '-created_at'),
+        'task_status_choices': Task.STATUS_CHOICES,
         'status_filter': status_filter,
         'status_choices': WorkAssignment.STATUS_CHOICES,
     })
     return render(request, 'staff/work_list.html', ctx)
+
+
+@staff_required
+def board_task_update(request, pk):
+    """Move one of your own project-board tasks along, or set its progress."""
+    from core.models import Task, TaskActivity
+    task = get_object_or_404(board_tasks_for(request.employee, open_only=False), pk=pk)
+    if request.method == 'POST':
+        old_status = task.status
+        status = request.POST.get('status', task.status)
+        if status in dict(Task.STATUS_CHOICES):
+            task.status = status
+            task.completed_date = timezone.localdate() if status == 'completed' else None
+        try:
+            task.progress = max(0, min(100, int(request.POST.get('progress', task.progress))))
+        except (TypeError, ValueError):
+            pass
+        task.save()
+        if old_status != task.status:
+            TaskActivity.objects.create(task=task, actor=request.user, verb='status_changed',
+                                        from_value=old_status, to_value=task.status, is_visible_to_client=True)
+        messages.success(request, f'"{task.title}" updated.')
+    from core.security import safe_next
+    return redirect(safe_next(request, request.POST.get('back'), 'staff:work_list'))
 
 
 @staff_required

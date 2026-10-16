@@ -12,6 +12,35 @@
   {% endfor %}
 </div>
 
+{% if board_tasks %}
+<section class="sv-card">
+  <header class="sv-card-head"><h2><span class="sv-head-ico"><i class="fas fa-table-columns"></i></span>Project tasks</h2></header>
+  {% for t in board_tasks %}
+  <div class="sv-row">
+    <div class="sv-chips">{% if t.category %}<span class="sv-chip">{{ t.category }}</span>{% endif %}<span class="sv-chip pri-{{ t.priority }}">{{ t.get_priority_display }}</span></div>
+    <div class="sv-row-top"><span class="sv-row-title">{{ t.title }}</span>
+      <span class="sf-badge {% if t.status == 'completed' %}sf-badge-ok{% elif t.status == 'in_progress' %}sf-badge-info{% elif t.status == 'review' %}sf-badge-warn{% else %}sf-badge-muted{% endif %}">{{ t.get_status_display }}</span></div>
+    {% if t.description %}<div class="sv-meta" style="margin-top:4px;">{{ t.description|truncatechars:160 }}</div>{% endif %}
+    <div class="sv-meta">
+      <span><i class="fas fa-folder"></i> {{ t.project.name }}</span>
+      {% if t.due_date %}<span class="{% if t.is_overdue %}late{% endif %}"><i class="far fa-calendar"></i> Due {{ t.due_date|date:"d M" }}{% if t.is_overdue %} · overdue{% endif %}</span>{% endif %}
+    </div>
+    {% if t.progress %}<div class="sv-bar"><i style="width: {{ t.progress_percent }}%"></i></div>{% endif %}
+    <form method="post" action="{% url 'staff:board_task_update' t.pk %}" class="sv-move">
+      {% csrf_token %}
+      <input type="hidden" name="back" value="{{ request.get_full_path }}">
+      <select name="status" aria-label="Status of {{ t.title }}">
+        {% for value, label in task_status_choices %}<option value="{{ value }}" {% if t.status == value %}selected{% endif %}>{{ label }}</option>{% endfor %}
+      </select>
+      <input type="number" name="progress" min="0" max="100" step="5" value="{{ t.progress }}" aria-label="Progress %" title="Progress %">
+      <button type="submit">Save</button>
+    </form>
+  </div>
+  {% endfor %}
+</section>
+{% if assignments %}<div class="sf-section-title">Work assignments</div>{% endif %}
+{% endif %}
+
 {% if assignments %}
   <div class="sf-list">
     {% for w in assignments %}
@@ -30,10 +59,10 @@
       </a>
     {% endfor %}
   </div>
-{% else %}
+{% elif not board_tasks %}
   <div class="sf-empty">
     <i class="fas fa-list-check"></i>
-    No work assignments{% if status_filter %} with this status{% endif %}.
+    No work{% if status_filter %} with this status{% endif %} right now.
   </div>
 {% endif %}
 

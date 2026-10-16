@@ -26,6 +26,7 @@ urlpatterns = [
     # Work assignments
     path('work/', v.work_list, name='work_list'),
     path('work/<uuid:pk>/', v.work_detail, name='work_detail'),
+    path('tasks/<uuid:pk>/update/', v.board_task_update, name='board_task_update'),
 
     # Classes & assessments
     path('classes/', v.class_list, name='class_list'),

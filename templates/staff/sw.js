@@ -9,6 +9,7 @@ const CACHE = 'ralfiz-staff-v{{ asset_v }}';
 
 const SHELL = [
   '{% static "css/staff.css" %}?v={{ asset_v }}',
+  '{% static "css/staff-velora.css" %}?v={{ asset_v }}',
   '{% static "js/staff.js" %}?v={{ asset_v }}',
   '{% static "staff/icon-192.png" %}?v={{ asset_v }}',
   '/staff/offline/'

@@ -5,122 +5,118 @@
 
 {% block content %}
 
-{# --- Today's attendance --- #}
-<a href="{% url 'staff:attendance' %}" class="sf-card" style="display:block">
-  <div class="sf-row">
+<section class="sv-hero">
+  <div class="sv-eyebrow">{{ greeting|upper }} · {{ today|date:"D, d M" }}</div>
+  <h1>Welcome back, <span class="sv-grad">{{ employee.user.first_name|default:employee.user.username }}</span> <span aria-hidden="true">👋</span></h1>
+  <p>{% if employee.designation %}{{ employee.designation }} · {% endif %}Here's your day: attendance, tasks and updates.</p>
+  <svg class="sv-hero-art" viewBox="0 0 140 110" fill="none" aria-hidden="true">
+    <rect x="34" y="14" width="96" height="64" rx="7" fill="#2A1F5C" transform="rotate(-5 82 46)"/>
+    <rect x="40" y="19" width="84" height="54" rx="4" fill="#EEEAFD" transform="rotate(-5 82 46)"/>
+    <g transform="rotate(-5 82 46)"><rect x="76" y="50" width="6" height="12" rx="2" fill="#A78BFA"/><rect x="86" y="44" width="6" height="18" rx="2" fill="#8B5CF6"/><rect x="96" y="38" width="6" height="24" rx="2" fill="#6D3DF2"/><rect x="48" y="28" width="22" height="16" rx="3" fill="#C9BCF8"/></g>
+    <g fill="#3DAA5C"><ellipse cx="18" cy="62" rx="5" ry="16" transform="rotate(-24 18 62)"/><ellipse cx="28" cy="58" rx="5" ry="18" transform="rotate(6 28 58)"/><ellipse cx="38" cy="64" rx="5" ry="15" transform="rotate(30 38 64)"/></g>
+    <path d="M14 76h30l-4 26H18z" fill="#fff"/>
+  </svg>
+</section>
+
+<section class="sv-stats" aria-label="Summary">
+  <a class="sv-stat" href="{% url 'staff:attendance_history' %}">
+    <span class="sv-ico green"><i class="fas fa-calendar-check"></i></span>
+    <span class="sv-stat-body"><span class="sv-stat-lbl">Days present</span><span class="sv-stat-val">{{ days_present }}</span>
+      {% if record %}<span class="sv-pill green">{{ record.get_status_display }} today</span>{% else %}<span class="sv-pill orange">Not in yet</span>{% endif %}</span>
+  </a>
+  <a class="sv-stat" href="{% url 'staff:work_list' %}">
+    <span class="sv-ico violet"><i class="fas fa-list-check"></i></span>
+    <span class="sv-stat-body"><span class="sv-stat-lbl">Open tasks</span><span class="sv-stat-val">{{ open_task_total }}</span>
+      {% if open_task_total %}<span class="sv-pill orange">To work on</span>{% else %}<span class="sv-pill green">All clear</span>{% endif %}</span>
+  </a>
+  <a class="sv-stat" href="{% url 'staff:daily_report' %}">
+    <span class="sv-ico blue"><i class="fas fa-pen-to-square"></i></span>
+    <span class="sv-stat-body"><span class="sv-stat-lbl">Daily update</span><span class="sv-stat-val">{% if todays_report %}Done{% else %}Due{% endif %}</span>
+      {% if todays_report %}<span class="sv-pill green">Sent today</span>{% else %}<span class="sv-pill red">Write it</span>{% endif %}</span>
+  </a>
+  <a class="sv-stat" href="{% url 'staff:leave' %}">
+    <span class="sv-ico orange"><i class="fas fa-plane-departure"></i></span>
+    <span class="sv-stat-body"><span class="sv-stat-lbl">Leave</span><span class="sv-stat-val">{{ pending_leave }}</span>
+      {% if pending_leave %}<span class="sv-pill orange">Waiting</span>{% else %}<span class="sv-pill grey">None</span>{% endif %}</span>
+  </a>
+</section>
+
+<section class="sv-card">
+  <a href="{% url 'staff:attendance' %}" class="sv-action">
+    <span class="sv-ico green"><i class="fas fa-fingerprint"></i></span>
     <div>
-      <div class="sf-dim" style="margin-bottom:4px">TODAY · {{ today|date:"D, d M" }}</div>
-      {% if record and record.check_out %}
-        <div class="sf-card-title">Checked out</div>
-        <div class="sf-muted">{{ record.check_in|time:"h:i A" }} – {{ record.check_out|time:"h:i A" }} · {{ record.working_hours }}h</div>
-      {% elif record %}
-        <div class="sf-card-title">Checked in</div>
-        <div class="sf-muted">Since {{ record.check_in|time:"h:i A" }}</div>
-      {% else %}
-        <div class="sf-card-title">Not checked in</div>
-        <div class="sf-muted">Tap to mark your attendance</div>
-      {% endif %}
+      {% if record and record.check_out %}<strong>Checked out</strong><span class="sub">{{ record.check_in|time:"h:i A" }} – {{ record.check_out|time:"h:i A" }} · {{ record.working_hours }}h</span>
+      {% elif record %}<strong>Checked in</strong><span class="sub">Since {{ record.check_in|time:"h:i A" }}</span>
+      {% else %}<strong>Not checked in</strong><span class="sub">Tap to mark your attendance</span>{% endif %}
     </div>
-    <span class="sf-badge {% if record and record.check_out %}sf-badge-info{% elif record %}sf-badge-ok{% else %}sf-badge-muted{% endif %}">
-      {% if record %}{{ record.get_status_display }}{% else %}Pending{% endif %}
-    </span>
-  </div>
-</a>
-
-{# --- Today's update --- #}
-<a href="{% url 'staff:daily_report' %}" class="sf-card" style="display:block">
-  <div class="sf-row">
+    <span class="sf-badge {% if record and record.check_out %}sf-badge-info{% elif record %}sf-badge-ok{% else %}sf-badge-muted{% endif %}">{% if record %}{{ record.get_status_display }}{% else %}Pending{% endif %}</span>
+  </a>
+  <a href="{% url 'staff:daily_report' %}" class="sv-action">
+    <span class="sv-ico blue"><i class="fas fa-pen-to-square"></i></span>
     <div>
-      <div class="sf-dim" style="margin-bottom:4px">DAILY UPDATE</div>
-      {% if todays_report %}
-        <div class="sf-card-title">Today's update is in</div>
-        <div class="sf-muted">{{ todays_report.work_done|truncatechars:70 }}</div>
-      {% else %}
-        <div class="sf-card-title">Not written yet</div>
-        <div class="sf-muted">What did you work on and learn today?</div>
-      {% endif %}
+      {% if todays_report %}<strong>Today's update is in</strong><span class="sub">{{ todays_report.work_done|truncatechars:70 }}</span>
+      {% else %}<strong>Not written yet</strong><span class="sub">Daily update · what did you work on and learn today?</span>{% endif %}
     </div>
-    <span class="sf-badge {% if todays_report %}sf-badge-ok{% else %}sf-badge-warn{% endif %}">
-      {% if todays_report %}Done{% else %}Due{% endif %}
-    </span>
-  </div>
-</a>
+    <span class="sf-badge {% if todays_report %}sf-badge-ok{% else %}sf-badge-warn{% endif %}">{% if todays_report %}Done{% else %}Due{% endif %}</span>
+  </a>
+</section>
 
-{# --- Quick stats --- #}
-<div class="sf-stats">
-  <div class="sf-stat">
-    <div class="sf-stat-val">{{ days_present }}</div>
-    <div class="sf-stat-lbl">Present</div>
+<section class="sv-card">
+  <header class="sv-card-head"><h2><span class="sv-head-ico"><i class="fas fa-table-columns"></i></span>Your project tasks</h2><a href="{% url 'staff:work_list' %}">View all</a></header>
+  {% for t in board_tasks %}
+  <div class="sv-row">
+    <div class="sv-chips">{% if t.category %}<span class="sv-chip">{{ t.category }}</span>{% endif %}<span class="sv-chip pri-{{ t.priority }}">{{ t.get_priority_display }}</span></div>
+    <div class="sv-row-top"><span class="sv-row-title">{{ t.title }}</span>
+      <span class="sf-badge {% if t.status == 'in_progress' %}sf-badge-info{% elif t.status == 'review' %}sf-badge-warn{% else %}sf-badge-muted{% endif %}">{{ t.get_status_display }}</span></div>
+    <div class="sv-meta">
+      <span><i class="fas fa-folder"></i> {{ t.project.name }}</span>
+      {% if t.due_date %}<span class="{% if t.is_overdue %}late{% endif %}"><i class="far fa-calendar"></i> Due {{ t.due_date|date:"d M" }}{% if t.is_overdue %} · overdue{% endif %}</span>{% endif %}
+    </div>
+    {% if t.progress %}<div class="sv-bar"><i style="width: {{ t.progress }}%"></i></div>{% endif %}
   </div>
-  <div class="sf-stat">
-    <div class="sf-stat-val">{{ open_work|length }}</div>
-    <div class="sf-stat-lbl">Open tasks</div>
-  </div>
-  <div class="sf-stat">
-    <div class="sf-stat-val">{{ pending_leave }}</div>
-    <div class="sf-stat-lbl">Leave</div>
-  </div>
-</div>
+  {% empty %}
+  <p class="sv-empty">No project tasks assigned to you yet.</p>
+  {% endfor %}
+</section>
 
-{# --- Work --- #}
 {% if open_work %}
-  <div class="sf-section-title">Your work</div>
-  <div class="sf-list">
-    {% for w in open_work %}
-      <a href="{% url 'staff:work_detail' w.pk %}" class="sf-item">
-        <div class="sf-item-head">
-          <span class="sf-item-title">{{ w.title }}</span>
-          <span class="sf-badge {% if w.is_overdue %}sf-badge-danger{% elif w.status == 'in_progress' %}sf-badge-info{% else %}sf-badge-muted{% endif %}">
-            {% if w.is_overdue %}Overdue{% else %}{{ w.get_status_display }}{% endif %}
-          </span>
-        </div>
-        <div class="sf-item-meta">
-          {% if w.due_date %}<span><i class="fas fa-clock"></i> Due {{ w.due_date|date:"d M" }}</span>{% endif %}
-          {% if w.project %}<span><i class="fas fa-folder"></i> {{ w.project.name }}</span>{% endif %}
-        </div>
-      </a>
-    {% endfor %}
-  </div>
+<section class="sv-card">
+  <header class="sv-card-head"><h2><span class="sv-head-ico"><i class="fas fa-clipboard-list"></i></span>Work assignments</h2><a href="{% url 'staff:work_list' %}">View all</a></header>
+  {% for w in open_work %}
+  <a href="{% url 'staff:work_detail' w.pk %}" class="sv-row">
+    <div class="sv-row-top"><span class="sv-row-title">{{ w.title }}</span>
+      <span class="sf-badge {% if w.is_overdue %}sf-badge-danger{% elif w.status == 'in_progress' %}sf-badge-info{% else %}sf-badge-muted{% endif %}">{% if w.is_overdue %}Overdue{% else %}{{ w.get_status_display }}{% endif %}</span></div>
+    <div class="sv-meta">
+      {% if w.due_date %}<span><i class="far fa-calendar"></i> Due {{ w.due_date|date:"d M" }}</span>{% endif %}
+      {% if w.project %}<span><i class="fas fa-folder"></i> {{ w.project.name }}</span>{% endif %}
+    </div>
+  </a>
+  {% endfor %}
+</section>
 {% endif %}
 
-{# --- Classes --- #}
 {% if is_intern and upcoming_classes %}
-  <div class="sf-section-title">Upcoming classes</div>
-  <div class="sf-list">
-    {% for c in upcoming_classes %}
-      <a href="{% url 'staff:class_detail' c.pk %}" class="sf-item">
-        <div class="sf-item-head">
-          <span class="sf-item-title">{{ c.title }}</span>
-          <span class="sf-badge">{{ c.date|date:"d M" }}</span>
-        </div>
-        <div class="sf-item-meta">
-          <span><i class="fas fa-clock"></i> {{ c.start_time|time:"h:i A" }}</span>
-          {% if c.location %}<span><i class="fas fa-location-dot"></i> {{ c.location }}</span>{% endif %}
-        </div>
-      </a>
-    {% endfor %}
-  </div>
+<section class="sv-card">
+  <header class="sv-card-head"><h2><span class="sv-head-ico"><i class="fas fa-chalkboard-user"></i></span>Upcoming classes</h2><a href="{% url 'staff:class_list' %}">View all</a></header>
+  {% for c in upcoming_classes %}
+  <a href="{% url 'staff:class_detail' c.pk %}" class="sv-row">
+    <div class="sv-row-top"><span class="sv-row-title">{{ c.title }}</span><span class="sf-badge">{{ c.date|date:"d M" }}</span></div>
+    <div class="sv-meta"><span><i class="fas fa-clock"></i> {{ c.start_time|time:"h:i A" }}</span>{% if c.location %}<span><i class="fas fa-location-dot"></i> {{ c.location }}</span>{% endif %}</div>
+  </a>
+  {% endfor %}
+</section>
 {% endif %}
 
-{# --- Notifications --- #}
 {% if recent_notifications %}
-  <div class="sf-section-title">Recent</div>
-  <div class="sf-list">
-    {% for n in recent_notifications %}
-      <div class="sf-item {% if not n.is_read %}sf-unread{% endif %}">
-        <div class="sf-item-title">{{ n.title }}</div>
-        <div class="sf-muted" style="margin-top:3px">{{ n.body|truncatechars:110 }}</div>
-        <div class="sf-item-meta"><span>{{ n.created_at|date:"d M, h:i A" }}</span></div>
-      </div>
-    {% endfor %}
+<section class="sv-card">
+  <header class="sv-card-head"><h2><span class="sv-head-ico"><i class="fas fa-wave-square"></i></span>Recent activity</h2><a href="{% url 'staff:notification_list' %}">View all</a></header>
+  {% for n in recent_notifications %}
+  <div class="sv-row{% if not n.is_read %} sf-unread{% endif %}">
+    <div class="sv-row-top"><span class="sv-row-title">{{ n.title }}</span><span class="sv-meta" style="margin:0;white-space:nowrap;">{{ n.created_at|date:"d M" }}</span></div>
+    <div class="sv-meta" style="margin-top:3px;">{{ n.body|truncatechars:110 }}</div>
   </div>
-{% endif %}
-
-{% if not open_work and not upcoming_classes and not recent_notifications %}
-  <div class="sf-empty">
-    <i class="fas fa-mug-hot"></i>
-    Nothing needs your attention right now.
-  </div>
+  {% endfor %}
+</section>
 {% endif %}
 
 {% endblock %}
