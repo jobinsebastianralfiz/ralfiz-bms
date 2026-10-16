@@ -3,68 +3,131 @@
 {% block title %}Work{% endblock %}
 {% block heading %}Work{% endblock %}
 
-{% block content %}
+{% block page_hero %}
+{% include 'staff/_hero.html' with title='Work' subtitle='Manage and track your project tasks and work assignments.' tagline='Plan · Execute · Deliver' art='check' %}
+{% endblock %}
 
-<div class="sf-chips">
+{% block content %}
+<div class="sf-chips sv-chip-row">
   <a href="{% url 'staff:work_list' %}" class="sf-chip {% if not status_filter %}active{% endif %}">All</a>
   {% for value, label in status_choices %}
     <a href="?status={{ value }}" class="sf-chip {% if status_filter == value %}active{% endif %}">{{ label }}</a>
   {% endfor %}
 </div>
 
-{% if board_tasks %}
-<section class="sv-card">
-  <header class="sv-card-head"><h2><span class="sv-head-ico"><i class="fas fa-table-columns"></i></span>Project tasks</h2></header>
-  {% for t in board_tasks %}
-  <div class="sv-row">
-    <div class="sv-chips">{% if t.category %}<span class="sv-chip">{{ t.category }}</span>{% endif %}<span class="sv-chip pri-{{ t.priority }}">{{ t.get_priority_display }}</span></div>
-    <div class="sv-row-top"><a class="sv-row-title" href="{% url 'staff:board_task_detail' t.pk %}" style="color:inherit;text-decoration:none;">{{ t.title }} <i class="fas fa-chevron-right" style="font-size:11px;color:var(--sf-text-3);"></i></a>
-      <span class="sf-badge {% if t.status == 'completed' %}sf-badge-ok{% elif t.status == 'in_progress' %}sf-badge-info{% elif t.status == 'review' %}sf-badge-warn{% else %}sf-badge-muted{% endif %}">{{ t.get_status_display }}</span></div>
-    {% if t.description %}<div class="sv-meta" style="margin-top:4px;">{{ t.description|truncatechars:160 }}</div>{% endif %}
-    <div class="sv-meta">
-      <span><i class="fas fa-folder"></i> {{ t.project.name }}</span>
-      {% if t.due_date %}<span class="{% if t.is_overdue %}late{% endif %}"><i class="far fa-calendar"></i> Due {{ t.due_date|date:"d M" }}{% if t.is_overdue %} · overdue{% endif %}</span>{% endif %}
-      {% with n=t.attachments.count %}{% if n %}<span><i class="fas fa-paperclip"></i> {{ n }} file{{ n|pluralize }}</span>{% endif %}{% endwith %}
-    </div>
-    {% if t.progress %}<div class="sv-bar"><i style="width: {{ t.progress_percent }}%"></i></div>{% endif %}
-    <form method="post" action="{% url 'staff:board_task_update' t.pk %}" class="sv-move">
-      {% csrf_token %}
-      <input type="hidden" name="back" value="{{ request.get_full_path }}">
-      <select name="status" aria-label="Status of {{ t.title }}">
-        {% for value, label in task_status_choices %}<option value="{{ value }}" {% if t.status == value %}selected{% endif %}>{{ label }}</option>{% endfor %}
-      </select>
-      <input type="number" name="progress" min="0" max="100" step="5" value="{{ t.progress }}" aria-label="Progress %" title="Progress %">
-      <button type="submit">Save</button>
-    </form>
-  </div>
-  {% endfor %}
+<section class="sv-stats five" aria-label="Work summary">
+  <div class="sv-stat"><span class="sv-ico violet"><i class="fas fa-list-check"></i></span><span class="sv-stat-body"><span class="sv-stat-lbl">Total Tasks</span><span class="sv-stat-val">{{ counts.total }}</span><span class="sv-pill green">{{ counts.new_week }} new this week</span></span></div>
+  <div class="sv-stat"><span class="sv-ico blue"><i class="far fa-clock"></i></span><span class="sv-stat-body"><span class="sv-stat-lbl">In Progress</span><span class="sv-stat-val">{{ counts.in_progress }}</span><span class="sv-pill blue">{{ counts.in_progress_pct }}%</span></span></div>
+  <div class="sv-stat"><span class="sv-ico orange"><i class="far fa-circle-pause"></i></span><span class="sv-stat-body"><span class="sv-stat-lbl">On Hold</span><span class="sv-stat-val">{{ counts.on_hold }}</span><span class="sv-pill orange">{{ counts.on_hold_pct }}%</span></span></div>
+  <div class="sv-stat"><span class="sv-ico green"><i class="far fa-circle-check"></i></span><span class="sv-stat-body"><span class="sv-stat-lbl">Completed</span><span class="sv-stat-val">{{ counts.completed }}</span><span class="sv-pill green">{{ counts.completed_pct }}%</span></span></div>
+  <div class="sv-stat"><span class="sv-ico red"><i class="fas fa-ban"></i></span><span class="sv-stat-body"><span class="sv-stat-lbl">Cancelled</span><span class="sv-stat-val">{{ counts.cancelled }}</span><span class="sv-pill red">{{ counts.cancelled_pct }}%</span></span></div>
 </section>
-{% if assignments %}<div class="sf-section-title">Work assignments</div>{% endif %}
-{% endif %}
 
-{% if assignments %}
-  <div class="sf-list">
+{% with total=work_total %}
+<section class="sv-card" id="sv-work">
+  <header class="sv-card-head sv-table-head">
+    <h2><span class="sv-head-ico"><i class="fas fa-list-check"></i></span>Project Tasks ({{ total }})</h2>
+    <div class="sv-tools">
+      <label class="sv-find"><i class="fas fa-magnifying-glass" aria-hidden="true"></i><input type="search" id="sv-find" placeholder="Search tasks…" aria-label="Search tasks"></label>
+      <select id="sv-sort" aria-label="Sort">
+        <option value="due">Sort: due date</option>
+        <option value="priority">Sort: priority</option>
+        <option value="title">Sort: title</option>
+      </select>
+      <div class="sv-view" role="group" aria-label="View">
+        <button type="button" data-view="list" class="on" aria-label="List view"><i class="fas fa-list"></i></button>
+        <button type="button" data-view="grid" aria-label="Grid view"><i class="fas fa-table-cells-large"></i></button>
+      </div>
+    </div>
+  </header>
+
+  {% if total %}
+  <div class="sv-table" id="sv-rows">
+    <div class="sv-tr sv-th" aria-hidden="true"><span>Task</span><span>Project</span><span>Due Date</span><span>Files</span><span>Status</span><span>Priority</span><span></span></div>
+    {% for t in board_tasks %}
+    <div class="sv-tr" data-title="{{ t.title|lower }} {{ t.description|lower|truncatechars:200 }} {{ t.project.name|lower }}" data-due="{{ t.due_date|date:'Y-m-d'|default:'9999-12-31' }}" data-pri="{% if t.priority == 'urgent' %}0{% elif t.priority == 'high' %}1{% elif t.priority == 'medium' %}2{% else %}3{% endif %}">
+      <div class="sv-td-task">
+        <a href="{% url 'staff:board_task_detail' t.pk %}" class="sv-row-title">{{ t.title }}</a>
+        {% if t.description %}<p>{{ t.description|truncatechars:150 }}</p>{% endif %}
+        <div class="sv-chips">{% if t.category %}<span class="sv-chip">{{ t.category }}</span>{% endif %}<span class="sv-chip pri-{{ t.priority }}">{{ t.get_priority_display }}</span></div>
+      </div>
+      <span class="sv-td" data-label="Project"><i class="far fa-folder"></i> {{ t.project.name }}</span>
+      <span class="sv-td{% if t.is_overdue %} late{% endif %}" data-label="Due"><i class="far fa-calendar"></i> {{ t.due_date|date:"M d, Y"|default:"—" }}</span>
+      {% with n=t.attachments.count %}<span class="sv-td" data-label="Files"><i class="fas fa-paperclip"></i> {{ n }} file{{ n|pluralize }}</span>{% endwith %}
+      <span class="sv-td" data-label="Status"><span class="sv-status s-{{ t.status }}">{{ t.get_status_display }}</span></span>
+      <span class="sv-td" data-label="Priority"><span class="sv-prio p-{{ t.priority }}"><i class="fas fa-arrow-up"></i> {{ t.get_priority_display }}</span></span>
+      <a class="sv-more" href="{% url 'staff:board_task_detail' t.pk %}" aria-label="Open {{ t.title }}"><i class="fas fa-ellipsis"></i></a>
+    </div>
+    {% endfor %}
     {% for w in assignments %}
-      <a href="{% url 'staff:work_detail' w.pk %}" class="sf-item">
-        <div class="sf-item-head">
-          <span class="sf-item-title">{{ w.title }}</span>
-          <span class="sf-badge {% if w.status == 'completed' %}sf-badge-ok{% elif w.is_overdue %}sf-badge-danger{% elif w.status == 'in_progress' %}sf-badge-info{% else %}sf-badge-muted{% endif %}">
-            {% if w.is_overdue %}Overdue{% else %}{{ w.get_status_display }}{% endif %}
-          </span>
-        </div>
-        <div class="sf-item-meta">
-          <span class="sf-badge {% if w.priority == 'urgent' %}sf-badge-danger{% elif w.priority == 'high' %}sf-badge-warn{% else %}sf-badge-muted{% endif %}">{{ w.get_priority_display }}</span>
-          {% if w.due_date %}<span><i class="fas fa-clock"></i> Due {{ w.due_date|date:"d M" }}</span>{% endif %}
-          {% if w.project %}<span><i class="fas fa-folder"></i> {{ w.project.name }}</span>{% endif %}
-        </div>
-      </a>
+    <div class="sv-tr" data-title="{{ w.title|lower }} {{ w.description|lower|truncatechars:200 }}" data-due="{{ w.due_date|date:'Y-m-d'|default:'9999-12-31' }}" data-pri="{% if w.priority == 'urgent' %}0{% elif w.priority == 'high' %}1{% elif w.priority == 'medium' %}2{% else %}3{% endif %}">
+      <div class="sv-td-task">
+        <a href="{% url 'staff:work_detail' w.pk %}" class="sv-row-title">{{ w.title }}</a>
+        {% if w.description %}<p>{{ w.description|truncatechars:150 }}</p>{% endif %}
+        <div class="sv-chips"><span class="sv-chip">Work assignment</span><span class="sv-chip pri-{{ w.priority }}">{{ w.get_priority_display }}</span></div>
+      </div>
+      <span class="sv-td" data-label="Project"><i class="far fa-folder"></i> {{ w.project.name|default:"—" }}</span>
+      <span class="sv-td{% if w.is_overdue %} late{% endif %}" data-label="Due"><i class="far fa-calendar"></i> {{ w.due_date|date:"M d, Y"|default:"—" }}</span>
+      <span class="sv-td" data-label="Files">—</span>
+      <span class="sv-td" data-label="Status"><span class="sv-status s-{{ w.status }}">{% if w.is_overdue %}Overdue{% else %}{{ w.get_status_display }}{% endif %}</span></span>
+      <span class="sv-td" data-label="Priority"><span class="sv-prio p-{{ w.priority }}"><i class="fas fa-arrow-up"></i> {{ w.get_priority_display }}</span></span>
+      <a class="sv-more" href="{% url 'staff:work_detail' w.pk %}" aria-label="Open {{ w.title }}"><i class="fas fa-ellipsis"></i></a>
+    </div>
     {% endfor %}
   </div>
-{% elif not board_tasks %}
-  <div class="sf-empty">
-    <i class="fas fa-list-check"></i>
-    No work{% if status_filter %} with this status{% endif %} right now.
-  </div>
-{% endif %}
+  <footer class="sv-pager">
+    <span id="sv-showing"></span>
+    <div class="sv-pages"><button type="button" id="sv-prev" aria-label="Previous page"><i class="fas fa-chevron-left"></i></button><span id="sv-page" class="on">1</span><button type="button" id="sv-next" aria-label="Next page"><i class="fas fa-chevron-right"></i></button></div>
+    <select id="sv-per" aria-label="Rows per page"><option>10</option><option>25</option><option>50</option></select>
+  </footer>
+  {% else %}
+  <p class="sv-empty">No work{% if status_filter %} with this status{% endif %} right now.</p>
+  {% endif %}
+</section>
+{% endwith %}
+{% endblock %}
 
+{% block extra_js %}
+<script>
+(function () {
+  var box = document.getElementById('sv-rows');
+  if (!box) return;
+  var rows = Array.prototype.slice.call(box.querySelectorAll('.sv-tr:not(.sv-th)'));
+  var find = document.getElementById('sv-find'), sort = document.getElementById('sv-sort'), per = document.getElementById('sv-per');
+  var page = 1;
+  var VIEW_KEY = 'sf.work.view';
+  function apply() {
+    var q = find.value.trim().toLowerCase(), key = sort.value, size = Number(per.value);
+    var shown = rows.filter(function (r) { return !q || r.dataset.title.indexOf(q) !== -1; });
+    shown.sort(function (a, b) {
+      if (key === 'priority') return a.dataset.pri - b.dataset.pri || a.dataset.due.localeCompare(b.dataset.due);
+      if (key === 'title') return a.dataset.title.localeCompare(b.dataset.title);
+      return a.dataset.due.localeCompare(b.dataset.due);
+    });
+    var pages = Math.max(1, Math.ceil(shown.length / size));
+    page = Math.min(page, pages);
+    rows.forEach(function (r) { r.hidden = true; });
+    shown.forEach(function (r, i) { box.appendChild(r); r.hidden = !(i >= (page - 1) * size && i < page * size); });
+    document.getElementById('sv-page').textContent = page;
+    document.getElementById('sv-prev').disabled = page <= 1;
+    document.getElementById('sv-next').disabled = page >= pages;
+    var from = shown.length ? (page - 1) * size + 1 : 0, to = Math.min(page * size, shown.length);
+    document.getElementById('sv-showing').textContent = 'Showing ' + from + '–' + to + ' of ' + shown.length + ' task' + (shown.length === 1 ? '' : 's');
+  }
+  find.addEventListener('input', function () { page = 1; apply(); });
+  sort.addEventListener('change', apply);
+  per.addEventListener('change', function () { page = 1; apply(); });
+  document.getElementById('sv-prev').addEventListener('click', function () { page -= 1; apply(); });
+  document.getElementById('sv-next').addEventListener('click', function () { page += 1; apply(); });
+  var btns = document.querySelectorAll('.sv-view button');
+  function setView(v) {
+    box.classList.toggle('grid', v === 'grid');
+    btns.forEach(function (b) { b.classList.toggle('on', b.dataset.view === v); b.setAttribute('aria-pressed', b.dataset.view === v); });
+    try { localStorage.setItem(VIEW_KEY, v); } catch (e) {}
+  }
+  btns.forEach(function (b) { b.addEventListener('click', function () { setView(b.dataset.view); }); });
+  try { if (localStorage.getItem(VIEW_KEY) === 'grid') setView('grid'); } catch (e) {}
+  apply();
+})();
+</script>
 {% endblock %}

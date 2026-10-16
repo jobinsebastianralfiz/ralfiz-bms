@@ -1,0 +1,26 @@
+<section class="sv-stats" aria-label="Summary">
+  <a class="sv-stat" href="{% url 'staff:attendance_history' %}">
+    <span class="sv-ico green"><i class="fas fa-calendar-check"></i></span>
+    <span class="sv-stat-body"><span class="sv-stat-lbl">Days Present</span><span class="sv-stat-val">{{ days_present }}</span>
+      {% if record %}<span class="sv-pill green">{{ record.get_status_display }} today</span>{% else %}<span class="sv-pill orange">Not in yet</span>{% endif %}</span>
+    <i class="fas fa-chevron-right sv-go" aria-hidden="true"></i>
+  </a>
+  <a class="sv-stat" href="{% url 'staff:work_list' %}">
+    <span class="sv-ico violet"><i class="fas fa-list-check"></i></span>
+    <span class="sv-stat-body"><span class="sv-stat-lbl">Open Tasks</span><span class="sv-stat-val">{{ open_task_total }}</span>
+      {% if open_task_total %}<span class="sv-pill orange">To work on</span>{% else %}<span class="sv-pill green">All clear</span>{% endif %}</span>
+    <i class="fas fa-chevron-right sv-go" aria-hidden="true"></i>
+  </a>
+  <a class="sv-stat" href="{% url 'staff:daily_report' %}">
+    <span class="sv-ico blue"><i class="fas fa-pen-to-square"></i></span>
+    <span class="sv-stat-body"><span class="sv-stat-lbl">Daily Update</span><span class="sv-stat-val">{% if todays_report %}Done{% else %}Due{% endif %}</span>
+      {% if todays_report %}<span class="sv-pill green">Sent today</span>{% else %}<span class="sv-pill red">Write it</span>{% endif %}</span>
+    <i class="fas fa-chevron-right sv-go" aria-hidden="true"></i>
+  </a>
+  <a class="sv-stat" href="{% url 'staff:leave' %}">
+    <span class="sv-ico orange"><i class="fas fa-plane-departure"></i></span>
+    <span class="sv-stat-body"><span class="sv-stat-lbl">Leave</span><span class="sv-stat-val">{{ pending_leave }}</span>
+      {% if pending_leave %}<span class="sv-pill orange">Waiting</span>{% else %}<span class="sv-pill grey">None</span>{% endif %}</span>
+    <i class="fas fa-chevron-right sv-go" aria-hidden="true"></i>
+  </a>
+</section>

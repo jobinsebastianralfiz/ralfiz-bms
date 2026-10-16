@@ -3,6 +3,10 @@
 {% block title %}Classes{% endblock %}
 {% block heading %}Classes{% endblock %}
 
+{% block page_hero %}
+{% include 'staff/_hero.html' with title='Classes' subtitle='Your scheduled classes and sessions.' tagline='Keep learning!' art='calendar' %}
+{% endblock %}
+
 {% block content %}
 
 {% if upcoming %}

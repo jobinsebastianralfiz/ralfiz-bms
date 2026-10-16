@@ -31,7 +31,7 @@ from .models import (
 # changes. Whitenoise serves these unhashed, and the service worker is
 # cache-first for static assets, so an unversioned URL is served from the old
 # cache forever -- which is exactly how the app icon got stuck.
-ASSET_V = '12'
+ASSET_V = '13'
 
 MONTHS = [
     '', 'January', 'February', 'March', 'April', 'May', 'June',
@@ -113,6 +113,28 @@ def board_tasks_for(employee, open_only=True):
     return tasks
 
 
+def _greeting():
+    hour = timezone.localtime().hour
+    return 'Good morning' if hour < 12 else ('Good afternoon' if hour < 17 else 'Good evening')
+
+
+def _summary(employee):
+    """The four tiles shown on Home, Attendance and Work."""
+    today = timezone.localdate()
+    open_work = (WorkAssignment.objects.filter(assigned_to=employee)
+                 .exclude(status__in=['completed', 'cancelled']).count())
+    return {
+        'today': today,
+        'greeting': _greeting(),
+        'record': Attendance.objects.filter(employee=employee, date=today).first(),
+        'days_present': Attendance.objects.filter(
+            employee=employee, date__year=today.year, date__month=today.month).exclude(status='absent').count(),
+        'open_task_total': open_work + board_tasks_for(employee).count(),
+        'todays_report': DailyReport.objects.filter(employee=employee, date=today).first(),
+        'pending_leave': LeaveRequest.objects.filter(employee=employee, status='pending').count(),
+    }
+
+
 def _base_context(request, active_nav=''):
     employee = request.employee
     return {
@@ -186,7 +208,11 @@ def dashboard(request):
         employee=employee, date__year=today.year, date__month=today.month)
 
     ctx = _base_context(request, 'dashboard')
+    ctx.update(_summary(employee))
     ctx.update({
+        'upcoming_leave': LeaveRequest.objects.filter(
+            employee=employee, end_date__gte=today, status__in=['pending', 'approved']
+        ).select_related('leave_type').order_by('start_date')[:3],
         'today': today,
         'record': record,
         'open_work': open_work,
@@ -217,7 +243,9 @@ def attendance(request):
     open_record = bool(record and record.check_in and not record.check_out)
 
     ctx = _base_context(request, 'attendance')
+    ctx.update(_summary(employee))
     ctx.update({
+        'recent_records': Attendance.objects.filter(employee=employee).order_by('-date')[:5],
         'today': today,
         'record': record,
         'config': cfg,
@@ -356,8 +384,26 @@ def work_list(request):
     else:
         board_tasks = board_tasks.exclude(status='completed')
 
+    all_tasks = board_tasks_for(employee, open_only=False)
+    all_work = WorkAssignment.objects.filter(assigned_to=employee)
+    week_ago = timezone.now() - timedelta(days=7)
+    counts = {
+        'total': all_tasks.count() + all_work.count(),
+        'new_week': all_tasks.filter(created_at__gte=week_ago).count() + all_work.filter(created_at__gte=week_ago).count(),
+        'in_progress': all_tasks.filter(status__in=['in_progress', 'review']).count() + all_work.filter(status='in_progress').count(),
+        'on_hold': all_work.filter(status='on_hold').count(),
+        'completed': all_tasks.filter(status='completed').count() + all_work.filter(status='completed').count(),
+        'cancelled': all_work.filter(status='cancelled').count(),
+    }
+    total = counts['total'] or 1
+    for key in ('in_progress', 'on_hold', 'completed', 'cancelled'):
+        counts[key + '_pct'] = round(counts[key] * 100 / total)
+
     ctx = _base_context(request, 'work')
+    ctx.update(_summary(employee))
     ctx.update({
+        'counts': counts,
+        'work_total': board_tasks.count() + assignments.count(),
         'assignments': assignments,
         'board_tasks': board_tasks.order_by('due_date', '-created_at'),
         'task_status_choices': Task.STATUS_CHOICES,
@@ -579,3 +625,23 @@ def service_worker(request):
 
 def offline(request):
     return render(request, 'staff/offline.html', {'asset_v': ASSET_V})
+
+
+
+@staff_required
+def staff_search(request):
+    """Search your own tasks, work assignments and notifications."""
+    employee = request.employee
+    q = request.GET.get('q', '').strip()[:100]
+    tasks = work = notes = []
+    if q:
+        tasks = board_tasks_for(employee, open_only=False).filter(
+            Q(title__icontains=q) | Q(description__icontains=q) | Q(project__name__icontains=q))[:20]
+        work = WorkAssignment.objects.filter(assigned_to=employee).filter(
+            Q(title__icontains=q) | Q(description__icontains=q))[:20]
+        notes = Notification.objects.filter(Q(employee=employee) | Q(employee__isnull=True)).filter(
+            Q(title__icontains=q) | Q(body__icontains=q))[:20]
+    ctx = _base_context(request, '')
+    ctx.update({'q': q, 'tasks': tasks, 'work': work, 'notes': notes,
+                'result_count': len(tasks) + len(work) + len(notes)})
+    return render(request, 'staff/search.html', ctx)

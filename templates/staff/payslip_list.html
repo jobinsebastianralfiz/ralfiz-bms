@@ -3,6 +3,10 @@
 {% block title %}Payslips{% endblock %}
 {% block heading %}Payslips{% endblock %}
 
+{% block page_hero %}
+{% include 'staff/_hero.html' with title='Payslips' subtitle='Your monthly salary slips.' tagline='Hard work pays!' art='check' %}
+{% endblock %}
+
 {% block content %}
 
 {% if payslips %}

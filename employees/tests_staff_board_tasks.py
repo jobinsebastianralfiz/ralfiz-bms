@@ -84,3 +84,19 @@ class StaffTaskPageTests(StaffBoardTaskTests):
     def test_cannot_open_someone_elses_task(self):
         other = Task.objects.get(title='Someone else')
         self.assertEqual(self.client.get(reverse('staff:board_task_detail', args=[other.pk])).status_code, 404)
+
+
+class StaffPagesTests(StaffBoardTaskTests):
+    def test_search_only_finds_own_things(self):
+        r = self.client.get(reverse('staff:search'), {'q': 'homepage'})
+        self.assertContains(r, 'Write the homepage copy')
+        r = self.client.get(reverse('staff:search'), {'q': 'someone'})
+        self.assertNotContains(r, 'Someone else')
+
+    def test_work_counts_and_pages_render(self):
+        r = self.client.get(reverse('staff:work_list'))
+        self.assertEqual(r.context['counts']['total'], 1)
+        self.assertEqual(r.context['work_total'], 1)
+        for name in ['staff:dashboard', 'staff:attendance', 'staff:leave', 'staff:daily_report',
+                     'staff:payslip_list', 'staff:notification_list', 'staff:attendance_history']:
+            self.assertEqual(self.client.get(reverse(name)).status_code, 200, name)

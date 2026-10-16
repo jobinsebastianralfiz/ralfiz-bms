@@ -3,6 +3,10 @@
 {% block title %}Notifications{% endblock %}
 {% block heading %}Notifications{% endblock %}
 
+{% block page_hero %}
+{% include 'staff/_hero.html' with title='Notifications' subtitle='Messages from HR and the team.' art='desk' %}
+{% endblock %}
+
 {% block content %}
 
 {% if unread_count %}

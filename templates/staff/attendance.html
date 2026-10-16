@@ -3,165 +3,120 @@
 {% block title %}Attendance{% endblock %}
 {% block heading %}Attendance{% endblock %}
 
-{% block content %}
+{% block page_hero %}
+{% with first=employee.user.first_name|default:employee.user.username %}
+{% include 'staff/_hero.html' with eyebrow='ATTENDANCE' title=greeting|add:',' accent=first|add:'!' subtitle='Track your attendance and stay consistent.' tagline='Consistency leads to growth!' art='calendar' show_date=True %}
+{% endwith %}
+{% endblock %}
 
-<div class="sf-att-hero">
-  <div class="sf-att-ring {% if record and record.check_out %}done{% elif record %}in{% endif %}">
-    {% if record and record.check_out %}<i class="fas fa-circle-check"></i>
-    {% elif record %}<i class="fas fa-fingerprint"></i>
-    {% else %}<i class="fas fa-fingerprint"></i>{% endif %}
+{% block content %}
+<div class="sv-att">
+<section class="sv-card sv-att-card">
+  <div class="sf-att-hero">
+    <div class="sf-att-ring {% if record and record.check_out %}done{% elif record %}in{% endif %}">
+      {% if record and record.check_out %}<i class="fas fa-circle-check"></i>{% else %}<i class="fas fa-fingerprint"></i>{% endif %}
+    </div>
+    {% if record and record.check_out %}
+      <div class="sf-att-state">Day complete</div>
+      <div class="sf-att-sub">{{ record.working_hours }} hours worked{% if record.pending_hours %} · {{ record.pending_hours }}h short{% endif %}</div>
+    {% elif record %}
+      <div class="sf-att-state">You're checked in</div>
+      <div class="sf-att-sub">Since {{ record.check_in|time:"h:i A" }}</div>
+    {% else %}
+      <div class="sf-att-state">Not checked in</div>
+      <div class="sf-att-sub">{{ today|date:"l, d F Y" }}</div>
+    {% endif %}
   </div>
 
-  {% if record and record.check_out %}
-    <div class="sf-att-state">Day complete</div>
-    <div class="sf-att-sub">{{ record.working_hours }} hours worked{% if record.pending_hours %} · {{ record.pending_hours }}h short{% endif %}</div>
-  {% elif record %}
-    <div class="sf-att-state">You're checked in</div>
-    <div class="sf-att-sub">Since {{ record.check_in|time:"h:i A" }}</div>
-  {% else %}
-    <div class="sf-att-state">Not checked in</div>
-    <div class="sf-att-sub">{{ today|date:"l, d F Y" }}</div>
+  <div class="sv-times">
+    <div><span class="sv-ico green"><i class="fas fa-right-to-bracket"></i></span><span><small>Check In</small><strong>{{ record.check_in|time:"h:i A"|default:"—" }}</strong></span></div>
+    <div><span class="sv-ico grey"><i class="fas fa-right-from-bracket"></i></span><span><small>Check Out</small><strong>{{ record.check_out|time:"h:i A"|default:"—" }}</strong></span></div>
+  </div>
+
+  {% if face_required and not has_face %}
+    <div class="sf-alert sf-alert-warning">
+      <strong>Register your face first.</strong> Check-in matches a selfie against your
+      registered photo. <a href="{% url 'staff:profile' %}" style="text-decoration:underline">Register now →</a>
+    </div>
   {% endif %}
+  {% if not office_configured %}
+    <div class="sf-alert sf-alert-warning">No office QR is configured yet. Ask HR to set one up before checking in.</div>
+  {% endif %}
+
+  {% if not record %}
+    <button type="button" class="sf-btn" id="sfCheckIn" {% if face_required and not has_face %}disabled{% endif %}>
+      <i class="fas fa-right-to-bracket"></i> Check in
+    </button>
+    {% if can_remote %}
+      <button type="button" class="sf-btn sf-btn-ghost" id="sfCheckInRemote" style="margin-top:10px"
+              {% if face_required and not has_face %}disabled{% endif %}>
+        <i class="fas fa-house-laptop"></i> Check in remotely
+      </button>
+    {% endif %}
+  {% elif not record.check_out %}
+    <button type="button" class="sf-btn" id="sfCheckOut"><i class="fas fa-right-from-bracket"></i> Check out</button>
+    {% if not checkout_allowed %}
+      <button type="button" class="sf-btn sf-btn-danger" id="sfForceCheckOut" style="margin-top:10px">
+        <i class="fas fa-door-open"></i> Leaving early — check out anyway
+      </button>
+      {% if seconds_until_eligible %}
+        <p class="sf-dim" style="text-align:center;margin-top:10px" id="sfEligible" data-seconds="{{ seconds_until_eligible }}">Minimum hours not yet complete.</p>
+      {% endif %}
+      <p class="sf-dim" style="text-align:center;margin-top:4px">You'll be asked for a reason, and the shortfall is recorded on today's attendance.</p>
+    {% endif %}
+  {% else %}
+    <a href="{% url 'staff:attendance_history' %}" class="sf-btn sf-btn-ghost"><i class="fas fa-calendar-days"></i> View history</a>
+  {% endif %}
+
+  {% if record.is_force_checkout %}
+    <div class="sf-alert sf-alert-warning">
+      <strong>Early check-out recorded.</strong>
+      {% if record.force_checkout_reason %}"{{ record.force_checkout_reason }}"{% endif %}
+      {% if record.pending_hours %} · {{ record.pending_hours }}h short of your required hours.{% endif %}
+    </div>
+  {% endif %}
+</section>
+
+<div class="sv-att-side">
+  {% include 'staff/_stats.html' %}
+
+  <section class="sv-card">
+    <header class="sv-card-head"><h2><span class="sv-head-ico"><i class="far fa-clock"></i></span>Today's Timing{% if has_custom_timing %} <span class="sv-pill green">Custom shift</span>{% endif %}</h2><span class="sv-meta" style="margin:0;"><i class="far fa-calendar"></i> {{ today|date:"D, d M Y" }}</span></header>
+    <div class="sv-kv"><span>Required hours</span><strong>{{ policy.required_hours|floatformat:"-2" }} h a day</strong></div>
+    <div class="sv-kv"><span>Check in by</span><strong>{{ policy.check_in_deadline|time:"h:i A" }}</strong></div>
+    <div class="sv-kv"><span>Check out from</span><strong>{{ policy.checkout_floor|time:"h:i A" }}</strong></div>
+    {% if earliest_checkout %}<div class="sv-kv"><span>Earliest today</span><strong>{{ earliest_checkout|time:"h:i A" }}</strong></div>{% endif %}
+  </section>
 
   {% if record %}
-    <div class="sf-att-times">
-      <div>
-        <div class="sf-dim">CHECK IN</div>
-        <div class="sf-att-time">{{ record.check_in|time:"h:i A"|default:"—" }}</div>
-      </div>
-      <div class="sf-att-divider"></div>
-      <div>
-        <div class="sf-dim">CHECK OUT</div>
-        <div class="sf-att-time">{{ record.check_out|time:"h:i A"|default:"—" }}</div>
-      </div>
-    </div>
+  <section class="sv-card">
+    <header class="sv-card-head"><h2><span class="sv-head-ico"><i class="fas fa-shield-halved"></i></span>How today was verified</h2></header>
+    <div class="sv-kv"><span>Method</span><strong>{{ record.get_verification_method_display }}</strong></div>
+    <div class="sv-kv"><span>Face match</span>{% if record.face_verified %}<span class="sv-pill green">Verified</span>{% else %}<span class="sv-pill grey">Not used</span>{% endif %}</div>
+    <div class="sv-kv"><span>Office QR</span>{% if record.qr_verified %}<span class="sv-pill green">Scanned</span>{% else %}<span class="sv-pill grey">Not used</span>{% endif %}</div>
+    <div class="sv-kv"><span>Location</span>{% if record.check_in_latitude %}<span class="sv-pill green">Captured</span>{% else %}<span class="sv-pill grey">Not used</span>{% endif %}</div>
+  </section>
   {% endif %}
 </div>
-
-{# --- Blockers --- #}
-{% if face_required and not has_face %}
-  <div class="sf-alert sf-alert-warning">
-    <strong>Register your face first.</strong> Check-in matches a selfie against your
-    registered photo. <a href="{% url 'staff:profile' %}" style="text-decoration:underline">Register now →</a>
-  </div>
-{% endif %}
-
-{% if not office_configured %}
-  <div class="sf-alert sf-alert-warning">
-    No office QR is configured yet. Ask HR to set one up before checking in.
-  </div>
-{% endif %}
-
-{# --- Actions --- #}
-{% if not record %}
-  <button type="button" class="sf-btn" id="sfCheckIn" {% if face_required and not has_face %}disabled{% endif %}>
-    <i class="fas fa-right-to-bracket"></i> Check in
-  </button>
-  {% if can_remote %}
-    <button type="button" class="sf-btn sf-btn-ghost" id="sfCheckInRemote" style="margin-top:10px"
-            {% if face_required and not has_face %}disabled{% endif %}>
-      <i class="fas fa-house-laptop"></i> Check in remotely
-    </button>
-  {% endif %}
-{% elif not record.check_out %}
-  <button type="button" class="sf-btn" id="sfCheckOut">
-    <i class="fas fa-right-from-bracket"></i> Check out
-  </button>
-  {% if not checkout_allowed %}
-    {% if seconds_until_eligible %}
-      <p class="sf-dim" style="text-align:center;margin-top:10px" id="sfEligible"
-         data-seconds="{{ seconds_until_eligible }}">
-        Minimum hours not yet complete.
-      </p>
-    {% endif %}
-    <button type="button" class="sf-btn sf-btn-danger" id="sfForceCheckOut" style="margin-top:10px">
-      <i class="fas fa-door-open"></i> Leaving early — check out anyway
-    </button>
-    <p class="sf-dim" style="text-align:center;margin-top:8px">
-      You'll be asked for a reason, and the shortfall is recorded on today's attendance.
-    </p>
-  {% endif %}
-{% else %}
-  <a href="{% url 'staff:attendance_history' %}" class="sf-btn sf-btn-ghost">
-    <i class="fas fa-calendar-days"></i> View history
-  </a>
-{% endif %}
-
-{# --- Early check-out on record --- #}
-{% if record.is_force_checkout %}
-  <div class="sf-alert sf-alert-warning">
-    <strong>Early check-out recorded.</strong>
-    {% if record.force_checkout_reason %}"{{ record.force_checkout_reason }}"{% endif %}
-    {% if record.pending_hours %} · {{ record.pending_hours }}h short of your required hours.{% endif %}
-  </div>
-{% endif %}
-
-{# --- The timing this person actually works to --- #}
-<div class="sf-section-title">
-  Your timing{% if has_custom_timing %} <span class="sf-badge sf-badge-ok">Custom shift</span>{% endif %}
-</div>
-<div class="sf-card">
-  <div class="sf-kv">
-    <span class="sf-kv-k">Required hours</span>
-    <span class="sf-kv-v">{{ policy.required_hours|floatformat:"-2" }} h a day</span>
-  </div>
-  <div class="sf-kv">
-    <span class="sf-kv-k">Check in by</span>
-    <span class="sf-kv-v">{{ policy.check_in_deadline|time:"h:i A" }}</span>
-  </div>
-  <div class="sf-kv">
-    <span class="sf-kv-k">Check out from</span>
-    <span class="sf-kv-v">{{ policy.checkout_floor|time:"h:i A" }}</span>
-  </div>
-  {% if earliest_checkout %}
-  <div class="sf-kv">
-    <span class="sf-kv-k">Earliest today</span>
-    <span class="sf-kv-v">{{ earliest_checkout|time:"h:i A" }}</span>
-  </div>
-  {% endif %}
 </div>
 
-{# --- Verification summary --- #}
-{% if record %}
-  <div class="sf-section-title">How today was verified</div>
-  <div class="sf-card">
-    <div class="sf-kv">
-      <span class="sf-kv-k">Method</span>
-      <span class="sf-kv-v">{{ record.get_verification_method_display }}</span>
+<section class="sv-card">
+  <header class="sv-card-head"><h2><span class="sv-head-ico"><i class="fas fa-chart-simple"></i></span>Recent Attendance</h2><a href="{% url 'staff:attendance_history' %}">View All</a></header>
+  {% if recent_records %}
+  <div class="sv-days">
+    {% for r in recent_records %}
+    <div class="sv-day{% if r.date == today %} today{% endif %}">
+      <strong>{{ r.date|date:"D" }}</strong><span>{{ r.date|date:"d M" }}</span>
+      <span class="sv-pill {% if r.status == 'absent' %}red{% elif r.status == 'late' %}orange{% else %}green{% endif %}">● {{ r.get_status_display }}</span>
+      <span>{{ r.check_in|time:"h:i A"|default:"—" }}</span>
+      <span>{{ r.check_out|time:"h:i A"|default:"—" }}</span>
     </div>
-    <div class="sf-kv">
-      <span class="sf-kv-k">Face match</span>
-      <span class="sf-kv-v">
-        {% if record.face_verified %}<span class="sf-badge sf-badge-ok">Verified</span>
-        {% else %}<span class="sf-badge sf-badge-muted">Not used</span>{% endif %}
-      </span>
-    </div>
-    <div class="sf-kv">
-      <span class="sf-kv-k">Office QR</span>
-      <span class="sf-kv-v">
-        {% if record.qr_verified %}<span class="sf-badge sf-badge-ok">Scanned</span>
-        {% else %}<span class="sf-badge sf-badge-muted">Not used</span>{% endif %}
-      </span>
-    </div>
-    <div class="sf-kv">
-      <span class="sf-kv-k">Location</span>
-      <span class="sf-kv-v">
-        {% if record.check_in_latitude %}<span class="sf-badge sf-badge-ok">Captured</span>
-        {% else %}<span class="sf-badge sf-badge-muted">Not used</span>{% endif %}
-      </span>
-    </div>
+    {% endfor %}
   </div>
-{% endif %}
-
-<div class="sf-section-title">This month</div>
-<a href="{% url 'staff:attendance_history' %}" class="sf-item">
-  <div class="sf-item-head">
-    <span class="sf-item-title">Attendance history</span>
-    <i class="fas fa-chevron-right sf-dim"></i>
-  </div>
-  <div class="sf-item-meta"><span>Days present, hours, and any shortfall</span></div>
-</a>
-
+  {% else %}
+  <p class="sv-empty">No attendance recorded yet.</p>
+  {% endif %}
+</section>
 {% endblock %}
 
 {% block extra_js %}

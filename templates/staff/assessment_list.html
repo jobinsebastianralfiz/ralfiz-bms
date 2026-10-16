@@ -3,6 +3,10 @@
 {% block title %}Assessments{% endblock %}
 {% block heading %}Assessments{% endblock %}
 
+{% block page_hero %}
+{% include 'staff/_hero.html' with title='Assessments' subtitle='Your tests and how you did.' tagline='You can do it!' art='check' %}
+{% endblock %}
+
 {% block content %}
 
 {% if average is not None %}

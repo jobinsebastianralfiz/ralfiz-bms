@@ -43,6 +43,7 @@ urlpatterns = [
 
     # Profile
     path('profile/', v.profile, name='profile'),
+    path('search/', v.staff_search, name='search'),
 
     # CRM leads (marketing interns)
     path('leads/', v.lead_list, name='lead_list'),

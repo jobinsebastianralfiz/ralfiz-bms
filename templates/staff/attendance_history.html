@@ -3,6 +3,10 @@
 {% block title %}History{% endblock %}
 {% block heading %}Attendance history{% endblock %}
 
+{% block page_hero %}
+{% include 'staff/_hero.html' with title='Attendance History' subtitle='Days present, hours and any shortfall, month by month.' tagline='Consistency leads to growth!' art='calendar' %}
+{% endblock %}
+
 {% block content %}
 
 <form method="get" class="sf-grid-2" style="margin-bottom:14px">

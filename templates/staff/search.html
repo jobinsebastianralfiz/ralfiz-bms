@@ -1,0 +1,31 @@
+{% extends 'staff/base.html' %}
+
+{% block title %}Search{% endblock %}
+{% block heading %}Search{% endblock %}
+
+{% block page_hero %}
+{% if q %}{% include 'staff/_hero.html' with title='Search' subtitle=result_count|stringformat:'d'|add:' result(s) for “'|add:q|add:'”' art='check' %}
+{% else %}{% include 'staff/_hero.html' with title='Search' subtitle='Find your tasks, work assignments and notifications.' art='check' %}{% endif %}
+{% endblock %}
+
+{% block content %}
+<form method="get" class="sv-card sv-search-mobile">
+  <label class="sv-find"><i class="fas fa-magnifying-glass" aria-hidden="true"></i><input type="search" name="q" value="{{ q }}" placeholder="Search…" aria-label="Search"></label>
+</form>
+{% if tasks %}
+<section class="sv-card"><header class="sv-card-head"><h2><span class="sv-head-ico"><i class="fas fa-list-check"></i></span>Project tasks</h2></header>
+  {% for t in tasks %}<a class="sv-row" href="{% url 'staff:board_task_detail' t.pk %}"><div class="sv-row-top"><span class="sv-row-title">{{ t.title }}</span><span class="sv-status s-{{ t.status }}">{{ t.get_status_display }}</span></div><div class="sv-meta"><span><i class="far fa-folder"></i> {{ t.project.name }}</span></div></a>{% endfor %}
+</section>
+{% endif %}
+{% if work %}
+<section class="sv-card"><header class="sv-card-head"><h2><span class="sv-head-ico"><i class="fas fa-clipboard-list"></i></span>Work assignments</h2></header>
+  {% for w in work %}<a class="sv-row" href="{% url 'staff:work_detail' w.pk %}"><div class="sv-row-top"><span class="sv-row-title">{{ w.title }}</span><span class="sv-status s-{{ w.status }}">{{ w.get_status_display }}</span></div></a>{% endfor %}
+</section>
+{% endif %}
+{% if notes %}
+<section class="sv-card"><header class="sv-card-head"><h2><span class="sv-head-ico"><i class="far fa-bell"></i></span>Notifications</h2></header>
+  {% for n in notes %}<div class="sv-row"><div class="sv-row-top"><span class="sv-row-title">{{ n.title }}</span><span class="sv-meta" style="margin:0;">{{ n.created_at|date:"d M" }}</span></div><div class="sv-meta">{{ n.body|truncatechars:120 }}</div></div>{% endfor %}
+</section>
+{% endif %}
+{% if q and not result_count %}<section class="sv-card"><p class="sv-empty">Nothing matched “{{ q }}”.</p></section>{% endif %}
+{% endblock %}

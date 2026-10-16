@@ -26,7 +26,7 @@
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@600&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
   <link rel="stylesheet" href="{% static 'css/staff.css' %}?v={{ asset_v }}">
   <link rel="stylesheet" href="{% static 'css/staff-velora.css' %}?v={{ asset_v }}">
@@ -60,13 +60,32 @@
     <a href="{% url 'staff:logout' %}"><i class="fas fa-right-from-bracket"></i> Sign out</a>
   </nav>
   <div class="sv-side-user">
-    {% if photo_url %}<img class="sf-avatar" src="{{ photo_url }}" alt="">{% else %}<div class="sf-avatar">{{ employee.full_name|slice:":1"|upper }}</div>{% endif %}
-    <div><strong>{{ employee.full_name }}</strong><span>{{ employee.designation|default:employee.get_role_display }}</span></div>
+    <div class="sv-side-user-row">
+      {% if photo_url %}<img class="sf-avatar" src="{{ photo_url }}" alt="">{% else %}<div class="sf-avatar">{{ employee.full_name|slice:":1"|upper }}</div>{% endif %}
+      <div><strong>{{ employee.full_name }}</strong><span>{{ employee.designation|default:employee.get_role_display }}</span></div>
+    </div>
+    <a href="{% url 'staff:profile' %}" class="sv-side-profile">View Profile <i class="fas fa-arrow-right"></i></a>
   </div>
 </aside>
 
 <header class="sf-appbar">
   {% block appbar %}
+  {# Wide screens: search, notifications, theme and the person, like the client portal. #}
+  <div class="sv-top">
+    <form class="sv-search" method="get" action="{% url 'staff:search' %}" role="search">
+      <i class="fas fa-magnifying-glass" aria-hidden="true"></i>
+      <input type="search" name="q" value="{{ q|default:'' }}" placeholder="Search tasks, work or notifications…" aria-label="Search">
+    </form>
+    <div class="sv-top-right">
+      <a href="{% url 'staff:notification_list' %}" class="sv-icon-btn" aria-label="Notifications{% if unread_count %}, {{ unread_count }} unread{% endif %}"><i class="far fa-bell"></i>{% if unread_count %}<span class="sv-dot"></span>{% endif %}</a>
+      <button type="button" class="sv-icon-btn" onclick="document.getElementById('sfThemeToggle').click()" aria-label="Switch light or dark"><i class="fas fa-moon"></i></button>
+      <a href="{% url 'staff:profile' %}" class="sv-user">
+        {% if photo_url %}<img class="sv-user-photo" src="{{ photo_url }}" alt="">{% else %}<span class="sv-user-photo">{{ employee.full_name|slice:":1"|upper }}</span>{% endif %}
+        <span class="sv-user-name">{{ employee.full_name }}<small>{{ employee.designation|default:employee.get_role_display }}</small></span>
+        <i class="fas fa-chevron-down" style="font-size:.65rem;"></i>
+      </a>
+    </div>
+  </div>
   <div class="sf-appbar-main">
     <div class="sf-brand">
       <img class="sf-brand-mark" src="{% static 'staff/icon-192.png' %}?v={{ asset_v }}" alt="" width="30" height="30">
@@ -86,6 +105,7 @@
       <div class="sf-alert sf-alert-{{ message.tags }}">{{ message }}</div>
     {% endfor %}
   {% endif %}
+  {% block page_hero %}{% endblock %}
   {% block content %}{% endblock %}
 </main>
 
