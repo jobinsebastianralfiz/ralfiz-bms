@@ -21,7 +21,7 @@ from .client_agreement_models import (
     DEFAULT_CLOUD_NOTE, DEFAULT_CLOUD_PLANS, MODE_INCLUDED, ClientAgreement, build_services, build_snapshot, default_exclusions_text,
     default_milestone_text, milestones_total_percent, parse_milestones,
 )
-from .models import Project
+from .models import CompanySettings, Project
 
 logger = logging.getLogger(__name__)
 
@@ -340,7 +340,8 @@ def _copy_context(agreement, for_pdf=False):
         'for_pdf': for_pdf, 'signature_src': sig,
         'company': company_countersignature(for_pdf=for_pdf),
         'inline_css': _agreement_css() if for_pdf else '',
-        'pdf_url': f'{agreement.public_path()}copy.pdf',
+        'letterhead': CompanySettings.get_settings(),
+        'pdf_url': f'{agreement.public_path()}copy.pdf' if agreement.status == ClientAgreement.STATUS_ACCEPTED else '',
     })
     return ctx
 
@@ -349,7 +350,7 @@ def client_agreement_copy(request, token):
     agreement = _get_or_404(token)
     if agreement.status != ClientAgreement.STATUS_ACCEPTED:
         return redirect('client_agreement_sign', token=token)
-    return render(request, 'client_agreements/copy.html', _copy_context(agreement))
+    return render(request, 'client_agreements/pdf.html', _copy_context(agreement))
 
 
 def client_agreement_copy_pdf(request, token):
@@ -364,11 +365,11 @@ def _pdf_or_copy(request, agreement):
     Before signing, staff get the same document as a preview of what was sent."""
     try:
         from weasyprint import HTML
-        html = render_to_string('client_agreements/copy.html', _copy_context(agreement, for_pdf=True))
+        html = render_to_string('client_agreements/pdf.html', _copy_context(agreement, for_pdf=True))
         pdf = HTML(string=html, base_url=request.build_absolute_uri('/')).write_pdf()
     except Exception as exc:
         logger.warning('Client agreement PDF unavailable: %s', exc)
-        return render(request, 'client_agreements/copy.html', _copy_context(agreement))
+        return render(request, 'client_agreements/pdf.html', _copy_context(agreement))
     response = HttpResponse(pdf, content_type='application/pdf')
     filename = f"Ralfiz-Agreement-{agreement.reference.replace('/', '-')}.pdf"
     response['Content-Disposition'] = f'attachment; filename="{filename}"'

@@ -450,3 +450,5 @@ body {
 .svc-pick.is-fixed { cursor: default; background: #f8fafc; }
 .svc-pick:has(input:checked):not(.is-fixed) { border-color: var(--agr-blue); background: var(--agr-blue-soft); }
 .svc-price { display: block; font-weight: 600; color: var(--agr-ink); }
+
+.agr-preamble { margin: 14px 0 0; line-height: 1.65; text-align: justify; }

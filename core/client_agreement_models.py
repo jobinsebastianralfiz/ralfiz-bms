@@ -30,51 +30,84 @@ DEFAULT_MILESTONES = [
 STANDARD_CLAUSES = [
     {
         'title': 'Change Requests',
-        'body': 'Work outside the scope and deliverables above is a change request. We will '
-                'quote each change request in writing - cost and effect on the timeline - and '
-                'start it only after you approve that quote.',
+        'body': 'Any work outside the Services and Deliverables described in this Agreement is a '
+                'change request. The Service Provider shall quote each change request in writing, '
+                'stating its cost and its effect on the timeline, and shall not be obliged to begin '
+                'any change request until the Client has approved that quote in writing.',
     },
     {
         'title': 'Client Responsibilities',
+        'body': 'The Client shall:',
         'bullets': [
-            'Provide content, branding, logins and other inputs on time',
-            'Name one point of contact who can give feedback and approvals',
-            'Review each delivery and share feedback within 5 working days',
-            'Arrange third-party accounts and fees (domain, hosting, app stores, payment gateways, SMS/API) unless quoted by us',
+            'provide content, branding, access credentials and all other inputs reasonably required, in a timely manner;',
+            'appoint one point of contact with authority to give feedback and approvals on its behalf;',
+            'review each delivery and give written feedback within five (5) working days, failing which that delivery shall be deemed accepted; and',
+            'procure and pay for all third-party accounts and fees (including domain, hosting, app store, payment gateway, SMS and API charges), unless these are expressly quoted by the Service Provider.',
         ],
         'callout': {
             'style': 'warn',
-            'text': 'Delays in inputs or approvals move the delivery date by the same amount of time.',
+            'text': 'Any delay by the Client in providing inputs or approvals shall extend the delivery '
+                    'date by at least the period of that delay.',
         },
     },
     {
-        'title': 'Ownership & Source Code',
-        'body': 'On receipt of the full project fee, ownership of the custom work built for this '
-                'project passes to you and the source code is handed over. Until then it remains '
-                'the property of Ralfiz Technologies. Open-source libraries and our own reusable '
-                'components stay under their own licences; you receive a licence to use them as '
-                'part of this project.',
+        'title': 'Intellectual Property & Source Code',
+        'body': 'On receipt of the Project Fee in full, ownership of the custom work created '
+                'specifically for the Project shall pass to the Client and the source code shall be '
+                'handed over. Until then, all such work remains the property of the Service Provider. '
+                'Open-source software and the Service Provider\'s pre-existing or reusable components '
+                'remain subject to their own licences, and the Client is granted a non-exclusive, '
+                'perpetual licence to use them as part of the Project.',
     },
     {
         'title': 'Confidentiality',
-        'body': 'Both parties keep the other\'s business information, data and credentials '
-                'confidential, and use them only for this project. We may list the project name '
-                'and a screenshot in our portfolio unless you ask us not to.',
+        'body': 'Each Party shall keep confidential all business information, data and credentials '
+                'disclosed to it by the other Party, and shall use them solely for the purposes of '
+                'this Agreement. This obligation survives the termination of this Agreement. The '
+                'Service Provider may refer to the Project name and display screenshots of it in its '
+                'portfolio, unless the Client objects in writing.',
+    },
+    {
+        'title': 'Limitation of Liability',
+        'body': 'The total liability of the Service Provider arising out of or in connection with '
+                'this Agreement shall not exceed the fees actually paid by the Client under this '
+                'Agreement. Neither Party shall be liable to the other for any indirect, incidental '
+                'or consequential loss, including loss of profit, revenue, data or business.',
+    },
+    {
+        'title': 'Force Majeure',
+        'body': 'Neither Party shall be liable for any delay or failure to perform its obligations '
+                'caused by events beyond its reasonable control, including natural disasters, '
+                'epidemics, government action, power or network failures and outages of third-party '
+                'services. The affected obligations are suspended for the duration of such event.',
     },
     {
         'title': 'Termination',
-        'body': 'Either party may end this agreement with 15 days\' written notice. You pay for '
-                'the work completed up to the notice date; advances already paid are adjusted '
-                'against that work and are otherwise non-refundable. Work paid for is handed over.',
+        'body': 'Either Party may terminate this Agreement by giving fifteen (15) days\' written notice '
+                'to the other. On termination, the Client shall pay for all work completed up to the '
+                'date of termination. Advances already paid shall be adjusted against that work and '
+                'are otherwise non-refundable. Work that has been paid for shall be handed over to '
+                'the Client.',
     },
     {
-        'title': 'Governing Law',
-        'body': 'This agreement is governed by the laws of India. Any dispute that cannot be '
-                'settled by discussion falls under the jurisdiction of the courts at Malappuram, '
-                'Kerala.',
+        'title': 'Governing Law & Jurisdiction',
+        'body': 'This Agreement shall be governed by and construed in accordance with the laws of '
+                'India. The Parties shall first attempt to resolve any dispute through good-faith '
+                'discussion. Any dispute not so resolved shall be subject to the exclusive '
+                'jurisdiction of the courts at Malappuram, Kerala.',
+    },
+    {
+        'title': 'General',
+        'bullets': [
+            'Entire agreement: this Agreement constitutes the entire agreement between the Parties regarding the Project and supersedes all prior proposals, quotations and discussions.',
+            'Amendment: no change to this Agreement is valid unless agreed in writing by both Parties.',
+            'Independent parties: the Service Provider acts as an independent contractor. Nothing in this Agreement creates a partnership, agency or employment relationship.',
+            'Assignment: neither Party may assign this Agreement without the prior written consent of the other Party.',
+            'Severability: if any provision is held invalid or unenforceable, the remaining provisions continue in full force.',
+            'Notices: notices under this Agreement may be given by email to the addresses the Parties have provided to each other.',
+        ],
     },
 ]
-
 
 def _money(amount):
     """'₹1,25,000' - Indian digit grouping, no paise unless there are some."""
@@ -496,51 +529,99 @@ def build_snapshot(project, *, scope, deliverables, start_date, end_date, total,
                    milestones, warranty_months, support_note, extra_terms,
                    exclusions=(), services=(), cloud_mode='', cloud_note='', late_interest=None):
     """Freeze the agreement for one project. Section numbers are assigned here
-    so the page and the signed copy always number the same way."""
+    so the page and the signed copy always number the same way. The wording
+    (preamble, clauses, acceptance) is frozen too, so rewording the template
+    later never changes what a client already accepted."""
+    from core.models import CompanySettings
+
     client = project.client
+    company = CompanySettings.get_settings()
+    provider_name = company.company_name or 'Ralfiz Technologies'
+    provider_address = ' '.join((company.address or 'KIMS Avenue, Perinthalmanna, Kerala, India').split())
+    client_party = client.company_name or client.name
+    client_address = ' '.join((client.address or '').split())
+    total = Decimal(total or 0)
     sections = []
 
     def add(title, **kw):
         sections.append({'no': len(sections) + 1, 'title': title, **kw})
 
-    add('Scope of Work', body=scope or project.description or '')
+    add('Scope of Work', body='The Service Provider shall carry out the following work for the '
+        'Project (the "Services"):\n\n' + (scope or project.description or ''))
     if deliverables:
-        add('Deliverables', bullets=deliverables)
+        add('Deliverables', body='The Service Provider shall deliver the following (the "Deliverables"):',
+            bullets=deliverables)
     if exclusions:
-        add('Exclusions', body='The following are not part of this project fee:', bullets=list(exclusions))
+        add('Exclusions', body='The following are excluded from the Services and the Project Fee and, '
+            'where required, shall be arranged and paid for by the Client:', bullets=list(exclusions))
     add('Timeline', kind='timeline',
-        body='Dates assume inputs and approvals arrive on time (see Client Responsibilities).')
+        body='The Service Provider shall use reasonable efforts to deliver the Project by the target '
+             'delivery date. The timeline is conditional on the Client meeting its obligations under '
+             'the clause titled Client Responsibilities.')
     add('Project Fee & Payment Schedule', kind='payment',
-        body='Amounts are exclusive of GST, which is added at the applicable rate on each invoice. '
-             'Each instalment is invoiced when its milestone is reached and is payable within '
-             '7 days of the invoice.'
-             + (f' Any invoice not paid by its due date, including invoices for recurring services, '
-                f'attracts interest at {late_interest.normalize():f}% per month on the overdue amount, '
-                f'from the due date until it is paid in full.' if late_interest else ''))
+        body=f'In consideration of the Services, the Client shall pay the Service Provider a total '
+             f'project fee of {_money(total)} ({rupees_in_words(total)}) (the "Project Fee"), exclusive '
+             f'of Goods and Services Tax (GST), which shall be charged at the applicable rate. The '
+             f'Project Fee shall be invoiced in instalments as each milestone below is reached, and '
+             f'each invoice is payable within seven (7) days of its date.'
+             + (f' Any amount not paid by its due date, including amounts due for recurring services, '
+                f'shall carry interest at {late_interest.normalize():f}% per month on the overdue amount, '
+                f'from the due date until the date of payment in full.' if late_interest else '')
+             + ' The Service Provider may suspend work on the Project while any invoice remains overdue, '
+               'and the timeline shall be extended accordingly.')
     if services:
         add('Additional Services & Charges', kind='services',
-            body='These are billed separately from the project fee, plus GST. One-time services are '
-                 'invoiced when delivered; recurring ones from go-live (or from the end of the '
-                 'warranty for AMC). Services marked Optional apply only if you '
-                 'choose them when accepting. Either party may stop a monthly service with 30 '
-                 'days\' written notice.'
-                 + (' Cloud hosting: please choose one plan.' if cloud_mode == 'required' else ''))
-    warranty_body = (f'We fix defects in the delivered work free of charge for {warranty_months} '
-                     f'month{"s" if warranty_months != 1 else ""} after go-live. '
-                     if warranty_months else 'No free warranty period applies to this project. ')
+            body='The following services are charged separately from the Project Fee, plus GST, unless '
+                 'stated to be included in the Project Fee. One-time services are invoiced on delivery. '
+                 'Recurring services are invoiced from go-live or, for the Annual Maintenance Contract '
+                 '(AMC), from the end of the Warranty Period. Services marked Optional apply only if the '
+                 'Client selects them at acceptance; services marked Part of agreement are binding. '
+                 'Either Party may discontinue a monthly service by giving thirty (30) days\' written notice.'
+                 + (' The Client shall select one cloud hosting plan.' if cloud_mode == 'required' else ''))
+    months = f'{warranty_months} month{"s" if warranty_months != 1 else ""}'
+    warranty_body = (f'The Service Provider warrants that the Deliverables shall be free from material '
+                     f'defects for a period of {months} from go-live (the "Warranty Period"), and shall '
+                     f'remedy any such defect reported in writing during the Warranty Period at no '
+                     f'additional charge. '
+                     if warranty_months else 'No free warranty period applies to this Project. ')
     add('Warranty & Support', body=warranty_body + (support_note or
-        'New features, content changes and third-party outages are not defects. Ongoing support '
-        'after the warranty is available under a separate Annual Maintenance Contract (AMC).'))
+        'New features, changes to content or requirements, and failures of third-party services are '
+        'not defects. Support after the Warranty Period is provided under the Annual Maintenance '
+        'Contract (AMC).'))
     for clause in STANDARD_CLAUSES:
         add(clause['title'], **{k: v for k, v in clause.items() if k != 'title'})
     if extra_terms:
         add('Additional Terms', bullets=extra_terms)
 
-    total = Decimal(total or 0)
+    issued = timezone.localdate().strftime('%d %B %Y')
+    preamble = (
+        f'This Project Service Agreement (the "Agreement") is made on {issued} between '
+        f'{provider_name}, {provider_address} (the "Service Provider"), and {client_party}'
+        + (f', {client_address}' if client_address else '')
+        + ' (the "Client"). The Service Provider and the Client are each a "Party" and together '
+          'the "Parties".'
+    )
+    recital = (f'The Client wishes to engage the Service Provider for {project.name} (the "Project"), '
+               f'and the Service Provider agrees to carry out the Project on the terms set out below.')
+    acceptance = (
+        f'By accepting this Agreement electronically, {client_party} confirms that it has read and '
+        f'understood this Agreement and agrees to be bound by its terms, including the Project Fee of '
+        f'{_money(total)} plus GST payable as per the payment schedule'
+        + (', the services marked Part of agreement and any optional services selected at acceptance'
+           if services else '')
+        + '. Under the Information Technology Act, 2000, this electronic acceptance has the same legal '
+          'effect as a handwritten signature.'
+    )
+
     return {
         'version': 'v1.0',
         'heading': 'Project Service Agreement',
         'eyebrow': 'CLIENT PROJECT AGREEMENT',
+        'preamble': preamble,
+        'recital': recital,
+        'acceptance': acceptance,
+        'provider_name': provider_name,
+        'provider_address': provider_address,
         'client_name': client.name,
         'client_company': client.company_name,
         'client_address': client.address,

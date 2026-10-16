@@ -9,6 +9,10 @@ signing page and the signed copy so the two can never drift.
       <div><label>Project</label><div>{{ doc.project_name }}<br><span class="kv-sub">{{ doc.project_type }}{% if doc.tech_stack %} &middot; {{ doc.tech_stack }}{% endif %}</span></div></div>
       <div><label>Reference</label><div>{{ agreement.reference }}<br><span class="kv-sub">{{ doc.version }} &middot; issued {{ agreement.sent_at|date:"d M Y" }}</span></div></div>
     </div>
+    {% if doc.preamble %}
+    <p class="agr-preamble">{{ doc.preamble }}</p>
+    <p class="agr-preamble">{{ doc.recital }} The Parties agree as follows:</p>
+    {% endif %}
   </section>
 
   {% for section in sections %}
@@ -84,10 +88,12 @@ signing page and the signed copy so the two can never drift.
       <h2>Acceptance</h2>
     </div>
     <div class="agr-callout dark">
+      {% if doc.acceptance %}{{ doc.acceptance }}{% else %}
       By accepting, <strong>{{ doc.client_company|default:doc.client_name }}</strong> agrees to engage
       Ralfiz Technologies for <strong>{{ doc.project_name }}</strong> on the terms above, for a total
       project fee of <strong>{{ doc.total_display }}</strong> plus GST, payable as per the schedule in
       this agreement{% if doc.services %}, together with the recurring services marked included and
       those chosen when accepting{% endif %}. An electronic acceptance is as binding as a signature on paper.
+      {% endif %}
     </div>
   </section>

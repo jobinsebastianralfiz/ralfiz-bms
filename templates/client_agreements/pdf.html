@@ -1,0 +1,246 @@
+{% load money %}<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{{ doc.heading }} - {{ agreement.reference }}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+{% include "pdf/_letterhead_style.html" %}
+
+    /* Agreement body on the letterhead */
+    .agr-title { margin-bottom: 4mm; }
+    .agr-title h1 { font-size: 15pt; font-weight: 800; color: #111827; letter-spacing: .01em; }
+    .agr-title .agr-sub { font-size: 8.5pt; color: #64748b; margin-top: .8mm; }
+    .agr-title .agr-rule { width: 16mm; height: .9mm; background: #3a82e4; margin-top: 2.5mm; }
+
+    .preamble { font-size: 9pt; line-height: 1.6; color: #1f2937; text-align: justify; margin-bottom: 2mm; }
+    .stamp {
+      border-left: 1mm solid #15803d; background: #f0fdf4; padding: 2mm 3.5mm; margin-bottom: 4mm;
+      font-size: 8.5pt; color: #14532d; page-break-inside: avoid;
+    }
+    .stamp strong { display: block; font-size: 9pt; }
+
+    .clause { margin-top: 4.5mm; }
+    .clause-head { display: flex; align-items: baseline; gap: 2.5mm; margin-bottom: 1.5mm; page-break-after: avoid; }
+    .clause-no { font-size: 9.5pt; font-weight: 800; color: #004aad; min-width: 6mm; }
+    .clause-head h2 { font-size: 9.5pt; font-weight: 800; color: #111827; text-transform: uppercase; letter-spacing: .05em; }
+    .clause-body { padding-left: 8.5mm; }
+    .clause p { font-size: 9pt; line-height: 1.6; color: #1f2937; text-align: justify; white-space: pre-line; }
+    .clause ol { margin: 1.5mm 0 0 5mm; font-size: 9pt; line-height: 1.55; color: #1f2937; list-style: lower-alpha; }
+    .clause ol li { margin-bottom: .8mm; padding-left: 1mm; text-align: justify; }
+    .note-box {
+      margin-top: 2mm; padding: 2mm 3.5mm; font-size: 8.5pt; line-height: 1.5;
+      border-left: 1mm solid #3a82e4; background: #f3f7fd; color: #1f2937; page-break-inside: avoid;
+    }
+    .note-box.warn { border-left-color: #d97706; background: #fffbeb; color: #78350f; }
+    .note-box.dark { border-left-color: #004aad; background: #eef4fd; color: #111827; text-align: justify; }
+
+    .kv2 { display: flex; gap: 6mm; margin: 1mm 0 2mm; }
+    .kv2 > div { flex: 1; background: #f3f7fd; padding: 2mm 3.5mm; }
+    .kv2 .label { margin-bottom: .5mm; }
+    .kv2 .v { font-size: 9.5pt; font-weight: 700; color: #111827; }
+
+    .fee-line { display: flex; align-items: baseline; gap: 3mm; margin: 2mm 0; }
+    .fee-amount { font-size: 13pt; font-weight: 800; color: #004aad; }
+    .fee-words { font-size: 8pt; color: #64748b; }
+    .clause .items { margin-top: 2mm; }
+    .clause .items tfoot td { font-weight: 800; color: #111827; border-top: .4mm solid #004aad; border-bottom: 0; padding: 2.2mm 3mm; font-size: 9pt; }
+    .svc-desc { font-size: 7.5pt; color: #64748b; margin-top: .4mm; font-weight: 400; }
+    .tag { display: inline-block; font-size: 7pt; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; padding: .3mm 1.8mm; border-radius: 2mm; background: #e5e7eb; color: #4b5563; white-space: nowrap; }
+    .tag.inc, .tag.yes { background: #dbeafe; color: #1d4ed8; }
+    .tag.yes { background: #dcfce7; color: #15803d; }
+
+    .witness { margin-top: 7mm; font-size: 9pt; color: #1f2937; page-break-after: avoid; }
+    .sign-grid { display: flex; gap: 12mm; margin-top: 4mm; page-break-inside: avoid; }
+    .sign-cell { flex: 1; font-size: 8.5pt; color: #4b5563; }
+    .sign-cell .label { margin-bottom: 2mm; }
+    .sign-area { height: 20mm; display: flex; align-items: flex-end; gap: 3mm; }
+    .sign-area img.sig { max-height: 17mm; max-width: 50mm; }
+    .sign-area img.seal { max-height: 20mm; max-width: 22mm; opacity: .9; }
+    .sign-typed { font-size: 15pt; font-style: italic; color: #111827; font-family: 'Brush Script MT', 'Segoe Script', cursive; }
+    .sign-line { border-top: .3mm solid #9ca3af; margin: 1mm 0 1.5mm; }
+    .sign-cell strong { display: block; color: #111827; font-size: 9pt; }
+    .sign-cell span { display: block; line-height: 1.5; }
+
+    .record { margin-top: 6mm; padding: 3mm 4mm; background: #f3f7fd; font-size: 7.5pt; color: #4b5563; page-break-inside: avoid; }
+    .record strong { color: #004aad; font-size: 8pt; letter-spacing: .06em; text-transform: uppercase; }
+    .record-grid { display: flex; flex-wrap: wrap; gap: 1mm 6mm; margin: 1.5mm 0; }
+    .record-grid div { width: 76mm; }
+    .record-grid span { color: #64748b; display: inline-block; width: 24mm; }
+    .record code { font-family: 'Courier New', monospace; font-size: 7pt; word-break: break-all; color: #111827; }
+  </style>
+</head>
+<body>
+  {% if not for_pdf %}
+  <div class="download-bar no-print">
+    <div class="download-bar-title">{% if agreement.status == 'accepted' %}Signed copy{% else %}Agreement preview{% endif %} - {{ agreement.reference }} {{ doc.version }}</div>
+    <div class="download-bar-actions">
+      <button type="button" class="download-btn secondary" onclick="window.print()">Print</button>
+      {% if pdf_url %}<a href="{{ pdf_url }}" class="download-btn">Download PDF</a>{% endif %}
+    </div>
+  </div>
+  {% endif %}
+
+  <div class="sheet">
+    {% include "pdf/_letterhead.html" with company=letterhead doc_title="AGREEMENT" doc_number=agreement.reference %}
+
+    <div class="agr-title">
+      <h1>{{ doc.heading }}</h1>
+      <div class="agr-sub">{{ doc.project_name }} &middot; {{ agreement.reference }} {{ doc.version }} &middot; issued {{ agreement.sent_at|date:"d M Y" }}</div>
+      <div class="agr-rule"></div>
+    </div>
+
+    <div class="doc-row">
+      <div class="doc-col">
+        <div class="label">Service Provider</div>
+        <div class="party-name">{{ doc.provider_name|default:letterhead.company_name }}</div>
+        <div class="party-details">
+          <div>{{ doc.provider_address|default:letterhead.address|oneline }}</div>
+          {% if letterhead.gst_number %}<div>GSTIN: {{ letterhead.gst_number }}</div>{% endif %}
+        </div>
+      </div>
+      <div class="doc-col">
+        <div class="label">Client</div>
+        <div class="party-name">{{ doc.client_company|default:doc.client_name }}</div>
+        <div class="party-details">
+          {% if doc.client_company %}<div>{{ doc.client_name }}</div>{% endif %}
+          {% if doc.client_address %}<div>{{ doc.client_address|oneline }}</div>{% endif %}
+          {% if doc.client_gst %}<div>GSTIN: {{ doc.client_gst }}</div>{% endif %}
+        </div>
+      </div>
+      <div class="meta">
+        <div class="meta-row"><span>Reference</span><span>{{ agreement.reference }}</span></div>
+        <div class="meta-row"><span>Version</span><span>{{ doc.version }}</span></div>
+        <div class="meta-row"><span>Issued</span><span>{{ agreement.sent_at|date:"d M Y" }}</span></div>
+        <div class="meta-row"><span>Status</span><span>{% if agreement.status == 'accepted' %}<span class="status-badge accepted">Signed</span>{% else %}<span class="status-badge pending">Awaiting signature</span>{% endif %}</span></div>
+      </div>
+    </div>
+
+    {% if agreement.status == 'accepted' %}
+    <div class="stamp"><strong>Accepted &amp; signed electronically</strong>
+      by {{ agreement.signed_name }} on {{ agreement.responded_at|date:"d M Y, g:i a" }}</div>
+    {% endif %}
+
+    {% if doc.preamble %}
+    <p class="preamble">{{ doc.preamble }}</p>
+    <p class="preamble">{{ doc.recital }} The Parties agree as follows:</p>
+    {% endif %}
+
+    {% for section in sections %}
+    <div class="clause">
+      <div class="clause-head"><span class="clause-no">{{ section.no }}.</span><h2>{{ section.title }}</h2></div>
+      <div class="clause-body">
+        {% if section.kind == 'payment' %}
+        <div class="fee-line"><span class="fee-amount">{{ doc.total_display }}</span><span class="fee-words">{{ doc.total_in_words }} &middot; plus GST</span></div>
+        {% endif %}
+
+        {% if section.body %}<p>{{ section.body }}</p>{% endif %}
+
+        {% if section.kind == 'timeline' %}
+        <div class="kv2">
+          <div><div class="label">Start</div><div class="v">{{ doc.start_date }}</div></div>
+          <div><div class="label">Target delivery</div><div class="v">{{ doc.end_date }}</div></div>
+        </div>
+        {% endif %}
+
+        {% if section.kind == 'payment' %}
+        <table class="items">
+          <thead><tr><th class="n">#</th><th>Milestone</th><th class="r">Share</th><th class="r">Amount</th></tr></thead>
+          <tbody>
+            {% for m in doc.milestones %}
+            <tr><td class="n">{{ forloop.counter }}</td><td>{{ m.label }}</td><td class="r">{{ m.percent }}%</td><td class="r">{{ m.amount_display }}</td></tr>
+            {% endfor %}
+          </tbody>
+          <tfoot><tr><td></td><td>Total (plus GST)</td><td class="r">100%</td><td class="r">{{ doc.total_display }}</td></tr></tfoot>
+        </table>
+        {% endif %}
+
+        {% if section.kind == 'services' %}
+        <table class="items">
+          <thead><tr><th>Service</th><th class="r">Charge</th><th class="r">{% if agreement.status == 'accepted' %}Chosen{% else %}Type{% endif %}</th></tr></thead>
+          <tbody>
+            {% for s in doc.services %}
+            <tr>
+              <td><span class="item-desc">{% if s.group == 'cloud' %}Cloud hosting &middot; {% endif %}{{ s.name }}</span>
+                {% if s.description %}<div class="svc-desc">{{ s.description }}</div>{% endif %}</td>
+              <td class="r">{{ s.amount_display }} {{ s.cycle_suffix }}{% if s.group == 'cloud' and doc.cloud_note %}<div class="svc-desc">+ usage at actuals</div>{% endif %}</td>
+              <td class="r">
+                {% if agreement.status == 'accepted' %}
+                  {% if s.key in chosen_keys %}<span class="tag yes">Yes</span>{% else %}<span class="tag">No</span>{% endif %}
+                {% elif s.mode == 'included' %}<span class="tag inc">Part of agreement</span>
+                {% elif s.group == 'cloud' %}<span class="tag">Pick one</span>
+                {% else %}<span class="tag">Optional</span>{% endif %}
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+        {% if doc.cloud_note %}<div class="note-box warn">{{ doc.cloud_note }}</div>{% endif %}
+        {% endif %}
+
+        {% if section.bullets %}
+        <ol>{% for bullet in section.bullets %}<li>{{ bullet }}</li>{% endfor %}</ol>
+        {% endif %}
+
+        {% if section.callout %}<div class="note-box {{ section.callout.style }}">{{ section.callout.text }}</div>{% endif %}
+      </div>
+    </div>
+    {% endfor %}
+
+    <div class="clause">
+      <div class="clause-head"><span class="clause-no">{{ doc.confirmation_no }}.</span><h2>Acceptance</h2></div>
+      <div class="clause-body">
+        <div class="note-box dark">
+          {% if doc.acceptance %}{{ doc.acceptance }}{% else %}
+          By accepting, {{ doc.client_company|default:doc.client_name }} agrees to engage Ralfiz Technologies for
+          {{ doc.project_name }} on the terms above, for a total project fee of {{ doc.total_display }} plus GST,
+          payable as per the schedule in this agreement. An electronic acceptance is as binding as a signature on paper.
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <p class="witness">IN WITNESS WHEREOF, the Parties have executed this Agreement on the dates set out below.</p>
+    <div class="sign-grid">
+      <div class="sign-cell">
+        <div class="label">For the Client</div>
+        <div class="sign-area">
+          {% if signature_src %}<img class="sig" src="{{ signature_src }}" alt="Signature">
+          {% elif agreement.signed_name %}<div class="sign-typed">{{ agreement.signed_name }}</div>{% endif %}
+        </div>
+        <div class="sign-line"></div>
+        <strong>{{ agreement.signer_company|default:doc.client_company|default:doc.client_name }}</strong>
+        <span>Name: {{ agreement.signer_name|default:"" }}{% if agreement.signer_designation %} &middot; {{ agreement.signer_designation }}{% endif %}</span>
+        <span>Date: {{ agreement.responded_at|date:"d M Y"|default:"" }}</span>
+      </div>
+      <div class="sign-cell">
+        <div class="label">For the Service Provider</div>
+        <div class="sign-area">
+          {% if company.signature_src %}<img class="sig" src="{{ company.signature_src }}" alt="Authorised signature">{% endif %}
+          {% if company.seal_src %}<img class="seal" src="{{ company.seal_src }}" alt="Company seal">{% endif %}
+        </div>
+        <div class="sign-line"></div>
+        <strong>{{ company.company_name }}</strong>
+        <span>{% if company.signatory_name %}Name: {{ company.signatory_name }} &middot; {% endif %}{{ company.signatory_designation }}</span>
+        <span>Date: {{ agreement.sent_at|date:"d M Y" }}</span>
+      </div>
+    </div>
+
+    {% if agreement.status == 'accepted' %}
+    <div class="record">
+      <strong>Electronic signature record</strong>
+      <div class="record-grid">
+        <div><span>Reference</span>{{ agreement.reference }} {{ doc.version }}</div>
+        <div><span>Signed by</span>{{ agreement.signed_name }}</div>
+        <div><span>Signed at</span>{{ agreement.responded_at|date:"d M Y, g:i a" }}</div>
+        {% if agreement.ip_address %}<div><span>Signed from IP</span>{{ agreement.ip_address }}</div>{% endif %}
+      </div>
+      <div><span style="color:#64748b;">Document fingerprint (SHA-256):</span> <code>{{ agreement.body_hash }}</code></div>
+    </div>
+    {% endif %}
+  </div>
+</body>
+</html>
