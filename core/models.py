@@ -4,6 +4,7 @@ import os
 import re
 from decimal import Decimal
 
+from .fields import EncryptedTextField
 from django.utils.functional import cached_property
 from django.core.exceptions import ValidationError
 from django.db import models, transaction
@@ -189,6 +190,7 @@ class Credential(models.Model):
         ('git', 'Git Repository'),
         ('payment', 'Payment Gateway'),
         ('social', 'Social Media'),
+        ('dev', 'Dev / test login'),
         ('other', 'Other'),
     ]
 
@@ -200,8 +202,8 @@ class Credential(models.Model):
     url = models.URLField(blank=True)
     ip_address = models.GenericIPAddressField(null=True, blank=True)
     username = models.CharField(max_length=255, blank=True)
-    password = models.CharField(max_length=255, blank=True)
-    ssh_key = models.TextField(blank=True)
+    password = EncryptedTextField(blank=True)
+    ssh_key = EncryptedTextField(blank=True)
     port = models.IntegerField(null=True, blank=True)
     purchase_date = models.DateField(null=True, blank=True)
     expiry_date = models.DateField(null=True, blank=True)
@@ -210,6 +212,7 @@ class Credential(models.Model):
     notes = models.TextField(blank=True)
     is_active = models.BooleanField(default=True)
     client_visible = models.BooleanField(default=False, help_text='Share this credential with the client in their portal')
+    is_temporary = models.BooleanField(default=False, help_text='A development or test login to remove or rotate at handover')
     last_renewed_date = models.DateField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -1440,6 +1443,26 @@ class ProjectLink(models.Model):
     def host(self):
         from urllib.parse import urlparse
         return urlparse(self.url).netloc.removeprefix('www.')
+
+
+class ProjectNote(models.Model):
+    """Staff-only working notes on a project: staging links, setup steps,
+    temporary development logins. The body is encrypted in the database."""
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    project = models.ForeignKey('Project', on_delete=models.CASCADE, related_name='note_entries')
+    title = models.CharField(max_length=150)
+    body = EncryptedTextField(blank=True)
+    pinned = models.BooleanField(default=False)
+    created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='+')
+    updated_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='+')
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['-pinned', '-updated_at']
+
+    def __str__(self):
+        return self.title
 
 
 class Task(models.Model):

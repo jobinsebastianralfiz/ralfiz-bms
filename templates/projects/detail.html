@@ -7,6 +7,17 @@
 <style>
   .pj-orb__logo { width: 44%; aspect-ratio: 1; overflow: hidden; border-radius: 50%; background: #fff; box-shadow: 0 4px 14px rgba(15,23,42,.18); }
   .pj-orb__logo img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .pj-note { border-top: 1px solid var(--border-color); }
+  .pj-note > summary { list-style: none; display: flex; align-items: center; gap: 12px; padding: 10px 2px; cursor: pointer; }
+  .pj-note > summary::-webkit-details-marker { display: none; }
+  .pj-note__caret { margin-left: auto; color: var(--text-muted); font-size: 11px; transition: transform .15s; }
+  .pj-note[open] .pj-note__caret { transform: rotate(180deg); }
+  .pj-note__body { padding: 0 2px 12px; }
+  .pj-note__body pre { white-space: pre-wrap; word-break: break-word; font: 13px/1.5 ui-monospace, SFMono-Regular, Menlo, monospace; background: var(--bg-hover); border: 1px solid var(--border-color); border-radius: 10px; padding: 10px 12px; margin: 0 0 8px; max-height: 320px; overflow: auto; }
+  .pj-note__actions { display: flex; flex-wrap: wrap; gap: 6px; align-items: flex-start; }
+  .pj-note__edit form { display: grid; gap: 8px; margin-top: 8px; width: 100%; }
+  .pj-note__edit[open] { flex-basis: 100%; }
+  .pj-note__edit > summary { list-style: none; }
 </style>
 <style>
   .tabs {
@@ -292,6 +303,51 @@
 
   <div class="pstage-col pstage-col--r">
 
+  <section class="stage-panel sp-pnotes" id="notes" data-open>
+    <h2 class="stage-panel__kicker"><span class="sp-ico sp-ico--slate"><i class="fas fa-note-sticky"></i></span>Project Notes</h2>
+    <div class="pj-bar"><span><i class="fas fa-lock"></i> Staff only &middot; stored encrypted</span></div>
+    {% for note in project.note_entries.all %}
+    <details class="pj-note">
+      <summary>
+        <span class="pj-row__icon"><i class="fas {% if note.pinned %}fa-thumbtack{% else %}fa-note-sticky{% endif %}"></i></span>
+        <span class="pj-row__main"><span class="pj-row__title">{{ note.title }}</span>
+          <span class="pj-row__sub">{% if note.updated_by %}{{ note.updated_by.get_full_name|default:note.updated_by.username }} &middot; {% endif %}{{ note.updated_at|date:"d M Y, H:i" }}</span></span>
+        <i class="fas fa-chevron-down pj-note__caret"></i>
+      </summary>
+      <div class="pj-note__body">
+        <pre>{{ note.body }}</pre>
+        <div class="pj-note__actions">
+          <button type="button" class="btn btn-sm btn-ghost" onclick="navigator.clipboard.writeText(this.closest('.pj-note__body').querySelector('pre').innerText);this.innerHTML='<i class=&quot;fas fa-check&quot;></i> Copied';"><i class="far fa-copy"></i> Copy</button>
+          <details class="pj-note__edit"><summary class="btn btn-sm btn-ghost"><i class="fas fa-pen"></i> Edit</summary>
+            <form method="post" action="{% url 'project_note_save' project.pk %}">
+              {% csrf_token %}<input type="hidden" name="note_id" value="{{ note.pk }}">
+              <input class="form-control" name="title" value="{{ note.title }}" maxlength="150" required>
+              <textarea class="form-control" name="body" rows="6">{{ note.body }}</textarea>
+              <label style="font-size:.875rem;margin:0;"><input type="checkbox" name="pinned" value="1" {% if note.pinned %}checked{% endif %}> Pin to top</label>
+              <button type="submit" class="btn btn-sm btn-primary">Save note</button>
+            </form>
+          </details>
+          <form method="post" action="{% url 'project_note_delete' project.pk note.pk %}" onsubmit="return confirm('Delete this note?');">
+            {% csrf_token %}<button type="submit" class="btn btn-sm btn-ghost"><i class="far fa-trash-can text-danger"></i> Delete</button>
+          </form>
+        </div>
+      </div>
+    </details>
+    {% empty %}
+    <p class="pj-empty"><i class="fas fa-note-sticky"></i> No notes yet. Keep staging links, setup steps and temporary logins here.</p>
+    {% endfor %}
+    <details class="pj-link-form">
+      <summary class="pj-add"><i class="fas fa-plus"></i> Add note</summary>
+      <form method="post" action="{% url 'project_note_save' project.pk %}" style="display:grid;gap:8px;margin-top:10px;">
+        {% csrf_token %}
+        <input class="form-control" name="title" maxlength="150" placeholder="Title, e.g. Staging admin login" required>
+        <textarea class="form-control" name="body" rows="5" placeholder="URL: https://staging.example.com/admin&#10;User: admin@example.com&#10;Password: ..."></textarea>
+        <label style="font-size:.875rem;margin:0;"><input type="checkbox" name="pinned" value="1"> Pin to top</label>
+        <button type="submit" class="btn btn-sm btn-primary" style="justify-self:start;"><i class="fas fa-plus"></i> Save note</button>
+      </form>
+    </details>
+  </section>
+
   <section class="stage-panel sp-plinks" id="links" data-open>
     <h2 class="stage-panel__kicker"><span class="sp-ico sp-ico--violet"><i class="fas fa-link"></i></span>Project Links</h2>
     {% with links=project.links.all %}
@@ -352,6 +408,7 @@
         <a href="{% url 'credential_detail' cred.pk %}" class="pj-row__title">{{ cred.name }}</a>
         <span class="pj-row__sub">{% if cred.url %}{{ cred.url|truncatechars:38 }}{% elif cred.username %}{{ cred.username }}{% else %}{{ cred.get_credential_type_display }}{% endif %}</span>
       </div>
+      {% if cred.is_temporary %}<span class="status-badge pending" title="Development login: remove or change at handover">Temporary</span>{% endif %}
       {% if cred.is_expired %}<span class="status-badge overdue">Expired</span>
       {% elif cred.is_expiring_soon %}
       <button type="button" class="btn btn-sm btn-ghost btn-icon" title="Renew credential" onclick="openRenewModal('{{ cred.pk }}', '{{ cred.name|escapejs }}')"><i class="fas fa-redo text-warning"></i></button>

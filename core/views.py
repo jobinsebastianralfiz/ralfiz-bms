@@ -23,7 +23,7 @@ from .models import (
     BankAccount, InternalTransfer,
     CompanyDocument, Partner, CapitalContribution, CompanyAsset,
     DailyTask,
-    ProjectLink,
+    ProjectLink, ProjectNote,
 )
 from django.contrib.contenttypes.models import ContentType
 from licensing.models import License, LicenseKey, LicenseActivation
@@ -1162,6 +1162,37 @@ def project_logo_upload(request, pk):
 
 
 @login_required
+def project_note_save(request, pk):
+    """Add a staff note to a project, or edit one (note_id)."""
+    project = get_object_or_404(Project, pk=pk)
+    if request.method == 'POST':
+        title = request.POST.get('title', '').strip()[:150]
+        if not title:
+            messages.error(request, 'Give the note a title.')
+            return redirect(f"{reverse('project_detail', args=[pk])}#notes")
+        note_id = request.POST.get('note_id', '')
+        note = get_object_or_404(ProjectNote, pk=note_id, project=project) if note_id else ProjectNote(project=project, created_by=request.user)
+        note.title = title
+        note.body = request.POST.get('body', '')[:20000]
+        note.pinned = bool(request.POST.get('pinned'))
+        note.updated_by = request.user
+        note.save()
+        log_activity(request, 'updated' if note_id else 'created', note)
+        messages.success(request, f'Note "{note.title}" saved.')
+    return redirect(f"{reverse('project_detail', args=[pk])}#notes")
+
+
+@login_required
+def project_note_delete(request, pk, note_id):
+    note = get_object_or_404(ProjectNote, pk=note_id, project_id=pk)
+    if request.method == 'POST':
+        log_activity(request, 'deleted', note)
+        note.delete()
+        messages.success(request, 'Note deleted.')
+    return redirect(f"{reverse('project_detail', args=[pk])}#notes")
+
+
+@login_required
 def project_link_add(request, pk):
     """Add a shareable link (design, preview, live site) to a project."""
     project = get_object_or_404(Project, pk=pk)
@@ -1394,6 +1425,7 @@ def credential_create(request):
             expiry_date=request.POST.get('expiry_date') or None,
             notes=request.POST.get('notes', ''),
             client_visible=request.POST.get('client_visible') == 'on',
+            is_temporary=request.POST.get('is_temporary') == 'on',
         )
         messages.success(request, f'Credential "{credential.name}" created successfully.')
         return redirect('credential_detail', pk=credential.pk)
@@ -1422,6 +1454,7 @@ def credential_update(request, pk):
         credential.notes = request.POST.get('notes', '')
         credential.is_active = request.POST.get('is_active') == 'on'
         credential.client_visible = request.POST.get('client_visible') == 'on'
+        credential.is_temporary = request.POST.get('is_temporary') == 'on'
         credential.save()
 
         messages.success(request, f'Credential "{credential.name}" updated successfully.')

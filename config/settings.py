@@ -235,6 +235,9 @@ YOUTUBE_API_KEY = os.getenv('YOUTUBE_API_KEY', '')
 
 # PULSE command center
 ANTHROPIC_API_KEY = os.getenv('ANTHROPIC_API_KEY', '')
+# Optional Fernet key for encrypted credential fields (core/fields.py); a key derived
+# from SECRET_KEY is always tried too, so setting this later does not lose data.
+CREDENTIAL_ENCRYPTION_KEY = os.getenv('CREDENTIAL_ENCRYPTION_KEY', '')
 PULSE_MODEL = os.getenv('PULSE_MODEL', 'claude-opus-4-8')
 # Social Hub: the model that drafts inbox replies (a person always sends them).
 SOCIAL_AI_MODEL = os.getenv('SOCIAL_AI_MODEL', 'claude-opus-5-5')
