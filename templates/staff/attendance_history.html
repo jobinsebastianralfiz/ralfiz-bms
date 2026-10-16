@@ -4,73 +4,65 @@
 {% block heading %}Attendance history{% endblock %}
 
 {% block page_hero %}
-{% include 'staff/_hero.html' with title='Attendance History' subtitle='Days present, hours and any shortfall, month by month.' tagline='Consistency leads to growth!' art='calendar' %}
+{% include 'staff/_hero.html' with title='Attendance History' subtitle='Days present, hours and any shortfall, month by month.' tagline='Good attendance builds success!' art='calendar' icon='fa-calendar-days' %}
 {% endblock %}
 
 {% block content %}
+<div class="sv-hist-top">
+  <div class="sv-hist-left">
+    <form method="get" class="sv-hist-pickers">
+      <label class="sv-picker"><i class="far fa-calendar" aria-hidden="true"></i>
+        <select name="month" onchange="this.form.submit()" aria-label="Month">{% for n, name in months %}<option value="{{ n }}" {% if n == month %}selected{% endif %}>{{ name }}</option>{% endfor %}</select></label>
+      <label class="sv-picker"><i class="far fa-calendar" aria-hidden="true"></i>
+        <select name="year" onchange="this.form.submit()" aria-label="Year">{% for y in years %}<option value="{{ y }}" {% if y == year %}selected{% endif %}>{{ y }}</option>{% endfor %}</select></label>
+    </form>
+    <section class="sv-stats three">
+      <div class="sv-stat"><span class="sv-ico green big"><i class="fas fa-user-group"></i></span><span class="sv-stat-body"><span class="sv-stat-lbl">Present</span><span class="sv-stat-val">{{ present_count }}</span><span class="sv-stat-lbl">Days present this month</span></span><span class="sv-corner green"><i class="fas fa-chevron-up"></i></span></div>
+      <div class="sv-stat"><span class="sv-ico orange big"><i class="far fa-clock"></i></span><span class="sv-stat-body"><span class="sv-stat-lbl">Late</span><span class="sv-stat-val">{{ late_count }}</span><span class="sv-stat-lbl">Days late this month</span></span><span class="sv-corner grey"><i class="fas fa-minus"></i></span></div>
+      <div class="sv-stat"><span class="sv-ico violet big"><i class="fas fa-hourglass-half"></i></span><span class="sv-stat-body"><span class="sv-stat-lbl">Total Hours</span><span class="sv-stat-val">{{ total_hours|floatformat:1 }}</span><span class="sv-stat-lbl">Total working hours</span></span><span class="sv-corner violet"><i class="fas fa-chart-simple"></i></span></div>
+    </section>
+  </div>
 
-<form method="get" class="sf-grid-2" style="margin-bottom:14px">
-  <select class="sf-select" name="month" onchange="this.form.submit()">
-    <option value="1"  {% if month == 1 %}selected{% endif %}>January</option>
-    <option value="2"  {% if month == 2 %}selected{% endif %}>February</option>
-    <option value="3"  {% if month == 3 %}selected{% endif %}>March</option>
-    <option value="4"  {% if month == 4 %}selected{% endif %}>April</option>
-    <option value="5"  {% if month == 5 %}selected{% endif %}>May</option>
-    <option value="6"  {% if month == 6 %}selected{% endif %}>June</option>
-    <option value="7"  {% if month == 7 %}selected{% endif %}>July</option>
-    <option value="8"  {% if month == 8 %}selected{% endif %}>August</option>
-    <option value="9"  {% if month == 9 %}selected{% endif %}>September</option>
-    <option value="10" {% if month == 10 %}selected{% endif %}>October</option>
-    <option value="11" {% if month == 11 %}selected{% endif %}>November</option>
-    <option value="12" {% if month == 12 %}selected{% endif %}>December</option>
-  </select>
-  <input class="sf-input" type="number" name="year" value="{{ year }}" min="2020" max="2100"
-         onchange="this.form.submit()">
-</form>
-
-<div class="sf-stats">
-  <div class="sf-stat">
-    <div class="sf-stat-val">{{ present_count }}</div>
-    <div class="sf-stat-lbl">Present</div>
-  </div>
-  <div class="sf-stat">
-    <div class="sf-stat-val">{{ late_count }}</div>
-    <div class="sf-stat-lbl">Late</div>
-  </div>
-  <div class="sf-stat">
-    <div class="sf-stat-val">{{ total_hours|floatformat:1 }}</div>
-    <div class="sf-stat-lbl">Hours</div>
-  </div>
+  <section class="sv-card sv-trend">
+    <header class="sv-card-head plain"><h2>Attendance Trend</h2><span class="sv-meta" style="margin:0;">{{ month_name|slice:":3" }} {{ year }}</span></header>
+    <div class="sv-chart" role="img" aria-label="Hours worked each day in {{ month_name }} {{ year }}">
+      <div class="sv-chart-y"><span>{{ trend_top }}h</span><span>{% widthratio trend_top 2 1 %}h</span><span>0h</span></div>
+      <div class="sv-chart-bars">
+        {% for d in trend %}<span class="sv-bar-col" title="{{ d.day }} {{ month_name|slice:':3' }}: {{ d.hours|floatformat:1 }}h"><i style="height: {{ d.pct }}%"></i>{% if d.label %}<small>{{ d.day }} {{ month_name|slice:":3" }}</small>{% endif %}</span>{% endfor %}
+      </div>
+    </div>
+  </section>
 </div>
 
-<div class="sf-section-title">{{ month_name }} {{ year }}</div>
-
-{% if records %}
-  <div class="sf-list">
+<section class="sv-card">
+  <header class="sv-card-head"><h2><span class="sv-head-ico"><i class="far fa-calendar"></i></span>{{ month_name }} {{ year }}</h2>
+    <span class="sv-summary-pill"><i class="far fa-calendar"></i> {{ present_count }} present · {{ late_count }} late · {{ total_hours|floatformat:1 }} hours</span></header>
+  {% if records %}
+  <div class="sv-htable">
+    <div class="sv-htr sv-th" aria-hidden="true"><span>Date</span><span>Check-in</span><span>Check-out</span><span>Hours</span><span>Status</span><span>Actions</span></div>
     {% for r in records %}
-      <div class="sf-item">
-        <div class="sf-item-head">
-          <span class="sf-item-title">{{ r.date|date:"D, d M" }}</span>
-          <span class="sf-badge {% if r.status == 'present' %}sf-badge-ok{% elif r.status == 'late' %}sf-badge-warn{% elif r.status == 'absent' %}sf-badge-danger{% else %}sf-badge-info{% endif %}">
-            {{ r.get_status_display }}
-          </span>
-        </div>
-        <div class="sf-item-meta">
-          <span><i class="fas fa-right-to-bracket"></i> {{ r.check_in|time:"h:i A"|default:"—" }}</span>
-          <span><i class="fas fa-right-from-bracket"></i> {{ r.check_out|time:"h:i A"|default:"—" }}</span>
-          {% if r.worked_hours %}<span><i class="fas fa-hourglass-half"></i> {{ r.worked_hours }}h</span>{% endif %}
-          {% if r.pending_hours %}<span style="color:var(--sf-red)"><i class="fas fa-triangle-exclamation"></i> {{ r.pending_hours }}h short</span>{% endif %}
-          {% if r.force_checkout_reason %}<span class="sf-dim">· {{ r.force_checkout_reason }}</span>{% endif %}
-          {% if r.is_remote %}<span><i class="fas fa-house-laptop"></i> Remote</span>{% endif %}
-        </div>
-      </div>
+    <div class="sv-htr">
+      <span class="sv-hdate"><i class="far fa-calendar"></i> <strong>{{ r.date|date:"D, d M" }}</strong></span>
+      <span class="sv-td" data-label="In">{{ r.check_in|time:"h:i A"|default:"—" }}</span>
+      <span class="sv-td" data-label="Out">{{ r.check_out|time:"h:i A"|default:"—" }}</span>
+      <span class="sv-td" data-label="Hours">{% if r.hours_shown %}{{ r.hours_shown|floatformat:2 }}h{% else %}—{% endif %}{% if r.pending_hours %} <span class="late">· {{ r.pending_hours }}h short</span>{% endif %}</span>
+      <span class="sv-td"><span class="sv-lstatus l-{% if r.status == 'absent' %}rejected{% elif r.status == 'late' %}pending{% else %}approved{% endif %}">● {{ r.get_status_display }}</span></span>
+      <span class="sv-actions">
+        {% if r.force_checkout_reason or r.is_remote or r.pending_hours %}
+        <details class="sv-menu"><summary aria-label="Details"><i class="fas fa-ellipsis"></i></summary>
+          <div class="sv-menu-note">
+            {% if r.is_remote %}<p><i class="fas fa-house-laptop"></i> Remote day</p>{% endif %}
+            {% if r.pending_hours %}<p><i class="fas fa-triangle-exclamation"></i> {{ r.pending_hours }}h short of required hours</p>{% endif %}
+            {% if r.force_checkout_reason %}<p><i class="fas fa-door-open"></i> Left early: {{ r.force_checkout_reason }}</p>{% endif %}
+          </div>
+        </details>
+        {% else %}<span class="sv-dim-dot">—</span>{% endif %}
+      </span>
+    </div>
     {% endfor %}
   </div>
-{% else %}
-  <div class="sf-empty">
-    <i class="fas fa-calendar-xmark"></i>
-    No attendance recorded for {{ month_name }} {{ year }}.
-  </div>
-{% endif %}
-
+  {% else %}
+  <p class="sv-empty">No attendance recorded for {{ month_name }} {{ year }}.</p>
+  {% endif %}
+</section>
 {% endblock %}

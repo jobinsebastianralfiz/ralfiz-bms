@@ -54,7 +54,7 @@
     <a href="{% url 'staff:notification_list' %}" class="{% if active_nav == 'notifications' %}active{% endif %}"><i class="fas fa-bell"></i> Notifications{% if unread_count %}<span class="sv-count">{{ unread_count }}</span>{% endif %}</a>
     <hr>
     <a href="{% url 'staff:payslip_list' %}" class="{% if active_nav == 'payslips' %}active{% endif %}"><i class="fas fa-receipt"></i> Payslips</a>
-    <a href="{% url 'staff:attendance_history' %}"><i class="fas fa-calendar-days"></i> Attendance history</a>
+    <a href="{% url 'staff:attendance_history' %}" class="{% if active_nav == 'attendance_history' %}active{% endif %}"><i class="fas fa-calendar-days"></i> Attendance history</a>
     <a href="{% url 'staff:profile' %}" class="{% if active_nav == 'profile' %}active{% endif %}"><i class="fas fa-user-gear"></i> Profile &amp; face</a>
     <a href="#" onclick="document.getElementById('sfThemeToggle').click(); return false;"><i class="fas fa-circle-half-stroke"></i> Light / dark</a>
     <a href="{% url 'staff:logout' %}"><i class="fas fa-right-from-bracket"></i> Sign out</a>

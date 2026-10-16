@@ -4,97 +4,74 @@
 {% block heading %}Daily update{% endblock %}
 
 {% block page_hero %}
-{% include 'staff/_hero.html' with title='Daily Updates' subtitle='What you worked on, what you learned and anything blocking you.' tagline='Small steps every day!' art='desk' %}
+{% include 'staff/_hero.html' with title='Daily Updates' subtitle='Stay updated with your daily work progress, learning and notes.' tagline='Small steps create big results' art='calendar' icon='fa-file-circle-plus' %}
 {% endblock %}
 
 {% block content %}
-
-<div class="sf-card">
-  <div class="sf-row">
-    <span class="sf-item-title">
-      {% if todays_report %}Today's update is in{% else %}Today's update{% endif %}
-    </span>
-    <span class="sf-muted">{{ today|date:"D, d M" }}</span>
+<section class="sv-today-bar">
+  <span class="sv-today-ico"><i class="far fa-file-lines"></i></span>
+  <div>
+    <strong>{% if todays_report %}Today's update is in{% else %}Add Today's Update{% endif %}</strong>
+    <span>{% if todays_report %}Filed at {{ todays_report.created_at|time:"g:i A" }}. You can still edit it today.{% else %}Share what you worked on today and keep your progress tracked.{% endif %}{% if streak > 1 %} · <i class="fas fa-fire"></i> {{ streak }} days in a row{% endif %}</span>
   </div>
-  <div class="sf-muted" style="margin-top:6px">
-    {% if todays_report %}
-      You filed it at {{ todays_report.created_at|time:"g:i A" }}. You can still edit it today.
-    {% else %}
-      A couple of lines is plenty — what you worked on, and what you picked up.
-    {% endif %}
-  </div>
-  {% if streak > 1 %}
-    <div class="sf-dim" style="margin-top:8px">
-      <i class="fas fa-fire"></i> {{ streak }} days in a row
-    </div>
-  {% endif %}
-  <button type="button" class="sf-btn" id="sfWriteUpdate" style="margin-top:12px"
-          data-id="{{ todays_report.id|default:'' }}">
+  <button type="button" class="sv-today-btn" id="sfWriteUpdate" data-id="{{ todays_report.id|default:'' }}">
     <i class="fas {% if todays_report %}fa-pen{% else %}fa-plus{% endif %}"></i>
     {% if todays_report %}Edit today's update{% else %}Write today's update{% endif %}
   </button>
-</div>
-
-<div class="sf-section-title">Your updates</div>
-{% if reports %}
-  <div class="sf-list">
-    {% for r in reports %}
-      <div class="sf-item">
-        <div class="sf-item-head">
-          <span class="sf-item-title">{{ r.date|date:"D, d M Y" }}</span>
-          {% if r.date == today %}<span class="sf-badge sf-badge-ok">Today</span>{% endif %}
-        </div>
-
-        <div class="sf-dr-block">
-          <div class="sf-dr-label"><i class="fas fa-briefcase"></i> Worked on</div>
-          <div class="sf-dr-text">{{ r.work_done|linebreaksbr }}</div>
-        </div>
-
-        {% if r.learned %}
-          <div class="sf-dr-block">
-            <div class="sf-dr-label"><i class="fas fa-lightbulb"></i> Learned</div>
-            <div class="sf-dr-text">{{ r.learned|linebreaksbr }}</div>
-          </div>
-        {% endif %}
-
-        {% if r.blockers %}
-          <div class="sf-dr-block sf-dr-blocked">
-            <div class="sf-dr-label"><i class="fas fa-triangle-exclamation"></i> Blocked on</div>
-            <div class="sf-dr-text">{{ r.blockers|linebreaksbr }}</div>
-          </div>
-        {% endif %}
-
-        {% for c in r.comments.all %}
-          <div class="sf-dr-comment">
-            <div class="sf-dr-comment-head">
-              {{ c.author_name }} · {{ c.created_at|date:"d M, g:i A" }}
-            </div>
-            <div>{{ c.message|linebreaksbr }}</div>
-          </div>
-        {% endfor %}
-
-        <div class="sf-dr-actions">
-          {% if r.is_editable %}
-            <button type="button" class="sf-btn sf-btn-ghost sf-btn-sm sf-dr-edit"
-                    data-id="{{ r.id }}"
-                    data-date="{{ r.date|date:'Y-m-d' }}"
-                    data-work="{{ r.work_done }}"
-                    data-learned="{{ r.learned }}"
-                    data-blockers="{{ r.blockers }}">Edit</button>
-          {% endif %}
-          <button type="button" class="sf-btn sf-btn-ghost sf-btn-sm sf-dr-reply"
-                  data-id="{{ r.id }}">Reply</button>
-        </div>
-      </div>
-    {% endfor %}
-  </div>
-{% else %}
-  <div class="sf-empty">
-    <i class="fas fa-book-open"></i>
-    No updates yet. Today is a good day to start.
-  </div>
+</section>
+{% if todays_report %}
+{# Keep today's report reachable for the edit button even when another month or range is shown. #}
+<span hidden class="sf-dr-edit" data-id="{{ todays_report.id }}" data-date="{{ todays_report.date|date:'Y-m-d' }}" data-work="{{ todays_report.work_done }}" data-learned="{{ todays_report.learned }}" data-blockers="{{ todays_report.blockers }}"></span>
 {% endif %}
 
+<div class="sv-filter-bar">
+  <div class="sf-chips sv-chip-row" style="margin:0;">
+    <a href="?month={{ month_value }}" class="sf-chip {% if range_key == 'all' %}active{% endif %}">All <span class="sv-count-pill">{{ range_counts.all }}</span></a>
+    <a href="?month={{ month_value }}&range=week" class="sf-chip {% if range_key == 'week' %}active{% endif %}">This Week <span class="sv-count-pill">{{ range_counts.week }}</span></a>
+    <a href="?month={{ month_value }}&range=last7" class="sf-chip {% if range_key == 'last7' %}active{% endif %}">Last 7 Days <span class="sv-count-pill">{{ range_counts.last7 }}</span></a>
+    <a href="?month={{ month_value }}&range=month" class="sf-chip {% if range_key == 'month' %}active{% endif %}">This Month <span class="sv-count-pill">{{ range_counts.month }}</span></a>
+  </div>
+  <form method="get" class="sv-picker">
+    {% if range_key != 'all' %}<input type="hidden" name="range" value="{{ range_key }}">{% endif %}
+    <i class="far fa-calendar" aria-hidden="true"></i>
+    <select name="month" onchange="this.form.submit()" aria-label="Month">{% for value, d in month_options %}<option value="{{ value }}" {% if value == month_value %}selected{% endif %}>{{ d|date:"M Y" }}</option>{% endfor %}</select>
+  </form>
+</div>
+
+<section class="sv-card">
+  <header class="sv-card-head"><h2><span class="sv-head-ico"><i class="fas fa-file-circle-plus"></i></span>Your Updates</h2></header>
+  {% if reports %}
+  <div class="sv-updates">
+    {% for r in reports %}
+    <article class="sv-update{% if r.date == today %} today{% endif %}">
+      <span class="sv-update-ico {% cycle 'violet' 'green' 'orange' 'red' 'blue' %}"><i class="fas {% if r.blockers %}fa-triangle-exclamation{% elif r.learned %}fa-lightbulb{% else %}fa-file-lines{% endif %}"></i></span>
+      <div class="sv-update-body">
+        <strong>{{ r.headline }}</strong>
+        {% if r.rest %}<p>{{ r.rest|linebreaksbr }}</p>{% endif %}
+        {% if r.learned %}<p class="sv-note"><i class="far fa-lightbulb"></i> <b>Learned:</b> {{ r.learned|linebreaksbr }}</p>{% endif %}
+        {% if r.blockers %}<p class="sv-note blocked"><i class="fas fa-triangle-exclamation"></i> <b>Blocked on:</b> {{ r.blockers|linebreaksbr }}</p>{% endif %}
+        {% for c in r.comments.all %}
+        <div class="sv-reply"><strong>{{ c.author_name }}</strong> · {{ c.created_at|date:"d M, g:i A" }}<br>{{ c.message|linebreaksbr }}</div>
+        {% endfor %}
+        <div class="sv-update-meta">
+          {% if r.comments.all %}<span><i class="far fa-message"></i> {{ r.comments.all|length }} repl{{ r.comments.all|length|pluralize:"y,ies" }}</span>{% endif %}
+          {% if r.is_editable %}<button type="button" class="sf-dr-edit" data-id="{{ r.id }}" data-date="{{ r.date|date:'Y-m-d' }}" data-work="{{ r.work_done }}" data-learned="{{ r.learned }}" data-blockers="{{ r.blockers }}"><i class="fas fa-pen"></i> Edit</button>{% endif %}
+          <button type="button" class="sf-dr-reply" data-id="{{ r.id }}"><i class="fas fa-reply"></i> Reply</button>
+        </div>
+      </div>
+      <div class="sv-update-side">
+        <span class="sv-meta" style="margin:0;"><i class="far fa-calendar"></i> {{ r.date|date:"D, d M Y" }}</span>
+        {% if r.date == today %}<span class="sv-status s-todo"><i class="fas fa-plus"></i> Today</span>
+        {% elif r.blockers %}<span class="sv-status s-cancelled">Blocked</span>
+        {% else %}<span class="sv-status s-completed"><i class="fas fa-check"></i> Filed</span>{% endif %}
+      </div>
+    </article>
+    {% endfor %}
+  </div>
+  {% else %}
+  <p class="sv-empty">No updates here yet. Today is a good day to start.</p>
+  {% endif %}
+</section>
 {% endblock %}
 
 {% block extra_js %}

@@ -9,7 +9,7 @@ re-implemented here -- the templates POST to the existing DRF endpoints in
 leave validation and face matching keep exactly one implementation shared with
 the Flutter app.
 """
-from datetime import timedelta
+from datetime import date, timedelta
 from functools import wraps
 
 from django.contrib import messages
@@ -31,7 +31,7 @@ from .models import (
 # changes. Whitenoise serves these unhashed, and the service worker is
 # cache-first for static assets, so an unversioned URL is served from the old
 # cache forever -- which is exactly how the app icon got stuck.
-ASSET_V = '13'
+ASSET_V = '14'
 
 MONTHS = [
     '', 'January', 'February', 'March', 'April', 'May', 'June',
@@ -280,15 +280,28 @@ def attendance_history(request):
     records = Attendance.objects.filter(
         employee=employee, date__year=year, date__month=month).order_by('-date')
 
-    ctx = _base_context(request, 'attendance')
+    import calendar
+    by_day = {r.date.day: float(r.worked_hours or r.working_hours or 0) for r in records}
+    days_in_month = calendar.monthrange(year, month)[1]
+    top = max([8.0] + list(by_day.values()))
+    trend = [{'day': d, 'hours': by_day.get(d, 0), 'pct': round(by_day.get(d, 0) * 100 / top),
+              'label': d in (1, 8, 15, 22, days_in_month)} for d in range(1, days_in_month + 1)]
+    for r in records:
+        r.hours_shown = float(r.worked_hours or r.working_hours or 0)
+
+    ctx = _base_context(request, 'attendance_history')
     ctx.update({
         'records': records,
         'year': year,
         'month': month,
         'month_name': MONTHS[month],
+        'months': list(enumerate(MONTHS))[1:],
+        'years': list(range(today.year, today.year - 4, -1)),
+        'trend': trend,
+        'trend_top': int(top),
+        'total_hours': sum(r.hours_shown for r in records),
         'present_count': records.exclude(status='absent').count(),
         'late_count': records.filter(status='late').count(),
-        'total_hours': sum(float(r.worked_hours or 0) for r in records),
     })
     return render(request, 'staff/attendance_history.html', ctx)
 
@@ -298,7 +311,12 @@ def attendance_history(request):
 @staff_required
 def leave(request):
     employee = request.employee
-    year = timezone.localdate().year
+    this_year = timezone.localdate().year
+    try:
+        year = int(request.GET.get('year', this_year))
+    except (TypeError, ValueError):
+        year = this_year
+    status = request.GET.get('status', '')
 
     balances = []
     for lt in LeaveType.objects.filter(is_active=True):
@@ -312,11 +330,28 @@ def leave(request):
             'remaining': max(0, lt.days_allowed - used),
         })
 
+    year_requests = LeaveRequest.objects.filter(employee=employee, start_date__year=year).select_related('leave_type')
+    status_counts = {'all': year_requests.count()}
+    for key in ('pending', 'approved', 'rejected'):
+        status_counts[key] = year_requests.filter(status=key).count()
+    shown = year_requests.filter(status=status) if status in dict(LeaveRequest.STATUS_CHOICES) else year_requests
+    years = sorted({d.year for d in LeaveRequest.objects.filter(employee=employee).dates('start_date', 'year')}
+                   | {this_year}, reverse=True)
+    for i, b in enumerate(balances):
+        name = b['leave_type'].name.lower()
+        b['icon'] = ('fa-plane' if 'casual' in name else 'fa-calendar-check' if 'earn' in name or 'privilege' in name
+                     else 'fa-kit-medical' if 'sick' in name or 'medical' in name else 'fa-hourglass-half')
+        b['tone'] = ['violet', 'green', 'red', 'blue'][i % 4]
+        b['pct'] = round(b['remaining'] * 100 / b['total_allowed']) if b['total_allowed'] else 0
+
     ctx = _base_context(request, 'leave')
     ctx.update({
         'balances': balances,
         'leave_types': LeaveType.objects.filter(is_active=True),
-        'requests': LeaveRequest.objects.filter(employee=employee).select_related('leave_type'),
+        'requests': shown.order_by('-start_date'),
+        'status_counts': status_counts,
+        'status': status,
+        'years': years,
         'year': year,
     })
     return render(request, 'staff/leave.html', ctx)
@@ -334,16 +369,42 @@ def daily_report(request):
     employee = request.employee
     today = timezone.localdate()
 
-    reports = list(DailyReport.objects
-                   .filter(employee=employee)
-                   .prefetch_related('comments__author')[:30])
-    todays = next((r for r in reports if r.date == today), None)
+    month_param = request.GET.get('month', today.strftime('%Y-%m'))
+    try:
+        my, mm = (int(x) for x in month_param.split('-'))
+        date(my, mm, 1)
+    except (ValueError, TypeError):
+        my, mm = today.year, today.month
+    in_month = DailyReport.objects.filter(employee=employee, date__year=my, date__month=mm)
+    week_start = today - timedelta(days=today.weekday())
+    ranges = {
+        'all': in_month,
+        'week': in_month.filter(date__gte=week_start),
+        'last7': in_month.filter(date__gte=today - timedelta(days=6)),
+        'month': in_month.filter(date__year=today.year, date__month=today.month),
+    }
+    range_key = request.GET.get('range', 'all')
+    if range_key not in ranges:
+        range_key = 'all'
+    reports = list(ranges[range_key].prefetch_related('comments__author').order_by('-date')[:60])
+    todays = DailyReport.objects.filter(employee=employee, date=today).prefetch_related('comments__author').first()
+    months = [d.strftime('%Y-%m') for d in DailyReport.objects.filter(employee=employee).dates('date', 'month', order='DESC')[:18]]
+    if today.strftime('%Y-%m') not in months:
+        months.insert(0, today.strftime('%Y-%m'))
+    for r in reports:
+        lines = [l.strip() for l in r.work_done.strip().splitlines() if l.strip()]
+        r.headline = (lines[0] if lines else 'Update')[:120]
+        r.rest = '\n'.join(lines[1:])
 
     ctx = _base_context(request, 'daily_report')
     ctx.update({
         'today': today,
         'todays_report': todays,
         'reports': reports,
+        'range_key': range_key,
+        'range_counts': {k: v.count() for k, v in ranges.items()},
+        'month_value': f'{my:04d}-{mm:02d}',
+        'month_options': [(m, date(int(m[:4]), int(m[5:]), 1)) for m in months],
         'streak': _report_streak(employee, today),
     })
     return render(request, 'staff/daily_report.html', ctx)

@@ -100,3 +100,44 @@ class StaffPagesTests(StaffBoardTaskTests):
         for name in ['staff:dashboard', 'staff:attendance', 'staff:leave', 'staff:daily_report',
                      'staff:payslip_list', 'staff:notification_list', 'staff:attendance_history']:
             self.assertEqual(self.client.get(reverse(name)).status_code, 200, name)
+
+
+class StaffLeaveDailyHistoryTests(StaffBoardTaskTests):
+    def test_leave_filters_by_status_and_year(self):
+        from datetime import date
+        from employees.models import LeaveRequest, LeaveType
+        lt, _ = LeaveType.objects.get_or_create(name='Sick Leave', defaults={'days_allowed': 10})
+        y = date.today().year
+        LeaveRequest.objects.create(employee=self.employee, leave_type=lt, start_date=date(y, 1, 5),
+                                    end_date=date(y, 1, 5), reason='flu', status='approved')
+        LeaveRequest.objects.create(employee=self.employee, leave_type=lt, start_date=date(y - 1, 3, 1),
+                                    end_date=date(y - 1, 3, 1), reason='old', status='approved')
+        r = self.client.get(reverse('staff:leave'), {'status': 'approved'})
+        self.assertEqual(r.context['status_counts']['all'], 1)
+        self.assertContains(r, 'flu')
+        self.assertNotContains(r, '>old<')
+        r = self.client.get(reverse('staff:leave'), {'year': y - 1})
+        self.assertContains(r, 'old')
+
+    def test_daily_updates_ranges(self):
+        from datetime import date, timedelta
+        from employees.models import DailyReport
+        today = date.today()
+        DailyReport.objects.create(employee=self.employee, date=today, work_done='Homepage copy\nmore detail')
+        r = self.client.get(reverse('staff:daily_report'), {'range': 'last7'})
+        self.assertEqual(r.context['range_counts']['last7'], 1)
+        self.assertContains(r, 'Homepage copy')
+        r = self.client.get(reverse('staff:daily_report'), {'month': 'nonsense'})
+        self.assertEqual(r.status_code, 200)
+
+    def test_history_hours_and_trend(self):
+        from datetime import datetime, time
+        from django.utils import timezone
+        from employees.models import Attendance
+        today = timezone.localdate()
+        start = timezone.make_aware(datetime.combine(today, time(9, 0)))
+        Attendance.objects.create(employee=self.employee, date=today, check_in=start,
+                                  check_out=start + timezone.timedelta(hours=6), status='present')
+        r = self.client.get(reverse('staff:attendance_history'))
+        self.assertEqual(r.context['total_hours'], 6.0)
+        self.assertEqual(next(d for d in r.context['trend'] if d['day'] == today.day)['hours'], 6.0)

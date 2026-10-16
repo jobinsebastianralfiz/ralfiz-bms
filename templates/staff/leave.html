@@ -4,66 +4,68 @@
 {% block heading %}Leave{% endblock %}
 
 {% block page_hero %}
-{% include 'staff/_hero.html' with title='Leave' subtitle='Apply for leave and follow your requests.' tagline='Rest well, come back strong!' art='calendar' %}
+{% include 'staff/_hero.html' with title='Leave Management' subtitle='Request, track and manage your leaves easily.' tagline='Take a break, come back stronger' art='calendar' icon='fa-plane' action_label='Request Leave' action_id='sfNewLeave' %}
 {% endblock %}
 
 {% block content %}
-
-<button type="button" class="sf-btn" id="sfNewLeave">
-  <i class="fas fa-plus"></i> Request leave
-</button>
-
-<div class="sf-section-title">Balance · {{ year }}</div>
 {% if balances %}
+<section class="sv-stats sv-balances" aria-label="Leave balance {{ year }}">
   {% for b in balances %}
-    <div class="sf-card sf-card-tight">
-      <div class="sf-row">
-        <span class="sf-item-title">{{ b.leave_type.name }}</span>
-        <span class="sf-muted">{{ b.remaining }} of {{ b.total_allowed }} left</span>
-      </div>
-      <div class="sf-bar">
-        <div class="sf-bar-fill" style="width:{% widthratio b.used b.total_allowed 100 %}%;
-             background:{% if b.remaining %}var(--sf-teal){% else %}var(--sf-red){% endif %}"></div>
-      </div>
-    </div>
+  <div class="sv-stat">
+    <span class="sv-ico {{ b.tone }}"><i class="fas {{ b.icon }}"></i></span>
+    <span class="sv-stat-body" style="flex:1;">
+      <span class="sv-stat-lbl">{{ b.leave_type.name }}</span>
+      <span class="sv-stat-val">{{ b.remaining }} <small>/ {{ b.total_allowed }}</small></span>
+      <span class="sv-meter {{ b.tone }}"><i style="width: {{ b.pct }}%"></i></span>
+      <span class="sv-stat-lbl">{{ b.remaining }} day{{ b.remaining|pluralize }} left</span>
+    </span>
+  </div>
   {% endfor %}
+</section>
 {% else %}
-  <div class="sf-card sf-muted">No leave types configured yet.</div>
+<section class="sv-card"><p class="sv-empty">No leave types configured yet. Ask HR to set them up.</p></section>
 {% endif %}
 
-<div class="sf-section-title">Your requests</div>
-{% if requests %}
-  <div class="sf-list">
+<div class="sv-filter-bar">
+  <div class="sf-chips sv-chip-row" style="margin:0;">
+    <a href="?year={{ year }}" class="sf-chip {% if not status %}active{% endif %}">All Requests ({{ status_counts.all }})</a>
+    <a href="?year={{ year }}&status=pending" class="sf-chip {% if status == 'pending' %}active{% endif %}">Pending ({{ status_counts.pending }})</a>
+    <a href="?year={{ year }}&status=approved" class="sf-chip {% if status == 'approved' %}active{% endif %}">Approved ({{ status_counts.approved }})</a>
+    <a href="?year={{ year }}&status=rejected" class="sf-chip {% if status == 'rejected' %}active{% endif %}">Rejected ({{ status_counts.rejected }})</a>
+  </div>
+  <form method="get" class="sv-picker">
+    {% if status %}<input type="hidden" name="status" value="{{ status }}">{% endif %}
+    <i class="far fa-calendar" aria-hidden="true"></i>
+    <select name="year" onchange="this.form.submit()" aria-label="Year">{% for y in years %}<option value="{{ y }}" {% if y == year %}selected{% endif %}>{{ y }}</option>{% endfor %}</select>
+  </form>
+</div>
+
+<section class="sv-card">
+  <header class="sv-card-head"><h2><span class="sv-head-ico"><i class="fas fa-user-clock"></i></span>Your Leave Requests</h2></header>
+  {% if requests %}
+  <div class="sv-ltable">
+    <div class="sv-ltr sv-th" aria-hidden="true"><span>Type</span><span>Duration</span><span>Reason</span><span>Status</span><span>Applied On</span><span></span></div>
     {% for r in requests %}
-      <div class="sf-item">
-        <div class="sf-item-head">
-          <span class="sf-item-title">{{ r.leave_type.name|default:"Leave" }}</span>
-          <span class="sf-badge {% if r.status == 'approved' %}sf-badge-ok{% elif r.status == 'rejected' %}sf-badge-danger{% elif r.status == 'cancelled' %}sf-badge-muted{% else %}sf-badge-warn{% endif %}">
-            {{ r.get_status_display }}
-          </span>
-        </div>
-        <div class="sf-item-meta">
-          <span><i class="fas fa-calendar"></i> {{ r.start_date|date:"d M" }} – {{ r.end_date|date:"d M Y" }}</span>
-          <span>{{ r.total_days }} day{{ r.total_days|pluralize }}</span>
-        </div>
-        <div class="sf-muted" style="margin-top:7px">{{ r.reason|truncatechars:130 }}</div>
-        {% if r.review_notes %}
-          <div class="sf-dim" style="margin-top:6px"><i class="fas fa-comment-dots"></i> {{ r.review_notes }}</div>
-        {% endif %}
+    <div class="sv-ltr">
+      <span class="sv-ltype"><span class="sv-ico {% if 'sick' in r.leave_type.name|lower %}red{% elif 'casual' in r.leave_type.name|lower %}violet{% elif 'earn' in r.leave_type.name|lower %}green{% else %}blue{% endif %}"><i class="fas {% if 'sick' in r.leave_type.name|lower %}fa-kit-medical{% elif 'casual' in r.leave_type.name|lower %}fa-plane{% elif 'earn' in r.leave_type.name|lower %}fa-calendar-check{% else %}fa-hourglass-half{% endif %}"></i></span>{{ r.leave_type.name|default:"Leave" }}</span>
+      <span class="sv-td" data-label="Duration"><strong>{{ r.start_date|date:"d M" }} – {{ r.end_date|date:"d M Y" }}</strong><br>{{ r.total_days }} day{{ r.total_days|pluralize }}</span>
+      <span class="sv-td" data-label="Reason">{{ r.reason|truncatechars:90 }}{% if r.review_notes %}<br><small><i class="far fa-comment-dots"></i> {{ r.review_notes|truncatechars:80 }}</small>{% endif %}</span>
+      <span class="sv-td" data-label="Status"><span class="sv-lstatus l-{{ r.status }}"><i class="fas {% if r.status == 'approved' %}fa-circle-check{% elif r.status == 'rejected' %}fa-circle-xmark{% elif r.status == 'cancelled' %}fa-ban{% else %}fa-hourglass-half{% endif %}"></i> {{ r.get_status_display }}</span></span>
+      <span class="sv-td" data-label="Applied">{{ r.created_at|date:"d M Y" }}</span>
+      <span class="sv-actions">
         {% if r.status == 'pending' %}
-          <button type="button" class="sf-btn sf-btn-ghost sf-btn-sm sf-cancel-leave"
-                  data-id="{{ r.id }}" style="margin-top:10px">Cancel request</button>
+        <details class="sv-menu"><summary aria-label="Actions"><i class="fas fa-ellipsis"></i></summary>
+          <div><button type="button" class="sf-cancel-leave" data-id="{{ r.id }}"><i class="fas fa-xmark"></i> Cancel request</button></div>
+        </details>
         {% endif %}
-      </div>
+      </span>
+    </div>
     {% endfor %}
   </div>
-{% else %}
-  <div class="sf-empty">
-    <i class="fas fa-plane-departure"></i>
-    You haven't requested any leave yet.
-  </div>
-{% endif %}
-
+  {% else %}
+  <p class="sv-empty">No leave requests{% if status %} with this status{% endif %} in {{ year }}.</p>
+  {% endif %}
+</section>
 {% endblock %}
 
 {% block extra_js %}
