@@ -32,3 +32,22 @@ def decorate_team(members):
     for m in members:
         m.avatar_tone = tone_for(m.name)
     return members
+
+
+def project_progress(project):
+    """Percent complete shown to the client.
+
+    A client-visible progress update wins. Otherwise it is the average of the
+    tasks' own progress, and it only reaches 100% once the project itself is
+    marked completed (a board with one finished task is not a finished project).
+    """
+    latest = project.updates.filter(progress_percentage__isnull=False, is_visible_to_client=True).first()
+    if latest:
+        return latest.progress_percentage
+    if project.status == 'completed':
+        return 100
+    tasks = list(project.tasks.all())
+    if not tasks:
+        return 0
+    pct = round(sum(t.progress_percent for t in tasks) / len(tasks))
+    return min(pct, 99)

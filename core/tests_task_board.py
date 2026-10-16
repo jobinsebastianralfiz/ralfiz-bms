@@ -106,3 +106,34 @@ class ProjectDetailBoardLinkTests(TestCase):
         r = self.client.get(reverse('project_detail', args=[project.pk]))
         self.assertContains(r, f'{reverse("task_board")}?project={project.pk}')
         self.assertContains(r, 'Task Board (1)')
+
+
+class ProjectProgressTests(TestCase):
+    def setUp(self):
+        client = Client.objects.create(name='Acme', email='acme@example.com')
+        self.project = Project.objects.create(client=client, name='Acme Website', status='confirmed')
+
+    def progress(self):
+        from core.task_board import project_progress
+        return project_progress(self.project)
+
+    def test_one_done_task_is_not_a_done_project(self):
+        Task.objects.create(project=self.project, title='Design', status='completed')
+        self.assertEqual(self.progress(), 99)
+        self.project.status = 'completed'
+        self.project.save()
+        self.assertEqual(self.progress(), 100)
+
+    def test_average_of_task_progress(self):
+        Task.objects.create(project=self.project, title='A', status='completed')
+        Task.objects.create(project=self.project, title='B', status='in_progress', progress=50)
+        Task.objects.create(project=self.project, title='C', status='todo')
+        self.assertEqual(self.progress(), 50)
+
+    def test_posted_update_wins(self):
+        from client_portal.models import ProjectUpdate
+        Task.objects.create(project=self.project, title='A', status='completed')
+        author = User.objects.create_user('pm', password='pw-12345')
+        ProjectUpdate.objects.create(project=self.project, author=author, title='Kick-off', description='Started',
+                                     progress_percentage=15, is_visible_to_client=True)
+        self.assertEqual(self.progress(), 15)

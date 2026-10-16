@@ -9,7 +9,7 @@ from django.contrib.contenttypes.models import ContentType
 from django.http import Http404
 
 from core.models import Client, Project, Task, Invoice, Quote, Document, Credential
-from core.task_board import board_columns
+from core.task_board import board_columns, project_progress
 from .models import ProjectComment, ProjectUpdate, ClientNotification
 
 
@@ -125,12 +125,7 @@ def portal_dashboard(request):
         tasks = p.tasks.all()
         total = tasks.count()
         completed = tasks.filter(status='completed').count()
-        # Check for manual progress
-        latest_update = p.updates.filter(
-            progress_percentage__isnull=False, is_visible_to_client=True
-        ).first()
-        progress = latest_update.progress_percentage if latest_update else (int((completed / total) * 100) if total else 0)
-        p.progress = progress
+        p.progress = project_progress(p)
         p.task_total = total
         p.task_completed = completed
         active_list.append(p)
@@ -176,10 +171,7 @@ def portal_projects(request):
         tasks = p.tasks.all()
         total = tasks.count()
         completed = tasks.filter(status='completed').count()
-        latest_update = p.updates.filter(
-            progress_percentage__isnull=False, is_visible_to_client=True
-        ).first()
-        p.progress = latest_update.progress_percentage if latest_update else (int((completed / total) * 100) if total else 0)
+        p.progress = project_progress(p)
         p.task_total = total
         p.task_completed = completed
         project_list.append(p)
@@ -216,15 +208,7 @@ def portal_project_detail(request, project_id):
         'completed': tasks.filter(status='completed').count(),
     }
 
-    latest_update = project.updates.filter(
-        progress_percentage__isnull=False, is_visible_to_client=True
-    ).first()
-    if latest_update:
-        progress = latest_update.progress_percentage
-    elif task_stats['total']:
-        progress = int((task_stats['completed'] / task_stats['total']) * 100)
-    else:
-        progress = 0
+    progress = project_progress(project)
 
     invoices = project.invoices(manager='all_objects').exclude(status='cancelled')
     total_invoiced = invoices.aggregate(t=Sum('total_amount'))['t'] or 0

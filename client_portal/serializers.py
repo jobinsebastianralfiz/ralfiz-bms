@@ -57,22 +57,8 @@ class ProjectListSerializer(serializers.ModelSerializer):
         return {'total': total, 'completed': completed}
 
     def get_progress(self, obj):
-        """Calculate progress from tasks or latest project update"""
-        # Check if there's a manual progress update
-        latest_update = obj.updates.filter(
-            progress_percentage__isnull=False,
-            is_visible_to_client=True
-        ).first()
-        if latest_update:
-            return latest_update.progress_percentage
-
-        # Otherwise calculate from tasks
-        tasks = obj.tasks.all()
-        total = tasks.count()
-        if total == 0:
-            return 0
-        completed = tasks.filter(status='completed').count()
-        return int((completed / total) * 100)
+        from core.task_board import project_progress
+        return project_progress(obj)
 
 
 class ProjectDetailSerializer(serializers.ModelSerializer):
