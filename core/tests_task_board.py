@@ -224,3 +224,22 @@ class ProjectLinkTests(TestCase):
         self.assertFalse(link.visible_to_client)
         self.client.post(reverse('project_link_delete', args=[self.project.pk, link.pk]))
         self.assertFalse(self.project.links.exists())
+
+
+class TaskFormProjectListTests(TestCase):
+    def test_lead_and_review_projects_can_get_tasks(self):
+        admin = User.objects.create_superuser('boss', 'boss@example.com', 'pw-12345')
+        biz = Client.objects.create(name='SunNok', email='s@example.com')
+        lead = Project.objects.create(client=biz, name='SunNok Website', status='lead')
+        review = Project.objects.create(client=biz, name='SunNok App', status='review')
+        done = Project.objects.create(client=biz, name='Old Site', status='completed')
+        self.client.force_login(admin)
+        r = self.client.get(reverse('task_create') + f'?project={lead.pk}&next=board')
+        names = [p.name for p in r.context['projects']]
+        self.assertIn('SunNok Website', names)
+        self.assertIn('SunNok App', names)
+        self.assertNotIn('Old Site', names)
+        self.assertContains(r, f'value="{lead.pk}" selected')
+        # Coming from a finished project still lists it.
+        r = self.client.get(reverse('task_create') + f'?project={done.pk}')
+        self.assertIn('Old Site', [p.name for p in r.context['projects']])

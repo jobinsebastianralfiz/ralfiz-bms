@@ -32,7 +32,7 @@
               <select class="form-control" name="project" required>
                 <option value="">Select Project</option>
                 {% for project in projects %}
-                <option value="{{ project.pk }}" {% if task.project_id == project.pk or prefill_project == project.pk|slugify %}selected{% endif %}>{{ project.name }}</option>
+                <option value="{{ project.pk }}" {% if task.project_id == project.pk or prefill_project == project.pk|slugify %}selected{% endif %}>{{ project.name }} · {{ project.client.name }}{% if project.status != "in_progress" and project.status != "confirmed" %} ({{ project.get_status_display }}){% endif %}</option>
                 {% endfor %}
               </select>
             </div>

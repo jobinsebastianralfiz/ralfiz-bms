@@ -5863,7 +5863,7 @@ def task_board(request):
         tasks = tasks.filter(assigned_to=team_member)
         projects = Project.objects.filter(tasks__assigned_to=team_member).distinct()
     else:
-        projects = Project.objects.filter(status__in=['in_progress', 'confirmed'])
+        projects = _task_form_projects(project_id)
     projects = projects.annotate(
         open_task_total=Count('tasks', filter=~Q(tasks__status='completed'), distinct=True),
     ).order_by('name')
@@ -6071,6 +6071,15 @@ def task_issue_update(request, pk, issue_id):
     return redirect(f"{reverse('task_detail', args=[pk])}#issues")
 
 
+def _task_form_projects(*keep_ids):
+    """Projects a task can belong to: anything not finished or cancelled,
+    plus the project the form came from (so a prefilled one is never missing)."""
+    keep = [k for k in keep_ids if k and _is_uuid(k)]
+    return Project.objects.filter(
+        ~Q(status__in=['completed', 'cancelled']) | Q(pk__in=keep)
+    ).select_related('client').order_by('name')
+
+
 def _task_board_fields(task, post):
     """Category label and progress % from the task form."""
     task.category = post.get('category', '').strip()[:60]
@@ -6119,7 +6128,7 @@ def task_create(request):
         return redirect('task_list')
 
     context = {
-        'projects': Project.objects.filter(status__in=['in_progress', 'confirmed']),
+        'projects': _task_form_projects(request.GET.get('project')),
         'status_choices': Task.STATUS_CHOICES,
         'priority_choices': Task.PRIORITY_CHOICES,
         'team_members': TeamMember.objects.filter(is_active=True),
@@ -6176,7 +6185,7 @@ def task_update(request, pk):
 
     context = {
         'task': task,
-        'projects': Project.objects.filter(status__in=['in_progress', 'confirmed']),
+        'projects': _task_form_projects(str(task.project_id)),
         'status_choices': Task.STATUS_CHOICES,
         'priority_choices': Task.PRIORITY_CHOICES,
         'team_members': TeamMember.objects.filter(is_active=True),
