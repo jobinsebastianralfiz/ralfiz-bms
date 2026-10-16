@@ -59,93 +59,231 @@
     </div>
 
     {% else %}
-    <!-- Admin Navigation -->
+    <!-- Admin Navigation, grouped by area of work. Groups collapse (see the script below). -->
+    {% with n=request.resolver_match.url_name|default:'' %}
     <div class="nav-section">
-      <a href="{% url 'dashboard' %}" class="nav-item {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}">
+      <a href="{% url 'dashboard' %}" class="nav-item {% if n == 'dashboard' %}active{% endif %}">
         <i class="fas fa-house"></i>
         <span>Dashboard</span>
       </a>
-    </div>
-
-    <div class="nav-section">
-      <div class="nav-section-title">Main</div>
-      <a href="{% url 'portfolio' %}" class="nav-item {% if request.resolver_match.url_name == 'portfolio' %}active{% endif %}">
+      <a href="{% url 'portfolio' %}" class="nav-item {% if n == 'portfolio' %}active{% endif %}">
         <i class="fas fa-circle-nodes"></i>
         <span>Portfolio</span>
       </a>
-      <a href="{% url 'dashboard-legacy' %}" class="nav-item {% if request.resolver_match.url_name == 'dashboard-legacy' %}active{% endif %}">
+      <a href="{% url 'dashboard-legacy' %}" class="nav-item {% if n == 'dashboard-legacy' %}active{% endif %}">
         <i class="fas fa-th-large"></i>
         <span>Classic Dashboard</span>
       </a>
     </div>
 
-    <div class="nav-section">
-      <div class="nav-section-title">Dashboards</div>
-      <a href="{% url 'projects_dashboard' %}" class="nav-item {% if request.resolver_match.url_name == 'projects_dashboard' %}active{% endif %}">
-        <i class="fas fa-thumbtack"></i>
-        <span>Projects Board</span>
+    <div class="nav-section nav-group" data-group="sales">
+      <button type="button" class="nav-section-title nav-group-toggle" aria-expanded="true">Sales<i class="fas fa-chevron-down nav-group-caret" aria-hidden="true"></i></button>
+      <div class="nav-group-items">
+      <a href="{% url 'crm:lead_list' %}" class="nav-item {% if 'lead' in n %}active{% endif %}">
+        <i class="fas fa-user-tag"></i>
+        <span>Leads</span>
       </a>
-      <a href="{% url 'daily_tasks_dashboard' %}" class="nav-item {% if 'daily_task' in request.resolver_match.url_name %}active{% endif %}">
-        <i class="fas fa-list-check"></i>
-        <span>Daily Tasks</span>
+      <a href="{% url 'crm:demo_list' %}" class="nav-item {% if 'demo' in n %}active{% endif %}">
+        <i class="fas fa-desktop"></i>
+        <span>Demos</span>
       </a>
+      <a href="{% url 'crm:activity_list' %}" class="nav-item {% if n == 'activity_list' or n == 'activity_create' or n == 'activity_edit' %}active{% endif %}">
+        <i class="fas fa-clipboard-check"></i>
+        <span>Daily Activities</span>
+      </a>
+      <a href="{% url 'quote_list' %}" class="nav-item {% if 'quote' in n %}active{% endif %}">
+        <i class="fas fa-file-alt"></i>
+        <span>Quotes</span>
+      </a>
+      </div>
     </div>
 
-    <div class="nav-section">
-      <div class="nav-section-title">Management</div>
-      <a href="{% url 'client_list' %}" class="nav-item {% if 'client' in request.resolver_match.url_name %}active{% endif %}">
+    <div class="nav-section nav-group" data-group="projects">
+      <button type="button" class="nav-section-title nav-group-toggle" aria-expanded="true">Projects<i class="fas fa-chevron-down nav-group-caret" aria-hidden="true"></i></button>
+      <div class="nav-group-items">
+      <a href="{% url 'client_list' %}" class="nav-item {% if 'client' in n %}active{% endif %}">
         <i class="fas fa-users"></i>
         <span>Clients</span>
       </a>
-      <a href="{% url 'project_list' %}" class="nav-item {% if 'project' in request.resolver_match.url_name %}active{% endif %}">
+      <a href="{% url 'project_list' %}" class="nav-item {% if 'project' in n and n != 'projects_dashboard' and n != 'project_status_update' and 'project_type' not in n and 'project_feature' not in n %}active{% endif %}">
         <i class="fas fa-folder-open"></i>
         <span>Projects</span>
       </a>
-      <a href="{% url 'task_list' %}" class="nav-item {% if 'task' in request.resolver_match.url_name %}active{% endif %}">
+      <a href="{% url 'task_board' %}" class="nav-item {% if n == 'task_board' %}active{% endif %}">
+        <i class="fas fa-table-columns"></i>
+        <span>Task Board</span>
+      </a>
+      <a href="{% url 'task_list' %}" class="nav-item {% if 'task' in n and n != 'task_board' and 'daily_task' not in n %}active{% endif %}">
         <i class="fas fa-tasks"></i>
         <span>Tasks</span>
       </a>
-      <a href="{% url 'team_list' %}" class="nav-item {% if 'team' in request.resolver_match.url_name %}active{% endif %}">
-        <i class="fas fa-user-friends"></i>
-        <span>Team Members</span>
+      <a href="{% url 'projects_dashboard' %}" class="nav-item {% if n == 'projects_dashboard' %}active{% endif %}">
+        <i class="fas fa-thumbtack"></i>
+        <span>Projects Board</span>
       </a>
-      {# Prefix match, not a substring: 'account' also appears in bank_account_*. #}
-      <a href="{% url 'account_list' %}" class="nav-item {% if request.resolver_match.url_name|slice:":8" == "account_" %}active{% endif %}">
-        <i class="fas fa-id-badge"></i>
-        <span>User Accounts</span>
+      <a href="{% url 'daily_tasks_dashboard' %}" class="nav-item {% if 'daily_task' in n %}active{% endif %}">
+        <i class="fas fa-list-check"></i>
+        <span>Daily Tasks</span>
       </a>
-      <a href="{% url 'credential_list' %}" class="nav-item {% if 'credential' in request.resolver_match.url_name %}active{% endif %}">
+      <a href="{% url 'feature_request_list' %}" class="nav-item {% if 'feature_request' in n or 'project_type' in n or 'project_feature' in n %}active{% endif %}">
+        <i class="fas fa-list-check"></i>
+        <span>Feature Requests</span>
+      </a>
+      <a href="{% url 'amc_list' %}" class="nav-item {% if 'amc' in n %}active{% endif %}">
+        <i class="fas fa-sync-alt"></i>
+        <span>Recurring Contracts</span>
+      </a>
+      <a href="{% url 'credential_list' %}" class="nav-item {% if 'credential' in n %}active{% endif %}">
         <i class="fas fa-key"></i>
         <span>Credentials</span>
         {% if expiring_credentials_count %}
         <span class="nav-badge">{{ expiring_credentials_count }}</span>
         {% endif %}
       </a>
-      <a href="{% url 'amc_list' %}" class="nav-item {% if 'amc' in request.resolver_match.url_name %}active{% endif %}">
-        <i class="fas fa-sync-alt"></i>
-        <span>Recurring Contracts</span>
-      </a>
-      <a href="{% url 'feature_request_list' %}" class="nav-item {% if 'feature_request' in request.resolver_match.url_name or 'project_type' in request.resolver_match.url_name or 'project_feature' in request.resolver_match.url_name %}active{% endif %}">
-        <i class="fas fa-list-check"></i>
-        <span>Feature Requests</span>
-      </a>
+      </div>
     </div>
 
-    <div class="nav-section">
-      <div class="nav-section-title">Tracking</div>
-      <a href="{% url 'timeentry_list' %}" class="nav-item {% if 'time' in request.resolver_match.url_name %}active{% endif %}">
-        <i class="fas fa-clock"></i>
-        <span>Time Tracking</span>
+    <div class="nav-section nav-group" data-group="money">
+      <button type="button" class="nav-section-title nav-group-toggle" aria-expanded="true">Money<i class="fas fa-chevron-down nav-group-caret" aria-hidden="true"></i></button>
+      <div class="nav-group-items">
+      <a href="{% url 'invoice_list' %}" class="nav-item {% if 'invoice' in n %}active{% endif %}">
+        <i class="fas fa-file-invoice-dollar"></i>
+        <span>Invoices</span>
       </a>
-      <a href="{% url 'expense_list' %}" class="nav-item {% if 'expense' in request.resolver_match.url_name %}active{% endif %}">
+      <a href="{% url 'payment_list' %}" class="nav-item {% if 'payment' in n %}active{% endif %}">
+        <i class="fas fa-credit-card"></i>
+        <span>Payments</span>
+      </a>
+      <a href="{% url 'expense_list' %}" class="nav-item {% if 'expense' in n %}active{% endif %}">
         <i class="fas fa-receipt"></i>
         <span>Expenses</span>
       </a>
+      <a href="{% url 'bank_account_list' %}" class="nav-item {% if 'bank_account' in n %}active{% endif %}">
+        <i class="fas fa-university"></i>
+        <span>Accounts</span>
+      </a>
+      <a href="{% url 'transfer_list' %}" class="nav-item {% if 'transfer' in n %}active{% endif %}">
+        <i class="fas fa-exchange-alt"></i>
+        <span>Transfers</span>
+        {% if pending_transfer_count %}
+        <span class="nav-badge">{{ pending_transfer_count }}</span>
+        {% endif %}
+      </a>
+      <a href="{% url 'partner_list' %}" class="nav-item {% if 'partner' in n or 'contribution' in n %}active{% endif %}">
+        <i class="fas fa-handshake"></i>
+        <span>Partners</span>
+      </a>
+      <a href="{% url 'asset_list' %}" class="nav-item {% if 'asset' in n %}active{% endif %}">
+        <i class="fas fa-coins"></i>
+        <span>Assets &amp; Deposits</span>
+      </a>
+      <a href="{% url 'gst_summary_report' %}" class="nav-item {% if 'gst_summary' in n %}active{% endif %}">
+        <i class="fas fa-receipt"></i>
+        <span>GST Summary</span>
+      </a>
+      <a href="{% url 'reports' %}" class="nav-item {% if 'report' in n and 'gst' not in n %}active{% endif %}">
+        <i class="fas fa-chart-bar"></i>
+        <span>Reports</span>
+      </a>
+      </div>
+    </div>
+
+    <div class="nav-section nav-group" data-group="team">
+      <button type="button" class="nav-section-title nav-group-toggle" aria-expanded="true">Team &amp; HR<i class="fas fa-chevron-down nav-group-caret" aria-hidden="true"></i></button>
+      <div class="nav-group-items">
+      <a href="{% url 'team_list' %}" class="nav-item {% if 'team' in n %}active{% endif %}">
+        <i class="fas fa-user-friends"></i>
+        <span>Team Members</span>
+      </a>
+      <a href="{% url 'emp_employee_list' %}" class="nav-item {% if 'emp_employee' in n %}active{% endif %}">
+        <i class="fas fa-id-badge"></i>
+        <span>Employees</span>
+      </a>
+      <a href="{% url 'emp_attendance_list' %}" class="nav-item {% if 'emp_attendance' in n %}active{% endif %}">
+        <i class="fas fa-fingerprint"></i>
+        <span>Attendance</span>
+      </a>
+      <a href="{% url 'emp_daily_report_list' %}" class="nav-item {% if 'emp_daily_report' in n %}active{% endif %}">
+        <i class="fas fa-pen-to-square"></i>
+        <span>Daily Updates</span>
+      </a>
+      <a href="{% url 'emp_leave_list' %}" class="nav-item {% if n == 'emp_leave_list' or n == 'emp_leave_action' %}active{% endif %}">
+        <i class="fas fa-calendar-minus"></i>
+        <span>Leave Requests</span>
+      </a>
+      <a href="{% url 'emp_leave_types' %}" class="nav-item {% if n == 'emp_leave_types' %}active{% endif %}">
+        <i class="fas fa-list-alt"></i>
+        <span>Leave Types</span>
+      </a>
+      <a href="{% url 'emp_work_list' %}" class="nav-item {% if 'emp_work' in n %}active{% endif %}">
+        <i class="fas fa-clipboard-list"></i>
+        <span>Work Assignments</span>
+      </a>
+      <a href="{% url 'timeentry_list' %}" class="nav-item {% if 'time' in n %}active{% endif %}">
+        <i class="fas fa-clock"></i>
+        <span>Time Tracking</span>
+      </a>
+      <a href="{% url 'emp_payroll_list' %}" class="nav-item {% if 'emp_payroll' in n %}active{% endif %}">
+        <i class="fas fa-money-bill-wave"></i>
+        <span>Payroll</span>
+      </a>
+      <a href="{% url 'emp_office_qr' %}" class="nav-item {% if n == 'emp_office_qr' %}active{% endif %}">
+        <i class="fas fa-qrcode"></i>
+        <span>Office QR Code</span>
+      </a>
+      </div>
+    </div>
+
+    <div class="nav-section nav-group" data-group="interns">
+      <button type="button" class="nav-section-title nav-group-toggle" aria-expanded="true">Interns &amp; Academy<i class="fas fa-chevron-down nav-group-caret" aria-hidden="true"></i></button>
+      <div class="nav-group-items">
+      <a href="{% url 'crm:intern_list' %}" class="nav-item {% if 'intern' in n %}active{% endif %}">
+        <i class="fas fa-user-graduate"></i>
+        <span>Interns</span>
+      </a>
+      <a href="{% url 'enrolment_list' %}" class="nav-item {% if 'enrolment' in n %}active{% endif %}">
+        <i class="fas fa-user-plus"></i>
+        <span>Intern Enrolments</span>
+      </a>
+      <a href="{% url 'emp_class_list' %}" class="nav-item {% if 'emp_class' in n %}active{% endif %}">
+        <i class="fas fa-chalkboard-teacher"></i>
+        <span>Intern Classes</span>
+      </a>
+      <a href="{% url 'agreement_list' %}" class="nav-item {% if 'agreement' in n %}active{% endif %}">
+        <i class="fas fa-file-signature"></i>
+        <span>Agreements</span>
+      </a>
+      <a href="{% url 'certificate_list' %}" class="nav-item {% if n == 'certificate_list' or n == 'certificate_create' or n == 'certificate_detail' %}active{% endif %}">
+        <i class="fas fa-award"></i>
+        <span>Certificates</span>
+      </a>
+      <a href="{% url 'certificate_template_list' %}" class="nav-item {% if 'certificate_template' in n %}active{% endif %}">
+        <i class="fas fa-file-alt"></i>
+        <span>Cert Templates</span>
+      </a>
+      <a href="{% url 'academy:manage_home' %}" class="nav-item {% if n == 'manage_home' %}active{% endif %}">
+        <i class="fas fa-graduation-cap"></i>
+        <span>Courses</span>
+      </a>
+      <a href="{% url 'academy:manage_students' %}" class="nav-item {% if request.resolver_match.namespace == 'academy' and 'manage_student' in n %}active{% endif %}">
+        <i class="fas fa-user-graduate"></i>
+        <span>Students</span>
+      </a>
+      <a href="{% url 'academy:manage_progress' %}" class="nav-item {% if n == 'manage_progress' %}active{% endif %}">
+        <i class="fas fa-table-cells"></i>
+        <span>Course Progress</span>
+      </a>
+      <a href="{% url 'academy:manage_videos' %}" class="nav-item {% if n == 'manage_videos' %}active{% endif %}">
+        <i class="fas fa-circle-play"></i>
+        <span>Lesson Videos</span>
+      </a>
+      </div>
     </div>
 
     {# Social Hub: styled like the hub itself (dark glass, pink-violet gradient). Its pages use their own layout, so no active states here. #}
-    <div class="nav-section nav-social">
-      <div class="nav-section-title"><span class="nav-social-mark">R</span> Social Hub</div>
+    <div class="nav-section nav-social nav-group" data-group="social">
+      <button type="button" class="nav-section-title nav-group-toggle" aria-expanded="true"><span class="nav-social-mark">R</span> Social Hub<i class="fas fa-chevron-down nav-group-caret" aria-hidden="true"></i></button>
+      <div class="nav-group-items">
       <a href="{% url 'social:home' %}" class="nav-item">
         <i class="fas fa-house"></i>
         <span>Social Home</span>
@@ -174,195 +312,88 @@
         <i class="fas fa-plug"></i>
         <span>Accounts &amp; Media</span>
       </a>
+      </div>
     </div>
 
-    <div class="nav-section">
-      <div class="nav-section-title">Intern CRM</div>
-      <a href="{% url 'crm:lead_list' %}" class="nav-item {% if 'lead' in request.resolver_match.url_name %}active{% endif %}">
-        <i class="fas fa-user-tag"></i>
-        <span>Leads</span>
+    <div class="nav-section nav-group" data-group="products">
+      <button type="button" class="nav-section-title nav-group-toggle" aria-expanded="true">Products<i class="fas fa-chevron-down nav-group-caret" aria-hidden="true"></i></button>
+      <div class="nav-group-items">
+      <a href="{% url 'license_list' %}" class="nav-item {% if n == 'license_list' or n == 'license_detail' %}active{% endif %}">
+        <i class="fas fa-certificate"></i>
+        <span>RetailEase Licenses</span>
       </a>
-      <a href="{% url 'crm:activity_list' %}" class="nav-item {% if request.resolver_match.url_name == 'activity_list' or request.resolver_match.url_name == 'activity_create' or request.resolver_match.url_name == 'activity_edit' %}active{% endif %}">
-        <i class="fas fa-clipboard-check"></i>
-        <span>Daily Activities</span>
+      <a href="{% url 'gym_license_list' %}" class="nav-item {% if 'gym_license' in n %}active{% endif %}">
+        <i class="fas fa-dumbbell"></i>
+        <span>GymPro Licenses</span>
       </a>
-      <a href="{% url 'crm:demo_list' %}" class="nav-item {% if 'demo' in request.resolver_match.url_name %}active{% endif %}">
-        <i class="fas fa-desktop"></i>
-        <span>Demos</span>
-      </a>
-      <a href="{% url 'crm:intern_list' %}" class="nav-item {% if 'intern' in request.resolver_match.url_name %}active{% endif %}">
-        <i class="fas fa-user-graduate"></i>
-        <span>Interns</span>
-      </a>
-    </div>
-
-    <div class="nav-section">
-      <div class="nav-section-title">Academy</div>
-      <a href="{% url 'academy:manage_home' %}" class="nav-item {% if request.resolver_match.url_name == 'manage_home' %}active{% endif %}">
+      <a href="{% url 'eduflow_license_list' %}" class="nav-item {% if 'eduflow_license' in n %}active{% endif %}">
         <i class="fas fa-graduation-cap"></i>
-        <span>Courses</span>
+        <span>EduFlow Licenses</span>
       </a>
-      <a href="{% url 'academy:manage_students' %}" class="nav-item {% if request.resolver_match.namespace == 'academy' and 'manage_student' in request.resolver_match.url_name %}active{% endif %}">
-        <i class="fas fa-user-graduate"></i>
-        <span>Students</span>
+      <a href="{% url 'ralfpos_license_list' %}" class="nav-item {% if 'ralfpos_license' in n %}active{% endif %}">
+        <i class="fas fa-cash-register"></i>
+        <span>RalfPOS Licenses</span>
       </a>
-      <a href="{% url 'academy:manage_progress' %}" class="nav-item {% if request.resolver_match.url_name == 'manage_progress' %}active{% endif %}">
-        <i class="fas fa-table-cells"></i>
-        <span>Course Progress</span>
-      </a>
-      <a href="{% url 'academy:manage_videos' %}" class="nav-item {% if request.resolver_match.url_name == 'manage_videos' %}active{% endif %}">
-        <i class="fas fa-circle-play"></i>
-        <span>Lesson Videos</span>
-      </a>
+      </div>
     </div>
 
-    <div class="nav-section">
-      <div class="nav-section-title">HR & Admin</div>
-      <a href="{% url 'emp_employee_list' %}" class="nav-item {% if 'emp_employee' in request.resolver_match.url_name %}active{% endif %}">
+    <div class="nav-section nav-group" data-group="admin">
+      <button type="button" class="nav-section-title nav-group-toggle" aria-expanded="true">Admin<i class="fas fa-chevron-down nav-group-caret" aria-hidden="true"></i></button>
+      <div class="nav-group-items">
+      <a href="{% url 'account_list' %}" class="nav-item {% if n|slice:":8" == "account_" %}active{% endif %}">
         <i class="fas fa-id-badge"></i>
-        <span>Employees</span>
+        <span>User Accounts</span>
       </a>
-      <a href="{% url 'emp_attendance_list' %}" class="nav-item {% if 'emp_attendance' in request.resolver_match.url_name %}active{% endif %}">
-        <i class="fas fa-fingerprint"></i>
-        <span>Attendance</span>
-      </a>
-      <a href="{% url 'emp_daily_report_list' %}" class="nav-item {% if 'emp_daily_report' in request.resolver_match.url_name %}active{% endif %}">
-        <i class="fas fa-pen-to-square"></i>
-        <span>Daily Updates</span>
-      </a>
-      <a href="{% url 'emp_leave_list' %}" class="nav-item {% if request.resolver_match.url_name == 'emp_leave_list' or request.resolver_match.url_name == 'emp_leave_action' %}active{% endif %}">
-        <i class="fas fa-calendar-minus"></i>
-        <span>Leave Requests</span>
-      </a>
-      <a href="{% url 'emp_leave_types' %}" class="nav-item {% if request.resolver_match.url_name == 'emp_leave_types' %}active{% endif %}">
-        <i class="fas fa-list-alt"></i>
-        <span>Leave Types</span>
-      </a>
-      <a href="{% url 'emp_work_list' %}" class="nav-item {% if 'emp_work' in request.resolver_match.url_name %}active{% endif %}">
-        <i class="fas fa-clipboard-list"></i>
-        <span>Work Assignments</span>
-      </a>
-      <a href="{% url 'emp_class_list' %}" class="nav-item {% if 'emp_class' in request.resolver_match.url_name %}active{% endif %}">
-        <i class="fas fa-chalkboard-teacher"></i>
-        <span>Intern Classes</span>
-      </a>
-      <a href="{% url 'emp_payroll_list' %}" class="nav-item {% if 'emp_payroll' in request.resolver_match.url_name %}active{% endif %}">
-        <i class="fas fa-money-bill-wave"></i>
-        <span>Payroll</span>
-      </a>
-      <a href="{% url 'enrolment_list' %}" class="nav-item {% if 'enrolment' in request.resolver_match.url_name %}active{% endif %}">
-        <i class="fas fa-user-plus"></i>
-        <span>Intern Enrolments</span>
-      </a>
-      <a href="{% url 'agreement_list' %}" class="nav-item {% if 'agreement' in request.resolver_match.url_name %}active{% endif %}">
-        <i class="fas fa-file-signature"></i>
-        <span>Agreements</span>
-      </a>
-      <a href="{% url 'certificate_list' %}" class="nav-item {% if request.resolver_match.url_name == 'certificate_list' or request.resolver_match.url_name == 'certificate_create' or request.resolver_match.url_name == 'certificate_detail' %}active{% endif %}">
-        <i class="fas fa-award"></i>
-        <span>Certificates</span>
-      </a>
-      <a href="{% url 'certificate_template_list' %}" class="nav-item {% if 'certificate_template' in request.resolver_match.url_name %}active{% endif %}">
-        <i class="fas fa-file-alt"></i>
-        <span>Cert Templates</span>
-      </a>
-      <a href="{% url 'emp_office_qr' %}" class="nav-item {% if request.resolver_match.url_name == 'emp_office_qr' %}active{% endif %}">
-        <i class="fas fa-qrcode"></i>
-        <span>Office QR Code</span>
-      </a>
-    </div>
-
-    <div class="nav-section">
-      <div class="nav-section-title">Billing</div>
-      <a href="{% url 'quote_list' %}" class="nav-item {% if 'quote' in request.resolver_match.url_name %}active{% endif %}">
-        <i class="fas fa-file-alt"></i>
-        <span>Quotes</span>
-      </a>
-      <a href="{% url 'invoice_list' %}" class="nav-item {% if 'invoice' in request.resolver_match.url_name %}active{% endif %}">
-        <i class="fas fa-file-invoice-dollar"></i>
-        <span>Invoices</span>
-      </a>
-      <a href="{% url 'payment_list' %}" class="nav-item {% if 'payment' in request.resolver_match.url_name %}active{% endif %}">
-        <i class="fas fa-credit-card"></i>
-        <span>Payments</span>
-      </a>
-    </div>
-
-    <div class="nav-section">
-      <div class="nav-section-title">Finance</div>
-      <a href="{% url 'bank_account_list' %}" class="nav-item {% if 'bank_account' in request.resolver_match.url_name %}active{% endif %}">
-        <i class="fas fa-university"></i>
-        <span>Accounts</span>
-      </a>
-      <a href="{% url 'transfer_list' %}" class="nav-item {% if 'transfer' in request.resolver_match.url_name %}active{% endif %}">
-        <i class="fas fa-exchange-alt"></i>
-        <span>Transfers</span>
-        {% if pending_transfer_count %}
-        <span class="nav-badge">{{ pending_transfer_count }}</span>
-        {% endif %}
-      </a>
-      <a href="{% url 'partner_list' %}" class="nav-item {% if 'partner' in request.resolver_match.url_name or 'contribution' in request.resolver_match.url_name %}active{% endif %}">
-        <i class="fas fa-handshake"></i>
-        <span>Partners</span>
-      </a>
-      <a href="{% url 'asset_list' %}" class="nav-item {% if 'asset' in request.resolver_match.url_name %}active{% endif %}">
-        <i class="fas fa-coins"></i>
-        <span>Assets &amp; Deposits</span>
-      </a>
-      <a href="{% url 'company_document_list' %}" class="nav-item {% if 'company_document' in request.resolver_match.url_name %}active{% endif %}">
+      <a href="{% url 'company_document_list' %}" class="nav-item {% if 'company_document' in n %}active{% endif %}">
         <i class="fas fa-folder"></i>
         <span>Documents</span>
         {% if expiring_documents_count %}
         <span class="nav-badge">{{ expiring_documents_count }}</span>
         {% endif %}
       </a>
-    </div>
-
-    <div class="nav-section">
-      <div class="nav-section-title">System</div>
-      <a href="{% url 'reports' %}" class="nav-item {% if 'report' in request.resolver_match.url_name and 'gst' not in request.resolver_match.url_name %}active{% endif %}">
-        <i class="fas fa-chart-bar"></i>
-        <span>Reports</span>
-      </a>
-      <a href="{% url 'gst_summary_report' %}" class="nav-item {% if 'gst_summary' in request.resolver_match.url_name %}active{% endif %}">
-        <i class="fas fa-receipt"></i>
-        <span>GST Summary</span>
-      </a>
-      <a href="{% url 'activity_log' %}" class="nav-item {% if 'activity' in request.resolver_match.url_name %}active{% endif %}">
+      <a href="{% url 'activity_log' %}" class="nav-item {% if n == 'activity_log' %}active{% endif %}">
         <i class="fas fa-history"></i>
         <span>Activity Log</span>
       </a>
-      <a href="{% url 'license_list' %}" class="nav-item {% if request.resolver_match.url_name == 'license_list' or request.resolver_match.url_name == 'license_detail' %}active{% endif %}">
-        <i class="fas fa-certificate"></i>
-        <span>RetailEase Licenses</span>
-      </a>
-      <a href="{% url 'gym_license_list' %}" class="nav-item {% if 'gym_license' in request.resolver_match.url_name %}active{% endif %}">
-        <i class="fas fa-dumbbell"></i>
-        <span>GymPro Licenses</span>
-      </a>
-      <a href="{% url 'eduflow_license_list' %}" class="nav-item {% if 'eduflow_license' in request.resolver_match.url_name %}active{% endif %}">
-        <i class="fas fa-graduation-cap"></i>
-        <span>EduFlow Licenses</span>
-      </a>
-      <a href="{% url 'ralfpos_license_list' %}" class="nav-item {% if 'ralfpos_license' in request.resolver_match.url_name %}active{% endif %}">
-        <i class="fas fa-cash-register"></i>
-        <span>RalfPOS Licenses</span>
-      </a>
-      <a href="{% url 'settings' %}" class="nav-item {% if 'setting' in request.resolver_match.url_name %}active{% endif %}">
+      <a href="{% url 'settings' %}" class="nav-item {% if 'setting' in n %}active{% endif %}">
         <i class="fas fa-cog"></i>
         <span>Settings</span>
       </a>
-      <a href="{% url 'backup' %}" class="nav-item {% if 'backup' in request.resolver_match.url_name %}active{% endif %}">
+      <a href="{% url 'backup' %}" class="nav-item {% if 'backup' in n %}active{% endif %}">
         <i class="fas fa-database"></i>
         <span>Backup</span>
       </a>
-      <a href="{% url 'profile' %}" class="nav-item {% if 'profile' in request.resolver_match.url_name %}active{% endif %}">
+      <a href="{% url 'profile' %}" class="nav-item {% if 'profile' in n %}active{% endif %}">
         <i class="fas fa-user-circle"></i>
         <span>Profile</span>
       </a>
+      </div>
     </div>
+    {% endwith %}
     {% endif %}
   </nav>
+  <script>
+  // Collapsible sidebar groups: the group holding the current page is always open,
+  // other groups remember what the user last did (per browser).
+  (function () {
+    var KEY = 'bms.sidebar.open';
+    var saved = null;
+    try { saved = JSON.parse(localStorage.getItem(KEY) || 'null'); } catch (e) {}
+    document.querySelectorAll('.sidebar-nav .nav-group').forEach(function (g) {
+      var btn = g.querySelector('.nav-group-toggle');
+      var key = g.dataset.group;
+      var open = g.querySelector('.nav-item.active') ? true : (saved ? saved.indexOf(key) !== -1 : key === 'projects');
+      function set(o) { g.classList.toggle('collapsed', !o); btn.setAttribute('aria-expanded', o ? 'true' : 'false'); }
+      set(open);
+      btn.addEventListener('click', function () {
+        set(g.classList.contains('collapsed'));
+        var keys = [];
+        document.querySelectorAll('.sidebar-nav .nav-group:not(.collapsed)').forEach(function (x) { keys.push(x.dataset.group); });
+        try { localStorage.setItem(KEY, JSON.stringify(keys)); } catch (e) {}
+      });
+    });
+  })();
+  </script>
 
   <div class="sidebar-promo">
     <span class="sidebar-promo__icon"><i class="fas fa-crown"></i></span>

@@ -1009,3 +1009,16 @@ a.inv-stat:hover { border-color: #bae6fd; }
   color: transparent;
 }
 .nav-social .nav-item:hover { background: rgba(255, 255, 255, .12); color: #fff; }
+
+/* Collapsible sidebar groups (templates/components/sidebar.html). */
+.nav-group-toggle {
+  display: flex; align-items: center; width: 100%; background: none; border: 0; cursor: pointer;
+  font-family: inherit; text-align: left; text-transform: uppercase;
+}
+.nav-group-toggle:hover { color: var(--sidebar-text-hover); }
+.nav-group-toggle:focus-visible { outline: 2px solid var(--primary); outline-offset: -2px; border-radius: 6px; }
+.nav-group-caret { margin-left: auto; font-size: 9px; transition: transform .15s; opacity: .7; }
+.nav-group.collapsed .nav-group-caret { transform: rotate(-90deg); }
+.nav-group.collapsed .nav-group-items { display: none; }
+/* While searching the menu, every group shows its matching items. */
+.sidebar-nav.searching .nav-group.collapsed .nav-group-items { display: block; }

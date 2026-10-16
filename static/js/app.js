@@ -445,6 +445,7 @@ document.addEventListener('DOMContentLoaded', () => {
       section.classList.toggle('search-hidden', q !== '' && !visibleItem);
     });
 
+    nav.classList.toggle('searching', q !== '');
     if (emptyMsg) emptyMsg.hidden = anyVisible || q === '';
     if (clearBtn) clearBtn.hidden = q === '';
   }
