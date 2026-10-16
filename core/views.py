@@ -1082,6 +1082,31 @@ def project_detail(request, pk):
     return render(request, 'projects/detail.html', context)
 
 
+PROJECT_LOGO_MAX_BYTES = 3 * 1024 * 1024
+
+
+def _save_project_logo(request, project):
+    """Apply a logo upload / removal from a project form. Returns an error message or ''."""
+    if request.POST.get('remove_logo') and project.logo:
+        project.logo.delete(save=False)
+        project.logo = ''
+    f = request.FILES.get('logo')
+    if not f:
+        return ''
+    if f.size > PROJECT_LOGO_MAX_BYTES:
+        return 'Logo is too large - keep it under 3 MB.'
+    from PIL import Image, UnidentifiedImageError
+    try:
+        Image.open(f).verify()
+    except (UnidentifiedImageError, OSError):
+        return 'Logo must be a PNG, JPG or WebP image.'
+    f.seek(0)
+    if project.logo:
+        project.logo.delete(save=False)
+    project.logo = f
+    return ''
+
+
 @login_required
 def project_create(request):
     clients = Client.objects.filter(is_active=True)
@@ -1100,6 +1125,11 @@ def project_create(request):
             tech_stack=request.POST.get('tech_stack', ''),
             notes=request.POST.get('notes', ''),
         )
+        logo_error = _save_project_logo(request, project)
+        if logo_error:
+            messages.warning(request, logo_error)
+        else:
+            project.save()
         # Assign team members
         selected_members = request.POST.getlist('team_members')
         if selected_members:
@@ -1114,6 +1144,20 @@ def project_create(request):
         'status_choices': Project.STATUS_CHOICES,
         'type_choices': Project.TYPE_CHOICES,
     })
+
+
+@login_required
+def project_logo_upload(request, pk):
+    """Upload or remove the project logo straight from the project page."""
+    project = get_object_or_404(Project, pk=pk)
+    if request.method == 'POST':
+        error = _save_project_logo(request, project)
+        if error:
+            messages.error(request, error)
+        else:
+            project.save()
+            messages.success(request, 'Project logo updated.' if project.logo else 'Project logo removed.')
+    return redirect('project_detail', pk=pk)
 
 
 @login_required
@@ -1143,6 +1187,9 @@ def project_update(request, pk):
         project.deliverables = request.POST.get('deliverables', '')
         project.amc_amount = request.POST.get('amc_amount') or None
         project.amc_billing_cycle = request.POST.get('amc_billing_cycle', '')
+        logo_error = _save_project_logo(request, project)
+        if logo_error:
+            messages.warning(request, logo_error)
 
         # Auto-set completed_date when status changes to completed
         old_status = Project.objects.filter(pk=pk).values_list('status', flat=True).first()

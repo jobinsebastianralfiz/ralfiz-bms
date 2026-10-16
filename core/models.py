@@ -140,6 +140,8 @@ class Project(models.Model):
     deadline = models.DateField(null=True, blank=True)
     completed_date = models.DateField(null=True, blank=True)
     tech_stack = models.CharField(max_length=255, blank=True)
+    logo = models.ImageField(upload_to='project_logos/', blank=True,
+                             help_text="Client's logo or a cover image, shown in the client portal.")
     github_repo = models.URLField(blank=True)
     live_url = models.URLField(blank=True)
     notes = models.TextField(blank=True)

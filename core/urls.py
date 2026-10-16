@@ -65,6 +65,7 @@ urlpatterns = [
     path('projects/import/', views.project_import, name='project_import'),
     path('projects/<uuid:pk>/', views.project_detail, name='project_detail'),
     path('projects/<uuid:pk>/edit/', views.project_update, name='project_update'),
+    path('projects/<uuid:pk>/logo/', views.project_logo_upload, name='project_logo_upload'),
     path('projects/<uuid:pk>/delete/', views.project_delete, name='project_delete'),
     path('projects/<uuid:pk>/post-update/', views.project_post_update, name='project_post_update'),
     path('projects/<uuid:pk>/delete-update/<uuid:update_pk>/', views.project_delete_update, name='project_delete_update'),

@@ -20,7 +20,7 @@
   </div>
 </div>
 
-<form method="post">
+<form method="post" enctype="multipart/form-data">
   {% csrf_token %}
   <div class="row">
     <!-- Left Column -->
@@ -164,6 +164,19 @@
               </div>
             </div>
             {% endif %}
+            <div class="col-12" style="padding: 0.5rem;">
+              <div class="form-group">
+                <label class="form-label" for="logo">Client logo / cover image</label>
+                {% if project.logo %}
+                <div style="display:flex;align-items:center;gap:12px;margin-bottom:8px;">
+                  <img src="{{ project.logo.url }}" alt="" style="width:72px;height:48px;object-fit:cover;border-radius:8px;border:1px solid var(--border-color);">
+                  <label style="margin:0;font-size:.875rem;"><input type="checkbox" name="remove_logo" value="1"> Remove</label>
+                </div>
+                {% endif %}
+                <input type="file" class="form-control" id="logo" name="logo" accept="image/png,image/jpeg,image/webp">
+                <small class="text-muted">PNG, JPG or WebP, up to 3 MB. Shown on the project in the client portal.</small>
+              </div>
+            </div>
             <div class="col-12" style="padding: 0.5rem;">
               <div class="form-group mb-0">
                 <label class="form-label" for="notes">Notes</label>

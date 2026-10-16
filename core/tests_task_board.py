@@ -137,3 +137,37 @@ class ProjectProgressTests(TestCase):
         ProjectUpdate.objects.create(project=self.project, author=author, title='Kick-off', description='Started',
                                      progress_percentage=15, is_visible_to_client=True)
         self.assertEqual(self.progress(), 15)
+
+
+class ProjectLogoTests(TestCase):
+    def setUp(self):
+        import tempfile
+        from django.test import override_settings
+        self._media = override_settings(MEDIA_ROOT=tempfile.mkdtemp())
+        self._media.enable()
+        self.admin = User.objects.create_superuser('boss', 'boss@example.com', 'pw-12345')
+        client = Client.objects.create(name='Acme', email='acme@example.com')
+        self.project = Project.objects.create(client=client, name='Acme Website', status='in_progress')
+        self.client.force_login(self.admin)
+
+    def tearDown(self):
+        self._media.disable()
+
+    def upload(self, f):
+        return self.client.post(reverse('project_logo_upload', args=[self.project.pk]), {'logo': f})
+
+    def test_image_is_saved(self):
+        import io
+        from PIL import Image
+        from django.core.files.uploadedfile import SimpleUploadedFile
+        buf = io.BytesIO()
+        Image.new('RGB', (20, 20), 'red').save(buf, 'PNG')
+        self.upload(SimpleUploadedFile('logo.png', buf.getvalue(), content_type='image/png'))
+        self.project.refresh_from_db()
+        self.assertTrue(self.project.logo.name.startswith('project_logos/'))
+
+    def test_non_image_is_refused(self):
+        from django.core.files.uploadedfile import SimpleUploadedFile
+        self.upload(SimpleUploadedFile('logo.png', b'not an image', content_type='image/png'))
+        self.project.refresh_from_db()
+        self.assertFalse(self.project.logo)
