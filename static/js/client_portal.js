@@ -59,10 +59,8 @@ document.addEventListener('click', function(e) {
 
 // ─── Mobile Navigation ─────────────────────────
 function togglePortalNav() {
-  const nav = document.getElementById('portalNavLinks');
-  if (nav) {
-    nav.classList.toggle('show');
-  }
+  // Phone layout: the sidebar slides in over the page.
+  document.body.classList.toggle('pv-menu-open');
 }
 
 

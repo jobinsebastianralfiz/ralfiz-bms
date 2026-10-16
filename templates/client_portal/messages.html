@@ -1,0 +1,41 @@
+{% extends 'client_portal/base.html' %}
+
+{% block title %}Messages{% endblock %}
+
+{% block content %}
+<div class="portal-page-header">
+  <h1>Messages</h1>
+  <p>Your conversations with our team, project by project.</p>
+</div>
+
+{% if projects %}
+<div class="pv-section-title">Start a conversation</div>
+<div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:6px;">
+  {% for p in projects %}
+  <a class="portal-btn portal-btn-outline portal-btn-sm" href="{% url 'client_portal:portal_project_detail' p.pk %}#comments"><i class="far fa-message"></i> {{ p.name|truncatechars:40 }}</a>
+  {% endfor %}
+</div>
+{% endif %}
+
+<div class="pv-section-title">Recent</div>
+<section class="pv-card">
+  {% if threads %}
+  <ul class="pv-list">
+    {% for t in threads %}
+    <li>
+      <a class="pv-row" href="{% url 'client_portal:portal_project_detail' t.project.pk %}#comments">
+        <span class="pv-avatar" style="width:38px;height:38px;flex:none;">{{ t.author.get_full_name|default:t.author.username|make_list|first|upper }}</span>
+        <span class="pv-row-body">
+          <strong>{{ t.author.get_full_name|default:t.author.username }} <span class="pv-muted" style="font-weight:500;">on {{ t.project.name }}</span></strong>
+          <span class="pv-muted pv-ellipsis">{{ t.message }}</span>
+        </span>
+        <span class="pv-muted" style="white-space:nowrap;text-align:right;">{{ t.created_at|date:"M d" }}{% if t.visible_replies %}<br>{{ t.visible_replies }} repl{{ t.visible_replies|pluralize:"y,ies" }}{% endif %}</span>
+      </a>
+    </li>
+    {% endfor %}
+  </ul>
+  {% else %}
+  <p class="pv-empty">No messages yet. Open a project above to write to our team.</p>
+  {% endif %}
+</section>
+{% endblock %}

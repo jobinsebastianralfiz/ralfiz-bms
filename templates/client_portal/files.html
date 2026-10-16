@@ -1,0 +1,31 @@
+{% extends 'client_portal/base.html' %}
+
+{% block title %}Files{% endblock %}
+
+{% block content %}
+<div class="portal-page-header">
+  <h1>Files</h1>
+  <p>Documents our team has shared on your projects.</p>
+</div>
+
+<section class="pv-card">
+  {% if documents %}
+  <ul class="pv-list">
+    {% for doc in documents %}
+    <li>
+      <a class="pv-row" href="{{ doc.file.url }}" target="_blank" rel="noopener">
+        <span class="pv-head-ico violet big"><i class="far fa-file-lines"></i></span>
+        <span class="pv-row-body">
+          <strong>{{ doc.name }}</strong>
+          <span class="pv-muted pv-ellipsis">{% if doc.project %}{{ doc.project.name }} · {% endif %}{{ doc.created_at|date:"M d, Y" }}{% if doc.description %} · {{ doc.description }}{% endif %}</span>
+        </span>
+        <i class="fas fa-arrow-down pv-go" aria-label="Open"></i>
+      </a>
+    </li>
+    {% endfor %}
+  </ul>
+  {% else %}
+  <p class="pv-empty">No files shared yet. Designs, documents and handover files will appear here.</p>
+  {% endif %}
+</section>
+{% endblock %}

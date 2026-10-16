@@ -68,3 +68,32 @@ class PortalLoginTests(TestCase):
         r = self.client.post('/portal/login/', {'username': 'acme_login', 'password': 'nope'})
         self.assertContains(r, 'Invalid username or password.')
         self.assertContains(r, 'value="acme_login"')
+
+
+class PortalPagesTests(TestCase):
+    """The new dashboard, files, messages and search pages render for a client."""
+
+    def setUp(self):
+        from django.contrib.auth.models import User
+        from core.models import Client as BizClient, Project
+        self.user = User.objects.create_user('acme_login', password='pw-12345')
+        biz = BizClient.objects.create(name='Acme', email='acme@example.com', user=self.user)
+        other = BizClient.objects.create(name='Other', email='other@example.com')
+        self.project = Project.objects.create(client=biz, name='Acme Website', status='in_progress')
+        Project.objects.create(client=other, name='Secret Project', status='in_progress')
+        self.client.force_login(self.user)
+
+    def test_pages_render(self):
+        for url in ['/portal/', '/portal/files/', '/portal/messages/', '/portal/search/?q=acme', '/portal/projects/']:
+            self.assertEqual(self.client.get(url).status_code, 200, url)
+
+    def test_search_only_finds_own_projects(self):
+        r = self.client.get('/portal/search/?q=project')
+        self.assertNotContains(r, 'Secret Project')
+        r = self.client.get('/portal/search/?q=acme')
+        self.assertContains(r, 'Acme Website')
+
+    def test_dashboard_greets_and_lists_project(self):
+        r = self.client.get('/portal/')
+        self.assertContains(r, 'Welcome back')
+        self.assertContains(r, 'Acme Website')

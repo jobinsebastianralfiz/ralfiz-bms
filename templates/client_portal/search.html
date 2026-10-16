@@ -1,0 +1,42 @@
+{% extends 'client_portal/base.html' %}
+{% load money %}
+
+{% block title %}Search{% endblock %}
+
+{% block content %}
+<div class="portal-page-header">
+  <h1>Search</h1>
+  <p>{% if q %}{{ result_count }} result{{ result_count|pluralize }} for &ldquo;{{ q }}&rdquo;{% else %}Type in the search box above to find projects, invoices and quotes.{% endif %}</p>
+</div>
+
+{% if q %}
+{% if results.projects %}
+<div class="pv-section-title">Projects</div>
+<section class="pv-card"><ul class="pv-list">
+  {% for p in results.projects %}
+  <li><a class="pv-row" href="{% url 'client_portal:portal_project_detail' p.pk %}"><span class="pv-head-ico violet big"><i class="fas fa-folder"></i></span>
+    <span class="pv-row-body"><strong>{{ p.name }}</strong><span class="pv-muted">{{ p.get_project_type_display }}</span></span><span class="portal-badge {{ p.status }}">{{ p.get_status_display }}</span></a></li>
+  {% endfor %}
+</ul></section>
+{% endif %}
+{% if results.invoices %}
+<div class="pv-section-title">Invoices</div>
+<section class="pv-card"><ul class="pv-list">
+  {% for i in results.invoices %}
+  <li><a class="pv-row" href="{% url 'client_portal:portal_invoice_detail' i.pk %}"><span class="pv-head-ico orange big"><i class="fas fa-file-invoice"></i></span>
+    <span class="pv-row-body"><strong>{{ i.invoice_number }}</strong><span class="pv-muted pv-ellipsis">{{ i.title }}</span></span><strong>₹{{ i.total_amount|inr }}</strong></a></li>
+  {% endfor %}
+</ul></section>
+{% endif %}
+{% if results.quotes %}
+<div class="pv-section-title">Quotes</div>
+<section class="pv-card"><ul class="pv-list">
+  {% for qt in results.quotes %}
+  <li><a class="pv-row" href="{% url 'client_portal:portal_quote_detail' qt.pk %}"><span class="pv-head-ico violet big"><i class="far fa-file-lines"></i></span>
+    <span class="pv-row-body"><strong>{{ qt.quote_number }}</strong><span class="pv-muted pv-ellipsis">{{ qt.title }}</span></span><span class="portal-badge {{ qt.status }}">{{ qt.get_status_display }}</span></a></li>
+  {% endfor %}
+</ul></section>
+{% endif %}
+{% if not result_count %}<section class="pv-card"><p class="pv-empty">Nothing matched. Try a project name or an invoice number.</p></section>{% endif %}
+{% endif %}
+{% endblock %}

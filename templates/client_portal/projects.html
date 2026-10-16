@@ -24,9 +24,12 @@
   {% for project in projects %}
   <a href="{% url 'client_portal:portal_project_detail' project.id %}" class="project-card">
     <div class="project-card-header">
+      <div style="display: flex; align-items: center; gap: 12px; min-width: 0;">
+      {% if project.logo %}<span class="pv-thumb" style="width: 56px; height: 42px;"><img src="{{ project.logo.url }}" alt=""></span>{% endif %}
       <div>
         <div class="project-card-title">{{ project.name }}</div>
         <div class="project-card-type">{{ project.get_project_type_display }}</div>
+      </div>
       </div>
       <span class="portal-badge {{ project.status }}">{{ project.get_status_display }}</span>
     </div>

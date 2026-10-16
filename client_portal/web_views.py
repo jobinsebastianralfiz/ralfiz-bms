@@ -50,11 +50,15 @@ def _get_unread_count(client):
 
 
 def _base_context(request, active_nav=''):
+    from core.models import CompanySettings
     client = request.client
+    company = CompanySettings.get_settings()
     return {
         'client': client,
         'active_nav': active_nav,
         'unread_count': _get_unread_count(client),
+        'company_name': company.company_name,
+        'company_email': company.email,
     }
 
 
@@ -113,44 +117,63 @@ def portal_logout(request):
 
 @client_required
 def portal_dashboard(request):
+    from datetime import timedelta
+    from django.utils import timezone
     client = request.client
     projects = Project.objects.filter(client=client)
+    today = timezone.localdate()
 
     active_statuses = ['confirmed', 'in_progress', 'review']
     active_projects = projects.filter(status__in=active_statuses)
 
-    # Annotate active projects with progress info
     active_list = []
-    for p in active_projects[:5]:
+    for p in active_projects.order_by('-updated_at')[:5]:
         tasks = p.tasks.all()
-        total = tasks.count()
-        completed = tasks.filter(status='completed').count()
+        p.task_total = tasks.count()
+        p.task_completed = tasks.filter(status='completed').count()
         p.progress = project_progress(p)
-        p.task_total = total
-        p.task_completed = completed
+        p.overdue = bool(p.deadline and p.deadline < today)
         active_list.append(p)
+    overdue_count = sum(1 for p in active_list if p.overdue)
 
     all_invoices = Invoice.all_objects.filter(client=client).exclude(status='cancelled')
-    pending_invoices = all_invoices.exclude(status='paid')[:5]
+    pending_qs = all_invoices.exclude(status='paid')
+    pending_invoices = list(pending_qs[:5])
     total_invoiced = all_invoices.aggregate(t=Sum('total_amount'))['t'] or 0
     total_paid = all_invoices.aggregate(t=Sum('amount_paid'))['t'] or 0
+    for inv in pending_invoices:
+        inv.is_late = bool(inv.due_date and inv.due_date < today)
 
-    recent_updates = ProjectUpdate.objects.filter(
-        project__client=client, is_visible_to_client=True
-    )[:8]
+    # Recent activity: posted updates and sent invoices, newest first.
+    activity = []
+    for u in ProjectUpdate.objects.filter(project__client=client, is_visible_to_client=True).select_related('project')[:6]:
+        activity.append({'kind': 'update', 'icon': 'fa-folder', 'tone': 'violet', 'title': u.title,
+                         'sub': u.project.name, 'when': u.created_at})
+    for inv in all_invoices.exclude(status='draft').order_by('-created_at')[:4]:
+        activity.append({'kind': 'invoice', 'icon': 'fa-file-invoice', 'tone': 'orange',
+                         'title': f'Invoice {inv.invoice_number}', 'sub': inv.title, 'when': inv.created_at})
+    activity.sort(key=lambda e: e['when'], reverse=True)
+
+    hour = timezone.localtime().hour
+    greeting = 'Good morning' if hour < 12 else ('Good afternoon' if hour < 17 else 'Good evening')
+    new_projects = projects.filter(created_at__date__gte=today - timedelta(days=30)).count()
+    pending_count = pending_qs.count()
 
     ctx = _base_context(request, 'dashboard')
     ctx.update({
+        'greeting': greeting,
         'stats': {
             'total_projects': projects.count(),
+            'new_projects': new_projects,
             'active_projects': active_projects.count(),
-            'completed_projects': projects.filter(status='completed').count(),
-            'pending_invoices': pending_invoices.count(),
-            'balance_due': f'{float(total_invoiced - total_paid):,.0f}',
+            'overdue_projects': overdue_count,
+            'pending_invoices': pending_count,
+            'balance_due': total_invoiced - total_paid,
         },
         'active_projects': active_list,
+        'focus_project': active_list[0] if active_list else None,
         'pending_invoices': pending_invoices,
-        'recent_updates': recent_updates,
+        'activity': activity[:5],
     })
     return render(request, 'client_portal/dashboard.html', ctx)
 
@@ -486,17 +509,17 @@ def portal_change_password(request):
         confirm_password = request.POST.get('confirm_password', '')
 
         if not request.user.check_password(old_password):
-            ctx = _base_context(request, 'profile')
+            ctx = _base_context(request, 'password')
             ctx['error'] = 'Current password is incorrect.'
             return render(request, 'client_portal/change_password.html', ctx)
 
         if new_password != confirm_password:
-            ctx = _base_context(request, 'profile')
+            ctx = _base_context(request, 'password')
             ctx['error'] = 'New passwords do not match.'
             return render(request, 'client_portal/change_password.html', ctx)
 
         if len(new_password) < 8:
-            ctx = _base_context(request, 'profile')
+            ctx = _base_context(request, 'password')
             ctx['error'] = 'Password must be at least 8 characters.'
             return render(request, 'client_portal/change_password.html', ctx)
 
@@ -505,5 +528,55 @@ def portal_change_password(request):
         messages.success(request, 'Password changed successfully. Please sign in again.')
         return redirect('client_portal:portal_login')
 
-    ctx = _base_context(request, 'profile')
+    ctx = _base_context(request, 'password')
     return render(request, 'client_portal/change_password.html', ctx)
+
+
+# ─── Files, messages, search ─────────────────────────────────────
+
+@client_required
+def portal_files(request):
+    """Every document shared on the client's projects."""
+    from django.contrib.contenttypes.models import ContentType
+    client = request.client
+    projects = {str(p.pk): p for p in Project.objects.filter(client=client)}
+    docs = list(Document.objects.filter(
+        content_type=ContentType.objects.get_for_model(Project), object_id__in=list(projects)))
+    for d in docs:
+        d.project = projects.get(d.object_id)
+    ctx = _base_context(request, 'files')
+    ctx['documents'] = docs
+    return render(request, 'client_portal/files.html', ctx)
+
+
+@client_required
+def portal_messages(request):
+    """Project discussions, newest first, across all of the client's projects."""
+    client = request.client
+    threads = ProjectComment.objects.filter(
+        project__client=client, is_internal=False, parent__isnull=True,
+    ).select_related('author', 'project').order_by('-created_at')[:50]
+    for t in threads:
+        t.visible_replies = t.replies.filter(is_internal=False).count()
+    ctx = _base_context(request, 'messages')
+    ctx['threads'] = threads
+    ctx['projects'] = Project.objects.filter(client=client).order_by('name')
+    return render(request, 'client_portal/messages.html', ctx)
+
+
+@client_required
+def portal_search(request):
+    client = request.client
+    q = request.GET.get('q', '').strip()[:100]
+    results = {'projects': [], 'invoices': [], 'quotes': []}
+    if q:
+        results['projects'] = Project.objects.filter(client=client).filter(
+            Q(name__icontains=q) | Q(description__icontains=q))[:20]
+        results['invoices'] = Invoice.all_objects.filter(client=client).exclude(status='cancelled').filter(
+            Q(invoice_number__icontains=q) | Q(title__icontains=q))[:20]
+        results['quotes'] = Quote.objects.filter(client=client).filter(
+            Q(quote_number__icontains=q) | Q(title__icontains=q))[:20]
+    ctx = _base_context(request, '')
+    ctx.update({'q': q, 'results': results,
+                'result_count': sum(len(v) for v in results.values())})
+    return render(request, 'client_portal/search.html', ctx)

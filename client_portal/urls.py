@@ -30,6 +30,11 @@ urlpatterns = [
     path('notifications/mark-all-read/', web_views.portal_mark_all_read, name='portal_mark_all_read'),
     path('notifications/<uuid:notification_id>/read/', web_views.portal_mark_read, name='portal_mark_read'),
 
+    # Files, messages, search
+    path('files/', web_views.portal_files, name='portal_files'),
+    path('messages/', web_views.portal_messages, name='portal_messages'),
+    path('search/', web_views.portal_search, name='portal_search'),
+
     # Profile
     path('profile/', web_views.portal_profile, name='portal_profile'),
     path('change-password/', web_views.portal_change_password, name='portal_change_password'),
