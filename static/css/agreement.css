@@ -452,3 +452,4 @@ body {
 .svc-price { display: block; font-weight: 600; color: var(--agr-ink); }
 
 .agr-preamble { margin: 14px 0 0; line-height: 1.65; text-align: justify; }
+.agr-callout.info { background: #eef4fd; border: 1px solid #c7dbf7; color: #1e3a5f; }

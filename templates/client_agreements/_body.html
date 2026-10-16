@@ -60,14 +60,20 @@ signing page and the signed copy so the two can never drift.
             {% if agreement.status == 'accepted' %}
               {% if s.key in chosen_keys %}<span class="svc-tag yes">&#10003; Yes</span>{% else %}<span class="svc-tag">No</span>{% endif %}
             {% elif s.mode == 'included' %}<span class="svc-tag inc">Part of agreement</span>
-            {% elif s.group == 'cloud' %}<span class="svc-tag">Pick one</span>
-            {% else %}<span class="svc-tag">Optional</span>{% endif %}
+            {% elif s.group == 'cloud' %}<span class="svc-tag">Pick one below</span>
+            {% else %}<span class="svc-tag">Optional &middot; choose below</span>{% endif %}
           </td>
         </tr>
         {% endfor %}
       </tbody>
     </table>
     {% if doc.cloud_note %}<div class="agr-callout warn">{{ doc.cloud_note }}</div>{% endif %}
+    {% if agreement.status != 'accepted' and doc.services|length > included_services|length %}
+    <div class="agr-callout info">
+      <strong>How to choose:</strong> at the end of this agreement, tick <em>I have read and understood the agreement</em>
+      and press <strong>Accept</strong>. You can then pick your {% if cloud_plans %}cloud hosting plan{% if optional_services %} and {% endif %}{% endif %}{% if optional_services %}optional services{% endif %} before signing.
+    </div>
+    {% endif %}
     {% endif %}
 
     {% if section.bullets %}
