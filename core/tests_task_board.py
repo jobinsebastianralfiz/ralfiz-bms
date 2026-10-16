@@ -76,3 +76,21 @@ class TaskBoardTests(TestCase):
         self.assertRedirects(r, reverse('task_board') + f'?project={self.project.pk}', fetch_redirect_response=False)
         t = Task.objects.get(title='QA pass')
         self.assertEqual((t.category, t.progress), ('Testing', 100))
+
+
+class PortalTaskBoardTests(TestCase):
+    def test_client_sees_board_without_internal_issues(self):
+        from core.models import TaskIssue
+        user = User.objects.create_user('acme_login', password='pw-12345')
+        client = Client.objects.create(name='Acme', email='acme@example.com', user=user)
+        project = Project.objects.create(client=client, name='Acme Website', status='in_progress')
+        task = Task.objects.create(project=project, title='Profile page', status='review', progress=80)
+        TaskIssue.objects.create(task=task, title='Internal only', is_visible_to_client=False)
+        self.client.force_login(user)
+        r = self.client.get(reverse('client_portal:portal_project_detail', args=[project.pk]))
+        self.assertEqual(r.status_code, 200)
+        review = [c for c in r.context['board_columns'] if c['key'] == 'review'][0]
+        self.assertEqual([t.title for t in review['tasks']], ['Profile page'])
+        self.assertEqual(review['tasks'][0].open_issue_total, 0)
+        self.assertContains(r, '80% complete')
+        self.assertNotContains(r, 'draggable="true"')

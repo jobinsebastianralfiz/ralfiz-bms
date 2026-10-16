@@ -4,11 +4,12 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
-from django.db.models import Sum
+from django.db.models import Count, Q, Sum
 from django.contrib.contenttypes.models import ContentType
 from django.http import Http404
 
 from core.models import Client, Project, Task, Invoice, Quote, Document, Credential
+from core.task_board import board_columns
 from .models import ProjectComment, ProjectUpdate, ClientNotification
 
 
@@ -161,6 +162,16 @@ def portal_projects(request):
     return render(request, 'client_portal/projects.html', ctx)
 
 
+def _portal_board_columns(project):
+    """Task board columns for the client, counting only what the client may see."""
+    tasks = project.tasks.select_related('assigned_to').annotate(
+        comment_total=Count('comments', filter=Q(comments__is_deleted=False, comments__is_visible_to_client=True), distinct=True),
+        attachment_total=Count('attachments', distinct=True),
+        open_issue_total=Count('issues', filter=Q(issues__is_visible_to_client=True, issues__status__in=['open', 'in_progress']), distinct=True),
+    )
+    return board_columns(tasks)[1]
+
+
 @client_required
 def portal_project_detail(request, project_id):
     client = request.client
@@ -283,10 +294,7 @@ def portal_project_detail(request, project_id):
     ctx.update({
         'project': project,
         'task_stats': task_stats,
-        'tasks_todo': tasks.filter(status='todo'),
-        'tasks_in_progress': tasks.filter(status='in_progress'),
-        'tasks_review': tasks.filter(status='review'),
-        'tasks_completed': tasks.filter(status='completed'),
+        'board_columns': _portal_board_columns(project),
         'progress': progress,
         'financial': {
             'total_invoiced': total_invoiced,

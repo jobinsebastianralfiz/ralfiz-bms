@@ -1,0 +1,50 @@
+{% load humanize %}{% comment %}One task card. Set readonly for the client portal: no links, no drag, no edit.{% endcomment %}
+<article class="vk-card{% if readonly %} readonly{% endif %}"{% if not readonly %} draggable="true" data-id="{{ task.pk }}" data-url="{% url 'task_status_update' task.pk %}"{% endif %}>
+  {% if task.tag or task.priority %}
+  <div class="vk-chips">
+    {% if task.tag %}<span class="vk-chip tone-{{ task.tag_tone }}">{{ task.tag }}</span>{% endif %}
+    <span class="vk-chip pri-{{ task.priority }}">{{ task.get_priority_display }}</span>
+  </div>
+  {% endif %}
+  <div class="vk-title-row">
+    {% if readonly %}<span class="vk-title">{{ task.title }}</span>{% else %}
+    <a class="vk-title" href="{% url 'task_detail' task.pk %}">{{ task.title }}</a>
+    <a class="vk-more" href="{% url 'task_update' task.pk %}" aria-label="Edit {{ task.title }}" title="Edit"><i class="fas fa-ellipsis"></i></a>{% endif %}
+  </div>
+  {% if show_project %}<div class="vk-proj"><i class="far fa-folder"></i> {{ task.project.name }}</div>{% endif %}
+  {% if task.description %}<p class="vk-desc">{{ task.description }}</p>{% endif %}
+
+  {% if col.key == 'completed' %}
+    <div class="vk-meta"><i class="far fa-calendar"></i> Completed {% if task.completed_date %}{{ task.completed_date|naturalday:"d/m/Y"|capfirst }}{% endif %}<i class="fas fa-circle-check vk-ok"></i></div>
+  {% else %}
+    {% with pct=task.progress_percent %}
+    <div class="vk-prog-row">
+      {% if pct %}<span>{{ pct }}% complete</span><span>{{ task.progress_left }}% left</span>
+      {% else %}<span>Progress</span><span>0%</span>{% endif %}
+    </div>
+    <div class="vk-track" role="progressbar" aria-valuenow="{{ pct }}" aria-valuemin="0" aria-valuemax="100" aria-label="Progress"><i style="width: {{ pct }}%"></i></div>
+    {% endwith %}
+    {% if col.key == 'review' %}
+    <div class="vk-meta{% if task.open_issue_total %} late{% endif %}">
+      <i class="fas {% if task.open_issue_total %}fa-circle-exclamation{% else %}fa-circle-notch{% endif %}"></i>
+      {% if task.open_issue_total %}{{ task.open_issue_total }} open issue{{ task.open_issue_total|pluralize }}{% else %}Waiting for review{% endif %}
+    </div>
+    {% endif %}
+    {% if task.due_date %}
+    <div class="vk-meta{% if task.is_overdue %} late{% endif %}"><i class="far fa-calendar"></i> Due: {{ task.due_date|date:"d/m/Y" }}{% if task.is_overdue %} · overdue{% endif %}</div>
+    {% endif %}
+  {% endif %}
+
+  <div class="vk-foot">
+    {% if task.assigned_to %}
+    <div class="vk-who"><span class="vk-av tone-{{ task.avatar_tone }}">{{ task.assigned_to.name|slice:":2"|upper }}</span><span>{{ task.assigned_to.name }}</span></div>
+    {% else %}
+    <div class="vk-who"><span class="vk-av unassigned"><i class="fas fa-user"></i></span><span>Unassigned</span></div>
+    {% endif %}
+    <div class="vk-stats">
+      {% if task.open_issue_total and col.key != 'review' %}<span class="warn" title="Open issues"><i class="fas fa-circle-exclamation"></i>{{ task.open_issue_total }}</span>{% endif %}
+      <span title="Attachments"><i class="fas fa-paperclip"></i>{{ task.attachment_total }}</span>
+      <span title="Comments"><i class="far fa-message"></i>{{ task.comment_total }}</span>
+    </div>
+  </div>
+</article>

@@ -12,6 +12,7 @@ from django.utils import timezone
 from django.conf import settings
 from datetime import timedelta, datetime
 
+from .task_board import board_columns, decorate_team
 from .models import (
     Client, Project, Credential, Quote, QuoteItem, Invoice, InvoiceItem, Payment, CompanySettings, GST_INVOICE,
     Expense, TeamMember, Task, TaskAttachment, TimeEntry, ActivityLog, Document,
@@ -5783,21 +5784,7 @@ def task_board(request):
     else:
         assignee = ''
 
-    tasks = list(tasks)
-    for t in tasks:
-        t.tag = t.category or (t.assigned_to.get_role_display() if t.assigned_to else '')
-        t.progress_left = 100 - t.progress_percent
-        t.tag_tone = _BOARD_TONES[sum(map(ord, t.tag)) % len(_BOARD_TONES)] if t.tag else ''
-        if t.assigned_to:
-            t.avatar_tone = _BOARD_TONES[sum(map(ord, t.assigned_to.name)) % len(_BOARD_TONES)]
-
-    columns = []
-    for key, label in Task.STATUS_CHOICES:
-        columns.append({
-            'key': key,
-            'label': label,
-            'tasks': [t for t in tasks if t.status == key],
-        })
+    tasks, columns = board_columns(tasks)
 
     if project:
         team = list(project.team_members.all()[:6])
@@ -5805,13 +5792,13 @@ def task_board(request):
             team = list(TeamMember.objects.filter(tasks__project=project).distinct()[:6])
     else:
         team = list(assignees[:6])
-    for m in team:
-        m.avatar_tone = _BOARD_TONES[sum(map(ord, m.name)) % len(_BOARD_TONES)]
+    team = decorate_team(team)
 
     context = {
         'columns': columns,
         'task_count': len(tasks),
         'project': project,
+        'show_project': project is None,
         'project_initials': ''.join(w[0] for w in (project.name.split() if project else [])[:2] if w[0].isalnum()).upper(),
         'projects': projects,
         'selected_project': project_id,
@@ -5825,10 +5812,6 @@ def task_board(request):
         'is_team_member': team_member is not None,
     }
     return render(request, 'tasks/board.html', context)
-
-
-# Soft tag / avatar colours on the board, picked by a stable hash of the text.
-_BOARD_TONES = ['violet', 'green', 'orange', 'blue', 'pink', 'teal']
 
 
 def _is_uuid(value):

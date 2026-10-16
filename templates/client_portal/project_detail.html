@@ -1,6 +1,11 @@
 {% extends 'client_portal/base.html' %}
+{% load static %}
 
 {% block title %}{{ project.name }}{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/task-board.css' %}?v=1">
+{% endblock %}
 
 {% block content %}
 <!-- Breadcrumb -->
@@ -160,142 +165,22 @@
 
 <!-- Tasks Tab (Kanban Board) -->
 <div id="tab-tasks" class="tab-content" style="display: none;">
-  <div class="kanban-board">
-    <div class="kanban-column" data-status="todo">
-      <div class="kanban-column-header">
-        <span class="kanban-column-title">To Do</span>
-        <span class="kanban-column-count">{{ task_stats.todo }}</span>
-      </div>
-      <div class="kanban-column-body">
-        {% for task in tasks_todo %}
-        <div class="kanban-task">
-          <div class="kanban-task-title">{{ task.title }}</div>
-          <div class="kanban-task-meta">
-            <span class="portal-badge {{ task.priority }}" style="font-size: 0.6875rem;">{{ task.get_priority_display }}</span>
-            {% if task.due_date %}
-            <span style="{% if task.is_overdue %}color: var(--danger);{% endif %}"><i class="fas fa-calendar"></i> {{ task.due_date|date:"M d" }}</span>
-            {% endif %}
-          </div>
-          {% if task.assigned_to %}
-          <div class="kanban-task-assignee" style="margin-top: 0.375rem;">
-            <i class="fas fa-user" style="font-size: 0.625rem;"></i> {{ task.assigned_to.name }}
-          </div>
-          {% endif %}
-          <div style="margin-top: 0.5rem; display: flex; gap: 0.45rem; flex-wrap: wrap; align-items: center; font-size: 0.7rem; color: var(--text-muted);">
-            {% if task.attachments.count %}
-              {% for att in task.attachments.all %}{% if att.is_image %}<img src="{{ att.file.url }}" style="width: 28px; height: 28px; object-fit: cover; border-radius: 4px; border: 1px solid var(--border-color);">{% endif %}{% endfor %}
-              <span><i class="fas fa-paperclip"></i> {{ task.attachments.count }}</span>
-            {% endif %}
-            {% if task.client_visible_comment_count %}<span title="Client-visible comments"><i class="far fa-comment"></i> {{ task.client_visible_comment_count }}</span>{% endif %}
-            {% if task.client_visible_issue_count %}<span style="color:#c2410c;" title="Issues"><i class="fas fa-exclamation-triangle"></i> {{ task.client_visible_issue_count }}</span>{% endif %}
-          </div>
+  <section class="vk vk-panel">
+    <div class="vk-board">
+      {% for col in board_columns %}
+      <div class="vk-col" data-status="{{ col.key }}">
+        <div class="vk-col-head">
+          {% if col.key == 'completed' %}<span class="vk-pie completed"><i class="fas fa-check"></i></span>{% else %}<span class="vk-pie {{ col.key }}"></span>{% endif %}
+          {{ col.label }} <span class="vk-count">{{ col.tasks|length }}</span>
         </div>
-        {% empty %}
-        <div style="text-align: center; padding: 1rem; color: var(--text-muted); font-size: 0.8125rem;">No tasks</div>
+        {% for task in col.tasks %}
+        {% include "tasks/_board_card.html" with readonly=True %}
         {% endfor %}
+        <div class="vk-empty">No tasks</div>
       </div>
+      {% endfor %}
     </div>
-
-    <div class="kanban-column" data-status="in_progress">
-      <div class="kanban-column-header">
-        <span class="kanban-column-title">In Progress</span>
-        <span class="kanban-column-count">{{ task_stats.in_progress }}</span>
-      </div>
-      <div class="kanban-column-body">
-        {% for task in tasks_in_progress %}
-        <div class="kanban-task">
-          <div class="kanban-task-title">{{ task.title }}</div>
-          <div class="kanban-task-meta">
-            <span class="portal-badge {{ task.priority }}" style="font-size: 0.6875rem;">{{ task.get_priority_display }}</span>
-            {% if task.due_date %}
-            <span style="{% if task.is_overdue %}color: var(--danger);{% endif %}"><i class="fas fa-calendar"></i> {{ task.due_date|date:"M d" }}</span>
-            {% endif %}
-          </div>
-          {% if task.assigned_to %}
-          <div class="kanban-task-assignee" style="margin-top: 0.375rem;">
-            <i class="fas fa-user" style="font-size: 0.625rem;"></i> {{ task.assigned_to.name }}
-          </div>
-          {% endif %}
-          <div style="margin-top: 0.5rem; display: flex; gap: 0.45rem; flex-wrap: wrap; align-items: center; font-size: 0.7rem; color: var(--text-muted);">
-            {% if task.attachments.count %}
-              {% for att in task.attachments.all %}{% if att.is_image %}<img src="{{ att.file.url }}" style="width: 28px; height: 28px; object-fit: cover; border-radius: 4px; border: 1px solid var(--border-color);">{% endif %}{% endfor %}
-              <span><i class="fas fa-paperclip"></i> {{ task.attachments.count }}</span>
-            {% endif %}
-            {% if task.client_visible_comment_count %}<span title="Client-visible comments"><i class="far fa-comment"></i> {{ task.client_visible_comment_count }}</span>{% endif %}
-            {% if task.client_visible_issue_count %}<span style="color:#c2410c;" title="Issues"><i class="fas fa-exclamation-triangle"></i> {{ task.client_visible_issue_count }}</span>{% endif %}
-          </div>
-        </div>
-        {% empty %}
-        <div style="text-align: center; padding: 1rem; color: var(--text-muted); font-size: 0.8125rem;">No tasks</div>
-        {% endfor %}
-      </div>
-    </div>
-
-    <div class="kanban-column" data-status="review">
-      <div class="kanban-column-header">
-        <span class="kanban-column-title">In Review</span>
-        <span class="kanban-column-count">{{ task_stats.review }}</span>
-      </div>
-      <div class="kanban-column-body">
-        {% for task in tasks_review %}
-        <div class="kanban-task">
-          <div class="kanban-task-title">{{ task.title }}</div>
-          <div class="kanban-task-meta">
-            <span class="portal-badge {{ task.priority }}" style="font-size: 0.6875rem;">{{ task.get_priority_display }}</span>
-            {% if task.due_date %}
-            <span style="{% if task.is_overdue %}color: var(--danger);{% endif %}"><i class="fas fa-calendar"></i> {{ task.due_date|date:"M d" }}</span>
-            {% endif %}
-          </div>
-          {% if task.assigned_to %}
-          <div class="kanban-task-assignee" style="margin-top: 0.375rem;">
-            <i class="fas fa-user" style="font-size: 0.625rem;"></i> {{ task.assigned_to.name }}
-          </div>
-          {% endif %}
-          <div style="margin-top: 0.5rem; display: flex; gap: 0.45rem; flex-wrap: wrap; align-items: center; font-size: 0.7rem; color: var(--text-muted);">
-            {% if task.attachments.count %}
-              {% for att in task.attachments.all %}{% if att.is_image %}<img src="{{ att.file.url }}" style="width: 28px; height: 28px; object-fit: cover; border-radius: 4px; border: 1px solid var(--border-color);">{% endif %}{% endfor %}
-              <span><i class="fas fa-paperclip"></i> {{ task.attachments.count }}</span>
-            {% endif %}
-            {% if task.client_visible_comment_count %}<span title="Client-visible comments"><i class="far fa-comment"></i> {{ task.client_visible_comment_count }}</span>{% endif %}
-            {% if task.client_visible_issue_count %}<span style="color:#c2410c;" title="Issues"><i class="fas fa-exclamation-triangle"></i> {{ task.client_visible_issue_count }}</span>{% endif %}
-          </div>
-        </div>
-        {% empty %}
-        <div style="text-align: center; padding: 1rem; color: var(--text-muted); font-size: 0.8125rem;">No tasks</div>
-        {% endfor %}
-      </div>
-    </div>
-
-    <div class="kanban-column" data-status="completed">
-      <div class="kanban-column-header">
-        <span class="kanban-column-title">Completed</span>
-        <span class="kanban-column-count">{{ task_stats.completed }}</span>
-      </div>
-      <div class="kanban-column-body">
-        {% for task in tasks_completed %}
-        <div class="kanban-task">
-          <div class="kanban-task-title">{{ task.title }}</div>
-          <div class="kanban-task-meta">
-            <span class="portal-badge completed" style="font-size: 0.6875rem;">Done</span>
-            {% if task.completed_date %}
-            <span><i class="fas fa-check"></i> {{ task.completed_date|date:"M d" }}</span>
-            {% endif %}
-          </div>
-          <div style="margin-top: 0.5rem; display: flex; gap: 0.45rem; flex-wrap: wrap; align-items: center; font-size: 0.7rem; color: var(--text-muted);">
-            {% if task.attachments.count %}
-              {% for att in task.attachments.all %}{% if att.is_image %}<img src="{{ att.file.url }}" style="width: 28px; height: 28px; object-fit: cover; border-radius: 4px; border: 1px solid var(--border-color);">{% endif %}{% endfor %}
-              <span><i class="fas fa-paperclip"></i> {{ task.attachments.count }}</span>
-            {% endif %}
-            {% if task.client_visible_comment_count %}<span title="Client-visible comments"><i class="far fa-comment"></i> {{ task.client_visible_comment_count }}</span>{% endif %}
-            {% if task.client_visible_issue_count %}<span style="color:#c2410c;" title="Issues"><i class="fas fa-exclamation-triangle"></i> {{ task.client_visible_issue_count }}</span>{% endif %}
-          </div>
-        </div>
-        {% empty %}
-        <div style="text-align: center; padding: 1rem; color: var(--text-muted); font-size: 0.8125rem;">No tasks</div>
-        {% endfor %}
-      </div>
-    </div>
-  </div>
+  </section>
 </div>
 
 <!-- Timeline Tab -->
