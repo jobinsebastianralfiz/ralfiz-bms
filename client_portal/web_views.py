@@ -60,6 +60,21 @@ def _base_context(request, active_nav=''):
 
 # ─── Auth ────────────────────────────────────────────────────────
 
+def _login_context(**extra):
+    from core.models import CompanySettings
+    company = CompanySettings.get_settings()
+    return {'company_name': company.company_name, 'company_email': company.email,
+            'company_phone': company.phone, **extra}
+
+
+def _portal_username(login_name):
+    """Clients may sign in with their email address as well as their username."""
+    if '@' not in login_name:
+        return login_name
+    client = Client.objects.filter(email__iexact=login_name, user__isnull=False).select_related('user').first()
+    return client.user.username if client else login_name
+
+
 def portal_login(request):
     if request.user.is_authenticated and hasattr(request.user, 'client_profile'):
         return redirect('client_portal:portal_dashboard')
@@ -67,24 +82,26 @@ def portal_login(request):
     if request.method == 'POST':
         username = request.POST.get('username', '').strip()
         password = request.POST.get('password', '')
-        user = authenticate(request, username=username, password=password)
+        user = authenticate(request, username=_portal_username(username), password=password)
 
         if user is None:
-            return render(request, 'client_portal/login.html', {'error': 'Invalid username or password.'})
+            return render(request, 'client_portal/login.html', _login_context(error='Invalid username or password.', username=username))
 
         client = getattr(user, 'client_profile', None)
         if client is None:
             error = STAFF_PORTAL_MESSAGE if _is_staff_login(user) else 'No client portal access for this account.'
-            return render(request, 'client_portal/login.html', {'error': error})
+            return render(request, 'client_portal/login.html', _login_context(error=error, username=username))
 
         if not client.is_active:
-            return render(request, 'client_portal/login.html', {'error': 'Your account is inactive. Contact support.'})
+            return render(request, 'client_portal/login.html', _login_context(error='Your account is inactive. Contact support.', username=username))
 
         login(request, user)
+        if not request.POST.get('remember'):
+            request.session.set_expiry(0)  # ends when the browser closes
         from core.security import safe_next
         return redirect(safe_next(request, request.GET.get('next'), 'client_portal:portal_dashboard'))
 
-    return render(request, 'client_portal/login.html')
+    return render(request, 'client_portal/login.html', _login_context())
 
 
 def portal_logout(request):
