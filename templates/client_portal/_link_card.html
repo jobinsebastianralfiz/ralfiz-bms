@@ -1,0 +1,9 @@
+<a class="pv-link" href="{{ link.url }}" target="_blank" rel="noopener">
+  <span class="pv-link-ico t-{{ link.link_type }}"><i class="fas {{ link.icon }}"></i></span>
+  <span class="pv-link-body">
+    <span class="pv-link-type">{{ link.get_link_type_display }}{% if show_project %} &middot; {{ link.project.name }}{% endif %}</span>
+    <strong>{{ link.title }}</strong>
+    {% if link.note %}<span class="pv-muted">{{ link.note }}</span>{% endif %}
+    <span class="pv-link-host"><i class="fas fa-arrow-up-right-from-square"></i> {{ link.host }} &middot; {{ link.created_at|date:"M d, Y" }}</span>
+  </span>
+</a>

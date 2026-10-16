@@ -23,6 +23,7 @@ from .models import (
     BankAccount, InternalTransfer,
     CompanyDocument, Partner, CapitalContribution, CompanyAsset,
     DailyTask,
+    ProjectLink,
 )
 from django.contrib.contenttypes.models import ContentType
 from licensing.models import License, LicenseKey, LicenseActivation
@@ -1158,6 +1159,66 @@ def project_logo_upload(request, pk):
             project.save()
             messages.success(request, 'Project logo updated.' if project.logo else 'Project logo removed.')
     return redirect('project_detail', pk=pk)
+
+
+@login_required
+def project_link_add(request, pk):
+    """Add a shareable link (design, preview, live site) to a project."""
+    project = get_object_or_404(Project, pk=pk)
+    if request.method != 'POST':
+        return redirect('project_detail', pk=pk)
+    url = request.POST.get('url', '').strip()
+    if url and '://' not in url:
+        url = 'https://' + url
+    title = request.POST.get('title', '').strip()[:120]
+    from django.core.validators import URLValidator
+    from django.core.exceptions import ValidationError
+    try:
+        URLValidator(schemes=['http', 'https'])(url)
+        valid = True
+    except ValidationError:
+        valid = False
+    if not title or not valid:
+        messages.error(request, 'Give the link a name and a web address starting with https://')
+        return redirect(f"{reverse('project_detail', args=[pk])}#links")
+    link_type = request.POST.get('link_type', 'design')
+    link = ProjectLink.objects.create(
+        project=project, title=title, url=url[:500],
+        link_type=link_type if link_type in dict(ProjectLink.TYPE_CHOICES) else 'other',
+        note=request.POST.get('note', '').strip()[:255],
+        visible_to_client=bool(request.POST.get('visible_to_client')),
+        created_by=request.user,
+    )
+    if link.visible_to_client and request.POST.get('notify_client'):
+        from client_portal.models import ClientNotification
+        ClientNotification.objects.create(
+            client=project.client, project=project, notification_type='project_update',
+            title=f'New link: {link.title}',
+            message=f'{link.get_link_type_display()} shared on {project.name}.' + (f' {link.note}' if link.note else ''),
+        )
+    log_activity(request, 'created', link)
+    messages.success(request, f'Link "{link.title}" added.' + (' The client can see it.' if link.visible_to_client else ' Only staff can see it.'))
+    return redirect(f"{reverse('project_detail', args=[pk])}#links")
+
+
+@login_required
+def project_link_delete(request, pk, link_id):
+    link = get_object_or_404(ProjectLink, pk=link_id, project_id=pk)
+    if request.method == 'POST':
+        log_activity(request, 'deleted', link)
+        link.delete()
+        messages.success(request, 'Link removed.')
+    return redirect(f"{reverse('project_detail', args=[pk])}#links")
+
+
+@login_required
+def project_link_toggle(request, pk, link_id):
+    """Show or hide a link from the client."""
+    link = get_object_or_404(ProjectLink, pk=link_id, project_id=pk)
+    if request.method == 'POST':
+        link.visible_to_client = not link.visible_to_client
+        link.save(update_fields=['visible_to_client'])
+    return redirect(f"{reverse('project_detail', args=[pk])}#links")
 
 
 @login_required

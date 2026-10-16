@@ -171,3 +171,56 @@ class ProjectLogoTests(TestCase):
         self.upload(SimpleUploadedFile('logo.png', b'not an image', content_type='image/png'))
         self.project.refresh_from_db()
         self.assertFalse(self.project.logo)
+
+
+class ProjectLinkTests(TestCase):
+    def setUp(self):
+        from core.models import ProjectLink  # noqa: F401
+        self.admin = User.objects.create_superuser('boss', 'boss@example.com', 'pw-12345')
+        self.client_user = User.objects.create_user('acme_login', password='pw-12345')
+        self.biz = Client.objects.create(name='Acme', email='acme@example.com', user=self.client_user)
+        self.project = Project.objects.create(client=self.biz, name='Acme Website', status='in_progress')
+        other = Client.objects.create(name='Other', email='o@example.com')
+        self.other_project = Project.objects.create(client=other, name='Other Site', status='in_progress')
+
+    def add(self, **data):
+        self.client.force_login(self.admin)
+        return self.client.post(reverse('project_link_add', args=[self.project.pk]), data)
+
+    def test_visible_link_notifies_and_shows_in_portal(self):
+        from client_portal.models import ClientNotification
+        self.add(title='Homepage design', url='figma.com/file/abc', link_type='design',
+                 visible_to_client='1', notify_client='1')
+        link = self.project.links.get()
+        self.assertEqual(link.url, 'https://figma.com/file/abc')
+        self.assertTrue(ClientNotification.objects.filter(client=self.biz, title__contains='Homepage design').exists())
+        self.client.force_login(self.client_user)
+        r = self.client.get(reverse('client_portal:portal_project_detail', args=[self.project.pk]))
+        self.assertContains(r, 'Homepage design')
+        self.assertContains(self.client.get('/portal/files/'), 'Homepage design')
+
+    def test_staff_only_link_is_hidden_from_client(self):
+        self.add(title='Admin panel', url='https://admin.acme.example', link_type='other')
+        self.assertFalse(self.project.links.get().visible_to_client)
+        self.client.force_login(self.client_user)
+        r = self.client.get(reverse('client_portal:portal_project_detail', args=[self.project.pk]))
+        self.assertEqual(list(r.context['project_links']), [])
+
+    def test_bad_url_is_refused(self):
+        self.add(title='Bad', url='javascript:alert(1)', visible_to_client='1')
+        self.assertFalse(self.project.links.exists())
+
+    def test_other_clients_links_never_show(self):
+        from core.models import ProjectLink
+        ProjectLink.objects.create(project=self.other_project, title='Their secret design', url='https://x.example')
+        self.client.force_login(self.client_user)
+        self.assertNotContains(self.client.get('/portal/files/'), 'Their secret design')
+
+    def test_toggle_and_delete(self):
+        self.add(title='Preview', url='https://preview.acme.example', link_type='preview', visible_to_client='1')
+        link = self.project.links.get()
+        self.client.post(reverse('project_link_toggle', args=[self.project.pk, link.pk]))
+        link.refresh_from_db()
+        self.assertFalse(link.visible_to_client)
+        self.client.post(reverse('project_link_delete', args=[self.project.pk, link.pk]))
+        self.assertFalse(self.project.links.exists())

@@ -39,6 +39,7 @@
   <a href="#tasks" class="portal-tab" onclick="switchTab(event, 'tasks')">Tasks <span class="portal-badge todo" style="margin-left: 0.25rem;">{{ task_stats.total }}</span></a>
   <a href="#timeline" class="portal-tab" onclick="switchTab(event, 'timeline')">Timeline</a>
   <a href="#comments" class="portal-tab" onclick="switchTab(event, 'comments')">Discussion</a>
+  <a href="#links" class="portal-tab" onclick="switchTab(event, 'links')">Links{% if project_links %} <span class="portal-badge todo" style="margin-left: 0.25rem;">{{ project_links|length }}</span>{% endif %}</a>
   <a href="#documents" class="portal-tab" onclick="switchTab(event, 'documents')">Documents</a>
   {% if credentials %}<a href="#credentials" class="portal-tab" onclick="switchTab(event, 'credentials')">Credentials</a>{% endif %}
 </div>
@@ -184,6 +185,19 @@
       {% endfor %}
     </div>
   </section>
+</div>
+
+<!-- Links Tab -->
+<div id="tab-links" class="tab-content" style="display: none;">
+  {% if project_links %}
+  <div class="pv-links">
+    {% for link in project_links %}
+    {% include "client_portal/_link_card.html" %}
+    {% endfor %}
+  </div>
+  {% else %}
+  <section class="pv-card"><p class="pv-empty">No links shared yet. Designs and preview builds will appear here as our team shares them.</p></section>
+  {% endif %}
 </div>
 
 <!-- Timeline Tab -->
@@ -423,7 +437,7 @@ function switchTab(event, tabName) {
   document.querySelectorAll('.tab-content').forEach(el => el.style.display = 'none');
   document.querySelectorAll('.portal-tab').forEach(el => el.classList.remove('active'));
   document.getElementById('tab-' + tabName).style.display = 'block';
-  event.target.classList.add('active');
+  event.target.closest('.portal-tab').classList.add('active');
   history.replaceState(null, '', '#' + tabName);
 }
 

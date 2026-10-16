@@ -5,9 +5,16 @@
 {% block content %}
 <div class="portal-page-header">
   <h1>Files</h1>
-  <p>Documents our team has shared on your projects.</p>
+  <p>Designs, preview links and documents our team has shared on your projects.</p>
 </div>
 
+{% if links %}
+<div class="pv-section-title">Links</div>
+<div class="pv-links" style="margin-bottom: 8px;">
+  {% for link in links %}{% include "client_portal/_link_card.html" with show_project=True %}{% endfor %}
+</div>
+<div class="pv-section-title">Documents</div>
+{% endif %}
 <section class="pv-card">
   {% if documents %}
   <ul class="pv-list">

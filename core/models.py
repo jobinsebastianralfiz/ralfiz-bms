@@ -1406,6 +1406,42 @@ class TeamMember(models.Model):
         return self.user is not None and not self.user.is_superuser
 
 
+class ProjectLink(models.Model):
+    """A link to share on a project: a design, a preview build, the live site."""
+    TYPE_CHOICES = [
+        ('design', 'Design'),
+        ('preview', 'Preview'),
+        ('live', 'Live site'),
+        ('document', 'Document'),
+        ('other', 'Other'),
+    ]
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    project = models.ForeignKey('Project', on_delete=models.CASCADE, related_name='links')
+    title = models.CharField(max_length=120)
+    url = models.URLField(max_length=500)
+    link_type = models.CharField(max_length=10, choices=TYPE_CHOICES, default='design')
+    note = models.CharField(max_length=255, blank=True)
+    visible_to_client = models.BooleanField(default=True)
+    created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='+')
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return self.title
+
+    @property
+    def icon(self):
+        return {'design': 'fa-pen-ruler', 'preview': 'fa-eye', 'live': 'fa-globe',
+                'document': 'fa-file-lines'}.get(self.link_type, 'fa-link')
+
+    @property
+    def host(self):
+        from urllib.parse import urlparse
+        return urlparse(self.url).netloc.removeprefix('www.')
+
+
 class Task(models.Model):
     """Task management model"""
     STATUS_CHOICES = [

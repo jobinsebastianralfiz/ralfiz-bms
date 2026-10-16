@@ -8,7 +8,7 @@ from django.db.models import Count, Q, Sum
 from django.contrib.contenttypes.models import ContentType
 from django.http import Http404
 
-from core.models import Client, Project, Task, Invoice, Quote, Document, Credential
+from core.models import Client, Project, ProjectLink, Task, Invoice, Quote, Document, Credential
 from core.task_board import board_columns, project_progress
 from .models import ProjectComment, ProjectUpdate, ClientNotification
 
@@ -330,6 +330,7 @@ def portal_project_detail(request, project_id):
     ctx = _base_context(request, 'projects')
     ctx.update({
         'project': project,
+        'project_links': project.links.filter(visible_to_client=True),
         'task_stats': task_stats,
         'board_columns': _portal_board_columns(project),
         'progress': progress,
@@ -546,6 +547,7 @@ def portal_files(request):
         d.project = projects.get(d.object_id)
     ctx = _base_context(request, 'files')
     ctx['documents'] = docs
+    ctx['links'] = ProjectLink.objects.filter(project__client=client, visible_to_client=True).select_related('project')
     return render(request, 'client_portal/files.html', ctx)
 
 

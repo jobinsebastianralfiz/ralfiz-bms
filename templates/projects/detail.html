@@ -292,6 +292,53 @@
 
   <div class="pstage-col pstage-col--r">
 
+  <section class="stage-panel sp-plinks" id="links" data-open>
+    <h2 class="stage-panel__kicker"><span class="sp-ico sp-ico--violet"><i class="fas fa-link"></i></span>Project Links</h2>
+    {% with links=project.links.all %}
+    <div class="pj-bar"><span>{{ links|length }} link{{ links|length|pluralize }} &middot; shown in the client portal unless marked staff-only</span></div>
+    {% for link in links %}
+    <div class="pj-row">
+      <span class="pj-row__icon"><i class="fas {{ link.icon }}"></i></span>
+      <div class="pj-row__main">
+        <a href="{{ link.url }}" target="_blank" rel="noopener" class="pj-row__title">{{ link.title }}</a>
+        <span class="pj-row__sub">{{ link.get_link_type_display }} &middot; {{ link.host }}{% if link.note %} &middot; {{ link.note }}{% endif %}</span>
+      </div>
+      <form method="post" action="{% url 'project_link_toggle' project.pk link.pk %}">
+        {% csrf_token %}
+        <button type="submit" class="status-badge {% if link.visible_to_client %}active{% else %}pending{% endif %}" style="border:0;cursor:pointer;" title="Click to {% if link.visible_to_client %}hide it from{% else %}show it to{% endif %} the client">
+          {% if link.visible_to_client %}<i class="far fa-eye"></i> Client{% else %}<i class="far fa-eye-slash"></i> Staff only{% endif %}
+        </button>
+      </form>
+      <button type="button" class="btn btn-sm btn-ghost btn-icon" title="Copy link" onclick="navigator.clipboard.writeText('{{ link.url|escapejs }}');this.innerHTML='<i class=&quot;fas fa-check&quot;></i>';"><i class="far fa-copy"></i></button>
+      <form method="post" action="{% url 'project_link_delete' project.pk link.pk %}" onsubmit="return confirm('Remove this link?');">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-sm btn-ghost btn-icon" title="Remove link"><i class="far fa-trash-can text-danger"></i></button>
+      </form>
+    </div>
+    {% empty %}
+    <p class="pj-empty"><i class="fas fa-link"></i> No links yet. Add the Figma design, a preview build or the live site.</p>
+    {% endfor %}
+    {% endwith %}
+    <details class="pj-link-form">
+      <summary class="pj-add"><i class="fas fa-plus"></i> Add link</summary>
+      <form method="post" action="{% url 'project_link_add' project.pk %}" style="display:grid;gap:8px;margin-top:10px;">
+        {% csrf_token %}
+        <input class="form-control" name="title" maxlength="120" placeholder="Name, e.g. Homepage design v2" required>
+        <input class="form-control" name="url" type="url" maxlength="500" placeholder="https://figma.com/..." required>
+        <div style="display:flex;gap:8px;">
+          <select class="form-control" name="link_type" style="flex:1;">
+            <option value="design">Design</option><option value="preview">Preview</option><option value="live">Live site</option>
+            <option value="document">Document</option><option value="other">Other</option>
+          </select>
+        </div>
+        <input class="form-control" name="note" maxlength="255" placeholder="Note for the client (optional)">
+        <label style="font-size:.875rem;margin:0;"><input type="checkbox" name="visible_to_client" value="1" checked onchange="this.form.notify_client.disabled=!this.checked"> Show in the client portal</label>
+        <label style="font-size:.875rem;margin:0;"><input type="checkbox" name="notify_client" value="1" checked> Notify the client</label>
+        <button type="submit" class="btn btn-sm btn-primary" style="justify-self:start;"><i class="fas fa-plus"></i> Add link</button>
+      </form>
+    </details>
+  </section>
+
   <section class="stage-panel sp-credentials" data-open>
     <h2 class="stage-panel__kicker"><span class="sp-ico sp-ico--blue"><i class="fas fa-key"></i></span>Credentials</h2>
     <div class="pj-bar">
