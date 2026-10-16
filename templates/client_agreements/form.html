@@ -91,7 +91,7 @@
       <div class="card mb-4">
         <div class="card-header"><h3 class="card-title"><i class="fas fa-rotate"></i> Additional &amp; recurring services</h3></div>
         <div class="card-body">
-          <p class="text-sm text-muted">Billed separately from the project fee. <strong>Optional</strong> services appear as tick boxes for the client when they accept.</p>
+          <p class="text-sm text-muted">Billed separately from the project fee unless marked as included in it. <strong>Optional</strong> services appear as tick boxes for the client when they accept.</p>
 
           <div class="svc-block">
             <label class="d-flex gap-2" style="align-items:center; font-weight:600;">
@@ -116,14 +116,17 @@
             </label>
             <div id="content-fields" class="svc-fields">
               <div class="d-flex gap-2" style="flex-wrap: wrap; align-items: center;">
+                <select class="form-control" name="content_mode" id="content_mode" style="max-width: 340px;">
+                  <option value="optional" {% if form.content_mode != 'included' and form.content_mode != 'in_fee' %}selected{% endif %}>Optional - client chooses</option>
+                  <option value="included" {% if form.content_mode == 'included' %}selected{% endif %}>Part of the agreement - client must take it</option>
+                  <option value="in_fee" {% if form.content_mode == 'in_fee' %}selected{% endif %}>Included in the project fee</option>
+                </select>
+                <span id="content-price" class="d-flex gap-2" style="flex-wrap: wrap;">
                 <input type="number" min="0" step="1" class="form-control" name="content_amount" placeholder="&#8377; price" value="{{ form.content_amount|default:'' }}" style="max-width: 140px;">
                 <input type="text" class="form-control" name="content_unit" placeholder="per... (blank = one-time)" value="{{ form.content_unit|default:'' }}" style="max-width: 200px;">
-                <select class="form-control" name="content_mode" style="max-width: 220px;">
-                  <option value="optional" {% if form.content_mode != 'included' %}selected{% endif %}>Optional - client chooses</option>
-                  <option value="included" {% if form.content_mode == 'included' %}selected{% endif %}>Part of the agreement - client must take it</option>
-                </select>
+                </span>
               </div>
-              <div class="text-sm text-muted mt-1">Leave "per" blank for a one-time fixed price, or type e.g. <code>product</code>, <code>page</code>, <code>50 products</code>.</div>
+              <div class="text-sm text-muted mt-1" id="content-price-hint">Leave "per" blank for a one-time fixed price, or type e.g. <code>product</code>, <code>page</code>, <code>50 products</code>.</div>
               <input type="text" class="form-control mt-2" name="content_note" placeholder="What it covers (blank = loading the client's text, images, products and prices before go-live)" value="{{ form.content_note|default:'' }}">
               {% if errors.content %}<div class="text-danger text-sm">{{ errors.content }}</div>{% endif %}
             </div>
@@ -148,7 +151,8 @@
 
           <div class="svc-block">
             <label class="d-flex gap-2" style="align-items:center; font-weight:600;">
-              <input type="checkbox" name="amc_on" class="js-toggle" data-target="amc-fields" {% if form.amc_on %}checked{% endif %}> AMC (annual maintenance contract)
+              <input type="checkbox" checked disabled> AMC (annual maintenance contract)
+              <span class="text-sm text-muted" style="font-weight: 500;">(compulsory)</span>
             </label>
             <div class="text-sm text-muted">Always part of the agreement - the client can't opt out of it.</div>
             <div id="amc-fields" class="svc-fields">
@@ -363,6 +367,15 @@ document.querySelectorAll('.js-toggle').forEach(function (box) {
   function sync() { target.hidden = !box.checked; }
   box.addEventListener('change', sync); sync();
 });
+(function () {  // content upload inside the project fee needs no price
+  var mode = document.getElementById('content_mode');
+  function sync() {
+    var inFee = mode.value === 'in_fee';
+    document.getElementById('content-price').style.display = inFee ? 'none' : '';
+    document.getElementById('content-price-hint').style.display = inFee ? 'none' : '';
+  }
+  mode.addEventListener('change', sync); sync();
+})();
 (function () {
   var total = document.getElementById('total'), ms = document.getElementById('milestones'), out = document.getElementById('ms-preview');
   function fmt(n) { return '₹' + Math.round(n).toLocaleString('en-IN'); }

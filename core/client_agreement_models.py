@@ -163,6 +163,7 @@ CYCLES = {
 
 MODE_INCLUDED = 'included'  # part of the agreement, the client can't untick it
 MODE_OPTIONAL = 'optional'  # the client chooses on the signing page
+MODE_IN_FEE = 'in_fee'  # staff form only: covered by the project fee, stored as included at no charge
 
 
 def _cycle(raw):
@@ -258,7 +259,15 @@ def build_services(form):
         if not any(s['group'] == 'cloud' for s in services) and 'cloud' not in errors:
             errors['cloud'] = 'Add at least one cloud plan, or switch cloud hosting off.'
 
-    if form.get('content_on'):
+    if form.get('content_on') and form.get('content_mode') == MODE_IN_FEE:
+        service = _service(
+            'content', 'content', 'Initial Content Upload', Decimal('0'), 'one_time', MODE_INCLUDED,
+            (form.get('content_note') or '').strip()
+            or 'We load the content you provide - text, images, products and prices - into '
+               'the website/app before go-live. Writing or creating new content is not included.')
+        service.update(amount_display='Included in the project fee', cycle_suffix='', in_project_fee=True)
+        services.append(service)
+    elif form.get('content_on'):
         amount = _amount(form.get('content_amount'))
         unit = (form.get('content_unit') or '').strip()
         if not amount:
@@ -273,18 +282,17 @@ def build_services(form):
                 service['cycle_suffix'] = f'per {unit.removeprefix("per ").strip()}'
             services.append(service)
 
-    if form.get('amc_on'):
-        amount = _amount(form.get('amc_amount'))
-        if not amount:
-            errors['amc'] = 'Enter the AMC amount.'
-        else:
-            services.append(_service(
-                'amc', 'amc', 'Annual Maintenance Contract (AMC)', amount,
-                # AMC is always part of the agreement; the client never chooses it.
-                _cycle(form.get('amc_cycle') or 'yearly'), MODE_INCLUDED,
-                (form.get('amc_note') or '').strip()
-                or 'Starts after the warranty ends. Covers support, bug fixes and updates for the '
-                   'year; renewed yearly. A separate AMC agreement is issued.'))
+    # AMC is compulsory: every agreement carries it, so there is no on/off switch.
+    amount = _amount(form.get('amc_amount'))
+    if not amount:
+        errors['amc'] = 'Enter the AMC amount - AMC is part of every agreement.'
+    else:
+        services.append(_service(
+            'amc', 'amc', 'Annual Maintenance Contract (AMC)', amount,
+            _cycle(form.get('amc_cycle') or 'yearly'), MODE_INCLUDED,
+            (form.get('amc_note') or '').strip()
+            or 'Starts after the warranty ends. Covers support, bug fixes and updates for the '
+               'year; renewed yearly. A separate AMC agreement is issued.'))
 
     for i, line in enumerate(l for l in (form.get('other_services') or '').splitlines() if l.strip()):
         parts = [p.strip() for p in line.split('|')]

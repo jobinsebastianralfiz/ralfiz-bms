@@ -42,6 +42,7 @@ class ClientAgreementFlowTests(TestCase):
             'start_date': '2026-10-20', 'end_date': '2026-12-20', 'total': '125000',
             'milestones': 'Advance | 40\nUAT | 40\nGo-live | 20', 'warranty_months': '3',
             'support_note': '', 'extra_terms': '', 'expiry_days': '14',
+            'amc_amount': '15000', 'amc_cycle': 'yearly',
         }
         data.update(overrides)
         return self.client.post(reverse('client_agreement_new', args=[self.project.pk]), data)
@@ -214,7 +215,7 @@ class RailwayCloudAndInterestTests(TestCase):
 
     def _create(self, **extra):
         data = {'scope': 'Shop', 'total': '50000', 'milestones': 'Advance | 100',
-                'warranty_months': '3', 'expiry_days': '14', **extra}
+                'warranty_months': '3', 'expiry_days': '14', 'amc_amount': '15000', **extra}
         return self.client.post(reverse('client_agreement_new', args=[self.project.pk]), data)
 
     def test_form_prefills_railway_plans_and_interest(self):
@@ -277,6 +278,28 @@ class ContentUploadTests(RailwayCloudAndInterestTests):
     def test_content_needs_a_price(self):
         res = self._create(content_on='on', content_amount='')
         self.assertContains(res, 'Enter the content upload price.')
+
+    def test_content_can_be_inside_the_project_fee(self):
+        self._create(content_on='on', content_amount='', content_mode='in_fee')
+        agreement = ClientAgreement.objects.get()
+        svc = agreement.snapshot_json['services'][0]
+        self.assertEqual((svc['mode'], svc['amount_display'], svc['cycle_suffix']),
+                         ('included', 'Included in the project fee', ''))
+        page = self.client.get(agreement.public_path())
+        self.assertContains(page, 'Included in the project fee')
+        self.assertNotContains(page, 'value="content"')  # not a client choice
+
+
+class CompulsoryAMCTests(RailwayCloudAndInterestTests):
+    def test_amc_is_added_without_a_switch(self):
+        self._create()
+        svc = ClientAgreement.objects.get().snapshot_json['services'][-1]
+        self.assertEqual((svc['key'], svc['mode']), ('amc', 'included'))
+
+    def test_amc_amount_is_required(self):
+        res = self._create(amc_amount='')
+        self.assertContains(res, 'AMC is part of every agreement')
+        self.assertFalse(ClientAgreement.objects.exists())
 
 
 class ProposalAITests(TestCase):

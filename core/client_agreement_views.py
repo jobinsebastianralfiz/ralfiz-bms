@@ -66,7 +66,6 @@ def client_agreement_new(request, pk):
         'late_interest': '1.5',
         'cloud_plans': DEFAULT_CLOUD_PLANS,
         'cloud_note': DEFAULT_CLOUD_NOTE,
-        'amc_on': 'on' if project.amc_amount else '',
         'amc_amount': project.amc_amount or '',
         'amc_cycle': project.amc_billing_cycle or 'yearly',
         'other_services': '',
@@ -137,7 +136,7 @@ def client_agreement_new(request, pk):
                 'warranty_months', 'support_note', 'extra_terms', 'expiry_days', 'exclusions',
                 'maint_on', 'maint_amount', 'maint_mode', 'maint_note',
                 'content_on', 'content_amount', 'content_unit', 'content_mode', 'content_note', 'cloud_on', 'cloud_mode',
-                'cloud_plans', 'cloud_note', 'late_interest', 'amc_on', 'amc_amount', 'amc_cycle', 'amc_note',
+                'cloud_plans', 'cloud_note', 'late_interest', 'amc_amount', 'amc_cycle', 'amc_note',
                 'other_services')}
             revision = (previous.revision + 1) if previous else 1
             snapshot['version'] = f'v{revision}.0'
@@ -153,7 +152,7 @@ def client_agreement_new(request, pk):
             messages.success(request, f'Agreement {agreement.reference} is ready. Send the link to the client.')
             return redirect('client_agreement_detail', pk=agreement.pk)
         initial.update(request.POST.dict())
-        for box in ('maint_on', 'content_on', 'cloud_on', 'amc_on'):  # unticked boxes are absent from POST
+        for box in ('maint_on', 'content_on', 'cloud_on'):  # unticked boxes are absent from POST
             initial[box] = request.POST.get(box, '')
 
     return render(request, 'client_agreements/form.html', {
