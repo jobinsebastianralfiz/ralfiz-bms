@@ -185,7 +185,10 @@
         {% csrf_token %}
         <button type="submit" class="btn btn-sm btn-outline-primary">{% if client.user.is_active %}<i class="fas fa-ban"></i> Deactivate{% else %}<i class="fas fa-check"></i> Activate{% endif %}</button>
       </form>
-      <a href="/portal/" target="_blank" class="btn btn-sm btn-ghost"><i class="fas fa-arrow-up-right-from-square"></i> Open Portal</a>
+      {# Staff can't open the portal in their own session (it needs the client's login), so hand over the link instead. #}
+      <button type="button" class="btn btn-sm btn-ghost" data-portal-url="{{ request.scheme }}://{{ request.get_host }}{% url 'client_portal:portal_login' %}"
+              onclick="var b=this;navigator.clipboard.writeText(b.dataset.portalUrl).then(function(){b.innerHTML='<i class=&quot;fas fa-check&quot;></i> Link copied';});"
+              title="Copy the portal sign-in link to send to the client"><i class="fas fa-link"></i> Copy portal link</button>
     </div>
     {% else %}
     <p class="cl-note"><u>No portal account yet</u>. Create one to give this client access to view projects, invoices, and communicate with your team.</p>

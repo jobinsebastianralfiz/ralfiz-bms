@@ -29,3 +29,20 @@ class ClientConfinementTests(TestCase):
         self.user.save()
         self.client.force_login(self.user)
         self.assertNotEqual(self.client.get('/invoices/').get('Location'), '/portal/')
+
+
+class StaffVisitingPortalTests(TestCase):
+    def test_staff_session_is_kept_and_redirected_to_bms(self):
+        from django.contrib.auth.models import User
+        admin = User.objects.create_superuser('boss', 'boss@example.com', 'pw-12345')
+        self.client.force_login(admin)
+        r = self.client.get('/portal/')
+        self.assertEqual(r.status_code, 302)
+        self.assertEqual(r['Location'], '/')
+        self.assertEqual(int(self.client.session['_auth_user_id']), admin.pk)
+
+    def test_staff_credentials_on_portal_login_get_a_clear_message(self):
+        from django.contrib.auth.models import User
+        User.objects.create_superuser('boss', 'boss@example.com', 'pw-12345')
+        r = self.client.post('/portal/login/', {'username': 'boss', 'password': 'pw-12345'})
+        self.assertContains(r, 'That is a staff account')

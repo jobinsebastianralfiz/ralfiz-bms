@@ -13,6 +13,15 @@ from core.task_board import board_columns
 from .models import ProjectComment, ProjectUpdate, ClientNotification
 
 
+STAFF_PORTAL_MESSAGE = ('That is a staff account. The client portal only opens with the client\'s own '
+                        'login - create or reset it in the Client Portal panel on the client\'s page.')
+
+
+def _is_staff_login(user):
+    return bool(user.is_staff or user.is_superuser
+                or getattr(user, 'team_profile', None) or getattr(user, 'employee_profile', None))
+
+
 def client_required(view_func):
     """Decorator: user must be logged in AND have a client profile."""
     @wraps(view_func)
@@ -20,6 +29,10 @@ def client_required(view_func):
     def wrapper(request, *args, **kwargs):
         client = getattr(request.user, 'client_profile', None)
         if client is None:
+            if _is_staff_login(request.user):
+                # Keep the staff session; the portal is only for client logins.
+                messages.info(request, STAFF_PORTAL_MESSAGE)
+                return redirect('dashboard')
             logout(request)
             messages.error(request, 'No client portal access for this account.')
             return redirect('client_portal:portal_login')
@@ -61,7 +74,8 @@ def portal_login(request):
 
         client = getattr(user, 'client_profile', None)
         if client is None:
-            return render(request, 'client_portal/login.html', {'error': 'No client portal access for this account.'})
+            error = STAFF_PORTAL_MESSAGE if _is_staff_login(user) else 'No client portal access for this account.'
+            return render(request, 'client_portal/login.html', {'error': error})
 
         if not client.is_active:
             return render(request, 'client_portal/login.html', {'error': 'Your account is inactive. Contact support.'})
