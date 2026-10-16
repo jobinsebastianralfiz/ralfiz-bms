@@ -68,6 +68,13 @@ signing page and the signed copy so the two can never drift.
       </tbody>
     </table>
     {% if doc.cloud_note %}<div class="agr-callout warn">{{ doc.cloud_note }}</div>{% endif %}
+    {% if doc.own_hosting %}
+    <div class="agr-callout warn">
+      <strong>Client's own hosting.</strong> {{ doc.own_hosting_terms }}
+      <ul class="agr-list">{% for r in doc.own_hosting %}<li>{{ r }}</li>{% endfor %}</ul>
+      {% if agreement.status == 'accepted' and own_hosting_chosen %}<strong>The Client has chosen to arrange its own hosting on these terms.</strong>{% endif %}
+    </div>
+    {% endif %}
     {% if agreement.status != 'accepted' and doc.services|length > included_services|length %}
     <div class="agr-callout info">
       <strong>How to choose:</strong> at the end of this agreement, tick <em>I have read and understood the agreement</em>

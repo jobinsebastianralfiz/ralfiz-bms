@@ -19,6 +19,7 @@ from employees.agreement_views import (
 
 from .client_agreement_models import (
     DEFAULT_CLOUD_NOTE, DEFAULT_CLOUD_PLANS, MODE_INCLUDED, ClientAgreement, build_services, build_snapshot, default_exclusions_text,
+    default_own_hosting_text,
     default_milestone_text, milestones_total_percent, parse_milestones,
 )
 from .models import CompanySettings, Project
@@ -66,6 +67,7 @@ def client_agreement_new(request, pk):
         'late_interest': '1.5',
         'cloud_plans': DEFAULT_CLOUD_PLANS,
         'cloud_note': DEFAULT_CLOUD_NOTE,
+        'own_hosting': default_own_hosting_text(project.tech_stack),
         'amc_amount': project.amc_amount or '',
         'amc_cycle': project.amc_billing_cycle or 'yearly',
         'other_services': '',
@@ -129,6 +131,7 @@ def client_agreement_new(request, pk):
                 cloud_mode=cloud_mode,
                 cloud_note=(form.get('cloud_note') or '').strip(),
                 late_interest=late_interest or None,
+                own_hosting=_lines(form.get('own_hosting')),
             )
             # Kept so a revision can prefill the form; not shown to the client.
             snapshot['_form'] = {k: form.get(k, '') for k in (
@@ -136,7 +139,7 @@ def client_agreement_new(request, pk):
                 'warranty_months', 'support_note', 'extra_terms', 'expiry_days', 'exclusions',
                 'maint_on', 'maint_amount', 'maint_mode', 'maint_note',
                 'content_on', 'content_amount', 'content_unit', 'content_mode', 'content_note', 'cloud_on', 'cloud_mode',
-                'cloud_plans', 'cloud_note', 'late_interest', 'amc_amount', 'amc_cycle', 'amc_note',
+                'cloud_plans', 'cloud_note', 'own_hosting', 'late_interest', 'amc_amount', 'amc_cycle', 'amc_note',
                 'other_services')}
             revision = (previous.revision + 1) if previous else 1
             snapshot['version'] = f'v{revision}.0'
@@ -247,6 +250,10 @@ def _sign_context(agreement, errors=None, posted=None):
         'cloud_plans': [s for s in services if s['group'] == 'cloud'],
         'posted_services': posted.get('_services', []),
         'chosen_keys': agreement.selected_services or [],
+        'own_hosting_chosen': (agreement.status == ClientAgreement.STATUS_ACCEPTED
+                               and any(sv['group'] == 'cloud' for sv in services)
+                               and not any(sv['group'] == 'cloud' and sv['key'] in (agreement.selected_services or [])
+                                           for sv in services)),
         'agreement': agreement, 'doc': doc, 'client': agreement.project.client,
         'sections': doc.get('sections', []), 'today': timezone.localdate(),
         'errors': errors or {}, 'posted': posted or {},
@@ -282,9 +289,16 @@ def client_agreement_sign(request, token):
         if posted.get('agreed_to_terms') != 'on':
             errors['agreed_to_terms'] = 'Please confirm that you accept the terms.'
         cloud_pick = posted.get('cloud_plan', '')
-        if (agreement.snapshot_json.get('cloud_mode') == 'required'
-                and not (cloud_pick in by_key and by_key[cloud_pick]['group'] == 'cloud')):
-            errors['cloud_plan'] = 'Please choose a cloud hosting plan.'
+        picked_plan = cloud_pick in by_key and by_key[cloud_pick]['group'] == 'cloud'
+        has_plans = any(s['group'] == 'cloud' for s in services)
+        if agreement.snapshot_json.get('cloud_mode') == 'required':
+            if not picked_plan:
+                errors['cloud_plan'] = 'Please choose a cloud hosting plan.'
+        elif has_plans and not picked_plan:
+            if cloud_pick != 'own':
+                errors['cloud_plan'] = 'Please choose a cloud hosting plan, or that you will arrange your own hosting.'
+            elif agreement.snapshot_json.get('own_hosting') and posted.get('own_hosting_ack') != 'on':
+                errors['own_hosting_ack'] = 'Please confirm your hosting will meet the requirements.'
     elif decision == 'changes':
         if not posted.get('change_notes', '').strip():
             errors['change_notes'] = 'Please tell us what you would like changed.'

@@ -200,9 +200,46 @@ class ClientAgreementServicesTests(ClientAgreementFlowTests):
         agreement = ClientAgreement.objects.get()
         self.client.post(agreement.public_path(), {
             'decision': 'accept', 'signer_name': 'A', 'signed_name': 'A',
-            'agreed_to_terms': 'on', 'cloud_plan': ''})
+            'agreed_to_terms': 'on', 'cloud_plan': 'own'})
         agreement.refresh_from_db()
         self.assertEqual(agreement.selected_services, ['amc'])
+
+    def test_optional_cloud_needs_an_explicit_choice(self):
+        self._create(**{**self.SERVICES, 'cloud_mode': 'optional'})
+        agreement = ClientAgreement.objects.get()
+        res = self.client.post(agreement.public_path(), {
+            'decision': 'accept', 'signer_name': 'A', 'signed_name': 'A',
+            'agreed_to_terms': 'on', 'cloud_plan': ''})
+        self.assertContains(res, 'arrange your own hosting', status_code=400)
+
+    def test_own_hosting_must_meet_requirements(self):
+        self._create(**{**self.SERVICES, 'cloud_mode': 'optional',
+                        'own_hosting': 'Linux VPS with SSH access\nPython 3.12 and PostgreSQL'})
+        agreement = ClientAgreement.objects.get()
+        self.assertEqual(agreement.snapshot_json['own_hosting'],
+                         ['Linux VPS with SSH access', 'Python 3.12 and PostgreSQL'])
+        page = self.client.get(agreement.public_path())
+        self.assertContains(page, 'Python 3.12 and PostgreSQL')
+        self.assertContains(page, 'change request and shall be charged separately')
+        base = {'decision': 'accept', 'signer_name': 'A', 'signed_name': 'A',
+                'agreed_to_terms': 'on', 'cloud_plan': 'own'}
+        res = self.client.post(agreement.public_path(), base)
+        self.assertContains(res, 'hosting will meet the requirements', status_code=400)
+        self.client.post(agreement.public_path(), {**base, 'own_hosting_ack': 'on'})
+        agreement.refresh_from_db()
+        self.assertEqual(agreement.status, ClientAgreement.STATUS_ACCEPTED)
+        copy = self.client.get(f'{agreement.public_path()}copy/')
+        self.assertContains(copy, 'chosen to arrange its own hosting')
+
+    def test_required_cloud_has_no_own_hosting_terms(self):
+        self._create(**{**self.SERVICES, 'own_hosting': 'Linux VPS'})
+        self.assertEqual(ClientAgreement.objects.get().snapshot_json['own_hosting'], [])
+
+    def test_form_prefills_hosting_requirements_from_tech_stack(self):
+        self.project.tech_stack = 'Django, PostgreSQL'
+        self.project.save()
+        res = self.client.get(reverse('client_agreement_new', args=[self.project.pk]))
+        self.assertContains(res, 'technology used in this project: Django, PostgreSQL')
 
 
 class RailwayCloudAndInterestTests(TestCase):

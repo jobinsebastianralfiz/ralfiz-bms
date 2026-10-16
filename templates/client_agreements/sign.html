@@ -114,9 +114,22 @@
       {% if doc.cloud_note %}<p class="agr-footnote" style="font-size:12px;margin:0 0 8px;">{{ doc.cloud_note }}</p>{% endif %}
       {% if doc.cloud_mode != 'required' %}
       <label class="svc-pick">
-        <input type="radio" name="cloud_plan" value="" {% if not posted.cloud_plan %}checked{% endif %}>
-        <div><strong>No, we will arrange our own hosting</strong></div>
+        <input type="radio" name="cloud_plan" value="own" {% if posted.cloud_plan == 'own' %}checked{% endif %}>
+        <div><strong>No, we will arrange our own hosting</strong>
+          {% if doc.own_hosting %}<span class="svc-desc">Your hosting must meet the requirements below.</span>{% endif %}</div>
       </label>
+      {% if doc.own_hosting %}
+      <div class="own-hosting" id="own-hosting-box" {% if posted.cloud_plan != 'own' %}hidden{% endif %}>
+        <strong>Your hosting must have:</strong>
+        <ul>{% for r in doc.own_hosting %}<li>{{ r }}</li>{% endfor %}</ul>
+        <p>{{ doc.own_hosting_terms }}</p>
+        <label class="own-hosting-ack {% if errors.own_hosting_ack %}has-error{% endif %}">
+          <input type="checkbox" name="own_hosting_ack" {% if posted.own_hosting_ack %}checked{% endif %}>
+          <span>We confirm our hosting will meet these requirements, and that problems or extra work caused by hosting that does not are our responsibility.</span>
+        </label>
+        {% if errors.own_hosting_ack %}<div class="field-error">{{ errors.own_hosting_ack }}</div>{% endif %}
+      </div>
+      {% endif %}
       {% endif %}
       {% if errors.cloud_plan %}<div class="field-error">{{ errors.cloud_plan }}</div>{% endif %}
     </div>
@@ -218,6 +231,12 @@
     if (yes) window.setTimeout(sizeCanvas, 50);
   }
   btnYes.addEventListener('click', function () { choose('accept'); });
+  var ownBox = document.getElementById('own-hosting-box');
+  if (ownBox) {
+    Array.prototype.forEach.call(document.querySelectorAll('input[name="cloud_plan"]'), function (r) {
+      r.addEventListener('change', function () { ownBox.hidden = !(r.checked && r.value === 'own'); });
+    });
+  }
   btnNo.addEventListener('click', function () { choose('changes'); });
   Array.prototype.forEach.call(document.querySelectorAll('.js-reset'), function (b) {
     b.addEventListener('click', function () {

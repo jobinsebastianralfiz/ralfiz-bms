@@ -179,6 +179,12 @@
           </tbody>
         </table>
         {% if doc.cloud_note %}<div class="note-box warn">{{ doc.cloud_note }}</div>{% endif %}
+        {% if doc.own_hosting %}
+        <div class="note-box warn"><strong>Client's own hosting.</strong> {{ doc.own_hosting_terms }}
+          <ol>{% for r in doc.own_hosting %}<li>{{ r }}</li>{% endfor %}</ol>
+          {% if agreement.status == 'accepted' and own_hosting_chosen %}<strong>The Client has chosen to arrange its own hosting on these terms.</strong>{% endif %}
+        </div>
+        {% endif %}
         {% endif %}
 
         {% if section.bullets %}

@@ -453,3 +453,10 @@ body {
 
 .agr-preamble { margin: 14px 0 0; line-height: 1.65; text-align: justify; }
 .agr-callout.info { background: #eef4fd; border: 1px solid #c7dbf7; color: #1e3a5f; }
+.own-hosting { margin: 4px 0 12px; padding: 12px 14px; border-radius: var(--agr-radius); background: var(--agr-warn-bg); border: 1px solid var(--agr-warn-line); color: #78350f; font-size: 13px; line-height: 1.55; }
+.own-hosting ul { margin: 6px 0 8px 18px; }
+.own-hosting p { margin: 0 0 10px; }
+.own-hosting-ack { display: flex; gap: 10px; align-items: flex-start; font-weight: 600; cursor: pointer; }
+.own-hosting-ack input { margin-top: 3px; }
+.own-hosting-ack.has-error { color: #b91c1c; }
+.field label.own-hosting-ack { display: flex; margin: 0; font-size: 13px; font-weight: 600; letter-spacing: 0; text-transform: none; color: #78350f; }

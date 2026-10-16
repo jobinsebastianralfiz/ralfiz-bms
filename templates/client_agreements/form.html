@@ -145,6 +145,9 @@
               <div class="text-sm text-muted">One plan per line: <code>Name | price per month | what's included</code>. Prefix the price with <code>$</code> for US dollars.</div>
               <label class="form-label mt-2" for="cloud_note">Usage / billing note</label>
               <textarea class="form-control" id="cloud_note" name="cloud_note" rows="3">{{ form.cloud_note|default:'' }}</textarea>
+              <label class="form-label mt-2" for="own_hosting">If the client uses their own hosting, it must have <span class="text-muted text-sm">(one per line, optional mode only)</span></label>
+              <textarea class="form-control" id="own_hosting" name="own_hosting" rows="5">{{ form.own_hosting|default:'' }}</textarea>
+              <div class="text-sm text-muted">Shown to the client if they skip your plans; they must confirm it before signing. Their hosting not meeting it is their risk, and fixing it is billed as a change request. Choose <strong>Required</strong> above to make them take your hosting.</div>
               {% if errors.cloud %}<div class="text-danger text-sm">{{ errors.cloud }}</div>{% endif %}
             </div>
           </div>

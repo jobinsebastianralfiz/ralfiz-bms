@@ -247,6 +247,35 @@ DEFAULT_CLOUD_NOTE = (
 )
 
 
+def default_own_hosting_text(tech_stack=''):
+    """Minimum hosting the client must provide if they skip our cloud plans.
+    One requirement per line; the tech stack line comes from the project."""
+    lines = [
+        'A Linux server (VPS or cloud instance) with SSH/root access - shared hosting such as cPanel is not supported',
+    ]
+    if (tech_stack or '').strip():
+        lines.append(f'Support for the technology used in this project: {" ".join(tech_stack.split())}')
+    lines += [
+        'A database server as required by the project, with regular backups',
+        'Domain DNS access and an SSL certificate',
+        'At least 2 GB RAM and enough resources for the expected traffic',
+    ]
+    return '\n'.join(lines)
+
+
+OWN_HOSTING_TERMS = (
+    'If the Client chooses not to take a cloud hosting plan from the Service Provider, the Client '
+    'shall, before go-live, provide hosting that meets all of the hosting requirements listed in '
+    'this Agreement and give the '
+    'Service Provider the access needed to deploy the Project. The Service Provider is not responsible '
+    'for any failure, downtime, security issue, loss of data or delay caused by hosting that does not '
+    'meet these requirements, or by the Client\'s hosting provider. Any additional work this causes, '
+    'including configuration, troubleshooting, migration or rework of the Project to suit that '
+    'hosting, is a change request and shall be charged separately. The timeline shall be extended '
+    'by any delay in the hosting being made available.'
+)
+
+
 def _service(key, group, name, amount, cycle, mode, description='', currency='INR'):
     suffix, label = CYCLES[cycle]
     return {
@@ -527,7 +556,8 @@ class ClientAgreement(models.Model):
 
 def build_snapshot(project, *, scope, deliverables, start_date, end_date, total,
                    milestones, warranty_months, support_note, extra_terms,
-                   exclusions=(), services=(), cloud_mode='', cloud_note='', late_interest=None):
+                   exclusions=(), services=(), cloud_mode='', cloud_note='', late_interest=None,
+                   own_hosting=()):
     """Freeze the agreement for one project. Section numbers are assigned here
     so the page and the signed copy always number the same way. The wording
     (preamble, clauses, acceptance) is frozen too, so rewording the template
@@ -541,6 +571,8 @@ def build_snapshot(project, *, scope, deliverables, start_date, end_date, total,
     client_party = client.company_name or client.name
     client_address = ' '.join((client.address or '').split())
     total = Decimal(total or 0)
+    has_cloud = any(sv['group'] == 'cloud' for sv in services)
+    own_hosting_list = [l for l in own_hosting if l.strip()] if has_cloud and cloud_mode != 'required' else []
     sections = []
 
     def add(title, **kw):
@@ -640,6 +672,9 @@ def build_snapshot(project, *, scope, deliverables, start_date, end_date, total,
         'late_interest': f'{late_interest.normalize():f}' if late_interest else '',
         'cloud_mode': cloud_mode,
         'cloud_note': cloud_note if any(sv['group'] == 'cloud' for sv in services) else '',
+        # Only when the client may skip our plans: what their own hosting must meet.
+        'own_hosting': own_hosting_list,
+        'own_hosting_terms': OWN_HOSTING_TERMS if own_hosting_list else '',
         'sections': sections,
         'confirmation_no': len(sections) + 1,
     }
