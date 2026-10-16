@@ -5930,6 +5930,146 @@ def _is_uuid(value):
     return True
 
 
+PLAN_MAX_BYTES = 512 * 1024
+
+
+def _plan_staff_only(request):
+    """Team members work tasks; only owners/staff import a plan."""
+    return getattr(request.user, 'team_profile', None) is None
+
+
+@login_required
+def task_plan_import(request):
+    """Step 1-2: upload or paste a plan, then review the draft tasks.
+
+    Nothing is saved here; the review form posts to task_plan_create.
+    """
+    from .task_plan_ai import PlanAIError, draft_tasks_ai, draft_tasks_from_checklist
+    if not _plan_staff_only(request):
+        messages.error(request, 'Only the project owner can import a plan.')
+        return redirect('task_board')
+
+    project_id = request.POST.get('project') or request.GET.get('project', '')
+    projects = _task_form_projects(project_id)
+    ctx = {'projects': projects, 'selected_project': project_id, 'mode': request.POST.get('mode', 'ai'),
+           'plan_text': request.POST.get('plan_text', '')}
+
+    if request.method != 'POST':
+        return render(request, 'tasks/plan_import.html', ctx)
+
+    project = Project.objects.select_related('client').filter(pk=project_id).first() if _is_uuid(project_id) else None
+    if project is None:
+        ctx['error'] = 'Choose the project these tasks belong to.'
+        return render(request, 'tasks/plan_import.html', ctx)
+
+    text = ctx['plan_text'].strip()
+    upload = request.FILES.get('plan_file')
+    if upload:
+        if not upload.name.lower().endswith(('.md', '.markdown', '.txt')):
+            ctx['error'] = 'Upload the plan as a .md (Markdown) or .txt file.'
+            return render(request, 'tasks/plan_import.html', ctx)
+        if upload.size > PLAN_MAX_BYTES:
+            ctx['error'] = 'That file is over 500 KB. Upload one phase at a time.'
+            return render(request, 'tasks/plan_import.html', ctx)
+        try:
+            text = upload.read().decode('utf-8-sig')
+        except UnicodeDecodeError:
+            ctx['error'] = 'The file is not plain text. Save it as Markdown (.md) and try again.'
+            return render(request, 'tasks/plan_import.html', ctx)
+    if not text.strip():
+        ctx['error'] = 'Upload the plan file or paste its text.'
+        return render(request, 'tasks/plan_import.html', ctx)
+
+    notice = ''
+    if ctx['mode'] == 'checklist':
+        drafts = draft_tasks_from_checklist(text)
+        if not drafts:
+            ctx['error'] = 'No open checklist items (- [ ] ...) found. Try the AI reader instead.'
+            ctx['plan_text'] = text
+            return render(request, 'tasks/plan_import.html', ctx)
+    else:
+        try:
+            drafts = draft_tasks_ai(text, project)
+        except PlanAIError as exc:
+            drafts = draft_tasks_from_checklist(text)
+            if not drafts:
+                ctx['error'] = str(exc)
+                ctx['plan_text'] = text
+                return render(request, 'tasks/plan_import.html', ctx)
+            notice = f'{exc} Showing the plan\'s checklist items instead.'
+        if not drafts:
+            ctx['error'] = 'The AI found no tasks in that plan.'
+            ctx['plan_text'] = text
+            return render(request, 'tasks/plan_import.html', ctx)
+
+    # Suggest an assignee: the project's team member with the matching role.
+    team = list(project.team_members.filter(is_active=True)) or list(TeamMember.objects.filter(is_active=True))
+    by_role = {}
+    for m in team:
+        by_role.setdefault(m.role, m)
+    existing = set(t.lower() for t in project.tasks.values_list('title', flat=True))
+    for d in drafts:
+        member = by_role.get(d['role'])
+        d['assignee'] = str(member.pk) if member else ''
+        d['duplicate'] = d['title'].lower() in existing
+
+    return render(request, 'tasks/plan_review.html', {
+        'project': project,
+        'drafts': drafts,
+        'notice': notice,
+        'team_members': TeamMember.objects.filter(is_active=True).order_by('name'),
+        'priority_choices': Task.PRIORITY_CHOICES,
+    })
+
+
+@login_required
+def task_plan_create(request):
+    """Step 3: create the reviewed tasks in To Do."""
+    from datetime import date
+    if request.method != 'POST' or not _plan_staff_only(request):
+        return redirect('task_board')
+    project_id = request.POST.get('project', '')
+    project = get_object_or_404(Project, pk=project_id) if _is_uuid(project_id) else None
+    if project is None:
+        return redirect('task_board')
+    members = {str(m.pk): m for m in TeamMember.objects.filter(is_active=True)}
+    try:
+        count = min(int(request.POST.get('count', 0)), 200)
+    except ValueError:
+        count = 0
+    created = 0
+    for i in range(count):
+        if not request.POST.get(f'include_{i}'):
+            continue
+        title = request.POST.get(f'title_{i}', '').strip()[:255]
+        if not title:
+            continue
+        priority = request.POST.get(f'priority_{i}', 'medium')
+        due = request.POST.get(f'due_{i}', '').strip()
+        try:
+            due = date.fromisoformat(due) if due else None
+        except ValueError:
+            due = None
+        phase = request.POST.get(f'phase_{i}', '').strip()[:80]
+        task = Task.objects.create(
+            project=project, title=title, status='todo',
+            description=request.POST.get(f'description_{i}', '').strip()[:2000],
+            category=request.POST.get(f'label_{i}', '').strip()[:60],
+            priority=priority if priority in dict(Task.PRIORITY_CHOICES) else 'medium',
+            assigned_to=members.get(request.POST.get(f'assignee_{i}', '')),
+            due_date=due,
+            notes=f'Phase: {phase}' if phase else '',
+        )
+        _log_task_activity(task, request.user, 'created', message='Created from an imported plan')
+        created += 1
+    if created:
+        log_activity(request, 'created', project)
+        messages.success(request, f'{created} task{"s" if created != 1 else ""} added to To Do.')
+    else:
+        messages.warning(request, 'No tasks were ticked, so nothing was created.')
+    return redirect(f"{reverse('task_board')}?project={project.pk}")
+
+
 @login_required
 def task_detail(request, pk):
     """Task detail view"""

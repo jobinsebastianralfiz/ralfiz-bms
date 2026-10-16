@@ -1,0 +1,117 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Create tasks from a plan - Ralfiz BMS{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/task-board.css' %}?v=2">
+<style>
+  .pi-wrap { max-width: 820px; }
+  .pi-body { padding: 22px 24px 26px; display: flex; flex-direction: column; gap: 18px; }
+  .pi-field label { display: block; font-size: 14px; font-weight: 600; margin-bottom: 7px; color: var(--vk-ink); }
+  .pi-field small { display: block; margin-top: 6px; font-size: 12.5px; color: var(--vk-ink-3); }
+  .pi-input, .pi-text { width: 100%; border: 1px solid var(--vk-line); border-radius: 10px; padding: 10px 12px; font: inherit; font-size: 14.5px; color: var(--vk-ink); background: var(--vk-card); }
+  .pi-text { min-height: 200px; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 13px; line-height: 1.5; }
+  .pi-input:focus, .pi-text:focus { outline: none; border-color: var(--vk-accent); box-shadow: 0 0 0 3px rgba(109, 61, 242, .12); }
+  .pi-drop { display: flex; align-items: center; gap: 14px; border: 1.5px dashed #D3CEF0; border-radius: 12px; padding: 16px 18px; background: #FAF9FF; cursor: pointer; }
+  .pi-drop i { font-size: 22px; color: var(--vk-accent); }
+  .pi-drop.has-file { border-style: solid; border-color: var(--vk-accent); }
+  .pi-or { text-align: center; font-size: 12.5px; color: var(--vk-ink-3); }
+  .pi-modes { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .pi-mode { display: flex; gap: 10px; align-items: flex-start; border: 1px solid var(--vk-line); border-radius: 12px; padding: 12px 14px; cursor: pointer; }
+  .pi-mode input { margin-top: 3px; accent-color: var(--vk-accent); }
+  .pi-mode strong { display: block; font-size: 14px; }
+  .pi-mode span { font-size: 12.5px; color: var(--vk-ink-2); }
+  .pi-mode:has(input:checked) { border-color: var(--vk-accent); background: #F7F4FF; }
+  .pi-error { background: #FDECEC; color: #C02626; border-radius: 10px; padding: 11px 14px; font-size: 14px; }
+  .pi-actions { display: flex; align-items: center; gap: 12px; }
+  .pi-busy { display: none; font-size: 13.5px; color: var(--vk-ink-2); }
+  form.busy .pi-busy { display: inline; }
+  @media (max-width: 640px) { .pi-modes { grid-template-columns: 1fr; } .pi-body { padding: 16px; } }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="vk pi-wrap">
+  <section class="vk-panel">
+    <div class="vk-head" style="padding-bottom: 14px; border-bottom: 1px solid var(--vk-line);">
+      <div class="vk-head-main">
+        <div class="vk-name">
+          <span class="vk-logo all" aria-hidden="true"><i class="fas fa-wand-magic-sparkles"></i></span>
+          <h1>Create tasks from a plan</h1>
+        </div>
+        <p class="vk-sub">Upload the implementation plan (.md). You'll review every task before anything is added to the board.</p>
+      </div>
+    </div>
+
+    <form method="post" enctype="multipart/form-data" class="pi-body" id="pi-form">
+      {% csrf_token %}
+      {% if error %}<div class="pi-error" role="alert"><i class="fas fa-circle-exclamation"></i> {{ error }}</div>{% endif %}
+
+      <div class="pi-field">
+        <label for="pi-project">Project</label>
+        <select class="pi-input" id="pi-project" name="project" required>
+          <option value="">Choose a project</option>
+          {% for p in projects %}
+          <option value="{{ p.pk }}" {% if selected_project == p.pk|slugify %}selected{% endif %}>{{ p.name }} · {{ p.client.name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="pi-field">
+        <label for="pi-file">Plan file</label>
+        <label class="pi-drop" id="pi-drop" for="pi-file" style="font-weight: 400;">
+          <i class="fas fa-file-arrow-up"></i>
+          <span><strong id="pi-file-name">Choose a .md file</strong><br><small style="margin:0;">Markdown or plain text, up to 500 KB</small></span>
+        </label>
+        <input type="file" id="pi-file" name="plan_file" accept=".md,.markdown,.txt,text/markdown,text/plain" hidden>
+      </div>
+
+      <div class="pi-or">or paste the plan</div>
+      <div class="pi-field" style="margin-top: -10px;">
+        <textarea class="pi-text" name="plan_text" placeholder="# Phase 1 - Foundation&#10;- Set up the Next.js project and CI&#10;- [ ] Design the homepage">{{ plan_text }}</textarea>
+      </div>
+
+      <div class="pi-field">
+        <label>How to read it</label>
+        <div class="pi-modes">
+          <label class="pi-mode"><input type="radio" name="mode" value="ai" {% if mode != 'checklist' %}checked{% endif %}>
+            <span><strong>AI reads the plan</strong><span>Claude splits any plan into tasks with labels, priorities and dates. Takes 10-30 seconds.</span></span></label>
+          <label class="pi-mode"><input type="radio" name="mode" value="checklist" {% if mode == 'checklist' %}checked{% endif %}>
+            <span><strong>Checklist items only</strong><span>Each open <code>- [ ] item</code> line becomes a task, grouped by its heading. Instant, no AI.</span></span></label>
+        </div>
+      </div>
+
+      <div class="pi-actions">
+        <button type="submit" class="vk-btn dark" id="pi-submit"><i class="fas fa-list-check"></i> Read the plan</button>
+        <a class="vk-btn" href="{% url 'task_board' %}{% if selected_project %}?project={{ selected_project }}{% endif %}">Cancel</a>
+        <span class="pi-busy" aria-live="polite"><i class="fas fa-spinner fa-spin"></i> Reading the plan&hellip;</span>
+      </div>
+    </form>
+  </section>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function () {
+  var file = document.getElementById('pi-file'), drop = document.getElementById('pi-drop'), name = document.getElementById('pi-file-name');
+  file.addEventListener('change', function () {
+    var f = file.files[0];
+    name.textContent = f ? f.name : 'Choose a .md file';
+    drop.classList.toggle('has-file', !!f);
+  });
+  ['dragover', 'drop'].forEach(function (ev) {
+    drop.addEventListener(ev, function (e) {
+      e.preventDefault();
+      if (ev === 'drop' && e.dataTransfer.files.length) { file.files = e.dataTransfer.files; file.dispatchEvent(new Event('change')); }
+    });
+  });
+  var form = document.getElementById('pi-form');
+  form.addEventListener('submit', function () {
+    form.classList.add('busy');
+    document.getElementById('pi-submit').disabled = true;
+  });
+})();
+</script>
+{% endblock %}

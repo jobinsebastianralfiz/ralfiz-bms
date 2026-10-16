@@ -218,6 +218,8 @@ urlpatterns = [
     # Tasks
     path('tasks/', views.task_list, name='task_list'),
     path('tasks/board/', views.task_board, name='task_board'),
+    path('tasks/from-plan/', views.task_plan_import, name='task_plan_import'),
+    path('tasks/from-plan/create/', views.task_plan_create, name='task_plan_create'),
     path('tasks/create/', views.task_create, name='task_create'),
     path('tasks/<uuid:pk>/', views.task_detail, name='task_detail'),
     path('tasks/<uuid:pk>/edit/', views.task_update, name='task_update'),
