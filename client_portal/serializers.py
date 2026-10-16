@@ -58,7 +58,7 @@ class ProjectListSerializer(serializers.ModelSerializer):
 
     def get_progress(self, obj):
         from core.task_board import project_progress
-        return project_progress(obj)
+        return project_progress(obj, from_tasks=True)
 
 
 class ProjectDetailSerializer(serializers.ModelSerializer):

@@ -39,12 +39,14 @@
     {% endif %}
 
     <div class="project-progress">
+      {% if project.progress is not None %}
       <div class="progress-bar-wrapper">
         <div class="progress-bar-fill" style="width: {{ project.progress }}%;"></div>
       </div>
+      {% endif %}
       <div class="progress-text">
-        <span>{{ project.task_completed }}/{{ project.task_total }} tasks</span>
-        <span>{{ project.progress }}%</span>
+        <span>{{ project.task_completed }}/{{ project.task_total }} tasks done</span>
+        {% if project.progress is not None %}<span>{{ project.progress }}%</span>{% endif %}
       </div>
     </div>
 

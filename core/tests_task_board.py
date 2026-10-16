@@ -113,13 +113,17 @@ class ProjectProgressTests(TestCase):
         client = Client.objects.create(name='Acme', email='acme@example.com')
         self.project = Project.objects.create(client=client, name='Acme Website', status='confirmed')
 
-    def progress(self):
+    def progress(self, **kw):
         from core.task_board import project_progress
-        return project_progress(self.project)
+        return project_progress(self.project, **kw)
+
+    def test_no_percentage_without_a_posted_update(self):
+        Task.objects.create(project=self.project, title='Design', status='completed')
+        self.assertIsNone(self.progress())
 
     def test_one_done_task_is_not_a_done_project(self):
         Task.objects.create(project=self.project, title='Design', status='completed')
-        self.assertEqual(self.progress(), 99)
+        self.assertEqual(self.progress(from_tasks=True), 99)
         self.project.status = 'completed'
         self.project.save()
         self.assertEqual(self.progress(), 100)
@@ -128,7 +132,7 @@ class ProjectProgressTests(TestCase):
         Task.objects.create(project=self.project, title='A', status='completed')
         Task.objects.create(project=self.project, title='B', status='in_progress', progress=50)
         Task.objects.create(project=self.project, title='C', status='todo')
-        self.assertEqual(self.progress(), 50)
+        self.assertEqual(self.progress(from_tasks=True), 50)
 
     def test_posted_update_wins(self):
         from client_portal.models import ProjectUpdate

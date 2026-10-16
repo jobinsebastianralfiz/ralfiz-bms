@@ -34,18 +34,22 @@ def decorate_team(members):
     return members
 
 
-def project_progress(project):
-    """Percent complete shown to the client.
+def project_progress(project, from_tasks=False):
+    """Percent complete shown to the client, or None when there is no honest figure.
 
-    A client-visible progress update wins. Otherwise it is the average of the
-    tasks' own progress, and it only reaches 100% once the project itself is
-    marked completed (a board with one finished task is not a finished project).
+    A client-visible progress update the team posted wins, and a completed
+    project is 100%. Otherwise the portal shows task counts instead of a
+    percentage, because the board rarely holds the whole scope (one finished
+    task on a big project is not "100%"). from_tasks=True keeps the old
+    task-average number for the JSON API, capped at 99% until completion.
     """
     latest = project.updates.filter(progress_percentage__isnull=False, is_visible_to_client=True).first()
     if latest:
         return latest.progress_percentage
     if project.status == 'completed':
         return 100
+    if not from_tasks:
+        return None
     tasks = list(project.tasks.all())
     if not tasks:
         return 0

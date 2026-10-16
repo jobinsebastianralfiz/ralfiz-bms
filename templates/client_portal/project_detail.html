@@ -52,6 +52,7 @@
       <div class="portal-card">
         <div class="portal-card-header"><h2>Progress</h2></div>
         <div class="portal-card-body">
+          {% if progress is not None %}
           <div style="text-align: center; margin-bottom: 1rem;">
             <div style="font-size: 2.5rem; font-weight: 700; color: var(--primary);">{{ progress }}%</div>
             <div style="font-size: 0.875rem; color: var(--text-muted);">Complete</div>
@@ -59,6 +60,12 @@
           <div class="progress-bar-wrapper" style="height: 10px;">
             <div class="progress-bar-fill" style="width: {{ progress }}%;"></div>
           </div>
+          {% else %}
+          <div style="text-align: center; margin-bottom: .5rem;">
+            <div style="font-size: 2.25rem; font-weight: 700; color: var(--primary);">{{ task_stats.completed }} of {{ task_stats.total }}</div>
+            <div style="font-size: 0.875rem; color: var(--text-muted);">tasks done &middot; our team posts the overall progress as the project moves</div>
+          </div>
+          {% endif %}
           <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.5rem; margin-top: 1rem; text-align: center;">
             <div>
               <div style="font-size: 1.25rem; font-weight: 700; color: var(--text-primary);">{{ task_stats.todo }}</div>

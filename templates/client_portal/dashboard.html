@@ -75,7 +75,7 @@
           {% if project.start_date %}<span><i class="far fa-calendar"></i> Started: {{ project.start_date|date:"M d, Y" }}</span>{% endif %}
           <span><i class="fas fa-list-check"></i> {{ project.task_completed }}/{{ project.task_total }} tasks completed</span>
         </span>
-        <span class="pv-bar-row"><span class="pv-bar"><i style="width: {{ project.progress }}%"></i></span>{{ project.progress }}%</span>
+        {% if project.progress is not None %}<span class="pv-bar-row"><span class="pv-bar"><i style="width: {{ project.progress }}%"></i></span>{{ project.progress }}%</span>{% endif %}
       </span>
     </a>
     {% empty %}
@@ -104,13 +104,20 @@
     <header class="pv-card-head"><h2><span class="pv-head-ico violet"><i class="fas fa-chart-area"></i></span>Project Progress</h2><a href="{% url 'client_portal:portal_projects' %}">View All <i class="fas fa-arrow-right"></i></a></header>
     {% if focus_project %}
     <div class="pv-progress">
+      {% if focus_project.progress is not None %}
       <div class="pv-ring" style="--pct: {{ focus_project.progress }}" role="img" aria-label="{{ focus_project.progress }}% completed">
         <span><strong>{{ focus_project.progress }}%</strong>Completed</span>
       </div>
+      {% else %}
+      <div class="pv-ring" style="--pct: 0" role="img" aria-label="{{ focus_project.task_completed }} of {{ focus_project.task_total }} tasks done">
+        <span><strong>{{ focus_project.task_completed }}/{{ focus_project.task_total }}</strong>tasks done</span>
+      </div>
+      {% endif %}
       <div class="pv-progress-body">
         <span class="pv-proj-top"><strong>{{ focus_project.name }}</strong>{% if focus_project.overdue %}<span class="pv-pill red">Past deadline</span>{% else %}<span class="pv-pill green">On track</span>{% endif %}</span>
         <span class="pv-muted">{{ focus_project.task_completed }} of {{ focus_project.task_total }} tasks completed</span>
-        <span class="pv-bar-row"><span class="pv-bar"><i style="width: {{ focus_project.progress }}%"></i></span>{{ focus_project.progress }}%</span>
+        {% if focus_project.progress is not None %}<span class="pv-bar-row"><span class="pv-bar"><i style="width: {{ focus_project.progress }}%"></i></span>{{ focus_project.progress }}%</span>
+        {% else %}<span class="pv-muted">Our team posts the overall progress here as the project moves.</span>{% endif %}
       </div>
     </div>
     {% else %}
