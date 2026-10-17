@@ -8,91 +8,87 @@
 {% endblock %}
 
 {% block content %}
-
-<div class="sf-card" style="display:flex;align-items:center;gap:14px">
-  {% if photo_url %}
-    <img class="sf-avatar" src="{{ photo_url }}" alt="{{ employee.full_name }}"
-         style="width:54px;height:54px;flex:0 0 54px;border-radius:16px">
-  {% else %}
-    <div class="sf-avatar" style="width:54px;height:54px;flex:0 0 54px;border-radius:16px;font-size:21px">
-      {{ employee.full_name|slice:":1"|upper }}
+<section class="sv-card sv-pf-head">
+  {% if photo_url %}<img class="sv-pf-avatar" src="{{ photo_url }}" alt="{{ employee.full_name }}">
+  {% else %}<span class="sv-pf-avatar sv-pf-initial">{{ employee.full_name|slice:":1"|upper }}</span>{% endif %}
+  <div class="sv-pf-who">
+    <h2>{{ employee.full_name }}</h2>
+    <p>{{ employee.designation|default:employee.get_role_display }}</p>
+    <div class="sv-pf-tags">
+      <span class="sv-lstatus {% if employee.status == 'active' %}l-approved{% else %}l-cancelled{% endif %}"><i class="fas fa-circle" style="font-size:7px"></i> {{ employee.get_status_display }}</span>
+      <span class="sv-chip">{{ work_mode_display }}</span>
     </div>
-  {% endif %}
-  <div style="min-width:0">
-    <div style="font-size:17px;font-weight:620;letter-spacing:-.015em">{{ employee.full_name }}</div>
-    <div class="sf-muted">{{ employee.designation|default:employee.get_role_display }}</div>
+  </div>
+  <button type="button" class="sv-outline-btn sf-edit-profile"><i class="fas fa-pen"></i> Edit Profile</button>
+</section>
+
+<div class="sv-pf-grid">
+  <section class="sv-card">
+    <header class="sv-card-head"><h2><span class="sv-head-ico"><i class="fas fa-user-gear"></i></span>Personal Information</h2>
+      <button type="button" class="sv-soft-btn sf-edit-profile"><i class="fas fa-pen"></i> Edit</button></header>
+    <dl class="sv-pf-rows">
+      <div><dt><i class="far fa-id-card"></i> Staff ID</dt><dd>{{ employee.employee_id }}</dd></div>
+      <div><dt><i class="fas fa-user-tag"></i> Role</dt><dd>{{ employee.get_role_display }}</dd></div>
+      <div><dt><i class="fas fa-briefcase"></i> Type</dt><dd>{{ employee.get_employment_type_display }}</dd></div>
+      <div><dt><i class="far fa-building"></i> Department</dt><dd>{{ employee.get_department_display }}</dd></div>
+      <div><dt><i class="fas fa-house-laptop"></i> Work mode</dt><dd>{{ work_mode_display }}</dd></div>
+      <div><dt><i class="far fa-calendar"></i> Joined</dt><dd>{{ employee.joining_date|date:"d M Y"|default:"—" }}</dd></div>
+      <div><dt><i class="fas fa-phone"></i> Phone</dt><dd>{{ employee.phone|default:"—" }}</dd></div>
+      <div><dt><i class="far fa-envelope"></i> Email</dt><dd>{{ employee.user.email|default:"—" }}</dd></div>
+      {% if employee.emergency_contact %}<div><dt><i class="fas fa-kit-medical"></i> Emergency contact</dt><dd>{{ employee.emergency_contact }}</dd></div>{% endif %}
+      {% if employee.address %}<div><dt><i class="fas fa-location-dot"></i> Address</dt><dd>{{ employee.address|linebreaksbr }}</dd></div>{% endif %}
+    </dl>
+  </section>
+
+  <div class="sv-pf-side">
+    {# Face registration: required before check-in works #}
+    <section class="sv-card">
+      <header class="sv-card-head"><h2><span class="sv-head-ico"><i class="fas fa-shield-halved"></i></span>Face Verification</h2>
+        {% if has_face %}<span class="sv-lstatus l-approved"><i class="fas fa-circle-check"></i> Registered</span>
+        {% else %}<span class="sv-lstatus l-rejected"><i class="fas fa-circle-xmark"></i> Missing</span>{% endif %}</header>
+      <div class="sv-pf-face">
+        {% if has_face %}
+        <img src="{{ employee.face_photo.url }}?v={{ asset_v }}" alt="Registered face"
+             onerror="this.style.display='none';document.getElementById('sfFaceGone').hidden=false">
+        {% else %}<span class="sv-pf-face-empty"><i class="fas fa-user"></i></span>{% endif %}
+        <div>
+          <strong>Registered photo</strong>
+          <p>{% if has_face %}Your check-in selfie is matched against this. It keeps your account secure and your attendance accurate.{% else %}You can't check in until a face photo is registered.{% endif %}</p>
+        </div>
+      </div>
+      <div class="sf-alert sf-alert-warning" id="sfFaceGone" hidden style="margin:0 18px 12px">Your registered photo could not be loaded. Retake it below.</div>
+      <div style="padding:0 18px 18px">
+        <button type="button" class="{% if has_face %}sv-outline-btn{% else %}sv-btn{% endif %} sv-wide" id="sfFaceBtn">
+          <i class="fas fa-camera"></i> {% if has_face %}Retake photo{% else %}Register your face{% endif %}
+        </button>
+      </div>
+    </section>
+
+    <section class="sv-card">
+      <header class="sv-card-head"><h2><span class="sv-head-ico"><i class="fas fa-lock"></i></span>Account Status</h2></header>
+      <dl class="sv-pf-rows">
+        <div><dt><i class="far fa-calendar-check"></i> Account</dt><dd><span class="sv-lstatus {% if employee.status == 'active' %}l-approved{% else %}l-cancelled{% endif %}"><i class="fas fa-circle-check"></i> {{ employee.get_status_display }}</span></dd></div>
+        <div><dt><i class="fas fa-circle-half-stroke"></i> Last login</dt><dd>{{ request.user.last_login|date:"d M Y, h:i A"|default:"—" }}</dd></div>
+      </dl>
+    </section>
   </div>
 </div>
 
-<div class="sf-card">
-  <div class="sf-kv"><span class="sf-kv-k">Staff ID</span><span class="sf-kv-v">{{ employee.employee_id }}</span></div>
-  <div class="sf-kv"><span class="sf-kv-k">Role</span><span class="sf-kv-v">{{ employee.get_role_display }}</span></div>
-  <div class="sf-kv"><span class="sf-kv-k">Type</span><span class="sf-kv-v">{{ employee.get_employment_type_display }}</span></div>
-  <div class="sf-kv"><span class="sf-kv-k">Department</span><span class="sf-kv-v">{{ employee.get_department_display }}</span></div>
-  <div class="sf-kv"><span class="sf-kv-k">Work mode</span><span class="sf-kv-v">{{ work_mode_display }}</span></div>
-  <div class="sf-kv"><span class="sf-kv-k">Joined</span><span class="sf-kv-v">{{ employee.joining_date|date:"d M Y" }}</span></div>
-  {% if employee.phone %}
-    <div class="sf-kv"><span class="sf-kv-k">Phone</span><span class="sf-kv-v">{{ employee.phone }}</span></div>
-  {% endif %}
-  <div class="sf-kv"><span class="sf-kv-k">Email</span><span class="sf-kv-v">{{ employee.user.email|default:"—" }}</span></div>
-</div>
-
-{# --- Face registration: required before QR check-in works --- #}
-<div class="sf-section-title">Face verification</div>
-<div class="sf-card">
-  <div class="sf-row" style="margin-bottom:12px">
-    <div style="min-width:0">
-      <div class="sf-card-title">Registered photo</div>
-      <div class="sf-muted">Your check-in selfie is matched against this.</div>
-    </div>
-    <span class="sf-badge {% if has_face %}sf-badge-ok{% else %}sf-badge-danger{% endif %}">
-      {% if has_face %}Registered{% else %}Missing{% endif %}
-    </span>
+<section class="sv-card">
+  <header class="sv-card-head sv-pf-pwhead"><h2><span class="sv-head-ico"><i class="fas fa-lock"></i></span><span>Change Password<small>Keep your account secure by using a strong password.</small></span></h2></header>
+  <div class="sv-pf-pw">
+    <div class="sf-field"><label class="sf-label" for="pwOld">Current password</label>
+      <span class="sv-pw"><i class="fas fa-lock"></i><input class="sf-input" type="password" id="pwOld" autocomplete="current-password" placeholder="Enter current password"><button type="button" class="sv-pw-eye" aria-label="Show password"><i class="far fa-eye"></i></button></span></div>
+    <div class="sf-field"><label class="sf-label" for="pwNew">New password</label>
+      <span class="sv-pw"><i class="fas fa-lock"></i><input class="sf-input" type="password" id="pwNew" autocomplete="new-password" placeholder="Enter new password"><button type="button" class="sv-pw-eye" aria-label="Show password"><i class="far fa-eye"></i></button></span></div>
+    <div class="sf-field"><label class="sf-label" for="pwNew2">Confirm new password</label>
+      <span class="sv-pw"><i class="fas fa-lock"></i><input class="sf-input" type="password" id="pwNew2" autocomplete="new-password" placeholder="Confirm new password"><button type="button" class="sv-pw-eye" aria-label="Show password"><i class="far fa-eye"></i></button></span></div>
   </div>
+  <div class="sv-pf-pwfoot"><button type="button" class="sv-btn" id="pwSave"><i class="fas fa-key"></i> Change password</button></div>
+</section>
 
-  {% if has_face %}
-    <img src="{{ employee.face_photo.url }}?v={{ asset_v }}" alt="Registered face"
-         style="width:100px;height:100px;object-fit:cover;border-radius:16px;border:1px solid var(--sf-line);margin-bottom:12px"
-         onerror="this.style.display='none';document.getElementById('sfFaceGone').hidden=false">
-    <div class="sf-alert sf-alert-warning" id="sfFaceGone" hidden>
-      Your registered photo could not be loaded. Retake it below.
-    </div>
-  {% else %}
-    <div class="sf-alert sf-alert-warning">
-      You can't check in until a face photo is registered.
-    </div>
-  {% endif %}
-
-  <button type="button" class="sf-btn {% if has_face %}sf-btn-ghost{% endif %}" id="sfFaceBtn">
-    <i class="fas fa-camera"></i> {% if has_face %}Retake photo{% else %}Register your face{% endif %}
-  </button>
-</div>
-
-<div class="sf-section-title">Security</div>
-<div class="sf-card">
-  <div class="sf-field">
-    <label class="sf-label" for="pwOld">Current password</label>
-    <input class="sf-input" type="password" id="pwOld" autocomplete="current-password">
-  </div>
-  <div class="sf-field">
-    <label class="sf-label" for="pwNew">New password</label>
-    <input class="sf-input" type="password" id="pwNew" autocomplete="new-password">
-  </div>
-  <div class="sf-field">
-    <label class="sf-label" for="pwNew2">Confirm new password</label>
-    <input class="sf-input" type="password" id="pwNew2" autocomplete="new-password">
-  </div>
-  <button type="button" class="sf-btn sf-btn-ghost" id="pwSave">Change password</button>
-</div>
-
-<a href="{% url 'staff:logout' %}" class="sf-btn sf-btn-danger" style="margin-top:14px">
-  <i class="fas fa-right-from-bracket"></i> Sign out
-</a>
-
-<button type="button" class="sf-btn sf-btn-ghost" id="sfInstallOpen" style="margin-top:22px">
-  <i class="fas fa-mobile-screen-button"></i> Add to Home Screen
-</button>
-
+<a href="{% url 'staff:logout' %}" class="sv-pf-signout"><i class="fas fa-right-from-bracket"></i> Sign out</a>
+<button type="button" class="sv-pf-install" id="pfInstall"><i class="fas fa-mobile-screen-button"></i> Add to Home Screen</button>
 {% endblock %}
 
 {% block extra_js %}
@@ -158,9 +154,66 @@
         setTimeout(function () { location.href = '{% url "staff:logout" %}'; }, 1400);
       } else {
         btn.disabled = false;
-        btn.textContent = 'Change password';
+        btn.innerHTML = '<i class="fas fa-key"></i> Change password';
         SF.toast(SF.errorText(res.data, 'Could not change the password.'), 'error');
       }
+    });
+  });
+
+  // base.html's install banner owns #sfInstallOpen, so this button is wired here.
+  document.getElementById('pfInstall').addEventListener('click', SF.showInstallHelp);
+
+  document.querySelectorAll('.sv-pw-eye').forEach(function (eye) {
+    eye.addEventListener('click', function () {
+      var input = eye.parentNode.querySelector('input');
+      var show = input.type === 'password';
+      input.type = show ? 'text' : 'password';
+      eye.innerHTML = show ? '<i class="far fa-eye-slash"></i>' : '<i class="far fa-eye"></i>';
+      eye.setAttribute('aria-label', show ? 'Hide password' : 'Show password');
+    });
+  });
+
+  // Staff can change their own phone, emergency contact, address and photo;
+  // everything else on this page is set by HR.
+  document.querySelectorAll('.sf-edit-profile').forEach(function (open) {
+    open.addEventListener('click', function () {
+      var modal = SF.openModal('Edit profile');
+      modal.bindClose(function () { modal.close(); });
+      modal.body.innerHTML =
+        '<div class="sf-field"><label class="sf-label" for="pfPhone">Phone</label>' +
+          '<input class="sf-input" type="tel" id="pfPhone" maxlength="15" value="{{ employee.phone|escapejs }}"></div>' +
+        '<div class="sf-field"><label class="sf-label" for="pfEmergency">Emergency contact</label>' +
+          '<input class="sf-input" type="tel" id="pfEmergency" maxlength="20" value="{{ employee.emergency_contact|escapejs }}"></div>' +
+        '<div class="sf-field"><label class="sf-label" for="pfAddress">Address</label>' +
+          '<textarea class="sf-textarea" id="pfAddress"></textarea></div>' +
+        '<div class="sf-field"><label class="sf-label" for="pfPhoto">Profile photo</label>' +
+          '<input class="sf-input" type="file" id="pfPhoto" accept="image/*"></div>' +
+        '<p class="sf-muted" style="margin:0 0 14px">Name, role and email are set by HR. Ask them to change those.</p>' +
+        '<button type="button" class="sf-btn" id="pfSave">Save changes</button>';
+      modal.body.querySelector('#pfAddress').value = '{{ employee.address|escapejs }}';
+
+      modal.body.querySelector('#pfSave').addEventListener('click', function () {
+        var btn = this;
+        var fd = new FormData();
+        fd.append('phone', modal.body.querySelector('#pfPhone').value.trim());
+        fd.append('emergency_contact', modal.body.querySelector('#pfEmergency').value.trim());
+        fd.append('address', modal.body.querySelector('#pfAddress').value.trim());
+        var photo = modal.body.querySelector('#pfPhoto').files[0];
+        if (photo) fd.append('profile_photo', photo);
+        btn.disabled = true;
+        btn.innerHTML = '<span class="sf-spinner"></span> Saving…';
+        SF.api('/api/employees/profile/', { method: 'PATCH', body: fd }).then(function (res) {
+          if (res.ok) {
+            modal.close();
+            SF.toast('Profile updated.', 'success');
+            setTimeout(function () { location.reload(); }, 700);
+          } else {
+            btn.disabled = false;
+            btn.textContent = 'Save changes';
+            SF.toast(SF.errorText(res.data, 'Could not save your profile.'), 'error');
+          }
+        });
+      });
     });
   });
 })();

@@ -4,45 +4,66 @@
 {% block heading %}Notifications{% endblock %}
 
 {% block page_hero %}
-{% include 'staff/_hero.html' with title='Notifications' subtitle='Messages from HR and the team.' art='desk' %}
+{% include 'staff/_hero.html' with title='Notifications' subtitle='Messages from HR and the team.' tagline='Stay informed, stay organized' art='bell' icon='fa-bell' %}
 {% endblock %}
 
 {% block content %}
-
-{% if unread_count %}
-  <button type="button" class="sf-btn sf-btn-ghost" id="sfMarkAll" style="margin-bottom:14px">
-    <i class="fas fa-check-double"></i> Mark all as read
-  </button>
-{% endif %}
-
-{% if notifications %}
-  <div class="sf-list">
-    {% for n in notifications %}
-      <div class="sf-item {% if not n.is_read %}sf-unread{% endif %}">
-        <div class="sf-item-head">
-          <span class="sf-item-title">{{ n.title }}</span>
-          <span class="sf-badge sf-badge-muted">{{ n.get_notification_type_display }}</span>
-        </div>
-        <div class="sf-muted" style="margin-top:5px">{{ n.body }}</div>
-        <div class="sf-item-meta"><span>{{ n.created_at|date:"d M Y, h:i A" }}</span></div>
-      </div>
+<div class="sv-filter-bar">
+  <div class="sf-chips sv-chip-row" style="margin:0;">
+    {% for key, label, count in filters %}
+    <a href="{% if key %}?type={{ key }}{% else %}?{% endif %}" class="sf-chip {% if key == kind %}active{% endif %}">{{ label }} <span class="sv-count-pill">{{ count }}</span></a>
     {% endfor %}
   </div>
-{% else %}
-  <div class="sf-empty">
-    <i class="fas fa-bell-slash"></i>
-    No notifications.
-  </div>
-{% endif %}
+  {% if has_unread %}
+  <button type="button" class="sv-outline-btn" id="sfMarkAll"><i class="fas fa-check"></i> Mark all as read</button>
+  {% endif %}
+</div>
 
+{% for label, items in groups %}
+<section class="sv-ngroup">
+  <header class="sv-ngroup-head">
+    <h2>{{ label }} <span>({{ items|length }})</span></h2>
+    {% if forloop.first and label == 'Today' %}<span class="sv-meta" style="margin:0;">{{ today|date:"D, d M Y" }}</span>{% endif %}
+  </header>
+  <div class="sv-nlist{% if items|length > 1 %} two{% endif %}">
+    {% for n in items %}
+    <article class="sv-notif{% if not n.is_read %} unread{% endif %}" data-id="{{ n.id }}">
+      <span class="sv-notif-ico sv-ico {{ n.tone }}"><i class="fas {{ n.icon }}"></i></span>
+      <div class="sv-notif-body">
+        <strong>{{ n.title }}</strong>
+        <p>{{ n.body_display|linebreaksbr }}</p>
+        <div class="sv-notif-meta">
+          <span><i class="far fa-calendar"></i> {% if n.on_date %}{{ n.on_date|date:"d M Y" }}{% else %}{{ n.created_at|date:"d M Y" }}{% endif %}</span>
+          {% if n.days %}<span><i class="far fa-clock"></i> {{ n.days }} day{{ n.days|pluralize }}</span>
+          {% else %}<span><i class="far fa-clock"></i> {{ n.created_at|date:"g:i A" }}</span>{% endif %}
+          <span class="sv-chip">{{ n.get_notification_type_display|default:"General" }}</span>
+        </div>
+      </div>
+      <div class="sv-notif-side">
+        {% if n.status %}<span class="sv-lstatus l-{{ n.status }}"><i class="fas {% if n.status == 'approved' %}fa-circle-check{% elif n.status == 'rejected' %}fa-circle-xmark{% elif n.status == 'cancelled' %}fa-ban{% else %}fa-hourglass-half{% endif %}"></i> {{ n.status|capfirst }}</span>{% endif %}
+        {% if n.can_mark_read or n.link %}
+        <details class="sv-menu"><summary aria-label="Actions"><i class="fas fa-ellipsis-vertical"></i></summary>
+          <div>
+            {% if n.can_mark_read %}<button type="button" class="sv-menu-plain sf-mark-one" data-id="{{ n.id }}"><i class="fas fa-check"></i> Mark as read</button>{% endif %}
+            {% if n.link %}<a class="sv-menu-plain" href="{{ n.link }}"><i class="fas fa-arrow-right"></i> Open</a>{% endif %}
+          </div>
+        </details>
+        {% endif %}
+      </div>
+    </article>
+    {% endfor %}
+  </div>
+</section>
+{% empty %}
+<section class="sv-card"><p class="sv-empty"><i class="fas fa-bell-slash"></i> {% if kind %}No notifications of this type.{% else %}No notifications yet.{% endif %}</p></section>
+{% endfor %}
 {% endblock %}
 
 {% block extra_js %}
 <script>
 (function () {
   var btn = document.getElementById('sfMarkAll');
-  if (!btn) return;
-  btn.addEventListener('click', function () {
+  if (btn) btn.addEventListener('click', function () {
     btn.disabled = true;
     btn.innerHTML = '<span class="sf-spinner"></span> Marking…';
     SF.api('/api/employees/notifications/read/', { method: 'POST' }).then(function (res) {
@@ -50,9 +71,21 @@
         location.reload();
       } else {
         btn.disabled = false;
-        btn.innerHTML = '<i class="fas fa-check-double"></i> Mark all as read';
+        btn.innerHTML = '<i class="fas fa-check"></i> Mark all as read';
         SF.toast(SF.errorText(res.data, 'Could not mark as read.'), 'error');
       }
+    });
+  });
+
+  document.querySelectorAll('.sf-mark-one').forEach(function (b) {
+    b.addEventListener('click', function () {
+      var card = b.closest('.sv-notif');
+      SF.api('/api/employees/notifications/' + b.dataset.id + '/read/', { method: 'POST' }).then(function (res) {
+        if (!res.ok) { SF.toast(SF.errorText(res.data, 'Could not mark as read.'), 'error'); return; }
+        card.classList.remove('unread');
+        b.closest('details').removeAttribute('open');
+        b.remove();
+      });
     });
   });
 })();

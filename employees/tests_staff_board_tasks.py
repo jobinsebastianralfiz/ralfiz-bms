@@ -130,6 +130,18 @@ class StaffLeaveDailyHistoryTests(StaffBoardTaskTests):
         r = self.client.get(reverse('staff:daily_report'), {'month': 'nonsense'})
         self.assertEqual(r.status_code, 200)
 
+    def test_long_daily_update_is_not_cut_off(self):
+        from employees.portal_views import _split_headline
+        text = ('Built the login screen for the Flutter app and wired the API client. '
+                'Fixed two layout bugs on the profile page that showed up on small phones.')
+        head, rest = _split_headline(text)
+        self.assertEqual(head, 'Built the login screen for the Flutter app and wired the API client.')
+        self.assertIn('showed up on small phones.', rest)
+        head, rest = _split_headline('word ' * 60)
+        self.assertTrue(head.endswith('…') and len(head) <= 121)
+        self.assertEqual((head[:-1] + ' ' + rest[1:]).split(), ['word'] * 60)
+        self.assertEqual(_split_headline('Short\nsecond line'), ('Short', 'second line'))
+
     def test_history_hours_and_trend(self):
         from datetime import datetime, time
         from django.utils import timezone
@@ -141,3 +153,51 @@ class StaffLeaveDailyHistoryTests(StaffBoardTaskTests):
         r = self.client.get(reverse('staff:attendance_history'))
         self.assertEqual(r.context['total_hours'], 6.0)
         self.assertEqual(next(d for d in r.context['trend'] if d['day'] == today.day)['hours'], 6.0)
+
+
+class StaffNotificationPageTests(StaffBoardTaskTests):
+    def test_groups_filters_and_leave_details(self):
+        from datetime import timedelta
+        from django.utils import timezone
+        from employees.models import Notification
+        mk = Notification.objects.create
+        mk(employee=self.employee, title='Leave Approved', notification_type='leave',
+           body='Your leave from 2026-10-13 to 2026-10-14 has been approved.')
+        old = mk(employee=self.employee, title='Leave Rejected', notification_type='leave',
+                 body='Your leave from 2026-01-05 to 2026-01-05 has been rejected.', is_read=True)
+        Notification.objects.filter(pk=old.pk).update(created_at=timezone.now() - timedelta(days=60))
+        mk(employee=self.employee, title='Daily update reply', body='HR replied', notification_type='general')
+        mk(employee=None, title='Office closed Monday', body='Holiday', notification_type='announcement')
+
+        r = self.client.get(reverse('staff:notification_list'))
+        counts = {key: n for key, _, n in r.context['filters']}
+        self.assertEqual(counts, {'': 4, 'leave': 2, 'attendance': 0, 'work': 0, 'announcement': 1, 'other': 1})
+        groups = dict(r.context['groups'])
+        self.assertEqual(len(groups['Today']), 3)
+        self.assertEqual([n.title for n in groups['Earlier']], ['Leave Rejected'])
+        approved = next(n for n in groups['Today'] if n.title == 'Leave Approved')
+        self.assertEqual((approved.status, approved.days, str(approved.on_date)), ('approved', 2, '2026-10-13'))
+        broadcast = next(n for n in groups['Today'] if n.employee_id is None)
+        self.assertFalse(broadcast.can_mark_read)
+
+        r = self.client.get(reverse('staff:notification_list'), {'type': 'other'})
+        self.assertEqual([n.title for _, items in r.context['groups'] for n in items], ['Daily update reply'])
+        r = self.client.get(reverse('staff:notification_list'), {'type': 'bogus'})
+        self.assertEqual(r.context['kind'], '')
+
+
+class StaffProfilePageTests(StaffBoardTaskTests):
+    def test_profile_page_and_self_edit(self):
+        r = self.client.get(reverse('staff:profile'))
+        self.assertContains(r, 'Personal Information')
+        self.assertContains(r, 'id="pfInstall"')
+        self.assertContains(r, 'Missing')  # no face photo yet
+
+        r = self.client.patch('/api/employees/profile/', {'phone': '9000011111', 'address': 'Kochi',
+                                                          'employee_id': 'HACK'},
+                              content_type='application/json')
+        self.assertEqual(r.status_code, 200)
+        self.employee.refresh_from_db()
+        self.assertEqual((self.employee.phone, self.employee.address, self.employee.employee_id),
+                         ('9000011111', 'Kochi', 'EMP006'))
+        self.assertContains(self.client.get(reverse('staff:profile')), 'Kochi')

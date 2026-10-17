@@ -9,6 +9,7 @@ re-implemented here -- the templates POST to the existing DRF endpoints in
 leave validation and face matching keep exactly one implementation shared with
 the Flutter app.
 """
+import re
 from datetime import date, timedelta
 from functools import wraps
 
@@ -19,6 +20,7 @@ from django.db.models import Q
 from django.http import Http404, HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.template.loader import render_to_string
+from django.urls import reverse
 from django.utils import timezone
 from django.views.decorators.cache import never_cache
 
@@ -31,7 +33,7 @@ from .models import (
 # changes. Whitenoise serves these unhashed, and the service worker is
 # cache-first for static assets, so an unversioned URL is served from the old
 # cache forever -- which is exactly how the app icon got stuck.
-ASSET_V = '14'
+ASSET_V = '17'
 
 MONTHS = [
     '', 'January', 'February', 'March', 'April', 'May', 'June',
@@ -111,6 +113,28 @@ def board_tasks_for(employee, open_only=True):
     if open_only:
         tasks = tasks.exclude(status='completed')
     return tasks
+
+
+def _split_headline(text, limit=120):
+    """Bold first line for a daily update card, plus everything after it.
+
+    A long single paragraph is split at its first sentence (or the last word
+    before `limit`), so none of what the person wrote is dropped.
+    """
+    lines = [l.strip() for l in (text or '').strip().splitlines() if l.strip()]
+    if not lines:
+        return 'Update', ''
+    first, rest = lines[0], lines[1:]
+    if len(first) > limit:
+        m = re.match(r'(.{20,%d}?[.!?])\s+(.*)' % limit, first)
+        if m:
+            first, tail = m.group(1), m.group(2)
+        else:
+            cut = first.rfind(' ', 0, limit)
+            cut = cut if cut > 0 else limit
+            first, tail = first[:cut].rstrip() + '…', '…' + first[cut:].lstrip()
+        rest = [tail] + rest
+    return first, '\n'.join(rest)
 
 
 def _greeting():
@@ -392,9 +416,7 @@ def daily_report(request):
     if today.strftime('%Y-%m') not in months:
         months.insert(0, today.strftime('%Y-%m'))
     for r in reports:
-        lines = [l.strip() for l in r.work_done.strip().splitlines() if l.strip()]
-        r.headline = (lines[0] if lines else 'Update')[:120]
-        r.rest = '\n'.join(lines[1:])
+        r.headline, r.rest = _split_headline(r.work_done)
 
     ctx = _base_context(request, 'daily_report')
     ctx.update({
@@ -608,12 +630,82 @@ def payslip_detail(request, pk):
 @staff_required
 def notification_list(request):
     employee = request.employee
-    notifications = Notification.objects.filter(
-        Q(employee=employee) | Q(employee__isnull=True))[:100]
+    mine = Notification.objects.filter(Q(employee=employee) | Q(employee__isnull=True))
+    kind = request.GET.get('type', '')
+    if kind not in dict(NOTIFICATION_FILTERS):
+        kind = ''
+
+    counts = {'': mine.count(), 'other': mine.filter(notification_type__in=['general', '']).count()}
+    for key, _ in NOTIFICATION_FILTERS[1:-1]:
+        counts[key] = mine.filter(notification_type=key).count()
+    filters = [(key, label, counts[key]) for key, label in NOTIFICATION_FILTERS]
+
+    shown = mine
+    if kind == 'other':
+        shown = shown.filter(notification_type__in=['general', ''])
+    elif kind:
+        shown = shown.filter(notification_type=kind)
+
+    today = timezone.localdate()
+    groups = {'today': [], 'month': [], 'earlier': []}
+    for n in shown[:100]:
+        _decorate_notification(n)
+        day = timezone.localtime(n.created_at).date()
+        if day == today:
+            groups['today'].append(n)
+        elif (day.year, day.month) == (today.year, today.month):
+            groups['month'].append(n)
+        else:
+            groups['earlier'].append(n)
 
     ctx = _base_context(request, 'notifications')
-    ctx.update({'notifications': notifications})
+    ctx.update({
+        'today': today,
+        'kind': kind,
+        'filters': filters,
+        'groups': [(label, groups[key]) for key, label in
+                   [('today', 'Today'), ('month', 'This Month'), ('earlier', 'Earlier')] if groups[key]],
+        'has_unread': mine.filter(employee=employee, is_read=False).exists(),
+    })
     return render(request, 'staff/notification_list.html', ctx)
+
+
+NOTIFICATION_FILTERS = [('', 'All'), ('leave', 'Leave'), ('attendance', 'Attendance'),
+                        ('work', 'Work'), ('announcement', 'Announcements'), ('other', 'Other')]
+_NOTIFICATION_LOOK = {  # type -> (icon, tone, link)
+    'leave': ('fa-plane', 'violet', 'staff:leave'),
+    'attendance': ('fa-fingerprint', 'green', 'staff:attendance'),
+    'work': ('fa-list-check', 'blue', 'staff:work_list'),
+    'announcement': ('fa-bullhorn', 'orange', ''),
+}
+_LEAVE_RANGE = re.compile(r'from (\d{4}-\d{2}-\d{2}) to (\d{4}-\d{2}-\d{2})')
+
+
+def _decorate_notification(n):
+    """Icon, status pill and the leave dates a notification card shows.
+
+    Leave notifications only carry their dates in the body text
+    ("from 2026-10-13 to 2026-10-13"), so they are read back from there.
+    """
+    icon, tone, link = _NOTIFICATION_LOOK.get(n.notification_type, ('fa-bell', 'grey', ''))
+    n.icon, n.tone = icon, tone
+    n.link = reverse(link) if link else ''
+    title = n.title.lower()
+    n.status = next((s for s in ('approved', 'rejected', 'cancelled') if s in title), '')
+    if not n.status and n.notification_type == 'leave' and 'request' in title:
+        n.status = 'pending'
+    n.on_date, n.days = None, None
+    m = _LEAVE_RANGE.search(n.body or '')
+    if m:
+        try:
+            start, end = date.fromisoformat(m.group(1)), date.fromisoformat(m.group(2))
+            n.on_date, n.days = start, (end - start).days + 1
+        except ValueError:
+            pass
+    # Non-breaking hyphens so "2026-10-13" never wraps onto two lines.
+    n.body_display = re.sub(r'\d{4}-\d{2}-\d{2}', lambda d: d.group(0).replace('-', '‑'), n.body or '')
+    n.can_mark_read = n.employee_id is not None and not n.is_read
+    return n
 
 
 # --- Profile ---------------------------------------------------------------
