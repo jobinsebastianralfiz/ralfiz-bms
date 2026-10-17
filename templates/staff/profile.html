@@ -70,6 +70,10 @@
         <div><dt><i class="far fa-calendar-check"></i> Account</dt><dd><span class="sv-lstatus {% if employee.status == 'active' %}l-approved{% else %}l-cancelled{% endif %}"><i class="fas fa-circle-check"></i> {{ employee.get_status_display }}</span></dd></div>
         <div><dt><i class="fas fa-circle-half-stroke"></i> Last login</dt><dd>{{ request.user.last_login|date:"d M Y, h:i A"|default:"—" }}</dd></div>
       </dl>
+      <div class="sv-pf-acts">
+        <button type="button" class="sv-pf-install" id="pfInstall"><i class="fas fa-mobile-screen-button"></i> Add to Home Screen</button>
+        <a href="{% url 'staff:logout' %}" class="sv-pf-signout"><i class="fas fa-right-from-bracket"></i> Sign out</a>
+      </div>
     </section>
   </div>
 </div>
@@ -87,8 +91,6 @@
   <div class="sv-pf-pwfoot"><button type="button" class="sv-btn" id="pwSave"><i class="fas fa-key"></i> Change password</button></div>
 </section>
 
-<a href="{% url 'staff:logout' %}" class="sv-pf-signout"><i class="fas fa-right-from-bracket"></i> Sign out</a>
-<button type="button" class="sv-pf-install" id="pfInstall"><i class="fas fa-mobile-screen-button"></i> Add to Home Screen</button>
 {% endblock %}
 
 {% block extra_js %}
