@@ -165,7 +165,7 @@
       <input type="checkbox" id="agreed_to_terms" name="agreed_to_terms" {% if posted.agreed_to_terms %}checked{% endif %}>
       <label for="agreed_to_terms">
         I confirm I am authorised to sign for {{ doc.client_company|default:doc.client_name }}, and I accept this
-        agreement for {{ doc.project_name }}, including the total fee of {{ doc.total_display }} plus GST and its payment schedule{% if doc.services %},
+        agreement for {{ doc.project_name }}, including the total fee of {{ doc.total_display }} ({{ doc.fee_suffix|default:"plus GST" }}) and its payment schedule{% if doc.services %},
         and the recurring services selected above{% endif %}.
       </label>
     </div>

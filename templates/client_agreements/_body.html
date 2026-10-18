@@ -32,8 +32,11 @@ signing page and the signed copy so the two can never drift.
     {% if section.kind == 'payment' %}
     <div class="agr-fee">
       <div class="agr-fee-amount">{{ doc.total_display }}</div>
-      <div class="agr-fee-note">{{ doc.total_in_words }} &middot; total project fee, plus GST</div>
+      <div class="agr-fee-note">{{ doc.total_in_words }} &middot; total project fee, {{ doc.fee_suffix|default:"plus GST" }}</div>
     </div>
+    {% if doc.gst_mode == 'inclusive' %}
+    <div class="agr-callout info">Of which {{ doc.base_amount_display }} is towards the Services and {{ doc.gst_amount_display }} is GST at {{ doc.gst_rate }}%.</div>
+    {% endif %}
     <table class="pay-table">
       <thead><tr><th>#</th><th>Milestone</th><th class="r">Share</th><th class="r">Amount</th></tr></thead>
       <tbody>
@@ -41,7 +44,7 @@ signing page and the signed copy so the two can never drift.
         <tr><td>{{ forloop.counter }}</td><td>{{ m.label }}</td><td class="r">{{ m.percent }}%</td><td class="r">{{ m.amount_display }}</td></tr>
         {% endfor %}
       </tbody>
-      <tfoot><tr><td></td><td>Total</td><td class="r">100%</td><td class="r">{{ doc.total_display }}</td></tr></tfoot>
+      <tfoot><tr><td></td><td>Total ({{ doc.fee_suffix|default:"plus GST" }})</td><td class="r">100%</td><td class="r">{{ doc.total_display }}</td></tr></tfoot>
     </table>
     {% endif %}
 
@@ -104,7 +107,7 @@ signing page and the signed copy so the two can never drift.
       {% if doc.acceptance %}{{ doc.acceptance }}{% else %}
       By accepting, <strong>{{ doc.client_company|default:doc.client_name }}</strong> agrees to engage
       Ralfiz Technologies for <strong>{{ doc.project_name }}</strong> on the terms above, for a total
-      project fee of <strong>{{ doc.total_display }}</strong> plus GST, payable as per the schedule in
+      project fee of <strong>{{ doc.total_display }}</strong> ({{ doc.fee_suffix|default:"plus GST" }}), payable as per the schedule in
       this agreement{% if doc.services %}, together with the recurring services marked included and
       those chosen when accepting{% endif %}. An electronic acceptance is as binding as a signature on paper.
       {% endif %}

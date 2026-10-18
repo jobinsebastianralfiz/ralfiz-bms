@@ -71,6 +71,7 @@ def client_agreement_new(request, pk):
         'amc_amount': project.amc_amount or '',
         'amc_cycle': project.amc_billing_cycle or 'yearly',
         'other_services': '',
+        'gst_mode': 'exclusive',
     }
     if previous:  # a revision starts from what was last sent, not from scratch
         snap = previous.snapshot_json
@@ -114,6 +115,7 @@ def client_agreement_new(request, pk):
         except ValueError:
             expiry_days = 14
 
+        gst_mode = 'inclusive' if form.get('gst_mode') == 'inclusive' else 'exclusive'
         if not errors:
             snapshot = build_snapshot(
                 project,
@@ -132,6 +134,7 @@ def client_agreement_new(request, pk):
                 cloud_note=(form.get('cloud_note') or '').strip(),
                 late_interest=late_interest or None,
                 own_hosting=_lines(form.get('own_hosting')),
+                gst_mode=gst_mode,
             )
             # Kept so a revision can prefill the form; not shown to the client.
             snapshot['_form'] = {k: form.get(k, '') for k in (
@@ -140,7 +143,7 @@ def client_agreement_new(request, pk):
                 'maint_on', 'maint_amount', 'maint_mode', 'maint_note',
                 'content_on', 'content_amount', 'content_unit', 'content_mode', 'content_note', 'cloud_on', 'cloud_mode',
                 'cloud_plans', 'cloud_note', 'own_hosting', 'late_interest', 'amc_amount', 'amc_cycle', 'amc_note',
-                'other_services')}
+                'other_services', 'gst_mode')}
             revision = (previous.revision + 1) if previous else 1
             snapshot['version'] = f'v{revision}.0'
             agreement = ClientAgreement.objects.create(

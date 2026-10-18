@@ -198,6 +198,10 @@ MODE_INCLUDED = 'included'  # part of the agreement, the client can't untick it
 MODE_OPTIONAL = 'optional'  # the client chooses on the signing page
 MODE_IN_FEE = 'in_fee'  # staff form only: covered by the project fee, stored as included at no charge
 
+GST_MODE_EXCLUSIVE = 'exclusive'  # fee is before GST, GST is added on top
+GST_MODE_INCLUSIVE = 'inclusive'  # fee already includes GST
+GST_RATE = Decimal('18')  # % used for the inclusive breakdown
+
 
 def _cycle(raw):
     raw = (raw or '').strip().lower().replace('-', '_').replace(' ', '_')
@@ -557,7 +561,7 @@ class ClientAgreement(models.Model):
 def build_snapshot(project, *, scope, deliverables, start_date, end_date, total,
                    milestones, warranty_months, support_note, extra_terms,
                    exclusions=(), services=(), cloud_mode='', cloud_note='', late_interest=None,
-                   own_hosting=()):
+                   own_hosting=(), gst_mode=GST_MODE_EXCLUSIVE):
     """Freeze the agreement for one project. Section numbers are assigned here
     so the page and the signed copy always number the same way. The wording
     (preamble, clauses, acceptance) is frozen too, so rewording the template
@@ -571,6 +575,15 @@ def build_snapshot(project, *, scope, deliverables, start_date, end_date, total,
     client_party = client.company_name or client.name
     client_address = ' '.join((client.address or '').split())
     total = Decimal(total or 0)
+    gst_mode = gst_mode if gst_mode == GST_MODE_INCLUSIVE else GST_MODE_EXCLUSIVE
+    if gst_mode == GST_MODE_INCLUSIVE:
+        base_amount = (total * Decimal('100') / (Decimal('100') + GST_RATE)).quantize(Decimal('0.01'))
+        gst_amount = (total - base_amount).quantize(Decimal('0.01'))
+        fee_suffix = f'inclusive of {GST_RATE.normalize():f}% GST'
+    else:
+        base_amount = total
+        gst_amount = Decimal('0')
+        fee_suffix = 'plus GST'
     has_cloud = any(sv['group'] == 'cloud' for sv in services)
     own_hosting_list = [l for l in own_hosting if l.strip()] if has_cloud and cloud_mode != 'required' else []
     sections = []
@@ -590,11 +603,17 @@ def build_snapshot(project, *, scope, deliverables, start_date, end_date, total,
         body='The Service Provider shall use reasonable efforts to deliver the Project by the target '
              'delivery date. The timeline is conditional on the Client meeting its obligations under '
              'the clause titled Client Responsibilities.')
+    if gst_mode == GST_MODE_INCLUSIVE:
+        gst_clause = (f'(the "Project Fee"), inclusive of Goods and Services Tax (GST) at '
+                      f'{GST_RATE.normalize():f}%, comprising {_money(base_amount)} towards the Services '
+                      f'and {_money(gst_amount)} towards GST. ')
+    else:
+        gst_clause = ('(the "Project Fee"), exclusive of Goods and Services Tax (GST), which shall be '
+                      'charged at the applicable rate. ')
     add('Project Fee & Payment Schedule', kind='payment',
         body=f'In consideration of the Services, the Client shall pay the Service Provider a total '
-             f'project fee of {_money(total)} ({rupees_in_words(total)}) (the "Project Fee"), exclusive '
-             f'of Goods and Services Tax (GST), which shall be charged at the applicable rate. The '
-             f'Project Fee shall be invoiced in instalments as each milestone below is reached, and '
+             f'project fee of {_money(total)} ({rupees_in_words(total)}) ' + gst_clause +
+             f'The Project Fee shall be invoiced in instalments as each milestone below is reached, and '
              f'each invoice is payable within seven (7) days of its date.'
              + (f' Any amount not paid by its due date, including amounts due for recurring services, '
                 f'shall carry interest at {late_interest.normalize():f}% per month on the overdue amount, '
@@ -638,7 +657,7 @@ def build_snapshot(project, *, scope, deliverables, start_date, end_date, total,
     acceptance = (
         f'By accepting this Agreement electronically, {client_party} confirms that it has read and '
         f'understood this Agreement and agrees to be bound by its terms, including the Project Fee of '
-        f'{_money(total)} plus GST payable as per the payment schedule'
+        f'{_money(total)} ({fee_suffix}) payable as per the payment schedule'
         + (', the services marked Part of agreement and any optional services selected at acceptance'
            if services else '')
         + '. Under the Information Technology Act, 2000, this electronic acceptance has the same legal '
@@ -666,6 +685,13 @@ def build_snapshot(project, *, scope, deliverables, start_date, end_date, total,
         'total': str(total),
         'total_display': _money(total),
         'total_in_words': rupees_in_words(total),
+        'gst_mode': gst_mode,
+        'gst_rate': f'{GST_RATE.normalize():f}',
+        'fee_suffix': fee_suffix,
+        'base_amount': str(base_amount),
+        'base_amount_display': _money(base_amount),
+        'gst_amount': str(gst_amount),
+        'gst_amount_display': _money(gst_amount),
         'milestones': milestones,
         'warranty_months': warranty_months,
         'services': list(services),

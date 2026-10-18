@@ -69,8 +69,15 @@
         <div class="card-header"><h3 class="card-title"><i class="fas fa-indian-rupee-sign"></i> Fee &amp; payment schedule</h3></div>
         <div class="card-body">
           <div class="form-group">
-            <label class="form-label" for="total">Total project fee (&#8377;, before GST)</label>
-            <input type="number" step="0.01" min="0" class="form-control" id="total" name="total" value="{{ form.total }}">
+            <label class="form-label" for="total">Total project fee (&#8377;)</label>
+            <div class="d-flex gap-2" style="flex-wrap: wrap; align-items: center;">
+              <input type="number" step="0.01" min="0" class="form-control" id="total" name="total" value="{{ form.total }}" style="max-width: 220px;">
+              <select class="form-control" id="gst_mode" name="gst_mode" style="max-width: 300px;">
+                <option value="exclusive" {% if form.gst_mode != 'inclusive' %}selected{% endif %}>Before GST &middot; GST added on top</option>
+                <option value="inclusive" {% if form.gst_mode == 'inclusive' %}selected{% endif %}>Inclusive of 18% GST</option>
+              </select>
+            </div>
+            <div class="text-sm text-muted mt-1" id="gst-hint"></div>
             {% if errors.total %}<div class="text-danger text-sm">{{ errors.total }}</div>{% endif %}
           </div>
           <div class="form-group">
@@ -385,6 +392,22 @@ document.querySelectorAll('.js-toggle').forEach(function (box) {
   var mode = document.getElementById('cloud_mode'), box = document.getElementById('own-hosting-fields');
   function sync() { box.style.display = mode.value === 'required' ? 'none' : ''; }
   mode.addEventListener('change', sync); sync();
+})();
+(function () {
+  var total = document.getElementById('total'), mode = document.getElementById('gst_mode'),
+      hint = document.getElementById('gst-hint');
+  function fmt(n) { return '₹' + Math.round(n).toLocaleString('en-IN'); }
+  function render() {
+    var t = parseFloat(total.value) || 0;
+    if (!t) { hint.textContent = ''; return; }
+    if (mode.value === 'inclusive') {
+      var base = t * 100 / 118, gst = t - base;
+      hint.textContent = 'Fee breakdown: ' + fmt(base) + ' services + ' + fmt(gst) + ' GST (18%).';
+    } else {
+      hint.textContent = 'Client will be invoiced ' + fmt(t) + ' plus GST at the applicable rate.';
+    }
+  }
+  total.addEventListener('input', render); mode.addEventListener('change', render); render();
 })();
 (function () {
   var total = document.getElementById('total'), ms = document.getElementById('milestones'), out = document.getElementById('ms-preview');

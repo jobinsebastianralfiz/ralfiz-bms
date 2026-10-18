@@ -86,7 +86,7 @@
     <div class="card mb-4">
       <div class="card-header"><h3 class="card-title"><i class="fas fa-indian-rupee-sign"></i> Terms sent</h3></div>
       <div class="card-body">
-        <p class="mb-2"><strong>{{ doc.total_display }}</strong> + GST &middot; {{ doc.start_date }} &rarr; {{ doc.end_date }} &middot; warranty {{ doc.warranty_months }} month{{ doc.warranty_months|pluralize }}</p>
+        <p class="mb-2"><strong>{{ doc.total_display }}</strong> ({{ doc.fee_suffix|default:"plus GST" }}) &middot; {{ doc.start_date }} &rarr; {{ doc.end_date }} &middot; warranty {{ doc.warranty_months }} month{{ doc.warranty_months|pluralize }}</p>
         {% if doc.services %}
         <h4 class="text-sm text-muted mb-2">Additional services{% if agreement.status == 'accepted' %} &middot; client chose{% endif %}</h4>
         <table class="table mb-4">

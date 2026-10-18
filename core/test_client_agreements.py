@@ -61,6 +61,31 @@ class ClientAgreementFlowTests(TestCase):
         self.assertEqual(len(agreement.snapshot_json['milestones']), 3)
         self.assertIn('wa.me/919876543210', agreement.whatsapp_url())
 
+    def test_gst_exclusive_is_default(self):
+        self._create()
+        snap = ClientAgreement.objects.get().snapshot_json
+        self.assertEqual(snap['gst_mode'], 'exclusive')
+        self.assertEqual(snap['fee_suffix'], 'plus GST')
+        self.assertEqual(snap['base_amount_display'], '₹1,25,000')
+        self.assertEqual(snap['gst_amount_display'], '₹0')
+
+    def test_gst_inclusive_breaks_down_fee_and_rewords_clauses(self):
+        self._create(gst_mode='inclusive')
+        agreement = ClientAgreement.objects.get()
+        snap = agreement.snapshot_json
+        self.assertEqual(snap['gst_mode'], 'inclusive')
+        self.assertEqual(snap['fee_suffix'], 'inclusive of 18% GST')
+        # 1,25,000 / 1.18 = 1,05,932.20 base; 19,067.80 GST
+        self.assertEqual(snap['base_amount_display'], '₹1,05,932.20')
+        self.assertEqual(snap['gst_amount_display'], '₹19,067.80')
+        payment_section = next(s for s in snap['sections'] if s.get('kind') == 'payment')
+        self.assertIn('inclusive of Goods and Services Tax (GST) at 18%', payment_section['body'])
+        self.assertIn('inclusive of 18% GST', snap['acceptance'])
+        self.client.logout()
+        res = self.client.get(agreement.public_path())
+        self.assertContains(res, 'inclusive of 18% GST')
+        self.assertContains(res, '₹1,05,932.20')
+
     def test_milestones_must_total_100(self):
         res = self._create(milestones='Advance | 40\nUAT | 40')
         self.assertEqual(res.status_code, 200)
