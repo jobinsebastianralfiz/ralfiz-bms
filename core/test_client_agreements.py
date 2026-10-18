@@ -86,6 +86,23 @@ class ClientAgreementFlowTests(TestCase):
         self.assertContains(res, 'inclusive of 18% GST')
         self.assertContains(res, '₹1,05,932.20')
 
+    def test_gst_none_drops_gst_wording_everywhere(self):
+        self._create(gst_mode='none')
+        agreement = ClientAgreement.objects.get()
+        snap = agreement.snapshot_json
+        self.assertEqual(snap['gst_mode'], 'none')
+        self.assertEqual(snap['fee_suffix'], 'GST not applicable')
+        payment = next(s for s in snap['sections'] if s.get('kind') == 'payment')
+        self.assertIn('GST) is not applicable', payment['body'])
+        services = next((s for s in snap['sections'] if s.get('kind') == 'services'), None)
+        if services:
+            self.assertNotIn('plus GST', services['body'])
+        self.assertIn('GST not applicable', snap['acceptance'])
+        self.client.logout()
+        res = self.client.get(agreement.public_path())
+        self.assertContains(res, 'GST not applicable')
+        self.assertNotContains(res, 'plus GST')
+
     def test_milestones_must_total_100(self):
         res = self._create(milestones='Advance | 40\nUAT | 40')
         self.assertEqual(res.status_code, 200)

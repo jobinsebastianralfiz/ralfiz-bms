@@ -115,7 +115,9 @@ def client_agreement_new(request, pk):
         except ValueError:
             expiry_days = 14
 
-        gst_mode = 'inclusive' if form.get('gst_mode') == 'inclusive' else 'exclusive'
+        gst_mode = form.get('gst_mode')
+        if gst_mode not in ('inclusive', 'none'):
+            gst_mode = 'exclusive'
         if not errors:
             snapshot = build_snapshot(
                 project,

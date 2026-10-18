@@ -200,6 +200,8 @@ MODE_IN_FEE = 'in_fee'  # staff form only: covered by the project fee, stored as
 
 GST_MODE_EXCLUSIVE = 'exclusive'  # fee is before GST, GST is added on top
 GST_MODE_INCLUSIVE = 'inclusive'  # fee already includes GST
+GST_MODE_NONE = 'none'  # GST is not applicable to this engagement
+GST_MODES = (GST_MODE_EXCLUSIVE, GST_MODE_INCLUSIVE, GST_MODE_NONE)
 GST_RATE = Decimal('18')  # % used for the inclusive breakdown
 
 
@@ -575,11 +577,15 @@ def build_snapshot(project, *, scope, deliverables, start_date, end_date, total,
     client_party = client.company_name or client.name
     client_address = ' '.join((client.address or '').split())
     total = Decimal(total or 0)
-    gst_mode = gst_mode if gst_mode == GST_MODE_INCLUSIVE else GST_MODE_EXCLUSIVE
+    gst_mode = gst_mode if gst_mode in GST_MODES else GST_MODE_EXCLUSIVE
     if gst_mode == GST_MODE_INCLUSIVE:
         base_amount = (total * Decimal('100') / (Decimal('100') + GST_RATE)).quantize(Decimal('0.01'))
         gst_amount = (total - base_amount).quantize(Decimal('0.01'))
         fee_suffix = f'inclusive of {GST_RATE.normalize():f}% GST'
+    elif gst_mode == GST_MODE_NONE:
+        base_amount = total
+        gst_amount = Decimal('0')
+        fee_suffix = 'GST not applicable'
     else:
         base_amount = total
         gst_amount = Decimal('0')
@@ -607,6 +613,9 @@ def build_snapshot(project, *, scope, deliverables, start_date, end_date, total,
         gst_clause = (f'(the "Project Fee"), inclusive of Goods and Services Tax (GST) at '
                       f'{GST_RATE.normalize():f}%, comprising {_money(base_amount)} towards the Services '
                       f'and {_money(gst_amount)} towards GST. ')
+    elif gst_mode == GST_MODE_NONE:
+        gst_clause = ('(the "Project Fee"). Goods and Services Tax (GST) is not applicable to this '
+                      'engagement. ')
     else:
         gst_clause = ('(the "Project Fee"), exclusive of Goods and Services Tax (GST), which shall be '
                       'charged at the applicable rate. ')
@@ -621,8 +630,9 @@ def build_snapshot(project, *, scope, deliverables, start_date, end_date, total,
              + ' The Service Provider may suspend work on the Project while any invoice remains overdue, '
                'and the timeline shall be extended accordingly.')
     if services:
+        services_gst = '' if gst_mode == GST_MODE_NONE else ', plus GST'
         add('Additional Services & Charges', kind='services',
-            body='The following services are charged separately from the Project Fee, plus GST, unless '
+            body=f'The following services are charged separately from the Project Fee{services_gst}, unless '
                  'stated to be included in the Project Fee. One-time services are invoiced on delivery. '
                  'Recurring services are invoiced from go-live or, for the Annual Maintenance Contract '
                  '(AMC), from the end of the Warranty Period. Services marked Optional apply only if the '
