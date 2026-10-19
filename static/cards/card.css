@@ -168,6 +168,9 @@
 .ed-name { margin: 22px 0 0; text-transform: uppercase; line-height: 1.1; }
 .ed-name b { display: block; font-weight: 800; font-size: 25px; letter-spacing: .03em; }
 .ed-name span { display: block; font-weight: 300; font-size: 23px; letter-spacing: .14em; color: #222; }
+.ed-role { margin: 8px 0 0; font-size: 11px; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; }
+.ed-org { margin: 2px 0 0; font: 400 12px var(--body); color: var(--muted); }
+.ed-svc { display: block; }
 .ed-bar { display: block; width: 32px; height: 2px; background: #111; margin: 12px 0 20px; }
 .ed-rows { margin: 0; display: grid; gap: 14px; }
 .ed-rows > div { display: grid; grid-template-columns: 34% 1fr; }
