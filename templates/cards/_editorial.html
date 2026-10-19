@@ -28,13 +28,13 @@
   </details>
   {% endif %}
   <dl class="ed-rows">
-    {% if card.address %}<div><dt>Address</dt><dd>{% if card.map_url %}<a href="{{ card.map_url }}" target="_blank" rel="noopener">{{ card.address|linebreaksbr }}</a>{% else %}{{ card.address|linebreaksbr }}{% endif %}</dd></div>{% endif %}
-    <div><dt>Contact</dt><dd>
-      <a href="tel:{{ card.phone_link }}">Mobile: {{ card.phone }}</a>
-      {% if card.whatsapp %}<a href="https://wa.me/{{ card.whatsapp_number }}" target="_blank" rel="noopener">WhatsApp: {{ card.whatsapp }}</a>{% endif %}
-      {% if card.email %}<a href="mailto:{{ card.email }}">{{ card.email }}</a>{% endif %}
-      {% if card.website %}<a href="{{ card.website }}" target="_blank" rel="noopener">{{ card.website|cut:'https://'|cut:'http://'|cut:'www.'|cut:'/' }}</a>{% endif %}
+    <div><dt>Contact</dt><dd class="ed-contact">
+      <a href="tel:{{ card.phone_link }}"><i class="fas fa-phone"></i>{{ card.phone }}</a>
+      {% if card.whatsapp %}<a href="https://wa.me/{{ card.whatsapp_number }}" target="_blank" rel="noopener"><i class="fab fa-whatsapp"></i>{{ card.whatsapp }}</a>{% endif %}
+      {% if card.email %}<a href="mailto:{{ card.email }}"><i class="fas fa-envelope"></i>{{ card.email }}</a>{% endif %}
+      {% if card.website %}<a href="{{ card.website }}" target="_blank" rel="noopener"><i class="fas fa-globe"></i>{{ card.website|cut:'https://'|cut:'http://'|cut:'www.'|cut:'/' }}</a>{% endif %}
     </dd></div>
+    {% if card.address %}<div><dt>Address</dt><dd>{% if card.map_url %}<a href="{{ card.map_url }}" target="_blank" rel="noopener">{{ card.address_line }} <i class="fas fa-arrow-up-right-from-square ed-ext"></i></a>{% else %}{{ card.address_line }}{% endif %}</dd></div>{% endif %}
   </dl>
 
   <section class="ed-co" aria-label="{{ company_name }}">

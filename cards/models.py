@@ -98,6 +98,11 @@ class DigitalCard(models.Model):
         return ''
 
     @property
+    def address_line(self):
+        """The address as one flowing line, so it wraps to the column instead of the typed line breaks."""
+        return ', '.join(l.strip().rstrip(',') for l in self.address.splitlines() if l.strip())
+
+    @property
     def service_list(self):
         return [s.strip() for s in self.services.splitlines() if s.strip()]
 
