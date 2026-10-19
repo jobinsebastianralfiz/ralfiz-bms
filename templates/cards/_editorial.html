@@ -11,8 +11,6 @@
         </div>
         {% if card.handle %}<span class="ed-handle">{{ card.handle }}</span>{% endif %}
       </div>
-      <i class="ed-rule" aria-hidden="true"></i>
-      {% if company.logo %}<img class="ed-logo" src="{{ company.logo.url }}" alt="{{ company_name }}">{% else %}<img class="ed-logo" src="{% static 'website/img/rt-mark.png' %}" alt="{{ company_name }}">{% endif %}
     </aside>
   </header>
 
