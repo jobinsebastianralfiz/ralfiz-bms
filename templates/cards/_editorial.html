@@ -21,8 +21,13 @@
   <p class="ed-org">{{ company_name }}</p>
   <i class="ed-bar" aria-hidden="true"></i>
 
+  {% if card.bio %}
+  <details class="ed-about">
+    <summary>About<i class="fas fa-plus" aria-hidden="true"></i></summary>
+    <p>{{ card.bio|linebreaksbr }}</p>
+  </details>
+  {% endif %}
   <dl class="ed-rows">
-    {% if card.bio %}<div><dt>About</dt><dd>{{ card.bio|linebreaksbr }}</dd></div>{% endif %}
     {% if card.address %}<div><dt>Address</dt><dd>{% if card.map_url %}<a href="{{ card.map_url }}" target="_blank" rel="noopener">{{ card.address|linebreaksbr }}</a>{% else %}{{ card.address|linebreaksbr }}{% endif %}</dd></div>{% endif %}
     <div><dt>Contact</dt><dd>
       <a href="tel:{{ card.phone_link }}">Mobile: {{ card.phone }}</a>

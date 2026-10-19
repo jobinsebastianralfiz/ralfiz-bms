@@ -172,6 +172,12 @@
 .ed-org { margin: 2px 0 0; font: 400 12px var(--body); color: var(--muted); }
 .ed-svc { display: block; }
 .ed-bar { display: block; width: 32px; height: 2px; background: #111; margin: 12px 0 20px; }
+.ed-about { margin: 0 0 14px; }
+.ed-about summary { list-style: none; display: flex; align-items: center; gap: 8px; width: max-content; cursor: pointer; font-size: 11.5px; font-weight: 700; }
+.ed-about summary::-webkit-details-marker { display: none; }
+.ed-about summary i { display: grid; place-items: center; width: 16px; height: 16px; border-radius: 50%; background: #111; color: #fff; font-size: 8px; transition: transform .25s var(--ease); }
+.ed-about[open] summary i { transform: rotate(45deg); }
+.ed-about p { margin: 8px 0 0; font: 400 11.5px/1.65 var(--body); color: var(--soft); }
 .ed-rows { margin: 0; display: grid; gap: 14px; }
 .ed-rows > div { display: grid; grid-template-columns: 34% 1fr; }
 .ed-rows dt { font-size: 11.5px; font-weight: 700; padding-top: 1px; }
