@@ -5,7 +5,7 @@ from django.shortcuts import redirect
 # @login_required, so without this an intern could open it by URL.
 OPEN_PREFIXES = (
     '/staff/', '/crm/', '/api/', '/static/', '/media/', '/login/', '/logout/',
-    '/agreement/', '/client-agreement/', '/enrol/', '/academy/', '/portal/', '/v/', '/social/report-link/',
+    '/agreement/', '/client-agreement/', '/enrol/', '/academy/', '/portal/', '/v/', '/card/', '/social/report-link/',
     '/oauth/', '/.well-known/', '/mcp', '/favicon', '/robots.txt',
     '/privacy/', '/terms/', '/data-deletion/',
 )

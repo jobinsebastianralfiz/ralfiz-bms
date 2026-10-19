@@ -3,7 +3,7 @@ from django.shortcuts import redirect
 from .access import student_only
 
 # What a student-only login may reach outside /academy/.
-OPEN_PREFIXES = ('/academy/', '/static/', '/media/', '/logout/', '/favicon')
+OPEN_PREFIXES = ('/academy/', '/card/', '/static/', '/media/', '/logout/', '/favicon')
 
 
 class StudentConfinementMiddleware:

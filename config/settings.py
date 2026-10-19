@@ -54,6 +54,7 @@ INSTALLED_APPS = [
     'connector',
     'social',
     'website',
+    'cards',
 ]
 
 MIDDLEWARE = [

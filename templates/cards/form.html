@@ -1,0 +1,81 @@
+{% extends 'base.html' %}
+
+{% block title %}{% if card %}Edit{% else %}New{% endif %} Visiting Card - Ralfiz BMS{% endblock %}
+
+{% block extra_css %}
+<style>
+  .vcf-section { font-weight: 800; font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.08em; color: #6b7280; margin: 0 0 0.25rem; padding: 0 0.5rem; }
+  .vcf-field { padding: 0.5rem; }
+  .vcf-field small { display: block; color: #6b7280; font-size: 0.78rem; margin-top: 0.2rem; }
+  .vcf-field .errorlist { color: #dc3545; font-size: 0.82rem; margin: 0.25rem 0 0; padding-left: 1rem; }
+  .vcf-check { display: flex; align-items: flex-start; gap: 0.6rem; padding: 0.5rem; }
+  .vcf-check input { margin-top: 0.3rem; }
+  .vcf-check small { display: block; color: #6b7280; font-size: 0.78rem; }
+  .vcf-current { display: flex; align-items: center; gap: 0.5rem; margin-top: 0.35rem; font-size: 0.8rem; color: #6b7280; }
+  .vcf-current img { width: 36px; height: 36px; border-radius: 50%; object-fit: cover; }
+  .vcf-current input { margin: 0; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title">{% if card %}Edit card: {{ card.full_name }}{% else %}New digital visiting card{% endif %}</h1>
+    <p class="page-subtitle mb-0">Only name and phone are required. Anything left blank stays off the card.</p>
+  </div>
+  {% if card %}
+  <div class="page-actions">
+    <a href="{% url 'cards:public' card.slug %}?preview=1" target="_blank" rel="noopener" class="btn btn-outline-secondary"><i class="fas fa-eye"></i> View card</a>
+  </div>
+  {% endif %}
+</div>
+
+<form method="post" enctype="multipart/form-data">
+  {% csrf_token %}
+  {% if form.errors %}<div class="alert alert-danger">Please fix the fields marked below.</div>{% endif %}
+
+  {% for title, fields in form.sections %}
+  <div class="card mb-3"><div class="card-body">
+    <div class="vcf-section">{{ title }}</div>
+    <div class="row">
+      {% for field, col in fields %}
+      <div class="{{ col }} vcf-field">
+        <label class="form-label" for="{{ field.id_for_label }}">{{ field.label }}{% if field.field.required %} *{% endif %}</label>
+        {% if field.name == 'photo' %}
+          <input type="file" name="photo" id="{{ field.id_for_label }}" class="form-control" accept="image/*">
+          {% if card.photo %}
+          <div class="vcf-current"><img src="{{ card.photo.url }}" alt=""> Current photo
+            <label style="margin-left: auto; display: flex; gap: 0.3rem; align-items: center;"><input type="checkbox" name="photo-clear"> Remove</label></div>
+          {% endif %}
+        {% elif field.name == 'slug' %}
+          <div class="input-group"><span class="input-group-text" style="font-size: 0.82rem;">/card/</span>{{ field }}</div>
+        {% else %}
+          {{ field }}
+        {% endif %}
+        {% if field.help_text %}<small>{{ field.help_text }}</small>{% endif %}
+        {{ field.errors }}
+      </div>
+      {% endfor %}
+    </div>
+    {% if forloop.last %}
+    <div class="row">
+      {% for field in form %}{% if field.name == 'show_enquiry_form' or field.name == 'is_active' %}
+      <div class="col-md-6"><label class="vcf-check">{{ field }}<span><b>{{ field.label }}</b><small>{{ field.help_text }}</small></span></label></div>
+      {% endif %}{% endfor %}
+    </div>
+    {% endif %}
+  </div></div>
+  {% endfor %}
+
+  <div style="display: flex; gap: 0.5rem; justify-content: flex-end; flex-wrap: wrap;">
+    {% if card %}
+    <button type="submit" form="deleteCard" class="btn btn-outline-danger" style="margin-right: auto;"><i class="fas fa-trash"></i> Delete card</button>
+    {% endif %}
+    <a href="{% url 'cards:list' %}" class="btn btn-outline-secondary">Cancel</a>
+    <button type="submit" class="btn btn-primary"><i class="fas fa-check"></i> {% if card %}Save changes{% else %}Create card{% endif %}</button>
+  </div>
+</form>
+{% if card %}
+<form id="deleteCard" method="post" action="{% url 'cards:delete' card.pk %}" onsubmit="return confirm('Delete this card? Anyone with the link or QR will see “not found”.');">{% csrf_token %}</form>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,150 @@
+{% load static %}<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>{{ card.full_name }}{% if card.designation %} · {{ card.designation }}{% endif %} | {{ company_name }}</title>
+<meta name="description" content="{% firstof card.bio card.designation company_name %}">
+<meta property="og:title" content="{{ card.full_name }}{% if card.designation %} · {{ card.designation }}{% endif %}">
+<meta property="og:description" content="{% if card.bio %}{{ card.bio|truncatechars:150 }}{% else %}{{ company_name }}. Tap to save my contact.{% endif %}">
+<meta property="og:type" content="profile">
+<meta property="og:url" content="{{ card_url }}">
+{% if card.photo %}<meta property="og:image" content="{{ request.scheme }}://{{ request.get_host }}{{ card.photo.url }}">{% else %}<meta property="og:image" content="{{ request.scheme }}://{{ request.get_host }}{% static 'website/img/rt-mark.png' %}">{% endif %}
+<meta name="robots" content="noindex">
+<meta name="theme-color" content="{% if card.theme == 'daylight' %}#F6F6FA{% else %}#14131C{% endif %}">
+<link rel="icon" type="image/svg+xml" href="{% static 'favicon.svg' %}">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700;12..96,800&family=Figtree:wght@400;500;600;700;800&display=swap">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<link rel="stylesheet" href="{% static 'cards/card.css' %}?v=2">
+</head>
+<body class="vc theme-{{ card.theme }}">
+<div class="vc-bg" aria-hidden="true"><i class="b b1"></i><i class="b b2"></i><i class="b b3"></i></div>
+
+<main class="vc-wrap">
+  <article class="vc-card">
+    <header class="vc-cover">
+      <div class="vc-brand">
+        {% if company.logo %}<img src="{{ company.logo.url }}" alt="">{% else %}<img src="{% static 'website/img/rt-mark.png' %}" alt="">{% endif %}
+        <span>{{ company_name }}</span>
+      </div>
+      <button class="vc-icon-btn" type="button" data-open="qrSheet" aria-label="Show QR code"><i class="fas fa-qrcode"></i></button>
+    </header>
+
+    <section class="vc-id">
+      <div class="vc-avatar">
+        {% if card.photo %}<img src="{{ card.photo.url }}" alt="{{ card.full_name }}">{% else %}<span>{{ card.initials }}</span>{% endif %}
+      </div>
+      <h1>{{ card.full_name }}</h1>
+      {% if card.designation %}<p class="vc-role">{{ card.designation }}</p>{% endif %}
+      <p class="vc-org"><i class="fas fa-building"></i> {{ company_name }}</p>
+      {% if card.bio %}<p class="vc-bio">{{ card.bio|linebreaksbr }}</p>{% endif %}
+    </section>
+
+    <nav class="vc-quick" aria-label="Contact">
+      <a href="tel:{{ card.phone_link }}"><i class="fas fa-phone"></i><span>Call</span></a>
+      <a href="https://wa.me/{{ card.whatsapp_number }}?text={{ 'Hi '|add:card.full_name|add:', I got your digital card.'|urlencode }}" target="_blank" rel="noopener" class="wa"><i class="fab fa-whatsapp"></i><span>WhatsApp</span></a>
+      {% if card.email %}<a href="mailto:{{ card.email }}"><i class="fas fa-envelope"></i><span>Email</span></a>{% endif %}
+      {% if card.website %}<a href="{{ card.website }}" target="_blank" rel="noopener"><i class="fas fa-globe"></i><span>Website</span></a>
+      {% elif card.map_url %}<a href="{{ card.map_url }}" target="_blank" rel="noopener"><i class="fas fa-location-dot"></i><span>Directions</span></a>{% endif %}
+    </nav>
+
+    <div class="vc-main-actions">
+      <a class="vc-btn grad" href="{% url 'cards:vcf' card.slug %}"><i class="fas fa-user-plus"></i> Save contact</a>
+      <button class="vc-btn ghost" type="button" id="shareBtn"><i class="fas fa-share-nodes"></i> Share</button>
+    </div>
+
+    <section class="vc-section">
+      <h2>Contact</h2>
+      <ul class="vc-list">
+        <li><a href="tel:{{ card.phone_link }}"><i class="fas fa-phone"></i><span><small>Mobile</small>{{ card.phone }}</span><i class="fas fa-chevron-right go"></i></a></li>
+        {% if card.email %}<li><a href="mailto:{{ card.email }}"><i class="fas fa-envelope"></i><span><small>Email</small>{{ card.email }}</span><i class="fas fa-chevron-right go"></i></a></li>{% endif %}
+        {% if card.website %}<li><a href="{{ card.website }}" target="_blank" rel="noopener"><i class="fas fa-globe"></i><span><small>Website</small>{{ card.website|cut:'https://'|cut:'http://'|cut:'www.' }}</span><i class="fas fa-arrow-up-right-from-square go"></i></a></li>{% endif %}
+        {% if card.address %}<li>{% if card.map_url %}<a href="{{ card.map_url }}" target="_blank" rel="noopener">{% else %}<div>{% endif %}<i class="fas fa-location-dot"></i><span><small>Office</small>{{ card.address|linebreaksbr }}</span>{% if card.map_url %}<i class="fas fa-diamond-turn-right go"></i></a>{% else %}</div>{% endif %}</li>{% endif %}
+      </ul>
+    </section>
+
+    {% if card.socials %}
+    <section class="vc-section">
+      <h2>Follow</h2>
+      <div class="vc-socials">
+        {% for label, icon, url in card.socials %}<a href="{{ url }}" target="_blank" rel="noopener" aria-label="{{ label }}" title="{{ label }}"><i class="{{ icon }}"></i></a>{% endfor %}
+      </div>
+    </section>
+    {% endif %}
+
+    {% if card.service_list %}
+    <section class="vc-section">
+      <h2>What we do</h2>
+      <div class="vc-chips">{% for s in card.service_list %}<span>{{ s }}</span>{% endfor %}</div>
+    </section>
+    {% endif %}
+
+    {% if card.show_enquiry_form %}
+    <section class="vc-section vc-connect" id="connect">
+      {% if sent %}
+      <div class="vc-sent">
+        <i class="fas fa-circle-check"></i>
+        <h2>Thanks, got your details</h2>
+        <p>{{ card.full_name }} will get back to you soon.</p>
+      </div>
+      {% else %}
+      <h2>Share your details</h2>
+      <p class="vc-hint">Leave your number and {{ card.full_name }} will reach out.</p>
+      {% if messages %}{% for m in messages %}<p class="vc-err">{{ m }}</p>{% endfor %}{% endif %}
+      <form method="post" action="{% url 'cards:enquiry' card.slug %}" class="vc-form">
+        {% csrf_token %}
+        <input type="text" name="website_url" tabindex="-1" autocomplete="off" class="hp" aria-hidden="true">
+        <label><span>Your name *</span><input name="name" required maxlength="200" autocomplete="name"></label>
+        <label><span>Phone *</span><input name="phone" required maxlength="20" inputmode="tel" autocomplete="tel"></label>
+        <label><span>Email</span><input name="email" type="email" maxlength="254" autocomplete="email"></label>
+        <label><span>Business</span><input name="business" maxlength="200" autocomplete="organization"></label>
+        <label class="full"><span>How can we help?</span><textarea name="message" rows="3" maxlength="2000"></textarea></label>
+        <button class="vc-btn grad full" type="submit"><i class="fas fa-paper-plane"></i> Send</button>
+      </form>
+      {% endif %}
+    </section>
+    {% endif %}
+
+    <footer class="vc-foot">
+      <a href="/">{{ company_name }}</a> · Digital visiting card
+    </footer>
+  </article>
+</main>
+
+<div class="vc-sheet" id="qrSheet" hidden>
+  <div class="vc-sheet-panel" role="dialog" aria-modal="true" aria-label="QR code">
+    <button class="vc-icon-btn close" type="button" data-close aria-label="Close"><i class="fas fa-xmark"></i></button>
+    <h2>Scan to save {{ card.full_name }}</h2>
+    <img src="{% url 'cards:qr' card.slug %}" alt="QR code for this card" width="260" height="260">
+    <p>Point a phone camera at the code.</p>
+  </div>
+</div>
+
+<div class="vc-toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+(function () {
+  var url = '{{ card_url|escapejs }}';
+  var title = '{{ card.full_name|escapejs }}';
+  var toast = document.getElementById('toast');
+  function say(t) { toast.textContent = t; toast.classList.add('on'); setTimeout(function () { toast.classList.remove('on'); }, 2200); }
+  document.getElementById('shareBtn').addEventListener('click', function () {
+    if (navigator.share) {
+      navigator.share({ title: title, text: title + '{% if card.designation %} · {{ card.designation|escapejs }}{% endif %}', url: url }).catch(function () {});
+    } else if (navigator.clipboard) {
+      navigator.clipboard.writeText(url).then(function () { say('Link copied'); });
+    } else { prompt('Copy this link', url); }
+  });
+  document.querySelectorAll('[data-open]').forEach(function (b) {
+    b.addEventListener('click', function () { document.getElementById(b.dataset.open).hidden = false; });
+  });
+  document.querySelectorAll('.vc-sheet').forEach(function (s) {
+    s.addEventListener('click', function (e) { if (e.target === s || e.target.closest('[data-close]')) s.hidden = true; });
+  });
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape') document.querySelectorAll('.vc-sheet').forEach(function (s) { s.hidden = true; }); });
+})();
+</script>
+</body>
+</html>
