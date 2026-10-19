@@ -43,6 +43,14 @@ class PublicCardTests(TestCase):
         self.card.refresh_from_db()
         self.assertEqual(self.card.views, 1)
 
+    def test_executive_theme_shows_business_card_header(self):
+        self.card.theme = 'executive'
+        self.card.save()
+        r = self.client.get('/card/jobin/')
+        self.assertContains(r, 'class="vc-exec"')
+        self.assertContains(r, 'Cormorant+Garamond')
+        self.assertNotContains(r, 'class="vc-hero')
+
     def test_preview_does_not_count_and_can_be_framed(self):
         r = self.client.get('/card/jobin/?preview=1')
         self.assertEqual(r['X-Frame-Options'], 'SAMEORIGIN')

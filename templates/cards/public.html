@@ -11,18 +11,42 @@
 <meta property="og:url" content="{{ card_url }}">
 {% if card.photo %}<meta property="og:image" content="{{ request.scheme }}://{{ request.get_host }}{{ card.photo.url }}">{% else %}<meta property="og:image" content="{{ request.scheme }}://{{ request.get_host }}{% static 'website/img/rt-mark.png' %}">{% endif %}
 <meta name="robots" content="noindex">
-<meta name="theme-color" content="{% if card.theme == 'daylight' %}#F3F2EF{% else %}#0D0D11{% endif %}">
+<meta name="theme-color" content="{% if card.theme == 'aurora' %}#0D0D11{% else %}#F3F2EF{% endif %}">
 <link rel="icon" type="image/svg+xml" href="{% static 'favicon.svg' %}">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@500;600;700&family=Inter:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@500;600;700&family=Inter:wght@400;500;600{% if card.theme == 'executive' %}&family=Cormorant+Garamond:wght@500;600{% endif %}&display=swap">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-<link rel="stylesheet" href="{% static 'cards/card.css' %}?v=4">
+<link rel="stylesheet" href="{% static 'cards/card.css' %}?v=5">
 </head>
 <body class="vc theme-{{ card.theme }}">
 
 <main class="vc-wrap">
   <article class="vc-card">
+    {% if card.theme == 'executive' %}
+    <header class="vc-exec">
+      <div class="vc-exec-card">
+        <div class="vc-top">
+          <span class="vc-brand">
+            {% if company.logo %}<img src="{{ company.logo.url }}" alt="">{% else %}<img src="{% static 'website/img/rt-mark.png' %}" alt="">{% endif %}
+          </span>
+          <button class="vc-icon-btn" type="button" data-open="qrSheet" aria-label="Show QR code"><i class="fas fa-qrcode"></i></button>
+        </div>
+        <div class="vc-exec-id">
+          <span class="vc-exec-photo">{% if card.photo %}<img src="{{ card.photo.url }}" alt="{{ card.full_name }}">{% else %}{{ card.initials }}{% endif %}</span>
+          <div>
+            <h1>{{ card.full_name }}</h1>
+            {% if card.designation %}<p class="role">{{ card.designation }}</p>{% endif %}
+            <p class="org">{{ company_name }}</p>
+          </div>
+        </div>
+        <div class="vc-exec-foot">
+          <span>{{ card.phone }}</span>
+          {% if card.website %}<span>{{ card.website|cut:'https://'|cut:'http://'|cut:'www.'|cut:'/' }}</span>{% elif card.email %}<span>{{ card.email }}</span>{% endif %}
+        </div>
+      </div>
+    </header>
+    {% else %}
     <header class="vc-hero{% if card.photo %} has-photo{% endif %}">
       {% if card.photo %}<img class="vc-hero-img" src="{{ card.photo.url }}" alt="{{ card.full_name }}">{% endif %}
       <div class="vc-top">
@@ -37,6 +61,7 @@
         <p>{% if card.designation %}{{ card.designation }}<span class="dot">·</span>{% endif %}{{ company_name }}</p>
       </div>
     </header>
+    {% endif %}
 
     <div class="vc-body">
       {% if card.bio %}<p class="vc-bio">{{ card.bio|linebreaksbr }}</p>{% endif %}

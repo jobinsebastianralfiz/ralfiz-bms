@@ -122,6 +122,31 @@
 .vc-foot { padding: 14px 0 22px; text-align: center; font-size: 12px; color: var(--muted); letter-spacing: .02em; }
 .vc-foot a { font-weight: 500; }
 
+/* Executive: the header is a printed business card, ink with a bronze hairline */
+.vc.theme-executive { --page: #E7E4DD; --card: #F7F5F0; --chip: #EEEAE2; --accent: #8C7449; }
+.vc-exec { padding: 16px 16px 4px; }
+.vc-exec-card { position: relative; display: flex; flex-direction: column; justify-content: space-between; gap: 18px; min-height: 236px;
+  padding: 4px 6px 16px; border-radius: 18px; color: #F3EFE6; overflow: hidden;
+  background: radial-gradient(120% 90% at 100% 0%, #2A2A31 0%, #17171C 55%, #101014 100%);
+  box-shadow: 0 1px 1px rgba(0,0,0,.08), 0 22px 40px -22px rgba(16, 16, 22, .6); }
+.vc-exec-card::before { content: ""; position: absolute; inset: 7px; border-radius: 13px; pointer-events: none;
+  border: 1px solid rgba(200, 178, 138, .35); }
+.vc-exec .vc-top { padding: 12px 12px 0; }
+.vc-exec .vc-brand { height: 30px; padding: 4px 8px; border-radius: 8px; }
+.vc-exec .vc-brand img { height: 20px; }
+.vc-exec .vc-icon-btn { width: 34px; height: 34px; font-size: 13px; background: rgba(255,255,255,.08); color: #E8DCC2; }
+.vc-exec-id { position: relative; display: flex; align-items: center; gap: 16px; padding: 0 16px; }
+.vc-exec-photo { flex: none; width: 76px; height: 76px; border-radius: 50%; padding: 2px; display: grid; place-items: center;
+  background: linear-gradient(140deg, #D9C298, #8C7449); font: 600 24px var(--display); color: #17171C; }
+.vc-exec-photo img { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; border: 2px solid #17171C; }
+.vc-exec h1 { margin: 0; font: 600 29px/1.05 "Cormorant Garamond", Georgia, serif; letter-spacing: .005em; color: #FBF8F1; }
+.vc-exec .role { margin: 6px 0 0; font-size: 10.5px; font-weight: 600; text-transform: uppercase; letter-spacing: .2em; color: #D2BC90; }
+.vc-exec .org { margin: 3px 0 0; font-size: 13px; color: rgba(243, 239, 230, .62); }
+.vc-exec-foot { position: relative; display: flex; justify-content: space-between; gap: 10px; margin: 0 16px; padding-top: 12px;
+  border-top: 1px solid rgba(200, 178, 138, .22); font-size: 12px; letter-spacing: .06em; color: rgba(243, 239, 230, .7); }
+.theme-executive .vc-body { margin-top: 0; border-radius: 0; padding-top: 18px; }
+.theme-executive .vc-section h2 { font: 600 17px "Cormorant Garamond", Georgia, serif; text-transform: none; letter-spacing: .01em; color: var(--ink); }
+
 /* QR sheet */
 .vc-sheet { position: fixed; inset: 0; z-index: 10; display: grid; place-items: end center; background: rgba(10, 10, 14, .5);
   backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); animation: fade .2s ease; }

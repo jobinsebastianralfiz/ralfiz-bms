@@ -16,6 +16,7 @@ class DigitalCard(models.Model):
     THEME_CHOICES = [
         ('daylight', 'Daylight (light, soft)'),
         ('aurora', 'Midnight (dark, soft)'),
+        ('executive', 'Executive (printed business card look)'),
     ]
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
