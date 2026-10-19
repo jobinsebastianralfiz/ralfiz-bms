@@ -157,14 +157,14 @@
 .ed-photo { flex: 1; aspect-ratio: 1 / 1; border-radius: 18px; overflow: hidden; background: #EFEFEC; display: grid; place-items: center; }
 .ed-photo img { width: 100%; height: 100%; object-fit: cover; object-position: center 22%; }
 .ed-photo span { font: 800 52px "Montserrat", var(--body); letter-spacing: .04em; color: #111; }
-.ed-side { flex: none; width: 52px; display: flex; flex-direction: column; align-items: center; }
+.ed-side { flex: none; width: 50px; min-width: 0; display: flex; flex-direction: column; align-items: center; }
 .ed-id { display: flex; gap: 6px; align-items: flex-start; }
 .ed-socials { display: flex; flex-direction: column; gap: 7px; }
 .ed-socials a { width: 22px; height: 22px; border-radius: 50%; display: grid; place-items: center; background: #111; color: #fff; font-size: 10.5px; transition: opacity .2s; }
 .ed-socials a:hover { opacity: .75; }
 .ed-handle { writing-mode: vertical-rl; font-size: 9.5px; letter-spacing: .04em; color: #444; white-space: nowrap; line-height: 1; padding-top: 2px; }
-.ed-rule { display: block; width: 40px; height: 1.5px; background: #111; margin: auto 0 10px; }
-.ed-logo { width: 56px; height: auto; max-height: 44px; object-fit: contain; }
+.ed-rule { display: block; width: 100%; height: 1.5px; background: #111; margin: auto 0 10px; }
+.ed-logo { display: block; width: 100%; max-width: 50px; height: auto; max-height: 40px; object-fit: contain; object-position: center bottom; }
 .ed-name { margin: 22px 0 0; text-transform: uppercase; line-height: 1.1; }
 .ed-name b { display: block; font-weight: 800; font-size: 25px; letter-spacing: .03em; }
 .ed-name span { display: block; font-weight: 300; font-size: 23px; letter-spacing: .14em; color: #222; }
@@ -173,7 +173,7 @@
 .ed-rows > div { display: grid; grid-template-columns: 34% 1fr; }
 .ed-rows dt { font-size: 11.5px; font-weight: 700; padding-top: 1px; }
 .ed-rows dd { margin: 0; font-size: 11.5px; line-height: 1.65; color: var(--soft); font-family: var(--body); }
-.ed-rows dd a { display: block; overflow-wrap: anywhere; }
+.ed-rows dd a { display: block; overflow-wrap: anywhere; text-decoration: none; color: inherit; }
 .ed-rows dd a:hover { text-decoration: underline; }
 .ed-actions { display: grid; gap: 9px; margin-top: 24px; }
 .ed-btn { display: flex; align-items: center; justify-content: center; height: 36px; border: 1.5px solid #111; border-radius: 0; background: #fff;
