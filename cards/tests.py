@@ -51,6 +51,17 @@ class PublicCardTests(TestCase):
         self.assertContains(r, 'Cormorant+Garamond')
         self.assertNotContains(r, 'class="vc-hero')
 
+    def test_editorial_theme(self):
+        self.card.theme = 'editorial'
+        self.card.instagram = 'https://www.instagram.com/ralfiztech/'
+        self.card.save()
+        r = self.client.get('/card/jobin/')
+        self.assertContains(r, '<b>Jobin</b><span>Sebastian</span>', html=False)
+        self.assertContains(r, '@ralfiztech')
+        self.assertContains(r, 'id="shareBtn"')
+        self.assertContains(r, '/card/jobin/contact.vcf')
+        self.assertNotContains(r, 'class="vc-hero')
+
     def test_preview_does_not_count_and_can_be_framed(self):
         r = self.client.get('/card/jobin/?preview=1')
         self.assertEqual(r['X-Frame-Options'], 'SAMEORIGIN')

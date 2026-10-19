@@ -1,0 +1,66 @@
+{% load static %}
+<div class="ed">
+  <header class="ed-top">
+    <div class="ed-photo">
+      {% if card.photo %}<img src="{{ card.photo.url }}" alt="{{ card.full_name }}">{% else %}<span>{{ card.initials }}</span>{% endif %}
+    </div>
+    <aside class="ed-side">
+      <div class="ed-socials">
+        {% for label, icon, url in card.socials|slice:':4' %}<a href="{{ url }}" target="_blank" rel="noopener" aria-label="{{ label }}" title="{{ label }}"><i class="{{ icon }}"></i></a>{% endfor %}
+        <button type="button" data-open="qrSheet" aria-label="Show QR code" title="QR code"><i class="fas fa-qrcode"></i></button>
+      </div>
+      {% if card.handle %}<span class="ed-handle">{{ card.handle }}</span>{% endif %}
+      <i class="ed-rule" aria-hidden="true"></i>
+      {% if company.logo %}<img class="ed-logo" src="{{ company.logo.url }}" alt="{{ company_name }}">{% else %}<img class="ed-logo" src="{% static 'website/img/rt-mark.png' %}" alt="{{ company_name }}">{% endif %}
+    </aside>
+  </header>
+
+  <h1 class="ed-name">{% with parts=card.name_parts %}<b>{{ parts.0 }}</b>{% if parts.1 %}<span>{{ parts.1 }}</span>{% endif %}{% endwith %}</h1>
+  {% if card.designation %}<p class="ed-role">{{ card.designation }}, {{ company_name }}</p>{% endif %}
+  <i class="ed-bar" aria-hidden="true"></i>
+
+  <dl class="ed-rows">
+    {% if card.bio %}<div><dt>About</dt><dd>{{ card.bio|linebreaksbr }}</dd></div>{% endif %}
+    {% if card.address %}<div><dt>Address</dt><dd>{% if card.map_url %}<a href="{{ card.map_url }}" target="_blank" rel="noopener">{{ card.address|linebreaksbr }}</a>{% else %}{{ card.address|linebreaksbr }}{% endif %}</dd></div>{% endif %}
+    <div><dt>Contact</dt><dd>
+      <a href="tel:{{ card.phone_link }}">Mobile: {{ card.phone }}</a>
+      {% if card.whatsapp %}<a href="https://wa.me/{{ card.whatsapp_number }}" target="_blank" rel="noopener">WhatsApp: {{ card.whatsapp }}</a>{% endif %}
+      {% if card.email %}<a href="mailto:{{ card.email }}">{{ card.email }}</a>{% endif %}
+      {% if card.website %}<a href="{{ card.website }}" target="_blank" rel="noopener">{{ card.website|cut:'https://'|cut:'http://'|cut:'www.' }}</a>{% endif %}
+    </dd></div>
+    {% if card.service_list %}<div><dt>Services</dt><dd class="ed-services">{% for s in card.service_list %}<span>{{ s }}</span>{% endfor %}</dd></div>{% endif %}
+  </dl>
+
+  <div class="ed-actions">
+    <a class="ed-btn" href="https://wa.me/{{ card.whatsapp_number }}?text={{ 'Hi '|add:card.full_name|add:', I got your digital card.'|urlencode }}" target="_blank" rel="noopener">Message me</a>
+    <a class="ed-btn solid" href="{% url 'cards:vcf' card.slug %}">Save my contact</a>
+  </div>
+  <div class="ed-links">
+    <a href="tel:{{ card.phone_link }}">Call</a>
+    {% if card.email %}<a href="mailto:{{ card.email }}">Email</a>{% endif %}
+    <button type="button" id="shareBtn">Share</button>
+  </div>
+
+  {% if card.show_enquiry_form %}
+  <section class="ed-connect" id="connect">
+    {% if sent %}
+    <p class="ed-sent"><i class="fas fa-check"></i> Thanks, got your details. {{ card.full_name }} will get back to you soon.</p>
+    {% else %}
+    <details{% if messages %} open{% endif %}>
+      <summary>Leave your details<i class="fas fa-plus caret"></i></summary>
+      {% if messages %}{% for m in messages %}<p class="vc-err">{{ m }}</p>{% endfor %}{% endif %}
+      <form method="post" action="{% url 'cards:enquiry' card.slug %}" class="ed-form">
+        {% csrf_token %}
+        <input type="text" name="website_url" tabindex="-1" autocomplete="off" class="hp" aria-hidden="true">
+        <input name="name" required maxlength="200" autocomplete="name" placeholder="Your name *" aria-label="Your name">
+        <input name="phone" required maxlength="20" inputmode="tel" autocomplete="tel" placeholder="Phone *" aria-label="Phone">
+        <input name="email" type="email" maxlength="254" autocomplete="email" placeholder="Email" aria-label="Email">
+        <input name="business" maxlength="200" autocomplete="organization" placeholder="Business" aria-label="Business">
+        <textarea name="message" rows="2" maxlength="2000" placeholder="How can we help?" aria-label="How can we help?"></textarea>
+        <button class="ed-btn solid" type="submit">Send</button>
+      </form>
+    </details>
+    {% endif %}
+  </section>
+  {% endif %}
+</div>

@@ -17,6 +17,7 @@ class DigitalCard(models.Model):
         ('daylight', 'Daylight (light, soft)'),
         ('aurora', 'Midnight (dark, soft)'),
         ('executive', 'Executive (printed business card look)'),
+        ('editorial', 'Editorial (white and black, magazine look)'),
     ]
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
@@ -78,6 +79,23 @@ class DigitalCard(models.Model):
     @property
     def initials(self):
         return ''.join(w[0] for w in self.full_name.split()[:2]).upper()
+
+    @property
+    def name_parts(self):
+        """(first, last) for the two-line name; last is '' for a single word."""
+        words = self.full_name.split()
+        return (' '.join(words[:-1]), words[-1]) if len(words) > 1 else (self.full_name, '')
+
+    @property
+    def handle(self):
+        """Short handle for the side of the editorial card: @instagram, else the website domain."""
+        if self.instagram:
+            name = self.instagram.rstrip('/').split('/')[-1].split('?')[0]
+            if name:
+                return '@' + name.lstrip('@')
+        if self.website:
+            return self.website.split('//')[-1].split('/')[0].removeprefix('www.')
+        return ''
 
     @property
     def service_list(self):

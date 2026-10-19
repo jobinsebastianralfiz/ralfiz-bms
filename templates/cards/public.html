@@ -15,14 +15,15 @@
 <link rel="icon" type="image/svg+xml" href="{% static 'favicon.svg' %}">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@500;600;700&family=Inter:wght@400;500;600{% if card.theme == 'executive' %}&family=Cormorant+Garamond:wght@500;600{% endif %}&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@500;600;700&family=Inter:wght@400;500;600{% if card.theme == 'executive' %}&family=Cormorant+Garamond:wght@500;600{% elif card.theme == 'editorial' %}&family=Montserrat:wght@300;400;800{% endif %}&display=swap">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-<link rel="stylesheet" href="{% static 'cards/card.css' %}?v=5">
+<link rel="stylesheet" href="{% static 'cards/card.css' %}?v=6">
 </head>
 <body class="vc theme-{{ card.theme }}">
 
 <main class="vc-wrap">
   <article class="vc-card">
+    {% if card.theme == 'editorial' %}{% include 'cards/_editorial.html' %}{% else %}
     {% if card.theme == 'executive' %}
     <header class="vc-exec">
       <div class="vc-exec-card">
@@ -127,6 +128,7 @@
     </div>
 
     <footer class="vc-foot"><a href="/">{{ company_name }}</a></footer>
+    {% endif %}
   </article>
 </main>
 
