@@ -31,14 +31,21 @@ def _fold(line):
 
 
 def _photo_b64(card):
-    """The card photo as a small JPEG, base64. '' if there is none or it can't be read."""
-    if not card.photo:
+    """The card photo (a company card's logo first) as a small JPEG, base64. '' if there is none or it can't be read."""
+    image = card.logo if card.is_company and card.logo else card.photo
+    if not image:
         return ''
     try:
         from PIL import Image, ImageOps
-        with card.photo.open('rb') as fh:
+        with image.open('rb') as fh:
             img = ImageOps.exif_transpose(Image.open(fh))
-            img = ImageOps.fit(img.convert('RGB'), (320, 320))
+            if img.mode in ('RGBA', 'LA', 'P'):     # transparent logos go on white, not black
+                img = img.convert('RGBA')
+                bg = Image.new('RGB', img.size, 'white')
+                bg.paste(img, mask=img.split()[-1])
+                img = bg
+            size = (320, 320)
+            img = ImageOps.pad(img.convert('RGB'), size, color='white') if image == card.logo else ImageOps.fit(img.convert('RGB'), size)
         out = io.BytesIO()
         img.save(out, 'JPEG', quality=82)
         return base64.b64encode(out.getvalue()).decode()
@@ -48,17 +55,18 @@ def _photo_b64(card):
 
 
 def build_vcard(card, company_name, card_url):
-    names = card.full_name.split()
-    last, first = (names[-1], ' '.join(names[:-1])) if len(names) > 1 else ('', card.full_name)
-    lines = [
-        'BEGIN:VCARD', 'VERSION:3.0',
-        f'N:{_escape(last)};{_escape(first)};;;',
-        f'FN:{_escape(card.full_name)}',
-    ]
-    if company_name:
-        lines.append(f'ORG:{_escape(company_name)}')
-    if card.designation:
-        lines.append(f'TITLE:{_escape(card.designation)}')
+    lines = ['BEGIN:VCARD', 'VERSION:3.0']
+    if card.is_company:
+        # iOS and macOS list it under the company name, not as a person
+        lines += ['N:;;;;', f'FN:{_escape(card.full_name)}', f'ORG:{_escape(card.full_name)}', 'X-ABShowAs:COMPANY']
+    else:
+        names = card.full_name.split()
+        last, first = (names[-1], ' '.join(names[:-1])) if len(names) > 1 else ('', card.full_name)
+        lines += [f'N:{_escape(last)};{_escape(first)};;;', f'FN:{_escape(card.full_name)}']
+        if company_name:
+            lines.append(f'ORG:{_escape(company_name)}')
+        if card.designation:
+            lines.append(f'TITLE:{_escape(card.designation)}')
     lines.append(f'TEL;TYPE=CELL,VOICE:{card.phone_link}')
     if card.whatsapp and card.whatsapp_number != ''.join(c for c in card.phone if c.isdigit()):
         lines.append(f'TEL;TYPE=CELL:+{card.whatsapp_number}')

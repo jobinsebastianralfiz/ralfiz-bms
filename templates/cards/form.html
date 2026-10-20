@@ -41,11 +41,11 @@
       {% for field, col in fields %}
       <div class="{{ col }} vcf-field">
         <label class="form-label" for="{{ field.id_for_label }}">{{ field.label }}{% if field.field.required %} *{% endif %}</label>
-        {% if field.name == 'photo' %}
-          <input type="file" name="photo" id="{{ field.id_for_label }}" class="form-control" accept="image/*">
-          {% if card.photo %}
-          <div class="vcf-current"><img src="{{ card.photo.url }}" alt=""> Current photo
-            <label style="margin-left: auto; display: flex; gap: 0.3rem; align-items: center;"><input type="checkbox" name="photo-clear"> Remove</label></div>
+        {% if field.name == 'photo' or field.name == 'logo' %}
+          <input type="file" name="{{ field.name }}" id="{{ field.id_for_label }}" class="form-control" accept="image/*">
+          {% if field.value %}
+          <div class="vcf-current"><img src="{{ field.value.url }}" alt=""{% if field.name == 'logo' %} style="object-fit: contain; border-radius: 6px;"{% endif %}> Current {{ field.name }}
+            <label style="margin-left: auto; display: flex; gap: 0.3rem; align-items: center;"><input type="checkbox" name="{{ field.name }}-clear"> Remove</label></div>
           {% endif %}
         {% elif field.name == 'slug' %}
           <div class="input-group"><span class="input-group-text" style="font-size: 0.82rem;">/card/</span>{{ field }}</div>

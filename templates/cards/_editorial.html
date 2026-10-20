@@ -32,12 +32,13 @@
       {% if card.email %}<a href="mailto:{{ card.email }}"><i class="fas fa-envelope"></i>{{ card.email }}</a>{% endif %}
       {% if card.website %}<a href="{{ card.website }}" target="_blank" rel="noopener"><i class="fas fa-globe"></i>{{ card.website|cut:'https://'|cut:'http://'|cut:'www.'|cut:'/' }}</a>{% endif %}
     </dd></div>
+    {% if card.google_review_url %}<div><dt>Review</dt><dd><a href="{{ card.google_review_url }}" target="_blank" rel="noopener">Review us on Google ★★★★★ <i class="fas fa-arrow-up-right-from-square ed-ext"></i></a></dd></div>{% endif %}
     {% if card.address %}<div><dt>Address</dt><dd>{% if card.map_url %}<a href="{{ card.map_url }}" target="_blank" rel="noopener">{{ card.address_line }} <i class="fas fa-arrow-up-right-from-square ed-ext"></i></a>{% else %}{{ card.address_line }}{% endif %}</dd></div>{% endif %}
   </dl>
 
   <section class="ed-co" aria-label="{{ company_name }}">
     <div class="ed-co-head">
-      <span class="ed-co-logo">{% if company.logo %}<img src="{{ company.logo.url }}" alt="">{% else %}<img src="{% static 'website/img/rt-mark.png' %}" alt="">{% endif %}</span>
+      <span class="ed-co-logo"><img src="{% if logo_url %}{{ logo_url }}{% else %}{% static 'website/img/rt-mark.png' %}{% endif %}" alt=""></span>
       <div>
         <b>{{ company_name }}</b>
         <span>{% firstof company.tagline 'Websites · Apps · AI systems' %}</span>

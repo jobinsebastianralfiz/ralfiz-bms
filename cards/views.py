@@ -49,6 +49,7 @@ def public_card(request, slug):
     return render(request, 'cards/public.html', {
         'card': card,
         'company': company,
+        'logo_url': card.logo.url if card.logo else (company.logo.url if company.logo else ''),
         'company_name': card.company or company.company_name,
         'card_url': _public_url(request, card),
         'sent': request.GET.get('sent') == '1',
@@ -178,10 +179,15 @@ def card_share(request, pk):
     card = get_object_or_404(DigitalCard, pk=pk)
     url = _public_url(request, card)
     company_name = card.company or _company().company_name
-    message = (f'Hi, this is {card.full_name}'
-               + (f', {card.designation}' if card.designation else '')
-               + (f' at {company_name}' if company_name else '')
-               + f'. Here is my digital visiting card. Tap to save my contact: {url}')
+    if card.is_company:
+        message = (f'Hi, greetings from {card.full_name}'
+                   + (f', {card.designation}' if card.designation else '')
+                   + f'. Here is our digital visiting card. Tap to save our contact: {url}')
+    else:
+        message = (f'Hi, this is {card.full_name}'
+                   + (f', {card.designation}' if card.designation else '')
+                   + (f' at {company_name}' if company_name else '')
+                   + f'. Here is my digital visiting card. Tap to save my contact: {url}')
     return render(request, 'cards/share.html', {
         'card': card, 'card_url': url, 'share_message': message, 'company_name': company_name,
     })

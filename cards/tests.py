@@ -93,6 +93,41 @@ class PublicCardTests(TestCase):
         for line in body.split('\r\n'):
             self.assertLessEqual(len(line.encode()), 75)
 
+    def test_google_review_link_on_every_theme(self):
+        self.card.google_review_url = 'https://g.page/r/abc123/review'
+        for theme, _label in DigitalCard.THEME_CHOICES:
+            self.card.theme = theme
+            self.card.save()
+            self.assertContains(self.client.get('/card/jobin/?preview=1'), 'https://g.page/r/abc123/review', msg_prefix=theme)
+
+    def test_showcase_theme_shows_highlights_services_and_about(self):
+        self.card.theme = 'showcase'
+        self.card.highlights = '100+ | Projects delivered\nKerala and the GCC'
+        self.card.company_about = 'We build websites and apps.'
+        self.card.save()
+        r = self.client.get('/card/jobin/?preview=1')
+        self.assertContains(r, '<b>100+</b><small>Projects delivered</small>', html=False)
+        self.assertContains(r, '<small>Kerala and the GCC</small>')
+        self.assertContains(r, 'fas fa-globe"></i><b>Websites</b>')
+        self.assertContains(r, 'fas fa-mobile-screen"></i><b>Mobile apps</b>')
+        self.assertContains(r, 'We build websites and apps.')
+        self.assertContains(r, 'name="phone"')
+
+    def test_company_card_saves_as_a_company(self):
+        self.card.card_type = 'company'
+        self.card.full_name = 'Ralfiz Technologies'
+        self.card.designation = 'Rise to the Next Level'
+        self.card.logo = _png()
+        self.card.save()
+        body = self.client.get('/card/jobin/contact.vcf').content.decode()
+        self.assertIn('FN:Ralfiz Technologies', body)
+        self.assertIn('ORG:Ralfiz Technologies', body)
+        self.assertIn('X-ABShowAs:COMPANY', body)
+        self.assertNotIn('TITLE:', body)
+        self.assertIn('PHOTO;ENCODING=b;TYPE=JPEG:', body)
+        r = self.client.get('/card/jobin/?preview=1')
+        self.assertContains(r, self.card.logo.url)
+
     def test_qr_png(self):
         r = self.client.get('/card/jobin/qr.png')
         self.assertEqual(r['Content-Type'], 'image/png')

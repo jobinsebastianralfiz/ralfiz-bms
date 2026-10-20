@@ -1,0 +1,133 @@
+{% load static %}
+<div class="sc">
+  <nav class="sc-nav">
+    <a class="sc-brand" href="#top">
+      {% if card.is_company %}<span class="sc-brand-logo"><img src="{% if logo_url %}{{ logo_url }}{% else %}{% static 'website/img/rt-mark.png' %}{% endif %}" alt=""></span>{% endif %}
+      <span><b>{% if card.is_company %}{{ card.full_name }}{% else %}{{ company_name }}{% endif %}</b>{% if company.tagline %}<small>{{ company.tagline }}</small>{% endif %}</span>
+    </a>
+    <div class="sc-links">
+      <a href="#top" class="on">Home</a>
+      {% if card.company_about or card.bio %}<a href="#about">About</a>{% endif %}
+      {% if card.service_list %}<a href="#services">Services</a>{% endif %}
+      <a href="#connect">Contact</a>
+    </div>
+    <a class="sc-btn blue sc-nav-save" href="{% url 'cards:vcf' card.slug %}"><i class="fas fa-user-plus"></i> Save {% if card.is_company %}Our{% else %}My{% endif %} Contact</a>
+    <button class="sc-qr-btn" type="button" data-open="qrSheet" aria-label="Show QR code"><i class="fas fa-qrcode"></i></button>
+  </nav>
+
+  <header class="sc-hero" id="top">
+    <div class="sc-hero-text">
+      <span class="sc-avatar{% if card.is_company and not card.photo %} logo{% endif %}">
+        {% if card.photo %}<img src="{{ card.photo.url }}" alt="{{ card.full_name }}">
+        {% elif card.is_company %}<img src="{% if logo_url %}{{ logo_url }}{% else %}{% static 'website/img/rt-mark.png' %}{% endif %}" alt="{{ card.full_name }}">
+        {% else %}<span>{{ card.initials }}</span>{% endif %}
+        <i class="sc-online" aria-hidden="true"></i>
+      </span>
+      {% if card.designation and not card.is_company %}<span class="sc-chip">{{ card.designation }}</span>{% endif %}
+      <h1>{{ card.full_name }}</h1>
+      {% if card.is_company %}
+        {% if card.designation %}<p class="sc-org">{{ card.designation }}</p>{% endif %}
+      {% else %}
+        <p class="sc-role">{{ card.designation }}</p>
+        <p class="sc-org">{{ company_name }}</p>
+        {% if company.tagline %}<p class="sc-tag">{{ company.tagline }}</p>{% endif %}
+      {% endif %}
+      {% if card.bio %}<p class="sc-bio">{{ card.bio|linebreaksbr }}</p>{% endif %}
+
+      <div class="sc-actions">
+        <a class="wa" href="https://wa.me/{{ card.whatsapp_number }}?text={{ 'Hi '|add:card.full_name|add:', I got your digital card.'|urlencode }}" target="_blank" rel="noopener"><i class="fab fa-whatsapp"></i><span>WhatsApp</span></a>
+        <a class="call" href="tel:{{ card.phone_link }}"><i class="fas fa-phone"></i><span>Call</span></a>
+        {% if card.email %}<a class="mail" href="mailto:{{ card.email }}"><i class="fas fa-envelope"></i><span>Email</span></a>{% endif %}
+        <button class="share" type="button" id="shareBtn"><i class="fas fa-share-nodes"></i><span>Share</span></button>
+      </div>
+    </div>
+    <div class="sc-hero-img{% if not card.photo %} empty{% endif %}" aria-hidden="true">
+      {% if card.photo %}<img src="{{ card.photo.url }}" alt="">{% else %}<img class="mark" src="{% if logo_url %}{{ logo_url }}{% else %}{% static 'website/img/rt-mark.png' %}{% endif %}" alt="">{% endif %}
+    </div>
+  </header>
+
+  <div class="sc-grid">
+    <div class="sc-main">
+      <ul class="sc-contact">
+        {% if card.address %}<li>{% if card.map_url %}<a href="{{ card.map_url }}" target="_blank" rel="noopener">{% else %}<div>{% endif %}<i class="fas fa-location-dot"></i><span>{{ card.address_line }}</span>{% if card.map_url %}</a>{% else %}</div>{% endif %}</li>{% endif %}
+        <li><a href="tel:{{ card.phone_link }}"><i class="fas fa-phone"></i><span>{{ card.phone }}</span></a></li>
+        {% if card.email %}<li><a href="mailto:{{ card.email }}"><i class="fas fa-envelope"></i><span>{{ card.email }}</span></a></li>{% endif %}
+        {% if card.website %}<li><a href="{{ card.website }}" target="_blank" rel="noopener"><i class="fas fa-globe"></i><span>{{ card.website|cut:'https://'|cut:'http://'|cut:'www.'|cut:'/' }}</span></a></li>{% endif %}
+      </ul>
+
+      {% if card.socials %}
+      <div class="sc-socials">
+        {% for label, icon, url in card.socials %}<a href="{{ url }}" target="_blank" rel="noopener" aria-label="{{ label }}" title="{{ label }}" class="s-{{ label|lower }}"><i class="{{ icon }}"></i></a>{% endfor %}
+      </div>
+      {% endif %}
+
+      {% if card.highlight_list %}
+      <div class="sc-stats">
+        {% for figure, label in card.highlight_list %}
+        <div><i class="fas {% cycle 'fa-briefcase' 'fa-layer-group' 'fa-users' 'fa-chart-simple' %}"></i><span>{% if figure %}<b>{{ figure }}</b>{% endif %}<small>{{ label }}</small></span></div>
+        {% endfor %}
+      </div>
+      {% endif %}
+
+      {% if card.service_tiles %}
+      <section class="sc-section" id="services">
+        <h2>Our Services</h2>
+        <div class="sc-services">
+          {% for name, icon in card.service_tiles %}<div class="sc-svc"><i class="{{ icon }}"></i><b>{{ name }}</b></div>{% endfor %}
+        </div>
+      </section>
+      {% endif %}
+
+      {% if card.company_about %}
+      <section class="sc-about" id="about">
+        <i class="fas fa-building-columns"></i>
+        <div>
+          <h2>About {% if card.is_company %}{{ card.full_name }}{% else %}{{ company_name }}{% endif %}</h2>
+          <p>{{ card.company_about|linebreaksbr }}</p>
+        </div>
+      </section>
+      {% endif %}
+    </div>
+
+    <aside class="sc-side">
+      {% if card.google_review_url %}
+      <a class="sc-review" href="{{ card.google_review_url }}" target="_blank" rel="noopener">
+        <span class="g" aria-hidden="true"><i class="fab fa-google"></i></span>
+        <span><b>Review us on Google</b><span class="stars" aria-hidden="true">★★★★★</span><small>Happy with our work? It takes a minute.</small></span>
+        <i class="fas fa-arrow-up-right-from-square"></i>
+      </a>
+      {% endif %}
+
+      {% if card.show_enquiry_form %}
+      <section class="sc-panel" id="connect">
+        <h2>Get in Touch</h2>
+        {% if sent %}
+        <p class="sc-sent"><i class="fas fa-circle-check"></i> Thanks, got your details. We will get back to you soon.</p>
+        {% else %}
+        <p class="sub">Leave your details and we'll get back to you.</p>
+        {% if messages %}{% for m in messages %}<p class="vc-err">{{ m }}</p>{% endfor %}{% endif %}
+        <form method="post" action="{% url 'cards:enquiry' card.slug %}" class="sc-form">
+          {% csrf_token %}
+          <input type="text" name="website_url" tabindex="-1" autocomplete="off" class="hp" aria-hidden="true">
+          <label><i class="fas fa-user"></i><input name="name" required maxlength="200" autocomplete="name" placeholder="Your Name *" aria-label="Your name"></label>
+          <label><i class="fas fa-phone"></i><input name="phone" required maxlength="20" inputmode="tel" autocomplete="tel" placeholder="Phone Number *" aria-label="Phone"></label>
+          <label><i class="fas fa-envelope"></i><input name="email" type="email" maxlength="254" autocomplete="email" placeholder="Email Address" aria-label="Email"></label>
+          <label><i class="fas fa-briefcase"></i><input name="business" maxlength="200" autocomplete="organization" placeholder="Business" aria-label="Business"></label>
+          <textarea name="message" rows="3" maxlength="2000" placeholder="How can we help?" aria-label="How can we help?"></textarea>
+          <button class="sc-btn blue" type="submit"><i class="fas fa-paper-plane"></i> Send Message</button>
+        </form>
+        {% endif %}
+      </section>
+      {% endif %}
+
+      <section class="sc-panel sc-scan">
+        <div><b>Scan to Save Contact</b><small>Open on your phone and save {% if card.is_company %}our{% else %}my{% endif %} details directly.</small></div>
+        <img src="{% url 'cards:qr' card.slug %}" alt="QR code for this card" width="96" height="96" loading="lazy">
+      </section>
+    </aside>
+  </div>
+
+  <footer class="sc-foot">{% if company.gst_number %}GSTIN {{ company.gst_number }} · {% endif %}<a href="/">{{ company_name }}</a></footer>
+
+  <a class="sc-btn blue sc-sticky" href="{% url 'cards:vcf' card.slug %}"><i class="fas fa-user-plus"></i> Save {% if card.is_company %}Our{% else %}My{% endif %} Contact</a>
+</div>
