@@ -3,9 +3,9 @@
 Run as its own Railway service:  python manage.py social_worker
 Or from cron once a minute:      python manage.py social_worker --once
 
-Every minute it publishes what is due. Inboxes and new posts sync every 10 minutes,
-metrics and token checks every 6 hours. Webhooks (Meta) deliver comments
-and messages in between.
+Every 15 seconds it publishes what is due and sends comment-to-DM replies.
+Inboxes and new posts sync every 10 minutes, metrics and token checks every
+6 hours. Webhooks (Meta) deliver comments and messages in between.
 """
 import logging
 import time
@@ -14,12 +14,12 @@ from django.core.management.base import BaseCommand
 from django.db import close_old_connections
 from django.utils import timezone
 
-from social import services
+from social import automations, services
 from social.models import SocialAccount
 
 log = logging.getLogger('social.worker')
 
-PUBLISH_EVERY = 60
+TICK = 15  # seconds; comment DMs should feel instant
 INBOX_EVERY = 10 * 60
 METRICS_EVERY = 6 * 3600
 
@@ -36,6 +36,7 @@ class Command(BaseCommand):
             close_old_connections()
             now = time.monotonic()
             self.safely('publish', services.publish_due)
+            self.safely('comment DMs', automations.run_due)
             if once or now - last['inbox'] >= INBOX_EVERY:
                 last['inbox'] = now
                 self.each_account('inbox', services.sync_inbox)
@@ -47,7 +48,7 @@ class Command(BaseCommand):
                 self.each_account('post metrics', services.sync_post_metrics)
             if once:
                 return
-            time.sleep(max(1, PUBLISH_EVERY - (time.monotonic() - now)))
+            time.sleep(max(1, TICK - (time.monotonic() - now)))
 
     def safely(self, name, fn, *args):
         try:

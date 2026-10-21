@@ -1,0 +1,79 @@
+{% extends 'social/_hub.html' %}
+{% load social_tags %}
+{% block hub_title %}Auto DM{% endblock %}
+{% block page_heading %}Comment-to-DM automations{% endblock %}
+{% block hub %}
+{% if not accounts %}
+<div class="card sh-panel"><p class="sh-muted">Connect a Facebook Page or Instagram account first, under <a href="{% url 'social:accounts' %}">Accounts</a>.</p></div>
+{% else %}
+<details class="card sh-panel" {% if editing or not automations %}open{% endif %}>
+  <summary class="sh-sum"><i class="fas {% if editing %}fa-pen{% else %}fa-plus{% endif %}"></i> {% if editing %}Edit {{ editing.name }}{% else %}New automation{% endif %}</summary>
+  <form method="post" class="sh-wsform sh-autoform" action="{% url 'social:automations' %}">{% csrf_token %}
+    {% if editing %}<input type="hidden" name="id" value="{{ editing.pk }}">{% endif %}
+    <div><label class="form-label">Name</label><input name="name" class="form-control" value="{{ editing.name|default:'' }}" placeholder="e.g. Claude SEO skill reel"></div>
+    <div><label class="form-label">Account</label><select name="account" class="form-control" id="auto-account">{% for a in accounts %}<option value="{{ a.pk }}" {% if editing.account_id == a.pk %}selected{% endif %}>{{ a.name }} · {{ a.get_platform_display }}{% if not current %} ({{ a.workspace.name }}){% endif %}</option>{% endfor %}</select></div>
+    <div><label class="form-label">Post or reel</label><select name="post_id" class="form-control" id="auto-post">
+      <option value="">Every post</option>
+      {% for a in accounts %}<optgroup label="{{ a.name }}" data-account="{{ a.pk }}">{% for t in a.recent_posts %}<option value="{{ t.external_id }}" {% if editing.post_id == t.external_id %}selected{% endif %}>{{ t.published_at|date:'d M' }} · {{ t.effective_text|default:t.kind|truncatechars:50 }}</option>{% endfor %}</optgroup>{% endfor %}
+      {% if editing.post_id %}<option value="{{ editing.post_id }}" selected>Post {{ editing.post_id }}</option>{% endif %}
+    </select></div>
+    <div><label class="form-label">Keywords</label><input name="keywords" class="form-control" required value="{{ editing.keywords|join:', ' }}" placeholder="SKILL, SEO"></div>
+    <div><label class="form-label">Match</label><select name="match_type" class="form-control">{% for v, l in match_choices %}<option value="{{ v }}" {% if editing.match_type == v %}selected{% endif %}>{{ l }}</option>{% endfor %}</select></div>
+    <div><label class="form-label">Stops on</label><input type="date" name="ends_at" class="form-control" value="{{ editing.ends_at|date:'Y-m-d' }}"></div>
+    <div class="sh-wide"><label class="form-label">DM text <small class="sh-muted">· up to 640 characters</small></label><textarea name="dm_text" class="form-control" rows="3" maxlength="640" required placeholder="Here's the Claude SEO skill you asked for 👇">{{ editing.dm_text|default:'' }}</textarea></div>
+    <div><label class="form-label">Button label</label><input name="button_label" class="form-control" maxlength="20" value="{{ editing.button_label|default:'' }}" placeholder="Download Skill"></div>
+    <div class="sh-wide-2"><label class="form-label">Button link</label><input name="button_url" type="url" class="form-control" value="{{ editing.button_url|default:'' }}" placeholder="https://ralfizdigital.in/…"></div>
+    <div class="sh-wide"><label class="form-label">Public replies <small class="sh-muted">· one per line, picked at random so it doesn't look like spam; leave empty for none</small></label><textarea name="public_replies" class="form-control" rows="3" placeholder="Sent to your DMs 📩&#10;Check your inbox 🙌&#10;Done! Look in your DMs">{{ editing.public_replies|join:'&#10;' }}</textarea></div>
+    <small class="sh-muted sh-wide">Meta allows one DM per comment, within about 7 days of it. Comments made before the automation existed are left alone.</small>
+    <label class="sh-check"><input type="checkbox" name="is_active" {% if not editing or editing.is_active %}checked{% endif %}> On</label>
+    <div class="sh-foot"><span class="sh-sp"></span>{% if editing %}<a class="btn btn-sm btn-ghost" href="{% url 'social:automations' %}">Cancel</a>{% endif %}<button class="btn btn-primary">Save</button></div>
+  </form>
+</details>
+{% endif %}
+
+{% for a in automations %}
+<div class="card sh-panel sh-auto">
+  <div class="sh-autohead">
+    <i class="{{ platform_meta|get_item:a.account.platform|get_item:'icon' }}" style="color:{{ platform_meta|get_item:a.account.platform|get_item:'color' }}"></i>
+    <h3>{{ a.name }}</h3>
+    {% if a.is_live %}<span class="badge badge-success">On</span>{% elif a.is_active %}<span class="badge badge-warning">Ended</span>{% else %}<span class="badge">Off</span>{% endif %}
+    <span class="sh-sp"></span>
+    <a class="btn btn-sm btn-ghost" href="?edit={{ a.pk }}">Edit</a>
+    <form method="post">{% csrf_token %}<input type="hidden" name="id" value="{{ a.pk }}"><button name="action" value="toggle" class="btn btn-sm btn-outline-secondary">{% if a.is_active %}Switch off{% else %}Switch on{% endif %}</button></form>
+  </div>
+  <div class="sh-tagrow">{% for k in a.keywords %}<span class="badge badge-info">{{ k }}</span>{% endfor %}
+    <span class="sh-muted">{{ a.get_match_type_display|lower }} · {{ a.account.name }} · {% if a.post_id %}one post{% else %}every post{% endif %}{% if a.ends_at %} · until {{ a.ends_at|date:'d M' }}{% endif %}</span></div>
+  <div class="sh-autostats"><span><b>{{ a.stats.total|default:0 }}</b> matched</span><span><b>{{ a.stats.sent|default:0 }}</b> DMs sent</span><span><b>{{ a.stats.waiting|default:0 }}</b> waiting</span><span{% if a.stats.failed %} class="bad"{% endif %}><b>{{ a.stats.failed|default:0 }}</b> failed</span></div>
+</div>
+{% endfor %}
+
+{% if automations %}
+<h3 class="sh-h3">Recent comments</h3>
+<div class="sh-seg"><a href="?status=" class="{% if not run_status %}on{% endif %}">All</a>{% for v, l in run_statuses %}{% if v != 'sending' %}<a href="?status={{ v }}" class="{% if run_status == v %}on{% endif %}">{{ l }}</a>{% endif %}{% endfor %}</div>
+<div class="card sh-log sh-autolog">
+  {% for r in runs %}
+  <div class="sh-logrow">
+    <time>{{ r.created_at|date:'d M, g:i A' }}</time>
+    <span class="badge {% if r.status == 'sent' %}badge-success{% elif r.status == 'failed' %}badge-danger{% elif r.status == 'skipped' %}{% else %}badge-info{% endif %}">{{ r.get_status_display }}</span>
+    <div><b>{{ r.item.author_name|default:'Someone' }}</b> <span class="sh-muted">· {{ r.automation.name }}</span><div class="sh-logsum">“{{ r.item.text|truncatechars:140 }}”{% if r.error %}<br><span class="sh-errtext">{{ r.error }}</span>{% endif %}</div></div>
+  </div>
+  {% empty %}<p class="sh-muted">No matching comments yet.</p>{% endfor %}
+</div>
+{% endif %}
+
+<script>
+(function () {
+  var acc = document.getElementById('auto-account'), post = document.getElementById('auto-post');
+  if (!acc || !post) return;
+  function only() {
+    post.querySelectorAll('optgroup').forEach(function (g) {
+      var mine = g.dataset.account === acc.value;
+      g.hidden = !mine; g.disabled = !mine;
+    });
+    var sel = post.selectedOptions[0];
+    if (sel && sel.parentElement.disabled) post.value = '';
+  }
+  acc.addEventListener('change', only); only();
+})();
+</script>
+{% endblock %}

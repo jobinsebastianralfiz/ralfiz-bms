@@ -340,6 +340,67 @@ class PostMetric(models.Model):
         unique_together = [('target', 'metric')]
 
 
+class Automation(models.Model):
+    """Comment-to-DM: a keyword under a post or reel gets a public reply and a private DM.
+
+    Meta allows one private reply per comment, sent to the comment rather than a
+    person, and only for about a week after the comment.
+    """
+    MATCH_CHOICES = [('contains', 'Comment contains the keyword'), ('exact', 'Comment is just the keyword')]
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    workspace = models.ForeignKey(Workspace, on_delete=models.CASCADE, related_name='automations')
+    account = models.ForeignKey(SocialAccount, on_delete=models.CASCADE, related_name='automations')
+    name = models.CharField(max_length=120)
+    post_id = models.CharField(max_length=300, blank=True,
+                               help_text='Post or reel id the comment is on; empty means every post')
+    keywords = models.JSONField(default=list)
+    match_type = models.CharField(max_length=10, choices=MATCH_CHOICES, default='contains')
+    public_replies = models.JSONField(default=list, blank=True,
+                                      help_text='Replies under the comment, one picked at random')
+    dm_text = models.TextField()
+    button_label = models.CharField(max_length=20, blank=True)
+    button_url = models.URLField(max_length=1000, blank=True)
+    is_active = models.BooleanField(default=True)
+    ends_at = models.DateTimeField(null=True, blank=True)
+    created_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL,
+                                   null=True, blank=True, related_name='+')
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return self.name
+
+    @property
+    def is_live(self):
+        return self.is_active and (self.ends_at is None or self.ends_at > timezone.now())
+
+
+class AutomationRun(models.Model):
+    """One matched comment and what the worker did about it. The comment is unique,
+    so a webhook delivered twice cannot send two DMs."""
+    STATUS_CHOICES = [('queued', 'Queued'), ('sending', 'Sending'), ('sent', 'Sent'),
+                      ('skipped', 'Skipped'), ('failed', 'Failed')]
+    MAX_ATTEMPTS = 3
+    automation = models.ForeignKey(Automation, on_delete=models.CASCADE, related_name='runs')
+    item = models.OneToOneField(InboxItem, on_delete=models.CASCADE, related_name='automation_run')
+    commenter_id = models.CharField(max_length=200, blank=True)
+    status = models.CharField(max_length=8, choices=STATUS_CHOICES, default='queued')
+    attempts = models.PositiveSmallIntegerField(default=0)
+    next_attempt_at = models.DateTimeField(default=timezone.now)
+    locked_at = models.DateTimeField(null=True, blank=True)
+    dm_id = models.CharField(max_length=300, blank=True)
+    reply_id = models.CharField(max_length=300, blank=True)
+    error = models.TextField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    sent_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        ordering = ['-created_at']
+        indexes = [models.Index(fields=['status', 'next_attempt_at'])]
+
+
 class AuditLog(models.Model):
     LABELS = {
         'post.create': 'created a post', 'post.edit': 'edited a post', 'post.submit': 'sent a post for approval',
@@ -351,6 +412,7 @@ class AuditLog(models.Model):
         'account.connect': 'connected an account', 'account.reconnect': 'reconnected an account',
         'account.disconnect': 'disconnected an account', 'account.delete': 'removed an account',
         'workspace.save': 'updated the client', 'report.download': 'downloaded a report',
+        'automation.save': 'saved a comment automation', 'automation.toggle': 'switched a comment automation',
     }
     workspace = models.ForeignKey(Workspace, on_delete=models.CASCADE, null=True, blank=True,
                                   related_name='audit')

@@ -182,6 +182,10 @@ class Adapter:
         raise NotSupported(f'Replies are not supported on {self.label}.')
 
     # -- analytics
+    def private_reply(self, account, comment_id, text, button=None):
+        """Send one DM to the person behind a comment. ``button`` is (label, url)."""
+        raise NotSupported(f'Private replies are not supported on {self.label}.')
+
     def fetch_insights(self, account, start: date, end: date):
         """{date: {metric: value}} for each day in [start, end]."""
         return {}

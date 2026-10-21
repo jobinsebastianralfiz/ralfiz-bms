@@ -1032,6 +1032,56 @@ def activity(request):
     return render(request, 'social/activity.html', ctx)
 
 
+# ================================================================ comment-to-DM automations
+
+@hub_view
+def automations(request):
+    from . import automations as A
+    from .models import Automation, AutomationRun, PostTarget
+    ctx = _ctx(request, 'automations')
+    autos = Automation.objects.filter(workspace__in=ctx['in_view']).select_related('account', 'workspace')
+    if request.method == 'POST':
+        f = request.POST
+        if f.get('action') == 'toggle':
+            a = A.toggle(request.user, get_object_or_404(autos, pk=f.get('id')))
+            messages.success(request, f'{a.name} is {"on" if a.is_active else "off"}.')
+            return redirect('social:automations')
+        existing = get_object_or_404(autos, pk=f['id']) if f.get('id') else None
+        account = get_object_or_404(SocialAccount, pk=f.get('account'), workspace__in=ctx['in_view'])
+        ends = f.get('ends_at')
+        data = {k: f.get(k, '') for k in ('account', 'name', 'post_id', 'keywords', 'match_type',
+                                          'public_replies', 'dm_text', 'button_label', 'button_url')}
+        data.update(is_active=bool(f.get('is_active')),
+                    ends_at=timezone.make_aware(datetime.combine(date.fromisoformat(ends), time.max))
+                    if ends else None)
+        a = A.save_automation(request.user, account.workspace, data, automation=existing)
+        messages.success(request, f'Saved {a.name}.')
+        return redirect('social:automations')
+
+    accounts = list(_accounts_in_view(ctx).filter(platform__in=A.PLATFORMS))
+    posts = {}
+    for t in (PostTarget.objects.filter(account__in=accounts, status='published').exclude(external_id='')
+              .select_related('post').order_by('-published_at')[:200]):
+        posts.setdefault(t.account_id, [])
+        if len(posts[t.account_id]) < 30:
+            posts[t.account_id].append(t)
+    for acc in accounts:
+        acc.recent_posts = posts.get(acc.pk, [])
+    editing = autos.filter(pk=request.GET.get('edit')).first() if request.GET.get('edit') else None
+    stats = A.stats(autos)
+    autos = list(autos)
+    for a in autos:
+        a.stats = stats.get(a.pk, {})
+    runs = AutomationRun.objects.filter(automation__in=autos).select_related('automation', 'item')
+    status = request.GET.get('status', '')
+    if status in dict(AutomationRun.STATUS_CHOICES):
+        runs = runs.filter(status=status)
+    ctx.update({'automations': autos, 'accounts': accounts, 'editing': editing,
+                'runs': runs[:60], 'run_status': status, 'run_statuses': AutomationRun.STATUS_CHOICES,
+                'match_choices': Automation.MATCH_CHOICES})
+    return render(request, 'social/automations.html', ctx)
+
+
 # ================================================================ workspaces (clients)
 
 @hub_view

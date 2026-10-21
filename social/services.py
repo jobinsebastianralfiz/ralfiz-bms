@@ -602,6 +602,9 @@ def ingest(account, items):
                           permalink=it.permalink[:1000], raw=it.raw,
                           received_at=it.received_at or timezone.now()))
         new += created
+        if created and obj.kind == 'comment':
+            from .automations import queue_for
+            queue_for(obj)
     return new
 
 

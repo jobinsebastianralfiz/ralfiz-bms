@@ -158,6 +158,21 @@ class _MetaAdapter(Adapter):
                            'message': json.dumps({'text': text})})
         return data.get('message_id', '')
 
+    def private_reply(self, account, comment_id, text, button=None):
+        """Messenger private reply: addressed to the comment, allowed once per comment and only
+        for about seven days after it. Works for Instagram comments through the linked Page."""
+        if button:
+            label, url = button
+            message = {'attachment': {'type': 'template', 'payload': {
+                'template_type': 'button', 'text': text,
+                'buttons': [{'type': 'web_url', 'url': url, 'title': label}]}}}
+        else:
+            message = {'text': text}
+        data = graph('POST', f'{self._page_id(account)}/messages', account.token, platform=self.label,
+                     data={'recipient': json.dumps({'comment_id': comment_id}),
+                           'message': json.dumps(message)})
+        return data.get('message_id', '')
+
     def _conversations(self, account, since, platform=None):
         """Recent DMs from the Page's conversations; the business's own messages are skipped."""
         params = {'fields': 'id,updated_time,messages.limit(10){id,message,from,created_time}',

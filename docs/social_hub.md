@@ -54,3 +54,16 @@ Every adapter is tested against mocked HTTP only. Check these on the first real 
 - **LinkedIn:** the `organizationAcls` field name; the follower-statistics shape; whether a video posted right after upload is accepted.
 - **X:** the OAuth details, written from memory.
 - **Google Business Profile:** review and local-post field names, and the performance API value shape.
+- **Comment-to-DM (Auto DM):** that a private reply with a button template reaches an Instagram commenter through the linked Page (`POST /{page-id}/messages` with `recipient.comment_id`), and the exact error Meta returns for a second private reply to the same comment.
+
+## 6. Comment-to-DM automations
+
+`/social/automations/` (Auto DM in the side bar). A keyword comment on a Page post or Instagram reel queues an
+`AutomationRun`; the worker sends a private-reply DM (text plus an optional link button) and then one of the
+public replies. Rules live in `social/automations.py`.
+
+- Needs the worker running: DMs go out on its 15-second tick, not in the webhook request.
+- Uses the existing webhook subscriptions (Page `feed`, Instagram `comments`); nothing new to subscribe.
+- Only comments newer than the automation and under 7 days old are answered, so a first inbox sync never
+  DMs weeks of old commenters. One DM per person per automation and post; at most 150 DMs an hour per account.
+- Until Meta grants Advanced Access through App Review, private replies only reach people with a role on the app.

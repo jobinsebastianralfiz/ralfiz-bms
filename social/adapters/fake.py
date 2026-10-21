@@ -76,6 +76,12 @@ class FakeAdapter(Adapter):
             raise err
         return f'reply_{uuid.uuid4().hex[:10]}'
 
+    def private_reply(self, account, comment_id, text, button=None):
+        if self.fail_next:
+            err, self.fail_next = self.fail_next, None
+            raise err
+        return f'dm_{uuid.uuid4().hex[:10]}'
+
     def fetch_insights(self, account, start, end):
         rnd = random.Random(str(account.pk))
         out, day = {}, start

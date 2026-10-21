@@ -29,6 +29,7 @@ urlpatterns = [
     path('connect/<str:platform>/', views.connect_start, name='connect'),
     path('connect/<str:platform>/manual/', views.connect_manual, name='connect_manual'),
     path('oauth/callback/<str:platform>/', views.oauth_callback, name='oauth_callback'),
+    path('automations/', views.automations, name='automations'),
     path('activity/', views.activity, name='activity'),
     path('clients/', views.workspaces, name='workspaces'),
     path('review/<str:token>/', views.review, name='review'),

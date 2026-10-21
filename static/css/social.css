@@ -717,3 +717,17 @@
 .ws-ideas { margin: 6px 0 4px; padding-left: 22px; display: flex; flex-direction: column; gap: 10px; }
 .ws-ideas li { padding: 12px 14px; border-radius: 14px; background: linear-gradient(135deg, rgba(155,77,255,.16), rgba(255,46,136,.08)); border: 1px solid rgba(155,77,255,.35); }
 .ws-ideas b { display: block; margin-bottom: 3px; } .ws-ideas span { font-size: 13px; color: var(--soft); line-height: 1.55; }
+
+/* comment-to-DM automations */
+.sh-wsform .sh-wide-2 { grid-column: span 2; }
+.sh-autoform > .sh-foot { flex-direction: row; }
+.shx .sh-auto { display: flex; flex-direction: column; gap: 10px; margin-top: 14px; }
+.sh-autohead { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.sh-autohead h3 { margin: 0; font-size: 17px; }
+.sh-autostats { display: flex; flex-wrap: wrap; gap: 18px; font-size: 13px; color: var(--muted); }
+.sh-autostats b { font: 500 15px var(--mono); color: var(--soft); margin-right: 4px; }
+.sh-autostats .bad b { color: #FF9AA6; }
+.sh-h3 { margin: 26px 0 10px; font-size: 16px; }
+.sh-h3 + .sh-seg { margin-bottom: 12px; flex-wrap: wrap; max-width: 100%; }
+.sh-autolog .badge { justify-self: start; align-self: start; }
+@media (max-width: 760px) { .sh-wsform .sh-wide-2 { grid-column: auto; } }
