@@ -347,6 +347,8 @@ class Automation(models.Model):
     person, and only for about a week after the comment.
     """
     MATCH_CHOICES = [('contains', 'Comment contains the keyword'), ('exact', 'Comment is just the keyword')]
+    DELIVERY_CHOICES = [('direct', 'Link in the first DM'),
+                        ('opener', 'Button first, link after they tap')]
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     workspace = models.ForeignKey(Workspace, on_delete=models.CASCADE, related_name='automations')
     account = models.ForeignKey(SocialAccount, on_delete=models.CASCADE, related_name='automations')
@@ -360,6 +362,17 @@ class Automation(models.Model):
     dm_text = models.TextField()
     button_label = models.CharField(max_length=20, blank=True)
     button_url = models.URLField(max_length=1000, blank=True)
+    # A tap on the opener button opens the 24-hour messaging window: it lets us check
+    # the Instagram follow, send the link and one follow-up.
+    delivery = models.CharField(max_length=6, choices=DELIVERY_CHOICES, default='direct')
+    opener_label = models.CharField(max_length=20, blank=True)
+    link_text = models.TextField(blank=True, help_text='Sent with the link after the tap')
+    follow_gate = models.BooleanField(default=False, help_text='Instagram: only followers get the link')
+    gate_text = models.TextField(blank=True, help_text='Sent to people who do not follow yet')
+    followup_text = models.TextField(blank=True)
+    followup_hours = models.PositiveSmallIntegerField(default=6)
+    lead_keyword = models.CharField(max_length=30, blank=True,
+                                    help_text='A DM with this word starts the lead form')
     is_active = models.BooleanField(default=True)
     ends_at = models.DateTimeField(null=True, blank=True)
     created_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL,
@@ -375,6 +388,28 @@ class Automation(models.Model):
     @property
     def is_live(self):
         return self.is_active and (self.ends_at is None or self.ends_at > timezone.now())
+
+
+class Contact(models.Model):
+    """A person an automation sent a DM to. ``platform_user_id`` is the commenter's id;
+    ``messaging_id`` is the id their DMs and button taps come from (on Facebook the two differ)."""
+    workspace = models.ForeignKey(Workspace, on_delete=models.CASCADE, related_name='contacts')
+    platform = models.CharField(max_length=20, choices=PLATFORM_CHOICES)
+    platform_user_id = models.CharField(max_length=200)
+    messaging_id = models.CharField(max_length=200, blank=True, db_index=True)
+    name = models.CharField(max_length=200, blank=True)
+    username = models.CharField(max_length=200, blank=True)
+    is_follower = models.BooleanField(null=True)
+    tags = models.JSONField(default=list, blank=True)
+    first_seen_at = models.DateTimeField(auto_now_add=True)
+    last_seen_at = models.DateTimeField(default=timezone.now)
+
+    class Meta:
+        ordering = ['-last_seen_at']
+        unique_together = [('workspace', 'platform', 'platform_user_id')]
+
+    def __str__(self):
+        return self.name or self.username or self.platform_user_id
 
 
 class AutomationRun(models.Model):
@@ -395,10 +430,59 @@ class AutomationRun(models.Model):
     error = models.TextField(blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     sent_at = models.DateTimeField(null=True, blank=True)
+    contact = models.ForeignKey(Contact, on_delete=models.SET_NULL, null=True, blank=True,
+                                related_name='runs')
+    tapped_at = models.DateTimeField(null=True, blank=True)
+    last_postback = models.CharField(max_length=300, blank=True, help_text='Dedupes redelivered taps')
+    was_follower = models.BooleanField(null=True, help_text='Follow status at the first check')
+    link_sent_at = models.DateTimeField(null=True, blank=True)
+    followup_due_at = models.DateTimeField(null=True, blank=True)
+    followup_sent_at = models.DateTimeField(null=True, blank=True)
 
     class Meta:
         ordering = ['-created_at']
-        indexes = [models.Index(fields=['status', 'next_attempt_at'])]
+        indexes = [models.Index(fields=['status', 'next_attempt_at']),
+                   models.Index(fields=['followup_due_at'])]
+
+    @property
+    def follow_gained(self):
+        return self.was_follower is False and self.link_sent_at is not None
+
+
+class TrackedLink(models.Model):
+    """The short /go/<slug>/ link an automation's button points at, so clicks are counted."""
+    automation = models.OneToOneField(Automation, on_delete=models.CASCADE, related_name='link')
+    slug = models.SlugField(max_length=16, unique=True)
+    target_url = models.URLField(max_length=1000)
+
+
+class LinkClick(models.Model):
+    link = models.ForeignKey(TrackedLink, on_delete=models.CASCADE, related_name='clicks')
+    run = models.ForeignKey(AutomationRun, on_delete=models.SET_NULL, null=True, blank=True,
+                            related_name='clicks')
+    platform = models.CharField(max_length=20, blank=True)
+    user_agent = models.CharField(max_length=300, blank=True)
+    clicked_at = models.DateTimeField(auto_now_add=True)
+
+
+class LeadCapture(models.Model):
+    """The DM lead form: name, business, then WhatsApp number, one message each."""
+    STEP_CHOICES = [('name', 'Asked name'), ('business', 'Asked business'),
+                    ('phone', 'Asked number'), ('done', 'Done')]
+    contact = models.ForeignKey(Contact, on_delete=models.CASCADE, related_name='lead_captures')
+    automation = models.ForeignKey(Automation, on_delete=models.SET_NULL, null=True, blank=True,
+                                   related_name='lead_captures')
+    step = models.CharField(max_length=8, choices=STEP_CHOICES, default='name')
+    name = models.CharField(max_length=200, blank=True)
+    business = models.CharField(max_length=200, blank=True)
+    phone = models.CharField(max_length=20, blank=True)
+    crm_lead = models.ForeignKey('crm.Lead', on_delete=models.SET_NULL, null=True, blank=True,
+                                 related_name='+')
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['-updated_at']
 
 
 class AuditLog(models.Model):

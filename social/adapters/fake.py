@@ -76,11 +76,17 @@ class FakeAdapter(Adapter):
             raise err
         return f'reply_{uuid.uuid4().hex[:10]}'
 
-    def private_reply(self, account, comment_id, text, button=None):
+    def private_reply(self, account, comment_id, text, buttons=None):
         if self.fail_next:
             err, self.fail_next = self.fail_next, None
             raise err
         return f'dm_{uuid.uuid4().hex[:10]}'
+
+    def send_dm(self, account, user_id, text, buttons=None):
+        return self.private_reply(account, user_id, text, buttons)
+
+    def user_profile(self, account, user_id):
+        return {'name': 'Demo follower', 'username': 'demo', 'is_follower': True}
 
     def fetch_insights(self, account, start, end):
         rnd = random.Random(str(account.pk))

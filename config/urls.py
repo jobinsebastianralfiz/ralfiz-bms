@@ -14,6 +14,7 @@ from connector.files import pdf_download as connector_pdf_download
 from connector.mcp import MCPView
 from employees.views import CertificateVerifyView
 from social.mcp_tools import report_download as social_report_download
+from social.views import go_link as social_go_link
 from website.views import book_demo as website_book_demo, video as website_video
 
 urlpatterns = [
@@ -39,6 +40,7 @@ urlpatterns = [
     path('v/site/<str:name>', website_video, name='site_video'),
     path('social/report-link/<str:token>/', social_report_download, name='social_report_link'),
     path('social/', include('social.urls')),
+    path('go/<slug:slug>/', social_go_link, name='social_go_link'),
 
     # Short verification link. It is what the certificate QR encodes: the API
     # path is 96 characters, which pushes the code to 49 modules and leaves

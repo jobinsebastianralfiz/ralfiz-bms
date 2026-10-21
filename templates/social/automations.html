@@ -11,7 +11,7 @@
   <form method="post" class="sh-wsform sh-autoform" action="{% url 'social:automations' %}">{% csrf_token %}
     {% if editing %}<input type="hidden" name="id" value="{{ editing.pk }}">{% endif %}
     <div><label class="form-label">Name</label><input name="name" class="form-control" value="{{ editing.name|default:'' }}" placeholder="e.g. Claude SEO skill reel"></div>
-    <div><label class="form-label">Account</label><select name="account" class="form-control" id="auto-account">{% for a in accounts %}<option value="{{ a.pk }}" {% if editing.account_id == a.pk %}selected{% endif %}>{{ a.name }} · {{ a.get_platform_display }}{% if not current %} ({{ a.workspace.name }}){% endif %}</option>{% endfor %}</select></div>
+    <div><label class="form-label">Account</label><select name="account" class="form-control" id="auto-account">{% for a in accounts %}<option value="{{ a.pk }}" data-platform="{{ a.platform }}" {% if editing.account_id == a.pk %}selected{% endif %}>{{ a.name }} · {{ a.get_platform_display }}{% if not current %} ({{ a.workspace.name }}){% endif %}</option>{% endfor %}</select></div>
     <div><label class="form-label">Post or reel</label><select name="post_id" class="form-control" id="auto-post">
       <option value="">Every post</option>
       {% for a in accounts %}<optgroup label="{{ a.name }}" data-account="{{ a.pk }}">{% for t in a.recent_posts %}<option value="{{ t.external_id }}" {% if editing.post_id == t.external_id %}selected{% endif %}>{{ t.published_at|date:'d M' }} · {{ t.effective_text|default:t.kind|truncatechars:50 }}</option>{% endfor %}</optgroup>{% endfor %}
@@ -23,8 +23,16 @@
     <div class="sh-wide"><label class="form-label">DM text <small class="sh-muted">· up to 640 characters</small></label><textarea name="dm_text" class="form-control" rows="3" maxlength="640" required placeholder="Here's the Claude SEO skill you asked for 👇">{{ editing.dm_text|default:'' }}</textarea></div>
     <div><label class="form-label">Button label</label><input name="button_label" class="form-control" maxlength="20" value="{{ editing.button_label|default:'' }}" placeholder="Download Skill"></div>
     <div class="sh-wide-2"><label class="form-label">Button link</label><input name="button_url" type="url" class="form-control" value="{{ editing.button_url|default:'' }}" placeholder="https://ralfizdigital.in/…"></div>
+    <div><label class="form-label">Delivery</label><select name="delivery" class="form-control" id="auto-delivery">{% for v, l in delivery_choices %}<option value="{{ v }}" {% if editing.delivery == v %}selected{% endif %}>{{ l }}</option>{% endfor %}</select></div>
+    <div data-opener><label class="form-label">First button</label><input name="opener_label" class="form-control" maxlength="20" value="{{ editing.opener_label|default:'' }}" placeholder="{{ defaults.opener }}"></div>
+    <div><label class="form-label">Lead keyword <small class="sh-muted">· in a DM, starts the lead form</small></label><input name="lead_keyword" class="form-control" maxlength="30" value="{{ editing.lead_keyword|default:'' }}" placeholder="WEBSITE"></div>
+    <div class="sh-wide" data-opener><label class="form-label">Message with the link <small class="sh-muted">· sent after they tap</small></label><textarea name="link_text" class="form-control" rows="2" maxlength="640" placeholder="{{ defaults.link }}">{{ editing.link_text|default:'' }}</textarea></div>
+    <label class="sh-check sh-wide" data-opener data-ig><input type="checkbox" name="follow_gate" id="auto-gate" {% if editing.follow_gate %}checked{% endif %}> Only followers get the link (Instagram checks the follow when they tap)</label>
+    <div class="sh-wide" data-opener data-ig data-gate><label class="form-label">Message for people who don't follow yet</label><textarea name="gate_text" class="form-control" rows="2" maxlength="640" placeholder="{{ defaults.gate }}">{{ editing.gate_text|default:'' }}</textarea></div>
+    <div class="sh-wide-2" data-opener><label class="form-label">Follow-up <small class="sh-muted">· one message after the tap; leave empty for none</small></label><input name="followup_text" class="form-control" maxlength="640" value="{{ editing.followup_text|default:'' }}" placeholder="Did the audit work? Reply FIX for help"></div>
+    <div data-opener><label class="form-label">Hours after the tap</label><input type="number" name="followup_hours" class="form-control" min="1" max="23" value="{{ editing.followup_hours|default:6 }}"></div>
     <div class="sh-wide"><label class="form-label">Public replies <small class="sh-muted">· one per line, picked at random so it doesn't look like spam; leave empty for none</small></label><textarea name="public_replies" class="form-control" rows="3" placeholder="Sent to your DMs 📩&#10;Check your inbox 🙌&#10;Done! Look in your DMs">{{ editing.public_replies|join:'&#10;' }}</textarea></div>
-    <small class="sh-muted sh-wide">Meta allows one DM per comment, within about 7 days of it. Comments made before the automation existed are left alone.</small>
+    <small class="sh-muted sh-wide">Meta allows one DM per comment, within about 7 days of it, and more messages only for 24 hours after the person taps a button or writes back. Comments made before the automation existed are left alone. The button link is counted through a short ralfizdigital.in/go/ link with UTM tags.</small>
     <label class="sh-check"><input type="checkbox" name="is_active" {% if not editing or editing.is_active %}checked{% endif %}> On</label>
     <div class="sh-foot"><span class="sh-sp"></span>{% if editing %}<a class="btn btn-sm btn-ghost" href="{% url 'social:automations' %}">Cancel</a>{% endif %}<button class="btn btn-primary">Save</button></div>
   </form>
@@ -42,10 +50,24 @@
     <form method="post">{% csrf_token %}<input type="hidden" name="id" value="{{ a.pk }}"><button name="action" value="toggle" class="btn btn-sm btn-outline-secondary">{% if a.is_active %}Switch off{% else %}Switch on{% endif %}</button></form>
   </div>
   <div class="sh-tagrow">{% for k in a.keywords %}<span class="badge badge-info">{{ k }}</span>{% endfor %}
-    <span class="sh-muted">{{ a.get_match_type_display|lower }} · {{ a.account.name }} · {% if a.post_id %}one post{% else %}every post{% endif %}{% if a.ends_at %} · until {{ a.ends_at|date:'d M' }}{% endif %}</span></div>
-  <div class="sh-autostats"><span><b>{{ a.stats.total|default:0 }}</b> matched</span><span><b>{{ a.stats.sent|default:0 }}</b> DMs sent</span><span><b>{{ a.stats.waiting|default:0 }}</b> waiting</span><span{% if a.stats.failed %} class="bad"{% endif %}><b>{{ a.stats.failed|default:0 }}</b> failed</span></div>
+    <span class="sh-muted">{{ a.get_match_type_display|lower }} · {{ a.get_delivery_display|lower }}{% if a.follow_gate %} · followers only{% endif %} · {{ a.account.name }} · {% if a.post_id %}one post{% else %}every post{% endif %}{% if a.ends_at %} · until {{ a.ends_at|date:'d M' }}{% endif %}</span></div>
+  <div class="sh-autostats"><span><b>{{ a.stats.total|default:0 }}</b> matched</span><span><b>{{ a.stats.sent|default:0 }}</b> DMs sent</span><span><b>{{ a.stats.waiting|default:0 }}</b> waiting</span><span{% if a.stats.failed %} class="bad"{% endif %}><b>{{ a.stats.failed|default:0 }}</b> failed</span>{% if a.delivery == 'opener' %}<span><b>{{ a.stats.taps|default:0 }}</b> taps</span>{% endif %}{% if a.button_url %}<span><b>{{ a.stats.clicks|default:0 }}</b> link clicks</span>{% endif %}{% if a.follow_gate %}<span><b>{{ a.stats.follows|default:0 }}</b> follows gained</span>{% endif %}{% if a.lead_keyword %}<span><b>{{ a.stats.leads|default:0 }}</b> leads</span>{% endif %}</div>
 </div>
 {% endfor %}
+
+{% if leads %}
+<h3 class="sh-h3">Leads from DMs <small class="sh-muted">· {{ n_contacts }} people messaged so far</small></h3>
+<div class="card sh-log sh-autolog">
+  {% for c in leads %}
+  <div class="sh-logrow">
+    <time>{{ c.updated_at|date:'d M, g:i A' }}</time>
+    <span class="badge {% if c.step == 'done' %}badge-success{% else %}badge-info{% endif %}">{% if c.step == 'done' %}Lead{% else %}{{ c.get_step_display }}{% endif %}</span>
+    <div><b>{{ c.name|default:c.contact }}</b>{% if c.business %} · {{ c.business }}{% endif %}{% if c.phone %} · {{ c.phone }}{% endif %} <span class="sh-muted">· {{ c.contact.get_platform_display }}{% if c.contact.username %} @{{ c.contact.username }}{% endif %}{% if c.automation %} · {{ c.automation.name }}{% endif %}</span>
+      {% if c.crm_lead_id and not hub_only %}<div class="sh-logsum"><a href="{% url 'crm:lead_detail' c.crm_lead_id %}">Open in CRM</a></div>{% endif %}</div>
+  </div>
+  {% endfor %}
+</div>
+{% endif %}
 
 {% if automations %}
 <h3 class="sh-h3">Recent comments</h3>
@@ -55,7 +77,7 @@
   <div class="sh-logrow">
     <time>{{ r.created_at|date:'d M, g:i A' }}</time>
     <span class="badge {% if r.status == 'sent' %}badge-success{% elif r.status == 'failed' %}badge-danger{% elif r.status == 'skipped' %}{% else %}badge-info{% endif %}">{{ r.get_status_display }}</span>
-    <div><b>{{ r.item.author_name|default:'Someone' }}</b> <span class="sh-muted">· {{ r.automation.name }}</span><div class="sh-logsum">“{{ r.item.text|truncatechars:140 }}”{% if r.error %}<br><span class="sh-errtext">{{ r.error }}</span>{% endif %}</div></div>
+    <div><b>{{ r.item.author_name|default:'Someone' }}</b> <span class="sh-muted">· {{ r.automation.name }}</span><div class="sh-logsum">“{{ r.item.text|truncatechars:140 }}”{% if r.tapped_at %}<br><span class="sh-muted">Tapped {{ r.tapped_at|date:'g:i A' }}{% if r.was_follower is False %} · followed after the ask{% endif %}{% if r.link_sent_at %} · link sent{% endif %}{% if r.followup_sent_at %} · follow-up sent{% endif %}</span>{% endif %}{% if r.error %}<br><span class="sh-errtext">{{ r.error }}</span>{% endif %}</div></div>
   </div>
   {% empty %}<p class="sh-muted">No matching comments yet.</p>{% endfor %}
 </div>
@@ -74,6 +96,15 @@
     if (sel && sel.parentElement.disabled) post.value = '';
   }
   acc.addEventListener('change', only); only();
+  var delivery = document.getElementById('auto-delivery'), gate = document.getElementById('auto-gate');
+  function show() {
+    var opener = delivery.value === 'opener', ig = acc.selectedOptions[0].dataset.platform === 'instagram';
+    if (!(opener && ig)) gate.checked = false;
+    document.querySelectorAll('.sh-autoform [data-opener]').forEach(function (el) {
+      el.hidden = !opener || (el.hasAttribute('data-ig') && !ig) || (el.hasAttribute('data-gate') && !gate.checked);
+    });
+  }
+  [acc, delivery, gate].forEach(function (el) { el.addEventListener('change', show); }); show();
 })();
 </script>
 {% endblock %}

@@ -4,7 +4,7 @@ from django.shortcuts import redirect
 from .services import social_only
 
 # What a Social-Hub-only login may reach outside /social/.
-OPEN_PREFIXES = ('/social/', '/static/', '/media/', '/logout/', '/favicon',
+OPEN_PREFIXES = ('/social/', '/go/', '/static/', '/media/', '/logout/', '/favicon',
                  '/privacy/', '/terms/', '/data-deletion/')
 
 

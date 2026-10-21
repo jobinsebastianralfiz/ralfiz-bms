@@ -35,7 +35,7 @@ It publishes due posts every minute, syncs inboxes every 10 minutes, and syncs m
 - Google: `.../social/oauth/callback/youtube/` and `.../google_business/`
 - LinkedIn: `.../social/oauth/callback/linkedin/`
 - X: `.../social/oauth/callback/x/`
-- Meta webhook callback: `https://ralfizdigital.in/social/webhooks/meta/` (subscribe Page `feed` + `messages`, Instagram `comments` + `messages`, WhatsApp `messages`)
+- Meta webhook callback: `https://ralfizdigital.in/social/webhooks/meta/` (subscribe Page `feed` + `messages` + `messaging_postbacks`, Instagram `comments` + `messages` + `messaging_postbacks`, WhatsApp `messages`)
 
 ## 4. Platform approvals (apply in week 1, they gate the timeline)
 
@@ -63,7 +63,16 @@ Every adapter is tested against mocked HTTP only. Check these on the first real 
 public replies. Rules live in `social/automations.py`.
 
 - Needs the worker running: DMs go out on its 15-second tick, not in the webhook request.
-- Uses the existing webhook subscriptions (Page `feed`, Instagram `comments`); nothing new to subscribe.
+- Comments come from the Page `feed` and Instagram `comments` subscriptions. Button taps need
+  `messaging_postbacks` subscribed on both the Page and Instagram, or "button first" automations never answer.
 - Only comments newer than the automation and under 7 days old are answered, so a first inbox sync never
   DMs weeks of old commenters. One DM per person per automation and post; at most 150 DMs an hour per account.
 - Until Meta grants Advanced Access through App Review, private replies only reach people with a role on the app.
+- **Button first** delivery: the first DM has a postback button. The tap opens Meta's 24-hour window; then the
+  link goes out (Instagram can require a follow first, checked with `is_user_follow_business`; if the check
+  errors the link is sent anyway), and one follow-up 1-23 hours later.
+- Button links go through `/go/<slug>/?r=<run>` (public, in every middleware's `OPEN_PREFIXES`), which counts the
+  click, skips link-preview crawlers and adds `utm_source/medium/campaign`.
+- **Lead keyword:** a DM with it, from someone an automation messaged, starts name → business → WhatsApp number.
+  On Ralfiz's own workspace (no BMS client) that creates a CRM lead (source Instagram/Facebook) and pushes to the
+  owners' phones; on a client workspace it stays in the hub's "Leads from DMs" list.

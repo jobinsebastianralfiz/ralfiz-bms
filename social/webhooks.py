@@ -1,4 +1,5 @@
-"""Meta webhook: Page comments and Messenger, Instagram comments and DMs, WhatsApp messages.
+"""Meta webhook: Page comments and Messenger, Instagram comments and DMs, WhatsApp messages,
+and taps on the buttons comment-to-DM automations send.
 
 One endpoint receives all three products (subscribe each in the app dashboard
 to the same callback URL). Meta signs every POST with the app secret; anything
@@ -83,6 +84,8 @@ def handle(payload):
                 ingest(account, items)
         if platform == 'whatsapp':
             _store_echoes(entry)
+        else:
+            _handle_postbacks(platform, entry)
 
 
 def _messaging(entry):
@@ -96,6 +99,30 @@ def _messaging(entry):
             kind='dm', external_id=msg['mid'], text=msg.get('text') or '[attachment]',
             author_id=sender, thread_id=sender, received_at=_parse_time(ev.get('timestamp')), raw=ev))
     return items
+
+
+def _postbacks(entry):
+    """Button taps: (sender id, payload, message id) for each ``postback`` event."""
+    for ev in entry.get('messaging') or []:
+        pb = ev.get('postback')
+        if pb and pb.get('payload'):
+            yield (str((ev.get('sender') or {}).get('id', '')), pb['payload'],
+                   pb.get('mid') or f"{ev.get('timestamp', '')}:{pb['payload']}")
+
+
+def _handle_postbacks(platform, entry):
+    from .automations import handle_postback
+    try:
+        taps = list(_postbacks(entry))
+    except (KeyError, TypeError, ValueError, AttributeError):
+        log.warning('Unreadable %s postback skipped', platform, exc_info=True)
+        return
+    if not taps:
+        return
+    for account in SocialAccount.objects.filter(platform=platform, external_id=str(entry.get('id', ''))) \
+            .exclude(status='disconnected'):
+        for sender, payload, mid in taps:
+            handle_postback(account, sender, payload, mid)
 
 
 def _page(entry):

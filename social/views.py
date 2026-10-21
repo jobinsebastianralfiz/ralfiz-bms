@@ -1037,7 +1037,7 @@ def activity(request):
 @hub_view
 def automations(request):
     from . import automations as A
-    from .models import Automation, AutomationRun, PostTarget
+    from .models import Automation, AutomationRun, Contact, LeadCapture, PostTarget
     ctx = _ctx(request, 'automations')
     autos = Automation.objects.filter(workspace__in=ctx['in_view']).select_related('account', 'workspace')
     if request.method == 'POST':
@@ -1050,8 +1050,10 @@ def automations(request):
         account = get_object_or_404(SocialAccount, pk=f.get('account'), workspace__in=ctx['in_view'])
         ends = f.get('ends_at')
         data = {k: f.get(k, '') for k in ('account', 'name', 'post_id', 'keywords', 'match_type',
-                                          'public_replies', 'dm_text', 'button_label', 'button_url')}
-        data.update(is_active=bool(f.get('is_active')),
+                                          'public_replies', 'dm_text', 'button_label', 'button_url',
+                                          'delivery', 'opener_label', 'link_text', 'gate_text',
+                                          'followup_text', 'followup_hours', 'lead_keyword')}
+        data.update(is_active=bool(f.get('is_active')), follow_gate=bool(f.get('follow_gate')),
                     ends_at=timezone.make_aware(datetime.combine(date.fromisoformat(ends), time.max))
                     if ends else None)
         a = A.save_automation(request.user, account.workspace, data, automation=existing)
@@ -1076,10 +1078,23 @@ def automations(request):
     status = request.GET.get('status', '')
     if status in dict(AutomationRun.STATUS_CHOICES):
         runs = runs.filter(status=status)
+    leads = (LeadCapture.objects.filter(contact__workspace__in=ctx['in_view'])
+             .select_related('contact', 'automation', 'crm_lead')[:30])
     ctx.update({'automations': autos, 'accounts': accounts, 'editing': editing,
                 'runs': runs[:60], 'run_status': status, 'run_statuses': AutomationRun.STATUS_CHOICES,
-                'match_choices': Automation.MATCH_CHOICES})
+                'match_choices': Automation.MATCH_CHOICES, 'delivery_choices': Automation.DELIVERY_CHOICES,
+                'leads': leads, 'n_contacts': Contact.objects.filter(workspace__in=ctx['in_view']).count(),
+                'defaults': {'opener': A.DEFAULT_OPENER, 'link': A.DEFAULT_LINK_TEXT, 'gate': A.DEFAULT_GATE_TEXT}})
     return render(request, 'social/automations.html', ctx)
+
+
+def go_link(request, slug):
+    """Public short link from an automation DM: count the click, then send them on."""
+    from . import automations as A
+    from .models import TrackedLink
+    link = get_object_or_404(TrackedLink.objects.select_related('automation__account'), slug=slug)
+    target = A.record_click(link, request.GET.get('r'), request.headers.get('User-Agent', ''))
+    return redirect(target)
 
 
 # ================================================================ workspaces (clients)

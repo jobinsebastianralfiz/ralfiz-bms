@@ -182,9 +182,15 @@ class Adapter:
         raise NotSupported(f'Replies are not supported on {self.label}.')
 
     # -- analytics
-    def private_reply(self, account, comment_id, text, button=None):
-        """Send one DM to the person behind a comment. ``button`` is (label, url)."""
+    def private_reply(self, account, comment_id, text, buttons=None):
+        """Send one DM to the person behind a comment. Buttons: [{'title', 'url' or 'payload'}]."""
         raise NotSupported(f'Private replies are not supported on {self.label}.')
+
+    def send_dm(self, account, user_id, text, buttons=None):
+        raise NotSupported(f'Automated messages are not supported on {self.label}.')
+
+    def user_profile(self, account, user_id):
+        raise NotSupported(f'Profiles are not available on {self.label}.')
 
     def fetch_insights(self, account, start: date, end: date):
         """{date: {metric: value}} for each day in [start, end]."""

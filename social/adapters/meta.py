@@ -158,20 +158,42 @@ class _MetaAdapter(Adapter):
                            'message': json.dumps({'text': text})})
         return data.get('message_id', '')
 
-    def private_reply(self, account, comment_id, text, button=None):
+    @staticmethod
+    def _message(text, buttons=None):
+        """Plain text, or a button template. A button is {'title', 'url'} or {'title', 'payload'}."""
+        if not buttons:
+            return {'text': text}
+        return {'attachment': {'type': 'template', 'payload': {
+            'template_type': 'button', 'text': text,
+            'buttons': [{'type': 'web_url', 'url': b['url'], 'title': b['title']} if b.get('url')
+                        else {'type': 'postback', 'payload': b['payload'], 'title': b['title']}
+                        for b in buttons]}}}
+
+    def private_reply(self, account, comment_id, text, buttons=None):
         """Messenger private reply: addressed to the comment, allowed once per comment and only
         for about seven days after it. Works for Instagram comments through the linked Page."""
-        if button:
-            label, url = button
-            message = {'attachment': {'type': 'template', 'payload': {
-                'template_type': 'button', 'text': text,
-                'buttons': [{'type': 'web_url', 'url': url, 'title': label}]}}}
-        else:
-            message = {'text': text}
         data = graph('POST', f'{self._page_id(account)}/messages', account.token, platform=self.label,
                      data={'recipient': json.dumps({'comment_id': comment_id}),
-                           'message': json.dumps(message)})
+                           'message': json.dumps(self._message(text, buttons))})
         return data.get('message_id', '')
+
+    def send_dm(self, account, user_id, text, buttons=None):
+        """A message inside the 24-hour window the person opened by writing or tapping a button."""
+        data = graph('POST', f'{self._page_id(account)}/messages', account.token, platform=self.label,
+                     data={'recipient': json.dumps({'id': user_id}), 'messaging_type': 'RESPONSE',
+                           'message': json.dumps(self._message(text, buttons))})
+        return data.get('message_id', '')
+
+    def user_profile(self, account, user_id):
+        """Name and, on Instagram, whether they follow the account. Only answers for people who
+        have messaged the account or tapped one of its buttons."""
+        if self.platform == 'instagram':
+            data = graph('GET', user_id, account.token, platform=self.label,
+                         params={'fields': 'name,username,is_user_follow_business'})
+            return {'name': data.get('name', ''), 'username': data.get('username', ''),
+                    'is_follower': data.get('is_user_follow_business')}
+        data = graph('GET', user_id, account.token, platform=self.label, params={'fields': 'name'})
+        return {'name': data.get('name', ''), 'username': '', 'is_follower': None}
 
     def _conversations(self, account, since, platform=None):
         """Recent DMs from the Page's conversations; the business's own messages are skipped."""
