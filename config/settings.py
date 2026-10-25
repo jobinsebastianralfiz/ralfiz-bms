@@ -222,6 +222,9 @@ SIMPLE_JWT = {
     'REFRESH_TOKEN_LIFETIME': timedelta(days=30),
     'ROTATE_REFRESH_TOKENS': True,
     'AUTH_HEADER_TYPES': ('Bearer',),
+    # Its own key so it can be rotated (and shared with ralfiz.com) without touching
+    # SECRET_KEY, which also derives the credential-encryption key (core/fields.py).
+    'SIGNING_KEY': os.getenv('JWT_SIGNING_KEY') or SECRET_KEY,
 }
 
 # CORS - allow mobile app
