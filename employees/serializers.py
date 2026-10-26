@@ -31,6 +31,13 @@ class EmployeeProfileSerializer(serializers.ModelSerializer):
             'date_of_birth', 'joining_date', 'status', 'profile_photo',
             'face_photo', 'office_latitude', 'office_longitude',
             'allowed_radius_meters', 'work_mode', 'full_name', 'created_at',
+            'face_check_required',
+        ]
+        read_only_fields = [
+            'face_check_required',
+            'id', 'employee_id', 'employment_type', 'department',
+            'designation', 'joining_date', 'status', 'office_latitude',
+            'office_longitude', 'allowed_radius_meters', 'created_at',
         ]
 
     def get_profile_photo(self, obj):
@@ -41,11 +48,6 @@ class EmployeeProfileSerializer(serializers.ModelSerializer):
                 return request.build_absolute_uri(photo.url)
             return photo.url
         return None
-        read_only_fields = [
-            'id', 'employee_id', 'employment_type', 'department',
-            'designation', 'joining_date', 'status', 'office_latitude',
-            'office_longitude', 'allowed_radius_meters', 'created_at',
-        ]
 
 
 class EmployeeListSerializer(serializers.ModelSerializer):

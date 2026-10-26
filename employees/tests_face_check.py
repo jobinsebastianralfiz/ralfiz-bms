@@ -88,6 +88,14 @@ class FaceCheckSwitchTests(TestCase):
         self.assertEqual(res.status_code, 200, res.content)
         self.assertIs(res.json()['employee']['face_check_required'], False)
 
+    def test_profile_tells_the_app_and_cannot_change_it(self, compare):
+        emp = make_employee('fc_prof', face_check_required=False)
+        self.client.force_login(emp.user)
+        self.assertIs(self.client.get('/api/employees/profile/').json()['face_check_required'], False)
+        self.client.patch('/api/employees/profile/', {'face_check_required': True}, content_type='application/json')
+        emp.refresh_from_db()
+        self.assertFalse(emp.face_check_required)
+
 
 class FaceCheckAdminTests(TestCase):
     def test_hr_can_turn_it_off_and_the_portal_stops_asking(self):
