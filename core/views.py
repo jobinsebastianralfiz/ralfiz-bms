@@ -7938,6 +7938,155 @@ def emp_leave_list(request):
     return render(request, 'hr/leave_list.html', context)
 
 
+def _overlap_days(start, end, lo, hi):
+    """Days of start..end that fall inside lo..hi (all inclusive)."""
+    return max(0, (min(end, hi) - max(start, lo)).days + 1)
+
+
+@login_required
+def emp_leave_summary(request):
+    """Leave taken per employee/intern for a year or one month, with Excel export.
+    Days are approved leave, clipped to the chosen period."""
+    from employees.models import Employee, LeaveRequest, LeaveType
+    from calendar import monthrange
+    from datetime import date
+
+    today = timezone.localdate()
+    try:
+        year = int(request.GET.get('year', today.year))
+        month = int(request.GET.get('month', 0))
+    except (TypeError, ValueError):
+        year, month = today.year, 0
+    if not 1 <= month <= 12:
+        month = 0
+    people = request.GET.get('people', '')
+    department = request.GET.get('department', '')
+    show_inactive = request.GET.get('inactive') == '1'
+
+    lo = date(year, month or 1, 1)
+    hi = date(year, month or 12, monthrange(year, month or 12)[1])
+
+    employees = Employee.objects.select_related('user').exclude(role__in=['owner', 'partner'])
+    if not show_inactive:
+        employees = employees.filter(status__in=['active', 'on_leave'])
+    is_intern = Q(employment_type='intern') | Q(role='intern')
+    if people == 'interns':
+        employees = employees.filter(is_intern)
+    elif people == 'employees':
+        employees = employees.exclude(is_intern)
+    if department:
+        employees = employees.filter(department=department)
+    employees = list(employees.order_by('employee_id'))
+
+    leave_types = list(LeaveType.objects.filter(is_active=True))
+    leaves = LeaveRequest.objects.filter(
+        employee__in=employees, start_date__lte=hi, end_date__gte=lo,
+    ).select_related('leave_type')
+    used, pending, rejected = {}, {}, {}
+    for lr in leaves:
+        if lr.status == 'approved':
+            key = (lr.employee_id, lr.leave_type_id)
+            used[key] = used.get(key, 0) + _overlap_days(lr.start_date, lr.end_date, lo, hi)
+        elif lr.status == 'pending':
+            pending[lr.employee_id] = pending.get(lr.employee_id, 0) + 1
+        elif lr.status == 'rejected':
+            rejected[lr.employee_id] = rejected.get(lr.employee_id, 0) + 1
+    # Approved leave whose type was deleted or switched off still counts
+    has_other = any(k[1] not in {lt.pk for lt in leave_types} for k in used)
+
+    rows = []
+    for emp in employees:
+        by_type = [used.get((emp.pk, lt.pk), 0) for lt in leave_types]
+        other = sum(d for (e, t), d in used.items() if e == emp.pk and t not in {lt.pk for lt in leave_types})
+        unpaid = sum(d for lt, d in zip(leave_types, by_type) if not lt.is_paid)
+        total = sum(by_type) + other
+        rows.append({
+            'employee': emp,
+            'is_intern': emp.employment_type == 'intern' or emp.role == 'intern',
+            'by_type': by_type,
+            'other': other,
+            'total': total,
+            'unpaid': unpaid,
+            # Remaining only means something against a full year's allowance
+            'remaining': None if month else sum(max(0, lt.days_allowed - d) for lt, d in zip(leave_types, by_type)),
+            'pending': pending.get(emp.pk, 0),
+            'rejected': rejected.get(emp.pk, 0),
+        })
+    totals = {
+        'by_type': [sum(r['by_type'][i] for r in rows) for i in range(len(leave_types))],
+        'other': sum(r['other'] for r in rows),
+        'total': sum(r['total'] for r in rows),
+        'unpaid': sum(r['unpaid'] for r in rows),
+        'pending': sum(r['pending'] for r in rows),
+        'rejected': sum(r['rejected'] for r in rows),
+    }
+    period = date(year, month, 1).strftime('%B %Y') if month else str(year)
+
+    if request.GET.get('export') == 'xlsx':
+        from openpyxl import Workbook
+        from openpyxl.styles import Font, PatternFill
+        from django.http import HttpResponse
+
+        wb = Workbook()
+        ws = wb.active
+        ws.title = 'Leave Summary'
+        headers = ['Employee ID', 'Name', 'Type', 'Department']
+        headers += [f'{lt.name} ({lt.days_allowed}/yr)' for lt in leave_types]
+        if has_other:
+            headers.append('Other')
+        headers += ['Total Days', 'Unpaid Days']
+        if not month:
+            headers.append('Remaining')
+        headers += ['Pending Requests', 'Rejected Requests']
+        ws.append([f'Leave summary: {period}'])
+        ws['A1'].font = Font(bold=True, size=13)
+        ws.append(headers)
+        for cell in ws[2]:
+            cell.font = Font(bold=True, color='FFFFFF')
+            cell.fill = PatternFill(start_color='0D9488', end_color='0D9488', fill_type='solid')
+        for r in rows:
+            emp = r['employee']
+            line = [emp.employee_id, emp.full_name, 'Intern' if r['is_intern'] else 'Employee',
+                    emp.get_department_display()] + r['by_type']
+            if has_other:
+                line.append(r['other'])
+            line += [r['total'], r['unpaid']]
+            if not month:
+                line.append(r['remaining'])
+            line += [r['pending'], r['rejected']]
+            ws.append(line)
+        for col_cells in ws.iter_cols(min_row=2):
+            length = max((len(str(cell.value or '')) for cell in col_cells), default=10)
+            ws.column_dimensions[col_cells[0].column_letter].width = min(max(length + 2, 12), 40)
+
+        response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+        suffix = f'{year}_{month:02d}' if month else str(year)
+        response['Content-Disposition'] = f'attachment; filename="leave_summary_{suffix}.xlsx"'
+        wb.save(response)
+        return response
+
+    query = request.GET.copy()
+    query.pop('export', None)
+    years = sorted({d.year for d in LeaveRequest.objects.dates('start_date', 'year')} | {today.year, year}, reverse=True)
+    context = {
+        'rows': rows,
+        'totals': totals,
+        'leave_types': leave_types,
+        'has_other': has_other,
+        'year': year,
+        'month': month,
+        'period': period,
+        'people': people,
+        'department': department,
+        'show_inactive': show_inactive,
+        'departments': Employee.DEPARTMENT_CHOICES,
+        'months': [(i, date(2000, i, 1).strftime('%B')) for i in range(1, 13)],
+        'years': years,
+        'export_query': query.urlencode(),
+    }
+    return render(request, 'hr/leave_summary.html', context)
+
+
 @login_required
 def emp_leave_action(request, pk):
     """Approve or reject a leave request"""

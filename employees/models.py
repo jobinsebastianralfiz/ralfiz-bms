@@ -138,6 +138,12 @@ class Employee(models.Model):
         return self.user.get_full_name() or self.user.username
 
     @property
+    def whatsapp_number(self):
+        """Phone as wa.me wants it: digits only, 91 added to a 10-digit number."""
+        digits = ''.join(ch for ch in (self.phone or '') if ch.isdigit())
+        return '91' + digits if len(digits) == 10 else digits
+
+    @property
     def has_custom_timing(self):
         return bool(self.custom_check_in_deadline or self.custom_checkout_time_floor
                     or self.custom_required_hours is not None)

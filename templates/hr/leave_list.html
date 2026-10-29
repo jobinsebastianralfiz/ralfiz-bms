@@ -7,6 +7,7 @@
     <h1 class="page-title">Leave Requests</h1>
     <p class="page-subtitle mb-0">Review and manage employee leave requests</p>
   </div>
+  <a href="{% url 'emp_leave_summary' %}" class="btn btn-outline-primary"><i class="fas fa-chart-column me-1"></i> Leave Summary</a>
 </div>
 
 <div class="card">
@@ -70,7 +71,14 @@
               <span class="badge">{{ l.get_status_display }}</span>
               {% endif %}
             </td>
-            <td>
+            <td style="white-space: nowrap;">
+              {% with wa=l.employee.whatsapp_number %}
+              <button type="button" class="btn btn-sm btn-ghost wa-reply" {% if not wa %}disabled title="No phone number on {{ l.employee.full_name }}'s profile"{% else %}title="Reply on WhatsApp"{% endif %}
+                data-phone="{{ wa }}" data-name="{{ l.employee.full_name }}" data-type="{{ l.leave_type.name|default:'' }}"
+                data-from="{{ l.start_date|date:'d M Y' }}" data-to="{{ l.end_date|date:'d M Y' }}" data-days="{{ l.total_days }}"
+                data-status="{{ l.status }}" data-action="{% url 'emp_leave_action' l.pk %}"
+                style="color:#16a34a;"><i class="fab fa-whatsapp"></i></button>
+              {% endwith %}
               {% if l.status == 'pending' %}
               <form method="post" action="{% url 'emp_leave_action' l.pk %}" class="d-inline">
                 {% csrf_token %}
@@ -94,4 +102,69 @@
     {% endif %}
   </div>
 </div>
+
+<dialog id="waDialog" style="margin:auto;border:0;border-radius:14px;padding:0;width:min(480px,92vw);box-shadow:0 20px 50px rgba(0,0,0,.25);">
+  <form method="dialog" style="padding:18px 20px;display:grid;gap:10px;" id="waForm">
+    <div style="display:flex;align-items:center;gap:8px;">
+      <i class="fab fa-whatsapp" style="color:#16a34a;font-size:1.3rem;"></i>
+      <strong id="waTitle">Reply on WhatsApp</strong>
+      <button type="submit" value="close" class="btn btn-sm btn-ghost btn-icon" style="margin-left:auto;" title="Close"><i class="fas fa-times"></i></button>
+    </div>
+    <div class="text-sm text-muted" id="waSub"></div>
+    <div style="display:flex;gap:6px;flex-wrap:wrap;">
+      <button type="button" class="btn btn-sm btn-outline-secondary wa-tpl" data-tpl="approve">Approved</button>
+      <button type="button" class="btn btn-sm btn-outline-secondary wa-tpl" data-tpl="reject">Not approved</button>
+      <button type="button" class="btn btn-sm btn-outline-secondary wa-tpl" data-tpl="ask">Ask for details</button>
+    </div>
+    <textarea id="waText" class="form-control" rows="7"></textarea>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
+      <button type="button" class="btn btn-sm btn-success" id="waSend"><i class="fab fa-whatsapp me-1"></i> Open in WhatsApp</button>
+      <span id="waDecide" style="display:none;gap:6px;margin-left:auto;">
+        <button type="button" class="btn btn-sm btn-outline-success" data-decide="approve"><i class="fas fa-check"></i> Approve</button>
+        <button type="button" class="btn btn-sm btn-outline-danger" data-decide="reject"><i class="fas fa-times"></i> Reject</button>
+      </span>
+    </div>
+    <small class="text-muted">WhatsApp opens with this message ready; you press send there. Approve / Reject saves the message as the review note.</small>
+  </form>
+</dialog>
+<form method="post" id="waDecisionForm" style="display:none;">
+  {% csrf_token %}<input type="hidden" name="action"><input type="hidden" name="notes">
+</form>
+<script>
+(function () {
+  const dlg = document.getElementById('waDialog');
+  const text = document.getElementById('waText');
+  let cur = null;
+  const tpl = {
+    approve: d => `Hi ${d.name},\n\nYour ${d.leave} from ${d.from} to ${d.to} (${d.days} day${d.days == 1 ? '' : 's'}) has been approved.\n\nRegards,\nRalfiz Technologies`,
+    reject: d => `Hi ${d.name},\n\nSorry, we are unable to approve your ${d.leave} from ${d.from} to ${d.to} (${d.days} day${d.days == 1 ? '' : 's'}). Please speak to HR if you would like to discuss it.\n\nRegards,\nRalfiz Technologies`,
+    ask: d => `Hi ${d.name},\n\nAbout your ${d.leave} request from ${d.from} to ${d.to}: could you share a few more details before we decide?\n\nRegards,\nRalfiz Technologies`,
+  };
+  const fill = key => {
+    text.value = tpl[key](cur);
+    document.querySelectorAll('.wa-tpl').forEach(b => b.classList.toggle('active', b.dataset.tpl === key));
+  };
+  document.querySelectorAll('.wa-reply').forEach(btn => btn.addEventListener('click', () => {
+    cur = Object.assign({}, btn.dataset);
+    // "Sick Leave" stays as is; "Casual" becomes "Casual leave"
+    cur.leave = !cur.type ? 'leave' : /leave$/i.test(cur.type) ? cur.type : cur.type + ' leave';
+    document.getElementById('waTitle').textContent = 'Reply to ' + cur.name;
+    document.getElementById('waSub').textContent = `+${cur.phone} · ${cur.from} to ${cur.to}`;
+    document.getElementById('waDecide').style.display = cur.status === 'pending' ? 'inline-flex' : 'none';
+    fill(cur.status === 'rejected' ? 'reject' : cur.status === 'approved' ? 'approve' : 'ask');
+    dlg.showModal();
+  }));
+  document.querySelectorAll('.wa-tpl').forEach(b => b.addEventListener('click', () => fill(b.dataset.tpl)));
+  document.getElementById('waSend').addEventListener('click', () => {
+    window.open(`https://wa.me/${cur.phone}?text=${encodeURIComponent(text.value)}`, '_blank', 'noopener');
+  });
+  document.querySelectorAll('[data-decide]').forEach(b => b.addEventListener('click', () => {
+    const f = document.getElementById('waDecisionForm');
+    f.action = cur.action;
+    f.elements.action.value = b.dataset.decide;
+    f.elements.notes.value = text.value;
+    f.submit();
+  }));
+})();
+</script>
 {% endblock %}

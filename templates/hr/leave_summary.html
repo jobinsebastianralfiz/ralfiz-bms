@@ -1,0 +1,112 @@
+{% extends 'base.html' %}
+{% block title %}Leave Summary - Ralfiz BMS{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title">Leave Summary</h1>
+    <p class="page-subtitle mb-0">Approved leave days per person for {{ period }}</p>
+  </div>
+  <div class="d-flex gap-2">
+    <a href="{% url 'emp_leave_list' %}" class="btn btn-outline-secondary">
+      <i class="fas fa-arrow-left me-1"></i> Requests
+    </a>
+    <a href="?{{ export_query }}{% if export_query %}&{% endif %}export=xlsx" class="btn btn-primary">
+      <i class="fas fa-file-excel me-1"></i> Export Excel
+    </a>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header">
+    <h3 class="card-title"><i class="fas fa-chart-column"></i> {{ rows|length }} {% if people == 'interns' %}intern{{ rows|length|pluralize }}{% elif people == 'employees' %}employee{{ rows|length|pluralize }}{% else %}{{ rows|length|pluralize:"person,people" }}{% endif %}</h3>
+    <div class="card-actions">
+      <form method="get" class="d-flex gap-2" style="flex-wrap: wrap;">
+        <select name="people" class="form-control" style="width: auto;">
+          <option value="">Employees &amp; interns</option>
+          <option value="employees" {% if people == 'employees' %}selected{% endif %}>Employees only</option>
+          <option value="interns" {% if people == 'interns' %}selected{% endif %}>Interns only</option>
+        </select>
+        <select name="month" class="form-control" style="width: auto;">
+          <option value="0">Whole year</option>
+          {% for value, label in months %}
+          <option value="{{ value }}" {% if value == month %}selected{% endif %}>{{ label }}</option>
+          {% endfor %}
+        </select>
+        <select name="year" class="form-control" style="width: auto;">
+          {% for y in years %}
+          <option value="{{ y }}" {% if y == year %}selected{% endif %}>{{ y }}</option>
+          {% endfor %}
+        </select>
+        <select name="department" class="form-control" style="width: auto;">
+          <option value="">All Departments</option>
+          {% for value, label in departments %}
+          <option value="{{ value }}" {% if value == department %}selected{% endif %}>{{ label }}</option>
+          {% endfor %}
+        </select>
+        <label style="display:flex;align-items:center;gap:6px;margin:0;font-size:.875rem;white-space:nowrap;">
+          <input type="checkbox" name="inactive" value="1" {% if show_inactive %}checked{% endif %}> Include former staff
+        </label>
+        <button type="submit" class="btn btn-primary">Apply</button>
+      </form>
+    </div>
+  </div>
+  <div class="table-wrapper">
+    <table class="table">
+      <thead>
+        <tr>
+          <th>Name</th>
+          {% for lt in leave_types %}
+          <th class="text-center">{{ lt.name }}<br><span class="text-muted text-sm" style="font-weight:400;">{{ lt.days_allowed }}/yr{% if not lt.is_paid %} &middot; unpaid{% endif %}</span></th>
+          {% endfor %}
+          {% if has_other %}<th class="text-center">Other</th>{% endif %}
+          <th class="text-center">Total Days</th>
+          <th class="text-center">Unpaid</th>
+          {% if not month %}<th class="text-center">Remaining</th>{% endif %}
+          <th class="text-center">Pending</th>
+          <th class="text-center">Rejected</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in rows %}
+        <tr>
+          <td>
+            <a href="{% url 'emp_leave_list' %}?employee={{ row.employee.pk }}">{{ row.employee.full_name }}</a>
+            <span class="text-muted text-sm">({{ row.employee.employee_id }})</span>
+            {% if row.is_intern %}<span class="status-badge pending" style="margin-left:4px;">Intern</span>{% endif %}
+          </td>
+          {% for d in row.by_type %}
+          <td class="text-center">{% if d %}{{ d }}{% else %}<span class="text-muted">0</span>{% endif %}</td>
+          {% endfor %}
+          {% if has_other %}<td class="text-center">{{ row.other }}</td>{% endif %}
+          <td class="text-center"><strong>{{ row.total }}</strong></td>
+          <td class="text-center">{% if row.unpaid %}<span class="text-danger">{{ row.unpaid }}</span>{% else %}<span class="text-muted">0</span>{% endif %}</td>
+          {% if not month %}<td class="text-center">{{ row.remaining }}</td>{% endif %}
+          <td class="text-center">{% if row.pending %}<a href="{% url 'emp_leave_list' %}?employee={{ row.employee.pk }}&status=pending"><strong>{{ row.pending }}</strong></a>{% else %}<span class="text-muted">0</span>{% endif %}</td>
+          <td class="text-center">{% if row.rejected %}{{ row.rejected }}{% else %}<span class="text-muted">0</span>{% endif %}</td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="{{ leave_types|length|add:6 }}" class="text-center text-muted py-4">No one matches these filters.</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+      {% if rows %}
+      <tfoot>
+        <tr style="font-weight: 600; border-top: 2px solid var(--border-color);">
+          <td>Total</td>
+          {% for d in totals.by_type %}<td class="text-center">{{ d }}</td>{% endfor %}
+          {% if has_other %}<td class="text-center">{{ totals.other }}</td>{% endif %}
+          <td class="text-center">{{ totals.total }}</td>
+          <td class="text-center">{{ totals.unpaid }}</td>
+          {% if not month %}<td class="text-center">&mdash;</td>{% endif %}
+          <td class="text-center">{{ totals.pending }}</td>
+          <td class="text-center">{{ totals.rejected }}</td>
+        </tr>
+      </tfoot>
+      {% endif %}
+    </table>
+  </div>
+</div>
+<p class="text-muted text-sm mt-2">Days count approved leave that falls inside {{ period }}; a leave crossing the month or year edge counts only its days inside. Click a name to see their requests.</p>
+{% endblock %}
