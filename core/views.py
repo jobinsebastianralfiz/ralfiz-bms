@@ -23,7 +23,7 @@ from .models import (
     BankAccount, InternalTransfer,
     CompanyDocument, Partner, CapitalContribution, CompanyAsset,
     DailyTask,
-    ProjectLink, ProjectNote,
+    ProjectLink, ProjectNote, ProjectFile,
 )
 from django.contrib.contenttypes.models import ContentType
 from licensing.models import License, LicenseKey, LicenseActivation
@@ -1190,6 +1190,57 @@ def project_note_delete(request, pk, note_id):
         note.delete()
         messages.success(request, 'Note deleted.')
     return redirect(f"{reverse('project_detail', args=[pk])}#notes")
+
+
+PROJECT_FILE_MAX_MB = 200
+
+
+@login_required
+def project_file_upload(request, pk):
+    """Attach staff-only files (zips, .jks keystores, builds) to a project."""
+    project = get_object_or_404(Project, pk=pk)
+    back = f"{reverse('project_detail', args=[pk])}#files"
+    if request.method != 'POST':
+        return redirect(back)
+    uploads = request.FILES.getlist('files')
+    if not uploads:
+        messages.error(request, 'Choose a file to upload.')
+        return redirect(back)
+    too_big = [f.name for f in uploads if f.size > PROJECT_FILE_MAX_MB * 1024 * 1024]
+    if too_big:
+        messages.error(request, f'{", ".join(too_big)} is over {PROJECT_FILE_MAX_MB} MB. Nothing was uploaded.')
+        return redirect(back)
+    category = request.POST.get('category', 'other')
+    if category not in dict(ProjectFile.CATEGORY_CHOICES):
+        category = 'other'
+    note = request.POST.get('note', '').strip()[:255]
+    for f in uploads:
+        pf = ProjectFile.objects.create(project=project, file=f, name=f.name[:255], category=category,
+                                        note=note, size=f.size, uploaded_by=request.user)
+        log_activity(request, 'created', pf)
+    messages.success(request, f'{len(uploads)} file{"s" if len(uploads) != 1 else ""} uploaded.')
+    return redirect(back)
+
+
+@login_required
+def project_file_download(request, pk, file_id):
+    from django.http import FileResponse, Http404
+    pf = get_object_or_404(ProjectFile, pk=file_id, project_id=pk)
+    try:
+        return FileResponse(pf.file.open('rb'), as_attachment=True, filename=pf.name)
+    except FileNotFoundError:
+        raise Http404('File missing from storage.')
+
+
+@login_required
+def project_file_delete(request, pk, file_id):
+    pf = get_object_or_404(ProjectFile, pk=file_id, project_id=pk)
+    if request.method == 'POST':
+        log_activity(request, 'deleted', pf)
+        pf.file.delete(save=False)
+        pf.delete()
+        messages.success(request, f'"{pf.name}" deleted.')
+    return redirect(f"{reverse('project_detail', args=[pk])}#files")
 
 
 @login_required

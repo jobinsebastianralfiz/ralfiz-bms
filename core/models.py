@@ -6,6 +6,8 @@ from decimal import Decimal
 
 from .fields import EncryptedTextField
 from django.utils.functional import cached_property
+from django.conf import settings
+from django.core.files.storage import FileSystemStorage
 from django.core.exceptions import ValidationError
 from django.db import models, transaction
 from django.contrib.auth.models import User
@@ -1463,6 +1465,56 @@ class ProjectNote(models.Model):
 
     def __str__(self):
         return self.title
+
+
+class _PrivateStorage(FileSystemStorage):
+    """MEDIA_ROOT/private/, which config/urls.py never serves. Follows
+    MEDIA_ROOT changes (override_settings in tests) like the default storage."""
+    @cached_property
+    def base_location(self):
+        return os.path.join(settings.MEDIA_ROOT, 'private')
+
+
+def _private_storage():
+    return _PrivateStorage(base_url=None)
+
+
+def project_file_path(instance, filename):
+    return f'project_files/{instance.project_id}/{uuid.uuid4().hex[:8]}_{os.path.basename(filename)}'
+
+
+class ProjectFile(models.Model):
+    """Staff-only project files: source zips, signing keystores (.jks),
+    builds, assets. Stored under media/private/ and only downloadable
+    through a login-protected view."""
+    CATEGORY_CHOICES = [
+        ('source', 'Source code'),
+        ('keystore', 'Keystore / signing key'),
+        ('build', 'Build (APK, IPA, installer)'),
+        ('design', 'Design / assets'),
+        ('document', 'Document'),
+        ('other', 'Other'),
+    ]
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    project = models.ForeignKey('Project', on_delete=models.CASCADE, related_name='files')
+    file = models.FileField(upload_to=project_file_path, storage=_private_storage, max_length=300)
+    name = models.CharField(max_length=255)
+    category = models.CharField(max_length=10, choices=CATEGORY_CHOICES, default='other')
+    note = models.CharField(max_length=255, blank=True)
+    size = models.BigIntegerField(default=0)
+    uploaded_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='+')
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return self.name
+
+    @property
+    def icon(self):
+        return {'source': 'fa-file-zipper', 'keystore': 'fa-key', 'build': 'fa-mobile-screen',
+                'design': 'fa-pen-ruler', 'document': 'fa-file-lines'}.get(self.category, 'fa-file')
 
 
 class Task(models.Model):
