@@ -36,13 +36,23 @@
       </div>
       <div class="row mb-3">
         <div class="col-6">
-          <label class="form-label">Assign To *</label>
-          <select name="employees" class="form-control" required multiple size="6" style="min-height: 120px;">
+          <label class="form-label">Assign To * <span class="text-muted" id="empCount" style="font-weight:400;">(0 selected)</span></label>
+          <div style="display:flex;gap:8px;margin-bottom:6px;">
+            <input type="search" class="form-control" id="empSearch" placeholder="Search name or ID..." style="flex:1;">
+            <button type="button" class="btn btn-sm btn-ghost" id="empAll">Select all</button>
+            <button type="button" class="btn btn-sm btn-ghost" id="empNone">Clear</button>
+          </div>
+          <div id="empList" class="form-control" style="height:auto;max-height:220px;overflow:auto;padding:4px 8px;">
             {% for emp in employees %}
-            <option value="{{ emp.pk }}">{{ emp.full_name }} ({{ emp.employee_id }})</option>
+            <label class="emp-pick" style="display:flex;align-items:center;gap:8px;margin:0;padding:5px 2px;cursor:pointer;font-weight:400;">
+              <input type="checkbox" name="employees" value="{{ emp.pk }}">
+              <span>{{ emp.full_name }} <span class="text-muted">({{ emp.employee_id }})</span></span>
+            </label>
+            {% empty %}
+            <span class="text-muted">No active employees.</span>
             {% endfor %}
-          </select>
-          <small class="text-muted">Hold Ctrl/Cmd to select multiple employees</small>
+          </div>
+          <small class="text-muted" id="empHint">Tick everyone who should get this work</small>
         </div>
         <div class="col-6">
           <label class="form-label">Due Date</label>
@@ -66,4 +76,30 @@
     </form>
   </div>
 </div>
+<script>
+(function () {
+  const boxes = [...document.querySelectorAll('#empList input[name=employees]')];
+  const count = document.getElementById('empCount');
+  const hint = document.getElementById('empHint');
+  const update = () => { count.textContent = `(${boxes.filter(b => b.checked).length} selected)`; };
+  boxes.forEach(b => b.addEventListener('change', update));
+  document.getElementById('empSearch').addEventListener('input', e => {
+    const q = e.target.value.trim().toLowerCase();
+    boxes.forEach(b => { const row = b.closest('.emp-pick'); row.style.display = row.textContent.toLowerCase().includes(q) ? '' : 'none'; });
+  });
+  // Select all / Clear act on the rows the search is showing
+  const visible = () => boxes.filter(b => b.closest('.emp-pick').style.display !== 'none');
+  document.getElementById('empAll').addEventListener('click', () => { visible().forEach(b => b.checked = true); update(); });
+  document.getElementById('empNone').addEventListener('click', () => { visible().forEach(b => b.checked = false); update(); });
+  document.getElementById('empList').closest('form').addEventListener('submit', e => {
+    if (!boxes.some(b => b.checked)) {
+      e.preventDefault();
+      hint.textContent = 'Select at least one employee';
+      hint.classList.replace('text-muted', 'text-danger');
+      document.getElementById('empList').scrollIntoView({block: 'center'});
+    }
+  });
+  update();
+})();
+</script>
 {% endblock %}
