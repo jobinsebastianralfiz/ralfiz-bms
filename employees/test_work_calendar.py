@@ -146,11 +146,43 @@ class WorkCalendarTests(TestCase):
         self.client.post(url, {'action': 'import', 'year': 2026, 'month': 11,
                                'pick': ['2026-11-08|public|google|Diwali/Deepavali', '2026-05-01|kerala|kerala|May Day']})
         self.assertEqual(sorted(Holiday.objects.values_list('name', flat=True)), ['Diwali/Deepavali', 'May Day'])
+        self.assertTrue(rows[date(2026, 4, 15)]['checked'])                  # Vishu on its own day
+        self.assertEqual(rows[date(2026, 3, 20)]['name'], 'Id-ul-Fitr (Ramzan)')   # Govt date, not Google's 21st
+        self.assertEqual(len([r for r in rows.values() if r['checked']]), 25)       # the whole Govt list
+
+    def test_import_offers_to_remove_dates_not_on_kerala_list(self):
+        wrong = Holiday.objects.create(date=date(2026, 3, 21), name='Ramzan Id', source='google')
+        own = Holiday.objects.create(date=date(2026, 11, 10), name='Office closed', kind='kerala')   # added by hand
+        self.client.force_login(self.admin)
+        url = reverse('emp_calendar')
+        with mock.patch.object(holiday_import, 'fetch', lambda year: []):
+            page = self.client.get(url, {'year': 2026, 'import': 1})
+        self.assertEqual(page.context['not_official'], [wrong])        # hand-added holidays are kept
+        self.client.post(url, {'action': 'import', 'year': 2026, 'remove': [wrong.pk],
+                               'pick': ['2026-03-20|public|kerala|Id-ul-Fitr (Ramzan)']})
+        self.assertEqual(sorted(Holiday.objects.values_list('date', flat=True)), [date(2026, 3, 20), own.date])
+
+    def test_import_renames_imported_holidays_to_government_name(self):
+        Holiday.objects.create(date=date(2026, 10, 20), name='Dussehra', source='google')
+        Holiday.objects.create(date=date(2026, 9, 4), name='Our name', source='manual')
+        self.client.force_login(self.admin)
+        with mock.patch.object(holiday_import, 'fetch', lambda year: []):
+            self.client.post(reverse('emp_calendar'), {'action': 'import', 'year': 2026})
+        self.assertEqual(Holiday.objects.get(date=date(2026, 10, 20)).name, 'Mahanavami')
+        self.assertEqual(Holiday.objects.get(date=date(2026, 9, 4)).name, 'Our name')   # HR's own name kept
+
+    def test_other_years_use_google(self):
+        self.client.force_login(self.admin)
+        with mock.patch.object(holiday_import, 'fetch', lambda year: holiday_import.parse_ics(ICS, year)):
+            page = self.client.get(reverse('emp_calendar'), {'year': 2027, 'import': 1})
+        rows = {r['date']: r for r in page.context['suggestions']}
+        self.assertTrue(rows[date(2027, 1, 26)]['checked'])
+        self.assertTrue(rows[date(2027, 1, 2)]['checked'])                   # Mannam Jayanthi, fixed list
 
     def test_import_failure_is_shown_not_raised(self):
         self.client.force_login(self.admin)
         with mock.patch('urllib.request.urlopen', side_effect=OSError('offline')):
-            page = self.client.get(reverse('emp_calendar'), {'import': 1})
+            page = self.client.get(reverse('emp_calendar'), {'year': 2027, 'import': 1})   # 2026 works offline
         self.assertContains(page, "Couldn&#x27;t reach Google")
 
     def test_payroll_uses_calendar_working_days_when_left_blank(self):

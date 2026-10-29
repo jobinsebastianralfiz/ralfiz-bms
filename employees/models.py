@@ -414,7 +414,7 @@ class Holiday(models.Model):
         ('company', 'Company holiday'),
     ]
     SOURCE_CHOICES = [('manual', 'Added by HR'), ('google', 'Google India calendar'),
-                      ('kerala', 'Kerala fixed-date list')]
+                      ('kerala', 'Kerala Government list')]
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     date = models.DateField(unique=True)

@@ -50,7 +50,7 @@
 {% if suggestions is not None or import_error %}
 <div class="card mb-3" id="import">
   <div class="card-header">
-    <h3 class="card-title"><i class="fas fa-cloud-arrow-down"></i> Holidays for {{ year }} from Google's India calendar</h3>
+    <h3 class="card-title"><i class="fas fa-cloud-arrow-down"></i> Holidays for {{ year }} from {% if official_year %}the Kerala Government calendar{% else %}Google's India calendar{% endif %}</h3>
     <div class="card-actions"><a href="?year={{ year }}&month={{ month }}" class="btn btn-outline-secondary btn-sm">Close</a></div>
   </div>
   {% if import_error %}
@@ -60,7 +60,26 @@
     {% csrf_token %}
     <input type="hidden" name="action" value="import">
     <input type="hidden" name="year" value="{{ year }}"><input type="hidden" name="month" value="{{ month }}">
+    {% if official_year %}
+    <p class="text-muted text-sm px-3 pt-3 mb-0">The Kerala Government's public holidays for {{ year }} are ticked. Other days from Google's India calendar are listed unticked. Untick any day the office stays open, then save.</p>
+    {% else %}
     <p class="text-muted text-sm px-3 pt-3 mb-0">Kerala holidays are ticked. Untick any day the office stays open, tick any other day it closes, then save. Mannam Jayanthi, May Day and Ayyankali Jayanthi are added from a fixed Kerala list because Google doesn't have them. Lunar festival dates can shift by a day: check them against the Kerala government list.</p>
+    {% endif %}
+    {% if renames %}
+    <div class="mx-3 mt-3 p-3" style="border:1px solid var(--border-color);border-radius:8px;">
+      <strong class="text-sm">Renamed to the Government name when you save</strong>
+      {% for h, name, kind in renames %}<div class="text-sm text-muted">{{ h.date|date:'d M' }}: {{ h.name }} &rarr; <span style="color:inherit;">{{ name }}</span></div>{% endfor %}
+    </div>
+    {% endif %}
+    {% if not_official %}
+    <div class="mx-3 mt-3 p-3" style="border:1px solid #f5c2c0;background:#fdecec;border-radius:8px;">
+      <strong class="text-sm">Already marked, but not on the Kerala Government list for {{ year }}</strong>
+      <div class="text-sm text-muted mb-2">Usually a date one day off from an earlier import. Ticked ones are removed when you save.</div>
+      {% for h in not_official %}
+      <label class="text-sm" style="display:flex;gap:8px;align-items:center;margin:0 0 4px;"><input type="checkbox" name="remove" value="{{ h.pk }}" checked> {{ h.date|date:'D, d M' }} &middot; {{ h.name }}</label>
+      {% endfor %}
+    </div>
+    {% endif %}
     <div class="table-wrapper">
       <table class="table">
         <thead><tr><th style="width:40px;"></th><th>Date</th><th>Holiday</th><th>Type</th><th>Also that day</th></tr></thead>
@@ -70,14 +89,14 @@
             <td><input type="checkbox" name="pick" value="{{ s.date|date:'Y-m-d' }}|{{ s.kind }}|{{ s.source }}|{{ s.name }}" {% if s.checked %}checked{% endif %} {% if s.exists %}disabled{% endif %}></td>
             <td style="white-space:nowrap;">{{ s.date|date:'D, d M' }}</td>
             <td>{{ s.name }}{% if s.exists %} <span class="status-badge approved" style="margin-left:4px;">already marked</span>{% endif %}{% if s.tentative %} <span class="status-badge pending" style="margin-left:4px;">tentative</span>{% endif %}</td>
-            <td>{% if s.kerala %}{% if s.kind == 'public' %}Public holiday{% else %}Kerala holiday{% endif %}{% else %}Not a Kerala holiday{% endif %}</td>
+            <td>{% if s.kerala %}{% if s.kind == 'public' %}Public holiday{% else %}Kerala holiday{% endif %}{% elif official_year %}Not on Kerala list{% else %}Not a Kerala holiday{% endif %}</td>
             <td class="text-sm">{{ s.others|join:", " }}</td>
           </tr>
           {% endfor %}
         </tbody>
       </table>
     </div>
-    <div class="p-3"><button type="submit" class="btn btn-primary"><i class="fas fa-check me-1"></i> Save ticked holidays</button></div>
+    <div class="p-3"><button type="submit" class="btn btn-primary"><i class="fas fa-check me-1"></i> Save</button></div>
   </form>
   {% endif %}
 </div>

@@ -8599,6 +8599,11 @@ def emp_calendar(request):
             settings_obj.save(update_fields=['intern_weekly_off', 'staff_weekly_off', 'leave_count_from'])
             messages.success(request, 'Calendar settings saved.')
         elif action == 'import':
+            removed, _ = Holiday.objects.filter(pk__in=request.POST.getlist('remove')).delete()
+            renamed = holiday_import.renames(year, Holiday.objects.filter(date__year=year))
+            for h, name, kind in renamed:
+                h.name, h.kind, h.source = name, kind, 'kerala'
+                h.save(update_fields=['name', 'kind', 'source'])
             added = 0
             for value in request.POST.getlist('pick'):
                 iso, kind, source, name = (value.split('|', 3) + ['', '', ''])[:4]
@@ -8612,7 +8617,9 @@ def emp_calendar(request):
                                            source=source if source in dict(Holiday.SOURCE_CHOICES) else 'google',
                                            created_by=request.user)
                     added += 1
-            messages.success(request, f'{added} holiday{"s" if added != 1 else ""} added for {year}.')
+            messages.success(request, f'{added} holiday{"s" if added != 1 else ""} added for {year}'
+                             + (f', {len(renamed)} renamed to the Government name' if renamed else '')
+                             + (f', {removed} removed.' if removed else '.'))
         return redirect(here)
 
     cal = WorkCalendar()
@@ -8636,12 +8643,14 @@ def emp_calendar(request):
                'interns': cal.month_working_days(year, m, intern),
                'holidays': sum(1 for h in year_holidays if h.date.month == m)} for m in range(1, 13)]
 
-    suggestions, import_error = None, ''
+    suggestions, import_error, not_official, renames = None, '', [], []
     if request.GET.get('import') == '1':
         try:
             suggestions = holiday_import.suggestions(year, {h.date for h in year_holidays})
         except holiday_import.ImportError_ as exc:
             import_error = str(exc)
+        not_official = holiday_import.not_official(year, year_holidays)
+        renames = holiday_import.renames(year, year_holidays)
 
     prev_y, prev_m = (year - 1, 12) if month == 1 else (year, month - 1)
     next_y, next_m = (year + 1, 1) if month == 12 else (year, month + 1)
@@ -8656,7 +8665,8 @@ def emp_calendar(request):
         'leave_count_from': settings_obj.leave_count_from,
         'prev': {'year': prev_y, 'month': prev_m}, 'next': {'year': next_y, 'month': next_m},
         'years': range(today.year - 1, today.year + 3),
-        'suggestions': suggestions, 'import_error': import_error,
+        'suggestions': suggestions, 'import_error': import_error, 'not_official': not_official, 'renames': renames,
+        'official_year': year in holiday_import.KERALA_OFFICIAL,
     })
 
 

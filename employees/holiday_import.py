@@ -1,5 +1,9 @@
 """Holiday suggestions for HR > Calendar > Import.
 
+For years in KERALA_OFFICIAL the Kerala Government calendar is used as is (the
+red dates printed by the Government Press, Mannanthala). Google's feed is then
+only shown, unticked, for anything else on it. Other years fall back to Google:
+
 Google's public India calendar (no key needed) has the central gazetted holidays
 and festivals such as Vishu and Onam, but it isn't Kerala's list: it has Holi and
 Guru Nanak Jayanti, and misses May Day and Mannam Jayanthi. So everything comes
@@ -18,6 +22,38 @@ KERALA = ['republic day', 'independence day', 'gandhi jayanti', 'ramzan id', 'go
           'bakrid', 'muharram', 'onam', 'milad un-nabi', 'janmashtami', 'dussehra', 'maha navami',
           'diwali', 'christmas', 'maha shivaratri', 'ambedkar jayanti', 'maundy thursday']
 SKIP = ['eve', 'smarta']
+
+# Public holidays (red dates) from the Kerala Government calendar, excluding plain
+# Sundays and second Saturdays. Source: Kerala Govt calendar 2026 PDF, checked 2026-10-29.
+KERALA_OFFICIAL = {
+    2026: [
+        (date(2026, 1, 2), 'Mannam Jayanthi', 'kerala'),
+        (date(2026, 1, 26), 'Republic Day', 'public'),
+        (date(2026, 2, 15), 'Maha Sivarathri', 'kerala'),
+        (date(2026, 3, 20), 'Id-ul-Fitr (Ramzan)', 'public'),
+        (date(2026, 4, 2), 'Maundy Thursday', 'kerala'),
+        (date(2026, 4, 3), 'Good Friday', 'public'),
+        (date(2026, 4, 5), 'Easter', 'kerala'),
+        (date(2026, 4, 14), 'Dr. B.R. Ambedkar Jayanthi', 'public'),
+        (date(2026, 4, 15), 'Vishu', 'kerala'),
+        (date(2026, 5, 1), 'May Day', 'kerala'),
+        (date(2026, 5, 27), 'Id-ul-Adha (Bakrid)', 'public'),
+        (date(2026, 6, 25), 'Muharram', 'public'),
+        (date(2026, 8, 12), 'Karkidaka Vavu', 'kerala'),
+        (date(2026, 8, 15), 'Independence Day', 'public'),
+        (date(2026, 8, 25), 'First Onam / Milad-i-Sherif', 'kerala'),
+        (date(2026, 8, 26), 'Thiruvonam', 'kerala'),
+        (date(2026, 8, 27), 'Third Onam', 'kerala'),
+        (date(2026, 8, 28), 'Fourth Onam / Sree Narayana Guru Jayanthi / Ayyankali Jayanthi', 'kerala'),
+        (date(2026, 9, 4), 'Sreekrishna Jayanthi', 'kerala'),
+        (date(2026, 9, 21), 'Sree Narayana Guru Samadhi', 'kerala'),
+        (date(2026, 10, 2), 'Gandhi Jayanthi', 'public'),
+        (date(2026, 10, 20), 'Mahanavami', 'kerala'),
+        (date(2026, 10, 21), 'Vijayadasami', 'kerala'),
+        (date(2026, 11, 8), 'Deepavali', 'public'),
+        (date(2026, 12, 25), 'Christmas', 'public'),
+    ],
+}
 
 # Kerala holidays on the same date every year, which Google's feed doesn't list
 KERALA_FIXED = [(1, 2, 'Mannam Jayanthi'), (5, 1, 'May Day'), (8, 28, 'Ayyankali Jayanthi')]
@@ -62,6 +98,8 @@ def fetch(year):
 
 def suggestions(year, existing):
     """One row per date, Kerala holidays ticked. `existing` is a set of dates already marked."""
+    if year in KERALA_OFFICIAL:
+        return _official(year, existing)
     by_date = {}
     fixed = [{'date': date(year, m, d), 'name': n, 'public': False, 'source': 'kerala'} for m, d, n in KERALA_FIXED]
     for ev in fetch(year) + fixed:
@@ -87,3 +125,38 @@ def suggestions(year, existing):
             'tentative': 'tentative' in ' '.join(names).lower(),
         })
     return out
+
+
+def _official(year, existing):
+    """The Government list, ticked; Google's other days listed unticked if reachable."""
+    official = {d: (n, k) for d, n, k in KERALA_OFFICIAL[year]}
+    try:
+        google = fetch(year)
+    except ImportError_:
+        google = []
+    others = {}
+    for ev in google:
+        others.setdefault(ev['date'], []).append(ev['name'])
+    out = [{'date': d, 'name': n, 'others': others.get(d, []), 'kind': k, 'source': 'kerala',
+            'kerala': True, 'exists': d in existing, 'checked': d not in existing, 'tentative': False}
+           for d, (n, k) in official.items()]
+    out += [{'date': d, 'name': names[0], 'others': names[1:], 'kind': 'public', 'source': 'google',
+             'kerala': False, 'exists': d in existing, 'checked': False, 'tentative': False}
+            for d, names in others.items() if d not in official]
+    return sorted(out, key=lambda r: r['date'])
+
+
+def not_official(year, holidays):
+    """Imported holidays the Kerala Government list doesn't have, for years where we
+    have that list (e.g. a Google date one day off). Ones HR added by hand are kept."""
+    if year not in KERALA_OFFICIAL:
+        return []
+    official = {d for d, _, _ in KERALA_OFFICIAL[year]}
+    return [h for h in holidays if h.date not in official and h.source != 'manual']
+
+
+def renames(year, holidays):
+    """Imported holidays on a Government date whose name differs: (holiday, new name, kind)."""
+    official = {d: (n, k) for d, n, k in KERALA_OFFICIAL.get(year, [])}
+    return [(h, *official[h.date]) for h in holidays
+            if h.date in official and h.source != 'manual' and h.name != official[h.date][0]]
