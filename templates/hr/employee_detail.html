@@ -348,6 +348,50 @@
       {% endif %}
     </div>
 
+    <!-- Leave Summary -->
+    <div class="card mb-4">
+      <div class="card-header emp-card-head">
+        <h3 class="card-title"><i class="fas fa-chart-column me-2 text-primary"></i> Leave Summary {{ leave_summary.year }}</h3>
+        <a href="{% url 'emp_leave_summary' %}?year={{ leave_summary.year }}" class="btn btn-sm btn-outline-primary">Everyone</a>
+      </div>
+      <div class="table-wrapper">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>Type</th>
+              <th class="text-center">{{ leave_summary.month_label }}</th>
+              <th class="text-center">This year</th>
+              <th class="text-center">Left this year</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for r in leave_summary.rows %}
+            <tr>
+              <td>{{ r.leave_type.name }}{% if not r.leave_type.is_paid %} <span class="text-muted text-sm">unpaid</span>{% endif %}</td>
+              <td class="text-center">{% if r.leave_type.monthly_limit and r.month_used > r.leave_type.monthly_limit %}<span class="text-danger" title="Over the monthly limit"><strong>{{ r.month_used }}</strong></span>{% else %}{{ r.month_used }}{% endif %}{% if r.leave_type.monthly_limit %} <span class="text-muted text-sm">of {{ r.leave_type.monthly_limit }}</span>{% endif %}</td>
+              <td class="text-center">{{ r.year_used }}{% if r.leave_type.days_allowed %} <span class="text-muted text-sm">of {{ r.leave_type.days_allowed }}</span>{% endif %}</td>
+              <td class="text-center">{% if r.year_left is None %}-{% else %}{{ r.year_left }}{% endif %}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+          <tfoot>
+            <tr style="font-weight: 600;">
+              <td>Total days taken</td>
+              <td></td>
+              <td class="text-center">{{ leave_summary.total }}</td>
+              <td></td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+      <div class="card-body text-sm text-muted" style="padding-top: 8px;">
+        Unpaid days: {% if leave_summary.unpaid %}<span class="text-danger">{{ leave_summary.unpaid }}</span>{% else %}0{% endif %}
+        &middot; Pending requests: {% if leave_summary.pending %}<a href="{% url 'emp_leave_list' %}?employee={{ employee.pk }}&status=pending"><strong>{{ leave_summary.pending }}</strong></a>{% else %}0{% endif %}
+        &middot; Rejected: {{ leave_summary.rejected }}
+        <br>Approved leave in working days; weekly offs and holidays aren't counted.
+      </div>
+    </div>
+
     <!-- Leave Requests -->
     <div class="card mb-4">
       <div class="card-header emp-card-head">

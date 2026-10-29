@@ -185,6 +185,27 @@ class WorkCalendarTests(TestCase):
             page = self.client.get(reverse('emp_calendar'), {'year': 2027, 'import': 1})   # 2026 works offline
         self.assertContains(page, "Couldn&#x27;t reach Google")
 
+    def test_employee_page_shows_leave_summary(self):
+        s = CompanySettings.get_settings()
+        s.leave_count_from = date(2026, 10, 1)
+        s.save()
+        unpaid = LeaveType.objects.create(name='Loss of Pay', days_allowed=0, is_paid=False)
+        for start, end, lt, status in [
+            (date(2026, 9, 2), date(2026, 9, 2), self.casual, 'approved'),      # before 'count from': hidden
+            (date(2026, 11, 13), date(2026, 11, 16), self.casual, 'approved'),  # Fri..Mon: 3 staff days
+            (date(2026, 10, 6), date(2026, 10, 7), unpaid, 'approved'),
+            (date(2026, 11, 20), date(2026, 11, 20), self.casual, 'pending'),
+        ]:
+            LeaveRequest.objects.create(employee=self.staff, leave_type=lt, start_date=start, end_date=end,
+                                        reason='x', status=status)
+        self.client.force_login(self.admin)
+        page = self.client.get(reverse('emp_employee_detail', args=[self.staff.pk]))
+        self.assertContains(page, 'Leave Summary 2026')
+        summary = page.context['leave_summary']
+        casual = next(r for r in summary['rows'] if r['leave_type'] == self.casual)
+        self.assertEqual((casual['month_used'], casual['year_used'], casual['year_left']), (3, 3, 9))
+        self.assertEqual((summary['total'], summary['unpaid'], summary['pending']), (5, 2, 1))
+
     def test_payroll_uses_calendar_working_days_when_left_blank(self):
         Holiday.objects.create(date=date(2026, 11, 10), name='Test holiday')
         self.client.force_login(self.admin)

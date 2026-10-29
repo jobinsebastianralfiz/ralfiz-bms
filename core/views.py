@@ -7556,6 +7556,39 @@ def emp_employee_list(request):
     return render(request, 'hr/employee_list.html', context)
 
 
+def _employee_leave_summary(employee):
+    """This month and this year of approved leave per type for the employee page,
+    counted in working days the same way as HR > Leave Summary."""
+    from calendar import monthrange
+    from employees.models import LeaveRequest, LeaveType
+    from employees.work_calendar import current
+    cal = current()
+    today = timezone.localdate()
+    year_lo, year_hi = today.replace(month=1, day=1), today.replace(month=12, day=31)
+    month_lo, month_hi = today.replace(day=1), today.replace(day=monthrange(today.year, today.month)[1])
+    leaves = list(cal.counted(LeaveRequest.objects.filter(employee=employee, start_date__lte=year_hi,
+                                                          end_date__gte=year_lo)).select_related('leave_type'))
+    approved = [lr for lr in leaves if lr.status == 'approved']
+    rows = []
+    for lt in LeaveType.objects.filter(is_active=True).order_by('name'):
+        mine = [lr for lr in approved if lr.leave_type_id == lt.pk]
+        year_used = sum(lr.days_in(year_lo, year_hi, cal) for lr in mine)
+        month_used = sum(lr.days_in(month_lo, month_hi, cal) for lr in mine)
+        rows.append({
+            'leave_type': lt, 'month_used': month_used, 'year_used': year_used,
+            'year_left': max(0, lt.days_allowed - year_used) if lt.days_allowed else None,
+            'month_left': max(0, lt.monthly_limit - month_used) if lt.monthly_limit else None,
+        })
+    days = [(lr, lr.days_in(year_lo, year_hi, cal)) for lr in approved]
+    return {
+        'year': today.year, 'month_label': today.strftime('%B'), 'rows': rows,
+        'total': sum(d for _, d in days),
+        'unpaid': sum(d for lr, d in days if not (lr.leave_type and lr.leave_type.is_paid)),
+        'pending': sum(1 for lr in leaves if lr.status == 'pending'),
+        'rejected': sum(1 for lr in leaves if lr.status == 'rejected'),
+    }
+
+
 @login_required
 def emp_employee_detail(request, pk):
     """Employee detail with attendance, leave, work"""
@@ -7754,6 +7787,7 @@ def emp_employee_detail(request, pk):
     recent_attendance = Attendance.objects.filter(employee=employee).order_by('-date')[:15]
     from employees.work_calendar import current
     leave_requests = current().counted(LeaveRequest.objects.filter(employee=employee)).order_by('-created_at')[:10]
+    leave_summary = _employee_leave_summary(employee)
     work_assignments = WorkAssignment.objects.filter(assigned_to=employee).order_by('-created_at')[:10]
     assessments = employee.assessments.all() if employee.employment_type == 'intern' else None
     context = {
@@ -7762,6 +7796,7 @@ def emp_employee_detail(request, pk):
         'office_config': OfficeConfig.objects.first(),
         'recent_attendance': recent_attendance,
         'leave_requests': leave_requests,
+        'leave_summary': leave_summary,
         'work_assignments': work_assignments,
         'assessments': assessments,
         'employment_types': Employee.EMPLOYMENT_TYPE_CHOICES,
@@ -8673,7 +8708,7 @@ def emp_calendar(request):
 @login_required
 def emp_leave_types(request):
     """Manage leave types"""
-    from employees.models import LeaveType
+    from employees.models import LeaveRequest, LeaveType
     if request.method == 'POST':
         action = request.POST.get('action')
         if action == 'create':
