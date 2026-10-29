@@ -1,0 +1,131 @@
+<!doctype html>
+<html><head><meta charset="utf-8">
+<style>
+@font-face { font-family: 'Inter'; src: url({{ font_dir }}/Inter-400.ttf); font-weight: 400; }
+@font-face { font-family: 'Inter'; src: url({{ font_dir }}/Inter-600.ttf); font-weight: 600; }
+@font-face { font-family: 'Inter'; src: url({{ font_dir }}/Inter-700.ttf); font-weight: 700; }
+@page { size: A4 {% if not single %}landscape{% endif %}; margin: 14mm 12mm 16mm;
+  @bottom-center { content: "{{ company.company_name }} · Leave summary {{ period }} · page " counter(page) " of " counter(pages); font: 7.5pt Inter; color: #94a3b8; } }
+body { font-family: Inter; color: #0f172a; font-size: 9pt; margin: 0; }
+.top { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #0ea5e9; padding-bottom: 8px; margin-bottom: 12px; }
+.brand { display: flex; align-items: center; gap: 8px; font-weight: 700; font-size: 11pt; }
+.brand img { height: 30px; }
+.meta { text-align: right; color: #64748b; font-size: 8pt; }
+h1 { font-size: 15pt; margin: 0 0 2px; }
+.sub { color: #64748b; margin: 0 0 12px; }
+.person { display: flex; gap: 24px; margin-bottom: 12px; padding: 8px 10px; background: #f1f5f9; border-radius: 6px; }
+.person div span { display: block; color: #64748b; font-size: 7.5pt; text-transform: uppercase; letter-spacing: .04em; }
+table { width: 100%; border-collapse: collapse; margin-bottom: 14px; }
+th { background: #0ea5e9; color: #fff; font-weight: 600; font-size: 8pt; padding: 5px 6px; text-align: center; }
+th:first-child, td:first-child { text-align: left; }
+td { padding: 5px 6px; border-bottom: 1px solid #e2e8f0; text-align: center; }
+tr { page-break-inside: avoid; }
+thead { display: table-header-group; }
+tfoot td { font-weight: 700; border-top: 2px solid #94a3b8; border-bottom: none; }
+.muted { color: #94a3b8; }
+.small { font-size: 7.5pt; color: #64748b; }
+.red { color: #dc2626; font-weight: 600; }
+.tag { font-size: 7pt; background: #fef3c7; color: #92400e; padding: 1px 4px; border-radius: 3px; }
+h2 { font-size: 11pt; margin: 4px 0 6px; }
+.note { color: #64748b; font-size: 7.5pt; }
+</style></head>
+<body>
+<div class="top">
+  <div class="brand">{% if company.logo_data_uri %}<img src="{{ company.logo_data_uri }}" alt="">{% endif %}{{ company.company_name }}</div>
+  <div class="meta">Generated {{ generated|date:"d M Y, h:i A" }}</div>
+</div>
+
+{% if single %}
+<h1>Leave summary: {{ single.full_name }}</h1>
+<p class="sub">{{ period }}</p>
+<div class="person">
+  <div><span>Employee ID</span>{{ single.employee_id }}</div>
+  <div><span>Type</span>{% if rows.0.is_intern %}Intern{% else %}{{ single.get_employment_type_display }}{% endif %}</div>
+  <div><span>Department</span>{{ single.get_department_display|default:"-" }}</div>
+  <div><span>Joined</span>{{ single.joining_date|date:"d M Y"|default:"-" }}</div>
+</div>
+{% else %}
+<h1>Leave summary</h1>
+<p class="sub">{{ period }} · {{ rows|length }} {% if people == 'interns' %}intern{{ rows|length|pluralize }}{% elif people == 'employees' %}employee{{ rows|length|pluralize }}{% else %}{{ rows|length|pluralize:"person,people" }}{% endif %}</p>
+{% endif %}
+
+<table>
+  <thead>
+    <tr>
+      {% if single %}<th>Leave type</th><th>Days taken</th>{% if not month %}<th>Allowed / year</th><th>Left</th>{% endif %}
+      {% else %}
+      <th>Name</th>
+      {% for lt in leave_types %}<th>{{ lt.name }}<br><span style="font-weight:400;">{{ lt.days_allowed }}/yr</span></th>{% endfor %}
+      {% if has_other %}<th>Other</th>{% endif %}
+      <th>Total</th><th>Unpaid</th><th>Pending</th><th>Rejected</th>
+      {% endif %}
+    </tr>
+  </thead>
+  <tbody>
+    {% if single %}
+      {% for lt, c in single_cells %}
+      <tr>
+        <td>{{ lt.name }}{% if not lt.is_paid %} <span class="small">unpaid</span>{% endif %}</td>
+        <td>{{ c.used }}</td>
+        {% if not month %}<td>{{ lt.days_allowed }}</td><td>{{ c.left }}</td>{% endif %}
+      </tr>
+      {% endfor %}
+      {% if has_other %}<tr><td>Other</td><td>{{ rows.0.other }}</td>{% if not month %}<td></td><td></td>{% endif %}</tr>{% endif %}
+    {% else %}
+      {% for row in rows %}
+      <tr>
+        <td>{{ row.employee.full_name }} <span class="small">{{ row.employee.employee_id }}</span>{% if row.is_intern %} <span class="tag">Intern</span>{% endif %}</td>
+        {% for c in row.cells %}
+        <td>{% if c.used %}{{ c.used }}{% else %}<span class="muted">0</span>{% endif %}{% if c.left is not None %}<br><span class="small">{{ c.left }} left</span>{% endif %}</td>
+        {% endfor %}
+        {% if has_other %}<td>{{ row.other }}</td>{% endif %}
+        <td><strong>{{ row.total }}</strong></td>
+        <td>{% if row.unpaid %}<span class="red">{{ row.unpaid }}</span>{% else %}<span class="muted">0</span>{% endif %}</td>
+        <td>{% if row.pending %}{{ row.pending }}{% else %}<span class="muted">0</span>{% endif %}</td>
+        <td>{% if row.rejected %}{{ row.rejected }}{% else %}<span class="muted">0</span>{% endif %}</td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="{{ leave_types|length|add:5 }}" class="muted">No one matches these filters.</td></tr>
+      {% endfor %}
+    {% endif %}
+  </tbody>
+  {% if rows %}
+  <tfoot>
+    {% if single %}
+    <tr><td>Total days taken</td><td>{{ totals.total }}</td>{% if not month %}<td></td><td></td>{% endif %}</tr>
+    {% else %}
+    <tr>
+      <td>Total</td>
+      {% for d in totals.by_type %}<td>{{ d }}</td>{% endfor %}
+      {% if has_other %}<td>{{ totals.other }}</td>{% endif %}
+      <td>{{ totals.total }}</td><td>{{ totals.unpaid }}</td><td>{{ totals.pending }}</td><td>{{ totals.rejected }}</td>
+    </tr>
+    {% endif %}
+  </tfoot>
+  {% endif %}
+</table>
+
+{% if single %}
+<p class="small">Unpaid days: {{ totals.unpaid }} · Pending requests: {{ totals.pending }} · Rejected requests: {{ totals.rejected }}</p>
+<h2>Leave requests in {{ period }}</h2>
+<table>
+  <thead><tr><th>Type</th><th>From</th><th>To</th><th>Days</th><th>Status</th><th>Reason</th></tr></thead>
+  <tbody>
+    {% for lr in single_leaves %}
+    <tr>
+      <td>{{ lr.leave_type.name|default:"-" }}</td>
+      <td>{{ lr.start_date|date:"d M Y" }}</td>
+      <td>{{ lr.end_date|date:"d M Y" }}</td>
+      <td>{{ lr.total_days }}</td>
+      <td>{% if lr.status == 'rejected' %}<span class="red">Rejected</span>{% else %}{{ lr.get_status_display }}{% endif %}</td>
+      <td style="text-align:left;">{{ lr.reason|truncatechars:70 }}</td>
+    </tr>
+    {% empty %}
+    <tr><td colspan="6" class="muted">No leave requests in this period.</td></tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endif %}
+
+<p class="note">Days are approved leave in working days. Weekly offs and holidays on the HR calendar are not counted, and a leave crossing the edge of {{ period }} counts only its days inside.</p>
+</body></html>

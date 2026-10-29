@@ -8021,7 +8021,8 @@ def emp_leave_list(request):
 
 @login_required
 def emp_leave_summary(request):
-    """Leave taken per employee/intern for a year or one month, with Excel export.
+    """Leave taken per employee/intern for a year or one month, with Excel and PDF
+    export. ?employee=<pk> narrows it to one person (the PDF on their HR page).
     Days are approved working days of leave, clipped to the chosen period."""
     from employees.models import Employee, LeaveRequest, LeaveType
     from employees.work_calendar import current
@@ -8053,6 +8054,12 @@ def emp_leave_summary(request):
         employees = employees.exclude(is_intern)
     if department:
         employees = employees.filter(department=department)
+    one = request.GET.get('employee', '')
+    if one:
+        try:
+            employees = Employee.objects.select_related('user').filter(pk=uuid.UUID(one))
+        except ValueError:
+            employees = Employee.objects.none()
     employees = list(employees.order_by('employee_id'))
 
     leave_types = list(LeaveType.objects.filter(is_active=True))
@@ -8146,6 +8153,28 @@ def emp_leave_summary(request):
         suffix = f'{year}_{month:02d}' if month else str(year)
         response['Content-Disposition'] = f'attachment; filename="leave_summary_{suffix}.xlsx"'
         wb.save(response)
+        return response
+
+    if request.GET.get('export') == 'pdf':
+        from django.conf import settings as dj_settings
+        from django.http import HttpResponse
+        from django.template.loader import render_to_string
+        from weasyprint import HTML
+        single = employees[0] if one and employees else None
+        html = render_to_string('hr/leave_summary_pdf.html', {
+            'rows': rows, 'totals': totals, 'leave_types': leave_types, 'has_other': has_other,
+            'period': period, 'month': month, 'single': single,
+            'single_cells': list(zip(leave_types, rows[0]['cells'])) if single else [],
+            'single_leaves': sorted((lr for lr in leaves if single), key=lambda lr: lr.start_date),
+            'company': CompanySettings.get_settings(), 'generated': timezone.localtime(),
+            'font_dir': (dj_settings.BASE_DIR / 'static' / 'certificates' / 'fonts').as_uri(),
+            'people': people,
+        })
+        pdf = HTML(string=html, base_url=str(dj_settings.BASE_DIR)).write_pdf()
+        response = HttpResponse(pdf, content_type='application/pdf')
+        suffix = f'{year}_{month:02d}' if month else str(year)
+        who = f'{single.employee_id}_' if single else ''
+        response['Content-Disposition'] = f'attachment; filename="leave_summary_{who}{suffix}.pdf"'
         return response
 
     query = request.GET.copy()

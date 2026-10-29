@@ -206,6 +206,24 @@ class WorkCalendarTests(TestCase):
         self.assertEqual((casual['month_used'], casual['year_used'], casual['year_left']), (3, 3, 9))
         self.assertEqual((summary['total'], summary['unpaid'], summary['pending']), (5, 2, 1))
 
+    def test_leave_summary_pdf_for_everyone_and_one_person(self):
+        LeaveRequest.objects.create(employee=self.staff, leave_type=self.casual, start_date=date(2026, 11, 13),
+                                    end_date=date(2026, 11, 16), reason='Family function', status='approved')
+        self.client.force_login(self.admin)
+        rendered = []
+        fake = mock.MagicMock()
+        fake.side_effect = lambda string, base_url: rendered.append(string) or mock.Mock(write_pdf=lambda: b'%PDF')
+        with mock.patch('weasyprint.HTML', fake):
+            r = self.client.get(reverse('emp_leave_summary'), {'year': 2026, 'export': 'pdf'})
+            one = self.client.get(reverse('emp_leave_summary'), {'year': 2026, 'export': 'pdf',
+                                                                 'employee': str(self.staff.pk)})
+        self.assertEqual(r['Content-Type'], 'application/pdf')
+        self.assertIn('Anu', rendered[0])
+        self.assertIn('Ravi', rendered[0])
+        self.assertIn('leave_summary_EMP201_2026.pdf', one['Content-Disposition'])
+        self.assertNotIn('Anu', rendered[1])
+        self.assertIn('Family function', rendered[1])
+
     def test_payroll_uses_calendar_working_days_when_left_blank(self):
         Holiday.objects.create(date=date(2026, 11, 10), name='Test holiday')
         self.client.force_login(self.admin)

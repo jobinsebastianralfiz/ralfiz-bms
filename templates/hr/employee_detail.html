@@ -352,7 +352,10 @@
     <div class="card mb-4">
       <div class="card-header emp-card-head">
         <h3 class="card-title"><i class="fas fa-chart-column me-2 text-primary"></i> Leave Summary {{ leave_summary.year }}</h3>
-        <a href="{% url 'emp_leave_summary' %}?year={{ leave_summary.year }}" class="btn btn-sm btn-outline-primary">Everyone</a>
+        <div class="d-flex gap-2">
+          <a href="{% url 'emp_leave_summary' %}?employee={{ employee.pk }}&year={{ leave_summary.year }}&export=pdf" class="btn btn-sm btn-primary"><i class="fas fa-file-pdf me-1"></i> PDF</a>
+          <a href="{% url 'emp_leave_summary' %}?year={{ leave_summary.year }}" class="btn btn-sm btn-outline-primary">Everyone</a>
+        </div>
       </div>
       <div class="table-wrapper">
         <table class="table">
