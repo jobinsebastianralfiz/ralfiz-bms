@@ -42,7 +42,8 @@
     <header class="sv-card-head plain"><h2>Quick Actions</h2></header>
     <div class="sv-quick-grid">
       <a href="{% url 'staff:attendance' %}" class="green"><span class="sv-ico green"><i class="fas fa-calendar-check"></i></span>Mark Attendance</a>
-      <a href="{% url 'staff:leave' %}" class="orange"><span class="sv-ico orange"><i class="fas fa-plane-departure"></i></span>Apply Leave</a>
+      {% if can_apply_leave %}<a href="{% url 'staff:leave' %}" class="orange"><span class="sv-ico orange"><i class="fas fa-plane-departure"></i></span>Apply Leave</a>
+      {% else %}<a href="tel:{{ office_tel }}" class="orange"><span class="sv-ico orange"><i class="fas fa-phone"></i></span>Call Office</a>{% endif %}
       <a href="{% url 'staff:daily_report' %}" class="blue"><span class="sv-ico blue"><i class="fas fa-pen-to-square"></i></span>Daily Update</a>
       <a href="{% url 'staff:payslip_list' %}" class="violet"><span class="sv-ico violet"><i class="fas fa-file-invoice"></i></span>View Payslips</a>
     </div>
@@ -109,7 +110,7 @@
         <span class="sv-pill {% if l.status == 'approved' %}green{% else %}orange{% endif %} big">{{ l.get_status_display }}</span>
       </div>
       {% empty %}
-      <p class="sv-empty">No leave coming up. <a href="{% url 'staff:leave' %}">Apply for leave</a></p>
+      <p class="sv-empty">No leave coming up.{% if can_apply_leave %} <a href="{% url 'staff:leave' %}">Apply for leave</a>{% endif %}</p>
       {% endfor %}
     </section>
 

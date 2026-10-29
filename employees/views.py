@@ -609,8 +609,13 @@ class LeaveTypeListView(generics.ListAPIView):
 
 @extend_schema(tags=['Leave'])
 class LeaveRequestListCreateView(APIView):
-    """List own leave requests or create new one"""
+    """List own leave requests or create new one.
+
+    Monthly rules apply (see employees/leave_rules.py): Casual is one day a month
+    with no carry forward, and Sick past one day a month needs a doctor's
+    prescription sent as the multipart `document` field."""
     permission_classes = [IsAuthenticated]
+    parser_classes = [MultiPartParser, FormParser, JSONParser]
 
     def get(self, request):
         employee = get_employee(request.user)
@@ -630,7 +635,7 @@ class LeaveRequestListCreateView(APIView):
         if not employee:
             return Response({'error': 'Employee profile not found'}, status=status.HTTP_404_NOT_FOUND)
 
-        serializer = LeaveRequestCreateSerializer(data=request.data)
+        serializer = LeaveRequestCreateSerializer(data=request.data, context={'employee': employee})
         if not serializer.is_valid():
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
@@ -653,6 +658,21 @@ class LeaveRequestListCreateView(APIView):
             )
 
         return Response(LeaveRequestSerializer(leave).data, status=status.HTTP_201_CREATED)
+
+
+@extend_schema(tags=['Leave'])
+class LeaveRulesView(APIView):
+    """This month's leave rules for the signed-in person. When `can_apply` is false
+    (monthly casual leave used up) show a Call office button for `office_phone`
+    instead of Apply leave."""
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        employee = get_employee(request.user)
+        if not employee:
+            return Response({'error': 'Employee profile not found'}, status=status.HTTP_404_NOT_FOUND)
+        from .leave_rules import monthly_status
+        return Response(monthly_status(employee))
 
 
 @extend_schema(tags=['Leave'])

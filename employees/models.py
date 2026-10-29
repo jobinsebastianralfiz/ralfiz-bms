@@ -1,3 +1,4 @@
+import os
 import uuid
 from collections import namedtuple
 
@@ -336,6 +337,10 @@ class LeaveType(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     name = models.CharField(max_length=50, unique=True)
     days_allowed = models.IntegerField(default=12, help_text='Max days per year')
+    monthly_limit = models.PositiveSmallIntegerField(
+        default=0, help_text='Days allowed each calendar month; unused days do not carry forward. 0 = no monthly cap.')
+    document_after_days = models.PositiveSmallIntegerField(
+        default=0, help_text="Days a month allowed without a document (e.g. a doctor's prescription); more needs one. 0 = never needed.")
     is_paid = models.BooleanField(default=True)
     is_active = models.BooleanField(default=True)
 
@@ -344,6 +349,15 @@ class LeaveType(models.Model):
 
     def __str__(self):
         return self.name
+
+
+def _leave_document_storage():
+    from core.models import _PrivateStorage
+    return _PrivateStorage(base_url=None)
+
+
+def leave_document_path(instance, filename):
+    return f'leave_documents/{instance.employee_id}/{uuid.uuid4().hex[:8]}_{os.path.basename(filename)}'
 
 
 class LeaveRequest(models.Model):
@@ -361,6 +375,8 @@ class LeaveRequest(models.Model):
     start_date = models.DateField()
     end_date = models.DateField()
     reason = models.TextField()
+    document = models.FileField(upload_to=leave_document_path, storage=_leave_document_storage, blank=True,
+                                max_length=300, help_text="Doctor's prescription or other proof")
     status = models.CharField(max_length=10, choices=STATUS_CHOICES, default='pending')
     reviewed_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True,
                                      related_name='reviewed_leaves')

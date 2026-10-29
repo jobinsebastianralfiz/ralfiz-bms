@@ -246,6 +246,10 @@ PULSE_MODEL = os.getenv('PULSE_MODEL', 'claude-opus-4-8')
 # Social Hub: the model that drafts inbox replies (a person always sends them).
 SOCIAL_AI_MODEL = os.getenv('SOCIAL_AI_MODEL', 'claude-opus-5-5')
 AGREEMENT_AI_MODEL = os.getenv('AGREEMENT_AI_MODEL', 'claude-opus-5-5')
+# HR: drafts the WhatsApp reply to a leave request (HR edits and sends it).
+LEAVE_AI_MODEL = os.getenv('LEAVE_AI_MODEL', 'claude-opus-5-5')
+# Staff whose monthly casual leave is used up are shown this number to call instead of applying.
+OFFICE_PHONE = os.getenv('OFFICE_PHONE', '9895663498')
 # Social Hub > Website: ralfiz.com numbers from Google Analytics 4 and Search Console, read by a
 # Google Cloud service account (key JSON, or base64 of it) that has Viewer access on both.
 GOOGLE_SERVICE_ACCOUNT_JSON = os.getenv('GOOGLE_SERVICE_ACCOUNT_JSON', '')

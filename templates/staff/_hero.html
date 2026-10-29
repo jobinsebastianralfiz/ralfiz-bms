@@ -1,4 +1,4 @@
-{% comment %}Page banner. Pass: title, subtitle, eyebrow, accent (the violet part of the title), tagline, art = desk|calendar|check, show_date, icon (a tile left of the title), action_label + action_id or action_href (a button on the right).{% endcomment %}
+{% comment %}Page banner. Pass: title, subtitle, eyebrow, accent (the violet part of the title), tagline, art = desk|calendar|check, show_date, icon (a tile left of the title), action_label + action_id or action_href (a button on the right), action_icon (default fa-plus).{% endcomment %}
 <section class="sv-hero sv-hero--{{ art|default:'desk' }}">
   {% if show_date %}<div class="sv-hero-date"><i class="far fa-calendar"></i> {% now "l, d M Y" %}</div>{% endif %}
   {% if icon %}<div class="sv-hero-row"><span class="sv-hero-icon"><i class="fas {{ icon }}"></i></span><div>{% endif %}
@@ -6,7 +6,7 @@
   <h1>{{ title }}{% if accent %} <span class="sv-grad">{{ accent }}</span>{% endif %}</h1>
   {% if subtitle %}<p>{{ subtitle }}</p>{% endif %}
   {% if icon %}</div></div>{% endif %}
-  {% if action_label %}{% if action_href %}<a class="sv-btn sv-hero-action" href="{{ action_href }}"><i class="fas fa-plus"></i> {{ action_label }}</a>{% else %}<button type="button" class="sv-btn sv-hero-action" id="{{ action_id }}"><i class="fas fa-plus"></i> {{ action_label }}</button>{% endif %}{% endif %}
+  {% if action_label %}{% if action_href %}<a class="sv-btn sv-hero-action" href="{{ action_href }}"><i class="fas {{ action_icon|default:'fa-plus' }}"></i> {{ action_label }}</a>{% else %}<button type="button" class="sv-btn sv-hero-action" id="{{ action_id }}"><i class="fas {{ action_icon|default:'fa-plus' }}"></i> {{ action_label }}</button>{% endif %}{% endif %}
   {% if tagline %}<div class="sv-tagline" aria-hidden="true">{{ tagline }}</div>{% endif %}
   <svg class="sv-hero-art" viewBox="0 0 300 150" fill="none" aria-hidden="true">
     {% if art == 'calendar' %}

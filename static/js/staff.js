@@ -46,7 +46,7 @@
     var keys = Object.keys(data);
     for (var i = 0; i < keys.length; i++) {
       var v = data[keys[i]];
-      if (Array.isArray(v) && v.length) return keys[i] + ': ' + v[0];
+      if (Array.isArray(v) && v.length) return keys[i] === 'non_field_errors' ? v[0] : keys[i] + ': ' + v[0];
       if (typeof v === 'string') return keys[i] + ': ' + v;
     }
     return fallback || 'Something went wrong. Please try again.';

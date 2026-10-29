@@ -245,11 +245,12 @@ def build_tools(scope):
 
 
 def _build_model():
-    api_key = getattr(settings, 'ANTHROPIC_API_KEY', '')
+    from core.ai_keys import anthropic_api_key
+    api_key = anthropic_api_key()
     if not api_key:
         raise PulseConfigurationError(
-            'ANTHROPIC_API_KEY is not set. PULSE cannot answer questions '
-            'until it is configured in the environment.'
+            'No Claude API key is set. PULSE cannot answer questions '
+            'until one is added in Settings > AI.'
         )
 
     from langchain_anthropic import ChatAnthropic

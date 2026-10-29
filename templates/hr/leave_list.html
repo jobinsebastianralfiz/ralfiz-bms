@@ -59,7 +59,7 @@
             <td>{{ l.start_date|date:"d M Y" }}</td>
             <td>{{ l.end_date|date:"d M Y" }}</td>
             <td>{{ l.total_days }}</td>
-            <td>{{ l.reason|truncatewords:8 }}</td>
+            <td>{{ l.reason|truncatewords:8 }}{% if l.document %}<br><a href="{% url 'emp_leave_document' l.pk %}" target="_blank" class="text-sm"><i class="fas fa-file-medical"></i> Prescription</a>{% endif %}</td>
             <td>
               {% if l.status == 'approved' %}
               <span class="badge" style="background: var(--success-bg); color: var(--success);">Approved</span>
@@ -73,7 +73,8 @@
             </td>
             <td style="white-space: nowrap;">
               {% with wa=l.employee.whatsapp_number %}
-              <button type="button" class="btn btn-sm btn-ghost wa-reply" {% if not wa %}disabled title="No phone number on {{ l.employee.full_name }}'s profile"{% else %}title="Reply on WhatsApp"{% endif %}
+              <button type="button" class="btn btn-sm btn-ghost wa-reply" title="Leave history &amp; WhatsApp reply"
+                data-insight="{% url 'emp_leave_insight' l.pk %}" data-ai="{% url 'emp_leave_ai_reply' l.pk %}"
                 data-phone="{{ wa }}" data-name="{{ l.employee.full_name }}" data-type="{{ l.leave_type.name|default:'' }}"
                 data-from="{{ l.start_date|date:'d M Y' }}" data-to="{{ l.end_date|date:'d M Y' }}" data-days="{{ l.total_days }}"
                 data-status="{{ l.status }}" data-action="{% url 'emp_leave_action' l.pk %}"
@@ -103,7 +104,17 @@
   </div>
 </div>
 
-<dialog id="waDialog" style="margin:auto;border:0;border-radius:14px;padding:0;width:min(480px,92vw);box-shadow:0 20px 50px rgba(0,0,0,.25);">
+<style>
+  .lv-stats { background: var(--bg-hover, #f6f8fb); border: 1px solid var(--border-color); border-radius: 10px; padding: 10px 12px; font-size: .85rem; display: grid; gap: 8px; }
+  .lv-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+  .lv-chip { background: #fff; border: 1px solid var(--border-color); border-radius: 999px; padding: 2px 9px; white-space: nowrap; }
+  .lv-chip.warn { border-color: #f59e0b; color: #b45309; background: #fffbeb; }
+  .lv-bars { display: flex; align-items: flex-end; gap: 6px; height: 46px; }
+  .lv-bar { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; height: 100%; font-size: .7rem; color: var(--text-muted); }
+  .lv-bar span { width: 100%; background: var(--primary, #0ea5e9); border-radius: 4px 4px 0 0; min-height: 2px; margin-bottom: 2px; }
+  .lv-note { background: #eef6ff; border-left: 3px solid var(--primary, #0ea5e9); padding: 8px 10px; border-radius: 6px; font-size: .85rem; }
+</style>
+<dialog id="waDialog" style="margin:auto;border:0;border-radius:14px;padding:0;width:min(580px,94vw);max-height:92vh;overflow:auto;box-shadow:0 20px 50px rgba(0,0,0,.25);">
   <form method="dialog" style="padding:18px 20px;display:grid;gap:10px;" id="waForm">
     <div style="display:flex;align-items:center;gap:8px;">
       <i class="fab fa-whatsapp" style="color:#16a34a;font-size:1.3rem;"></i>
@@ -111,12 +122,15 @@
       <button type="submit" value="close" class="btn btn-sm btn-ghost btn-icon" style="margin-left:auto;" title="Close"><i class="fas fa-times"></i></button>
     </div>
     <div class="text-sm text-muted" id="waSub"></div>
-    <div style="display:flex;gap:6px;flex-wrap:wrap;">
+    <div class="lv-stats" id="lvStats"><span class="text-muted">Loading leave history…</span></div>
+    <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;">
       <button type="button" class="btn btn-sm btn-outline-secondary wa-tpl" data-tpl="approve">Approved</button>
       <button type="button" class="btn btn-sm btn-outline-secondary wa-tpl" data-tpl="reject">Not approved</button>
       <button type="button" class="btn btn-sm btn-outline-secondary wa-tpl" data-tpl="ask">Ask for details</button>
+      <button type="button" class="btn btn-sm btn-primary" id="waAI" style="margin-left:auto;"><i class="fas fa-wand-magic-sparkles me-1"></i> Write with AI</button>
     </div>
-    <textarea id="waText" class="form-control" rows="7"></textarea>
+    <div class="lv-note" id="waNote" style="display:none;"></div>
+    <textarea id="waText" class="form-control" rows="8"></textarea>
     <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
       <button type="button" class="btn btn-sm btn-success" id="waSend"><i class="fab fa-whatsapp me-1"></i> Open in WhatsApp</button>
       <span id="waDecide" style="display:none;gap:6px;margin-left:auto;">
@@ -124,7 +138,7 @@
         <button type="button" class="btn btn-sm btn-outline-danger" data-decide="reject"><i class="fas fa-times"></i> Reject</button>
       </span>
     </div>
-    <small class="text-muted">WhatsApp opens with this message ready; you press send there. Approve / Reject saves the message as the review note.</small>
+    <small class="text-muted">"Write with AI" drafts the message for the chosen decision using this leave history; check it before sending. WhatsApp opens with the message ready and you press send there. Approve / Reject saves the message as the review note.</small>
   </form>
 </dialog>
 <form method="post" id="waDecisionForm" style="display:none;">
@@ -134,13 +148,34 @@
 (function () {
   const dlg = document.getElementById('waDialog');
   const text = document.getElementById('waText');
-  let cur = null;
+  let cur = null, decision = 'ask', seq = 0;
+  const esc = v => String(v).replace(/[&<>"']/g, c => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'})[c]);
+  const statsBox = document.getElementById('lvStats');
+  const note = document.getElementById('waNote');
+  const aiBtn = document.getElementById('waAI');
+  const sendBtn = document.getElementById('waSend');
+  const renderStats = s => {
+    const r = s.this_request;
+    const warn = [];
+    if (r.exceeds_balance) warn.push(`Over balance: ${r.days} asked, ${r.remaining_before} left`);
+    if (r.short_notice) warn.push('Short notice');
+    if (s.others_off.length) warn.push(`Also off: ${s.others_off.join(', ')}`);
+    const max = Math.max(1, ...s.last_six_months.map(m => m.days));
+    statsBox.innerHTML = `
+      <div><strong>${s.year}:</strong> ${s.total_days_year} day${s.total_days_year == 1 ? '' : 's'} taken before this request · ${s.requests_year} other request${s.requests_year == 1 ? '' : 's'}${s.rejected_year ? ` (${s.rejected_year} rejected)` : ''}${s.pending_other ? ` · ${s.pending_other} more pending` : ''}</div>
+      <div class="lv-chips">${s.by_type.map(t => `<span class="lv-chip">${esc(t.type)}: ${t.used}/${t.allowed}</span>`).join('')}</div>
+      <div class="lv-bars" title="Approved leave days per month">${s.last_six_months.map(m => `<div class="lv-bar"><span style="height:${Math.round(m.days / max * 30)}px"></span>${esc(m.month.slice(0, 3))} ${m.days}</div>`).join('')}</div>
+      <div class="lv-chips">${s.weekend_edge_year ? `<span class="lv-chip${s.weekend_edge_year >= 3 ? ' warn' : ''}">${s.weekend_edge_year} next to a weekend</span>` : ''}${s.short_notice_year ? `<span class="lv-chip${s.short_notice_year >= 3 ? ' warn' : ''}">${s.short_notice_year} short notice before</span>` : ''}${warn.map(w => `<span class="lv-chip warn">${esc(w)}</span>`).join('')}</div>
+      ${s.recent.length ? `<div class="text-muted">Recent: ${s.recent.map(x => `${esc(x.from)}${x.days > 1 ? ' – ' + esc(x.to) : ''} ${esc(x.type)} (${esc(x.status)})`).join(' · ')}</div>` : '<div class="text-muted">No earlier leave.</div>'}`;
+  };
   const tpl = {
     approve: d => `Hi ${d.name},\n\nYour ${d.leave} from ${d.from} to ${d.to} (${d.days} day${d.days == 1 ? '' : 's'}) has been approved.\n\nRegards,\nRalfiz Technologies`,
     reject: d => `Hi ${d.name},\n\nSorry, we are unable to approve your ${d.leave} from ${d.from} to ${d.to} (${d.days} day${d.days == 1 ? '' : 's'}). Please speak to HR if you would like to discuss it.\n\nRegards,\nRalfiz Technologies`,
     ask: d => `Hi ${d.name},\n\nAbout your ${d.leave} request from ${d.from} to ${d.to}: could you share a few more details before we decide?\n\nRegards,\nRalfiz Technologies`,
   };
   const fill = key => {
+    decision = key;
+    note.style.display = 'none';
     text.value = tpl[key](cur);
     document.querySelectorAll('.wa-tpl').forEach(b => b.classList.toggle('active', b.dataset.tpl === key));
   };
@@ -149,12 +184,37 @@
     // "Sick Leave" stays as is; "Casual" becomes "Casual leave"
     cur.leave = !cur.type ? 'leave' : /leave$/i.test(cur.type) ? cur.type : cur.type + ' leave';
     document.getElementById('waTitle').textContent = 'Reply to ' + cur.name;
-    document.getElementById('waSub').textContent = `+${cur.phone} · ${cur.from} to ${cur.to}`;
+    document.getElementById('waSub').textContent = (cur.phone ? `+${cur.phone}` : 'No phone number on file') + ` · ${cur.from} to ${cur.to}`;
+    sendBtn.disabled = !cur.phone;
+    sendBtn.title = cur.phone ? '' : 'Add a phone number to their employee profile first';
+    const mine = ++seq;
+    statsBox.innerHTML = '<span class="text-muted">Loading leave history…</span>';
+    fetch(cur.insight, {credentials: 'same-origin'}).then(r => r.json())
+      .then(s => { if (mine === seq) renderStats(s); })
+      .catch(() => { if (mine === seq) statsBox.innerHTML = '<span class="text-danger">Could not load leave history.</span>'; });
     document.getElementById('waDecide').style.display = cur.status === 'pending' ? 'inline-flex' : 'none';
     fill(cur.status === 'rejected' ? 'reject' : cur.status === 'approved' ? 'approve' : 'ask');
     dlg.showModal();
   }));
   document.querySelectorAll('.wa-tpl').forEach(b => b.addEventListener('click', () => fill(b.dataset.tpl)));
+  aiBtn.addEventListener('click', () => {
+    const mine = seq, body = new FormData();
+    body.append('decision', decision);
+    body.append('csrfmiddlewaretoken', document.querySelector('#waDecisionForm [name=csrfmiddlewaretoken]').value);
+    aiBtn.disabled = true;
+    aiBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i> Writing…';
+    fetch(cur.ai, {method: 'POST', body, credentials: 'same-origin'})
+      .then(r => r.json())
+      .then(d => {
+        if (mine !== seq) return;
+        if (d.error) { note.textContent = d.error; note.style.display = ''; return; }
+        text.value = d.message;
+        note.innerHTML = '<strong>For HR:</strong> ' + esc(d.hr_note);
+        note.style.display = d.hr_note ? '' : 'none';
+      })
+      .catch(() => { note.textContent = 'Could not reach the server. Try again.'; note.style.display = ''; })
+      .finally(() => { aiBtn.disabled = false; aiBtn.innerHTML = '<i class="fas fa-wand-magic-sparkles me-1"></i> Write with AI'; });
+  });
   document.getElementById('waSend').addEventListener('click', () => {
     window.open(`https://wa.me/${cur.phone}?text=${encodeURIComponent(text.value)}`, '_blank', 'noopener');
   });

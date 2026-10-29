@@ -36,6 +36,7 @@ urlpatterns = [
     path('leave/requests/', views.LeaveRequestListCreateView.as_view(), name='leave_requests'),
     path('leave/requests/<uuid:pk>/cancel/', views.LeaveRequestCancelView.as_view(), name='leave_cancel'),
     path('leave/balance/', views.LeaveBalanceView.as_view(), name='leave_balance'),
+    path('leave/rules/', views.LeaveRulesView.as_view(), name='leave_rules'),
 
     # Work Assignments
     path('work/', views.WorkAssignmentListView.as_view(), name='work_list'),

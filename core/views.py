@@ -3692,6 +3692,45 @@ def payment_receipt(request, pk):
 # ============== Settings & Reports ==============
 
 @login_required
+def settings_ai_key(request):
+    """Owner only: save, replace or remove the Claude API key (stored encrypted).
+    The key is checked against Anthropic before it is saved and is never shown back."""
+    back = f"{reverse('settings')}#ai"
+    if not request.user.is_superuser:
+        messages.error(request, 'Only the owner can change the AI key.')
+        return redirect(back)
+    if request.method != 'POST':
+        return redirect(back)
+    company = CompanySettings.get_settings()
+    if request.POST.get('remove'):
+        company.anthropic_api_key = ''
+        company.anthropic_key_updated_at = timezone.now()
+        company.anthropic_key_updated_by = request.user
+        company.save(update_fields=['anthropic_api_key', 'anthropic_key_updated_at', 'anthropic_key_updated_by'])
+        messages.success(request, 'Saved key removed. The AI features now use the server variable, if one is set.')
+        return redirect(back)
+    key = request.POST.get('api_key', '').strip()
+    if not key.startswith('sk-ant-') or len(key) < 30:
+        messages.error(request, 'That does not look like a Claude API key. It starts with "sk-ant-".')
+        return redirect(back)
+    import anthropic
+    try:
+        anthropic.Anthropic(api_key=key, timeout=20.0, max_retries=1).models.list(limit=1)
+    except anthropic.AuthenticationError:
+        messages.error(request, 'Anthropic rejected this key. Check it was copied in full and is still active.')
+        return redirect(back)
+    except anthropic.APIError:
+        messages.error(request, 'Could not reach Anthropic to check the key. Try again in a minute.')
+        return redirect(back)
+    company.anthropic_api_key = key
+    company.anthropic_key_updated_at = timezone.now()
+    company.anthropic_key_updated_by = request.user
+    company.save(update_fields=['anthropic_api_key', 'anthropic_key_updated_at', 'anthropic_key_updated_by'])
+    messages.success(request, 'Claude API key checked and saved. All AI features use it from now on.')
+    return redirect(back)
+
+
+@login_required
 def settings_view(request):
     company = CompanySettings.get_settings()
 
@@ -3801,7 +3840,11 @@ def settings_view(request):
         status__in=['paid', 'cancelled']
     ).aggregate(total=Sum(F('total_amount') - F('amount_paid')))['total'] or 0
     fy_reset_history = FYResetEvent.objects.select_related('ran_by', 'opening_balance')[:10]
+    from .ai_keys import anthropic_api_key, key_source, masked
+    ai_source = key_source()
     return render(request, 'settings/index.html', {
+        'ai_source': ai_source,
+        'ai_key_hint': masked(anthropic_api_key()) if ai_source else '',
         'company': company,
         'opening_balance': opening_balance,
         'opening_balance_history': opening_balance_history,
@@ -8088,6 +8131,46 @@ def emp_leave_summary(request):
 
 
 @login_required
+def emp_leave_document(request, pk):
+    """Download the prescription attached to a leave request (private storage)."""
+    import os
+    from django.http import FileResponse, Http404
+    from employees.models import LeaveRequest
+    leave = get_object_or_404(LeaveRequest, pk=pk)
+    if not leave.document:
+        raise Http404
+    try:
+        return FileResponse(leave.document.open('rb'), filename=os.path.basename(leave.document.name))
+    except FileNotFoundError:
+        raise Http404('File missing from storage.')
+
+
+@login_required
+def emp_leave_insight(request, pk):
+    """JSON: this person's leave history, for the reply dialog on Leave Requests."""
+    from django.http import JsonResponse
+    from employees.models import LeaveRequest
+    from .leave_insights import leave_stats
+    leave = get_object_or_404(LeaveRequest.objects.select_related('employee__user', 'leave_type'), pk=pk)
+    return JsonResponse(leave_stats(leave))
+
+
+@login_required
+def emp_leave_ai_reply(request, pk):
+    """JSON: a Claude-drafted WhatsApp reply that reflects the leave trend."""
+    from django.http import JsonResponse
+    from employees.models import LeaveRequest
+    from .leave_insights import LeaveAIError, draft_reply
+    if request.method != 'POST':
+        return JsonResponse({'error': 'POST only.'}, status=405)
+    leave = get_object_or_404(LeaveRequest.objects.select_related('employee__user', 'leave_type'), pk=pk)
+    try:
+        return JsonResponse(draft_reply(leave, request.POST.get('decision', 'ask')))
+    except LeaveAIError as exc:
+        return JsonResponse({'error': str(exc)}, status=502)
+
+
+@login_required
 def emp_leave_action(request, pk):
     """Approve or reject a leave request"""
     from employees.models import LeaveRequest, Notification
@@ -8451,6 +8534,13 @@ def emp_work_delete(request, pk):
     return redirect('emp_work_list')
 
 
+def _nonneg_int(value):
+    try:
+        return max(0, int(value))
+    except (TypeError, ValueError):
+        return 0
+
+
 @login_required
 def emp_leave_types(request):
     """Manage leave types"""
@@ -8461,10 +8551,18 @@ def emp_leave_types(request):
             LeaveType.objects.create(
                 name=request.POST.get('name'),
                 days_allowed=int(request.POST.get('days_allowed', 12)),
+                monthly_limit=_nonneg_int(request.POST.get('monthly_limit')),
+                document_after_days=_nonneg_int(request.POST.get('document_after_days')),
                 is_paid=request.POST.get('is_paid') == 'on',
                 is_active=True,
             )
             messages.success(request, 'Leave type created.')
+        elif action == 'rules':
+            lt = get_object_or_404(LeaveType, pk=request.POST.get('pk'))
+            lt.monthly_limit = _nonneg_int(request.POST.get('monthly_limit'))
+            lt.document_after_days = _nonneg_int(request.POST.get('document_after_days'))
+            lt.save(update_fields=['monthly_limit', 'document_after_days'])
+            messages.success(request, f'Monthly rules for {lt.name} saved.')
         elif action == 'toggle':
             lt = get_object_or_404(LeaveType, pk=request.POST.get('pk'))
             lt.is_active = not lt.is_active

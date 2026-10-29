@@ -4,10 +4,31 @@
 {% block heading %}Leave{% endblock %}
 
 {% block page_hero %}
+{% if rules.can_apply %}
 {% include 'staff/_hero.html' with title='Leave Management' subtitle='Request, track and manage your leaves easily.' tagline='Take a break, come back stronger' art='calendar' icon='fa-plane' action_label='Request Leave' action_id='sfNewLeave' %}
+{% else %}
+{% include 'staff/_hero.html' with title='Leave Management' subtitle='Request, track and manage your leaves easily.' tagline='Take a break, come back stronger' art='calendar' icon='fa-plane' action_label='Call Office' action_href='tel:'|add:office_tel action_icon='fa-phone' %}
+{% endif %}
 {% endblock %}
 
 {% block content %}
+{% if not rules.can_apply %}
+<section class="sv-card" style="border-left:4px solid #f59e0b;padding-left:16px;">
+  <p style="margin:0 0 10px;"><strong>You have used this month's Casual Leave.</strong> One casual day is allowed each month and unused days do not carry forward. If you need more leave in {{ rules.month }}, please call the office. You can still apply for sick leave here.</p>
+  <div style="display:flex;gap:8px;flex-wrap:wrap;">
+    <a href="tel:{{ office_tel }}" class="sv-btn"><i class="fas fa-phone"></i> Call office · {{ rules.office_phone }}</a>
+    {% if leave_types %}<button type="button" class="sv-btn" id="sfNewLeave" style="background:#fff;color:#6D3DF2;border:1px solid #D9CFFB;"><i class="fas fa-kit-medical"></i> Apply sick leave</button>{% endif %}
+  </div>
+</section>
+{% elif rules.monthly or rules.document_rules %}
+<section class="sv-card" style="padding:12px 16px;">
+  <p style="margin:0;font-size:.9rem;">
+    <i class="fas fa-circle-info" style="color:#8B5CF6;"></i>
+    {% for m in rules.monthly %}{{ m.leave_type }}: {{ m.remaining }} of {{ m.limit }} day{{ m.limit|pluralize }} left in {{ rules.month }} (no carry forward). {% endfor %}
+    {% for d in rules.document_rules %}{{ d.leave_type }} over {{ d.free_days_per_month }} day{{ d.free_days_per_month|pluralize }} a month needs a doctor's prescription.{% endfor %}
+  </p>
+</section>
+{% endif %}
 {% if balances %}
 <section class="sv-stats sv-balances" aria-label="Leave balance {{ year }}">
   {% for b in balances %}
@@ -73,15 +94,16 @@
 (function () {
   var LEAVE_URL = '/api/employees/leave/requests/';
 
-  document.getElementById('sfNewLeave').addEventListener('click', function () {
-    var modal = SF.openModal('Request leave');
+  var newBtn = document.getElementById('sfNewLeave');
+  if (newBtn) newBtn.addEventListener('click', function () {
+    var modal = SF.openModal({% if rules.can_apply %}'Request leave'{% else %}'Request sick leave'{% endif %});
     modal.bindClose(function () { modal.close(); });
 
     modal.body.innerHTML =
       '<div class="sf-field">' +
         '<label class="sf-label" for="lvType">Leave type</label>' +
         '<select class="sf-select" id="lvType">' +
-          {% for lt in leave_types %}'<option value="{{ lt.id }}">{{ lt.name|escapejs }}</option>' +{% endfor %}
+          {% for lt in leave_types %}'<option value="{{ lt.id }}" data-doc="{{ lt.document_after_days }}">{{ lt.name|escapejs }}</option>' +{% endfor %}
         '</select>' +
       '</div>' +
       '<div class="sf-grid-2">' +
@@ -94,7 +116,22 @@
         '<label class="sf-label" for="lvReason">Reason</label>' +
         '<textarea class="sf-textarea" id="lvReason" placeholder="Why do you need this leave?"></textarea>' +
       '</div>' +
+      '<div class="sf-field" id="lvDocField" style="display:none;">' +
+        '<label class="sf-label" for="lvDoc">Doctor\'s prescription</label>' +
+        '<input class="sf-input" type="file" id="lvDoc" accept="application/pdf,image/*">' +
+        '<small id="lvDocHint" style="display:block;margin-top:4px;color:#6b7280;"></small>' +
+      '</div>' +
       '<button type="button" class="sf-btn" id="lvSubmit">Submit request</button>';
+
+    var typeSel = modal.body.querySelector('#lvType');
+    var showDoc = function () {
+      var free = +(typeSel.selectedOptions[0] || {dataset: {}}).dataset.doc || 0;
+      modal.body.querySelector('#lvDocField').style.display = free ? '' : 'none';
+      modal.body.querySelector('#lvDocHint').textContent = free
+        ? 'Needed when you take more than ' + free + ' day' + (free === 1 ? '' : 's') + ' of this leave in a month.' : '';
+    };
+    typeSel.addEventListener('change', showDoc);
+    showDoc();
 
     modal.body.querySelector('#lvSubmit').addEventListener('click', function () {
       var btn = this;
@@ -111,10 +148,15 @@
       btn.disabled = true;
       btn.innerHTML = '<span class="sf-spinner"></span> Submitting…';
 
-      SF.api(LEAVE_URL, {
-        method: 'POST',
-        body: { leave_type: type, start_date: from, end_date: to, reason: reason }
-      }).then(function (res) {
+      var body = new FormData();
+      body.append('leave_type', type);
+      body.append('start_date', from);
+      body.append('end_date', to);
+      body.append('reason', reason);
+      var doc = modal.body.querySelector('#lvDoc').files[0];
+      if (doc && modal.body.querySelector('#lvDocField').style.display !== 'none') body.append('document', doc);
+
+      SF.api(LEAVE_URL, { method: 'POST', body: body }).then(function (res) {
         if (res.ok) {
           modal.close();
           SF.toast('Leave request submitted.', 'success');

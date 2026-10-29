@@ -1140,6 +1140,14 @@ class CompanySettings(models.Model):
             'branch': self.bank_branch, 'upi': self.upi_id,
         }
 
+    # Claude API key for the AI features (PULSE, Social Hub, agreement and leave
+    # drafts). Encrypted at rest; the owner sets it in Settings > AI. When blank the
+    # ANTHROPIC_API_KEY environment variable is used (see core/ai_keys.py).
+    anthropic_api_key = EncryptedTextField(blank=True)
+    anthropic_key_updated_at = models.DateTimeField(null=True, blank=True)
+    anthropic_key_updated_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True,
+                                                 related_name='+')
+
     @classmethod
     def get_settings(cls):
         obj, created = cls.objects.get_or_create(pk=1)

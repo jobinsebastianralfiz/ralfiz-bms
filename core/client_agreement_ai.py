@@ -39,9 +39,11 @@ SCHEMA = {
 
 
 def _client():
-    if not settings.ANTHROPIC_API_KEY:
-        raise ProposalAIError('AI drafting needs ANTHROPIC_API_KEY on the server.')
-    return anthropic.Anthropic(api_key=settings.ANTHROPIC_API_KEY, timeout=180.0, max_retries=2)
+    from .ai_keys import anthropic_api_key
+    key = anthropic_api_key()
+    if not key:
+        raise ProposalAIError('AI drafting needs a Claude API key. Add it in Settings > AI.')
+    return anthropic.Anthropic(api_key=key, timeout=180.0, max_retries=2)
 
 
 def draft_from_proposal(proposal_md, project):

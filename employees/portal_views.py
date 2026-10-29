@@ -33,7 +33,7 @@ from .models import (
 # changes. Whitenoise serves these unhashed, and the service worker is
 # cache-first for static assets, so an unversioned URL is served from the old
 # cache forever -- which is exactly how the app icon got stuck.
-ASSET_V = '18'
+ASSET_V = '19'
 
 MONTHS = [
     '', 'January', 'February', 'March', 'April', 'May', 'June',
@@ -231,9 +231,13 @@ def dashboard(request):
     month_attendance = Attendance.objects.filter(
         employee=employee, date__year=today.year, date__month=today.month)
 
+    from .leave_rules import monthly_status
+    leave_rules = monthly_status(employee, today)
     ctx = _base_context(request, 'dashboard')
     ctx.update(_summary(employee))
     ctx.update({
+        'can_apply_leave': leave_rules['can_apply'],
+        'office_tel': _tel(leave_rules['office_phone']),
         'upcoming_leave': LeaveRequest.objects.filter(
             employee=employee, end_date__gte=today, status__in=['pending', 'approved']
         ).select_related('leave_type').order_by('start_date')[:3],
@@ -332,6 +336,12 @@ def attendance_history(request):
 
 # --- Leave -----------------------------------------------------------------
 
+def _tel(phone):
+    """tel: link target; a 10-digit Indian number gets +91."""
+    digits = ''.join(ch for ch in phone if ch.isdigit())
+    return '+91' + digits if len(digits) == 10 else '+' + digits
+
+
 @staff_required
 def leave(request):
     employee = request.employee
@@ -368,10 +378,14 @@ def leave(request):
         b['tone'] = ['violet', 'green', 'red', 'blue'][i % 4]
         b['pct'] = round(b['remaining'] * 100 / b['total_allowed']) if b['total_allowed'] else 0
 
+    from .leave_rules import monthly_status
+    rules = monthly_status(employee)
     ctx = _base_context(request, 'leave')
     ctx.update({
+        'rules': rules,
+        'office_tel': _tel(rules['office_phone']),
         'balances': balances,
-        'leave_types': LeaveType.objects.filter(is_active=True),
+        'leave_types': LeaveType.objects.filter(is_active=True, pk__in=rules['online_type_ids']),
         'requests': shown.order_by('-start_date'),
         'status_counts': status_counts,
         'status': status,

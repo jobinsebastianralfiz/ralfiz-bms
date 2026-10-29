@@ -29,6 +29,16 @@
             <input type="number" name="days_allowed" class="form-control" value="12" min="1">
           </div>
           <div class="mb-3">
+            <label class="form-label">Days per month</label>
+            <input type="number" name="monthly_limit" class="form-control" value="0" min="0">
+            <small class="text-muted">Unused days don't carry forward. 0 = no monthly cap.</small>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Prescription needed after (days a month)</label>
+            <input type="number" name="document_after_days" class="form-control" value="0" min="0">
+            <small class="text-muted">More days than this in a month need a doctor's prescription. 0 = never.</small>
+          </div>
+          <div class="mb-3">
             <label class="form-check">
               <input type="checkbox" name="is_paid" class="form-check-input" checked>
               <span class="form-check-label">Paid Leave</span>
@@ -54,6 +64,7 @@
               <tr>
                 <th>Name</th>
                 <th>Days/Year</th>
+                <th>Monthly rules</th>
                 <th>Paid</th>
                 <th>Status</th>
                 <th>Actions</th>
@@ -64,6 +75,14 @@
               <tr>
                 <td class="fw-medium">{{ lt.name }}</td>
                 <td>{{ lt.days_allowed }}</td>
+                <td>
+                  <form method="post" class="d-flex align-items-center gap-2" style="flex-wrap:wrap;font-size:.85rem;">
+                    {% csrf_token %}<input type="hidden" name="action" value="rules"><input type="hidden" name="pk" value="{{ lt.pk }}">
+                    <label class="mb-0" title="Days allowed each month; 0 = no cap">Per month <input type="number" name="monthly_limit" value="{{ lt.monthly_limit }}" min="0" class="form-control form-control-sm d-inline-block" style="width:64px;"></label>
+                    <label class="mb-0" title="Days a month without a prescription; 0 = never needed">Rx after <input type="number" name="document_after_days" value="{{ lt.document_after_days }}" min="0" class="form-control form-control-sm d-inline-block" style="width:64px;"></label>
+                    <button class="btn btn-sm btn-ghost" title="Save rules"><i class="fas fa-check"></i></button>
+                  </form>
+                </td>
                 <td>
                   {% if lt.is_paid %}
                   <span class="badge" style="background: var(--success-bg); color: var(--success);">Paid</span>

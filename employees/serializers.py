@@ -160,7 +160,7 @@ class CheckOutSerializer(serializers.Serializer):
 class LeaveTypeSerializer(serializers.ModelSerializer):
     class Meta:
         model = LeaveType
-        fields = ['id', 'name', 'days_allowed', 'is_paid']
+        fields = ['id', 'name', 'days_allowed', 'monthly_limit', 'document_after_days', 'is_paid']
 
 
 class LeaveRequestSerializer(serializers.ModelSerializer):
@@ -173,19 +173,44 @@ class LeaveRequestSerializer(serializers.ModelSerializer):
         fields = [
             'id', 'leave_type', 'leave_type_name', 'start_date', 'end_date',
             'reason', 'status', 'total_days', 'reviewed_by_name',
-            'review_notes', 'reviewed_at', 'created_at',
+            'review_notes', 'reviewed_at', 'created_at', 'has_document',
         ]
         read_only_fields = ['id', 'status', 'reviewed_by_name', 'review_notes', 'reviewed_at', 'created_at']
 
+    has_document = serializers.SerializerMethodField()
+
+    def get_has_document(self, obj):
+        return bool(obj.document)
+
+
+LEAVE_DOCUMENT_TYPES = ('.pdf', '.jpg', '.jpeg', '.png', '.heic', '.webp')
+
 
 class LeaveRequestCreateSerializer(serializers.ModelSerializer):
+    """Pass context={'employee': ...} so the monthly leave rules can be checked."""
+    document = serializers.FileField(required=False, allow_null=True)
+
     class Meta:
         model = LeaveRequest
-        fields = ['leave_type', 'start_date', 'end_date', 'reason']
+        fields = ['leave_type', 'start_date', 'end_date', 'reason', 'document']
+
+    def validate_document(self, f):
+        if f and not f.name.lower().endswith(LEAVE_DOCUMENT_TYPES):
+            raise serializers.ValidationError('Attach the prescription as a PDF or a photo (JPG or PNG).')
+        if f and f.size > 10 * 1024 * 1024:
+            raise serializers.ValidationError('The file is over 10 MB. Attach a smaller photo or PDF.')
+        return f
 
     def validate(self, data):
         if data['start_date'] > data['end_date']:
             raise serializers.ValidationError('End date must be after start date.')
+        employee = self.context.get('employee')
+        if employee:
+            from .leave_rules import check_request
+            problem = check_request(employee, data.get('leave_type'), data['start_date'], data['end_date'],
+                                    has_document=bool(data.get('document')))
+            if problem:
+                raise serializers.ValidationError(problem)
         return data
 
 

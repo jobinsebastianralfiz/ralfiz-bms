@@ -141,6 +141,7 @@ urlpatterns = [
 
     # Settings & Reports
     path('settings/', views.settings_view, name='settings'),
+    path('settings/ai-key/', views.settings_ai_key, name='settings_ai_key'),
     path('settings/start-new-fy/', views.start_new_fy, name='start_new_fy'),
     path('settings/start-new-fy-quotes/', views.start_new_fy_quotes, name='start_new_fy_quotes'),
     path('settings/fy-wizard/', views.fy_wizard, name='fy_wizard'),
@@ -313,6 +314,9 @@ urlpatterns = [
     path('hr/leave/', views.emp_leave_list, name='emp_leave_list'),
     path('hr/leave/summary/', views.emp_leave_summary, name='emp_leave_summary'),
     path('hr/leave/<uuid:pk>/action/', views.emp_leave_action, name='emp_leave_action'),
+    path('hr/leave/<uuid:pk>/insight/', views.emp_leave_insight, name='emp_leave_insight'),
+    path('hr/leave/<uuid:pk>/document/', views.emp_leave_document, name='emp_leave_document'),
+    path('hr/leave/<uuid:pk>/ai-reply/', views.emp_leave_ai_reply, name='emp_leave_ai_reply'),
     path('hr/leave/types/', views.emp_leave_types, name='emp_leave_types'),
     path('hr/daily-reports/', views.emp_daily_report_list, name='emp_daily_report_list'),
     path('hr/daily-reports/<uuid:pk>/comment/', views.emp_daily_report_comment, name='emp_daily_report_comment'),
