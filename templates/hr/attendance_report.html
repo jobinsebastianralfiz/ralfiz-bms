@@ -52,6 +52,7 @@
           <th class="text-center">Half Day</th>
           <th class="text-center">WFH</th>
           <th class="text-center">Absent</th>
+          <th class="text-center" title="Working days with no attendance and no approved leave, up to yesterday">Unmarked Leave</th>
           <th class="text-center">Days Present</th>
           <th class="text-center">Working Days</th>
           <th class="text-center">Total Hours</th>
@@ -69,13 +70,14 @@
           <td class="text-center">{{ row.half_day }}</td>
           <td class="text-center">{{ row.work_from_home }}</td>
           <td class="text-center">{{ row.absent }}</td>
+          <td class="text-center">{% if row.unmarked %}<span class="text-danger" title="{% for d in row.unmarked_dates %}{{ d|date:'d M' }}{% if not forloop.last %}, {% endif %}{% endfor %}"><strong>{{ row.unmarked }}</strong></span>{% else %}<span class="text-muted">0</span>{% endif %}</td>
           <td class="text-center"><strong>{{ row.days_present }}</strong></td>
           <td class="text-center">{{ row.working_days }}</td>
           <td class="text-center">{{ row.hours }}h</td>
         </tr>
         {% empty %}
         <tr>
-          <td colspan="9" class="text-center text-muted py-4">No active employees found.</td>
+          <td colspan="10" class="text-center text-muted py-4">No active employees found.</td>
         </tr>
         {% endfor %}
       </tbody>
@@ -88,6 +90,7 @@
           <td class="text-center">{{ totals.half_day }}</td>
           <td class="text-center">{{ totals.work_from_home }}</td>
           <td class="text-center">{{ totals.absent }}</td>
+          <td class="text-center">{{ totals.unmarked }}</td>
           <td class="text-center">—</td>
           <td class="text-center">—</td>
           <td class="text-center">{{ totals.hours }}h</td>
@@ -97,4 +100,5 @@
     </table>
   </div>
 </div>
+<p class="text-muted text-sm mt-2">Unmarked Leave: working days with no attendance and no approved leave, counted up to yesterday from the joining date. Holidays and weekly offs are skipped. Hover a number to see the dates. Payroll doesn't cut salary for these days.</p>
 {% endblock %}

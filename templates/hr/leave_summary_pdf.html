@@ -57,7 +57,7 @@ h2 { font-size: 11pt; margin: 4px 0 6px; }
       <th>Name</th>
       {% for lt in leave_types %}<th>{{ lt.name }}<br><span style="font-weight:400;">{{ lt.days_allowed }}/yr</span></th>{% endfor %}
       {% if has_other %}<th>Other</th>{% endif %}
-      <th>Total</th><th>Unpaid</th><th>Pending</th><th>Rejected</th>
+      <th>Total</th><th>Unpaid</th><th>Unmarked leave</th><th>Pending</th><th>Rejected</th>
       {% endif %}
     </tr>
   </thead>
@@ -81,11 +81,12 @@ h2 { font-size: 11pt; margin: 4px 0 6px; }
         {% if has_other %}<td>{{ row.other }}</td>{% endif %}
         <td><strong>{{ row.total }}</strong></td>
         <td>{% if row.unpaid %}<span class="red">{{ row.unpaid }}</span>{% else %}<span class="muted">0</span>{% endif %}</td>
+        <td>{% if row.unmarked %}<span class="red">{{ row.unmarked }}</span>{% else %}<span class="muted">0</span>{% endif %}</td>
         <td>{% if row.pending %}{{ row.pending }}{% else %}<span class="muted">0</span>{% endif %}</td>
         <td>{% if row.rejected %}{{ row.rejected }}{% else %}<span class="muted">0</span>{% endif %}</td>
       </tr>
       {% empty %}
-      <tr><td colspan="{{ leave_types|length|add:5 }}" class="muted">No one matches these filters.</td></tr>
+      <tr><td colspan="{{ leave_types|length|add:6 }}" class="muted">No one matches these filters.</td></tr>
       {% endfor %}
     {% endif %}
   </tbody>
@@ -98,7 +99,7 @@ h2 { font-size: 11pt; margin: 4px 0 6px; }
       <td>Total</td>
       {% for d in totals.by_type %}<td>{{ d }}</td>{% endfor %}
       {% if has_other %}<td>{{ totals.other }}</td>{% endif %}
-      <td>{{ totals.total }}</td><td>{{ totals.unpaid }}</td><td>{{ totals.pending }}</td><td>{{ totals.rejected }}</td>
+      <td>{{ totals.total }}</td><td>{{ totals.unpaid }}</td><td>{{ totals.unmarked }}</td><td>{{ totals.pending }}</td><td>{{ totals.rejected }}</td>
     </tr>
     {% endif %}
   </tfoot>
@@ -107,6 +108,10 @@ h2 { font-size: 11pt; margin: 4px 0 6px; }
 
 {% if single %}
 <p class="small">Unpaid days: {{ totals.unpaid }} · Pending requests: {{ totals.pending }} · Rejected requests: {{ totals.rejected }}</p>
+{% if rows.0.unmarked %}
+<p class="small"><span class="red">Unmarked leave: {{ rows.0.unmarked }} day{{ rows.0.unmarked|pluralize }}</span> (no attendance and no approved leave):
+{% for d in rows.0.unmarked_dates %}{{ d|date:"d M" }}{% if not forloop.last %}, {% endif %}{% endfor %}</p>
+{% endif %}
 <h2>Leave requests in {{ period }}</h2>
 <table>
   <thead><tr><th>Type</th><th>From</th><th>To</th><th>Days</th><th>Status</th><th>Reason</th></tr></thead>
@@ -127,5 +132,5 @@ h2 { font-size: 11pt; margin: 4px 0 6px; }
 </table>
 {% endif %}
 
-<p class="note">Days are approved leave in working days. Weekly offs and holidays on the HR calendar are not counted, and a leave crossing the edge of {{ period }} counts only its days inside.</p>
+<p class="note">Days are approved leave in working days. Weekly offs and holidays on the HR calendar are not counted, and a leave crossing the edge of {{ period }} counts only its days inside. Unmarked leave is a working day up to yesterday with no attendance and no approved leave; it isn't cut from salary.</p>
 </body></html>

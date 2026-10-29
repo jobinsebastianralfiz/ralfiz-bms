@@ -7580,7 +7580,11 @@ def _employee_leave_summary(employee):
             'month_left': max(0, lt.monthly_limit - month_used) if lt.monthly_limit else None,
         })
     days = [(lr, lr.days_in(year_lo, year_hi, cal)) for lr in approved]
+    from employees.leave_rules import unmarked_days
+    unmarked = unmarked_days([employee], year_lo, year_hi)[employee.pk]
     return {
+        'unmarked': len(unmarked), 'unmarked_dates': unmarked,
+        'unmarked_month': sum(1 for d in unmarked if d >= month_lo),
         'year': today.year, 'month_label': today.strftime('%B'), 'rows': rows,
         'total': sum(d for _, d in days),
         'unpaid': sum(d for lr, d in days if not (lr.leave_type and lr.leave_type.is_paid)),
@@ -8078,6 +8082,8 @@ def emp_leave_summary(request):
             rejected[lr.employee_id] = rejected.get(lr.employee_id, 0) + 1
     # Approved leave whose type was deleted or switched off still counts
     has_other = any(k[1] not in {lt.pk for lt in leave_types} for k in used)
+    from employees.leave_rules import unmarked_days
+    unmarked = unmarked_days(employees, lo, hi)
 
     rows = []
     for emp in employees:
@@ -8098,6 +8104,8 @@ def emp_leave_summary(request):
                       for lt, d in zip(leave_types, by_type)],
             'pending': pending.get(emp.pk, 0),
             'rejected': rejected.get(emp.pk, 0),
+            'unmarked': len(unmarked[emp.pk]),
+            'unmarked_dates': unmarked[emp.pk],
         })
     totals = {
         'by_type': [sum(r['by_type'][i] for r in rows) for i in range(len(leave_types))],
@@ -8106,6 +8114,7 @@ def emp_leave_summary(request):
         'unpaid': sum(r['unpaid'] for r in rows),
         'pending': sum(r['pending'] for r in rows),
         'rejected': sum(r['rejected'] for r in rows),
+        'unmarked': sum(r['unmarked'] for r in rows),
     }
     period = date(year, month, 1).strftime('%B %Y') if month else str(year)
 
@@ -8124,8 +8133,8 @@ def emp_leave_summary(request):
                 headers.append(f'{lt.name} left')
         if has_other:
             headers.append('Other')
-        headers += ['Total Days', 'Unpaid Days']
-        headers += ['Pending Requests', 'Rejected Requests']
+        headers += ['Total Days', 'Unpaid Days', 'Unmarked Leave']
+        headers += ['Pending Requests', 'Rejected Requests', 'Unmarked Dates']
         ws.append([f'Leave summary: {period}'])
         ws['A1'].font = Font(bold=True, size=13)
         ws.append(headers)
@@ -8142,8 +8151,8 @@ def emp_leave_summary(request):
                     line.append(c['left'])
             if has_other:
                 line.append(r['other'])
-            line += [r['total'], r['unpaid']]
-            line += [r['pending'], r['rejected']]
+            line += [r['total'], r['unpaid'], r['unmarked']]
+            line += [r['pending'], r['rejected'], ', '.join(d.strftime('%d %b') for d in r['unmarked_dates'])]
             ws.append(line)
         for col_cells in ws.iter_cols(min_row=2):
             length = max((len(str(cell.value or '')) for cell in col_cells), default=10)
@@ -8385,10 +8394,13 @@ def emp_attendance_report(request):
     cal = current()
     month_days = {'interns': cal.month_working_days(year, month, Employee(employment_type='intern')),
                   'staff': cal.month_working_days(year, month)}
+    from employees.leave_rules import unmarked_days
+    employees = list(employees)
+    unmarked = unmarked_days(employees, date(year, month, 1), date(year, month, monthrange(year, month)[1]))
 
     rows = []
     totals = {'present': 0, 'late': 0, 'half_day': 0, 'work_from_home': 0,
-              'absent': 0, 'hours': 0.0}
+              'absent': 0, 'unmarked': 0, 'hours': 0.0}
     for emp in employees:
         emp_records = by_employee.get(emp.id, [])
         counts = {'present': 0, 'late': 0, 'half_day': 0, 'work_from_home': 0, 'absent': 0}
@@ -8405,12 +8417,15 @@ def emp_attendance_report(request):
             'half_day': counts['half_day'],
             'work_from_home': counts['work_from_home'],
             'absent': counts['absent'],
+            'unmarked': len(unmarked[emp.pk]),
+            'unmarked_dates': unmarked[emp.pk],
             'days_present': round(present_equiv, 1),
             'working_days': cal.month_working_days(year, month, emp),
             'hours': round(hours, 2),
         })
         for key in counts:
             totals[key] += counts[key]
+        totals['unmarked'] += len(unmarked[emp.pk])
         totals['hours'] += hours
 
     totals['hours'] = round(totals['hours'], 2)
@@ -8426,7 +8441,8 @@ def emp_attendance_report(request):
         header_font = Font(bold=True, color='FFFFFF')
         header_fill = PatternFill(start_color='0D9488', end_color='0D9488', fill_type='solid')
         headers = ['Employee ID', 'Name', 'Department', 'Present', 'Late',
-                   'Half Day', 'WFH', 'Absent', 'Days Present', 'Working Days', 'Total Hours']
+                   'Half Day', 'WFH', 'Absent', 'Unmarked Leave', 'Days Present', 'Working Days', 'Total Hours',
+                   'Unmarked Dates']
         ws.append(headers)
         for cell in ws[1]:
             cell.font = header_font
@@ -8436,7 +8452,8 @@ def emp_attendance_report(request):
             ws.append([
                 emp.employee_id, emp.full_name, emp.get_department_display(),
                 r['present'], r['late'], r['half_day'], r['work_from_home'],
-                r['absent'], r['days_present'], r['working_days'], r['hours'],
+                r['absent'], r['unmarked'], r['days_present'], r['working_days'], r['hours'],
+                ', '.join(d.strftime('%d %b') for d in r['unmarked_dates']),
             ])
         for col_cells in ws.columns:
             length = max((len(str(cell.value or '')) for cell in col_cells), default=10)

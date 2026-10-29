@@ -8,12 +8,12 @@ Pending and approved requests both count, so two requests can't slip past togeth
 Days are working days (employees/work_calendar.py): weekly offs and holidays are free.
 """
 from calendar import monthrange
-from datetime import date
+from datetime import date, timedelta
 
 from django.conf import settings
 from django.utils import timezone
 
-from .models import LeaveRequest, LeaveType
+from .models import Attendance, LeaveRequest, LeaveType
 from .work_calendar import current
 
 
@@ -57,6 +57,36 @@ def month_leave_days(employee, year, month):
         else:
             unpaid += days
     return paid, unpaid
+
+
+def unmarked_days(employees, lo, hi):
+    """{employee pk: [dates]} of working days in lo..hi with no attendance marked
+    and no approved leave. Shown to HR as unmarked leave; payroll doesn't cut for
+    them. Counts only up to yesterday, from the person's joining date and from the
+    'count leave from' date (HR > Calendar)."""
+    employees = list(employees)
+    cal = current()
+    hi = min(hi, timezone.localdate() - timedelta(days=1))
+    if cal.count_from:
+        lo = max(lo, cal.count_from)
+    out = {e.pk: [] for e in employees}
+    if lo > hi or not employees:
+        return out
+    marked = set(Attendance.objects.filter(employee__in=employees, date__range=(lo, hi))
+                 .values_list('employee_id', 'date'))
+    on_leave = {}
+    for e_id, start, end in LeaveRequest.objects.filter(employee__in=employees, status='approved', start_date__lte=hi,
+                                                        end_date__gte=lo).values_list('employee_id', 'start_date', 'end_date'):
+        on_leave.setdefault(e_id, []).append((start, end))
+    for e in employees:
+        joined = e.joining_date.date() if hasattr(e.joining_date, 'date') else e.joining_date
+        day = max(lo, joined) if joined else lo
+        while day <= hi:
+            if (cal.is_working_day(day, e) and (e.pk, day) not in marked
+                    and not any(a <= day <= b for a, b in on_leave.get(e.pk, ()))):
+                out[e.pk].append(day)
+            day += timedelta(days=1)
+    return out
 
 
 def is_sick(leave_type):

@@ -391,6 +391,8 @@
         Unpaid days: {% if leave_summary.unpaid %}<span class="text-danger">{{ leave_summary.unpaid }}</span>{% else %}0{% endif %}
         &middot; Pending requests: {% if leave_summary.pending %}<a href="{% url 'emp_leave_list' %}?employee={{ employee.pk }}&status=pending"><strong>{{ leave_summary.pending }}</strong></a>{% else %}0{% endif %}
         &middot; Rejected: {{ leave_summary.rejected }}
+        <br>Unmarked leave: {% if leave_summary.unmarked %}<span class="text-danger" title="{% for d in leave_summary.unmarked_dates %}{{ d|date:'d M' }}{% if not forloop.last %}, {% endif %}{% endfor %}"><strong>{{ leave_summary.unmarked_month }}</strong> in {{ leave_summary.month_label }}, <strong>{{ leave_summary.unmarked }}</strong> this year</span>{% else %}0{% endif %}
+        <span class="text-muted">(working days with no attendance and no approved leave, up to yesterday)</span>
         <br>Approved leave in working days; weekly offs and holidays aren't counted.
       </div>
     </div>

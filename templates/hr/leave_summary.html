@@ -65,6 +65,7 @@
           {% if has_other %}<th class="text-center">Other</th>{% endif %}
           <th class="text-center">Total Days</th>
           <th class="text-center">Unpaid</th>
+          <th class="text-center" title="Working days with no attendance and no approved leave, up to yesterday">Unmarked Leave</th>
           <th class="text-center">Pending</th>
           <th class="text-center">Rejected</th>
         </tr>
@@ -83,12 +84,13 @@
           {% if has_other %}<td class="text-center">{{ row.other }}</td>{% endif %}
           <td class="text-center"><strong>{{ row.total }}</strong></td>
           <td class="text-center">{% if row.unpaid %}<span class="text-danger">{{ row.unpaid }}</span>{% else %}<span class="text-muted">0</span>{% endif %}</td>
+          <td class="text-center">{% if row.unmarked %}<span class="text-danger" title="{% for d in row.unmarked_dates %}{{ d|date:'d M' }}{% if not forloop.last %}, {% endif %}{% endfor %}"><strong>{{ row.unmarked }}</strong></span>{% else %}<span class="text-muted">0</span>{% endif %}</td>
           <td class="text-center">{% if row.pending %}<a href="{% url 'emp_leave_list' %}?employee={{ row.employee.pk }}&status=pending"><strong>{{ row.pending }}</strong></a>{% else %}<span class="text-muted">0</span>{% endif %}</td>
           <td class="text-center">{% if row.rejected %}{{ row.rejected }}{% else %}<span class="text-muted">0</span>{% endif %}</td>
         </tr>
         {% empty %}
         <tr>
-          <td colspan="{{ leave_types|length|add:6 }}" class="text-center text-muted py-4">No one matches these filters.</td>
+          <td colspan="{{ leave_types|length|add:7 }}" class="text-center text-muted py-4">No one matches these filters.</td>
         </tr>
         {% endfor %}
       </tbody>
@@ -100,6 +102,7 @@
           {% if has_other %}<td class="text-center">{{ totals.other }}</td>{% endif %}
           <td class="text-center">{{ totals.total }}</td>
           <td class="text-center">{{ totals.unpaid }}</td>
+          <td class="text-center">{{ totals.unmarked }}</td>
           <td class="text-center">{{ totals.pending }}</td>
           <td class="text-center">{{ totals.rejected }}</td>
         </tr>
@@ -108,5 +111,5 @@
     </table>
   </div>
 </div>
-<p class="text-muted text-sm mt-2">Days count approved leave that falls inside {{ period }}; a leave crossing the month or year edge counts only its days inside. Click a name to see their requests.</p>
+<p class="text-muted text-sm mt-2">Days count approved leave that falls inside {{ period }}; a leave crossing the month or year edge counts only its days inside. Unmarked Leave is working days with no attendance and no approved leave, up to yesterday (hover for the dates); it isn't cut from salary. Click a name to see their requests.</p>
 {% endblock %}

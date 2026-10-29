@@ -224,6 +224,36 @@ class WorkCalendarTests(TestCase):
         self.assertNotIn('Anu', rendered[1])
         self.assertIn('Family function', rendered[1])
 
+    def test_unmarked_working_days_count_as_leave(self):
+        from employees.leave_rules import unmarked_days
+        from employees.models import Attendance
+        for e in (self.staff, self.intern):
+            e.joining_date = date(2026, 11, 2)
+            e.save()
+        Holiday.objects.create(date=date(2026, 11, 5), name='Test holiday')
+        Attendance.objects.create(employee=self.staff, date=date(2026, 11, 2), status='present')
+        Attendance.objects.create(employee=self.staff, date=date(2026, 11, 7), status='absent')     # marked
+        LeaveRequest.objects.create(employee=self.staff, leave_type=self.casual, start_date=date(2026, 11, 3),
+                                    end_date=date(2026, 11, 4), reason='x', status='approved')
+        LeaveRequest.objects.create(employee=self.staff, leave_type=self.casual, start_date=date(2026, 11, 6),
+                                    end_date=date(2026, 11, 6), reason='x', status='rejected')
+        # 1 Oct .. 30 Nov, today is 10 Nov: only up to 9 Nov, from joining on 2 Nov
+        out = unmarked_days([self.staff, self.intern], date(2026, 10, 1), date(2026, 11, 30))
+        self.assertEqual(out[self.staff.pk], [date(2026, 11, 6), date(2026, 11, 9)])
+        self.assertEqual(out[self.intern.pk], [date(2026, 11, 2), date(2026, 11, 3), date(2026, 11, 4),
+                                               date(2026, 11, 6), date(2026, 11, 9)])
+
+        self.client.force_login(self.admin)
+        report = self.client.get(reverse('emp_attendance_report'), {'month': 11, 'year': 2026})
+        row = next(r for r in report.context['rows'] if r['employee'] == self.staff)
+        self.assertEqual(row['unmarked'], 2)
+        self.assertEqual(report.context['totals']['unmarked'], 7)
+        summary = self.client.get(reverse('emp_leave_summary'), {'year': 2026, 'month': 11})
+        self.assertEqual(next(r for r in summary.context['rows'] if r['employee'] == self.intern)['unmarked'], 5)
+        card = self.client.get(reverse('emp_employee_detail', args=[self.staff.pk])).context['leave_summary']
+        self.assertEqual((card['unmarked'], card['unmarked_month']), (2, 2))
+        self.assertEqual(Payroll.objects.count(), 0)
+
     def test_payroll_uses_calendar_working_days_when_left_blank(self):
         Holiday.objects.create(date=date(2026, 11, 10), name='Test holiday')
         self.client.force_login(self.admin)
