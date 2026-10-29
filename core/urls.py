@@ -313,6 +313,7 @@ urlpatterns = [
     path('hr/attendance/late-grant/<uuid:pk>/revoke/', views.emp_late_checkin_revoke, name='emp_late_checkin_revoke'),
     path('hr/leave/', views.emp_leave_list, name='emp_leave_list'),
     path('hr/leave/summary/', views.emp_leave_summary, name='emp_leave_summary'),
+    path('hr/calendar/', views.emp_calendar, name='emp_calendar'),
     path('hr/leave/<uuid:pk>/action/', views.emp_leave_action, name='emp_leave_action'),
     path('hr/leave/<uuid:pk>/insight/', views.emp_leave_insight, name='emp_leave_insight'),
     path('hr/leave/<uuid:pk>/document/', views.emp_leave_document, name='emp_leave_document'),

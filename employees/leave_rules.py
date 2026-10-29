@@ -5,6 +5,7 @@
 - A type with document_after_days (Sick: 1) needs a document, such as a doctor's
   prescription, once a month's days go past that number.
 Pending and approved requests both count, so two requests can't slip past together.
+Days are working days (employees/work_calendar.py): weekly offs and holidays are free.
 """
 from calendar import monthrange
 from datetime import date
@@ -13,6 +14,7 @@ from django.conf import settings
 from django.utils import timezone
 
 from .models import LeaveRequest, LeaveType
+from .work_calendar import current
 
 
 def _months(start, end):
@@ -23,16 +25,38 @@ def _months(start, end):
         y, m = (y + 1, 1) if m == 12 else (y, m + 1)
 
 
-def _overlap(start, end, lo, hi):
-    return max(0, (min(end, hi) - max(start, lo)).days + 1)
-
-
 def days_used(employee, leave_type, lo, hi, exclude_pk=None):
     qs = LeaveRequest.objects.filter(employee=employee, leave_type=leave_type, status__in=['pending', 'approved'],
                                      start_date__lte=hi, end_date__gte=lo)
     if exclude_pk:
         qs = qs.exclude(pk=exclude_pk)
-    return sum(_overlap(lr.start_date, lr.end_date, lo, hi) for lr in qs)
+    cal = current()
+    return sum(lr.days_in(lo, hi, cal) for lr in qs)
+
+
+def year_days_used(employee, leave_type, year):
+    """Approved working days of this type in the year, for balances. Leave before
+    the 'count leave from' date (HR > Calendar) is left out."""
+    cal = current()
+    lo, hi = date(year, 1, 1), date(year, 12, 31)
+    qs = cal.counted(LeaveRequest.objects.filter(employee=employee, leave_type=leave_type, status='approved',
+                                                 start_date__lte=hi, end_date__gte=lo))
+    return sum(lr.days_in(lo, hi, cal) for lr in qs)
+
+
+def month_leave_days(employee, year, month):
+    """(paid, unpaid) approved working days of leave inside the month, for payroll."""
+    cal = current()
+    lo, hi = date(year, month, 1), date(year, month, monthrange(year, month)[1])
+    paid = unpaid = 0
+    for lr in LeaveRequest.objects.filter(employee=employee, status='approved', start_date__lte=hi,
+                                          end_date__gte=lo).select_related('leave_type'):
+        days = lr.days_in(lo, hi, cal)
+        if lr.leave_type and lr.leave_type.is_paid:
+            paid += days
+        else:
+            unpaid += days
+    return paid, unpaid
 
 
 def is_sick(leave_type):
@@ -52,8 +76,13 @@ def check_request(employee, leave_type, start, end, has_document=False):
     """Return a message saying why this request breaks a rule, or '' if it is fine."""
     if not leave_type or start > end:
         return ''
+    cal = current()
+    if not cal.working_days(start, end, employee):
+        return 'Those dates are all holidays or weekly offs, so no leave is needed.'
     for _, _, lo, hi in _months(start, end):
-        new = _overlap(start, end, lo, hi)
+        new = cal.working_days(max(start, lo), min(end, hi), employee)
+        if not new:
+            continue
         used = days_used(employee, leave_type, lo, hi)
         month = lo.strftime('%B')
         if leave_type.monthly_limit and used + new > leave_type.monthly_limit:

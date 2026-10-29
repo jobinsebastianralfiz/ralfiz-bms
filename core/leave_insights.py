@@ -14,6 +14,7 @@ from django.conf import settings
 from django.utils import timezone
 
 from employees.models import LeaveRequest, LeaveType
+from employees.work_calendar import current
 
 
 class LeaveAIError(Exception):
@@ -21,7 +22,7 @@ class LeaveAIError(Exception):
 
 
 def _days_in(lr, lo, hi):
-    return max(0, (min(lr.end_date, hi) - max(lr.start_date, lo)).days + 1)
+    return lr.days_in(lo, hi) if lr.start_date <= hi and lr.end_date >= lo else 0
 
 
 def leave_stats(leave):
@@ -30,7 +31,8 @@ def leave_stats(leave):
     today = timezone.localdate()
     year = leave.start_date.year
     y_lo, y_hi = date(year, 1, 1), date(year, 12, 31)
-    mine = list(LeaveRequest.objects.filter(employee=emp).exclude(pk=leave.pk).select_related('leave_type'))
+    mine = list(current().counted(LeaveRequest.objects.filter(employee=emp))
+                .exclude(pk=leave.pk).select_related('leave_type', 'employee'))
     approved = [lr for lr in mine if lr.status == 'approved']
 
     by_type = []

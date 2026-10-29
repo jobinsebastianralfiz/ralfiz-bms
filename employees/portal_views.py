@@ -24,6 +24,8 @@ from django.urls import reverse
 from django.utils import timezone
 from django.views.decorators.cache import never_cache
 
+from . import work_calendar
+from .leave_rules import year_days_used
 from .models import (
     Attendance, DailyReport, Employee, InternAssessment, LeaveRequest, LeaveType,
     Notification, OfficeConfig, Payroll, ScheduledClass, WorkAssignment,
@@ -354,9 +356,7 @@ def leave(request):
 
     balances = []
     for lt in LeaveType.objects.filter(is_active=True):
-        approved = LeaveRequest.objects.filter(
-            employee=employee, leave_type=lt, status='approved', start_date__year=year)
-        used = sum(lr.total_days for lr in approved)
+        used = year_days_used(employee, lt, year)
         balances.append({
             'leave_type': lt,
             'total_allowed': lt.days_allowed,
@@ -364,7 +364,8 @@ def leave(request):
             'remaining': max(0, lt.days_allowed - used),
         })
 
-    year_requests = LeaveRequest.objects.filter(employee=employee, start_date__year=year).select_related('leave_type')
+    year_requests = work_calendar.current().counted(
+        LeaveRequest.objects.filter(employee=employee, start_date__year=year)).select_related('leave_type')
     status_counts = {'all': year_requests.count()}
     for key in ('pending', 'approved', 'rejected'):
         status_counts[key] = year_requests.filter(status=key).count()

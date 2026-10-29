@@ -36,7 +36,7 @@ class LeaveSummaryTests(TestCase):
         self.assertEqual(r.status_code, 200)
         return {row['employee'].employee_id: row for row in r.context['rows']}
 
-    def test_year_totals_remaining_and_counts(self):
+    def test_year_totals_left_per_type_and_counts(self):
         self._leave(self.intern, self.casual, date(2026, 3, 2), date(2026, 3, 4))      # 3
         self._leave(self.intern, self.lop, date(2026, 5, 1), date(2026, 5, 1))         # 1 unpaid
         self._leave(self.intern, self.casual, date(2026, 6, 1), date(2026, 6, 2), 'pending')
@@ -47,14 +47,16 @@ class LeaveSummaryTests(TestCase):
         self.assertEqual((by_name['Casual'], by_name['Loss of Pay']), (3, 1))
         self.assertEqual(sum(row['by_type']), 4)
         self.assertEqual((row['total'], row['unpaid'], row['pending'], row['rejected']), (4, 1, 1, 1))
-        allowed = sum(lt.days_allowed for lt in r.context['leave_types'])
-        self.assertEqual(row['remaining'], allowed - 4)
+        left = dict(zip([lt.name for lt in r.context['leave_types']], [c['left'] for c in row['cells']]))
+        self.assertEqual(left['Casual'], self.casual.days_allowed - 3)   # each type on its own, never summed
+        self.assertNotContains(r, 'Remaining')
+        self.assertContains(r, f'{self.casual.days_allowed - 3} left')
 
     def test_leave_crossing_period_edge_counts_only_days_inside(self):
         self._leave(self.staff, self.casual, date(2026, 3, 30), date(2026, 4, 2))      # 2 in Mar, 2 in Apr
         self.assertEqual(self.rows(year=2026, month=3)['EMP101']['total'], 2)
         self.assertEqual(self.rows(year=2026, month=4)['EMP101']['total'], 2)
-        self.assertIsNone(self.rows(year=2026, month=4)['EMP101']['remaining'])
+        self.assertTrue(all(c['left'] is None for c in self.rows(year=2026, month=4)['EMP101']['cells']))
         self._leave(self.staff, self.casual, date(2025, 12, 31), date(2026, 1, 1))
         self.assertEqual(self.rows(year=2026)['EMP101']['total'], 5)
 

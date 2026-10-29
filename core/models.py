@@ -1148,6 +1148,13 @@ class CompanySettings(models.Model):
     anthropic_key_updated_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True,
                                                  related_name='+')
 
+    # Work calendar (HR > Calendar). Weekly off days are weekday numbers, Monday=0
+    # ... Sunday=6, comma separated. Leave ending before leave_count_from is kept
+    # but no longer shown or counted anywhere.
+    intern_weekly_off = models.CharField(max_length=20, default='5,6', blank=True)
+    staff_weekly_off = models.CharField(max_length=20, default='6', blank=True)
+    leave_count_from = models.DateField(null=True, blank=True)
+
     @classmethod
     def get_settings(cls):
         obj, created = cls.objects.get_or_create(pk=1)

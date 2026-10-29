@@ -7752,7 +7752,8 @@ def emp_employee_detail(request, pk):
         return redirect('emp_employee_detail', pk=pk)
 
     recent_attendance = Attendance.objects.filter(employee=employee).order_by('-date')[:15]
-    leave_requests = LeaveRequest.objects.filter(employee=employee).order_by('-created_at')[:10]
+    from employees.work_calendar import current
+    leave_requests = current().counted(LeaveRequest.objects.filter(employee=employee)).order_by('-created_at')[:10]
     work_assignments = WorkAssignment.objects.filter(assigned_to=employee).order_by('-created_at')[:10]
     assessments = employee.assessments.all() if employee.employment_type == 'intern' else None
     context = {
@@ -7966,7 +7967,9 @@ def emp_employee_import(request):
 def emp_leave_list(request):
     """List leave requests with filtering"""
     from employees.models import LeaveRequest
-    leaves = LeaveRequest.objects.select_related('employee__user', 'leave_type').order_by('-created_at')
+    from employees.work_calendar import current
+    cal = current()
+    leaves = cal.counted(LeaveRequest.objects.select_related('employee__user', 'leave_type')).order_by('-created_at')
     status_filter = request.GET.get('status', '')
     if status_filter:
         leaves = leaves.filter(status=status_filter)
@@ -7981,16 +7984,12 @@ def emp_leave_list(request):
     return render(request, 'hr/leave_list.html', context)
 
 
-def _overlap_days(start, end, lo, hi):
-    """Days of start..end that fall inside lo..hi (all inclusive)."""
-    return max(0, (min(end, hi) - max(start, lo)).days + 1)
-
-
 @login_required
 def emp_leave_summary(request):
     """Leave taken per employee/intern for a year or one month, with Excel export.
-    Days are approved leave, clipped to the chosen period."""
+    Days are approved working days of leave, clipped to the chosen period."""
     from employees.models import Employee, LeaveRequest, LeaveType
+    from employees.work_calendar import current
     from calendar import monthrange
     from datetime import date
 
@@ -8022,14 +8021,15 @@ def emp_leave_summary(request):
     employees = list(employees.order_by('employee_id'))
 
     leave_types = list(LeaveType.objects.filter(is_active=True))
-    leaves = LeaveRequest.objects.filter(
+    cal = current()
+    leaves = cal.counted(LeaveRequest.objects.filter(
         employee__in=employees, start_date__lte=hi, end_date__gte=lo,
-    ).select_related('leave_type')
+    )).select_related('leave_type', 'employee')
     used, pending, rejected = {}, {}, {}
     for lr in leaves:
         if lr.status == 'approved':
             key = (lr.employee_id, lr.leave_type_id)
-            used[key] = used.get(key, 0) + _overlap_days(lr.start_date, lr.end_date, lo, hi)
+            used[key] = used.get(key, 0) + lr.days_in(lo, hi, cal)
         elif lr.status == 'pending':
             pending[lr.employee_id] = pending.get(lr.employee_id, 0) + 1
         elif lr.status == 'rejected':
@@ -8050,8 +8050,10 @@ def emp_leave_summary(request):
             'other': other,
             'total': total,
             'unpaid': unpaid,
-            # Remaining only means something against a full year's allowance
-            'remaining': None if month else sum(max(0, lt.days_allowed - d) for lt, d in zip(leave_types, by_type)),
+            # Days left per type only mean something against a full year's allowance;
+            # adding them up across types would mix casual, sick and earned days
+            'cells': [{'used': d, 'left': None if month else max(0, lt.days_allowed - d)}
+                      for lt, d in zip(leave_types, by_type)],
             'pending': pending.get(emp.pk, 0),
             'rejected': rejected.get(emp.pk, 0),
         })
@@ -8074,12 +8076,13 @@ def emp_leave_summary(request):
         ws = wb.active
         ws.title = 'Leave Summary'
         headers = ['Employee ID', 'Name', 'Type', 'Department']
-        headers += [f'{lt.name} ({lt.days_allowed}/yr)' for lt in leave_types]
+        for lt in leave_types:
+            headers.append(f'{lt.name} ({lt.days_allowed}/yr)')
+            if not month:
+                headers.append(f'{lt.name} left')
         if has_other:
             headers.append('Other')
         headers += ['Total Days', 'Unpaid Days']
-        if not month:
-            headers.append('Remaining')
         headers += ['Pending Requests', 'Rejected Requests']
         ws.append([f'Leave summary: {period}'])
         ws['A1'].font = Font(bold=True, size=13)
@@ -8090,12 +8093,14 @@ def emp_leave_summary(request):
         for r in rows:
             emp = r['employee']
             line = [emp.employee_id, emp.full_name, 'Intern' if r['is_intern'] else 'Employee',
-                    emp.get_department_display()] + r['by_type']
+                    emp.get_department_display()]
+            for c in r['cells']:
+                line.append(c['used'])
+                if not month:
+                    line.append(c['left'])
             if has_other:
                 line.append(r['other'])
             line += [r['total'], r['unpaid']]
-            if not month:
-                line.append(r['remaining'])
             line += [r['pending'], r['rejected']]
             ws.append(line)
         for col_cells in ws.iter_cols(min_row=2):
@@ -8312,7 +8317,10 @@ def emp_attendance_report(request):
     for rec in records:
         by_employee.setdefault(rec.employee_id, []).append(rec)
 
-    working_days = monthrange(year, month)[1]
+    from employees.work_calendar import current
+    cal = current()
+    month_days = {'interns': cal.month_working_days(year, month, Employee(employment_type='intern')),
+                  'staff': cal.month_working_days(year, month)}
 
     rows = []
     totals = {'present': 0, 'late': 0, 'half_day': 0, 'work_from_home': 0,
@@ -8334,6 +8342,7 @@ def emp_attendance_report(request):
             'work_from_home': counts['work_from_home'],
             'absent': counts['absent'],
             'days_present': round(present_equiv, 1),
+            'working_days': cal.month_working_days(year, month, emp),
             'hours': round(hours, 2),
         })
         for key in counts:
@@ -8353,7 +8362,7 @@ def emp_attendance_report(request):
         header_font = Font(bold=True, color='FFFFFF')
         header_fill = PatternFill(start_color='0D9488', end_color='0D9488', fill_type='solid')
         headers = ['Employee ID', 'Name', 'Department', 'Present', 'Late',
-                   'Half Day', 'WFH', 'Absent', 'Days Present', 'Total Hours']
+                   'Half Day', 'WFH', 'Absent', 'Days Present', 'Working Days', 'Total Hours']
         ws.append(headers)
         for cell in ws[1]:
             cell.font = header_font
@@ -8363,7 +8372,7 @@ def emp_attendance_report(request):
             ws.append([
                 emp.employee_id, emp.full_name, emp.get_department_display(),
                 r['present'], r['late'], r['half_day'], r['work_from_home'],
-                r['absent'], r['days_present'], r['hours'],
+                r['absent'], r['days_present'], r['working_days'], r['hours'],
             ])
         for col_cells in ws.columns:
             length = max((len(str(cell.value or '')) for cell in col_cells), default=10)
@@ -8381,7 +8390,7 @@ def emp_attendance_report(request):
         'totals': totals,
         'month': month,
         'year': year,
-        'working_days': working_days,
+        'month_days': month_days,
         'department': department,
         'departments': Employee.DEPARTMENT_CHOICES,
         'months': [(i, date(2000, i, 1).strftime('%B')) for i in range(1, 13)],
@@ -8539,6 +8548,116 @@ def _nonneg_int(value):
         return max(0, int(value))
     except (TypeError, ValueError):
         return 0
+
+
+@login_required
+def emp_calendar(request):
+    """HR > Calendar: weekly offs, holidays and working days per month. Leave,
+    payroll and the attendance report count working days from here."""
+    from calendar import Calendar, monthrange
+    from datetime import date
+    from employees.models import Employee, Holiday
+    from employees import holiday_import
+    from employees.work_calendar import WEEKDAYS, WorkCalendar, parse_days
+
+    today = timezone.localdate()
+    try:
+        year = int(request.GET.get('year') or request.POST.get('year') or today.year)
+        month = int(request.GET.get('month') or request.POST.get('month') or today.month)
+    except (TypeError, ValueError):
+        year, month = today.year, today.month
+    if not 1 <= month <= 12 or not 2000 <= year <= 2100:
+        year, month = today.year, today.month
+    here = f"{reverse('emp_calendar')}?year={year}&month={month}"
+    settings_obj = CompanySettings.get_settings()
+
+    if request.method == 'POST':
+        action = request.POST.get('action')
+        if action == 'add':
+            try:
+                day = date.fromisoformat(request.POST.get('date', ''))
+            except ValueError:
+                day = None
+            name = request.POST.get('name', '').strip()[:120]
+            kind = request.POST.get('kind') if request.POST.get('kind') in dict(Holiday.KIND_CHOICES) else 'company'
+            if day and name:
+                Holiday.objects.update_or_create(date=day, defaults={'name': name, 'kind': kind,
+                                                                     'created_by': request.user})
+                messages.success(request, f'{day:%d %b %Y} marked as a holiday: {name}.')
+            else:
+                messages.error(request, 'Give the holiday a date and a name.')
+        elif action == 'delete':
+            Holiday.objects.filter(pk=request.POST.get('pk')).delete()
+            messages.success(request, 'Holiday removed. That day is a working day again.')
+        elif action == 'settings':
+            settings_obj.intern_weekly_off = ','.join(sorted(request.POST.getlist('intern_off')))
+            settings_obj.staff_weekly_off = ','.join(sorted(request.POST.getlist('staff_off')))
+            try:
+                settings_obj.leave_count_from = date.fromisoformat(request.POST.get('leave_count_from') or '')
+            except ValueError:
+                settings_obj.leave_count_from = None
+            settings_obj.save(update_fields=['intern_weekly_off', 'staff_weekly_off', 'leave_count_from'])
+            messages.success(request, 'Calendar settings saved.')
+        elif action == 'import':
+            added = 0
+            for value in request.POST.getlist('pick'):
+                iso, kind, source, name = (value.split('|', 3) + ['', '', ''])[:4]
+                try:
+                    day = date.fromisoformat(iso)
+                except ValueError:
+                    continue
+                if name and not Holiday.objects.filter(date=day).exists():
+                    Holiday.objects.create(date=day, name=name[:120],
+                                           kind=kind if kind in dict(Holiday.KIND_CHOICES) else 'public',
+                                           source=source if source in dict(Holiday.SOURCE_CHOICES) else 'google',
+                                           created_by=request.user)
+                    added += 1
+            messages.success(request, f'{added} holiday{"s" if added != 1 else ""} added for {year}.')
+        return redirect(here)
+
+    cal = WorkCalendar()
+    intern = Employee(employment_type='intern')
+    weeks = []
+    for week in Calendar().monthdatescalendar(year, month):
+        cells = []
+        for day in week:
+            wd = day.weekday()
+            cells.append({
+                'date': day, 'in_month': day.month == month, 'today': day == today,
+                'holiday': cal.holidays.get(day),
+                'staff_off': wd in cal.staff_off, 'intern_off': wd in cal.intern_off,
+            })
+        weeks.append(cells)
+
+    year_holidays = list(Holiday.objects.filter(date__year=year))
+    months = [{'month': m, 'name': date(year, m, 1).strftime('%B'),
+               'days': monthrange(year, m)[1],
+               'staff': cal.month_working_days(year, m),
+               'interns': cal.month_working_days(year, m, intern),
+               'holidays': sum(1 for h in year_holidays if h.date.month == m)} for m in range(1, 13)]
+
+    suggestions, import_error = None, ''
+    if request.GET.get('import') == '1':
+        try:
+            suggestions = holiday_import.suggestions(year, {h.date for h in year_holidays})
+        except holiday_import.ImportError_ as exc:
+            import_error = str(exc)
+
+    prev_y, prev_m = (year - 1, 12) if month == 1 else (year, month - 1)
+    next_y, next_m = (year + 1, 1) if month == 12 else (year, month + 1)
+    return render(request, 'hr/calendar.html', {
+        'year': year, 'month': month, 'month_name': date(year, month, 1).strftime('%B %Y'),
+        'weeks': weeks, 'weekdays': WEEKDAYS, 'today': today,
+        'this_month': months[month - 1],
+        'months': months, 'year_holidays': year_holidays,
+        'kinds': Holiday.KIND_CHOICES,
+        'weekday_choices': list(enumerate(WEEKDAYS)),
+        'intern_off': cal.intern_off, 'staff_off': cal.staff_off,
+        'leave_count_from': settings_obj.leave_count_from,
+        'prev': {'year': prev_y, 'month': prev_m}, 'next': {'year': next_y, 'month': next_m},
+        'years': range(today.year - 1, today.year + 3),
+        'suggestions': suggestions, 'import_error': import_error,
+    })
 
 
 @login_required
@@ -8852,7 +8971,9 @@ def emp_payroll_list(request):
 
     # Generate payroll
     if request.method == 'POST' and request.POST.get('action') == 'generate':
-        working_days = int(request.POST.get('working_days', 26))
+        from employees import work_calendar
+        from employees.leave_rules import month_leave_days
+        fixed_days = int(request.POST.get('working_days') or 0)
         employees = Employee.objects.filter(status='active')
         count = 0
 
@@ -8866,17 +8987,9 @@ def emp_payroll_list(request):
             half_days = attendance.filter(status='half_day').count()
             days_present += half_days * 0.5
 
-            approved_leaves = LeaveRequest.objects.filter(
-                employee=emp, status='approved',
-                start_date__month=month, start_date__year=year,
-            )
-            paid_leave_days = 0
-            unpaid_leave_days = 0
-            for lr in approved_leaves:
-                if lr.leave_type and lr.leave_type.is_paid:
-                    paid_leave_days += lr.total_days
-                else:
-                    unpaid_leave_days += lr.total_days
+            paid_leave_days, unpaid_leave_days = month_leave_days(emp, year, month)
+            # Blank working days: this person's working days from HR > Calendar
+            working_days = fixed_days or work_calendar.current().month_working_days(year, month, emp)
 
             days_absent = max(0, working_days - int(days_present) - paid_leave_days - unpaid_leave_days)
 

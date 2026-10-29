@@ -1,0 +1,249 @@
+{% extends 'base.html' %}
+{% block title %}Holiday Calendar - Ralfiz BMS{% endblock %}
+
+{% block extra_css %}
+<style>
+  .hc-layout { display: grid; grid-template-columns: minmax(0, 1fr) 320px; gap: 16px; align-items: start; }
+  @media (max-width: 1100px) { .hc-layout { grid-template-columns: 1fr; } }
+  .hc-grid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); border-top: 1px solid var(--border-color); }
+  .hc-dow { padding: 8px; font-size: .75rem; font-weight: 600; text-transform: uppercase; color: var(--text-muted); text-align: center; border-bottom: 1px solid var(--border-color); }
+  .hc-cell { min-height: 92px; padding: 6px 8px; border-right: 1px solid var(--border-color); border-bottom: 1px solid var(--border-color); background: none; border-top: 0; border-left: 0; text-align: left; font: inherit; cursor: pointer; display: flex; flex-direction: column; gap: 4px; }
+  .hc-cell:nth-child(7n) { border-right: 0; }
+  .hc-cell:hover { background: rgba(37, 99, 235, .05); }
+  .hc-cell.out { opacity: .4; }
+  .hc-cell.off { background: #f4f6f9; }
+  .hc-cell.half { background: repeating-linear-gradient(135deg, #fff, #fff 6px, #f4f6f9 6px, #f4f6f9 12px); }
+  .hc-cell.hol { background: #fdecec; }
+  .hc-num { font-weight: 600; font-size: .9rem; }
+  .hc-cell.today .hc-num { background: var(--primary, #2563eb); color: #fff; border-radius: 999px; width: 24px; height: 24px; display: inline-flex; align-items: center; justify-content: center; }
+  .hc-tag { font-size: .7rem; line-height: 1.25; color: var(--text-muted); }
+  .hc-tag.red { color: #b42318; font-weight: 600; }
+  .hc-stat { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid var(--border-color); }
+  .hc-stat:last-child { border-bottom: 0; }
+  .hc-days { display: flex; gap: 4px; flex-wrap: wrap; }
+  .hc-days label { display: inline-flex; align-items: center; gap: 4px; padding: 4px 8px; border: 1px solid var(--border-color); border-radius: 6px; font-size: .8rem; margin: 0; cursor: pointer; }
+  .hc-legend { display: flex; gap: 14px; flex-wrap: wrap; font-size: .75rem; color: var(--text-muted); padding: 10px 16px; }
+  .hc-legend span::before { content: ''; display: inline-block; width: 12px; height: 12px; border: 1px solid var(--border-color); border-radius: 3px; margin-right: 5px; vertical-align: -2px; }
+  .hc-legend .l-hol::before { background: #fdecec; }
+  .hc-legend .l-off::before { background: #f4f6f9; }
+  .hc-legend .l-half::before { background: repeating-linear-gradient(135deg, #fff, #fff 3px, #e5e9f0 3px, #e5e9f0 6px); }
+  #hcDialog { margin: auto; border: 0; border-radius: 12px; padding: 0; width: min(420px, 94vw); box-shadow: 0 20px 50px rgba(0,0,0,.2); }
+  #hcDialog::backdrop { background: rgba(15, 23, 42, .45); }
+  .hc-dlg-body { padding: 20px; display: grid; gap: 12px; }
+  tr.hc-current td { background: rgba(37, 99, 235, .06); font-weight: 600; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title">Holiday Calendar</h1>
+    <p class="page-subtitle mb-0">Weekly offs and holidays. Leave, payroll and attendance count working days from here.</p>
+  </div>
+  <div class="d-flex gap-2">
+    <a href="?year={{ year }}&month={{ month }}&import=1#import" class="btn btn-primary">
+      <i class="fas fa-cloud-arrow-down me-1"></i> Import {{ year }} India / Kerala holidays
+    </a>
+  </div>
+</div>
+
+{% if suggestions is not None or import_error %}
+<div class="card mb-3" id="import">
+  <div class="card-header">
+    <h3 class="card-title"><i class="fas fa-cloud-arrow-down"></i> Holidays for {{ year }} from Google's India calendar</h3>
+    <div class="card-actions"><a href="?year={{ year }}&month={{ month }}" class="btn btn-outline-secondary btn-sm">Close</a></div>
+  </div>
+  {% if import_error %}
+  <div class="p-3 text-danger">{{ import_error }}</div>
+  {% else %}
+  <form method="post">
+    {% csrf_token %}
+    <input type="hidden" name="action" value="import">
+    <input type="hidden" name="year" value="{{ year }}"><input type="hidden" name="month" value="{{ month }}">
+    <p class="text-muted text-sm px-3 pt-3 mb-0">Kerala holidays are ticked. Untick any day the office stays open, tick any other day it closes, then save. Mannam Jayanthi, May Day and Ayyankali Jayanthi are added from a fixed Kerala list because Google doesn't have them. Lunar festival dates can shift by a day: check them against the Kerala government list.</p>
+    <div class="table-wrapper">
+      <table class="table">
+        <thead><tr><th style="width:40px;"></th><th>Date</th><th>Holiday</th><th>Type</th><th>Also that day</th></tr></thead>
+        <tbody>
+          {% for s in suggestions %}
+          <tr {% if not s.kerala %}class="text-muted"{% endif %}>
+            <td><input type="checkbox" name="pick" value="{{ s.date|date:'Y-m-d' }}|{{ s.kind }}|{{ s.source }}|{{ s.name }}" {% if s.checked %}checked{% endif %} {% if s.exists %}disabled{% endif %}></td>
+            <td style="white-space:nowrap;">{{ s.date|date:'D, d M' }}</td>
+            <td>{{ s.name }}{% if s.exists %} <span class="status-badge approved" style="margin-left:4px;">already marked</span>{% endif %}{% if s.tentative %} <span class="status-badge pending" style="margin-left:4px;">tentative</span>{% endif %}</td>
+            <td>{% if s.kerala %}{% if s.kind == 'public' %}Public holiday{% else %}Kerala holiday{% endif %}{% else %}Not a Kerala holiday{% endif %}</td>
+            <td class="text-sm">{{ s.others|join:", " }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    <div class="p-3"><button type="submit" class="btn btn-primary"><i class="fas fa-check me-1"></i> Save ticked holidays</button></div>
+  </form>
+  {% endif %}
+</div>
+{% endif %}
+
+<div class="hc-layout">
+  <div class="card">
+    <div class="card-header">
+      <h3 class="card-title"><i class="fas fa-calendar-days"></i> {{ month_name }}</h3>
+      <div class="card-actions">
+        <form method="get" class="d-flex gap-2" style="flex-wrap: wrap;">
+          <a href="?year={{ prev.year }}&month={{ prev.month }}" class="btn btn-outline-secondary" title="Previous month"><i class="fas fa-chevron-left"></i></a>
+          <select name="month" class="form-control" style="width: auto;" onchange="this.form.submit()">
+            {% for m in months %}<option value="{{ m.month }}" {% if m.month == month %}selected{% endif %}>{{ m.name }}</option>{% endfor %}
+          </select>
+          <select name="year" class="form-control" style="width: auto;" onchange="this.form.submit()">
+            {% for y in years %}<option value="{{ y }}" {% if y == year %}selected{% endif %}>{{ y }}</option>{% endfor %}
+          </select>
+          <a href="?year={{ next.year }}&month={{ next.month }}" class="btn btn-outline-secondary" title="Next month"><i class="fas fa-chevron-right"></i></a>
+        </form>
+      </div>
+    </div>
+    <div class="hc-grid">
+      {% for d in weekdays %}<div class="hc-dow">{{ d }}</div>{% endfor %}
+      {% for week in weeks %}{% for c in week %}
+      <button type="button" class="hc-cell{% if not c.in_month %} out{% endif %}{% if c.today %} today{% endif %}{% if c.holiday %} hol{% elif c.staff_off and c.intern_off %} off{% elif c.intern_off or c.staff_off %} half{% endif %}"
+              data-date="{{ c.date|date:'Y-m-d' }}" data-label="{{ c.date|date:'l, j F Y' }}" data-holiday="{{ c.holiday|default_if_none:'' }}"
+              data-pk="{% for h in year_holidays %}{% if h.date == c.date %}{{ h.pk }}{% endif %}{% endfor %}">
+        <span class="hc-num">{{ c.date.day }}</span>
+        {% if c.holiday %}<span class="hc-tag red">{{ c.holiday }}</span>{% endif %}
+        {% if c.staff_off and c.intern_off %}<span class="hc-tag">Weekly off</span>
+        {% elif c.intern_off %}<span class="hc-tag">Interns off</span>
+        {% elif c.staff_off %}<span class="hc-tag">Staff off</span>{% endif %}
+      </button>
+      {% endfor %}{% endfor %}
+    </div>
+    <div class="hc-legend">
+      <span class="l-hol">Holiday</span><span class="l-off">Weekly off for everyone</span><span class="l-half">Off for interns or staff only</span>
+      <em>Click a day to mark or remove a holiday.</em>
+    </div>
+  </div>
+
+  <div style="display:grid;gap:16px;">
+    <div class="card">
+      <div class="card-header"><h3 class="card-title"><i class="fas fa-briefcase"></i> Working days in {{ this_month.name }}</h3></div>
+      <div style="padding: 4px 16px 8px;">
+        <div class="hc-stat"><span>Staff</span><strong>{{ this_month.staff }} of {{ this_month.days }}</strong></div>
+        <div class="hc-stat"><span>Interns</span><strong>{{ this_month.interns }} of {{ this_month.days }}</strong></div>
+        <div class="hc-stat"><span>Holidays marked</span><strong>{{ this_month.holidays }}</strong></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header"><h3 class="card-title"><i class="fas fa-sliders"></i> Calendar settings</h3></div>
+      <form method="post" style="padding: 12px 16px 16px; display:grid; gap:12px;">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="settings">
+        <input type="hidden" name="year" value="{{ year }}"><input type="hidden" name="month" value="{{ month }}">
+        <div>
+          <div class="form-label">Interns' weekly off</div>
+          <div class="hc-days">{% for i, d in weekday_choices %}<label><input type="checkbox" name="intern_off" value="{{ i }}" {% if i in intern_off %}checked{% endif %}> {{ d }}</label>{% endfor %}</div>
+        </div>
+        <div>
+          <div class="form-label">Staff weekly off</div>
+          <div class="hc-days">{% for i, d in weekday_choices %}<label><input type="checkbox" name="staff_off" value="{{ i }}" {% if i in staff_off %}checked{% endif %}> {{ d }}</label>{% endfor %}</div>
+        </div>
+        <div>
+          <label class="form-label" for="hcFrom">Count leave from</label>
+          <input type="date" id="hcFrom" name="leave_count_from" value="{{ leave_count_from|date:'Y-m-d' }}" class="form-control">
+          <div class="text-muted text-sm mt-1">Leave that ended before this date is kept but not shown or counted. Clear it to bring old leave back.</div>
+        </div>
+        <button type="submit" class="btn btn-primary">Save settings</button>
+      </form>
+    </div>
+  </div>
+</div>
+
+<div class="hc-layout mt-3">
+  <div class="card">
+    <div class="card-header"><h3 class="card-title"><i class="fas fa-table"></i> Working days in {{ year }}</h3></div>
+    <div class="table-wrapper">
+      <table class="table">
+        <thead><tr><th>Month</th><th class="text-center">Days</th><th class="text-center">Holidays</th><th class="text-center">Staff working days</th><th class="text-center">Intern working days</th></tr></thead>
+        <tbody>
+          {% for m in months %}
+          <tr {% if m.month == month %}class="hc-current"{% endif %}>
+            <td><a href="?year={{ year }}&month={{ m.month }}">{{ m.name }}</a></td>
+            <td class="text-center">{{ m.days }}</td>
+            <td class="text-center">{% if m.holidays %}{{ m.holidays }}{% else %}<span class="text-muted">0</span>{% endif %}</td>
+            <td class="text-center">{{ m.staff }}</td>
+            <td class="text-center">{{ m.interns }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header"><h3 class="card-title"><i class="fas fa-umbrella-beach"></i> {{ year_holidays|length }} holiday{{ year_holidays|length|pluralize }} in {{ year }}</h3></div>
+    <div style="padding: 4px 16px 8px;">
+      {% for h in year_holidays %}
+      <div class="hc-stat">
+        <span><a href="?year={{ year }}&month={{ h.date.month }}" class="text-muted text-sm" style="display:inline-block;width:64px;">{{ h.date|date:'d M' }}</a>{{ h.name }}</span>
+        <form method="post" style="margin:0;">
+          {% csrf_token %}
+          <input type="hidden" name="action" value="delete"><input type="hidden" name="pk" value="{{ h.pk }}">
+          <input type="hidden" name="year" value="{{ year }}"><input type="hidden" name="month" value="{{ month }}">
+          <button type="submit" class="btn btn-sm btn-outline-secondary" title="Remove {{ h.name }}"><i class="fas fa-xmark"></i></button>
+        </form>
+      </div>
+      {% empty %}
+      <p class="text-muted text-sm py-2 mb-0">None yet. Use Import or click a day on the calendar.</p>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+
+<dialog id="hcDialog">
+  <form method="post" class="hc-dlg-body" id="hcAddForm">
+    {% csrf_token %}
+    <input type="hidden" name="action" value="add">
+    <input type="hidden" name="year" value="{{ year }}"><input type="hidden" name="month" value="{{ month }}">
+    <input type="hidden" name="date" id="hcDate">
+    <h3 style="margin:0;font-size:1.05rem;" id="hcTitle"></h3>
+    <div>
+      <label class="form-label" for="hcName">Holiday name</label>
+      <input type="text" name="name" id="hcName" class="form-control" maxlength="120" required placeholder="e.g. Thiruvonam">
+    </div>
+    <div>
+      <label class="form-label" for="hcKind">Type</label>
+      <select name="kind" id="hcKind" class="form-control">
+        {% for value, label in kinds %}<option value="{{ value }}" {% if value == 'kerala' %}selected{% endif %}>{{ label }}</option>{% endfor %}
+      </select>
+    </div>
+    <div class="d-flex gap-2" style="justify-content:flex-end;">
+      <button type="button" class="btn btn-outline-danger" id="hcRemove" style="margin-right:auto;display:none;">Make it a working day</button>
+      <button type="button" class="btn btn-outline-secondary" id="hcCancel">Cancel</button>
+      <button type="submit" class="btn btn-primary" id="hcSave">Mark holiday</button>
+    </div>
+  </form>
+  <form method="post" id="hcDeleteForm" hidden>
+    {% csrf_token %}
+    <input type="hidden" name="action" value="delete"><input type="hidden" name="pk" id="hcPk">
+    <input type="hidden" name="year" value="{{ year }}"><input type="hidden" name="month" value="{{ month }}">
+  </form>
+</dialog>
+
+<script>
+(function () {
+  var dlg = document.getElementById('hcDialog');
+  document.querySelectorAll('.hc-cell').forEach(function (cell) {
+    cell.addEventListener('click', function () {
+      var name = cell.dataset.holiday;
+      document.getElementById('hcDate').value = cell.dataset.date;
+      document.getElementById('hcTitle').textContent = cell.dataset.label;
+      document.getElementById('hcName').value = name;
+      document.getElementById('hcSave').textContent = name ? 'Save' : 'Mark holiday';
+      document.getElementById('hcPk').value = cell.dataset.pk;
+      document.getElementById('hcRemove').style.display = cell.dataset.pk ? '' : 'none';
+      dlg.showModal();
+      document.getElementById('hcName').focus();
+    });
+  });
+  document.getElementById('hcCancel').addEventListener('click', function () { dlg.close(); });
+  document.getElementById('hcRemove').addEventListener('click', function () { document.getElementById('hcDeleteForm').submit(); });
+})();
+</script>
+{% endblock %}

@@ -135,9 +135,11 @@ class StaffPortalPageTests(StaffPortalTestBase):
 
     def test_leave_balance_counts_approved_days_only(self):
         lt = LeaveType.objects.create(name='Casual', days_allowed=12)
+        may = date(timezone.now().year, 5, 1)
+        monday = may + timedelta(days=(7 - may.weekday()) % 7)   # Mon..Wed: 3 working days
         LeaveRequest.objects.create(
-            employee=self.intern, leave_type=lt, start_date=date(timezone.now().year, 5, 1),
-            end_date=date(timezone.now().year, 5, 3), reason='Family', status='approved')
+            employee=self.intern, leave_type=lt, start_date=monday,
+            end_date=monday + timedelta(days=2), reason='Family', status='approved')
         LeaveRequest.objects.create(
             employee=self.intern, leave_type=lt, start_date=date(timezone.now().year, 6, 1),
             end_date=date(timezone.now().year, 6, 9), reason='Trip', status='pending')

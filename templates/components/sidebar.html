@@ -219,6 +219,10 @@
         <i class="fas fa-chart-column"></i>
         <span>Leave Summary</span>
       </a>
+      <a href="{% url 'emp_calendar' %}" class="nav-item {% if n == 'emp_calendar' %}active{% endif %}">
+        <i class="fas fa-calendar-days"></i>
+        <span>Holiday Calendar</span>
+      </a>
       <a href="{% url 'emp_leave_types' %}" class="nav-item {% if n == 'emp_leave_types' %}active{% endif %}">
         <i class="fas fa-list-alt"></i>
         <span>Leave Types</span>

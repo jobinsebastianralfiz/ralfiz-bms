@@ -19,6 +19,8 @@ from .models import (
     WorkAssignment, WorkUpdate, Notification, QRCode, ScheduledClass, Payroll,
     CertificateTemplate, Certificate, LateCheckInGrant
 )
+from . import work_calendar
+from .leave_rules import month_leave_days, year_days_used
 from crm.models import Lead, LeadNote, LeadReferenceLink, LeadQuoteAttachment, DailyActivity, Demo, FollowUp, LeadActivity
 from core.models import (
     Client, Project, Credential, AMCContract, AMCPayment, CredentialRenewal,
@@ -622,7 +624,7 @@ class LeaveRequestListCreateView(APIView):
         if not employee:
             return Response({'error': 'Employee profile not found'}, status=status.HTTP_404_NOT_FOUND)
 
-        qs = LeaveRequest.objects.filter(employee=employee)
+        qs = work_calendar.current().counted(LeaveRequest.objects.filter(employee=employee))
         status_filter = request.query_params.get('status')
         if status_filter:
             qs = qs.filter(status=status_filter)
@@ -713,17 +715,7 @@ class LeaveBalanceView(APIView):
         balances = []
 
         for lt in leave_types:
-            used = LeaveRequest.objects.filter(
-                employee=employee, leave_type=lt, status='approved',
-                start_date__year=year,
-            ).count()
-            # Sum actual days
-            used_days = 0
-            for lr in LeaveRequest.objects.filter(
-                employee=employee, leave_type=lt, status='approved',
-                start_date__year=year,
-            ):
-                used_days += lr.total_days
+            used_days = year_days_used(employee, lt, year)
 
             balances.append({
                 'leave_type': lt.name,
@@ -2259,12 +2251,7 @@ class OwnerEmployeeDetailView(APIView):
         leave_data = []
         leave_types = LeaveType.objects.filter(is_active=True)
         for lt in leave_types:
-            used_days = 0
-            for lr in LeaveRequest.objects.filter(
-                employee=emp, leave_type=lt, status='approved',
-                start_date__year=today.year,
-            ):
-                used_days += lr.total_days
+            used_days = year_days_used(emp, lt, today.year)
             leave_data.append({
                 'leave_type': lt.name,
                 'total_allowed': lt.days_allowed,
@@ -3610,7 +3597,7 @@ class AdminPayrollGenerateView(APIView):
     def post(self, request):
         month = int(request.data.get('month', timezone.now().month))
         year = int(request.data.get('year', timezone.now().year))
-        working_days = int(request.data.get('working_days', 26))
+        fixed_days = int(request.data.get('working_days') or 0)
         employee_id = request.data.get('employee_id')  # None = all active employees
 
         if employee_id:
@@ -3634,18 +3621,9 @@ class AdminPayrollGenerateView(APIView):
             half_days = attendance.filter(status='half_day').count()
             days_present += half_days * 0.5
 
-            # Calculate leave
-            approved_leaves = LeaveRequest.objects.filter(
-                employee=emp, status='approved',
-                start_date__month=month, start_date__year=year,
-            )
-            paid_leave_days = 0
-            unpaid_leave_days = 0
-            for lr in approved_leaves:
-                if lr.leave_type and lr.leave_type.is_paid:
-                    paid_leave_days += lr.total_days
-                else:
-                    unpaid_leave_days += lr.total_days
+            paid_leave_days, unpaid_leave_days = month_leave_days(emp, year, month)
+            # Blank working days: this person's working days from HR > Calendar
+            working_days = fixed_days or work_calendar.current().month_working_days(year, month, emp)
 
             # Also count absent days not covered by leave
             days_absent = max(0, working_days - int(days_present) - paid_leave_days - unpaid_leave_days)

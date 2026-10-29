@@ -393,9 +393,42 @@ class LeaveRequest(models.Model):
 
     @property
     def total_days(self):
+        """Working days only: weekly offs and holidays inside the leave don't count."""
         if self.start_date and self.end_date:
-            return (self.end_date - self.start_date).days + 1
+            return self.days_in(self.start_date, self.end_date)
         return 0
+
+    def days_in(self, lo, hi, cal=None):
+        """Working days of this leave that fall inside lo..hi."""
+        from .work_calendar import current
+        cal = cal or current()
+        return cal.working_days(max(self.start_date, lo), min(self.end_date, hi), self.employee)
+
+
+class Holiday(models.Model):
+    """A day the office is closed (HR > Calendar). Not counted as a working day
+    or a leave day."""
+    KIND_CHOICES = [
+        ('public', 'Public holiday'),
+        ('kerala', 'Kerala holiday'),
+        ('company', 'Company holiday'),
+    ]
+    SOURCE_CHOICES = [('manual', 'Added by HR'), ('google', 'Google India calendar'),
+                      ('kerala', 'Kerala fixed-date list')]
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    date = models.DateField(unique=True)
+    name = models.CharField(max_length=120)
+    kind = models.CharField(max_length=10, choices=KIND_CHOICES, default='public')
+    source = models.CharField(max_length=10, choices=SOURCE_CHOICES, default='manual')
+    created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='+')
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['date']
+
+    def __str__(self):
+        return f'{self.date} {self.name}'
 
 
 class WorkAssignment(models.Model):

@@ -19,7 +19,7 @@
 
 <div class="card">
   <div class="card-header">
-    <h3 class="card-title"><i class="fas fa-chart-bar"></i> {{ working_days }} day month</h3>
+    <h3 class="card-title"><i class="fas fa-chart-bar"></i> Working days: {{ month_days.staff }} staff &middot; {{ month_days.interns }} interns <a href="{% url 'emp_calendar' %}?year={{ year }}&month={{ month }}" class="text-sm" style="font-weight:400;margin-left:6px;">Calendar</a></h3>
     <div class="card-actions">
       <form method="get" class="d-flex gap-2">
         <select name="month" class="form-control" style="width: auto;">
@@ -53,6 +53,7 @@
           <th class="text-center">WFH</th>
           <th class="text-center">Absent</th>
           <th class="text-center">Days Present</th>
+          <th class="text-center">Working Days</th>
           <th class="text-center">Total Hours</th>
         </tr>
       </thead>
@@ -69,11 +70,12 @@
           <td class="text-center">{{ row.work_from_home }}</td>
           <td class="text-center">{{ row.absent }}</td>
           <td class="text-center"><strong>{{ row.days_present }}</strong></td>
+          <td class="text-center">{{ row.working_days }}</td>
           <td class="text-center">{{ row.hours }}h</td>
         </tr>
         {% empty %}
         <tr>
-          <td colspan="8" class="text-center text-muted py-4">No active employees found.</td>
+          <td colspan="9" class="text-center text-muted py-4">No active employees found.</td>
         </tr>
         {% endfor %}
       </tbody>
@@ -86,6 +88,7 @@
           <td class="text-center">{{ totals.half_day }}</td>
           <td class="text-center">{{ totals.work_from_home }}</td>
           <td class="text-center">{{ totals.absent }}</td>
+          <td class="text-center">—</td>
           <td class="text-center">—</td>
           <td class="text-center">{{ totals.hours }}h</td>
         </tr>
