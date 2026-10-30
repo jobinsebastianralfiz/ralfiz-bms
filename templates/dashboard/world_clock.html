@@ -119,6 +119,11 @@ select{font:inherit;font-size:13px;color:var(--ink);background:var(--surface-2);
 /* Timeline */
 .panel{background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:20px;display:grid;gap:14px}
 .panel h2{font-family:var(--display);font-weight:700;font-size:20px;margin:0}
+details.panel > summary{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;cursor:pointer;list-style:none}
+details.panel > summary::-webkit-details-marker{display:none}
+details.panel > summary::after{content:"";margin-left:auto;align-self:center;width:8px;height:8px;border-right:2px solid var(--muted);border-bottom:2px solid var(--muted);transform:rotate(45deg);transition:transform .15s}
+details.panel[open] > summary::after{transform:rotate(-135deg)}
+details.panel:not([open]){gap:0}
 .panel p{margin:0;color:var(--muted);font-size:14px;max-width:70ch}
 .tl-scroll{overflow-x:auto}
 .tl{min-width:640px;display:grid;grid-template-columns:120px 1fr;gap:8px 12px;align-items:center;position:relative}
@@ -178,11 +183,11 @@ footer{font-size:12px;color:var(--muted);display:flex;justify-content:space-betw
 
   <section class="grid" id="cards" aria-label="Country clocks"></section>
 
-  <section class="panel" aria-label="Working hours overlap">
-    <div style="display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;align-items:baseline">
+  <details class="panel" id="tlPanel" aria-label="Working hours overlap">
+    <summary>
       <h2>Working hours on India time</h2>
       <span class="planning-badge" id="tlBadge" hidden>Planning view</span>
-    </div>
+    </summary>
     <p>Each bar shows that country's 9:00–18:00 workday mapped onto the IST clock. The bottom row marks hours when every selected market is at work. Striped bars mean that day is a weekend there.</p>
     <div class="tl-scroll">
       <div class="tl" id="timeline"></div>
@@ -193,7 +198,7 @@ footer{font-size:12px;color:var(--muted);display:flex;justify-content:space-betw
       <span><i class="sw" style="background:var(--night)"></i>Outside office hours</span>
       <span><i class="sw" style="background:var(--accent)"></i>Everyone at work / selected time</span>
     </div>
-  </section>
+  </details>
 
   <footer>
     <span id="wxStamp">Weather —</span>
@@ -556,6 +561,9 @@ footer{font-size:12px;color:var(--muted);display:flex;justify-content:space-betw
   fmtBtn.addEventListener("click", () => { use24 = !use24; store.set("wc-24h", use24); fmtBtn.setAttribute("aria-pressed", String(use24)); lastTlKey = ""; tick(); renderWeather(); });
   unitBtn.addEventListener("click", () => { useF = !useF; store.set("wc-f", useF); unitBtn.setAttribute("aria-pressed", String(useF)); renderWeather(); });
   window.addEventListener("resize", () => { lastTlKey = lastTlKey; tick(); });
+  const tlPanel = $("tlPanel");
+  tlPanel.open = store.get("wc-tl-open", false);
+  tlPanel.addEventListener("toggle", () => { store.set("wc-tl-open", tlPanel.open); tick(); });
   try { matchMedia("(prefers-color-scheme: dark)").addEventListener("change", () => { acc = accent(); }); } catch(e){}
   new MutationObserver(() => { acc = accent(); }).observe(document.documentElement, { attributes:true, attributeFilter:["data-theme"] });
 

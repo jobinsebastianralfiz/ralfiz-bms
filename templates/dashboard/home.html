@@ -49,21 +49,21 @@
     f.addEventListener('load', function () {
       var doc = f.contentDocument;
       if (!doc) return;
-      var fit = function () { f.style.height = doc.documentElement.scrollHeight + 'px'; };
+      var fit = function () { f.style.height = doc.body.offsetHeight + 'px'; };  // body, so it can shrink too
       fit();
       if (window.ResizeObserver) new ResizeObserver(fit).observe(doc.body);
     });
   })();
 </script>
 
-<div class="card mb-4">
-  <div class="card-header inv-list-head">
+<details class="card mb-4 home-fold" data-fold="invoices">
+  <summary class="card-header inv-list-head">
     <div>
       <h2 class="card-title mb-0">Recent Invoices</h2>
       <p class="inv-list-head__sub">Latest numbers first</p>
     </div>
     <a href="{% url 'invoice_list' %}" class="btn btn-sm btn-outline-secondary">View all</a>
-  </div>
+  </summary>
   <div class="table-wrapper">
     <table class="table inv-table">
       <thead>
@@ -101,17 +101,17 @@
       </tbody>
     </table>
   </div>
-</div>
+</details>
 
 <div class="home-split">
-  <div class="card">
-    <div class="card-header inv-list-head">
+  <details class="card home-fold" data-fold="projects">
+    <summary class="card-header inv-list-head">
       <div>
         <h2 class="card-title mb-0">Active Projects</h2>
         <p class="inv-list-head__sub">Confirmed, in progress or in review</p>
       </div>
       <a href="{% url 'project_list' %}" class="btn btn-sm btn-outline-secondary">All projects</a>
-    </div>
+    </summary>
     <ul class="home-list">
       {% for p in active_projects %}
       <li>
@@ -128,16 +128,16 @@
       <li class="home-list__empty">No active projects.</li>
       {% endfor %}
     </ul>
-  </div>
+  </details>
 
-  <div class="card">
-    <div class="card-header inv-list-head">
+  <details class="card home-fold" data-fold="dues">
+    <summary class="card-header inv-list-head">
       <div>
         <h2 class="card-title mb-0">Dues &amp; Renewals</h2>
         <p class="inv-list-head__sub">Next {{ dues.horizon_days }} days{% if dues.overdue_count %} · <span class="text-danger">{{ dues.overdue_count }} overdue</span>{% endif %}</p>
       </div>
       <a href="{% url 'credential_list' %}" class="btn btn-sm btn-outline-secondary">Credentials</a>
-    </div>
+    </summary>
     <ul class="home-list">
       {% for d in dues.items %}
       <li>
@@ -154,8 +154,18 @@
       <li class="home-list__empty">Nothing expiring in the next {{ dues.horizon_days }} days.</li>
       {% endfor %}
     </ul>
-  </div>
+  </details>
 </div>
+<script>
+  {# Folded sections remember being opened, per browser. #}
+  document.querySelectorAll('details.home-fold').forEach(function (d) {
+    var key = 'home-fold-' + d.dataset.fold;
+    try { if (localStorage.getItem(key) === '1') d.open = true; } catch (e) {}
+    d.addEventListener('toggle', function () {
+      try { localStorage.setItem(key, d.open ? '1' : '0'); } catch (e) {}
+    });
+  });
+</script>
 
 
 </div>{# /inv-main #}
