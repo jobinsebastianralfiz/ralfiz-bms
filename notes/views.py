@@ -32,8 +32,16 @@ def spa(request, *args, **kwargs):
 @require_POST
 def new_linked_note(request):
     """POST /notes/new/ from a project, client or lead page: `kind` + `id` of the record.
-    Creates an empty doc note linked to it and opens it in the Notes app."""
+    Creates an empty doc note linked to it and opens it in the Notes app.
+    With no `kind` (the dashboard) the note is unlinked, and `note_kind=board` starts a board."""
     kind = request.POST.get("kind")
+    if not kind:
+        if request.POST.get("note_kind") == Note.KIND_BOARD:
+            note = Note.objects.create(owner=request.user, kind=Note.KIND_BOARD)
+        else:
+            note = Note.objects.create(owner=request.user, kind=Note.KIND_DOC,
+                                       content={"type": "doc", "content": [{"type": "paragraph"}]})
+        return redirect(f"/notes/n/{note.id}")
     record = find_record(kind, request.POST.get("id"), request.user) if kind in LINK_KINDS else None
     if record is None:
         messages.error(request, "That record can't be linked to a note.")

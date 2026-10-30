@@ -1,5 +1,5 @@
 {% extends 'base.html' %}
-{% load static money %}
+{% load static money humanize %}
 
 {% block title %}Dashboard - Ralfiz BMS{% endblock %}
 
@@ -41,59 +41,126 @@
       <div class="modules__search">
         <i class="fas fa-search"></i>
         <input type="text" id="modulesSearch" placeholder="Find a module..." autocomplete="off" aria-label="Find a module">
+        <kbd>Ctrl K</kbd>
       </div>
       <button type="button" class="modules__close" id="modulesClose" aria-label="Close"><i class="fas fa-times"></i></button>
     </div>
-    <div class="modules__grid" id="modulesGrid"></div>
-    <p class="modules__empty" id="modulesEmpty" hidden>No module matches.</p>
+    <div class="modules__body">
+      <section class="modules__recent" id="modulesRecent" hidden>
+        <h3>Recently opened</h3>
+        <div class="modules__chips" id="modulesChips"></div>
+      </section>
+      <div class="modules__grid" id="modulesGrid"></div>
+      <p class="modules__empty" id="modulesEmpty" hidden>No module matches.</p>
+    </div>
+    <div class="modules__foot"><span><kbd>&uarr;</kbd><kbd>&darr;</kbd>move</span><span><kbd>Enter</kbd>open</span><span><kbd>Esc</kbd>close</span></div>
   </div>
 </div>
 <script>
   {# Built from the (hidden) sidebar, so the two can never drift apart. #}
   (function () {
     var panel = document.getElementById('modulesPanel'), grid = document.getElementById('modulesGrid'),
-        search = document.getElementById('modulesSearch'), empty = document.getElementById('modulesEmpty');
-    document.querySelectorAll('.sidebar .nav-section').forEach(function (sec) {
+        search = document.getElementById('modulesSearch'), empty = document.getElementById('modulesEmpty'),
+        recentBox = document.getElementById('modulesRecent'), chips = document.getElementById('modulesChips'),
+        RECENT = 'modules-recent', byHref = {}, cursor = -1;
+    function store(v) { try { if (v) localStorage.setItem(RECENT, JSON.stringify(v)); else return JSON.parse(localStorage.getItem(RECENT)) || []; } catch (e) { return []; } }
+    function esc(t) { return t.replace(/[&<>"]/g, function (c) { return {'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;'}[c]; }); }
+
+    document.querySelectorAll('.sidebar .nav-section').forEach(function (sec, i) {
       var links = sec.querySelectorAll('a.nav-item');
       if (!links.length) return;
       var title = sec.querySelector('.nav-section-title');
       var box = document.createElement('section');
       box.className = 'modules__group';
+      box.dataset.tone = i % 9;
       var h = document.createElement('h3');
       {# Own text only: the Social Hub heading also holds a logo badge. #}
       h.textContent = title ? Array.prototype.filter.call(title.childNodes, function (n) { return n.nodeType === 3; })
         .map(function (n) { return n.textContent; }).join(' ').trim() || title.textContent.trim() : 'Home';
+      var count = document.createElement('span');
+      count.className = 'modules__count';
+      h.appendChild(count);
       box.appendChild(h);
       links.forEach(function (a) {
-        var link = a.cloneNode(true);
-        link.className = 'modules__item';
-        link.removeAttribute('id');
+        var icon = a.querySelector('i'), label = a.querySelector('span:not(.nav-badge)');
+        var link = document.createElement('a');
+        link.className = 'modules__item' + (a.classList.contains('active') ? ' active' : '');
+        link.href = a.getAttribute('href');
+        link.dataset.label = (label ? label.textContent : a.textContent).trim();
+        link.dataset.icon = icon ? icon.className : 'fas fa-circle';
+        link.innerHTML = '<i class="' + link.dataset.icon + '"></i><span>' + esc(link.dataset.label) + '</span>';
+        var badge = a.querySelector('.nav-badge');
+        if (badge) link.appendChild(badge.cloneNode(true));
+        link.addEventListener('click', function () { remember(link.getAttribute('href')); });
+        byHref[link.getAttribute('href')] = {label: link.dataset.label, icon: link.dataset.icon, tone: box.dataset.tone};
         box.appendChild(link);
       });
       grid.appendChild(box);
     });
-    function open() { panel.hidden = false; search.value = ''; filter(); search.focus(); }
-    function close() { panel.hidden = true; }
+
+    function remember(href) {
+      var list = store().filter(function (h) { return h !== href; });
+      list.unshift(href);
+      store(list.slice(0, 8));
+    }
+    function drawRecent() {
+      chips.innerHTML = '';
+      store().filter(function (h) { return byHref[h]; }).slice(0, 6).forEach(function (h) {
+        var m = byHref[h], c = document.createElement('a');
+        c.className = 'modules__chip'; c.href = h; c.dataset.tone = m.tone;
+        c.innerHTML = '<i class="' + m.icon + '"></i>' + esc(m.label);
+        c.addEventListener('click', function () { remember(h); });
+        chips.appendChild(c);
+      });
+      recentBox.hidden = !chips.children.length || !!search.value.trim();
+    }
+    function visible() { return Array.prototype.slice.call(grid.querySelectorAll('.modules__item:not([hidden])')); }
+    function setCursor(n) {
+      var items = visible();
+      items.forEach(function (a) { a.classList.remove('is-cursor'); });
+      cursor = items.length && n !== null ? (n + items.length) % items.length : -1;
+      if (cursor > -1) { items[cursor].classList.add('is-cursor'); items[cursor].scrollIntoView({block: 'nearest'}); }
+    }
     function filter() {
       var q = search.value.trim().toLowerCase(), any = false;
       grid.querySelectorAll('.modules__group').forEach(function (box) {
         var shown = 0;
         box.querySelectorAll('.modules__item').forEach(function (a) {
-          var hit = !q || a.textContent.toLowerCase().indexOf(q) > -1;
+          var label = a.dataset.label, at = label.toLowerCase().indexOf(q), hit = !q || at > -1;
           a.hidden = !hit; shown += hit;
+          a.querySelector('span').innerHTML = q && hit
+            ? esc(label.slice(0, at)) + '<mark>' + esc(label.slice(at, at + q.length)) + '</mark>' + esc(label.slice(at + q.length))
+            : esc(label);
         });
         box.hidden = !shown; any = any || shown > 0;
+        box.querySelector('.modules__count').textContent = shown;
       });
       empty.hidden = any;
+      drawRecent();
+      setCursor(q ? 0 : null);
     }
+    function open() { panel.hidden = false; search.value = ''; filter(); search.focus(); document.body.style.overflow = 'hidden'; }
+    function close() { panel.hidden = true; document.body.style.overflow = ''; }
+
     document.getElementById('modulesBtn').addEventListener('click', open);
     document.getElementById('modulesClose').addEventListener('click', close);
     panel.addEventListener('click', function (e) { if (e.target === panel) close(); });
     search.addEventListener('input', filter);
     search.addEventListener('keydown', function (e) {
-      if (e.key === 'Enter') { var first = grid.querySelector('.modules__item:not([hidden])'); if (first) first.click(); }
+      if (e.key === 'ArrowDown') { e.preventDefault(); setCursor(cursor + 1); }
+      else if (e.key === 'ArrowUp') { e.preventDefault(); setCursor(cursor - 1); }
+      else if (e.key === 'Enter') {
+        var items = visible(), pick = items[cursor > -1 ? cursor : 0];
+        if (pick) pick.click();
+      }
     });
-    document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && !panel.hidden) close(); });
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape' && !panel.hidden) return close();
+      var typing = /INPUT|TEXTAREA|SELECT/.test(e.target.tagName) || e.target.isContentEditable;
+      if ((e.key.toLowerCase() === 'k' && (e.ctrlKey || e.metaKey)) || (e.key === '/' && !typing)) {
+        if (panel.hidden) { e.preventDefault(); open(); }
+      }
+    });
     {# The navbar's menu button opens this panel here, since there is no sidebar to slide in. #}
     var toggle = document.getElementById('sidebarToggle');
     if (toggle) toggle.addEventListener('click', function (e) { e.stopImmediatePropagation(); open(); }, true);
@@ -127,6 +194,38 @@
     });
   })();
 </script>
+
+<div class="card mb-4 home-notes">
+  <div class="card-header inv-list-head">
+    <div>
+      <h2 class="card-title mb-0">My Notes</h2>
+      <p class="inv-list-head__sub"><i class="fas fa-lock"></i> Private to you · last edited first</p>
+    </div>
+    <div class="home-notes__acts">
+      <form method="post" action="{% url 'notes_new_linked' %}">{% csrf_token %}
+        <button type="submit" class="btn btn-sm btn-primary"><i class="fas fa-plus"></i> New note</button>
+      </form>
+      <form method="post" action="{% url 'notes_new_linked' %}">{% csrf_token %}
+        <input type="hidden" name="note_kind" value="board">
+        <button type="submit" class="btn btn-sm btn-outline-secondary"><i class="fas fa-shapes"></i> Board</button>
+      </form>
+      <a href="{% url 'notes_home' %}" class="btn btn-sm btn-outline-secondary">Open Notes</a>
+    </div>
+  </div>
+  <ul class="home-list">
+    {% for n in my_notes %}
+    <li>
+      <a href="/notes/n/{{ n.pk }}" class="home-list__main">
+        <span class="home-list__title"><i class="fas {% if n.kind == 'board' %}fa-shapes{% else %}fa-file-lines{% endif %} home-notes__ico"></i>{{ n.title|default:"Untitled" }}{% if n.pinned %} <i class="fas fa-thumbtack home-notes__pin" title="Pinned"></i>{% endif %}</span>
+        <span class="home-list__sub">{% if n.project %}<i class="far fa-folder-open"></i> {{ n.project.name }}{% elif n.client %}<i class="fas fa-user-tie"></i> {{ n.client.name }}{% elif n.lead %}<i class="fas fa-bullseye"></i> {% firstof n.lead.company_name n.lead.contact_person %}{% elif n.preview %}{{ n.preview|truncatechars:90 }}{% else %}{% if n.kind == 'board' %}Board{% else %}Empty note{% endif %}{% endif %}</span>
+      </a>
+      <div class="home-list__side"><span class="home-list__when">{{ n.updated_at|naturaltime }}</span></div>
+    </li>
+    {% empty %}
+    <li class="home-list__empty">No notes yet. Start one here, or from a project, client or lead page.</li>
+    {% endfor %}
+  </ul>
+</div>
 
 <details class="card mb-4 home-fold" data-fold="invoices">
   <summary class="card-header inv-list-head">

@@ -183,3 +183,26 @@ class LinkTests(TestCase):
         res = intern_api.post("/notes/new/", {"kind": "project", "id": str(self.project.pk)})
         self.assertEqual(res.status_code, 302)
         self.assertEqual(Note.objects.filter(owner=intern).count(), 1)
+
+
+class DashboardTests(TestCase):
+    def setUp(self):
+        self.owner, _ = make_user("chief", is_staff=True, is_superuser=True)
+        self.client.force_login(self.owner)
+
+    def test_dashboard_lists_only_my_notes(self):
+        other, _ = make_user("partner", is_staff=True)
+        Note.objects.create(owner=self.owner, title="Roadmap ideas")
+        Note.objects.create(owner=other, title="Their secret")
+        page = self.client.get("/")
+        self.assertContains(page, "My Notes")
+        self.assertContains(page, "Roadmap ideas")
+        self.assertNotContains(page, "Their secret")
+
+    def test_new_note_and_board_from_dashboard(self):
+        res = self.client.post("/notes/new/")
+        note = Note.objects.get()
+        self.assertRedirects(res, f"/notes/n/{note.pk}", fetch_redirect_response=False)
+        self.assertEqual((note.owner, note.kind, note.project, note.client, note.lead), (self.owner, "doc", None, None, None))
+        self.client.post("/notes/new/", {"note_kind": "board"})
+        self.assertEqual(Note.objects.filter(kind="board", owner=self.owner).count(), 1)

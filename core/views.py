@@ -117,7 +117,14 @@ def home_dashboard(request):
     projects = (Project.objects.filter(status__in=ACTIVE_PROJECT_STATUSES)
                 .select_related('client').order_by('deadline', 'name')[:6])
 
+    from notes.models import Note
+    my_notes = (Note.objects.filter(owner=request.user, deleted_at__isnull=True)
+                .select_related('project', 'client', 'lead')
+                .only('id', 'kind', 'title', 'preview', 'pinned', 'updated_at',
+                      'project__name', 'client__name', 'lead__company_name', 'lead__contact_person')[:5])
+
     return render(request, 'dashboard/home.html', {
+        'my_notes': my_notes,
         'recent_invoices': _latest_number_first(Invoice.objects.select_related('client'))[:6],
         'active_projects': projects,
         'dues': get_dues_and_renewals(scope, limit=6),
