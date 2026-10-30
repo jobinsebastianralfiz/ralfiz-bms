@@ -227,6 +227,95 @@
   </ul>
 </div>
 
+<div class="card mb-4 fx" id="fx">
+  <div class="card-header inv-list-head">
+    <div>
+      <h2 class="card-title mb-0">Currency Converter</h2>
+      <p class="inv-list-head__sub" id="fxUpdated">Live rates, updated daily</p>
+    </div>
+  </div>
+  {% if fx.rates %}
+  <div class="fx__body">
+    <div class="fx__row">
+      <label class="fx__field fx__field--amount">
+        <span>Amount</span>
+        <input type="text" inputmode="decimal" id="fxAmount" value="1000" autocomplete="off" aria-label="Amount">
+      </label>
+      <label class="fx__field">
+        <span>From</span>
+        <select id="fxFrom" aria-label="From currency">
+          {% for code, name in fx_currencies %}{% if code in fx.rates %}<option value="{{ code }}">{{ code }} · {{ name }}</option>{% endif %}{% endfor %}
+        </select>
+      </label>
+      <button type="button" class="fx__swap" id="fxSwap" title="Swap" aria-label="Swap currencies"><i class="fas fa-right-left"></i></button>
+      <label class="fx__field">
+        <span>To</span>
+        <select id="fxTo" aria-label="To currency">
+          {% for code, name in fx_currencies %}{% if code in fx.rates %}<option value="{{ code }}">{{ code }} · {{ name }}</option>{% endif %}{% endfor %}
+        </select>
+      </label>
+    </div>
+    <div class="fx__result">
+      <div class="fx__big" id="fxResult" aria-live="polite"></div>
+      <div class="fx__rate" id="fxRate"></div>
+    </div>
+    <div class="fx__chips" id="fxChips" aria-label="Rupees per unit"></div>
+  </div>
+  {{ fx|json_script:"fx-data" }}
+  <script>
+    (function () {
+      var fx = JSON.parse(document.getElementById('fx-data').textContent), r = fx.rates,
+          amount = document.getElementById('fxAmount'), from = document.getElementById('fxFrom'),
+          to = document.getElementById('fxTo'), out = document.getElementById('fxResult'),
+          rateLine = document.getElementById('fxRate'), chips = document.getElementById('fxChips'), KEY = 'fx-pair';
+      {# Rates are "per rupee"; INR amounts use lakh/crore grouping. #}
+      function money(v, code) {
+        var digits = Math.abs(v) >= 1 || v === 0 ? 2 : 4;
+        try { return new Intl.NumberFormat(code === 'INR' ? 'en-IN' : 'en-US', {style: 'currency', currency: code,
+          minimumFractionDigits: digits, maximumFractionDigits: digits}).format(v); }
+        catch (e) { return code + ' ' + v.toFixed(digits); }
+      }
+      function convert(v, a, b) { return v / r[a] * r[b]; }
+      function parse() { var v = parseFloat(amount.value.replace(/[^0-9.]/g, '')); return isNaN(v) ? 0 : v; }
+      function draw() {
+        var a = from.value, b = to.value, v = parse();
+        out.innerHTML = '<span class="fx__src">' + money(v, a) + ' =</span> ' + money(convert(v, a, b), b);
+        rateLine.textContent = '1 ' + a + ' = ' + money(convert(1, a, b), b) + '  ·  1 ' + b + ' = ' + money(convert(1, b, a), a);
+        chips.querySelectorAll('button').forEach(function (c) {
+          c.classList.toggle('is-on', (c.dataset.code === a && b === 'INR') || (c.dataset.code === b && a === 'INR'));
+        });
+        try { localStorage.setItem(KEY, a + '>' + b); } catch (e) {}
+      }
+      ['USD', 'AED', 'SAR', 'QAR', 'KWD', 'CAD', 'EUR', 'GBP'].forEach(function (code) {
+        if (!r[code]) return;
+        var c = document.createElement('button');
+        c.type = 'button'; c.dataset.code = code;
+        c.innerHTML = '<b>' + code + '</b>' + money(1 / r[code], 'INR');
+        c.title = '1 ' + code + ' in rupees. Click to convert ' + code + ' to INR';
+        c.addEventListener('click', function () { from.value = code; to.value = 'INR'; draw(); });
+        chips.appendChild(c);
+      });
+      var pair = 'USD>INR';
+      try { pair = localStorage.getItem(KEY) || pair; } catch (e) {}
+      pair = pair.split('>');
+      from.value = r[pair[0]] ? pair[0] : 'USD';
+      to.value = r[pair[1]] ? pair[1] : 'INR';
+      document.getElementById('fxSwap').addEventListener('click', function () {
+        var t = from.value; from.value = to.value; to.value = t; draw();
+      });
+      [amount, from, to].forEach(function (el) { el.addEventListener('input', draw); });
+      if (fx.updatedAt) {
+        document.getElementById('fxUpdated').textContent = 'Live rates · updated ' + new Date(fx.updatedAt).toLocaleString('en-IN',
+          {day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit'});
+      }
+      draw();
+    })();
+  </script>
+  {% else %}
+  <p class="fx__down">Exchange rates can't be reached right now. Try again in a few minutes.</p>
+  {% endif %}
+</div>
+
 <details class="card mb-4 home-fold" data-fold="invoices">
   <summary class="card-header inv-list-head">
     <div>

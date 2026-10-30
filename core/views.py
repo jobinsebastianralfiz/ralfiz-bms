@@ -125,6 +125,8 @@ def home_dashboard(request):
 
     return render(request, 'dashboard/home.html', {
         'my_notes': my_notes,
+        'fx': currency_rates(),
+        'fx_currencies': CONVERTER_CURRENCIES,
         'recent_invoices': _latest_number_first(Invoice.objects.select_related('client'))[:6],
         'active_projects': projects,
         'dues': get_dues_and_renewals(scope, limit=6),
@@ -208,6 +210,46 @@ def world_clock_weather():
     data = {'updatedAt': timezone.now().isoformat(), 'cities': cities}
     if cities:
         cache.set('world_clock_weather', data, 30 * 60)
+    return data
+
+
+# The dashboard's currency converter: client-market currencies first.
+CONVERTER_CURRENCIES = [
+    ('INR', 'Indian Rupee'), ('USD', 'US Dollar'), ('AED', 'UAE Dirham'), ('SAR', 'Saudi Riyal'),
+    ('QAR', 'Qatari Riyal'), ('KWD', 'Kuwaiti Dinar'), ('OMR', 'Omani Rial'), ('BHD', 'Bahraini Dinar'),
+    ('CAD', 'Canadian Dollar'), ('EUR', 'Euro'), ('GBP', 'British Pound'), ('AUD', 'Australian Dollar'),
+    ('SGD', 'Singapore Dollar'), ('NZD', 'New Zealand Dollar'), ('MYR', 'Malaysian Ringgit'), ('JPY', 'Japanese Yen'),
+]
+
+
+def currency_rates():
+    """How much of each converter currency one rupee buys, from open.er-api.com
+    (no key, refreshed daily), cached for 6 hours. Empty rates when unreachable."""
+    import requests
+    from datetime import timezone as dt_timezone
+    from django.core.cache import cache
+
+    cached = cache.get('currency_rates_inr')
+    if cached:
+        return cached
+    try:
+        response = requests.get('https://open.er-api.com/v6/latest/INR', timeout=8)
+        response.raise_for_status()
+        body = response.json()
+        if body.get('result') != 'success':
+            raise ValueError(body.get('error-type'))
+        all_rates = body['rates']
+    except (requests.RequestException, ValueError, KeyError, TypeError, AttributeError):
+        return {'updatedAt': None, 'rates': {}}
+
+    rates = {code: all_rates[code] for code, _ in CONVERTER_CURRENCIES if code in all_rates}
+    updated = body.get('time_last_update_unix')
+    data = {
+        'updatedAt': datetime.fromtimestamp(updated, tz=dt_timezone.utc).isoformat() if updated else None,
+        'rates': rates,
+    }
+    if len(rates) > 1:
+        cache.set('currency_rates_inr', data, 6 * 60 * 60)
     return data
 
 

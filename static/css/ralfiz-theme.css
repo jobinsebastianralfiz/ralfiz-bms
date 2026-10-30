@@ -1143,3 +1143,31 @@ a.inv-stat:hover { border-color: #bae6fd; }
 .home-notes__ico { color: var(--primary); margin-right: 8px; width: 14px; text-align: center; }
 .home-notes__pin { color: #f59e0b; font-size: 11px; margin-left: 4px; }
 .home-notes .home-list__sub i { color: var(--text-muted); margin-right: 3px; }
+
+/* Dashboard currency converter */
+.fx__body { padding: 4px 20px 18px; }
+.fx__row { display: grid; grid-template-columns: 1.1fr 1fr auto 1fr; gap: 12px; align-items: end; }
+.fx__field { display: flex; flex-direction: column; gap: 6px; margin: 0; min-width: 0; }
+.fx__field span { font-size: 12px; font-weight: 600; color: var(--text-muted); }
+.fx__field input, .fx__field select { height: 44px; border: 1px solid var(--border-color); border-radius: 12px; background: var(--bg-subtle);
+  padding: 0 12px; font: inherit; font-size: 15px; color: var(--text-primary); width: 100%; }
+.fx__field--amount input { font-size: 18px; font-weight: 700; }
+.fx__field input:focus, .fx__field select:focus { outline: 2px solid var(--primary-lighter); border-color: var(--primary); background: #fff; }
+.fx__swap { width: 44px; height: 44px; border-radius: 50%; border: 1px solid var(--border-color); background: #fff; color: var(--primary);
+  cursor: pointer; transition: transform .2s; }
+.fx__swap:hover { background: var(--primary-bg); transform: rotate(180deg); }
+.fx__result { margin: 16px 0 14px; padding: 14px 16px; border-radius: 16px; background: var(--primary-bg); }
+.fx__big { font-size: 26px; font-weight: 800; color: var(--text-primary); line-height: 1.2; word-break: break-word; }
+.fx__src { font-size: 16px; font-weight: 600; color: var(--text-secondary); }
+.fx__rate { font-size: 13px; color: var(--text-secondary); margin-top: 4px; }
+.fx__chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.fx__chips button { display: inline-flex; gap: 6px; align-items: baseline; padding: 6px 12px; border-radius: 999px; font: inherit; font-size: 13px;
+  border: 1px solid var(--border-color); background: var(--bg-subtle); color: var(--text-secondary); cursor: pointer; }
+.fx__chips button b { color: var(--text-primary); font-weight: 700; }
+.fx__chips button:hover, .fx__chips button.is-on { border-color: var(--primary); background: #fff; color: var(--text-primary); }
+.fx__down { padding: 0 20px 18px; color: var(--text-muted); margin: 0; }
+@media (max-width: 640px) {
+  .fx__row { grid-template-columns: 1fr auto 1fr; }
+  .fx__field--amount { grid-column: 1 / -1; }
+  .fx__big { font-size: 22px; }
+}

@@ -8,7 +8,7 @@ from django.core.cache import cache
 from django.test import TestCase, override_settings
 from django.urls import reverse
 
-from .views import WORLD_CLOCK_CITIES, world_clock_weather
+from .views import WORLD_CLOCK_CITIES, currency_rates, world_clock_weather
 
 LOCMEM = {'default': {'BACKEND': 'django.core.cache.backends.locmem.LocMemCache'}}
 
@@ -68,7 +68,8 @@ class WorldClockPageTests(TestCase):
         self.assertNotContains(resp, 'Plan a call time')
 
     def test_dashboard_embeds_the_clock(self):
-        resp = self.client.get(reverse('dashboard'))
+        with mock.patch('requests.get', side_effect=requests.ConnectionError):
+            resp = self.client.get(reverse('dashboard'))
         self.assertContains(resp, reverse('world_clock') + '?embed=1')
         # The clock replaced the headline figures; Quick Actions links to it.
         self.assertNotContains(resp, 'home-stat')
@@ -80,3 +81,37 @@ class WorldClockPageTests(TestCase):
     def test_needs_login(self):
         self.client.logout()
         self.assertEqual(self.client.get(reverse('world_clock')).status_code, 302)
+
+
+FX_BODY = {'result': 'success', 'time_last_update_unix': 1793318551,
+           'rates': {'INR': 1, 'USD': 0.0105, 'AED': 0.0385, 'XYZ': 9.9}}
+
+
+@override_settings(CACHES=LOCMEM)
+class CurrencyConverterTests(TestCase):
+    def setUp(self):
+        cache.clear()
+
+    def test_keeps_listed_currencies_and_caches(self):
+        with mock.patch('requests.get', return_value=_response(FX_BODY)) as get:
+            data = currency_rates()
+            currency_rates()
+        self.assertEqual(get.call_count, 1)
+        self.assertEqual(data['rates'], {'INR': 1, 'USD': 0.0105, 'AED': 0.0385})
+        self.assertTrue(data['updatedAt'].startswith('2026-10-30'))
+
+    def test_failure_gives_empty_and_is_not_cached(self):
+        with mock.patch('requests.get', return_value=_response({'result': 'error', 'error-type': 'unsupported-code'})) as get:
+            self.assertEqual(currency_rates()['rates'], {})
+            currency_rates()
+        self.assertEqual(get.call_count, 2)
+
+    def test_dashboard_shows_converter(self):
+        owner = User.objects.create_user('fxowner', password='pw', is_staff=True, is_superuser=True)
+        self.client.force_login(owner)
+        with mock.patch('requests.get', return_value=_response(FX_BODY)):
+            resp = self.client.get(reverse('dashboard'))
+        self.assertContains(resp, 'Currency Converter')
+        self.assertContains(resp, 'id="fx-data"')
+        self.assertContains(resp, '<option value="AED">AED')
+        self.assertNotContains(resp, '<option value="SAR">')  # not in the feed: not offered
