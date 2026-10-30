@@ -65,6 +65,7 @@ class WorldClockPageTests(TestCase):
         self.assertContains(resp, 'id="wx-data"')
         self.assertContains(resp, '"Asia/Dubai"')
         self.assertContains(resp, 'body{background:transparent}')
+        self.assertNotContains(resp, 'Plan a call time')
 
     def test_dashboard_embeds_the_clock(self):
         resp = self.client.get(reverse('dashboard'))
@@ -72,6 +73,9 @@ class WorldClockPageTests(TestCase):
         # The clock replaced the headline figures; Quick Actions links to it.
         self.assertNotContains(resp, 'home-stat')
         self.assertContains(resp, 'World Clock</a>')
+        # No sidebar here: its links open from "All modules"
+        self.assertContains(resp, '<body class="layout-top">')
+        self.assertContains(resp, 'id="modulesBtn"')
 
     def test_needs_login(self):
         self.client.logout()

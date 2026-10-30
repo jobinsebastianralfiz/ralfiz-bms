@@ -5,7 +5,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=Instrument+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap">
 <style>
-/* Layout: a planning console — IST strip with a time scrubber, six watch-face cards with live weather, then a 24h overlap timeline on the IST axis. */
+/* Layout: six watch-face cards with live weather, then a 24h overlap timeline on the IST axis. */
 :root{
   --bg:#EDF0F4; --surface:#FFFFFF; --surface-2:#F4F6F9; --ink:#14202E; --muted:#5D6B7C; --line:#D9DFE7;
   --accent:#C7741B; --accent-soft:#F6E6D2;
@@ -162,24 +162,6 @@ footer{font-size:12px;color:var(--muted);display:flex;justify-content:space-betw
     </div>
   </header>
 
-  <section class="home" aria-label="India time and meeting planner">
-    <div>
-      <div class="city">India · Perinthalmanna (IST, UTC+05:30)</div>
-      <div class="big" id="homeTime">--:--<span class="sec">--</span></div>
-      <div class="date" id="homeDate">—</div>
-    </div>
-    <div class="planner">
-      <div class="planner-head">
-        <label for="scrub">Plan a call time</label>
-        <span class="shift" id="shiftLabel">Live</span>
-      </div>
-      <input type="range" id="scrub" min="-720" max="720" step="15" value="0" aria-describedby="scrubHint">
-      <div class="planner-foot">
-        <span id="scrubHint">Drag to move every clock to a future or past India time. Weather always shows current conditions.</span>
-        <button class="btn" id="nowBtn" type="button">Back to now</button>
-      </div>
-    </div>
-  </section>
 
   <section class="grid" id="cards" aria-label="Country clocks"></section>
 
@@ -251,7 +233,6 @@ footer{font-size:12px;color:var(--muted);display:flex;justify-content:space-betw
     const dow = new Date(Date.UTC(y, mo-1, d)).getUTCDay();
     return { y, mo, d, h, mi, s, offset, dow };
   }
-  const longFmt = new Intl.DateTimeFormat("en-GB", { timeZone: HOME_TZ, weekday:"long", day:"numeric", month:"long", year:"numeric" });
   const shortFmt = {};
   const pad = n => String(n).padStart(2, "0");
   function clock(h, m){
@@ -509,9 +490,6 @@ footer{font-size:12px;color:var(--muted);display:flex;justify-content:space-betw
   function tick(){
     const at = new Date(Date.now() + shiftMin*60000);
     const homeL = local(HOME_TZ, at);
-    const hc = clock(homeL.h, homeL.mi);
-    $("homeTime").innerHTML = hc.main + `<span class="sec">${use24 ? pad(homeL.s) : hc.suf}</span>`;
-    $("homeDate").textContent = longFmt.format(at);
     $("utcNow").textContent = "UTC " + pad(at.getUTCHours()) + ":" + pad(at.getUTCMinutes()) + (shiftMin ? " (planned)" : "");
     const locals = {};
     ZONES.forEach(z => {
@@ -545,16 +523,6 @@ footer{font-size:12px;color:var(--muted);display:flex;justify-content:space-betw
   function loop(){ frame(); requestAnimationFrame(loop); }
 
   // ---------- controls ----------
-  const scrub = $("scrub");
-  function setShift(v){
-    shiftMin = v; scrub.value = v;
-    const a = Math.abs(v), h = Math.floor(a/60), m = a%60;
-    $("shiftLabel").textContent = v === 0 ? "Live" : (v > 0 ? "+" : "−") + h + "h" + (m ? " " + m + "m" : "") + " from now";
-    $("tlBadge").hidden = v === 0;
-    tick();
-  }
-  scrub.addEventListener("input", () => setShift(+scrub.value));
-  $("nowBtn").addEventListener("click", () => setShift(0));
   const fmtBtn = $("fmtBtn"), unitBtn = $("unitBtn");
   fmtBtn.setAttribute("aria-pressed", String(use24));
   unitBtn.setAttribute("aria-pressed", String(useF));

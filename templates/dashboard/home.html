@@ -3,33 +3,105 @@
 
 {% block title %}Dashboard - Ralfiz BMS{% endblock %}
 
+{% block body_class %}layout-top{% endblock %}
+
 {% block breadcrumb %}
 <span class="breadcrumb-item active">Dashboard</span>
 {% endblock %}
 
 {% block content %}
-<div class="inv-page">
-<div class="inv-main">
-
-<div class="page-header">
-  <div class="page-header__lead">
-    <span class="page-header__icon"><i class="fas fa-house"></i></span>
+{# No sidebar on this page: everything in it lives behind "All modules". #}
+<header class="dash-head">
+  <div class="dash-head__hello">
+    <span class="dash-head__avatar">{{ request.user.first_name|default:request.user.username|slice:":1"|upper }}</span>
     <div>
-      <h1 class="page-title">{% now "H" as hour %}{% if hour|add:"0" < 12 %}Good morning{% elif hour|add:"0" < 17 %}Good afternoon{% else %}Good evening{% endif %}, {{ request.user.first_name|default:request.user.username }}</h1>
-      <p class="page-subtitle mb-0">Here is how the business stands today</p>
+      <h1 class="dash-head__title">{% now "H" as hour %}{% if hour|add:"0" < 12 %}Good morning{% elif hour|add:"0" < 17 %}Good afternoon{% else %}Good evening{% endif %}, {{ request.user.first_name|default:request.user.username }}</h1>
+      <p class="dash-head__sub">{% now "l, j F" %}</p>
     </div>
   </div>
-  <div class="page-actions">
-    <a href="{% url 'portfolio' %}" class="btn btn-outline-secondary">
-      <i class="fas fa-circle-nodes"></i>
-      Portfolio
-    </a>
-    <a href="{% url 'invoice_create' %}" class="btn btn-primary">
-      <i class="fas fa-plus"></i>
-      Create Invoice
-    </a>
+  <nav class="dash-tabs" aria-label="Main pages">
+    <a href="{% url 'dashboard' %}" class="is-active">Overview</a>
+    <a href="{% url 'invoice_list' %}">Invoices</a>
+    <a href="{% url 'project_list' %}">Projects</a>
+    <a href="{% url 'client_list' %}">Clients</a>
+    <a href="{% url 'portfolio' %}">Portfolio</a>
+  </nav>
+  <div class="dash-head__actions">
+    <a href="{% url 'invoice_create' %}" class="dash-btn dash-btn--primary"><i class="fas fa-plus"></i>Create Invoice</a>
+    <button type="button" class="dash-btn" id="modulesBtn" aria-haspopup="dialog" aria-controls="modulesPanel">
+      <i class="fas fa-grip"></i>All modules
+    </button>
+  </div>
+</header>
+
+<div class="modules" id="modulesPanel" role="dialog" aria-modal="true" aria-label="All modules" hidden>
+  <div class="modules__sheet">
+    <div class="modules__top">
+      <h2>All modules</h2>
+      <div class="modules__search">
+        <i class="fas fa-search"></i>
+        <input type="text" id="modulesSearch" placeholder="Find a module..." autocomplete="off" aria-label="Find a module">
+      </div>
+      <button type="button" class="modules__close" id="modulesClose" aria-label="Close"><i class="fas fa-times"></i></button>
+    </div>
+    <div class="modules__grid" id="modulesGrid"></div>
+    <p class="modules__empty" id="modulesEmpty" hidden>No module matches.</p>
   </div>
 </div>
+<script>
+  {# Built from the (hidden) sidebar, so the two can never drift apart. #}
+  (function () {
+    var panel = document.getElementById('modulesPanel'), grid = document.getElementById('modulesGrid'),
+        search = document.getElementById('modulesSearch'), empty = document.getElementById('modulesEmpty');
+    document.querySelectorAll('.sidebar .nav-section').forEach(function (sec) {
+      var links = sec.querySelectorAll('a.nav-item');
+      if (!links.length) return;
+      var title = sec.querySelector('.nav-section-title');
+      var box = document.createElement('section');
+      box.className = 'modules__group';
+      var h = document.createElement('h3');
+      {# Own text only: the Social Hub heading also holds a logo badge. #}
+      h.textContent = title ? Array.prototype.filter.call(title.childNodes, function (n) { return n.nodeType === 3; })
+        .map(function (n) { return n.textContent; }).join(' ').trim() || title.textContent.trim() : 'Home';
+      box.appendChild(h);
+      links.forEach(function (a) {
+        var link = a.cloneNode(true);
+        link.className = 'modules__item';
+        link.removeAttribute('id');
+        box.appendChild(link);
+      });
+      grid.appendChild(box);
+    });
+    function open() { panel.hidden = false; search.value = ''; filter(); search.focus(); }
+    function close() { panel.hidden = true; }
+    function filter() {
+      var q = search.value.trim().toLowerCase(), any = false;
+      grid.querySelectorAll('.modules__group').forEach(function (box) {
+        var shown = 0;
+        box.querySelectorAll('.modules__item').forEach(function (a) {
+          var hit = !q || a.textContent.toLowerCase().indexOf(q) > -1;
+          a.hidden = !hit; shown += hit;
+        });
+        box.hidden = !shown; any = any || shown > 0;
+      });
+      empty.hidden = any;
+    }
+    document.getElementById('modulesBtn').addEventListener('click', open);
+    document.getElementById('modulesClose').addEventListener('click', close);
+    panel.addEventListener('click', function (e) { if (e.target === panel) close(); });
+    search.addEventListener('input', filter);
+    search.addEventListener('keydown', function (e) {
+      if (e.key === 'Enter') { var first = grid.querySelector('.modules__item:not([hidden])'); if (first) first.click(); }
+    });
+    document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && !panel.hidden) close(); });
+    {# The navbar's menu button opens this panel here, since there is no sidebar to slide in. #}
+    var toggle = document.getElementById('sidebarToggle');
+    if (toggle) toggle.addEventListener('click', function (e) { e.stopImmediatePropagation(); open(); }, true);
+  })();
+</script>
+
+<div class="inv-page">
+<div class="inv-main">
 
 <div class="card mb-4">
   <div class="card-header inv-list-head">
