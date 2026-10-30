@@ -45,6 +45,7 @@ urlpatterns = [
     path('data-deletion/', website_views.legal, {'page': 'deletion'}, name='data_deletion'),
     path('portfolio/', pulse_views.GraphDashboardView.as_view(), name='portfolio'),
     path('dashboard/legacy/', views.dashboard, name='dashboard-legacy'),
+    path('dashboard/world-clock/', views.world_clock, name='world_clock'),
 
     # Clients
     path('clients/', views.client_list, name='client_list'),

@@ -3,6 +3,7 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.urls import reverse
 from django.core.exceptions import ValidationError
 from django.contrib.auth.decorators import login_required
+from django.views.decorators.clickjacking import xframe_options_sameorigin
 from .security import is_locked, safe_next
 from django.contrib.auth import login, logout, authenticate
 from django.contrib.auth.models import User
@@ -104,38 +105,112 @@ def logout_view(request):
 
 @login_required
 def home_dashboard(request):
-    """The light dashboard at '/': headline figures, recent invoices, active
+    """The light dashboard at '/': the world clock, recent invoices, active
     projects, dues, and the same side panels as the invoice list."""
     from pulse.scoping import resolve_scope
-    from pulse.tools import (
-        ACTIVE_PROJECT_STATUSES, get_dashboard_metrics, get_dues_and_renewals,
-    )
+    from pulse.tools import ACTIVE_PROJECT_STATUSES, get_dues_and_renewals
 
     scope = resolve_scope(request.user)
     if not scope.can_query_business:
         return redirect('dashboard-legacy')
 
-    icons = {
-        'income': ('fa-indian-rupee-sign', 'is-success'),
-        'outstanding': ('fa-hourglass-half', 'is-amber'),
-        'leads': ('fa-user-plus', 'is-primary'),
-        'projects': ('fa-rocket', 'is-warning'),
-    }
-    metrics = [
-        {**m, 'icon': icons.get(m['key'], ('fa-chart-line', 'is-primary'))[0],
-         'tone': icons.get(m['key'], ('fa-chart-line', 'is-primary'))[1]}
-        for m in get_dashboard_metrics(scope)
-    ]
     projects = (Project.objects.filter(status__in=ACTIVE_PROJECT_STATUSES)
                 .select_related('client').order_by('deadline', 'name')[:6])
 
     return render(request, 'dashboard/home.html', {
-        'metrics': metrics,
         'recent_invoices': _latest_number_first(Invoice.objects.select_related('client'))[:6],
         'active_projects': projects,
         'dues': get_dues_and_renewals(scope, limit=6),
         'today': timezone.localdate(),
         **_invoice_page_panels(Invoice.objects.all()),
+    })
+
+
+# The world clock's weather: one Open-Meteo call for every city the clock can
+# show, keyed by the time zone the page uses for that city.
+WORLD_CLOCK_CITIES = {
+    'Asia/Kolkata': (10.98, 76.22),         # Perinthalmanna
+    'Asia/Riyadh': (24.71, 46.68),
+    'Asia/Qatar': (25.29, 51.53),
+    'Asia/Dubai': (25.20, 55.27),
+    'America/Toronto': (43.65, -79.38),
+    'America/Winnipeg': (49.90, -97.14),
+    'America/Edmonton': (51.05, -114.07),   # Calgary
+    'America/Vancouver': (49.28, -123.12),
+    'America/Halifax': (44.65, -63.58),
+    'America/New_York': (40.71, -74.01),
+    'America/Chicago': (41.88, -87.63),
+    'America/Denver': (39.74, -104.99),
+    'America/Los_Angeles': (34.05, -118.24),
+}
+
+# WMO weather code -> (icon group the page understands, label).
+_WMO = {
+    0: ('clear', 'Clear'), 1: ('clear', 'Mostly clear'), 2: ('partly_cloudy', 'Partly cloudy'),
+    3: ('cloudy', 'Overcast'), 45: ('fog', 'Fog'), 48: ('fog', 'Rime fog'),
+    51: ('drizzle', 'Light drizzle'), 53: ('drizzle', 'Drizzle'), 55: ('drizzle', 'Heavy drizzle'),
+    56: ('drizzle', 'Freezing drizzle'), 57: ('drizzle', 'Freezing drizzle'),
+    61: ('rain', 'Light rain'), 63: ('rain', 'Rain'), 65: ('rain', 'Heavy rain'),
+    66: ('rain', 'Freezing rain'), 67: ('rain', 'Freezing rain'),
+    71: ('snow', 'Light snow'), 73: ('snow', 'Snow'), 75: ('snow', 'Heavy snow'), 77: ('snow', 'Snow grains'),
+    80: ('shower', 'Showers'), 81: ('shower', 'Showers'), 82: ('shower', 'Heavy showers'),
+    85: ('snow', 'Snow showers'), 86: ('snow', 'Snow showers'),
+    95: ('thunder', 'Thunderstorm'), 96: ('thunder', 'Thunderstorm, hail'), 99: ('thunder', 'Thunderstorm, hail'),
+}
+
+
+def world_clock_weather():
+    """Current weather for every world-clock city, cached for 30 minutes.
+    Returns an empty cities map when Open-Meteo can't be reached."""
+    import requests
+    from django.core.cache import cache
+
+    cached = cache.get('world_clock_weather')
+    if cached:
+        return cached
+
+    zones = list(WORLD_CLOCK_CITIES)
+    try:
+        response = requests.get('https://api.open-meteo.com/v1/forecast', params={
+            'latitude': ','.join(str(WORLD_CLOCK_CITIES[z][0]) for z in zones),
+            'longitude': ','.join(str(WORLD_CLOCK_CITIES[z][1]) for z in zones),
+            'current': 'temperature_2m,weather_code,is_day',
+            'daily': 'temperature_2m_max,temperature_2m_min,precipitation_probability_max',
+            'timezone': 'auto', 'forecast_days': 1,
+        }, timeout=8)
+        response.raise_for_status()
+        rows = response.json()
+    except (requests.RequestException, ValueError):
+        return {'updatedAt': None, 'cities': {}}
+    if isinstance(rows, dict):
+        rows = [rows]
+
+    cities = {}
+    for zone, row in zip(zones, rows):
+        try:
+            now, day = row['current'], row['daily']
+            group, label = _WMO.get(now['weather_code'], ('cloudy', 'Cloudy'))
+            cities[zone] = {
+                't': now['temperature_2m'], 'c': group, 'x': label, 'd': bool(now['is_day']),
+                'hi': day['temperature_2m_max'][0], 'lo': day['temperature_2m_min'][0],
+                'p': day['precipitation_probability_max'][0] or 0,
+            }
+        except (KeyError, IndexError, TypeError):
+            continue
+
+    data = {'updatedAt': timezone.now().isoformat(), 'cities': cities}
+    if cities:
+        cache.set('world_clock_weather', data, 30 * 60)
+    return data
+
+
+@login_required
+@xframe_options_sameorigin
+def world_clock(request):
+    """Six-market clock + live weather. Full page, or framed on the dashboard with ?embed=1."""
+    return render(request, 'dashboard/world_clock.html', {
+        'weather': world_clock_weather(),
+        'embed': request.GET.get('embed') == '1',
     })
 
 
