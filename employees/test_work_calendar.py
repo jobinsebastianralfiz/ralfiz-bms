@@ -250,13 +250,20 @@ class WorkCalendarTests(TestCase):
         self.assertEqual(report.context['totals']['unmarked'], 7)
         summary = self.client.get(reverse('emp_leave_summary'), {'year': 2026, 'month': 11})
         self.assertEqual(next(r for r in summary.context['rows'] if r['employee'] == self.intern)['unmarked'], 5)
-        # The leave summaries also count the day marked Absent (7 Nov) and put it in the total;
-        # the attendance report above keeps it in its own Absent column instead
+        # The day marked Absent (7 Nov) is taken from Casual Leave: 2 approved + 1 absent.
+        # The attendance report above keeps it in its own Absent column instead
         staff_row = next(r for r in summary.context['rows'] if r['employee'] == self.staff)
-        self.assertEqual((staff_row['unmarked'], staff_row['total']), (3, 5))
+        casual_col = summary.context['leave_types'].index(self.casual)
+        self.assertEqual((staff_row['by_type'][casual_col], staff_row['unmarked'], staff_row['total']), (3, 2, 5))
         card = self.client.get(reverse('emp_employee_detail', args=[self.staff.pk])).context['leave_summary']
-        self.assertEqual(card['unmarked_dates'], [date(2026, 11, 6), date(2026, 11, 7), date(2026, 11, 9)])
-        self.assertEqual((card['unmarked'], card['unmarked_month'], card['total'], card['month_total']), (3, 3, 5, 5))
+        casual = next(r for r in card['rows'] if r['leave_type'] == self.casual)
+        self.assertEqual((casual['year_used'], casual['absent']), (3, 1))
+        self.assertEqual(card['absent_dates'], [date(2026, 11, 7)])
+        self.assertEqual((card['unmarked'], card['unmarked_month'], card['total'], card['month_total']), (2, 2, 5, 5))
+        # The balance the apps show counts it too
+        from employees.leave_rules import days_used, year_days_used
+        self.assertEqual(year_days_used(self.staff, self.casual, 2026), 3)
+        self.assertEqual(days_used(self.staff, self.casual, date(2026, 11, 1), date(2026, 11, 30)), 3)
         self.assertEqual(Payroll.objects.count(), 0)
 
     def test_payroll_uses_calendar_working_days_when_left_blank(self):

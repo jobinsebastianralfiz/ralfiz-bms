@@ -57,7 +57,7 @@ h2 { font-size: 11pt; margin: 4px 0 6px; }
       <th>Name</th>
       {% for lt in leave_types %}<th>{{ lt.name }}<br><span style="font-weight:400;">{{ lt.days_allowed }}/yr</span></th>{% endfor %}
       {% if has_other %}<th>Other</th>{% endif %}
-      <th>Total</th><th>Unpaid</th><th>Absent / unmarked</th><th>Pending</th><th>Rejected</th>
+      <th>Total</th><th>Unpaid</th><th>Unmarked</th><th>Pending</th><th>Rejected</th>
       {% endif %}
     </tr>
   </thead>
@@ -71,7 +71,7 @@ h2 { font-size: 11pt; margin: 4px 0 6px; }
       </tr>
       {% endfor %}
       {% if has_other %}<tr><td>Other</td><td>{{ rows.0.other }}</td>{% if not month %}<td></td><td></td>{% endif %}</tr>{% endif %}
-      <tr><td>Absent / unmarked <span class="small">no leave applied</span></td><td>{% if rows.0.unmarked %}<span class="red">{{ rows.0.unmarked }}</span>{% else %}0{% endif %}</td>{% if not month %}<td></td><td></td>{% endif %}</tr>
+      <tr><td>Unmarked <span class="small">no attendance, no leave</span></td><td>{% if rows.0.unmarked %}<span class="red">{{ rows.0.unmarked }}</span>{% else %}0{% endif %}</td>{% if not month %}<td></td><td></td>{% endif %}</tr>
     {% else %}
       {% for row in rows %}
       <tr>
@@ -110,7 +110,7 @@ h2 { font-size: 11pt; margin: 4px 0 6px; }
 {% if single %}
 <p class="small">Unpaid days: {{ totals.unpaid }} · Pending requests: {{ totals.pending }} · Rejected requests: {{ totals.rejected }}</p>
 {% if rows.0.unmarked %}
-<p class="small"><span class="red">Absent / unmarked: {{ rows.0.unmarked }} day{{ rows.0.unmarked|pluralize }}</span> (marked Absent or no attendance, and no approved leave):
+<p class="small"><span class="red">Unmarked: {{ rows.0.unmarked }} day{{ rows.0.unmarked|pluralize }}</span> (no attendance and no approved leave):
 {% for d in rows.0.unmarked_dates %}{{ d|date:"d M" }}{% if not forloop.last %}, {% endif %}{% endfor %}</p>
 {% endif %}
 <h2>Leave requests in {{ period }}</h2>
@@ -133,5 +133,5 @@ h2 { font-size: 11pt; margin: 4px 0 6px; }
 </table>
 {% endif %}
 
-<p class="note">Days are approved leave in working days. Weekly offs and holidays on the HR calendar are not counted, and a leave crossing the edge of {{ period }} counts only its days inside. Absent / unmarked is a working day up to yesterday marked Absent or with no attendance, and no approved leave; it is in the total but isn't cut from salary.</p>
+<p class="note">Days are approved leave in working days. Weekly offs and holidays on the HR calendar are not counted, and a leave crossing the edge of {{ period }} counts only its days inside. A day marked Absent counts as Casual Leave. Unmarked is a working day up to yesterday with no attendance and no approved leave; it is in the total but isn't cut from salary.</p>
 </body></html>

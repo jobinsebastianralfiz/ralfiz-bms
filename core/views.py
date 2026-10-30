@@ -7644,26 +7644,37 @@ def _employee_leave_summary(employee):
     leaves = list(cal.counted(LeaveRequest.objects.filter(employee=employee, start_date__lte=year_hi,
                                                           end_date__gte=year_lo)).select_related('leave_type'))
     approved = [lr for lr in leaves if lr.status == 'approved']
+    from employees.leave_rules import absent_days, casual_type, unmarked_days
+    casual = casual_type()
+    absent = absent_days([employee], year_lo, year_hi)[employee.pk]
+    absent_month = sum(1 for d in absent if d >= month_lo)
     rows = []
     for lt in LeaveType.objects.filter(is_active=True).order_by('name'):
         mine = [lr for lr in approved if lr.leave_type_id == lt.pk]
         year_used = sum(lr.days_in(year_lo, year_hi, cal) for lr in mine)
         month_used = sum(lr.days_in(month_lo, month_hi, cal) for lr in mine)
+        # Days marked Absent are taken from Casual Leave
+        is_casual = casual is not None and lt.pk == casual.pk
+        if is_casual:
+            year_used += len(absent)
+            month_used += absent_month
         rows.append({
             'leave_type': lt, 'month_used': month_used, 'year_used': year_used,
+            'absent': len(absent) if is_casual else 0,
             'year_left': max(0, lt.days_allowed - year_used) if lt.days_allowed else None,
             'month_left': max(0, lt.monthly_limit - month_used) if lt.monthly_limit else None,
         })
     days = [(lr, lr.days_in(year_lo, year_hi, cal)) for lr in approved]
-    from employees.leave_rules import unmarked_days
-    unmarked = unmarked_days([employee], year_lo, year_hi, count_absent=True)[employee.pk]
+    unmarked = unmarked_days([employee], year_lo, year_hi)[employee.pk]
     unmarked_month = sum(1 for d in unmarked if d >= month_lo)
     return {
         'unmarked': len(unmarked), 'unmarked_dates': unmarked, 'unmarked_month': unmarked_month,
+        'absent': len(absent), 'absent_dates': absent,
         'year': today.year, 'month_label': today.strftime('%B'), 'rows': rows,
-        # Absent and unmarked days are leave taken too, just never applied for
-        'total': sum(d for _, d in days) + len(unmarked),
-        'month_total': sum(r['month_used'] for r in rows) + unmarked_month,
+        # Absent (as Casual) and unmarked days are leave taken too, just never applied for
+        'total': sum(d for _, d in days) + len(absent) + len(unmarked),
+        'month_total': (sum(lr.days_in(month_lo, month_hi, cal) for lr in approved)
+                        + absent_month + unmarked_month),
         'unpaid': sum(d for lr, d in days if not (lr.leave_type and lr.leave_type.is_paid)),
         'pending': sum(1 for lr in leaves if lr.status == 'pending'),
         'rejected': sum(1 for lr in leaves if lr.status == 'rejected'),
@@ -8157,10 +8168,16 @@ def emp_leave_summary(request):
             pending[lr.employee_id] = pending.get(lr.employee_id, 0) + 1
         elif lr.status == 'rejected':
             rejected[lr.employee_id] = rejected.get(lr.employee_id, 0) + 1
+    # Days marked Absent are taken from Casual Leave (or, with no Casual type, shown as unmarked)
+    from employees.leave_rules import absent_days, casual_type, unmarked_days
+    casual = casual_type()
+    absent = absent_days(employees, lo, hi) if casual else {}
+    for emp_pk, dates in absent.items():
+        if dates:
+            used[(emp_pk, casual.pk)] = used.get((emp_pk, casual.pk), 0) + len(dates)
     # Approved leave whose type was deleted or switched off still counts
     has_other = any(k[1] not in {lt.pk for lt in leave_types} for k in used)
-    from employees.leave_rules import unmarked_days
-    unmarked = unmarked_days(employees, lo, hi, count_absent=True)
+    unmarked = unmarked_days(employees, lo, hi, count_absent=casual is None)
 
     rows = []
     for emp in employees:
@@ -8183,6 +8200,7 @@ def emp_leave_summary(request):
             'rejected': rejected.get(emp.pk, 0),
             'unmarked': len(unmarked[emp.pk]),
             'unmarked_dates': unmarked[emp.pk],
+            'absent': len(absent.get(emp.pk, ())),
         })
     totals = {
         'by_type': [sum(r['by_type'][i] for r in rows) for i in range(len(leave_types))],
@@ -8210,8 +8228,8 @@ def emp_leave_summary(request):
                 headers.append(f'{lt.name} left')
         if has_other:
             headers.append('Other')
-        headers += ['Total Days', 'Unpaid Days', 'Absent / Unmarked']
-        headers += ['Pending Requests', 'Rejected Requests', 'Absent / Unmarked Dates']
+        headers += ['Total Days', 'Unpaid Days', 'Unmarked Leave']
+        headers += ['Pending Requests', 'Rejected Requests', 'Unmarked Dates']
         ws.append([f'Leave summary: {period}'])
         ws['A1'].font = Font(bold=True, size=13)
         ws.append(headers)

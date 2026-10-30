@@ -6,6 +6,7 @@
   prescription, once a month's days go past that number.
 Pending and approved requests both count, so two requests can't slip past together.
 Days are working days (employees/work_calendar.py): weekly offs and holidays are free.
+A working day marked Absent with no approved leave uses up a Casual Leave day (absent_days).
 """
 from calendar import monthrange
 from datetime import date, timedelta
@@ -25,13 +26,52 @@ def _months(start, end):
         y, m = (y + 1, 1) if m == 12 else (y, m + 1)
 
 
+def casual_type():
+    """The leave type that Absent days are taken from: the active one named Casual."""
+    return LeaveType.objects.filter(is_active=True, name__icontains='casual').order_by('name').first()
+
+
+def absent_days(employees, lo, hi):
+    """{employee pk: [dates]} of working days in lo..hi marked Absent with no approved
+    leave, from the joining date and the 'count leave from' date (HR > Calendar).
+    Each one uses up a Casual Leave day."""
+    employees = list(employees)
+    cal = current()
+    if cal.count_from:
+        lo = max(lo, cal.count_from)
+    out = {e.pk: [] for e in employees}
+    if lo > hi or not employees:
+        return out
+    on_leave = {}
+    for e_id, start, end in LeaveRequest.objects.filter(employee__in=employees, status='approved', start_date__lte=hi,
+                                                        end_date__gte=lo).values_list('employee_id', 'start_date', 'end_date'):
+        on_leave.setdefault(e_id, []).append((start, end))
+    by_pk = {e.pk: e for e in employees}
+    for e_id, day in (Attendance.objects.filter(employee__in=employees, date__range=(lo, hi), status='absent')
+                      .order_by('date').values_list('employee_id', 'date')):
+        e = by_pk[e_id]
+        joined = e.joining_date.date() if hasattr(e.joining_date, 'date') else e.joining_date
+        if ((not joined or day >= joined) and cal.is_working_day(day, e)
+                and not any(a <= day <= b for a, b in on_leave.get(e_id, ()))):
+            out[e_id].append(day)
+    return out
+
+
+def _absent_as(employee, leave_type, lo, hi):
+    """Absent days charged to this leave type: all of them for Casual, none otherwise."""
+    casual = casual_type()
+    if not casual or leave_type is None or leave_type.pk != casual.pk:
+        return 0
+    return len(absent_days([employee], lo, hi)[employee.pk])
+
+
 def days_used(employee, leave_type, lo, hi, exclude_pk=None):
     qs = LeaveRequest.objects.filter(employee=employee, leave_type=leave_type, status__in=['pending', 'approved'],
                                      start_date__lte=hi, end_date__gte=lo)
     if exclude_pk:
         qs = qs.exclude(pk=exclude_pk)
     cal = current()
-    return sum(lr.days_in(lo, hi, cal) for lr in qs)
+    return sum(lr.days_in(lo, hi, cal) for lr in qs) + _absent_as(employee, leave_type, lo, hi)
 
 
 def year_days_used(employee, leave_type, year):
@@ -41,7 +81,7 @@ def year_days_used(employee, leave_type, year):
     lo, hi = date(year, 1, 1), date(year, 12, 31)
     qs = cal.counted(LeaveRequest.objects.filter(employee=employee, leave_type=leave_type, status='approved',
                                                  start_date__lte=hi, end_date__gte=lo))
-    return sum(lr.days_in(lo, hi, cal) for lr in qs)
+    return sum(lr.days_in(lo, hi, cal) for lr in qs) + _absent_as(employee, leave_type, lo, hi)
 
 
 def month_leave_days(employee, year, month):

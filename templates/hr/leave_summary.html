@@ -65,7 +65,7 @@
           {% if has_other %}<th class="text-center">Other</th>{% endif %}
           <th class="text-center">Total Days</th>
           <th class="text-center">Unpaid</th>
-          <th class="text-center" title="Working days marked Absent or with no attendance, and no approved leave, up to yesterday">Absent / Unmarked</th>
+          <th class="text-center" title="Working days with no attendance and no approved leave, up to yesterday">Unmarked Leave</th>
           <th class="text-center">Pending</th>
           <th class="text-center">Rejected</th>
         </tr>
@@ -111,5 +111,5 @@
     </table>
   </div>
 </div>
-<p class="text-muted text-sm mt-2">Days count approved leave that falls inside {{ period }}; a leave crossing the month or year edge counts only its days inside. Absent / Unmarked is working days marked Absent or with no attendance, and no approved leave, up to yesterday (hover for the dates); it is in Total Days but isn't cut from salary. Click a name to see their requests.</p>
+<p class="text-muted text-sm mt-2">Days count approved leave that falls inside {{ period }}; a leave crossing the month or year edge counts only its days inside. Days marked Absent count as Casual Leave. Unmarked Leave is working days with no attendance and no approved leave, up to yesterday (hover for the dates); it is in Total Days but isn't cut from salary. Click a name to see their requests.</p>
 {% endblock %}
