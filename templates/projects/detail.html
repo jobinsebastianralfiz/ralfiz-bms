@@ -1,5 +1,5 @@
 {% extends 'base.html' %}
-{% load static money %}
+{% load static money notes_tags %}
 
 {% block title %}{{ project.name }} - Ralfiz BMS{% endblock %}
 
@@ -347,6 +347,8 @@
       </form>
     </details>
   </section>
+
+  {% record_notes project "project" %}
 
   <section class="stage-panel sp-pfiles" id="files" data-open>
     <h2 class="stage-panel__kicker"><span class="sp-ico sp-ico--blue"><i class="fas fa-folder-open"></i></span>Project Files</h2>

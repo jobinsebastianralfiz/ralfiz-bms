@@ -55,6 +55,8 @@ INSTALLED_APPS = [
     'social',
     'website',
     'cards',
+    'notes',
+    'doc_templates',
 ]
 
 MIDDLEWARE = [
@@ -130,6 +132,11 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 STATIC_URL = '/static/'
 STATICFILES_DIRS = [BASE_DIR / 'static']
+# The Notes app (noetsa_frontend/) is built by Vite into its dist/ folder with base
+# /static/noetsa/; notes.views.spa serves its index.html. The Dockerfile builds it.
+NOTES_FRONTEND_DIST = BASE_DIR / 'noetsa_frontend' / 'dist'
+if NOTES_FRONTEND_DIST.exists():
+    STATICFILES_DIRS.append(('noetsa', NOTES_FRONTEND_DIST))
 STATIC_ROOT = BASE_DIR / 'staticfiles'
 
 # Whitenoise configuration for serving static files in production
@@ -139,6 +146,10 @@ STATICFILES_STORAGE = 'whitenoise.storage.CompressedStaticFilesStorage'
 # Media files (Uploaded files)
 MEDIA_URL = '/media/'
 MEDIA_ROOT = os.getenv('RAILWAY_VOLUME_MOUNT_PATH', str(BASE_DIR / 'media'))
+
+# A Notes save sends the whole note as JSON (up to 5 MB, notes.serializers), which is
+# over Django's 2.5 MB default.
+DATA_UPLOAD_MAX_MEMORY_SIZE = 6 * 1024 * 1024
 
 # Default primary key field type
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'

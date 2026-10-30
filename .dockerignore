@@ -4,3 +4,7 @@ __pycache__/
 .git/
 media/
 .env
+# Notes frontend: dependencies are installed and dist/ is built inside the image.
+**/node_modules/
+noetsa_frontend/dist/
+noetsa_frontend/public/excalidraw/

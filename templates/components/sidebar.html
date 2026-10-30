@@ -42,6 +42,10 @@
         <i class="fas fa-columns"></i>
         <span>Task Board</span>
       </a>
+      <a href="{% url 'notes_home' %}" class="nav-item">
+        <i class="fas fa-book-open"></i>
+        <span>Notes</span>
+      </a>
       {% if request.user.team_profile.is_freelancer %}
       <a href="{% url 'timeentry_list' %}" class="nav-item {% if 'time' in request.resolver_match.url_name %}active{% endif %}">
         <i class="fas fa-clock"></i>
@@ -73,6 +77,10 @@
       <a href="{% url 'dashboard-legacy' %}" class="nav-item {% if n == 'dashboard-legacy' %}active{% endif %}">
         <i class="fas fa-th-large"></i>
         <span>Classic Dashboard</span>
+      </a>
+      <a href="{% url 'notes_home' %}" class="nav-item">
+        <i class="fas fa-book-open"></i>
+        <span>Notes</span>
       </a>
     </div>
 

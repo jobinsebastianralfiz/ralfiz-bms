@@ -46,6 +46,7 @@
     <a href="{% url 'staff:work_list' %}" class="{% if active_nav == 'work' %}active{% endif %}"><i class="fas fa-list-check"></i> Work</a>
     <a href="{% url 'staff:daily_report' %}" class="{% if active_nav == 'daily_report' %}active{% endif %}"><i class="fas fa-pen-to-square"></i> Daily updates</a>
     <a href="{% url 'staff:leave' %}" class="{% if active_nav == 'leave' %}active{% endif %}"><i class="fas fa-plane-departure"></i> Leave</a>
+    <a href="{% url 'notes_home' %}"><i class="fas fa-book-open"></i> Notes</a>
     {% if is_intern %}
     <a href="{% url 'staff:class_list' %}" class="{% if active_nav == 'classes' %}active{% endif %}"><i class="fas fa-chalkboard-user"></i> Classes</a>
     <a href="{% url 'staff:assessment_list' %}" class="{% if active_nav == 'assessments' %}active{% endif %}"><i class="fas fa-file-pen"></i> Assessments</a>
@@ -162,6 +163,7 @@
       <a href="{% url 'staff:lead_list' %}"><i class="fas fa-bullseye"></i> My Leads</a>
     {% endif %}
     <a href="{% url 'staff:daily_report' %}"><i class="fas fa-pen-to-square"></i> Daily updates</a>
+    <a href="{% url 'notes_home' %}"><i class="fas fa-book-open"></i> Notes</a>
     <a href="{% url 'staff:payslip_list' %}"><i class="fas fa-receipt"></i> Payslips</a>
     <a href="{% url 'staff:attendance_history' %}"><i class="fas fa-calendar-days"></i> Attendance history</a>
     <a href="{% url 'staff:notification_list' %}"><i class="fas fa-bell"></i> Notifications</a>

@@ -36,6 +36,7 @@ urlpatterns = [
     path('client-agreement/', include('core.client_agreement_urls')),
     path('enrol/', include('employees.enrolment_urls')),
     path('academy/', include('academy.urls')),
+    path('notes/', include('notes.site_urls')),
     path('book-demo/', website_book_demo, name='book_demo'),
     path('v/site/<str:name>', website_video, name='site_video'),
     path('social/report-link/<str:token>/', social_report_download, name='social_report_link'),

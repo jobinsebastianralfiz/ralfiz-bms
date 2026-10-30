@@ -1,5 +1,5 @@
 {% extends 'base.html' %}
-{% load static %}
+{% load static notes_tags %}
 
 {% block title %}{{ lead.contact_person }} - Intern CRM{% endblock %}
 
@@ -357,6 +357,8 @@
       </div>
     </div>
     {% endif %}
+
+    {% record_notes lead "lead" style="card" %}
 
     <div class="card">
       <div class="card-body">

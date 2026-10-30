@@ -1,5 +1,5 @@
 {% extends 'base.html' %}
-{% load static money %}
+{% load static money notes_tags %}
 
 {% block title %}{{ client.name }} - Ralfiz BMS{% endblock %}
 
@@ -245,6 +245,8 @@
     <div class="cl-empty"><i class="far fa-folder"></i><strong>No projects yet.</strong><span>Start one with the Project button.</span></div>
     {% endfor %}
   </section>
+
+  {% record_notes client "client" %}
 
   <section class="stage-panel sp-col-r" data-open data-key="invoices">
     <h2 class="stage-panel__kicker"><span class="sp-ico sp-ico--green"><i class="fas fa-file-lines"></i></span>Invoices ({{ invoices.count }})

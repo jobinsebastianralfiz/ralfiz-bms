@@ -1,0 +1,50 @@
+{# The "Notes" card on a project, client or lead page (notes_tags.record_notes). Only the viewer's own notes are listed. #}
+{% load humanize %}
+{% if style == "card" %}
+<div class="card mb-4" id="my-notes">
+  <div class="card-body">
+    <h3 class="card-title d-flex align-items-center justify-content-between">
+      <span><i class="fas fa-book-open"></i> My Notes</span>
+      <form method="post" action="{% url 'notes_new_linked' %}" class="m-0">
+        <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
+        <input type="hidden" name="kind" value="{{ kind }}"><input type="hidden" name="id" value="{{ record.pk }}">
+        <button type="submit" class="btn btn-sm btn-primary"><i class="fas fa-plus"></i> New note</button>
+      </form>
+    </h3>
+    <p class="text-muted text-sm mb-2"><i class="fas fa-lock"></i> Private to you</p>
+    {% for note in notes %}
+    <a href="/notes/n/{{ note.pk }}" class="d-flex justify-content-between align-items-center py-2 border-top text-decoration-none">
+      <span><i class="fas {% if note.kind == 'board' %}fa-shapes{% else %}fa-file-lines{% endif %} text-muted me-1"></i> {{ note.title|default:"Untitled" }}</span>
+      <span class="text-muted text-sm">{{ note.updated_at|naturaltime }}</span>
+    </a>
+    {% empty %}
+    <p class="text-muted text-sm mb-0">No notes yet. Notes you start here stay linked to this lead.</p>
+    {% endfor %}
+    {% if more %}<a href="/notes/" class="text-sm d-block pt-2">and {{ more }} more in Notes</a>{% endif %}
+  </div>
+</div>
+{% else %}
+<section class="stage-panel sp-mynotes" id="my-notes" data-open data-key="mynotes">
+  <h2 class="stage-panel__kicker"><span class="sp-ico sp-ico--violet"><i class="fas fa-book-open"></i></span>My Notes{% if total %} ({{ total }}){% endif %}
+    <a href="/notes/" class="sp-kicker-act">Open Notes</a></h2>
+  <div class="pj-bar"><span><i class="fas fa-lock"></i> Private to you &middot; rich notes and boards in the Notes app</span></div>
+  {% for note in notes %}
+  <a href="/notes/n/{{ note.pk }}" class="pj-row pj-row--link">
+    <span class="pj-row__icon"><i class="fas {% if note.kind == 'board' %}fa-shapes{% else %}fa-file-lines{% endif %}"></i></span>
+    <div class="pj-row__main">
+      <span class="pj-row__title">{{ note.title|default:"Untitled" }}</span>
+      <span class="pj-row__sub">Updated {{ note.updated_at|naturaltime }}</span>
+    </div>
+    <i class="fas fa-chevron-right cl-chev"></i>
+  </a>
+  {% empty %}
+  <p class="pj-empty"><i class="fas fa-book-open"></i> No notes yet. Notes you start here stay linked to this {{ kind }}.</p>
+  {% endfor %}
+  {% if more %}<a href="/notes/" class="pj-row__sub">and {{ more }} more in Notes</a>{% endif %}
+  <form method="post" action="{% url 'notes_new_linked' %}">
+    <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
+    <input type="hidden" name="kind" value="{{ kind }}"><input type="hidden" name="id" value="{{ record.pk }}">
+    <button type="submit" class="pj-add" style="border:0;background:none;cursor:pointer;"><i class="fas fa-plus"></i> New note</button>
+  </form>
+</section>
+{% endif %}

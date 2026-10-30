@@ -8,6 +8,7 @@ OPEN_PREFIXES = (
     '/agreement/', '/client-agreement/', '/enrol/', '/academy/', '/portal/', '/v/', '/card/', '/go/', '/social/report-link/',
     '/oauth/', '/.well-known/', '/mcp', '/favicon', '/robots.txt',
     '/privacy/', '/terms/', '/data-deletion/',
+    '/notes/',  # the Notes app and its API (/notes/api/); every note is private to its owner
 )
 
 

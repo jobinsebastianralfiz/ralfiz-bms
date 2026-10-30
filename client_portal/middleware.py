@@ -37,7 +37,8 @@ class ClientConfinementMiddleware:
         if (user is not None and user.is_authenticated
                 and not request.path.startswith(OPEN_PREFIXES)
                 and client_only(user)):
-            if request.path.startswith('/api/') or request.path.startswith('/mcp'):
+            # The Notes app (/notes/) is staff-only and deliberately not in OPEN_PREFIXES.
+            if request.path.startswith(('/api/', '/mcp', '/notes/api/')):
                 return JsonResponse({'detail': 'Not available to client portal logins.'}, status=403)
             return redirect('client_portal:portal_dashboard')
         return self.get_response(request)
