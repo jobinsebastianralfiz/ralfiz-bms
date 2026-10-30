@@ -1,0 +1,101 @@
+{# Calculator-style currency converter for the dashboard rail. Needs `fx` (core.views.currency_rates) and `fx_currencies`. #}
+<div class="card fxc" id="fx">
+  <div class="fxc__head">
+    <h2 class="fxc__title"><i class="fas fa-coins"></i> Currency</h2>
+    <span class="fxc__upd" id="fxUpdated">Live rates</span>
+  </div>
+  {% if fx.rates %}
+  <div class="fxc__screen">
+    <div class="fxc__line">
+      <select id="fxFrom" class="fxc__cur" aria-label="From currency">
+        {% for code, name in fx_currencies %}{% if code in fx.rates %}<option value="{{ code }}" title="{{ name }}">{{ code }}</option>{% endif %}{% endfor %}
+      </select>
+      <input id="fxAmount" class="fxc__in" type="text" inputmode="decimal" value="1000" autocomplete="off" aria-label="Amount">
+    </div>
+    <button type="button" class="fxc__swap" id="fxSwap" title="Swap" aria-label="Swap currencies"><i class="fas fa-arrow-right-arrow-left fa-rotate-90"></i></button>
+    <div class="fxc__line fxc__line--out">
+      <select id="fxTo" class="fxc__cur" aria-label="To currency">
+        {% for code, name in fx_currencies %}{% if code in fx.rates %}<option value="{{ code }}" title="{{ name }}">{{ code }}</option>{% endif %}{% endfor %}
+      </select>
+      <output id="fxResult" class="fxc__out" aria-live="polite"></output>
+    </div>
+    <div class="fxc__rate" id="fxRate"></div>
+  </div>
+  <div class="fxc__keys" id="fxKeys">
+    <button type="button" data-k="7">7</button><button type="button" data-k="8">8</button><button type="button" data-k="9">9</button>
+    <button type="button" data-k="C" class="is-fn">AC</button>
+    <button type="button" data-k="4">4</button><button type="button" data-k="5">5</button><button type="button" data-k="6">6</button>
+    <button type="button" data-k="B" class="is-fn" aria-label="Backspace"><i class="fas fa-delete-left"></i></button>
+    <button type="button" data-k="1">1</button><button type="button" data-k="2">2</button><button type="button" data-k="3">3</button>
+    <button type="button" data-k="S" class="is-op" aria-label="Swap currencies"><i class="fas fa-right-left"></i></button>
+    <button type="button" data-k="0" class="is-wide">0</button><button type="button" data-k="00">00</button><button type="button" data-k=".">.</button>
+  </div>
+  <div class="fxc__chips" id="fxChips" aria-label="Rupees per unit"></div>
+  {{ fx|json_script:"fx-data" }}
+  <script>
+    (function () {
+      var fx = JSON.parse(document.getElementById('fx-data').textContent), r = fx.rates,
+          amount = document.getElementById('fxAmount'), from = document.getElementById('fxFrom'),
+          to = document.getElementById('fxTo'), out = document.getElementById('fxResult'),
+          rateLine = document.getElementById('fxRate'), chips = document.getElementById('fxChips'), KEY = 'fx-pair';
+      {# Rates are "per rupee"; INR uses lakh/crore grouping. #}
+      function money(v, code, symbol) {
+        var digits = Math.abs(v) >= 1 || v === 0 ? 2 : 4;
+        try { return new Intl.NumberFormat(code === 'INR' ? 'en-IN' : 'en-US', symbol === false
+            ? {minimumFractionDigits: digits, maximumFractionDigits: digits}
+            : {style: 'currency', currency: code, minimumFractionDigits: digits, maximumFractionDigits: digits}).format(v); }
+        catch (e) { return v.toFixed(digits); }
+      }
+      function convert(v, a, b) { return v / r[a] * r[b]; }
+      function raw() { return amount.value.replace(/[^0-9.]/g, ''); }
+      function draw() {
+        var a = from.value, b = to.value, v = parseFloat(raw()) || 0;
+        out.textContent = money(convert(v, a, b), b, false);
+        out.classList.toggle('is-long', out.textContent.length > 12);
+        amount.classList.toggle('is-long', amount.value.length > 12);
+        rateLine.textContent = '1 ' + a + ' = ' + money(convert(1, a, b), b) + ' · 1 ' + b + ' = ' + money(convert(1, b, a), a);
+        chips.querySelectorAll('button').forEach(function (c) {
+          c.classList.toggle('is-on', c.dataset.code === a && b === 'INR');
+        });
+        try { localStorage.setItem(KEY, a + '>' + b); } catch (e) {}
+      }
+      function swap() { var t = from.value; from.value = to.value; to.value = t; draw(); }
+      document.getElementById('fxKeys').addEventListener('click', function (e) {
+        var k = e.target.closest('button'); if (!k) return;
+        k = k.dataset.k;
+        var v = raw();
+        if (k === 'C') v = '';
+        else if (k === 'B') v = v.slice(0, -1);
+        else if (k === 'S') return swap();
+        else if (k === '.') { if (v.indexOf('.') < 0) v = (v || '0') + '.'; }
+        else if (v.replace('.', '').length < 13) v = (v === '0' ? '' : v) + k;
+        amount.value = v;
+        draw();
+      });
+      ['USD', 'AED', 'SAR', 'QAR', 'KWD', 'CAD', 'EUR', 'GBP'].forEach(function (code) {
+        if (!r[code]) return;
+        var c = document.createElement('button');
+        c.type = 'button'; c.dataset.code = code;
+        c.innerHTML = '<b>' + code + '</b><span>' + money(1 / r[code], 'INR') + '</span>';
+        c.title = '1 ' + code + ' in rupees. Tap to convert ' + code + ' to INR';
+        c.addEventListener('click', function () { from.value = code; to.value = 'INR'; draw(); });
+        chips.appendChild(c);
+      });
+      var pair = 'USD>INR';
+      try { pair = localStorage.getItem(KEY) || pair; } catch (e) {}
+      pair = pair.split('>');
+      from.value = r[pair[0]] ? pair[0] : 'USD';
+      to.value = r[pair[1]] ? pair[1] : 'INR';
+      document.getElementById('fxSwap').addEventListener('click', swap);
+      [amount, from, to].forEach(function (el) { el.addEventListener('input', draw); });
+      if (fx.updatedAt) {
+        document.getElementById('fxUpdated').textContent = 'Live · ' + new Date(fx.updatedAt).toLocaleString('en-IN',
+          {day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit'});
+      }
+      draw();
+    })();
+  </script>
+  {% else %}
+  <p class="fxc__down">Exchange rates can't be reached right now. Try again in a few minutes.</p>
+  {% endif %}
+</div>

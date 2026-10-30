@@ -1144,30 +1144,42 @@ a.inv-stat:hover { border-color: #bae6fd; }
 .home-notes__pin { color: #f59e0b; font-size: 11px; margin-left: 4px; }
 .home-notes .home-list__sub i { color: var(--text-muted); margin-right: 3px; }
 
-/* Dashboard currency converter */
-.fx__body { padding: 4px 20px 18px; }
-.fx__row { display: grid; grid-template-columns: 1.1fr 1fr auto 1fr; gap: 12px; align-items: end; }
-.fx__field { display: flex; flex-direction: column; gap: 6px; margin: 0; min-width: 0; }
-.fx__field span { font-size: 12px; font-weight: 600; color: var(--text-muted); }
-.fx__field input, .fx__field select { height: 44px; border: 1px solid var(--border-color); border-radius: 12px; background: var(--bg-subtle);
-  padding: 0 12px; font: inherit; font-size: 15px; color: var(--text-primary); width: 100%; }
-.fx__field--amount input { font-size: 18px; font-weight: 700; }
-.fx__field input:focus, .fx__field select:focus { outline: 2px solid var(--primary-lighter); border-color: var(--primary); background: #fff; }
-.fx__swap { width: 44px; height: 44px; border-radius: 50%; border: 1px solid var(--border-color); background: #fff; color: var(--primary);
-  cursor: pointer; transition: transform .2s; }
-.fx__swap:hover { background: var(--primary-bg); transform: rotate(180deg); }
-.fx__result { margin: 16px 0 14px; padding: 14px 16px; border-radius: 16px; background: var(--primary-bg); }
-.fx__big { font-size: 26px; font-weight: 800; color: var(--text-primary); line-height: 1.2; word-break: break-word; }
-.fx__src { font-size: 16px; font-weight: 600; color: var(--text-secondary); }
-.fx__rate { font-size: 13px; color: var(--text-secondary); margin-top: 4px; }
-.fx__chips { display: flex; flex-wrap: wrap; gap: 8px; }
-.fx__chips button { display: inline-flex; gap: 6px; align-items: baseline; padding: 6px 12px; border-radius: 999px; font: inherit; font-size: 13px;
-  border: 1px solid var(--border-color); background: var(--bg-subtle); color: var(--text-secondary); cursor: pointer; }
-.fx__chips button b { color: var(--text-primary); font-weight: 700; }
-.fx__chips button:hover, .fx__chips button.is-on { border-color: var(--primary); background: #fff; color: var(--text-primary); }
-.fx__down { padding: 0 20px 18px; color: var(--text-muted); margin: 0; }
-@media (max-width: 640px) {
-  .fx__row { grid-template-columns: 1fr auto 1fr; }
-  .fx__field--amount { grid-column: 1 / -1; }
-  .fx__big { font-size: 22px; }
-}
+/* Dashboard currency converter: a calculator card in the side rail */
+.fxc { background: linear-gradient(160deg, #0f172a 0%, #1e293b 100%); color: #e2e8f0; padding: 16px; border: 0; overflow: hidden; }
+.fxc__head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+.fxc__title { font-size: 15px; font-weight: 700; margin: 0; color: #fff; display: flex; align-items: center; gap: 8px; }
+.fxc__title i { color: #fbbf24; }
+.fxc__upd { font-size: 11px; color: #94a3b8; }
+.fxc__screen { position: relative; background: rgba(255, 255, 255, .06); border: 1px solid rgba(255, 255, 255, .08);
+  border-radius: 16px; padding: 4px 12px 10px; margin-bottom: 12px; }
+.fxc__line { display: flex; align-items: center; gap: 10px; min-height: 52px; }
+.fxc__line + .fxc__swap + .fxc__line { border-top: 1px dashed rgba(255, 255, 255, .14); }
+.fxc__cur { flex: none; appearance: none; -webkit-appearance: none; cursor: pointer; font-family: inherit; font-weight: 700; font-size: 13px; line-height: 1; color: #fff;
+  background: rgba(14, 165, 233, .22) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%23bae6fd' stroke-width='1.6' fill='none'/%3E%3C/svg%3E") no-repeat right 8px center;
+  border: 1px solid rgba(56, 189, 248, .35); border-radius: 999px; padding: 7px 24px 7px 11px; }
+.fxc__cur option { color: #0f172a; background: #fff; }
+.fxc__cur:focus { outline: 2px solid #38bdf8; outline-offset: 1px; }
+.fxc__in, .fxc__out { flex: 1; min-width: 0; text-align: right; font-family: inherit; font-weight: 700; font-size: 24px; line-height: 1.1; color: #fff; background: none; border: 0;
+  padding: 0; font-variant-numeric: tabular-nums; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.fxc__in:focus { outline: none; }
+.fxc__out { color: #7dd3fc; }
+.fxc__in.is-long, .fxc__out.is-long { font-size: 18px; }
+.fxc__swap { position: absolute; left: 50%; top: 56px; transform: translate(-50%, -50%); width: 30px; height: 30px; border-radius: 50%;
+  border: 2px solid #1e293b; background: #0ea5e9; color: #fff; font-size: 12px; cursor: pointer; z-index: 1; transition: transform .2s; }
+.fxc__swap:hover { transform: translate(-50%, -50%) rotate(180deg); }
+.fxc__rate { font-size: 11px; color: #94a3b8; text-align: right; }
+.fxc__keys { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 12px; }
+.fxc__keys button { height: 42px; border: 0; border-radius: 12px; background: rgba(255, 255, 255, .08); color: #fff;
+  font-family: inherit; font-weight: 600; font-size: 17px; line-height: 1; cursor: pointer; transition: background .12s, transform .06s; }
+.fxc__keys button:hover { background: rgba(255, 255, 255, .15); }
+.fxc__keys button:active { transform: scale(.95); }
+.fxc__keys .is-fn { background: rgba(251, 191, 36, .16); color: #fcd34d; font-size: 14px; }
+.fxc__keys .is-op { background: #0ea5e9; grid-row: span 2; height: auto; }
+.fxc__keys .is-op:hover { background: #0284c7; }
+.fxc__keys .is-wide { grid-column: span 1; }
+.fxc__chips { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
+.fxc__chips button { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 6px 2px; border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, .1); background: none; color: #94a3b8; font-family: inherit; font-weight: 500; font-size: 10.5px; line-height: 1.1; cursor: pointer; }
+.fxc__chips button b { color: #fff; font-size: 12px; }
+.fxc__chips button:hover, .fxc__chips button.is-on { border-color: #38bdf8; background: rgba(14, 165, 233, .15); color: #e0f2fe; }
+.fxc__down { color: #94a3b8; margin: 0; font-size: 13px; }

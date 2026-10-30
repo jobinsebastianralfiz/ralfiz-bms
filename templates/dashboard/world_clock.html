@@ -147,7 +147,7 @@ footer{font-size:12px;color:var(--muted);display:flex;justify-content:space-betw
 @media (max-width:560px){ .grid{grid-template-columns:minmax(0,1fr)} .watch canvas{width:200px;height:200px} }
 @media (prefers-reduced-motion:reduce){ *{animation:none!important;transition:none!important} }
 </style>
-{% if embed %}<style>body{background:transparent}.wrap{padding:16px;max-width:none}header.top{justify-content:flex-end}.brand{display:none}</style>{% endif %}
+{% if embed %}<style>body{background:transparent}.wrap{padding:16px;max-width:none}header.top{justify-content:flex-end}.brand{display:none}.grid{grid-template-columns:repeat(6,minmax(0,1fr));gap:10px}.card{padding:12px;gap:8px;border-radius:14px}.country{font-size:15px}.cityline,.d,.meta{font-size:11.5px}.code{font-size:10.5px}.pill{font-size:10.5px;padding:2px 7px}.watch{gap:4px}.watch canvas{width:104px;height:104px}.t{font-size:20px}.t small{font-size:11px}.wx{grid-template-columns:auto minmax(0,1fr);gap:8px;padding:6px 8px;border-radius:10px}.wx svg.ic{width:28px;height:28px}.wx .temp{font-size:16px}.wx .cond{font-size:11px}.wx .hl{display:none}.meta{gap:2px 8px;grid-template-columns:auto minmax(0,1fr)}.meta>*{min-width:0;overflow-wrap:anywhere}select{font-size:11.5px;width:100%}.card{min-width:0;overflow:hidden}.c-head{flex-direction:column-reverse;align-items:flex-start;gap:6px}.c-head>*{min-width:0}.panel h2{font-size:16px}@media (max-width:1000px){.grid{grid-template-columns:repeat(3,minmax(0,1fr))}}@media (max-width:560px){.grid{grid-template-columns:repeat(2,minmax(0,1fr))}.watch canvas{width:96px;height:96px}}</style>{% endif %}
 
 <div class="wrap">
   <header class="top">

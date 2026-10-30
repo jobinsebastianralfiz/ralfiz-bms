@@ -111,7 +111,7 @@ class CurrencyConverterTests(TestCase):
         self.client.force_login(owner)
         with mock.patch('requests.get', return_value=_response(FX_BODY)):
             resp = self.client.get(reverse('dashboard'))
-        self.assertContains(resp, 'Currency Converter')
+        self.assertContains(resp, 'class="card fxc"')
         self.assertContains(resp, 'id="fx-data"')
-        self.assertContains(resp, '<option value="AED">AED')
+        self.assertContains(resp, '<option value="AED" title="UAE Dirham">AED')
         self.assertNotContains(resp, '<option value="SAR">')  # not in the feed: not offered

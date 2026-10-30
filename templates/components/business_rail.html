@@ -2,6 +2,8 @@
 <aside class="inv-rail">
   {% include 'components/quick_actions.html' %}
 
+  {% if fx %}{% include 'components/fx_converter.html' %}{% endif %}
+
   <div class="card inv-panel">
     <h2 class="inv-panel__title">Invoice Status</h2>
     <div class="inv-donut-row">
