@@ -59,11 +59,12 @@ def month_leave_days(employee, year, month):
     return paid, unpaid
 
 
-def unmarked_days(employees, lo, hi):
+def unmarked_days(employees, lo, hi, count_absent=False):
     """{employee pk: [dates]} of working days in lo..hi with no attendance marked
     and no approved leave. Shown to HR as unmarked leave; payroll doesn't cut for
     them. Counts only up to yesterday, from the person's joining date and from the
-    'count leave from' date (HR > Calendar)."""
+    'count leave from' date (HR > Calendar). count_absent also takes in days
+    marked Absent (the leave summaries; the attendance report counts those itself)."""
     employees = list(employees)
     cal = current()
     hi = min(hi, timezone.localdate() - timedelta(days=1))
@@ -72,8 +73,10 @@ def unmarked_days(employees, lo, hi):
     out = {e.pk: [] for e in employees}
     if lo > hi or not employees:
         return out
-    marked = set(Attendance.objects.filter(employee__in=employees, date__range=(lo, hi))
-                 .values_list('employee_id', 'date'))
+    attended = Attendance.objects.filter(employee__in=employees, date__range=(lo, hi))
+    if count_absent:
+        attended = attended.exclude(status='absent')
+    marked = set(attended.values_list('employee_id', 'date'))
     on_leave = {}
     for e_id, start, end in LeaveRequest.objects.filter(employee__in=employees, status='approved', start_date__lte=hi,
                                                         end_date__gte=lo).values_list('employee_id', 'start_date', 'end_date'):

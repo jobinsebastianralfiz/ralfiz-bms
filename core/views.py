@@ -7656,12 +7656,14 @@ def _employee_leave_summary(employee):
         })
     days = [(lr, lr.days_in(year_lo, year_hi, cal)) for lr in approved]
     from employees.leave_rules import unmarked_days
-    unmarked = unmarked_days([employee], year_lo, year_hi)[employee.pk]
+    unmarked = unmarked_days([employee], year_lo, year_hi, count_absent=True)[employee.pk]
+    unmarked_month = sum(1 for d in unmarked if d >= month_lo)
     return {
-        'unmarked': len(unmarked), 'unmarked_dates': unmarked,
-        'unmarked_month': sum(1 for d in unmarked if d >= month_lo),
+        'unmarked': len(unmarked), 'unmarked_dates': unmarked, 'unmarked_month': unmarked_month,
         'year': today.year, 'month_label': today.strftime('%B'), 'rows': rows,
-        'total': sum(d for _, d in days),
+        # Absent and unmarked days are leave taken too, just never applied for
+        'total': sum(d for _, d in days) + len(unmarked),
+        'month_total': sum(r['month_used'] for r in rows) + unmarked_month,
         'unpaid': sum(d for lr, d in days if not (lr.leave_type and lr.leave_type.is_paid)),
         'pending': sum(1 for lr in leaves if lr.status == 'pending'),
         'rejected': sum(1 for lr in leaves if lr.status == 'rejected'),
@@ -8158,14 +8160,14 @@ def emp_leave_summary(request):
     # Approved leave whose type was deleted or switched off still counts
     has_other = any(k[1] not in {lt.pk for lt in leave_types} for k in used)
     from employees.leave_rules import unmarked_days
-    unmarked = unmarked_days(employees, lo, hi)
+    unmarked = unmarked_days(employees, lo, hi, count_absent=True)
 
     rows = []
     for emp in employees:
         by_type = [used.get((emp.pk, lt.pk), 0) for lt in leave_types]
         other = sum(d for (e, t), d in used.items() if e == emp.pk and t not in {lt.pk for lt in leave_types})
         unpaid = sum(d for lt, d in zip(leave_types, by_type) if not lt.is_paid)
-        total = sum(by_type) + other
+        total = sum(by_type) + other + len(unmarked[emp.pk])
         rows.append({
             'employee': emp,
             'is_intern': emp.employment_type == 'intern' or emp.role == 'intern',
@@ -8208,8 +8210,8 @@ def emp_leave_summary(request):
                 headers.append(f'{lt.name} left')
         if has_other:
             headers.append('Other')
-        headers += ['Total Days', 'Unpaid Days', 'Unmarked Leave']
-        headers += ['Pending Requests', 'Rejected Requests', 'Unmarked Dates']
+        headers += ['Total Days', 'Unpaid Days', 'Absent / Unmarked']
+        headers += ['Pending Requests', 'Rejected Requests', 'Absent / Unmarked Dates']
         ws.append([f'Leave summary: {period}'])
         ws['A1'].font = Font(bold=True, size=13)
         ws.append(headers)

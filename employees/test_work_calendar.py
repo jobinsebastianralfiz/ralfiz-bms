@@ -104,7 +104,7 @@ class WorkCalendarTests(TestCase):
         self.client.force_login(self.admin)
         r = self.client.get(reverse('emp_leave_summary'), {'year': 2026})
         row = next(x for x in r.context['rows'] if x['employee'] == self.staff)
-        self.assertEqual(row['total'], 1)
+        self.assertEqual(row['total'] - row['unmarked'], 1)   # no attendance in this fixture, so unmarked days add on
         self.assertNotIn(old, list(self.client.get(reverse('emp_leave_list')).context['leaves']))
         self.client.force_login(self.staff.user)
         bal = self.client.get('/api/employees/leave/balance/').json()
@@ -204,7 +204,7 @@ class WorkCalendarTests(TestCase):
         summary = page.context['leave_summary']
         casual = next(r for r in summary['rows'] if r['leave_type'] == self.casual)
         self.assertEqual((casual['month_used'], casual['year_used'], casual['year_left']), (3, 3, 9))
-        self.assertEqual((summary['total'], summary['unpaid'], summary['pending']), (5, 2, 1))
+        self.assertEqual((summary['total'] - summary['unmarked'], summary['unpaid'], summary['pending']), (5, 2, 1))
 
     def test_leave_summary_pdf_for_everyone_and_one_person(self):
         LeaveRequest.objects.create(employee=self.staff, leave_type=self.casual, start_date=date(2026, 11, 13),
@@ -250,8 +250,13 @@ class WorkCalendarTests(TestCase):
         self.assertEqual(report.context['totals']['unmarked'], 7)
         summary = self.client.get(reverse('emp_leave_summary'), {'year': 2026, 'month': 11})
         self.assertEqual(next(r for r in summary.context['rows'] if r['employee'] == self.intern)['unmarked'], 5)
+        # The leave summaries also count the day marked Absent (7 Nov) and put it in the total;
+        # the attendance report above keeps it in its own Absent column instead
+        staff_row = next(r for r in summary.context['rows'] if r['employee'] == self.staff)
+        self.assertEqual((staff_row['unmarked'], staff_row['total']), (3, 5))
         card = self.client.get(reverse('emp_employee_detail', args=[self.staff.pk])).context['leave_summary']
-        self.assertEqual((card['unmarked'], card['unmarked_month']), (2, 2))
+        self.assertEqual(card['unmarked_dates'], [date(2026, 11, 6), date(2026, 11, 7), date(2026, 11, 9)])
+        self.assertEqual((card['unmarked'], card['unmarked_month'], card['total'], card['month_total']), (3, 3, 5, 5))
         self.assertEqual(Payroll.objects.count(), 0)
 
     def test_payroll_uses_calendar_working_days_when_left_blank(self):
