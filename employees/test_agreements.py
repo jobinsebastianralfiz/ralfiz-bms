@@ -954,3 +954,51 @@ class NewJoinerWithoutCollegeTests(TestCase):
         self.assertIn('Monday to Saturday', text)
         self.assertIn('10:00 AM to 4:00 PM', text)
         self.assertIn('Sunday is a weekly holiday', text)
+
+
+class WelcomeMessageTests(AgreementTestBase):
+    """WhatsApp welcome for people who accepted the agreement."""
+
+    def setUp(self):
+        super().setUp()
+        self.hr = User.objects.create_superuser('hrw', 'hrw@example.com', 'pw')
+        self.client.force_login(self.hr)
+
+    def _signed(self, employee=None):
+        a = self._make_request(employee=employee)
+        self.client.post(f'/agreement/{a.token}/', self._continue_payload())
+        a.refresh_from_db()
+        return a
+
+    def test_no_welcome_before_signing(self):
+        a = self._make_request()
+        self.assertFalse(a.can_welcome)
+        self.assertEqual(a.welcome_whatsapp_url(), '')
+        self.assertNotContains(self.client.get(f'/hr/agreements/{a.pk}/'), 'Welcome message')
+
+    def test_intern_welcome_after_accepting(self):
+        a = self._signed()
+        self.assertTrue(a.can_welcome)
+        text = a.welcome_message()
+        self.assertIn('Welcome to Ralfiz Technologies, Test!', text)
+        self.assertIn('Digital Marketing', text)
+        self.assertIn(f'/agreement/{a.token}/copy/', text)
+        self.assertTrue(a.welcome_whatsapp_url().startswith('https://wa.me/919895663498?text='))
+        r = self.client.get(f'/hr/agreements/{a.pk}/')
+        self.assertContains(r, 'Send on WhatsApp')
+        self.assertContains(r, 'http://testserver/staff/')
+        self.assertContains(self.client.get('/hr/agreements/'), '#welcome')
+
+    def test_declined_gets_no_welcome(self):
+        a = self._make_request()
+        self.client.post(f'/agreement/{a.token}/', {
+            'decision': 'discontinue', 'full_name': 'Test Intern', 'decline_reason': 'Exams'})
+        a.refresh_from_db()
+        self.assertFalse(a.can_welcome)
+
+    def test_staff_without_phone_can_still_copy(self):
+        a = self._signed(employee=self.staff)
+        self.assertEqual(a.welcome_whatsapp_url(), '')
+        self.assertIn('Ralfiz team', a.welcome_message())
+        r = self.client.get(f'/hr/agreements/{a.pk}/')
+        self.assertContains(r, 'No phone number on file')

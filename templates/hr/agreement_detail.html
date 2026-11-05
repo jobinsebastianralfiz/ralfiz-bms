@@ -129,6 +129,30 @@
         {% endif %}
       </div>
     </div>
+
+    {% if welcome_text %}
+    <div class="card mb-4" id="welcome">
+      <div class="card-header">
+        <h3 class="card-title"><i class="fab fa-whatsapp" style="color:#25D366;"></i> Welcome message</h3>
+        <div class="d-flex gap-2">
+          <button type="button" class="btn btn-sm btn-ghost" id="btn-copy-welcome"><i class="fas fa-copy"></i> Copy</button>
+          {% if welcome_whatsapp %}
+          <a href="{{ welcome_whatsapp }}" target="_blank" rel="noopener" class="btn btn-sm btn-primary" style="background:#25D366;border-color:#25D366;">
+            <i class="fab fa-whatsapp"></i> Send on WhatsApp
+          </a>
+          {% endif %}
+        </div>
+      </div>
+      <div class="card-body">
+        {% if not welcome_whatsapp %}
+        <p class="text-sm text-muted mb-2">No phone number on file for {{ agreement.employee.full_name }} &mdash; copy the message and send it yourself.</p>
+        {% endif %}
+        <div style="background:#efeae2;border-radius:12px;padding:16px;">
+          <div id="welcome-text" style="background:#d9fdd3;color:#111b21;border-radius:10px 10px 10px 2px;padding:10px 14px;max-width:520px;white-space:pre-wrap;font-size:14px;line-height:1.45;box-shadow:0 1px 1px rgba(0,0,0,.08);">{{ welcome_text }}</div>
+        </div>
+      </div>
+    </div>
+    {% endif %}
   </div>
 
   <div class="col-4 col-md-12" style="padding: 0.75rem;">
@@ -203,6 +227,24 @@ if (copyBtn) {
       navigator.clipboard.writeText(field.value).then(done);
     } else {
       try { document.execCommand('copy'); done(); } catch (e) { /* user can copy manually */ }
+    }
+  });
+}
+var welcomeBtn = document.getElementById('btn-copy-welcome');
+if (welcomeBtn) {
+  welcomeBtn.addEventListener('click', function () {
+    var text = document.getElementById('welcome-text').innerText;
+    var done = function () {
+      welcomeBtn.innerHTML = '<i class="fas fa-check"></i> Copied';
+      setTimeout(function () { welcomeBtn.innerHTML = '<i class="fas fa-copy"></i> Copy'; }, 1600);
+    };
+    if (navigator.clipboard && window.isSecureContext) {
+      navigator.clipboard.writeText(text).then(done);
+    } else {
+      var ta = document.createElement('textarea');
+      ta.value = text; document.body.appendChild(ta); ta.select();
+      try { document.execCommand('copy'); done(); } catch (e) { /* manual copy */ }
+      document.body.removeChild(ta);
     }
   });
 }

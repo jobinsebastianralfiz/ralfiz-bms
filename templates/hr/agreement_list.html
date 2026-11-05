@@ -110,6 +110,7 @@
               {% else %}&mdash;{% endif %}
             </td>
             <td class="text-end">
+              {% if a.can_welcome %}<a href="{% url 'agreement_detail' a.pk %}#welcome" class="btn btn-sm btn-ghost" title="Send welcome message" style="color:#25D366;"><i class="fab fa-whatsapp"></i> Welcome</a>{% endif %}
               <a href="{% url 'agreement_detail' a.pk %}" class="btn btn-sm btn-ghost">View</a>
             </td>
           </tr>

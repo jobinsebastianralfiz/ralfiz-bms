@@ -544,6 +544,61 @@ class AgreementRequest(models.Model):
         )
         return f"https://wa.me/{digits}?text={quote(message)}"
 
+    @property
+    def can_welcome(self):
+        """Only people who accepted and chose to continue get a welcome."""
+        return self.status == self.STATUS_ACCEPTED and self.decision == 'continue'
+
+    def welcome_message(self, request=None):
+        """Warm WhatsApp welcome for someone who has signed. Uses *bold* / _italic_."""
+        emp = self.employee
+        name = (self.full_name or emp.full_name or '').strip()
+        first = name.split()[0] if name else 'there'
+        is_intern = emp.employment_type == 'intern' or emp.role == 'intern'
+        role = (self.internship_domain or emp.designation or '').strip()
+
+        def link(path):
+            return request.build_absolute_uri(path) if request else path
+
+        if is_intern:
+            opening = ("Thank you for signing your internship agreement. "
+                       "You are now officially part of the Ralfiz family!")
+            role_line = f"🎯 *Your domain:* {role}\n" if role else ''
+            promise = ("Over the coming months you will work on real client projects, "
+                       "learn from mentors who care, and build skills that last a lifetime.")
+        else:
+            opening = ("Thank you for signing your agreement. "
+                       "We are truly happy to have you on the Ralfiz team!")
+            role_line = f"💼 *Your role:* {role}\n" if role else ''
+            promise = ("Your talent and energy will help us build great things for our clients, "
+                       "and we will be right here to support your growth every step of the way.")
+
+        return (
+            f"🎉 *Welcome to Ralfiz Technologies, {first}!* 🎉\n\n"
+            f"{opening} ✨\n\n"
+            f"{promise}\n\n"
+            f"{role_line}"
+            f"📄 *Your signed copy:* {link(f'/agreement/{self.token}/copy/')}\n"
+            f"📱 *Staff portal:* {link('/staff/')}\n"
+            "_Mark attendance, apply for leave and see your work, right from your phone._\n\n"
+            "*A few things to get you started:*\n"
+            "✅ Log in to the staff portal and register your face from Profile\n"
+            "✅ Check in on time every working day\n"
+            "✅ Share your daily update: what you did, learned and where you got stuck\n"
+            "✅ Ask questions freely, we are one team 🤝\n\n"
+            "We believe in you and can't wait to see what you create. "
+            "Here's to a great journey together! 🚀\n\n"
+            "Warm regards,\n"
+            "*Team Ralfiz Technologies* 💙"
+        )
+
+    def welcome_whatsapp_url(self, request=None):
+        if not self.can_welcome:
+            return ''
+        digits = self.employee.whatsapp_number
+        return (f"https://wa.me/{digits}?text={quote(self.welcome_message(request))}"
+                if digits else '')
+
     # ---- Transitions ----
     def mark_viewed(self):
         now = timezone.now()

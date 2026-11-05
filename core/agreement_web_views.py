@@ -192,6 +192,8 @@ def agreement_detail(request, pk):
         'doc': agreement.snapshot_json or {},
         'url': agreement.public_url(request),
         'whatsapp': agreement.whatsapp_url(request),
+        'welcome_text': agreement.welcome_message(request) if agreement.can_welcome else '',
+        'welcome_whatsapp': agreement.welcome_whatsapp_url(request),
         'history': AgreementRequest.objects.filter(
             employee=agreement.employee
         ).exclude(pk=agreement.pk).order_by('-sent_at')[:10],
