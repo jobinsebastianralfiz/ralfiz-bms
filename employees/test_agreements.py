@@ -1002,3 +1002,31 @@ class WelcomeMessageTests(AgreementTestBase):
         self.assertIn('Ralfiz team', a.welcome_message())
         r = self.client.get(f'/hr/agreements/{a.pk}/')
         self.assertContains(r, 'No phone number on file')
+
+
+class AgreementCardTests(AgreementTestBase):
+    """Employee page shows the latest agreement with a way to open the signed copy."""
+
+    def setUp(self):
+        super().setUp()
+        self.client.force_login(User.objects.create_superuser('hrc', 'hrc@example.com', 'pw'))
+
+    def _page(self):
+        from django.urls import reverse
+        return self.client.get(reverse('emp_employee_detail', args=[self.intern.pk]))
+
+    def test_no_agreement_offers_send(self):
+        self.assertContains(self._page(), 'No agreement sent yet.')
+
+    def test_signed_agreement_links_the_signed_copy(self):
+        a = self._make_request()
+        self.client.post(f'/agreement/{a.token}/', self._continue_payload())
+        r = self._page()
+        self.assertContains(r, f'/hr/agreements/{a.pk}/pdf/')
+        self.assertContains(r, 'Signed copy')
+
+    def test_unsigned_agreement_has_no_signed_copy(self):
+        a = self._make_request()
+        r = self._page()
+        self.assertContains(r, f'/hr/agreements/{a.pk}/')
+        self.assertNotContains(r, f'/hr/agreements/{a.pk}/pdf/')

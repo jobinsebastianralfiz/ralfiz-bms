@@ -172,6 +172,7 @@
         <a href="{% url 'emp_employee_detail' enrolment.employee.pk %}" class="btn btn-ghost w-100">Open employee record</a>
       </div>
     </div>
+    {% include 'hr/partials/agreement_card.html' with person=enrolment.employee %}
     {% elif enrolment.status == 'rejected' %}
     <div class="card mb-4">
       <div class="card-header"><h3 class="card-title"><i class="fas fa-times"></i> Rejected</h3></div>
