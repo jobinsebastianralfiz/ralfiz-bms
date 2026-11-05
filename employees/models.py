@@ -47,6 +47,7 @@ class Employee(models.Model):
 
     DEPARTMENT_CHOICES = [
         ('engineering', 'Engineering'),
+        ('software', 'Software Development'),
         ('design', 'Design'),
         ('marketing', 'Marketing'),
         ('sales', 'Sales'),

@@ -70,7 +70,7 @@ WORK_MODE_CHOICES = [
 
 def default_tracks():
     return [
-        {'label': 'Engineering', 'department': 'engineering'},
+        {'label': 'Software Development', 'department': 'software'},
         {'label': 'UI/UX & Graphic Design', 'department': 'design'},
         {'label': 'Digital Marketing', 'department': 'marketing'},
         {'label': 'Data Analytics', 'department': 'engineering'},
