@@ -32,7 +32,7 @@ def form_data(**overrides):
         'full_name': 'Anjali Menon', 'phone': '9876543210', 'whatsapp': '', 'email': 'anjali@example.com',
         'date_of_birth': '2004-05-17', 'address': 'Kozhikode, Kerala', 'guardian_name': 'Ravi Menon',
         'guardian_phone': '9876500000', 'college_name': 'MES College', 'course': 'BCA',
-        'year_of_study': '3', 'register_number': 'MES21BCA07', 'track': 'Software Development',
+        'year_of_study': '3', 'register_number': 'MES21BCA07', 'track': 'Engineering',
         'track_other': '', 'preferred_start_date': '2026-11-02', 'duration_months': '3',
         'work_mode': 'onsite', 'skills': 'Python basics', 'confirm': '1',
     }
@@ -77,7 +77,7 @@ class EnrolmentTests(TestCase):
         self.assertRedirects(response, reverse('enrolment_done', args=[self.enrolment.token]))
         e = InternEnrolment.objects.get()
         self.assertEqual((e.status, e.full_name, e.date_of_birth, e.track),
-                         ('submitted', 'Anjali Menon', date(2004, 5, 17), 'Software Development'))
+                         ('submitted', 'Anjali Menon', date(2004, 5, 17), 'Engineering'))
         self.assertTrue(e.photo.name.startswith(f'enrolments/{e.pk}/photo'))
         # The link now shows the thank-you page, and cannot be resubmitted.
         self.assertRedirects(self.client.get(self.url), reverse('enrolment_done', args=[e.token]))
@@ -138,10 +138,10 @@ class EnrolmentTests(TestCase):
         page = self.client.get(self.url)
         self.assertContains(page, 'How you want to work')
         self.assertContains(page, 'Flutter Development')
-        self.assertNotContains(page, 'Software Development')
+        self.assertNotContains(page, 'Engineering')
         self.assertNotContains(page, 'Which area?')
         # A removed area is refused; an offered one goes through and sets the department.
-        self.assertContains(self.submit(track='Software Development', duration_months='2',
+        self.assertContains(self.submit(track='Engineering', duration_months='2',
                                         work_mode='remote'), 'Choose one of the options.', status_code=400)
         self.submit(track='SEO', duration_months='6', work_mode='remote')
         e = InternEnrolment.objects.get()
@@ -194,11 +194,11 @@ class EnrolmentTests(TestCase):
         self.client.force_login(self.hr)
         detail = self.client.get(reverse('enrolment_detail', args=[e.pk]))
         self.assertContains(detail, 'value="anjali"')  # suggested username
-        self.assertContains(detail, 'Software Development Intern')
+        self.assertContains(detail, 'Engineering Intern')
 
         response = self.client.post(reverse('enrolment_approve', args=[e.pk]), {
             'username': 'anjali', 'joining_date': '2026-11-02', 'department': 'engineering',
-            'designation': 'Software Development Intern'})
+            'designation': 'Engineering Intern'})
         # Not followed: following would use up the once-only password display.
         self.assertRedirects(response, reverse('enrolment_detail', args=[e.pk]),
                              fetch_redirect_response=False)
