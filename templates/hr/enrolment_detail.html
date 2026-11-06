@@ -66,6 +66,7 @@
         <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem;">
           <div><label class="text-muted text-sm">Full name</label><div class="fw-medium">{{ enrolment.full_name }}</div></div>
           <div><label class="text-muted text-sm">Date of birth</label><div>{{ enrolment.date_of_birth|date:"d M Y" }}</div></div>
+          <div><label class="text-muted text-sm">Gender</label><div>{% if enrolment.gender %}{{ enrolment.get_gender_display }}{% else %}<span class="text-muted">Not given</span>{% endif %}</div></div>
           <div><label class="text-muted text-sm">Phone</label><div>{{ enrolment.phone }}</div></div>
           <div><label class="text-muted text-sm">WhatsApp</label><div>{{ enrolment.whatsapp|default:"Same as phone" }}</div></div>
           <div><label class="text-muted text-sm">Email</label><div>{{ enrolment.email }}</div></div>

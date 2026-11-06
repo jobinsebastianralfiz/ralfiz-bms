@@ -195,6 +195,7 @@ class EnrolmentTests(TestCase):
         detail = self.client.get(reverse('enrolment_detail', args=[e.pk]))
         self.assertContains(detail, 'value="anjali"')  # suggested username
         self.assertContains(detail, 'Software Development Intern')
+        self.assertContains(detail, 'Female')
 
         response = self.client.post(reverse('enrolment_approve', args=[e.pk]), {
             'username': 'anjali', 'joining_date': '2026-11-02', 'department': 'engineering',
