@@ -62,7 +62,12 @@ class ResignationTests(TestCase):
         self.assertContains(relieving, 'RELIEVING LETTER')
         self.assertContains(relieving, '05 Dec 2026')
         self.assertContains(relieving, 'Worked on client apps.')
+        self.assertNotContains(relieving, 'Signed from IP')
+        self.assertNotContains(relieving, 'SHA-256')
+        self.assertNotContains(relieving, 'Signed electronically')
         letter = self.client.get(reverse('resignation_letter', args=[res.token]))
+        self.assertContains(letter, 'Signed electronically')
+        self.assertNotContains(letter, 'SHA-256')
         self.assertContains(letter, 'My final exams start next month.')
         self.assertContains(letter, 'Accepted by')
         self.assertContains(self.client.get(reverse('resignation_done', args=[res.token])),

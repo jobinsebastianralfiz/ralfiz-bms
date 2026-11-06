@@ -152,19 +152,20 @@
       Approved on {{ res.approved_at|date:"d M Y" }} &middot; relieving date {{ res.final_date|date:"d M Y" }}
     </div>
     {% endif %}
-    {% endif %}
 
+    {% comment %}
+    Only the person's own resignation copy says how it was signed. The
+    relieving letter is the company's letter and goes to future employers,
+    so it carries no signing details. IP and fingerprint stay in the database.
+    {% endcomment %}
     <div class="record">
-      <strong>Electronic record</strong>
+      <strong>Signed electronically</strong>
       <div class="record-grid">
-        <div><span>Reference</span>{{ res.reference }}</div>
         <div><span>Signed by</span>{{ res.signed_name }}</div>
         <div><span>Signed at</span>{{ res.submitted_at|date:"d M Y, g:i a" }}</div>
-        {% if res.approved_at %}<div><span>Approved at</span>{{ res.approved_at|date:"d M Y, g:i a" }}</div>{% endif %}
-        {% if res.ip_address %}<div><span>Signed from IP</span>{{ res.ip_address }}</div>{% endif %}
       </div>
-      {% if res.body_hash %}<div><span style="color:#64748b;">Document fingerprint (SHA-256):</span> <code>{{ res.body_hash }}</code></div>{% endif %}
     </div>
+    {% endif %}
   </div>
 </body>
 </html>
