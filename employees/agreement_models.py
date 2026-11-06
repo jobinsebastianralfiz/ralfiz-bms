@@ -573,12 +573,18 @@ class AgreementRequest(models.Model):
             promise = ("Your talent and energy will help us build great things for our clients, "
                        "and we will be right here to support your growth every step of the way.")
 
+        fee_line = ''
+        if self.needs_payment:
+            amount = f'{self.snapshot_fee:.2f}'.rstrip('0').rstrip('.')
+            fee_line = f"💳 *Pay your internship fee (₹{amount}/month):* {link(self.payment_path())}\n"
+
         return (
             f"🎉 *Welcome to Ralfiz Technologies, {first}!* 🎉\n\n"
             f"{opening} ✨\n\n"
             f"{promise}\n\n"
             f"{role_line}"
             f"📄 *Your signed copy:* {link(f'/agreement/{self.token}/copy/')}\n"
+            f"{fee_line}"
             f"📱 *Staff portal:* {link('/staff/')}\n"
             "_Mark attendance, apply for leave and see your work, right from your phone._\n\n"
             "*A few things to get you started:*\n"
@@ -591,6 +597,79 @@ class AgreementRequest(models.Model):
             "Warm regards,\n"
             "*Team Ralfiz Technologies* 💙"
         )
+
+    # ---- Fee payment (interns who pay a monthly fee) ----
+    @property
+    def needs_payment(self):
+        """Accepted, continuing, and on the pay-a-fee arrangement with an amount."""
+        return (self.status == self.STATUS_ACCEPTED and self.decision == 'continue'
+                and self.snapshot_money_mode == MONEY_FEE
+                and bool(self.snapshot_fee) and self.snapshot_fee > 0)
+
+    def payment_account(self):
+        """Intern fees go to the no-GST account; payment_details() falls back
+        to the main account when no no-GST details are entered."""
+        from core.models import CompanySettings
+        company = CompanySettings.get_settings()
+        details = company.payment_details(gst=False)
+        details['payee'] = details.get('holder') or company.company_name or 'Ralfiz Technologies'
+        return details
+
+    def payment_note(self):
+        return f'Internship fee {self.reference}'
+
+    def upi_uri(self):
+        """upi:// link any UPI app opens with the payee, amount and note filled in."""
+        account = self.payment_account()
+        if not self.needs_payment or not account.get('upi'):
+            return ''
+        from urllib.parse import urlencode
+        query = urlencode({
+            'pa': account['upi'], 'pn': account['payee'], 'am': f'{self.snapshot_fee:.2f}',
+            'cu': 'INR', 'tn': self.payment_note(),
+        }, quote_via=quote)
+        return f'upi://pay?{query}'
+
+    def upi_qr_data_uri(self):
+        """The UPI link as a scannable QR code (PNG data URI).
+
+        Quiet zone of four modules inside the image and no rounding on the code
+        itself: both are what made the certificate QR unscannable once.
+        """
+        uri = self.upi_uri()
+        if not uri:
+            return ''
+        import base64
+        import io
+
+        import qrcode
+        qr = qrcode.QRCode(border=4, box_size=8, error_correction=qrcode.constants.ERROR_CORRECT_M)
+        qr.add_data(uri)
+        qr.make(fit=True)
+        buffer = io.BytesIO()
+        qr.make_image(fill_color='black', back_color='white').save(buffer, format='PNG')
+        return 'data:image/png;base64,' + base64.b64encode(buffer.getvalue()).decode()
+
+    def payment_path(self):
+        return f'/agreement/{self.token}/pay/'
+
+    def payment_whatsapp_url(self, request=None):
+        if not self.needs_payment:
+            return ''
+        digits = self.employee.whatsapp_number
+        if not digits:
+            return ''
+        link = request.build_absolute_uri(self.payment_path()) if request else self.payment_path()
+        name = (self.full_name or self.employee.full_name or '').split(' ')[0] or 'there'
+        amount = f'{self.snapshot_fee:.2f}'.rstrip('0').rstrip('.')
+        message = (
+            f'Hi {name},\n\n'
+            f'Here is the payment QR for your monthly internship fee of *₹{amount}*:\n{link}\n\n'
+            'Scan it with any UPI app (GPay, PhonePe, Paytm) or tap "Pay with UPI app" on your phone. '
+            f'Please keep the note *{self.payment_note()}* so we can match your payment.\n\n'
+            'Thank you!\nTeam Ralfiz Technologies'
+        )
+        return f'https://wa.me/{digits}?text={quote(message)}'
 
     def welcome_whatsapp_url(self, request=None):
         if not self.can_welcome:

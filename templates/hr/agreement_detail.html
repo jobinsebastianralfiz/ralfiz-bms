@@ -130,6 +130,28 @@
       </div>
     </div>
 
+    {% if agreement.needs_payment %}
+    <div class="card mb-4" id="payment">
+      <div class="card-header"><h3 class="card-title"><i class="fas fa-qrcode"></i> Fee payment QR</h3></div>
+      <div class="card-body">
+        <div class="d-flex gap-3" style="flex-wrap: wrap; align-items: flex-start;">
+          {% with qr=agreement.upi_qr_data_uri %}
+          {% if qr %}<img src="{{ qr }}" alt="UPI QR" width="150" height="150" style="border:1px solid var(--gray-200);border-radius:8px;padding:6px;background:#fff;image-rendering:pixelated;">
+          {% else %}<p class="text-danger mb-0">No UPI ID is set. Add the no-GST (or main) UPI ID in Settings to show a QR.</p>{% endif %}
+          {% endwith %}
+          <div>
+            <p class="mb-1"><strong>&#8377;{{ agreement.snapshot_fee|floatformat:"-2" }}</strong> per month to <strong>{{ payment_account.upi|default:"-" }}</strong></p>
+            <p class="text-sm text-muted mb-2">Note on the payment: {{ agreement.payment_note }}. The welcome message below includes this link too.</p>
+            <div class="d-flex gap-2" style="flex-wrap: wrap;">
+              {% if payment_whatsapp %}<a href="{{ payment_whatsapp }}" target="_blank" rel="noopener" class="btn btn-sm btn-primary" style="background:#25D366;border-color:#25D366;"><i class="fab fa-whatsapp"></i> Send payment QR</a>{% endif %}
+              <a href="{{ payment_url }}" target="_blank" rel="noopener" class="btn btn-sm btn-ghost"><i class="fas fa-external-link-alt"></i> Open payment page</a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    {% endif %}
+
     {% if welcome_text %}
     <div class="card mb-4" id="welcome">
       <div class="card-header">

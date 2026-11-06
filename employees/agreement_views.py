@@ -160,6 +160,20 @@ def agreement_done(request, token):
         'agreement': agreement,
         'doc': agreement.snapshot_json or {},
         'employee': agreement.employee,
+        'account': agreement.payment_account() if agreement.needs_payment else None,
+    })
+
+
+def agreement_pay(request, token):
+    """The fee payment QR, for interns who accepted on the pay-a-fee arrangement."""
+    agreement = _get_request_or_404(token)
+    if not agreement.needs_payment:
+        return redirect('agreement_done', token=agreement.token)
+    return render(request, 'agreements/pay.html', {
+        'agreement': agreement,
+        'doc': agreement.snapshot_json or {},
+        'employee': agreement.employee,
+        'account': agreement.payment_account(),
     })
 
 

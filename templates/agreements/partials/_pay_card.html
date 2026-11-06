@@ -1,0 +1,23 @@
+{% comment %}Fee payment QR for an accepted agreement. Pass agreement and account.{% endcomment %}
+{% with qr=agreement.upi_qr_data_uri upi=agreement.upi_uri %}
+<div class="pay-card">
+  <div class="pay-card-head">
+    <strong>Pay your internship fee</strong>
+    <span class="pay-amount">&#8377;{{ agreement.snapshot_fee|floatformat:"-2" }} <small>/ month</small></span>
+  </div>
+  {% if qr %}
+  <div class="pay-qr"><img src="{{ qr }}" alt="UPI payment QR code" width="200" height="200"></div>
+  <p class="pay-hint">Scan with any UPI app (GPay, PhonePe, Paytm, BHIM).</p>
+  <a class="copy-btn primary pay-app" href="{{ upi }}">Pay with UPI app</a>
+  {% endif %}
+  <div class="receipt pay-details">
+    {% if account.upi %}<div class="receipt-row"><span>UPI ID</span><span>{{ account.upi }}</span></div>{% endif %}
+    <div class="receipt-row"><span>Paying to</span><span>{{ account.payee }}</span></div>
+    {% if account.account %}<div class="receipt-row"><span>Account no.</span><span>{{ account.account }}</span></div>{% endif %}
+    {% if account.ifsc %}<div class="receipt-row"><span>IFSC</span><span>{{ account.ifsc }}</span></div>{% endif %}
+    {% if account.bank %}<div class="receipt-row"><span>Bank</span><span>{{ account.bank }}</span></div>{% endif %}
+    <div class="receipt-row"><span>Note / reference</span><span>{{ agreement.payment_note }}</span></div>
+  </div>
+  <p class="pay-hint">Keep the note above so we can match your payment. Send a screenshot to your coordinator after paying.</p>
+</div>
+{% endwith %}

@@ -1,0 +1,13 @@
+{% extends 'agreements/_doc_base.html' %}
+
+{% block title %}Pay internship fee - Ralfiz Technologies{% endblock %}
+{% block band_label %}Payment{% endblock %}
+
+{% block body %}
+<div class="status-card">
+  <h1>Hi {{ agreement.full_name|default:employee.full_name }}</h1>
+  <p>Thank you for accepting your internship agreement ({{ agreement.reference }}).</p>
+  {% include 'agreements/partials/_pay_card.html' %}
+  <p style="margin-top:22px;font-size:13px;color:var(--agr-muted);">Questions? Contact us at +91 98956 63498.</p>
+</div>
+{% endblock %}

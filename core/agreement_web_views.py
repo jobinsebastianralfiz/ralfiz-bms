@@ -194,6 +194,9 @@ def agreement_detail(request, pk):
         'whatsapp': agreement.whatsapp_url(request),
         'welcome_text': agreement.welcome_message(request) if agreement.can_welcome else '',
         'welcome_whatsapp': agreement.welcome_whatsapp_url(request),
+        'payment_whatsapp': agreement.payment_whatsapp_url(request),
+        'payment_url': request.build_absolute_uri(agreement.payment_path()) if agreement.needs_payment else '',
+        'payment_account': agreement.payment_account() if agreement.needs_payment else None,
         'history': AgreementRequest.objects.filter(
             employee=agreement.employee
         ).exclude(pk=agreement.pk).order_by('-sent_at')[:10],

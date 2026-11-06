@@ -55,6 +55,8 @@
     </div>
   </div>
 
+  {% if agreement.needs_payment %}{% include 'agreements/partials/_pay_card.html' %}{% endif %}
+
   <div style="margin-top:26px; display:flex; gap:10px; justify-content:center; flex-wrap:wrap;">
     <a href="{% url 'agreement_copy_pdf' agreement.token %}" class="copy-btn primary">Download my signed copy (PDF)</a>
     <a href="{% url 'agreement_copy' agreement.token %}" class="copy-btn">View copy</a>
