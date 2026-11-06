@@ -76,8 +76,9 @@
       </div>
 
       <div class="mb-3">
-        <label class="form-label">Wish Text *</label>
-        <textarea name="wish_text" class="form-control" rows="2" required>{{ template.wish_text|default:'We wish {pronoun} success in {possessive} future academic and professional endeavors.' }}</textarea>
+        <label class="form-label">Wish Text</label>
+        <textarea name="wish_text" class="form-control" rows="2">{% if template %}{{ template.wish_text }}{% else %}We wish {pronoun} success in {possessive} future academic and professional endeavors.{% endif %}</textarea>
+        <small class="text-muted">Optional. Leave blank if the body already ends with a wish; it is skipped automatically when the body has one.</small>
       </div>
 
       <div class="d-flex gap-2">

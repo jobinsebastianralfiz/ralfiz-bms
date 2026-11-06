@@ -963,6 +963,11 @@ class Certificate(models.Model):
         return html
 
     def render_wish_text(self):
+        # Many bodies already end with their own good wishes; printing the
+        # separate wish line as well says it twice.
+        import re
+        if re.search(r'\bwish', self.body_text or '', re.IGNORECASE):
+            return ''
         return self._substitute(self.wish_text or '', {
             'pronoun': self.object_pronoun,
             'possessive': self.possessive,

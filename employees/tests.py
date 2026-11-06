@@ -204,6 +204,13 @@ class CertificateWishTextTests(TestCase):
         self.cert.wish_text = 'We wish {pronoun} success, {bogus}.'
         self.assertEqual(self.cert.render_wish_text(), 'We wish her success, {bogus}.')
 
+    def test_wish_line_skipped_when_body_already_wishes(self):
+        self.cert.wish_text = 'We wish {pronoun} a bright and successful future.'
+        self.cert.body_text = 'We appreciate {possessive} commitment and wish {object_pronoun} every success.'
+        self.assertEqual(self.cert.render_wish_text(), '')
+        self.cert.body_text = 'She completed the internship.'
+        self.assertEqual(self.cert.render_wish_text(), 'We wish her a bright and successful future.')
+
 
 class CertificatePdfLayoutTests(TestCase):
     """The print layout is built from `build_context`, so cover it directly.

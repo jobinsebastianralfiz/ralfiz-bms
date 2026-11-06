@@ -147,7 +147,7 @@
           <div class="mb-3">
             <label class="form-label">Wish Text</label>
             <textarea name="wish_text" class="form-control" rows="2">{{ cert.wish_text }}</textarea>
-            <small class="text-muted">Use <code>{pronoun}</code> for him/her and <code>{possessive}</code> for his/her.</small>
+            <small class="text-muted">Use <code>{pronoun}</code> for him/her and <code>{possessive}</code> for his/her. Leave blank for no wish line. It is skipped automatically when the body text already has a wish.</small>
           </div>
 
           {% if cert.status == 'draft' %}
