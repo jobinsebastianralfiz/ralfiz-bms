@@ -9,6 +9,7 @@ from . import agreement_web_views
 from . import client_agreement_views
 from . import enrolment_web_views
 from . import offer_web_views
+from . import resignation_web_views
 
 urlpatterns = [
     # Public Pages
@@ -364,6 +365,15 @@ urlpatterns = [
     path('hr/offers/<uuid:pk>/enrolment/', offer_web_views.offer_create_enrolment, name='offer_create_enrolment'),
     path('hr/offers/<uuid:pk>/cancel/', offer_web_views.offer_cancel, name='offer_cancel'),
     path('hr/offers/<uuid:pk>/extend/', offer_web_views.offer_extend, name='offer_extend'),
+    path('hr/resignations/', resignation_web_views.resignation_list, name='resignation_list'),
+    path('hr/resignations/send/', resignation_web_views.resignation_send, name='resignation_send'),
+    path('hr/resignations/<uuid:pk>/', resignation_web_views.resignation_detail, name='resignation_detail'),
+    path('hr/resignations/<uuid:pk>/approve/', resignation_web_views.resignation_approve, name='resignation_approve'),
+    path('hr/resignations/<uuid:pk>/reject/', resignation_web_views.resignation_reject, name='resignation_reject'),
+    path('hr/resignations/<uuid:pk>/cancel/', resignation_web_views.resignation_cancel, name='resignation_cancel'),
+    path('hr/resignations/<uuid:pk>/extend/', resignation_web_views.resignation_extend, name='resignation_extend'),
+    path('hr/resignations/<uuid:pk>/<str:kind>.pdf', resignation_web_views.resignation_pdf, name='resignation_pdf'),
+    path('hr/resignations/<uuid:pk>/<str:kind>/', resignation_web_views.resignation_preview, name='resignation_preview'),
     path('hr/agreements/', agreement_web_views.agreement_list, name='agreement_list'),
     path('hr/agreements/send/', agreement_web_views.agreement_send, name='agreement_send'),
     path('hr/agreements/batch/<uuid:batch>/', agreement_web_views.agreement_batch, name='agreement_batch'),

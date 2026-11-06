@@ -1,0 +1,46 @@
+{% extends 'agreements/_doc_base.html' %}
+
+{% block title %}Resignation - Ralfiz Technologies{% endblock %}
+{% block band_label %}Resignation{% endblock %}
+
+{% block body %}
+<div class="status-card">
+  {% if res.status == 'approved' %}
+  <div class="status-icon ok">&#10003;</div>
+  <h1>All the best, {{ res.first_name }}!</h1>
+  <p>Your resignation has been accepted. Your relieving date is <strong>{{ res.final_date|date:"d M Y" }}</strong>.
+     Download your letters below and keep them for your records.</p>
+  {% elif res.status == 'submitted' %}
+  <div class="status-icon ok">&#10003;</div>
+  <h1>Thank you, {{ res.first_name }}</h1>
+  <p>Your signed resignation has been received. Once we approve it, your relieving letter will be ready
+     to download on this same page.</p>
+  {% else %}
+  <div class="status-icon info">&#9432;</div>
+  <h1>Your resignation was not accepted</h1>
+  <p>{{ res.rejection_reason|default:"Please speak to your coordinator about the next steps." }}</p>
+  {% endif %}
+
+  <div class="receipt">
+    <div class="receipt-row"><span>Reference</span><span>{{ res.reference }}</span></div>
+    <div class="receipt-row"><span>Name</span><span>{{ res.name }}</span></div>
+    <div class="receipt-row"><span>Reason</span><span>{{ res.get_reason_category_display }}</span></div>
+    <div class="receipt-row"><span>Last working day</span><span>{{ res.final_date|date:"d M Y" }}</span></div>
+    <div class="receipt-row"><span>Signed on</span><span>{{ res.submitted_at|date:"d M Y, g:i a" }}</span></div>
+    <div class="receipt-row"><span>Status</span><span>
+      {% if res.status == 'approved' %}<span class="pill ok">Approved</span>
+      {% elif res.status == 'submitted' %}<span class="pill ok">Signed &middot; awaiting approval</span>
+      {% else %}<span class="pill stop">Not accepted</span>{% endif %}
+    </span></div>
+  </div>
+
+  {% if res.can_download %}
+  <div style="margin-top:26px; display:flex; gap:10px; justify-content:center; flex-wrap:wrap;">
+    <a href="{% url 'relieving_letter_pdf' res.token %}" class="copy-btn primary">Download relieving letter (PDF)</a>
+    <a href="{% url 'resignation_letter_pdf' res.token %}" class="copy-btn">Download my resignation (PDF)</a>
+  </div>
+  {% endif %}
+
+  <p style="margin-top:22px;font-size:13px;color:var(--agr-muted);">Questions? Contact us at +91 98956 63498.</p>
+</div>
+{% endblock %}

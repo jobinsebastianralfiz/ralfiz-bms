@@ -640,6 +640,35 @@ def payslip_detail(request, pk):
     return render(request, 'staff/payslip_detail.html', ctx)
 
 
+# --- Resignation -----------------------------------------------------------
+
+@staff_required
+def resignation(request):
+    """Start a resignation, or see where it stands and download the letters.
+
+    Starting one only creates the request and hands the person to the same
+    public form HR links use, so there is one form to keep right.
+    """
+    from .resignation_models import ResignationRequest
+
+    employee = request.employee
+    current = employee.resignations.exclude(status=ResignationRequest.STATUS_CANCELLED).first()
+    if request.method == 'POST':
+        open_one = employee.resignations.filter(status__in=ResignationRequest.ACTIVE_STATUSES).first()
+        if open_one is None:
+            open_one = ResignationRequest.objects.create(employee=employee, created_by=request.user,
+                                                         source='self')
+        elif open_one.is_expired:
+            from .resignation_models import default_resignation_expiry
+            open_one.expires_at = default_resignation_expiry()
+            open_one.save(update_fields=['expires_at', 'updated_at'])
+        return redirect(open_one.public_path())
+
+    ctx = _base_context(request, 'resignation')
+    ctx.update({'current': current})
+    return render(request, 'staff/resignation.html', ctx)
+
+
 # --- Notifications ---------------------------------------------------------
 
 @staff_required

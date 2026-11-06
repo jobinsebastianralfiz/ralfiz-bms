@@ -1,0 +1,45 @@
+{% extends 'staff/base.html' %}
+
+{% block title %}Resignation{% endblock %}
+{% block heading %}Resignation{% endblock %}
+
+{% block page_hero %}
+{% include 'staff/_hero.html' with title='Resignation' subtitle='Sign your resignation and download your relieving letter.' art='check' %}
+{% endblock %}
+
+{% block content %}
+{% if current and current.status == 'approved' %}
+  <div class="sf-card">
+    <div class="sf-section-title">Approved</div>
+    <p>Your resignation ({{ current.reference }}) has been accepted. Relieving date: <strong>{{ current.final_date|date:"d M Y" }}</strong>.</p>
+    <a class="sf-btn" href="{% url 'relieving_letter_pdf' current.token %}"><i class="fas fa-download"></i> Relieving letter (PDF)</a>
+    <p style="margin-top:10px"><a href="{% url 'resignation_letter_pdf' current.token %}">Download my signed resignation</a></p>
+  </div>
+{% elif current and current.status == 'submitted' %}
+  <div class="sf-card">
+    <div class="sf-section-title">Waiting for approval</div>
+    <p>You signed your resignation on {{ current.submitted_at|date:"d M Y" }}, asking for {{ current.last_working_day|date:"d M Y" }} as your last day.
+       Your relieving letter will appear here once it is approved.</p>
+    <a href="{% url 'resignation_done' current.token %}">View what you submitted</a>
+  </div>
+{% elif current and current.is_open %}
+  <div class="sf-card">
+    <div class="sf-section-title">Not signed yet</div>
+    <p>Your resignation form is ready. Fill in your reason and sign it.</p>
+    <a class="sf-btn" href="{{ current.public_path }}"><i class="fas fa-pen"></i> Open my resignation form</a>
+  </div>
+{% else %}
+  <div class="sf-card">
+    <div class="sf-section-title">Leaving Ralfiz?</div>
+    {% if current and current.status == 'rejected' %}
+    <p>Your last resignation was not accepted{% if current.rejection_reason %}: {{ current.rejection_reason }}{% endif %}.</p>
+    {% endif %}
+    <p>We are sorry to see you go. Please talk to your mentor first. When you are ready, fill in the form:
+       give your reason, choose your last working day and sign. Once HR approves it, you can download your relieving letter here.</p>
+    <form method="post">
+      {% csrf_token %}
+      <button type="submit" class="sf-btn"><i class="fas fa-door-open"></i> Start my resignation</button>
+    </form>
+  </div>
+{% endif %}
+{% endblock %}

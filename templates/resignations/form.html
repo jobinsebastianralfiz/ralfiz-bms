@@ -1,0 +1,70 @@
+{% extends 'agreements/_doc_base.html' %}
+
+{% block title %}Resignation - Ralfiz Technologies{% endblock %}
+{% block band_label %}Resignation{% endblock %}
+
+{% block body %}
+<main class="doc-main">
+  <p class="doc-eyebrow">{% if res.is_intern %}Internship{% else %}Employment{% endif %}</p>
+  <h1 class="doc-title">Resignation Letter</h1>
+  <div class="doc-rule"></div>
+
+  <div class="doc-greeting">
+    <p class="greet-name">Hi {{ employee.full_name }},</p>
+    <p>Fill in the form below to submit your resignation. Once we approve it, you can download your
+       signed resignation and your relieving letter from this same page.</p>
+  </div>
+
+  <div class="kv-grid">
+    <div><label>Name</label>{{ employee.full_name }}</div>
+    <div><label>Employee ID</label>{{ employee.employee_id }}</div>
+    <div><label>{% if res.is_intern %}Internship{% else %}Designation{% endif %}</label>{{ res.role_title }}</div>
+    <div><label>Joined on</label>{{ employee.joining_date|date:"d M Y" }}</div>
+  </div>
+</main>
+
+<form class="doc-form" method="post" novalidate>
+  {% csrf_token %}
+  <hr class="form-divider">
+  {% if errors %}<div class="alert-error">Please check the highlighted fields below and try again.</div>{% endif %}
+
+  <h3 class="form-heading">Why are you leaving?</h3>
+  <div class="field {% if errors.reason_category %}has-error{% endif %}">
+    <label for="reason_category">Main reason</label>
+    <select id="reason_category" name="reason_category">
+      <option value="">Choose&hellip;</option>
+      {% for key, label in reasons %}<option value="{{ key }}"{% if key == posted.reason_category %} selected{% endif %}>{{ label }}</option>{% endfor %}
+    </select>
+    {% if errors.reason_category %}<div class="field-error">{{ errors.reason_category }}</div>{% endif %}
+  </div>
+  <div class="field {% if errors.reason %}has-error{% endif %}">
+    <label for="reason">Your reason, in your own words</label>
+    <textarea id="reason" name="reason" rows="4" placeholder="e.g. My final semester exams start next month and I need to focus on them.">{{ posted.reason|default:'' }}</textarea>
+    {% if errors.reason %}<div class="field-error">{{ errors.reason }}</div>{% endif %}
+  </div>
+  <div class="field {% if errors.last_working_day %}has-error{% endif %}">
+    <label for="last_working_day">Last working day you are requesting</label>
+    <input type="date" id="last_working_day" name="last_working_day" value="{{ posted.last_working_day|default:'' }}" min="{{ employee.joining_date|date:'Y-m-d' }}" style="width:100%;padding:11px 13px;border:1px solid var(--agr-line);border-radius:9px;font-family:inherit;font-size:15px;">
+    {% if errors.last_working_day %}<div class="field-error">{{ errors.last_working_day }}</div>{% endif %}
+  </div>
+
+  <hr class="form-divider">
+  <h3 class="form-heading">Sign</h3>
+  <div class="field {% if errors.signed_name %}has-error{% endif %}">
+    <label for="signed_name">Type your full name to sign</label>
+    <input type="text" id="signed_name" name="signed_name" value="{{ posted.signed_name|default:'' }}" placeholder="e.g. {{ employee.full_name }}" autocomplete="name">
+    {% if errors.signed_name %}<div class="field-error">{{ errors.signed_name }}</div>{% endif %}
+  </div>
+  <div class="field">
+    <label for="today">Date</label>
+    <input type="text" id="today" value="{{ today|date:'d M Y' }}" readonly>
+  </div>
+  <div class="confirm-check {% if errors.agree %}has-error{% endif %}">
+    <input type="checkbox" id="agree" name="agree" {% if posted.agree %}checked{% endif %}>
+    <label for="agree">I am resigning of my own accord. I will hand over my work, return any company property and
+      keep company and client information confidential after I leave.</label>
+  </div>
+  {% if errors.agree %}<div class="field-error" style="margin-top:-8px;margin-bottom:14px;">{{ errors.agree }}</div>{% endif %}
+  <button type="submit" class="btn-submit">Sign and submit my resignation</button>
+</form>
+{% endblock %}

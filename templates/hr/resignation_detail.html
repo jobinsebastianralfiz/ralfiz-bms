@@ -1,0 +1,156 @@
+{% extends 'base.html' %}
+{% block title %}{{ employee.full_name }} - Resignation - Ralfiz BMS{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title">{{ employee.full_name }}</h1>
+    <p class="page-subtitle mb-0">Resignation {{ res.reference }} &middot; {{ res.role_title }} &middot; <span class="badge" style="{{ res.status_css }}">{{ res.status_label }}</span></p>
+  </div>
+  <div class="page-actions d-flex gap-2" style="flex-wrap: wrap;">
+    <a href="{% url 'resignation_list' %}" class="btn btn-ghost"><i class="fas fa-arrow-left"></i> Back</a>
+    {% if res.submitted_at %}
+    <a href="{% url 'resignation_preview' res.pk 'letter' %}" target="_blank" rel="noopener" class="btn btn-ghost"><i class="fas fa-file-lines"></i> Resignation letter</a>
+    <a href="{% url 'resignation_preview' res.pk 'relieving' %}" target="_blank" rel="noopener" class="btn btn-ghost"><i class="fas fa-file-circle-check"></i> Relieving letter</a>
+    {% endif %}
+    {% if res.status == 'sent' or res.status == 'opened' %}
+    <form method="post" action="{% url 'resignation_extend' res.pk %}">{% csrf_token %}<button type="submit" class="btn btn-ghost"><i class="fas fa-clock"></i> Extend 14 days</button></form>
+    {% endif %}
+    {% if res.status == 'sent' or res.status == 'opened' or res.status == 'submitted' %}
+    <form method="post" action="{% url 'resignation_cancel' res.pk %}" onsubmit="return confirm('Cancel this resignation? The link will stop working.')">{% csrf_token %}<button type="submit" class="btn btn-ghost text-danger"><i class="fas fa-ban"></i> Cancel</button></form>
+    {% endif %}
+  </div>
+</div>
+
+<div class="row">
+  <div class="col-8 col-md-12" style="padding: 0.75rem;">
+    {% if res.status == 'sent' or res.status == 'opened' %}
+    <div class="card mb-4">
+      <div class="card-header"><h3 class="card-title"><i class="fas fa-link"></i> Resignation link</h3></div>
+      <div class="card-body">
+        {% if res.is_open %}
+        <p class="text-muted">Send this to {{ employee.full_name }}. It works until {{ res.expires_at|date:"d M Y" }}.</p>
+        <div class="d-flex gap-2">
+          <input type="text" class="form-control" id="link-field" value="{{ url }}" readonly>
+          <button type="button" class="btn btn-ghost" id="btn-copy" title="Copy link"><i class="fas fa-copy"></i></button>
+          {% if whatsapp %}<a href="{{ whatsapp }}" target="_blank" rel="noopener" class="btn btn-primary"><i class="fab fa-whatsapp"></i> WhatsApp</a>{% endif %}
+        </div>
+        <p class="text-sm text-muted mt-2 mb-0">{% if res.source == 'self' %}Started by {{ employee.full_name }} from the staff portal. {% endif %}{% if res.first_opened_at %}Opened {{ res.first_opened_at|date:"d M, g:i a" }}, not signed yet.{% else %}Not opened yet.{% endif %}</p>
+        {% else %}
+        <p class="text-muted mb-0">This link expired on {{ res.expires_at|date:"d M Y" }}. Use <strong>Extend 14 days</strong> to reopen it.</p>
+        {% endif %}
+      </div>
+    </div>
+    {% endif %}
+
+    {% if res.status == 'approved' %}
+    <div class="card mb-4" style="border: 2px solid var(--success);">
+      <div class="card-header"><h3 class="card-title"><i class="fas fa-check-circle"></i> Approved &mdash; letters ready</h3></div>
+      <div class="card-body">
+        <p class="mb-2">Relieving date <strong>{{ res.final_date|date:"d M Y" }}</strong>. {{ res.first_name }} can download both letters from their link.</p>
+        {% if approved_whatsapp %}<a href="{{ approved_whatsapp }}" target="_blank" rel="noopener" class="btn btn-primary"><i class="fab fa-whatsapp"></i> Send both letters on WhatsApp</a>{% endif %}
+      </div>
+    </div>
+    {% endif %}
+
+    <div class="card mb-4">
+      <div class="card-header"><h3 class="card-title"><i class="fas fa-user"></i> Person</h3></div>
+      <div class="card-body">
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem;">
+          <div><label class="text-muted text-sm">Employee ID</label><div class="fw-medium">{{ employee.employee_id }}</div></div>
+          <div><label class="text-muted text-sm">Role</label><div>{{ res.role_title }}</div></div>
+          <div><label class="text-muted text-sm">Joined</label><div>{{ employee.joining_date|date:"d M Y" }}</div></div>
+          <div><label class="text-muted text-sm">Record status</label><div>{{ employee.get_status_display }}</div></div>
+        </div>
+      </div>
+    </div>
+
+    {% if res.submitted_at %}
+    <div class="card mb-4">
+      <div class="card-header"><h3 class="card-title"><i class="fas fa-comment"></i> Their resignation</h3></div>
+      <div class="card-body">
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem;" class="mb-3">
+          <div><label class="text-muted text-sm">Main reason</label><div class="fw-medium">{{ res.get_reason_category_display }}</div></div>
+          <div><label class="text-muted text-sm">Requested last day</label><div>{{ res.last_working_day|date:"d M Y" }}</div></div>
+          <div><label class="text-muted text-sm">Signed as</label><div>{{ res.signed_name }} &middot; {{ res.submitted_at|date:"d M Y, g:i a" }}</div></div>
+        </div>
+        <label class="text-muted text-sm">In their words</label>
+        <div style="white-space: pre-line;">{{ res.reason }}</div>
+      </div>
+    </div>
+    {% endif %}
+  </div>
+
+  <div class="col-4 col-md-12" style="padding: 0.75rem;">
+    {% if res.status == 'submitted' %}
+    <div class="card mb-4" style="border: 2px solid var(--warning);">
+      <div class="card-header"><h3 class="card-title"><i class="fas fa-user-check"></i> Approve</h3></div>
+      <div class="card-body">
+        <form method="post" action="{% url 'resignation_approve' res.pk %}">
+          {% csrf_token %}
+          <div class="mb-3">
+            <label class="form-label" for="relieving_date">Relieving date (last working day)</label>
+            <input type="date" name="relieving_date" id="relieving_date" class="form-control" value="{{ res.last_working_day|date:'Y-m-d' }}" required>
+          </div>
+          <div class="mb-3">
+            <label class="form-label" for="relieving_note">Extra line on the relieving letter <span class="text-muted">(optional)</span></label>
+            <textarea name="relieving_note" id="relieving_note" class="form-control" rows="3" placeholder="e.g. During the internship they worked on our client web projects using Django and Flutter."></textarea>
+          </div>
+          <label class="d-flex gap-2 mb-3 text-sm" style="cursor: pointer;">
+            <input type="checkbox" name="deactivate">
+            <span>Also mark them inactive and turn off their login now</span>
+          </label>
+          <button type="submit" class="btn btn-primary w-100"><i class="fas fa-check"></i> Approve &amp; issue relieving letter</button>
+        </form>
+        <p class="text-sm text-muted mt-2 mb-0">Leave the box unticked if their last day is still ahead. You can mark them inactive on the employee page later.</p>
+      </div>
+    </div>
+    <div class="card mb-4">
+      <div class="card-header"><h3 class="card-title"><i class="fas fa-times"></i> Don't accept</h3></div>
+      <div class="card-body">
+        <form method="post" action="{% url 'resignation_reject' res.pk %}" onsubmit="return confirm('Mark this resignation as not accepted?')">
+          {% csrf_token %}
+          <textarea name="reason" class="form-control mb-2" rows="2" placeholder="Shown to them, e.g. please speak to your mentor first"></textarea>
+          <button type="submit" class="btn btn-ghost text-danger w-100">Not accepted</button>
+        </form>
+      </div>
+    </div>
+    {% elif res.status == 'rejected' %}
+    <div class="card mb-4">
+      <div class="card-header"><h3 class="card-title"><i class="fas fa-times"></i> Not accepted</h3></div>
+      <div class="card-body"><p class="mb-0">{{ res.rejection_reason|default:"No reason recorded." }}</p></div>
+    </div>
+    {% endif %}
+
+    <div class="card mb-4">
+      <div class="card-header"><h3 class="card-title"><i class="fas fa-history"></i> History</h3></div>
+      <div class="card-body text-sm">
+        <div class="mb-2"><span class="text-muted">{% if res.source == 'self' %}Started from staff portal{% else %}Link sent{% endif %}</span><br>{{ res.sent_at|date:"d M Y, g:i a" }}{% if res.created_by %} by {{ res.created_by.get_full_name|default:res.created_by.username }}{% endif %}</div>
+        {% if res.submitted_at %}<div class="mb-2"><span class="text-muted">Signed</span><br>{{ res.submitted_at|date:"d M Y, g:i a" }}</div>{% endif %}
+        {% if res.approved_at %}<div class="mb-2"><span class="text-muted">{% if res.status == 'rejected' %}Declined{% else %}Approved{% endif %}</span><br>{{ res.approved_at|date:"d M Y, g:i a" }}{% if res.approved_by %} by {{ res.approved_by.get_full_name|default:res.approved_by.username }}{% endif %}</div>{% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+var copyBtn = document.getElementById('btn-copy');
+if (copyBtn) {
+  copyBtn.addEventListener('click', function () {
+    var field = document.getElementById('link-field');
+    field.select();
+    function done() {
+      copyBtn.innerHTML = '<i class="fas fa-check"></i>';
+      setTimeout(function () { copyBtn.innerHTML = '<i class="fas fa-copy"></i>'; }, 1600);
+    }
+    if (navigator.clipboard && window.isSecureContext) {
+      navigator.clipboard.writeText(field.value).then(done);
+    } else {
+      try { document.execCommand('copy'); done(); } catch (e) { /* copy manually */ }
+    }
+  });
+}
+</script>
+{% endblock %}

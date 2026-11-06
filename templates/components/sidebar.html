@@ -277,6 +277,10 @@
         <i class="fas fa-file-signature"></i>
         <span>Agreements</span>
       </a>
+      <a href="{% url 'resignation_list' %}" class="nav-item {% if 'resignation' in n %}active{% endif %}">
+        <i class="fas fa-door-open"></i>
+        <span>Resignations</span>
+      </a>
       <a href="{% url 'certificate_list' %}" class="nav-item {% if n == 'certificate_list' or n == 'certificate_create' or n == 'certificate_detail' %}active{% endif %}">
         <i class="fas fa-award"></i>
         <span>Certificates</span>

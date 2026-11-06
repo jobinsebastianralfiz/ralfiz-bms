@@ -56,6 +56,7 @@
     <hr>
     <a href="{% url 'staff:payslip_list' %}" class="{% if active_nav == 'payslips' %}active{% endif %}"><i class="fas fa-receipt"></i> Payslips</a>
     <a href="{% url 'staff:attendance_history' %}" class="{% if active_nav == 'attendance_history' %}active{% endif %}"><i class="fas fa-calendar-days"></i> Attendance history</a>
+    <a href="{% url 'staff:resignation' %}" class="{% if active_nav == 'resignation' %}active{% endif %}"><i class="fas fa-door-open"></i> Resignation</a>
     <a href="{% url 'staff:profile' %}" class="{% if active_nav == 'profile' %}active{% endif %}"><i class="fas fa-user-gear"></i> Profile &amp; face</a>
     <a href="#" onclick="document.getElementById('sfThemeToggle').click(); return false;"><i class="fas fa-circle-half-stroke"></i> Light / dark</a>
     <a href="{% url 'staff:logout' %}"><i class="fas fa-right-from-bracket"></i> Sign out</a>
@@ -167,6 +168,7 @@
     <a href="{% url 'staff:payslip_list' %}"><i class="fas fa-receipt"></i> Payslips</a>
     <a href="{% url 'staff:attendance_history' %}"><i class="fas fa-calendar-days"></i> Attendance history</a>
     <a href="{% url 'staff:notification_list' %}"><i class="fas fa-bell"></i> Notifications</a>
+    <a href="{% url 'staff:resignation' %}"><i class="fas fa-door-open"></i> Resignation</a>
     <a href="{% url 'staff:profile' %}"><i class="fas fa-user-gear"></i> Profile &amp; face</a>
     <a href="#" id="sfInstallEntry"><i class="fas fa-mobile-screen-button"></i> Add to Home Screen</a>
     <a href="#" id="sfThemeToggle"><i class="fas fa-moon" id="sfThemeIcon"></i> <span id="sfThemeLabel">Switch to dark</span></a>

@@ -36,6 +36,7 @@ urlpatterns = [
     path('client-agreement/', include('core.client_agreement_urls')),
     path('enrol/', include('employees.enrolment_urls')),
     path('offer/', include('employees.offer_urls')),
+    path('resign/', include('employees.resignation_urls')),
     path('academy/', include('academy.urls')),
     path('notes/', include('notes.site_urls')),
     path('book-demo/', website_book_demo, name='book_demo'),

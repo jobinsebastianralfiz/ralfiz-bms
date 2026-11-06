@@ -1,0 +1,33 @@
+{% extends 'base.html' %}
+{% block title %}Send Resignation Link - Ralfiz BMS{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title">Send Resignation Link</h1>
+    <p class="page-subtitle mb-0">The person gets a personal link to give their reason, choose their last day and sign</p>
+  </div>
+  <div class="page-actions">
+    <a href="{% url 'resignation_list' %}" class="btn btn-ghost"><i class="fas fa-arrow-left"></i> Back</a>
+  </div>
+</div>
+
+<form method="post" class="card" style="max-width: 640px;">
+  {% csrf_token %}
+  <div class="card-header"><h3 class="card-title"><i class="fas fa-user"></i> Who is leaving?</h3></div>
+  <div class="card-body">
+    <div class="mb-3">
+      <label class="form-label" for="employee">Intern / employee</label>
+      <select name="employee" id="employee" class="form-control" required>
+        <option value="">Choose&hellip;</option>
+        {% for p in people %}
+        <option value="{{ p.pk }}"{% if p.pk|stringformat:"s" == selected %} selected{% endif %}>{{ p.full_name }} &middot; {{ p.employee_id }} &middot; {{ p.designation|default:p.get_employment_type_display }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <p class="text-sm text-muted mb-3">The link works for 14 days. Interns can also start a resignation themselves from the staff portal.
+      Nothing changes on their record until you approve.</p>
+    <button type="submit" class="btn btn-primary"><i class="fas fa-link"></i> Create link</button>
+  </div>
+</form>
+{% endblock %}

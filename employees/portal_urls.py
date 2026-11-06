@@ -38,6 +38,9 @@ urlpatterns = [
     path('payslips/', v.payslip_list, name='payslip_list'),
     path('payslips/<uuid:pk>/', v.payslip_detail, name='payslip_detail'),
 
+    # Resignation
+    path('resignation/', v.resignation, name='resignation'),
+
     # Notifications
     path('notifications/', v.notification_list, name='notification_list'),
 
