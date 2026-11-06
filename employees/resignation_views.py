@@ -151,3 +151,78 @@ def resignation_document_pdf(request, token, kind):
     if not res.can_download:
         return redirect('resignation_done', token=token)
     return pdf_response(res, kind, request) or redirect(f'/resign/{res.token}/{kind}/')
+
+
+# ---------------------------------------------------------------------------
+# Thank-you card, sent once the resignation is accepted
+# ---------------------------------------------------------------------------
+
+def office_visit():
+    """Address, phone and a map link for the 'visit us any time' panel."""
+    from core.models import CompanySettings
+
+    from .models import OfficeConfig
+
+    company = CompanySettings.get_settings()
+    office = OfficeConfig.objects.exclude(latitude=None).exclude(longitude=None).first()
+    if office:
+        map_url = f'https://www.google.com/maps/search/?api=1&query={office.latitude},{office.longitude}'
+    elif company.address:
+        from urllib.parse import quote_plus
+        map_url = f'https://www.google.com/maps/search/?api=1&query={quote_plus(company.address)}'
+    else:
+        map_url = ''
+    return {'address': company.address, 'phone': company.phone, 'email': company.email, 'map_url': map_url}
+
+
+def thanks_context(res, for_pdf=False):
+    from django.conf import settings
+    return {
+        'res': res,
+        'employee': res.employee,
+        'letterhead': brand_letterhead(),
+        'office': office_visit(),
+        'for_pdf': for_pdf,
+        'font_dir': (settings.BASE_DIR / 'static' / 'certificates' / 'fonts').as_uri(),
+    }
+
+
+def render_thanks_pdf(res, base_url=None):
+    try:
+        from weasyprint import HTML
+    except Exception as exc:
+        logger.warning('WeasyPrint unavailable, no thank-you card PDF: %s', exc)
+        return None
+    try:
+        # The card is one sheet whose height follows the message: grow the
+        # page until it all fits rather than letting the footer spill over.
+        for height in (228, 240, 255, 272, 292, 316, 345):
+            context = thanks_context(res, for_pdf=True)
+            context['page_height'] = height
+            document = HTML(string=render_to_string('resignations/thanks.html', context),
+                            base_url=base_url).render()
+            if len(document.pages) == 1:
+                break
+        return document.write_pdf()
+    except Exception as exc:
+        logger.exception('Failed to render thank-you card PDF: %s', exc)
+        return None
+
+
+def resignation_thanks(request, token):
+    res = _get(token)
+    if not res.can_download:
+        return redirect('resignation_done', token=token)
+    return render(request, 'resignations/thanks.html', thanks_context(res))
+
+
+def resignation_thanks_pdf(request, token):
+    res = _get(token)
+    if not res.can_download:
+        return redirect('resignation_done', token=token)
+    pdf = render_thanks_pdf(res, base_url=request.build_absolute_uri('/'))
+    if pdf is None:
+        return redirect('resignation_thanks', token=token)
+    response = HttpResponse(pdf, content_type='application/pdf')
+    response['Content-Disposition'] = f'attachment; filename="Ralfiz-Thank-You-{res.first_name}.pdf"'
+    return response

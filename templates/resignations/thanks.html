@@ -1,0 +1,189 @@
+{% load static %}<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="robots" content="noindex, nofollow">
+  <title>Thank you, {{ res.first_name }} - {{ letterhead.company_name }}</title>
+  <meta property="og:title" content="Thank you, {{ res.first_name }}!">
+  <meta property="og:description" content="A thank-you card from all of us at {{ letterhead.company_name }}.">
+  {% if not for_pdf %}
+  <link rel="icon" type="image/svg+xml" href="{% static 'favicon.svg' %}">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700;800&family=Source+Serif+4:ital,wght@0,400;0,600;1,400;1,600&display=swap" rel="stylesheet">
+  {% endif %}
+  <style>
+    {% if for_pdf %}
+    @font-face { font-family: 'Poppins'; src: url({{ font_dir }}/Poppins-500.ttf); font-weight: 500; }
+    @font-face { font-family: 'Poppins'; src: url({{ font_dir }}/Poppins-600.ttf); font-weight: 600; }
+    @font-face { font-family: 'Poppins'; src: url({{ font_dir }}/Poppins-700.ttf); font-weight: 700; }
+    @font-face { font-family: 'Poppins'; src: url({{ font_dir }}/Poppins-800.ttf); font-weight: 800; }
+    @font-face { font-family: 'Source Serif 4'; src: url({{ font_dir }}/SourceSerif4-400.ttf); font-weight: 400; }
+    @font-face { font-family: 'Source Serif 4'; src: url({{ font_dir }}/SourceSerif4-600.ttf); font-weight: 600; }
+    @page { size: 126mm {{ page_height|default:250 }}mm; margin: 0; }
+    html, body { background: #fff !important; }
+    {% endif %}
+    :root {
+      --ink: #0f172a; --body: #334155; --muted: #64748b;
+      --navy: #0b1a4a; --blue: #2563eb; --violet: #7c3aed; --soft: #eef2ff;
+    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; padding: 0; }
+    body {
+      font-family: 'Poppins', system-ui, sans-serif; color: var(--body);
+      background: #eef2ff;
+      {% if not for_pdf %}
+      background:
+        radial-gradient(600px 400px at 10% 0%, rgba(124, 58, 237, .16), transparent 70%),
+        radial-gradient(600px 420px at 100% 100%, rgba(37, 99, 235, .16), transparent 70%),
+        #f4f6fd;
+      min-height: 100vh; padding: 32px 16px 40px;
+      {% endif %}
+    }
+    .card {
+      max-width: 430px; margin: 0 auto; background: #fff; overflow: hidden;
+      {% if for_pdf %}width: 126mm; max-width: none;{% else %}
+      border-radius: 28px; box-shadow: 0 30px 70px -30px rgba(15, 23, 42, .45), 0 2px 6px rgba(15, 23, 42, .06);
+      {% endif %}
+    }
+    .hero {
+      position: relative; overflow: hidden; color: #fff;
+      padding: 30px 30px 58px;
+      background: linear-gradient(140deg, #0b1a4a 0%, #1e40af 48%, #7c3aed 100%);
+    }
+    .orb { position: absolute; border-radius: 50%; }
+    .orb.a { width: 240px; height: 240px; right: -90px; top: -110px; background: rgba(255, 255, 255, .09); }
+    .orb.b { width: 130px; height: 130px; right: 40px; top: 120px; background: rgba(255, 255, 255, .06); }
+    .orb.c { width: 180px; height: 180px; left: -80px; bottom: -110px; background: rgba(167, 139, 250, .25); }
+    .spark { position: absolute; color: rgba(255, 255, 255, .7); font-size: 14px; }
+    .brand { position: relative; display: flex; align-items: center; gap: 10px; }
+    .brand-tile { width: 40px; height: 40px; border-radius: 12px; background: #fff; padding: 6px; display: flex; align-items: center; justify-content: center; }
+    .brand-tile img { width: 100%; height: auto; display: block; }
+    .brand-name { font-weight: 700; font-size: 13px; letter-spacing: .04em; }
+    .brand-tag { font-size: 10.5px; opacity: .75; letter-spacing: .08em; text-transform: uppercase; }
+    .thanks {
+      position: relative; margin: 34px 0 0; font-family: 'Source Serif 4', Georgia, serif;
+      font-style: italic; font-weight: 400; font-size: 50px; line-height: 1; letter-spacing: -.01em;
+    }
+    .name { position: relative; margin: 6px 0 0; font-weight: 800; font-size: 31px; line-height: 1.15; letter-spacing: -.01em; }
+    .chip {
+      position: relative; display: inline-block; margin-top: 16px; padding: 6px 14px; border-radius: 14px;
+      background: rgba(255, 255, 255, .14); border: 1px solid rgba(255, 255, 255, .28);
+      font-size: 12px; font-weight: 500;
+    }
+    .curve { position: absolute; left: 0; right: 0; bottom: -1px; height: 30px; background: #fff; border-radius: 30px 30px 0 0; }
+    .content { padding: 2px 30px 6px; }
+    .dates { display: flex; align-items: center; gap: 12px; padding: 0 0 20px; border-bottom: 1px dashed #dbe3f0; }
+    .date { flex: 1; }
+    .date-k { font-size: 10.5px; text-transform: uppercase; letter-spacing: .1em; color: var(--muted); }
+    .date-v { font-weight: 600; color: var(--ink); font-size: 14px; margin-top: 2px; }
+    .date.end { text-align: right; }
+    .line { flex: 0 0 64px; height: 2px; background: linear-gradient(90deg, var(--blue), var(--violet)); border-radius: 2px; position: relative; }
+    .note { position: relative; padding: 22px 0 4px 0; }
+    .quote { font-family: 'Source Serif 4', Georgia, serif; font-size: 64px; line-height: .6; color: var(--violet); opacity: .35; height: 26px; }
+    .note p { margin: 0; font-family: 'Source Serif 4', Georgia, serif; font-size: 16px; line-height: 1.65; color: #1e293b; white-space: pre-line; }
+    .note p.long { font-size: 14.5px; line-height: 1.55; }
+    .sign { margin-top: 18px; font-size: 13px; color: var(--muted); }
+    .sign strong { display: block; color: var(--ink); font-weight: 600; font-size: 14px; margin-top: 2px; }
+    .visit {
+      margin: 18px 16px 16px; padding: 20px 20px 18px; border-radius: 22px;
+      background: linear-gradient(135deg, #eff6ff 0%, #f5f3ff 100%); border: 1px solid #e0e7ff;
+    }
+    .visit-head { display: flex; align-items: center; gap: 12px; }
+    .door {
+      width: 42px; height: 42px; border-radius: 13px; flex: 0 0 42px;
+      background: linear-gradient(140deg, var(--blue), var(--violet)); display: flex; align-items: center; justify-content: center;
+    }
+    .visit h2 { margin: 0; font-size: 16px; font-weight: 700; color: var(--ink); line-height: 1.25; }
+    .visit-sub { font-size: 11px; color: var(--violet); font-weight: 600; text-transform: uppercase; letter-spacing: .08em; }
+    .visit p { margin: 12px 0 0; font-size: 13px; line-height: 1.6; }
+    .addr { margin-top: 12px; font-size: 12.5px; line-height: 1.55; color: var(--ink); white-space: pre-line; }
+    .contact { margin-top: 4px; font-size: 12.5px; color: var(--muted); }
+    .actions { display: flex; gap: 8px; margin-top: 14px; flex-wrap: wrap; }
+    .btn {
+      display: inline-flex; align-items: center; gap: 7px; padding: 10px 16px; border-radius: 12px;
+      font: 600 13px 'Poppins', sans-serif; text-decoration: none;
+    }
+    .btn.primary { background: linear-gradient(135deg, var(--blue), var(--violet)); color: #fff; }
+    .btn.ghost { background: #fff; color: var(--ink); border: 1px solid #dbe3f0; }
+    .foot { text-align: center; padding: 6px 0 22px; font-size: 11px; color: #94a3b8; letter-spacing: .04em; }
+    .below { max-width: 430px; margin: 22px auto 0; display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
+    .below a { font-size: 13px; color: var(--blue); font-weight: 600; text-decoration: none; padding: 8px 12px; border-radius: 10px; background: rgba(255, 255, 255, .7); }
+    {% if not for_pdf %}
+    @media (max-width: 380px) {
+      .hero { padding: 26px 22px 50px; }
+      .content { padding: 2px 22px 6px; }
+      .thanks { font-size: 44px; }
+      .name { font-size: 27px; }
+    }
+    {% endif %}
+  </style>
+</head>
+<body>
+  <article class="card">
+    <header class="hero">
+      <span class="orb a"></span><span class="orb b"></span><span class="orb c"></span>
+      <span class="spark" style="right: 34px; top: 92px;">&#10022;</span>
+      <span class="spark" style="right: 110px; top: 52px; font-size: 9px;">&#10022;</span>
+      <span class="spark" style="right: 70px; top: 178px; font-size: 11px;">&#10022;</span>
+      <div class="brand">
+        <div class="brand-tile"><img src="{{ letterhead.logo_data_uri }}" alt=""></div>
+        <div>
+          <div class="brand-name">{{ letterhead.company_name }}</div>
+          <div class="brand-tag">{{ letterhead.tagline }}</div>
+        </div>
+      </div>
+      <div class="thanks">Thank you,</div>
+      <div class="name">{{ res.name }}</div>
+      <div class="chip">{{ res.role_title }}{% if res.tenure_label %} &middot; {{ res.tenure_label }} with us{% endif %}</div>
+      <div class="curve"></div>
+    </header>
+
+    <div class="content">
+      <div class="dates">
+        <div class="date"><div class="date-k">Joined</div><div class="date-v">{{ employee.joining_date|date:"d M Y" }}</div></div>
+        <div class="line"></div>
+        <div class="date end"><div class="date-k">Last day</div><div class="date-v">{{ res.final_date|date:"d M Y" }}</div></div>
+      </div>
+      <div class="note">
+        <div class="quote">&ldquo;</div>
+        <p{% if res.thanks_text|length > 420 %} class="long"{% endif %}>{{ res.thanks_text }}</p>
+        <div class="sign">With gratitude,<strong>Team {{ letterhead.company_name }}</strong></div>
+      </div>
+    </div>
+
+    <section class="visit">
+      <div class="visit-head">
+        <div class="door">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 21h18"/><path d="M6 21V4a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v17"/><path d="M14 12h.01"/></svg>
+        </div>
+        <div>
+          <div class="visit-sub">You're always welcome</div>
+          <h2>Our doors are always open</h2>
+        </div>
+      </div>
+      <p>Once part of Ralfiz, always part of Ralfiz. Visit our office any time: for a coffee, a chat, some advice,
+         or just to say hello. We would love to hear how you are doing.</p>
+      {% if office.address %}<div class="addr">{{ office.address }}</div>{% endif %}
+      {% if office.phone or office.email %}<div class="contact">{{ office.phone }}{% if office.phone and office.email %} &middot; {% endif %}{{ office.email }}</div>{% endif %}
+      {% if not for_pdf %}
+      <div class="actions">
+        {% if office.map_url %}<a class="btn primary" href="{{ office.map_url }}" target="_blank" rel="noopener">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21s-7-6.2-7-11.5A7 7 0 0 1 19 9.5C19 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/></svg>
+          Get directions</a>{% endif %}
+        {% if office.phone %}<a class="btn ghost" href="tel:{{ office.phone|cut:' ' }}">Call us</a>{% endif %}
+      </div>
+      {% endif %}
+    </section>
+    <div class="foot">{{ res.reference }}</div>
+  </article>
+
+  {% if not for_pdf %}
+  <nav class="below">
+    <a href="{% url 'resignation_thanks_pdf' res.token %}">Download this card (PDF)</a>
+    <a href="{% url 'relieving_letter_pdf' res.token %}">Relieving letter</a>
+  </nav>
+  {% endif %}
+</body>
+</html>

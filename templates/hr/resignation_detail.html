@@ -51,6 +51,27 @@
         {% if approved_whatsapp %}<a href="{{ approved_whatsapp }}" target="_blank" rel="noopener" class="btn btn-primary"><i class="fab fa-whatsapp"></i> Send both letters on WhatsApp</a>{% endif %}
       </div>
     </div>
+
+    <div class="card mb-4">
+      <div class="card-header"><h3 class="card-title"><i class="fas fa-heart"></i> Thank-you card</h3></div>
+      <div class="card-body">
+        <p class="text-muted">A card thanking {{ res.first_name }} for their time with us, with an open invitation to visit the office any time.
+          {% if res.thanks_sent_at %}<strong>Sent {{ res.thanks_sent_at|date:"d M Y, g:i a" }}.</strong>{% endif %}</p>
+        <form method="post" action="{% url 'resignation_send_thanks' res.pk %}">
+          {% csrf_token %}
+          <label class="form-label" for="thanks_note">Message on the card</label>
+          <textarea name="thanks_note" id="thanks_note" class="form-control mb-2" rows="4" maxlength="700">{{ res.thanks_text }}</textarea>
+          <div class="d-flex gap-2" style="flex-wrap: wrap;">
+            {% if employee.whatsapp_number %}
+            <button type="submit" name="action" value="send" formtarget="_blank" class="btn btn-primary"><i class="fab fa-whatsapp"></i> {% if res.thanks_sent_at %}Send again{% else %}Send thank-you card{% endif %}</button>
+            {% endif %}
+            <button type="submit" name="action" value="save" class="btn btn-ghost"><i class="fas fa-save"></i> Save message</button>
+            <a href="{{ thanks_url }}" target="_blank" rel="noopener" class="btn btn-ghost"><i class="fas fa-eye"></i> Preview card</a>
+          </div>
+        </form>
+        {% if not employee.whatsapp_number %}<p class="text-sm text-muted mt-2 mb-0">No phone number on file, so copy this link and send it yourself: {{ thanks_url }}</p>{% endif %}
+      </div>
+    </div>
     {% endif %}
 
     <div class="card mb-4">

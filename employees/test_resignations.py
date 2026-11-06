@@ -123,3 +123,71 @@ class ResignationTests(TestCase):
     def test_interns_cannot_reach_hr_pages(self):
         self.client.force_login(self.user)
         self.assertIn(self.client.get(reverse('resignation_list')).status_code, (302, 403))
+
+
+class ThankYouCardTests(TestCase):
+    def setUp(self):
+        self.hr = User.objects.create_superuser('boss', 'boss@example.com', 'pw-123456')
+        user = User.objects.create_user('asha', first_name='Asha', last_name='Nair')
+        self.emp = Employee.objects.create(user=user, employee_id='EMP903', employment_type='intern',
+                                           role='intern', designation='Flutter Intern', phone='9876543210',
+                                           joining_date=date(2026, 8, 1), status='active')
+        self.res = ResignationRequest.objects.create(
+            employee=self.emp, status=ResignationRequest.STATUS_SUBMITTED, signed_name='Asha Nair',
+            reason_category='higher_studies', reason='Exams next month.', last_working_day=date(2026, 11, 30),
+            submitted_at=timezone.now())
+
+    def approve(self):
+        self.res.approve(self.hr, relieving_date=date(2026, 11, 30))
+
+    def test_card_locked_until_approved(self):
+        self.assertRedirects(self.client.get(reverse('resignation_thanks', args=[self.res.token])),
+                             reverse('resignation_done', args=[self.res.token]))
+
+    def test_card_shows_name_tenure_note_and_office_invite(self):
+        self.approve()
+        page = self.client.get(reverse('resignation_thanks', args=[self.res.token]))
+        self.assertContains(page, 'Thank you,')
+        self.assertContains(page, 'Asha Nair')
+        self.assertContains(page, '3 months with us')
+        self.assertContains(page, 'Our doors are always open')
+        self.assertContains(page, self.res.default_thanks_note)
+
+    def test_tenure_label(self):
+        self.res.relieving_date = date(2027, 10, 15)
+        self.assertEqual(self.res.tenure_label, '1 year 2 months')
+        self.res.relieving_date = date(2026, 8, 20)
+        self.assertEqual(self.res.tenure_label, '2 weeks')
+
+    def test_hr_saves_note_and_sends_on_whatsapp(self):
+        self.approve()
+        self.client.force_login(self.hr)
+        detail = self.client.get(reverse('resignation_detail', args=[self.res.pk]))
+        self.assertContains(detail, 'Send thank-you card')
+        response = self.client.post(reverse('resignation_send_thanks', args=[self.res.pk]),
+                                    {'thanks_note': 'You were brilliant, Asha.', 'action': 'send'})
+        self.assertTrue(response['Location'].startswith('https://wa.me/919876543210?text='))
+        self.assertIn('thanks', response['Location'])
+        self.res.refresh_from_db()
+        self.assertEqual(self.res.thanks_note, 'You were brilliant, Asha.')
+        self.assertIsNotNone(self.res.thanks_sent_at)
+        self.client.logout()
+        self.assertContains(self.client.get(reverse('resignation_thanks', args=[self.res.token])),
+                            'You were brilliant, Asha.')
+        self.assertContains(self.client.get(reverse('resignation_done', args=[self.res.token])),
+                            'Open your thank-you card')
+
+    def test_save_only_does_not_mark_sent(self):
+        self.approve()
+        self.client.force_login(self.hr)
+        self.client.post(reverse('resignation_send_thanks', args=[self.res.pk]),
+                         {'thanks_note': 'Draft', 'action': 'save'})
+        self.res.refresh_from_db()
+        self.assertEqual(self.res.thanks_note, 'Draft')
+        self.assertIsNone(self.res.thanks_sent_at)
+
+    def test_cannot_send_before_approval(self):
+        self.client.force_login(self.hr)
+        self.client.post(reverse('resignation_send_thanks', args=[self.res.pk]), {'action': 'send'})
+        self.res.refresh_from_db()
+        self.assertIsNone(self.res.thanks_sent_at)

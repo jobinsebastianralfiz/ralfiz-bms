@@ -371,6 +371,7 @@ urlpatterns = [
     path('hr/resignations/<uuid:pk>/approve/', resignation_web_views.resignation_approve, name='resignation_approve'),
     path('hr/resignations/<uuid:pk>/reject/', resignation_web_views.resignation_reject, name='resignation_reject'),
     path('hr/resignations/<uuid:pk>/cancel/', resignation_web_views.resignation_cancel, name='resignation_cancel'),
+    path('hr/resignations/<uuid:pk>/thanks/', resignation_web_views.resignation_send_thanks, name='resignation_send_thanks'),
     path('hr/resignations/<uuid:pk>/extend/', resignation_web_views.resignation_extend, name='resignation_extend'),
     path('hr/resignations/<uuid:pk>/<str:kind>.pdf', resignation_web_views.resignation_pdf, name='resignation_pdf'),
     path('hr/resignations/<uuid:pk>/<str:kind>/', resignation_web_views.resignation_preview, name='resignation_preview'),

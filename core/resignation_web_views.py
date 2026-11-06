@@ -5,6 +5,7 @@ from datetime import date
 from django.contrib import messages
 from django.db.models import Q
 from django.shortcuts import get_object_or_404, redirect, render
+from django.utils import timezone
 from django.views.decorators.http import require_POST
 
 from employees.models import Employee
@@ -63,6 +64,7 @@ def resignation_detail(request, pk):
         'url': res.public_url(request),
         'whatsapp': res.whatsapp_url(request),
         'approved_whatsapp': res.approved_whatsapp_url(request),
+        'thanks_url': request.build_absolute_uri(res.thanks_path()),
     })
 
 
@@ -140,3 +142,27 @@ def resignation_extend(request, pk):
         messages.success(request, 'Link extended by 14 days.')
     return redirect('resignation_detail', pk=pk)
 
+
+
+@enrolment_admin
+@require_POST
+def resignation_send_thanks(request, pk):
+    """Save the personal note; 'send' also stamps it sent and opens WhatsApp."""
+    res = get_object_or_404(ResignationRequest.objects.select_related('employee'), pk=pk)
+    if not res.can_download:
+        messages.error(request, 'Approve the resignation before sending the thank-you card.')
+        return redirect('resignation_detail', pk=pk)
+    note = (request.POST.get('thanks_note') or '').strip()
+    if len(note) > 700:
+        messages.error(request, 'Keep the message under 700 characters so it fits on the card.')
+        return redirect('resignation_detail', pk=pk)
+    res.thanks_note = '' if note == res.default_thanks_note else note
+    fields = ['thanks_note', 'updated_at']
+    if request.POST.get('action') == 'send':
+        res.thanks_sent_at = timezone.now()
+        fields.append('thanks_sent_at')
+    res.save(update_fields=fields)
+    if request.POST.get('action') == 'send':
+        return redirect(res.thanks_whatsapp_url(request) or res.thanks_path())
+    messages.success(request, 'Thank-you card saved.')
+    return redirect('resignation_detail', pk=pk)

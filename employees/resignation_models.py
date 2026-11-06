@@ -88,6 +88,10 @@ class ResignationRequest(models.Model):
     rejection_reason = models.TextField(blank=True)
     hr_notes = models.TextField(blank=True)
 
+    # ---- Thank-you card, sent after approval ----
+    thanks_note = models.TextField(blank=True, help_text='Personal message on the thank-you card')
+    thanks_sent_at = models.DateTimeField(null=True, blank=True)
+
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -165,6 +169,34 @@ class ResignationRequest(models.Model):
     def final_date(self):
         return self.relieving_date or self.last_working_day
 
+    @property
+    def tenure_label(self):
+        """'4 months', '1 year 2 months', '3 weeks' - joining date to relieving date."""
+        start, end = self.employee.joining_date, self.final_date
+        if not start or not end or end < start:
+            return ''
+        months = (end.year - start.year) * 12 + end.month - start.month - (end.day < start.day)
+        if months < 1:
+            weeks = (end - start).days // 7
+            return f'{weeks} week{"s" if weeks != 1 else ""}' if weeks else ''
+        years, months = divmod(months, 12)
+        parts = []
+        if years:
+            parts.append(f'{years} year{"s" if years != 1 else ""}')
+        if months:
+            parts.append(f'{months} month{"s" if months != 1 else ""}')
+        return ' '.join(parts)
+
+    @property
+    def default_thanks_note(self):
+        return (f'Thank you for everything you brought to Ralfiz, {self.first_name}: your effort, your ideas '
+                'and your good company. It has been a real pleasure having you on the team. We are proud of '
+                'what you learned and built here, and we cannot wait to see where you go next.')
+
+    @property
+    def thanks_text(self):
+        return self.thanks_note or self.default_thanks_note
+
     # ---- Evidence ----
     def compute_body_hash(self):
         payload = json.dumps({
@@ -219,6 +251,20 @@ class ResignationRequest(models.Model):
 
     def public_url(self, request=None):
         return request.build_absolute_uri(self.public_path()) if request else self.public_path()
+
+    def thanks_path(self):
+        return f'/resign/{self.token}/thanks/'
+
+    def thanks_whatsapp_url(self, request=None):
+        if not self.can_download:
+            return ''
+        link = request.build_absolute_uri(self.thanks_path()) if request else self.thanks_path()
+        return self._wa(
+            f'Hi {self.first_name} 💙\n\n'
+            'A little thank-you card from all of us at Ralfiz Technologies:\n'
+            f'{link}\n\n'
+            'Our office doors are always open. Drop by any time!'
+        )
 
     def _wa(self, message):
         digits = self.employee.whatsapp_number
