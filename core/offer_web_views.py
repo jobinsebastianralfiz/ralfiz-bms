@@ -8,6 +8,7 @@ from django.contrib import messages
 from django.db.models import Q
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
+from django.urls import reverse
 from django.utils import timezone
 from django.views.decorators.http import require_POST
 
@@ -15,7 +16,7 @@ from employees.agreement_models import MONEY_MODE_CHOICES, MONEY_NONE
 from employees.enrolment_models import WORK_MODE_CHOICES, EnrolmentSettings
 from employees.models import Employee
 from employees.offer_models import DEFAULT_TERMS, InternOffer, default_offer_expiry
-from employees.offer_views import letter_context, offer_pdf_filename, render_offer_pdf
+from employees.offer_views import letterhead_context, offer_pdf_filename, render_offer_pdf
 
 from .enrolment_web_views import enrolment_admin
 
@@ -165,15 +166,14 @@ def offer_detail(request, pk):
 def offer_preview(request, pk):
     """The letter as the candidate sees it; signed and stamped once approved."""
     offer = get_object_or_404(InternOffer, pk=pk)
-    ctx = letter_context(offer, show_company_sign=offer.can_download)
-    return render(request, 'offers/copy.html', ctx)
+    return render(request, 'offers/letterhead.html',
+                  letterhead_context(offer, pdf_url=reverse('offer_pdf', args=[offer.pk])))
 
 
 @enrolment_admin
 def offer_pdf(request, pk):
     offer = get_object_or_404(InternOffer, pk=pk)
-    pdf = render_offer_pdf(offer, base_url=request.build_absolute_uri('/'),
-                           show_company_sign=offer.can_download)
+    pdf = render_offer_pdf(offer, base_url=request.build_absolute_uri('/'))
     if pdf is None:
         return redirect('offer_preview', pk=pk)
     response = HttpResponse(pdf, content_type='application/pdf')

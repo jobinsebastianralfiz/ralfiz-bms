@@ -488,3 +488,14 @@ body {
 .field.has-error select { border-color: var(--agr-red); }
 .field .opt { text-transform: none; letter-spacing: 0; font-weight: 400; }
 @media print { .ofr-accept { break-inside: avoid; } }
+
+/* Offer pages: brand letterhead (mark + blue bands, as on the invoice PDFs) */
+.ofr-lh { background: #fff; padding: 18px 24px 0; border-bottom: 1px solid var(--agr-line); }
+.ofr-lh-brand { display: flex; align-items: center; gap: 12px; padding-bottom: 14px; }
+.ofr-lh-brand img { height: 40px; width: auto; display: block; }
+.ofr-lh-name { font-weight: 800; font-size: 17px; letter-spacing: .04em; text-transform: uppercase; color: #1f2937; line-height: 1.1; }
+.ofr-lh-tag { font-size: 12px; color: #64748b; margin-top: 2px; }
+.ofr-lh-band { margin: 0 -24px; display: flex; }
+.ofr-lh-band::before { content: ''; flex: 1; background: #004aad; height: 6px; align-self: flex-end; }
+.ofr-lh-band span { background: #3a82e4; color: #fff; font-weight: 800; font-size: 12px; letter-spacing: .16em; text-transform: uppercase; padding: 7px 24px 7px 30px; clip-path: polygon(14px 0, 100% 0, 100% 100%, 0 100%); }
+.ofr-lh-foot { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 6px 16px; background: #004aad; color: #fff; font-size: 12px; padding: 12px 24px; }

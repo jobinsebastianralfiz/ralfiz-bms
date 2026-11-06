@@ -12,7 +12,7 @@ from django.template.loader import render_to_string
 from django.utils import timezone
 from django.views.decorators.http import require_http_methods
 
-from .agreement_views import _agreement_css, _client_ip, company_countersignature
+from .agreement_views import _agreement_css, _client_ip, _static_data_uri, company_countersignature
 from .offer_models import InternOffer
 
 logger = logging.getLogger(__name__)
@@ -25,6 +25,7 @@ def _get(token):
 
 
 def letter_context(offer, for_pdf=False, show_company_sign=False):
+    """For the mobile accept page, which renders the letter in the agreement layout."""
     return {
         'offer': offer,
         'doc': DOC,
@@ -123,15 +124,43 @@ def offer_done(request, token):
     return render(request, 'offers/done.html', {'offer': offer, 'doc': DOC})
 
 
-def render_offer_pdf(offer, base_url=None, show_company_sign=True):
+def letterhead_context(offer, for_pdf=False, pdf_url=''):
+    """The letter on the blue company letterhead used by invoices and quotes.
+
+    The logo falls back to the bundled brand mark: an uploaded logo can be
+    missing from the media volume, and the generic letter tile looks off-brand.
+    """
+    from core.models import CompanySettings
+
+    company = CompanySettings.get_settings()
+    letterhead = {
+        'company_name': company.company_name or 'Ralfiz Technologies',
+        'tagline': company.tagline or 'Rise to Next Level',
+        'logo_data_uri': company.logo_data_uri or _static_data_uri('brand/ralfiz-mark.svg'),
+        'gst_number': company.gst_number,
+        'pan_number': company.pan_number,
+        'hsn_code': '',
+        'phone': company.phone,
+        'email': company.email,
+        'address': company.address,
+    }
+    return {
+        'offer': offer,
+        'letterhead': letterhead,
+        'sign': company_countersignature(for_pdf=True),
+        'for_pdf': for_pdf,
+        'pdf_url': pdf_url,
+    }
+
+
+def render_offer_pdf(offer, base_url=None):
     """PDF bytes, or None when WeasyPrint cannot run."""
     try:
         from weasyprint import HTML
     except Exception as exc:  # ImportError, or OSError from the native libs
         logger.warning('WeasyPrint unavailable, serving HTML offer instead: %s', exc)
         return None
-    html = render_to_string('offers/copy.html',
-                            letter_context(offer, for_pdf=True, show_company_sign=show_company_sign))
+    html = render_to_string('offers/letterhead.html', letterhead_context(offer, for_pdf=True))
     try:
         return HTML(string=html, base_url=base_url).write_pdf()
     except Exception as exc:
@@ -147,9 +176,8 @@ def offer_copy(request, token):
     offer = _get(token)
     if not offer.can_download:
         return redirect('offer_done', token=token)
-    ctx = letter_context(offer, show_company_sign=True)
-    ctx['pdf_url'] = f'/offer/{offer.token}/copy.pdf'
-    return render(request, 'offers/copy.html', ctx)
+    return render(request, 'offers/letterhead.html',
+                  letterhead_context(offer, pdf_url=f'/offer/{offer.token}/copy.pdf'))
 
 
 def offer_copy_pdf(request, token):
