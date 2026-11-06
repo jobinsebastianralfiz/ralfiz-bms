@@ -32,6 +32,8 @@ class Employee(models.Model):
         ('field', 'Field Marketing'),
     ]
 
+    GENDER_CHOICES = [('female', 'Female'), ('male', 'Male')]
+
     WORK_MODE_CHOICES = [
         ('onsite', 'Onsite'),
         ('hybrid', 'Hybrid'),
@@ -68,6 +70,8 @@ class Employee(models.Model):
     emergency_contact = models.CharField(max_length=20, blank=True)
     address = models.TextField(blank=True)
     date_of_birth = models.DateField(null=True, blank=True)
+    gender = models.CharField(max_length=10, choices=GENDER_CHOICES, blank=True,
+                              help_text='Sets Mr./Ms. and he/she on certificates')
     joining_date = models.DateField(default=timezone.now)
     status = models.CharField(max_length=12, choices=STATUS_CHOICES, default='active')
 

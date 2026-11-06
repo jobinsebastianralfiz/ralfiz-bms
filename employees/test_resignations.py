@@ -196,3 +196,103 @@ class ThankYouCardTests(TestCase):
         self.client.post(reverse('resignation_send_thanks', args=[self.res.pk]), {'action': 'send'})
         self.res.refresh_from_db()
         self.assertIsNone(self.res.thanks_sent_at)
+
+
+class ResignationCertificateTests(TestCase):
+    def setUp(self):
+        from employees.models import CertificateTemplate
+        self.hr = User.objects.create_superuser('boss', 'boss@example.com', 'pw-123456')
+        user = User.objects.create_user('asha', first_name='Asha', last_name='Nair')
+        self.emp = Employee.objects.create(user=user, employee_id='EMP904', employment_type='intern',
+                                           role='intern', designation='Flutter Intern', phone='9876543210',
+                                           joining_date=date(2026, 8, 1), status='active', work_mode='remote')
+        self.template = CertificateTemplate.objects.create(
+            name='Internship - Student', certificate_type='inter', title='INTERNSHIP CERTIFICATE',
+            body_text='This is to certify that {salutation} {student_name} worked as {position} '
+                      'from {start_date} to {end_date}. {pronoun_cap} was diligent.')
+        self.res = ResignationRequest.objects.create(
+            employee=self.emp, status=ResignationRequest.STATUS_SUBMITTED, signed_name='Asha Nair',
+            reason_category='internship_complete', reason='My internship period is over.',
+            last_working_day=date(2026, 11, 30), submitted_at=timezone.now())
+        self.client.force_login(self.hr)
+
+    def approve(self, **extra):
+        data = {'relieving_date': '2026-11-30'}
+        data.update(extra)
+        return self.client.post(reverse('resignation_approve', args=[self.res.pk]), data)
+
+    def test_approve_issues_filled_certificate(self):
+        self.assertContains(self.client.get(reverse('resignation_detail', args=[self.res.pk])),
+                            'Also issue the internship certificate')
+        self.approve(issue_certificate='on', cert_template=str(self.template.pk), salutation='Ms.')
+        self.res.refresh_from_db()
+        cert = self.res.certificate
+        self.assertEqual(cert.status, 'published')
+        self.assertEqual(cert.student_name, 'Asha Nair')
+        self.assertEqual(cert.position, 'Flutter Intern')
+        self.assertEqual((cert.start_date, cert.end_date), (date(2026, 8, 1), date(2026, 11, 30)))
+        self.assertEqual(cert.duration_days, 122)
+        self.assertEqual(cert.mode, 'online')
+        self.assertEqual(cert.gender, 'female')
+        self.assertTrue(cert.certificate_number.startswith('RT/PR/'))
+        self.assertIn('She was diligent', cert.render_body_html())
+        self.assertIn('certificate.pdf', self.res.approved_whatsapp_url())
+        self.client.logout()
+        self.assertContains(self.client.get(reverse('resignation_done', args=[self.res.token])),
+                            'Download internship certificate')
+
+    def test_approve_without_ticking_issues_nothing(self):
+        self.approve(cert_template=str(self.template.pk), salutation='Ms.')
+        self.res.refresh_from_db()
+        self.assertIsNone(self.res.certificate)
+        self.assertNotIn('certificate.pdf', self.res.approved_whatsapp_url())
+        self.assertRedirects(self.client.get(reverse('resignation_certificate_pdf', args=[self.res.token])),
+                             reverse('resignation_done', args=[self.res.token]))
+
+    def test_issue_later_needs_salutation_and_only_once(self):
+        self.approve()
+        url = reverse('resignation_issue_certificate', args=[self.res.pk])
+        self.client.post(url, {'cert_template': str(self.template.pk), 'salutation': ''})
+        self.res.refresh_from_db()
+        self.assertIsNone(self.res.certificate)
+        self.client.post(url, {'cert_template': str(self.template.pk), 'salutation': 'Mr.'})
+        self.client.post(url, {'cert_template': str(self.template.pk), 'salutation': 'Mr.'})
+        self.res.refresh_from_db()
+        self.assertEqual(self.res.certificate.gender, 'male')
+        from employees.models import Certificate
+        self.assertEqual(Certificate.objects.count(), 1)
+
+    def test_cannot_issue_before_approval(self):
+        self.client.post(reverse('resignation_issue_certificate', args=[self.res.pk]),
+                         {'cert_template': str(self.template.pk), 'salutation': 'Ms.'})
+        self.res.refresh_from_db()
+        self.assertIsNone(self.res.certificate)
+
+    def test_college_comes_from_form_or_enrolment(self):
+        from employees.models import InternEnrolment
+        InternEnrolment.objects.create(full_name='Asha Nair', phone='9876543210', college_name='MES College',
+                                       register_number='MES123', employee=self.emp)
+        self.assertEqual(self.res.certificate_college, 'MES College')
+        self.approve(issue_certificate='on', cert_template=str(self.template.pk), salutation='Ms.',
+                     college_name='MES College of Engineering, Kuttippuram')
+        self.res.refresh_from_db()
+        self.assertEqual(self.res.certificate.college_name, 'MES College of Engineering, Kuttippuram')
+        self.assertEqual(self.res.certificate.register_number, 'MES123')
+
+    def test_ticked_certificate_without_title_blocks_approval(self):
+        self.approve(issue_certificate='on', cert_template=str(self.template.pk), salutation='')
+        self.res.refresh_from_db()
+        self.assertEqual(self.res.status, ResignationRequest.STATUS_SUBMITTED)
+
+    def test_title_comes_from_employee_gender_and_is_saved_back(self):
+        self.assertEqual(self.res.default_salutation, '')
+        self.approve(issue_certificate='on', cert_template=str(self.template.pk), salutation='Ms.')
+        self.emp.refresh_from_db()
+        self.assertEqual(self.emp.gender, 'female')
+
+        self.emp.gender = 'male'
+        self.emp.save()
+        self.res.refresh_from_db()
+        self.assertEqual(self.res.default_salutation, 'Mr.')
+        page = self.client.get(reverse('resignation_detail', args=[self.res.pk]))
+        self.assertEqual(page.status_code, 200)

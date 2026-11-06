@@ -92,6 +92,10 @@ class ResignationRequest(models.Model):
     thanks_note = models.TextField(blank=True, help_text='Personal message on the thank-you card')
     thanks_sent_at = models.DateTimeField(null=True, blank=True)
 
+    # ---- Internship certificate, issued from the existing certificate system ----
+    certificate = models.OneToOneField('employees.Certificate', on_delete=models.SET_NULL, null=True,
+                                       blank=True, related_name='resignation')
+
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -245,6 +249,76 @@ class ResignationRequest(models.Model):
         self.approved_at = timezone.now()
         self.save()
 
+    @property
+    def has_certificate(self):
+        return bool(self.certificate_id) and self.certificate.status == 'published'
+
+    def _enrolment(self):
+        try:
+            return self.employee.enrolment
+        except Exception:  # RelatedObjectDoesNotExist: joined before enrolment links existed
+            return None
+
+    @property
+    def certificate_college(self):
+        """Best guess at their college: enrolment form first, then the offer letter."""
+        enrolment = self._enrolment()
+        if enrolment is None:
+            return ''
+        if enrolment.college_name:
+            return enrolment.college_name
+        offer = getattr(enrolment, 'offer', None)
+        return getattr(offer, 'institution_name', '') or ''
+
+    @property
+    def default_salutation(self):
+        return {'female': 'Ms.', 'male': 'Mr.'}.get(self.employee.gender, '')
+
+    def issue_certificate(self, template, salutation, by, college_name=None):
+        """Fill a certificate from the person's records and publish it.
+
+        Uses the chosen certificate template's wording, so HR keeps editing
+        the text in one place (Certificates > Templates).
+        """
+        if self.has_certificate:
+            return self.certificate
+        if self.status != self.STATUS_APPROVED:
+            raise ValueError('Approve the resignation before issuing the certificate.')
+        from .models import Certificate
+
+        emp = self.employee
+        enrolment = self._enrolment()
+        start, end = emp.joining_date, self.final_date
+        cert = Certificate(
+            template=template,
+            certificate_type=template.certificate_type,
+            title=template.title,
+            salutation=salutation,
+            gender='female' if salutation in ('Ms.', 'Mrs.') else 'male',
+            student_name=emp.full_name,
+            register_number=getattr(enrolment, 'register_number', '') or '',
+            college_name=(self.certificate_college if college_name is None else college_name.strip())[:300],
+            course_name=(getattr(enrolment, 'track', '') or getattr(enrolment, 'track_other', '') or ''),
+            position=self.role_title,
+            start_date=start,
+            end_date=end,
+            duration_days=(end - start).days + 1 if start and end else None,
+            mode={'onsite': 'offline', 'remote': 'online', 'hybrid': 'hybrid'}.get(emp.work_mode, 'offline'),
+            body_text=template.body_text,
+            wish_text=template.wish_text,
+            date_of_issuance=timezone.localdate(),
+            issued_by=by,
+            status='published',
+        )
+        cert.save()
+        if not emp.gender:
+            # HR just told us; keep it for next time.
+            emp.gender = cert.gender
+            emp.save(update_fields=['gender'])
+        self.certificate = cert
+        self.save(update_fields=['certificate', 'updated_at'])
+        return cert
+
     # ---- Links ----
     def public_path(self):
         return f'/resign/{self.token}/'
@@ -284,12 +358,15 @@ class ResignationRequest(models.Model):
         def link(path):
             return request.build_absolute_uri(path) if request else path
 
+        certificate = (f'🎓 Internship certificate:\n{link(f"/resign/{self.token}/certificate.pdf")}\n\n'
+                       if self.has_certificate else '')
         return self._wa(
             f'Hi {self.first_name},\n\n'
             'Your resignation has been accepted. Your relieving date is '
             f'*{self.final_date:%d %b %Y}*.\n\n'
             f'📄 Relieving letter:\n{link(f"/resign/{self.token}/relieving.pdf")}\n\n'
             f'📝 Your signed resignation:\n{link(f"/resign/{self.token}/letter.pdf")}\n\n'
+            f'{certificate}'
             'Thank you for your time with us, and all the best for what comes next!\n'
             'Team Ralfiz Technologies'
         )

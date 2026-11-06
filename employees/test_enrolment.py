@@ -30,7 +30,7 @@ def pdf(name='id.pdf'):
 def form_data(**overrides):
     data = {
         'full_name': 'Anjali Menon', 'phone': '9876543210', 'whatsapp': '', 'email': 'anjali@example.com',
-        'date_of_birth': '2004-05-17', 'address': 'Kozhikode, Kerala', 'guardian_name': 'Ravi Menon',
+        'date_of_birth': '2004-05-17', 'gender': 'female', 'address': 'Kozhikode, Kerala', 'guardian_name': 'Ravi Menon',
         'guardian_phone': '9876500000', 'college_name': 'MES College', 'course': 'BCA',
         'year_of_study': '3', 'register_number': 'MES21BCA07', 'track': 'Software Development',
         'track_other': '', 'preferred_start_date': '2026-11-02', 'duration_months': '3',
@@ -210,6 +210,7 @@ class EnrolmentTests(TestCase):
         self.assertEqual((emp.user.first_name, emp.user.last_name, emp.phone, emp.emergency_contact),
                          ('Anjali', 'Menon', '9876543210', '9876500000'))
         self.assertEqual(emp.joining_date, date(2026, 11, 2))
+        self.assertEqual(emp.gender, 'female')
         self.assertIn('MES College', emp.notes)
         self.assertTrue(emp.profile_photo)
 

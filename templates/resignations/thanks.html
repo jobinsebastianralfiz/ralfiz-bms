@@ -183,6 +183,7 @@
   <nav class="below">
     <a href="{% url 'resignation_thanks_pdf' res.token %}">Download this card (PDF)</a>
     <a href="{% url 'relieving_letter_pdf' res.token %}">Relieving letter</a>
+    {% if res.has_certificate %}<a href="{% url 'resignation_certificate_pdf' res.token %}">Internship certificate</a>{% endif %}
   </nav>
   {% endif %}
 </body>

@@ -8,7 +8,7 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 from django.views.decorators.http import require_POST
 
-from employees.models import Employee
+from employees.models import Certificate, CertificateTemplate, Employee
 from employees.resignation_models import ResignationRequest, default_resignation_expiry
 from employees.resignation_views import KINDS, letter_context, pdf_response
 
@@ -65,7 +65,29 @@ def resignation_detail(request, pk):
         'whatsapp': res.whatsapp_url(request),
         'approved_whatsapp': res.approved_whatsapp_url(request),
         'thanks_url': request.build_absolute_uri(res.thanks_path()),
+        'cert_templates': _cert_templates(),
+        'salutations': Certificate.SALUTATION_CHOICES,
     })
+
+
+def _cert_templates():
+    return CertificateTemplate.objects.filter(is_active=True, certificate_type='inter')
+
+
+def _issue_from_post(request, res):
+    """Issue the certificate from the approve / issue form. Returns an error or ''."""
+    template = _cert_templates().filter(pk=request.POST.get('cert_template') or None).first()
+    if template is None:
+        return 'Choose an internship certificate template.'
+    salutation = request.POST.get('salutation', '')
+    if salutation not in dict(Certificate.SALUTATION_CHOICES):
+        return 'Choose Mr. or Ms. for the certificate.'
+    try:
+        res.issue_certificate(template, salutation, request.user,
+                              college_name=request.POST.get('college_name', ''))
+    except ValueError as exc:
+        return str(exc)
+    return ''
 
 
 @enrolment_admin
@@ -98,6 +120,9 @@ def resignation_approve(request, pk):
     if relieving < res.employee.joining_date:
         messages.error(request, 'The relieving date is before the joining date.')
         return redirect('resignation_detail', pk=pk)
+    if request.POST.get('issue_certificate') and request.POST.get('salutation') not in dict(Certificate.SALUTATION_CHOICES):
+        messages.error(request, 'Choose Mr. or Ms. for the certificate, or untick "Also issue the internship certificate".')
+        return redirect('resignation_detail', pk=pk)
     try:
         res.approve(request.user, relieving_date=relieving, note=request.POST.get('relieving_note', ''),
                     deactivate=bool(request.POST.get('deactivate')))
@@ -105,6 +130,12 @@ def resignation_approve(request, pk):
         messages.error(request, str(exc))
     else:
         messages.success(request, 'Resignation approved. The relieving letter is ready to download.')
+        if request.POST.get('issue_certificate'):
+            error = _issue_from_post(request, res)
+            if error:
+                messages.error(request, f'Certificate not issued: {error}')
+            else:
+                messages.success(request, f'Internship certificate {res.certificate.certificate_number} issued.')
     return redirect('resignation_detail', pk=pk)
 
 
@@ -165,4 +196,16 @@ def resignation_send_thanks(request, pk):
     if request.POST.get('action') == 'send':
         return redirect(res.thanks_whatsapp_url(request) or res.thanks_path())
     messages.success(request, 'Thank-you card saved.')
+    return redirect('resignation_detail', pk=pk)
+
+
+@enrolment_admin
+@require_POST
+def resignation_issue_certificate(request, pk):
+    res = get_object_or_404(ResignationRequest.objects.select_related('employee'), pk=pk)
+    error = _issue_from_post(request, res)
+    if error:
+        messages.error(request, error)
+    else:
+        messages.success(request, f'Internship certificate {res.certificate.certificate_number} issued.')
     return redirect('resignation_detail', pk=pk)

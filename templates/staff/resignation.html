@@ -14,6 +14,7 @@
     <p>Your resignation ({{ current.reference }}) has been accepted. Relieving date: <strong>{{ current.final_date|date:"d M Y" }}</strong>.</p>
     <a class="sf-btn" href="{% url 'relieving_letter_pdf' current.token %}"><i class="fas fa-download"></i> Relieving letter (PDF)</a>
     <p style="margin-top:10px"><a href="{% url 'resignation_letter_pdf' current.token %}">Download my signed resignation</a></p>
+    {% if current.has_certificate %}<p style="margin-top:6px"><a href="{% url 'resignation_certificate_pdf' current.token %}">Download my internship certificate</a></p>{% endif %}
     {% if current.thanks_sent_at %}<p style="margin-top:6px"><a href="{% url 'resignation_thanks' current.token %}">Open your thank-you card</a></p>{% endif %}
   </div>
 {% elif current and current.status == 'submitted' %}

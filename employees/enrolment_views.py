@@ -18,9 +18,9 @@ DOCUMENT_EXTS = IMAGE_EXTS | {'.pdf'}
 
 TEXT_FIELDS = ('full_name', 'phone', 'whatsapp', 'email', 'address', 'guardian_name',
                'guardian_phone', 'college_name', 'course', 'register_number', 'track_other', 'skills')
-CHOICE_FIELDS = ('year_of_study', 'track', 'duration_months', 'work_mode')
+CHOICE_FIELDS = ('gender', 'year_of_study', 'track', 'duration_months', 'work_mode')
 DATE_FIELDS = ('date_of_birth', 'preferred_start_date')
-REQUIRED = ('full_name', 'phone', 'email', 'date_of_birth', 'address', 'guardian_name',
+REQUIRED = ('full_name', 'phone', 'email', 'date_of_birth', 'gender', 'address', 'guardian_name',
             'guardian_phone', 'college_name', 'course', 'year_of_study', 'track',
             'preferred_start_date', 'duration_months', 'work_mode')
 #: (field, allowed extensions, required)
@@ -39,6 +39,7 @@ def _choices(settings):
     EnrolmentSettings; a field left with a single option (e.g. onsite only) is
     shown as a fixed line, and that option is filled in for the student."""
     return {
+        'gender': (('female', 'Female'), ('male', 'Male')),
         'year_of_study': InternEnrolment.YEAR_CHOICES,
         'track': settings.track_choices(),
         'duration_months': settings.duration_choices(),
@@ -60,6 +61,7 @@ SECTIONS = (
     ('About you', (
         ('full_name', 'Full name (as on your ID)', 'text', 'name', ''),
         ('date_of_birth', 'Date of birth', 'date', 'bday', ''),
+        ('gender', 'Gender', 'select', 'sex', 'Used for Mr./Ms. on your certificate'),
         ('phone', 'Phone', 'tel', 'tel', ''),
         ('whatsapp', 'WhatsApp number', 'tel', 'tel', 'If different from your phone'),
         ('email', 'Email', 'email', 'email', ''),

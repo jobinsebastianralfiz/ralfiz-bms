@@ -1,0 +1,20 @@
+<div class="d-flex gap-2 mt-2" style="flex-wrap: wrap;">
+  <div style="flex: 0 0 90px;">
+    <label class="form-label text-sm" for="salutation-{{ res.pk }}">Title</label>
+    <select name="salutation" id="salutation-{{ res.pk }}" class="form-control">
+      <option value="">-</option>
+      {% for value, label in salutations %}<option value="{{ value }}"{% if value == res.default_salutation %} selected{% endif %}>{{ label }}</option>{% endfor %}
+    </select>
+  </div>
+  <div style="flex: 1 1 160px;">
+    <label class="form-label text-sm" for="cert-template-{{ res.pk }}">Template</label>
+    <select name="cert_template" id="cert-template-{{ res.pk }}" class="form-control">
+      {% for t in cert_templates %}<option value="{{ t.pk }}">{{ t.name }}</option>{% endfor %}
+    </select>
+  </div>
+</div>
+<div class="mt-2">
+  <label class="form-label text-sm" for="college-{{ res.pk }}">College / institution</label>
+  <input type="text" name="college_name" id="college-{{ res.pk }}" class="form-control" maxlength="300" value="{{ res.certificate_college }}" placeholder="Leave blank if not a student">
+</div>
+<p class="text-sm text-muted mt-1 mb-0">{% if res.default_salutation %}Title comes from the gender on their employee record.{% else %}No gender on their employee record yet; what you pick here is saved to it.{% endif %} Mr. / Ms. sets he or she in the certificate text. You can change anything else later from the certificate page.</p>

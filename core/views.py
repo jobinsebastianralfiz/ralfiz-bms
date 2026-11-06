@@ -7749,6 +7749,8 @@ def emp_employee_detail(request, pk):
         employee.role = request.POST.get('role', employee.role)
         employee.department = request.POST.get('department', employee.department)
         employee.designation = request.POST.get('designation', employee.designation)
+        if request.POST.get('gender', employee.gender) in ('', 'male', 'female'):
+            employee.gender = request.POST.get('gender', employee.gender)
         employee.status = request.POST.get('status', employee.status)
         employee.phone = request.POST.get('phone', employee.phone)
         employee.emergency_contact = request.POST.get('emergency_contact', employee.emergency_contact)
@@ -8070,6 +8072,7 @@ def emp_employee_create(request):
             role=request.POST.get('role', 'employee'),
             department=request.POST.get('department', 'engineering'),
             designation=request.POST.get('designation', ''),
+            gender=request.POST.get('gender', '') if request.POST.get('gender') in ('male', 'female') else '',
             phone=request.POST.get('phone', ''),
             emergency_contact=request.POST.get('emergency_contact', ''),
             address=request.POST.get('address', ''),

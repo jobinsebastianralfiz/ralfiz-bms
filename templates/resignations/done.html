@@ -38,6 +38,7 @@
   <div style="margin-top:26px; display:flex; gap:10px; justify-content:center; flex-wrap:wrap;">
     <a href="{% url 'relieving_letter_pdf' res.token %}" class="copy-btn primary">Download relieving letter (PDF)</a>
     <a href="{% url 'resignation_letter_pdf' res.token %}" class="copy-btn">Download my resignation (PDF)</a>
+    {% if res.has_certificate %}<a href="{% url 'resignation_certificate_pdf' res.token %}" class="copy-btn primary">Download internship certificate</a>{% endif %}
     {% if res.thanks_sent_at %}<a href="{% url 'resignation_thanks' res.token %}" class="copy-btn">Open your thank-you card</a>{% endif %}
   </div>
   {% endif %}

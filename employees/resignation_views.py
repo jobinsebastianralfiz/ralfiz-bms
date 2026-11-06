@@ -226,3 +226,19 @@ def resignation_thanks_pdf(request, token):
     response = HttpResponse(pdf, content_type='application/pdf')
     response['Content-Disposition'] = f'attachment; filename="Ralfiz-Thank-You-{res.first_name}.pdf"'
     return response
+
+
+def resignation_certificate_pdf(request, token):
+    """The internship certificate issued with the resignation, if there is one."""
+    res = _get(token)
+    if not (res.can_download and res.has_certificate):
+        return redirect('resignation_done', token=token)
+    from .certificate_pdf import pdf_filename, render_pdf
+    try:
+        pdf = render_pdf(res.certificate, request)
+    except Exception as exc:
+        logger.exception('Failed to render certificate PDF: %s', exc)
+        return redirect('resignation_done', token=token)
+    response = HttpResponse(pdf, content_type='application/pdf')
+    response['Content-Disposition'] = f'attachment; filename="{pdf_filename(res.certificate)}"'
+    return response

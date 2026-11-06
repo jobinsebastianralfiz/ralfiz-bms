@@ -146,6 +146,14 @@
             <input type="text" name="designation" class="form-control form-control-sm" value="{{ employee.designation }}">
           </div>
           <div class="mb-3">
+            <label class="form-label text-sm text-muted">Gender <span class="text-muted">(for certificates)</span></label>
+            <select name="gender" class="form-control form-control-sm">
+              <option value="">-</option>
+              <option value="female" {% if employee.gender == 'female' %}selected{% endif %}>Female</option>
+              <option value="male" {% if employee.gender == 'male' %}selected{% endif %}>Male</option>
+            </select>
+          </div>
+          <div class="mb-3">
             <label class="form-label text-sm text-muted">Status</label>
             <select name="status" class="form-control form-control-sm">
               {% for key, value in statuses %}

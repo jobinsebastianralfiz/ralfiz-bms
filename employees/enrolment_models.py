@@ -179,6 +179,7 @@ class InternEnrolment(models.Model):
     whatsapp = models.CharField(max_length=20, blank=True)
     email = models.EmailField(blank=True)
     date_of_birth = models.DateField(null=True, blank=True)
+    gender = models.CharField(max_length=10, choices=[('female', 'Female'), ('male', 'Male')], blank=True)
     address = models.TextField(blank=True)
     guardian_name = models.CharField(max_length=200, blank=True)
     guardian_phone = models.CharField(max_length=20, blank=True)
@@ -350,6 +351,7 @@ class InternEnrolment(models.Model):
                 emergency_contact=self.guardian_phone,
                 address=self.address,
                 date_of_birth=self.date_of_birth,
+                gender=self.gender,
                 joining_date=joining_date,
                 work_mode=self.work_mode or 'onsite',
                 status='active',
