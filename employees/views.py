@@ -6014,3 +6014,21 @@ class OwnerTransferDetailView(APIView):
             return Response({'error': 'Not found'}, status=status.HTTP_404_NOT_FOUND)
         t.delete()
         return Response({'message': 'Transfer deleted'}, status=status.HTTP_204_NO_CONTENT)
+
+
+def certificate_public_pdf(request, verification_id):
+    """Download a published certificate without logging in.
+
+    The link carries the same unguessable verification id as the QR code on
+    the certificate, so it reveals nothing the printed copy does not.
+    """
+    from django.http import Http404, HttpResponse
+    from .certificate_pdf import pdf_filename, render_pdf
+    certificate = Certificate.objects.filter(verification_id=verification_id, status='published').first()
+    if certificate is None:
+        raise Http404('Certificate not found')
+    pdf = render_pdf(certificate, request)
+    response = HttpResponse(pdf, content_type='application/pdf')
+    disposition = 'inline' if request.GET.get('view') else 'attachment'
+    response['Content-Disposition'] = f'{disposition}; filename="{pdf_filename(certificate)}"'
+    return response

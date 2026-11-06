@@ -12,7 +12,7 @@ from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView, Sp
 from academy.public_views import robots as academy_robots
 from connector.files import pdf_download as connector_pdf_download
 from connector.mcp import MCPView
-from employees.views import CertificateVerifyView
+from employees.views import CertificateVerifyView, certificate_public_pdf
 from social.mcp_tools import report_download as social_report_download
 from social.views import go_link as social_go_link
 from website.views import book_demo as website_book_demo, video as website_video
@@ -50,6 +50,7 @@ urlpatterns = [
     # each one under half a millimetre on the printed page. The long path
     # stays so codes already in the wild keep working.
     path('v/<uuid:verification_id>/', CertificateVerifyView.as_view(), name='certificate_verify_short'),
+    path('v/<uuid:verification_id>/certificate.pdf', certificate_public_pdf, name='certificate_public_pdf'),
 
     # Claude connector: the MCP endpoint, plus OAuth discovery/login under
     # /.well-known/ and /oauth/. Both /mcp and /mcp/ answer so a pasted URL

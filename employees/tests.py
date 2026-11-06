@@ -788,3 +788,34 @@ class CertificatePlaceholderAliasTests(TestCase):
         html = self._cert('Date: {issue_date}').render_body_html()
         self.assertIn('4th September 2026', html)
         self.assertNotIn('{issue_date}', html)
+
+
+class CertificatePublicLinkTests(TestCase):
+    def setUp(self):
+        from django.contrib.auth.models import User
+        self.hr = User.objects.create_superuser('boss', 'boss@example.com', 'pw-123456')
+        self.cert = Certificate.objects.create(student_name='Fathima Nasrin', gender='female', salutation='Ms.',
+                                               title='INTERNSHIP CERTIFICATE', status='published',
+                                               date_of_issuance=date(2026, 11, 6))
+
+    def test_published_pdf_downloads_without_login(self):
+        from unittest import mock
+        with mock.patch('employees.certificate_pdf.render_pdf', return_value=b'%PDF-1.7 test'):
+            response = self.client.get(self.cert.public_pdf_path())
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response['Content-Type'], 'application/pdf')
+        self.assertIn('attachment', response['Content-Disposition'])
+
+    def test_draft_and_cancelled_are_not_downloadable(self):
+        for status in ('draft', 'cancelled'):
+            Certificate.objects.filter(pk=self.cert.pk).update(status=status)
+            self.assertEqual(self.client.get(self.cert.public_pdf_path()).status_code, 404)
+
+    def test_hr_page_shows_link_and_whatsapp(self):
+        self.client.force_login(self.hr)
+        page = self.client.get(reverse('certificate_detail', args=[self.cert.pk]))
+        self.assertContains(page, self.cert.public_pdf_path())
+        self.assertContains(page, 'Send on WhatsApp')
+        self.assertContains(page, 'https://wa.me/?text=')
+        verify = self.client.get(self.cert.verify_path())
+        self.assertContains(verify, 'Download certificate (PDF)')

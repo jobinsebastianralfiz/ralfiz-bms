@@ -9501,6 +9501,8 @@ def certificate_detail(request, pk):
         'gender_choices': Certificate.GENDER_CHOICES,
         'mode_choices': Certificate.MODE_CHOICES,
         'type_choices': Certificate.CERTIFICATE_TYPE_CHOICES,
+        'public_pdf_url': request.build_absolute_uri(cert.public_pdf_path()),
+        'share_whatsapp': cert.share_whatsapp_url(request),
     }
     return render(request, 'hr/certificate_detail.html', context)
 

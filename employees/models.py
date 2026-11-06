@@ -962,6 +962,27 @@ class Certificate(models.Model):
             html += p if p.startswith('<ul') else f'<p class="body-text">{p}</p>'
         return html
 
+    # ---- Public links (no login): the verification id is already public via the QR ----
+    def verify_path(self):
+        return f'/v/{self.verification_id}/'
+
+    def public_pdf_path(self):
+        return f'/v/{self.verification_id}/certificate.pdf'
+
+    def share_whatsapp_url(self, request=None):
+        """WhatsApp message with the download link; to the person's number when we know it."""
+        from urllib.parse import quote
+        link = request.build_absolute_uri(self.public_pdf_path()) if request else self.public_pdf_path()
+        first = (self.student_name or '').split(' ')[0].title() or 'there'
+        message = (f'Hi {first},\n\nCongratulations! Your {self.title.title()} from Ralfiz Technologies '
+                   f'is ready. Download it here:\n{link}\n\nCertificate no. {self.certificate_number}')
+        digits = ''
+        try:
+            digits = self.resignation.employee.whatsapp_number or ''
+        except Exception:  # not issued from a resignation
+            pass
+        return f'https://wa.me/{digits}?text={quote(message)}' if digits else f'https://wa.me/?text={quote(message)}'
+
     def render_wish_text(self):
         # Many bodies already end with their own good wishes; printing the
         # separate wish line as well says it twice.
