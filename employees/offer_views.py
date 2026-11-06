@@ -12,7 +12,7 @@ from django.template.loader import render_to_string
 from django.utils import timezone
 from django.views.decorators.http import require_http_methods
 
-from .agreement_views import _agreement_css, _client_ip, _static_data_uri, company_countersignature
+from .agreement_views import _agreement_css, _client_ip, brand_letterhead, company_countersignature
 from .offer_models import InternOffer
 
 logger = logging.getLogger(__name__)
@@ -125,28 +125,10 @@ def offer_done(request, token):
 
 
 def letterhead_context(offer, for_pdf=False, pdf_url=''):
-    """The letter on the blue company letterhead used by invoices and quotes.
-
-    The logo falls back to the bundled brand mark: an uploaded logo can be
-    missing from the media volume, and the generic letter tile looks off-brand.
-    """
-    from core.models import CompanySettings
-
-    company = CompanySettings.get_settings()
-    letterhead = {
-        'company_name': company.company_name or 'Ralfiz Technologies',
-        'tagline': company.tagline or 'Rise to Next Level',
-        'logo_data_uri': company.logo_data_uri or _static_data_uri('brand/ralfiz-mark.svg'),
-        'gst_number': company.gst_number,
-        'pan_number': company.pan_number,
-        'hsn_code': '',
-        'phone': company.phone,
-        'email': company.email,
-        'address': company.address,
-    }
+    """The letter on the blue company letterhead used by invoices and quotes."""
     return {
         'offer': offer,
-        'letterhead': letterhead,
+        'letterhead': brand_letterhead(),
         'sign': company_countersignature(for_pdf=True),
         'for_pdf': for_pdf,
         'pdf_url': pdf_url,

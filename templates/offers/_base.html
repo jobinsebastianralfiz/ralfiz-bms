@@ -1,25 +1,2 @@
 {% extends 'agreements/_doc_base.html' %}
-{% load static %}
-{% comment %}
-Offer pages carry the real brand mark and the blue bands of the company
-letterhead, not the generic letter tile the agreement pages use.
-{% endcomment %}
-{% block letterhead %}
-<header class="ofr-lh">
-  <div class="ofr-lh-brand">
-    <img src="{% static 'brand/ralfiz-mark.svg' %}" alt="">
-    <div>
-      <div class="ofr-lh-name">Ralfiz Technologies</div>
-      <div class="ofr-lh-tag">Rise to Next Level</div>
-    </div>
-  </div>
-  <div class="ofr-lh-band"><span>Offer Letter</span></div>
-</header>
-{% endblock %}
-
-{% block footer %}
-<footer class="ofr-lh-foot">
-  <span>KIMS Avenue, Perinthalmanna, Kerala</span>
-  <span>+91 98956 63498 &middot; www.ralfiz.com</span>
-</footer>
-{% endblock %}
+{% block band_label %}Offer Letter{% endblock %}

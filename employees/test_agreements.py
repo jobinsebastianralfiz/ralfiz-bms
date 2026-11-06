@@ -380,10 +380,11 @@ class SignedCopyTests(AgreementTestBase):
         self.assertTrue(context['inline_css'])
         self.assertTrue(context['signature_src'].startswith('data:image/'))
 
-    def test_html_copy_links_css_rather_than_inlining_it(self):
+    def test_html_copy_is_on_the_company_letterhead(self):
         agreement = self._sign()
         body = self.client.get(f'/agreement/{agreement.token}/copy/').content.decode()
-        self.assertIn('css/agreement.css', body)
+        self.assertIn('class="lh-head"', body)
+        self.assertIn(f'#{agreement.reference}', body)
 
     def test_pdf_falls_back_to_html_when_rendering_is_unavailable(self):
         """A dev box without pango must still hand over the copy, not a 500."""

@@ -17,30 +17,30 @@
   {% endcomment %}
   <style>{{ inline_css|safe }}</style>
   {% else %}
-  <link rel="stylesheet" href="{% static 'css/agreement.css' %}?v=11">
+  <link rel="stylesheet" href="{% static 'css/agreement.css' %}?v=12">
   {% endif %}
 </head>
 <body>
   <div class="doc-shell">
     {% block letterhead %}
-    <header class="doc-letterhead">
-      <div class="lh-brand">
-        <span class="lh-mark">R</span>
-        <span class="lh-name">RALFIZ<small>TECHNOLOGIES</small></span>
+    <header class="ofr-lh">
+      <div class="ofr-lh-brand">
+        <img src="{% static 'brand/ralfiz-mark.svg' %}" alt="">
+        <div>
+          <div class="ofr-lh-name">Ralfiz Technologies</div>
+          <div class="ofr-lh-tag">Rise to Next Level</div>
+        </div>
       </div>
-      <div class="lh-contact">
-        KIMS Avenue, Perinthalmanna, Kerala, India<br>
-        +91 98956 63498 &middot; www.ralfiz.com
-      </div>
+      <div class="ofr-lh-band"><span>{% block band_label %}Agreement{% endblock %}</span></div>
     </header>
     {% endblock %}
 
     {% block body %}{% endblock %}
 
     {% block footer %}
-    <footer class="doc-footer">
-      <strong>RALFIZ TECHNOLOGIES</strong>
-      <span>{{ doc.heading|default:"Internship Agreement" }}</span>
+    <footer class="ofr-lh-foot">
+      <span>KIMS Avenue, Perinthalmanna, Kerala</span>
+      <span>+91 98956 63498 &middot; www.ralfiz.com</span>
     </footer>
     {% endblock %}
   </div>

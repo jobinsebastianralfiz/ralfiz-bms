@@ -210,6 +210,29 @@ def build_copy_context(agreement, request=None, for_pdf=False):
         'company': company_countersignature(for_pdf=for_pdf),
         'inline_css': _agreement_css() if for_pdf else '',
         'pdf_url': f'/agreement/{agreement.token}/copy.pdf' if request else '',
+        'letterhead': brand_letterhead(),
+    }
+
+
+def brand_letterhead():
+    """Company details for the blue letterhead shared with invoices and quotes.
+
+    The logo falls back to the bundled brand mark: an uploaded logo can be
+    missing from the media volume, and the generic letter tile looks off-brand.
+    """
+    from core.models import CompanySettings
+
+    company = CompanySettings.get_settings()
+    return {
+        'company_name': company.company_name or 'Ralfiz Technologies',
+        'tagline': company.tagline or 'Rise to Next Level',
+        'logo_data_uri': company.logo_data_uri or _static_data_uri('brand/ralfiz-mark.svg'),
+        'gst_number': company.gst_number,
+        'pan_number': company.pan_number,
+        'hsn_code': '',
+        'phone': company.phone,
+        'email': company.email,
+        'address': company.address,
     }
 
 
@@ -294,7 +317,7 @@ def render_agreement_pdf(agreement, base_url=None):
         logger.warning('WeasyPrint unavailable, serving HTML copy instead: %s', exc)
         return None
 
-    html = render_to_string('agreements/copy.html',
+    html = render_to_string('agreements/letterhead.html',
                             build_copy_context(agreement, for_pdf=True))
     try:
         return HTML(string=html, base_url=base_url).write_pdf()
@@ -308,7 +331,7 @@ def agreement_copy(request, token):
     agreement = _get_request_or_404(token)
     if not agreement.has_responded:
         return redirect('agreement_sign', token=agreement.token)
-    return render(request, 'agreements/copy.html',
+    return render(request, 'agreements/letterhead.html',
                   build_copy_context(agreement, request=request))
 
 
