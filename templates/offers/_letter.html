@@ -1,0 +1,67 @@
+{% comment %}
+The offer letter itself. Shared by the accept page, the HR preview and the
+downloadable copy so the wording can never drift between them.
+{% endcomment %}
+<p class="doc-eyebrow">Internship Offer</p>
+<h1 class="doc-title">Offer Letter</h1>
+<div class="doc-rule"></div>
+
+<div class="ofr-body">
+  <div class="ofr-meta">
+    <div>Ref: <strong>{{ offer.reference }}</strong></div>
+    <div>Date: <strong>{{ offer.sent_at|date:"d M Y" }}</strong></div>
+  </div>
+
+  <div class="ofr-to">
+    To,<br>
+    <strong>{{ offer.signed_name|default:offer.candidate_name }}</strong>
+    {% if offer.education_line %}<br>{{ offer.education_line }}{% endif %}
+  </div>
+
+  <p class="ofr-subject">Subject: Offer of internship as {{ offer.position }}</p>
+
+  <p>Dear {{ offer.first_name }},</p>
+  <p>We are pleased to offer you an internship at <strong>{{ company.company_name }}</strong> as
+     <strong>{{ offer.position }}</strong>. We were impressed by your interest and enthusiasm, and we
+     look forward to helping you build practical skills on real projects.</p>
+
+  <div class="kv-grid">
+    <div><label>Position</label>{{ offer.position }}</div>
+    <div><label>Start date</label>{{ offer.start_date|date:"d M Y" }}</div>
+    <div><label>Duration</label>{% if offer.duration_months %}{{ offer.duration_label }}{% if offer.end_date %}<div class="kv-sub">until {{ offer.end_date|date:"d M Y" }}</div>{% endif %}{% else %}As agreed{% endif %}</div>
+    <div><label>Work mode</label>{{ offer.get_work_mode_display }}</div>
+    <div><label>Location</label>KIMS Avenue, Perinthalmanna, Kerala</div>
+    <div><label>{% if offer.money_mode == 'stipend' %}Stipend{% elif offer.money_mode == 'fee' %}Internship fee{% else %}Fee / stipend{% endif %}</label>{{ offer.money_label }}</div>
+  </div>
+
+  <p>{{ offer.money_sentence }}</p>
+
+  {% if offer.term_lines %}
+  <section class="agr-section">
+    <div class="agr-section-head">
+      <span class="agr-no">&bull;</span>
+      <h2>Terms of this offer</h2>
+    </div>
+    <ul class="agr-list">
+      {% for line in offer.term_lines %}<li>{{ line }}</li>{% endfor %}
+    </ul>
+  </section>
+  {% endif %}
+
+  <p>Please confirm your acceptance by <strong>{{ offer.expires_at|date:"d M Y" }}</strong>. Once we
+     approve your acceptance, you can download this letter and you will receive a link to complete
+     your enrolment.</p>
+  <p>We look forward to welcoming you to the team.</p>
+
+  <div class="ofr-sign">
+    <div class="sign-area company-sign">
+      {% if show_company_sign %}
+      {% if company.signature_src %}<img class="sign-image" src="{{ company.signature_src }}" alt="Authorized signature">{% endif %}
+      {% if company.seal_src %}<img class="seal-image" src="{{ company.seal_src }}" alt="Company seal">{% endif %}
+      {% endif %}
+    </div>
+    <div class="sign-line"></div>
+    <strong>For {{ company.company_name }}</strong>
+    <span>{% if company.signatory_name %}{{ company.signatory_name }} &middot; {% endif %}{{ company.signatory_designation }}</span>
+  </div>
+</div>

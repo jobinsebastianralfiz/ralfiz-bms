@@ -1,0 +1,159 @@
+{% extends 'base.html' %}
+{% block title %}{{ offer.candidate_name }} - Offer Letter - Ralfiz BMS{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title">{{ offer.candidate_name }}</h1>
+    <p class="page-subtitle mb-0">Offer {{ offer.reference }} &middot; {{ offer.position }} &middot; <span class="badge" style="{{ offer.status_css }}">{{ offer.status_label }}</span></p>
+  </div>
+  <div class="page-actions d-flex gap-2" style="flex-wrap: wrap;">
+    <a href="{% url 'offer_list' %}" class="btn btn-ghost"><i class="fas fa-arrow-left"></i> Back</a>
+    <a href="{% url 'offer_preview' offer.pk %}" target="_blank" rel="noopener" class="btn btn-ghost"><i class="fas fa-eye"></i> Preview letter</a>
+    <a href="{% url 'offer_pdf' offer.pk %}" target="_blank" rel="noopener" class="btn btn-ghost"><i class="fas fa-file-pdf"></i> PDF</a>
+    {% if offer.is_editable %}
+    <a href="{% url 'offer_edit' offer.pk %}" class="btn btn-ghost"><i class="fas fa-pen"></i> Edit</a>
+    <form method="post" action="{% url 'offer_extend' offer.pk %}">
+      {% csrf_token %}
+      <button type="submit" class="btn btn-ghost"><i class="fas fa-clock"></i> Extend 14 days</button>
+    </form>
+    {% endif %}
+    {% if offer.status == 'sent' or offer.status == 'opened' or offer.status == 'accepted' %}
+    <form method="post" action="{% url 'offer_cancel' offer.pk %}" onsubmit="return confirm('Withdraw this offer? The link will stop working.')">
+      {% csrf_token %}
+      <button type="submit" class="btn btn-ghost text-danger"><i class="fas fa-ban"></i> Withdraw</button>
+    </form>
+    {% endif %}
+  </div>
+</div>
+
+<div class="row">
+  <div class="col-8 col-md-12" style="padding: 0.75rem;">
+    {% if offer.status == 'sent' or offer.status == 'opened' %}
+    <div class="card mb-4">
+      <div class="card-header"><h3 class="card-title"><i class="fas fa-link"></i> Offer link</h3></div>
+      <div class="card-body">
+        {% if offer.is_open %}
+        <p class="text-muted">Send this to {{ offer.candidate_name }}. They can respond until {{ offer.expires_at|date:"d M Y" }}.</p>
+        <div class="d-flex gap-2">
+          <input type="text" class="form-control" id="link-field" value="{{ url }}" readonly>
+          <button type="button" class="btn btn-ghost" id="btn-copy" title="Copy link"><i class="fas fa-copy"></i></button>
+          {% if whatsapp %}<a href="{{ whatsapp }}" target="_blank" rel="noopener" class="btn btn-primary"><i class="fab fa-whatsapp"></i> WhatsApp</a>{% endif %}
+        </div>
+        <p class="text-sm text-muted mt-2 mb-0">{% if offer.first_opened_at %}Opened {{ offer.first_opened_at|date:"d M, g:i a" }}, not answered yet.{% else %}Not opened yet.{% endif %}</p>
+        {% else %}
+        <p class="text-muted mb-0">The respond-by date ({{ offer.expires_at|date:"d M Y" }}) has passed. Use <strong>Extend 14 days</strong> to reopen the same link.</p>
+        {% endif %}
+      </div>
+    </div>
+    {% endif %}
+
+    {% if offer.status == 'approved' %}
+    <div class="card mb-4" style="border: 2px solid var(--success);">
+      <div class="card-header"><h3 class="card-title"><i class="fas fa-check-circle"></i> Approved &mdash; letter ready</h3></div>
+      <div class="card-body">
+        <p class="mb-2">{{ offer.signed_name|default:offer.candidate_name }} can now download the signed offer letter from their link{% if offer.enrolment %}, and fill in their enrolment form{% endif %}.</p>
+        <div class="d-flex gap-2" style="flex-wrap: wrap;">
+          {% if approved_whatsapp %}<a href="{{ approved_whatsapp }}" target="_blank" rel="noopener" class="btn btn-primary"><i class="fab fa-whatsapp"></i> Send letter{% if offer.enrolment %} + enrolment link{% endif %}</a>{% endif %}
+          {% if offer.enrolment %}
+          <a href="{% url 'enrolment_detail' offer.enrolment.pk %}" class="btn btn-ghost"><i class="fas fa-user-plus"></i> Enrolment: {{ offer.enrolment.status_label }}</a>
+          {% else %}
+          <form method="post" action="{% url 'offer_create_enrolment' offer.pk %}">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-ghost"><i class="fas fa-user-plus"></i> Create enrolment link</button>
+          </form>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+    {% endif %}
+
+    <div class="card mb-4">
+      <div class="card-header"><h3 class="card-title"><i class="fas fa-briefcase"></i> Offer</h3></div>
+      <div class="card-body">
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem;">
+          <div><label class="text-muted text-sm">Position</label><div class="fw-medium">{{ offer.position }}</div></div>
+          <div><label class="text-muted text-sm">Department</label><div>{{ offer.department_label|default:"-" }}</div></div>
+          <div><label class="text-muted text-sm">Start date</label><div>{{ offer.start_date|date:"d M Y" }}</div></div>
+          <div><label class="text-muted text-sm">Duration</label><div>{{ offer.duration_label|default:"Not fixed" }}{% if offer.end_date %} (until {{ offer.end_date|date:"d M Y" }}){% endif %}</div></div>
+          <div><label class="text-muted text-sm">Work mode</label><div>{{ offer.get_work_mode_display }}</div></div>
+          <div><label class="text-muted text-sm">Fee / stipend</label><div>{{ offer.money_label }}</div></div>
+          <div><label class="text-muted text-sm">Phone</label><div>{{ offer.phone|default:"-" }}</div></div>
+          <div><label class="text-muted text-sm">Email</label><div>{{ offer.email|default:"-" }}</div></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card mb-4">
+      <div class="card-header"><h3 class="card-title"><i class="fas fa-graduation-cap"></i> Education</h3></div>
+      <div class="card-body">
+        {% if offer.is_student %}
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem;">
+          <div><label class="text-muted text-sm">College / institution</label><div class="fw-medium">{{ offer.institution_name|default:"Candidate fills in" }}</div></div>
+          <div><label class="text-muted text-sm">Course</label><div>{{ offer.course|default:"-" }}</div></div>
+          <div><label class="text-muted text-sm">Year</label><div>{{ offer.get_year_of_study_display|default:"-" }}</div></div>
+        </div>
+        {% else %}
+        <p class="text-muted mb-0">Not a student. No college details asked.</p>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <div class="col-4 col-md-12" style="padding: 0.75rem;">
+    {% if offer.status == 'accepted' %}
+    <div class="card mb-4" style="border: 2px solid var(--warning);">
+      <div class="card-header"><h3 class="card-title"><i class="fas fa-user-check"></i> Approve acceptance</h3></div>
+      <div class="card-body">
+        <p class="text-sm">Accepted by <strong>{{ offer.signed_name }}</strong> on {{ offer.responded_at|date:"d M Y, g:i a" }}</p>
+        <form method="post" action="{% url 'offer_approve' offer.pk %}">
+          {% csrf_token %}
+          <label class="d-flex gap-2 mb-3 text-sm" style="cursor: pointer;">
+            <input type="checkbox" name="create_enrolment" checked>
+            <span>Also create their enrolment link, with the college and start date filled in</span>
+          </label>
+          <button type="submit" class="btn btn-primary w-100"><i class="fas fa-check"></i> Approve &amp; release letter</button>
+        </form>
+        <p class="text-sm text-muted mt-2 mb-0">The letter is stamped with the company signature and seal, and becomes downloadable on the candidate's link.</p>
+      </div>
+    </div>
+    {% elif offer.status == 'declined' %}
+    <div class="card mb-4">
+      <div class="card-header"><h3 class="card-title"><i class="fas fa-times"></i> Declined</h3></div>
+      <div class="card-body"><p class="mb-0">{{ offer.decline_reason|default:"No reason given." }}</p></div>
+    </div>
+    {% endif %}
+
+    <div class="card mb-4">
+      <div class="card-header"><h3 class="card-title"><i class="fas fa-history"></i> History</h3></div>
+      <div class="card-body text-sm">
+        <div class="mb-2"><span class="text-muted">Created</span><br>{{ offer.sent_at|date:"d M Y, g:i a" }}{% if offer.created_by %} by {{ offer.created_by.get_full_name|default:offer.created_by.username }}{% endif %}</div>
+        {% if offer.first_opened_at %}<div class="mb-2"><span class="text-muted">Opened</span><br>{{ offer.first_opened_at|date:"d M Y, g:i a" }}</div>{% endif %}
+        {% if offer.responded_at %}<div class="mb-2"><span class="text-muted">{% if offer.status == 'declined' %}Declined{% else %}Accepted{% endif %}</span><br>{{ offer.responded_at|date:"d M Y, g:i a" }}</div>{% endif %}
+        {% if offer.approved_at %}<div class="mb-2"><span class="text-muted">Approved</span><br>{{ offer.approved_at|date:"d M Y, g:i a" }}{% if offer.approved_by %} by {{ offer.approved_by.get_full_name|default:offer.approved_by.username }}{% endif %}</div>{% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+var copyBtn = document.getElementById('btn-copy');
+if (copyBtn) {
+  copyBtn.addEventListener('click', function () {
+    var field = document.getElementById('link-field');
+    field.select();
+    function done() {
+      copyBtn.innerHTML = '<i class="fas fa-check"></i>';
+      setTimeout(function () { copyBtn.innerHTML = '<i class="fas fa-copy"></i>'; }, 1600);
+    }
+    if (navigator.clipboard && window.isSecureContext) {
+      navigator.clipboard.writeText(field.value).then(done);
+    } else {
+      try { document.execCommand('copy'); done(); } catch (e) { /* copy manually */ }
+    }
+  });
+}
+</script>
+{% endblock %}

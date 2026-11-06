@@ -1,0 +1,104 @@
+{% extends 'base.html' %}
+{% block title %}Offer Letters - Ralfiz BMS{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title">Offer Letters</h1>
+    <p class="page-subtitle mb-0">Send an internship offer before enrolment. The candidate accepts online, you approve, and they download the letter.</p>
+  </div>
+  <div class="page-actions d-flex gap-2">
+    <a href="{% url 'enrolment_list' %}" class="btn btn-ghost"><i class="fas fa-user-plus"></i> Enrolments</a>
+    <a href="{% url 'offer_new' %}" class="btn btn-primary"><i class="fas fa-envelope-open-text"></i> New Offer Letter</a>
+  </div>
+</div>
+
+<div class="row mb-4">
+  <div class="col-3 col-md-6 col-sm-12" style="padding: 0.75rem;">
+    <a href="?status=accepted" class="card stat-card" style="display: block; text-decoration: none;">
+      <div class="stat-card-header"><div class="stat-card-icon warning"><i class="fas fa-inbox"></i></div></div>
+      <div class="stat-card-value">{{ counters.to_approve }}</div>
+      <div class="stat-card-label">Accepted, to approve</div>
+    </a>
+  </div>
+  <div class="col-3 col-md-6 col-sm-12" style="padding: 0.75rem;">
+    <a href="?status=open" class="card stat-card" style="display: block; text-decoration: none;">
+      <div class="stat-card-header"><div class="stat-card-icon info"><i class="fas fa-hourglass-half"></i></div></div>
+      <div class="stat-card-value">{{ counters.waiting }}</div>
+      <div class="stat-card-label">Waiting for candidate</div>
+    </a>
+  </div>
+  <div class="col-3 col-md-6 col-sm-12" style="padding: 0.75rem;">
+    <a href="?status=approved" class="card stat-card" style="display: block; text-decoration: none;">
+      <div class="stat-card-header"><div class="stat-card-icon success"><i class="fas fa-check"></i></div></div>
+      <div class="stat-card-value">{{ counters.approved }}</div>
+      <div class="stat-card-label">Approved</div>
+    </a>
+  </div>
+  <div class="col-3 col-md-6 col-sm-12" style="padding: 0.75rem;">
+    <a href="?status=declined" class="card stat-card" style="display: block; text-decoration: none;">
+      <div class="stat-card-header"><div class="stat-card-icon danger"><i class="fas fa-times"></i></div></div>
+      <div class="stat-card-value">{{ counters.declined }}</div>
+      <div class="stat-card-label">Declined</div>
+    </a>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header">
+    <h3 class="card-title"><i class="fas fa-envelope-open-text"></i> All Offers</h3>
+    <div class="card-actions">
+      <form method="get" class="d-flex gap-2">
+        <input type="text" name="q" class="form-control" style="width: auto;" placeholder="Name, position, college" value="{{ search }}">
+        <select name="status" class="form-control" style="width: auto;" onchange="this.form.submit()">
+          <option value="">All Status</option>
+          <option value="open" {% if status_filter == 'open' %}selected{% endif %}>Waiting for candidate</option>
+          <option value="expired" {% if status_filter == 'expired' %}selected{% endif %}>Expired</option>
+          {% for key, label in statuses %}
+          <option value="{{ key }}" {% if status_filter == key %}selected{% endif %}>{{ label }}</option>
+          {% endfor %}
+        </select>
+      </form>
+    </div>
+  </div>
+  <div class="card-body p-0">
+    {% if offers %}
+    <div class="table-responsive">
+      <table class="table table-hover mb-0">
+        <thead>
+          <tr>
+            <th>Candidate</th>
+            <th>Position</th>
+            <th>College</th>
+            <th>Start</th>
+            <th>Status</th>
+            <th class="text-end">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for o in offers %}
+          <tr>
+            <td>
+              <div class="fw-medium">{{ o.candidate_name }}</div>
+              <div class="text-sm text-muted">{{ o.reference }} &middot; {% firstof o.phone o.email %}</div>
+            </td>
+            <td class="text-sm">{{ o.position }}</td>
+            <td class="text-sm">{% if o.is_student and o.institution_name %}{{ o.institution_name }}<div class="text-muted">{{ o.course }}</div>{% elif o.is_student %}<span class="text-muted">Student</span>{% else %}<span class="text-muted">Not a student</span>{% endif %}</td>
+            <td class="text-sm text-muted">{{ o.start_date|date:"d M Y" }}</td>
+            <td><span class="badge" style="{{ o.status_css }}">{{ o.status_label }}</span></td>
+            <td class="text-end"><a href="{% url 'offer_detail' o.pk %}" class="btn btn-sm btn-ghost">{% if o.status == 'accepted' %}Approve{% else %}View{% endif %}</a></td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <div class="text-center text-muted" style="padding: 48px;">
+      <i class="fas fa-envelope-open-text fa-2x mb-3 d-block"></i>
+      {% if search or status_filter %}No offers match this filter.
+      {% else %}No offer letters yet. <a href="{% url 'offer_new' %}">Write the first one</a>.{% endif %}
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

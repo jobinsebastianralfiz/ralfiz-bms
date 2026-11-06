@@ -1,0 +1,172 @@
+{% extends 'base.html' %}
+{% block title %}{% if offer %}Edit Offer{% else %}New Offer Letter{% endif %} - Ralfiz BMS{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title">{% if offer %}Edit Offer {{ offer.reference }}{% else %}New Offer Letter{% endif %}</h1>
+    <p class="page-subtitle mb-0">The candidate gets a personal link to read and accept the offer. No login needed.</p>
+  </div>
+  <div class="page-actions">
+    <a href="{% if offer %}{% url 'offer_detail' offer.pk %}{% else %}{% url 'offer_list' %}{% endif %}" class="btn btn-ghost"><i class="fas fa-arrow-left"></i> Back</a>
+  </div>
+</div>
+
+<form method="post" style="max-width: 820px;">
+  {% csrf_token %}
+  {% if errors %}<div class="alert alert-danger mb-3">Please fix the highlighted fields.</div>{% endif %}
+
+  <div class="card mb-4">
+    <div class="card-header"><h3 class="card-title"><i class="fas fa-user"></i> Candidate</h3></div>
+    <div class="card-body">
+      <div class="row">
+        <div class="col-12" style="padding: 0 0.5rem;">
+          <div class="mb-3">
+            <label class="form-label" for="candidate_name">Full name</label>
+            <input type="text" name="candidate_name" id="candidate_name" class="form-control" value="{{ posted.candidate_name|default:'' }}" required autofocus>
+            {% if errors.candidate_name %}<div class="text-sm text-danger mt-1">{{ errors.candidate_name }}</div>{% endif %}
+          </div>
+        </div>
+        <div class="col-6 col-sm-12" style="padding: 0 0.5rem;">
+          <div class="mb-3">
+            <label class="form-label" for="phone">WhatsApp / phone</label>
+            <input type="tel" name="phone" id="phone" class="form-control" value="{{ posted.phone|default:'' }}" placeholder="98xxxxxxxx">
+            {% if errors.phone %}<div class="text-sm text-danger mt-1">{{ errors.phone }}</div>{% endif %}
+          </div>
+        </div>
+        <div class="col-6 col-sm-12" style="padding: 0 0.5rem;">
+          <div class="mb-3">
+            <label class="form-label" for="email">Email <span class="text-muted">(optional)</span></label>
+            <input type="email" name="email" id="email" class="form-control" value="{{ posted.email|default:'' }}">
+          </div>
+        </div>
+      </div>
+
+      <label class="d-flex align-items-center gap-2 mb-3" style="cursor: pointer;">
+        <input type="checkbox" name="is_student" id="is_student" {% if posted.is_student %}checked{% endif %}>
+        <span class="fw-medium">Candidate is a student</span>
+      </label>
+      <div id="student-fields" {% if not posted.is_student %}hidden{% endif %}>
+        <p class="text-sm text-muted mb-2">Fill these in if you know them. The candidate confirms or corrects them when accepting.</p>
+        <div class="row">
+          <div class="col-12" style="padding: 0 0.5rem;">
+            <div class="mb-3">
+              <label class="form-label" for="institution_name">College / institution</label>
+              <input type="text" name="institution_name" id="institution_name" class="form-control" value="{{ posted.institution_name|default:'' }}">
+            </div>
+          </div>
+          <div class="col-8 col-sm-12" style="padding: 0 0.5rem;">
+            <div class="mb-3">
+              <label class="form-label" for="course">Course and branch</label>
+              <input type="text" name="course" id="course" class="form-control" value="{{ posted.course|default:'' }}" placeholder="e.g. B.Tech CSE, BCA, MBA">
+            </div>
+          </div>
+          <div class="col-4 col-sm-12" style="padding: 0 0.5rem;">
+            <div class="mb-3">
+              <label class="form-label" for="year_of_study">Year</label>
+              <select name="year_of_study" id="year_of_study" class="form-control">
+                <option value="">-</option>
+                {% for key, label in years %}<option value="{{ key }}"{% if key == posted.year_of_study %} selected{% endif %}>{{ label }}</option>{% endfor %}
+              </select>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card mb-4">
+    <div class="card-header"><h3 class="card-title"><i class="fas fa-briefcase"></i> The offer</h3></div>
+    <div class="card-body">
+      <div class="row">
+        <div class="col-8 col-sm-12" style="padding: 0 0.5rem;">
+          <div class="mb-3">
+            <label class="form-label" for="position">Position</label>
+            <input type="text" name="position" id="position" class="form-control" list="position-list" value="{{ posted.position|default:'' }}" placeholder="e.g. Flutter Developer Intern" required>
+            <datalist id="position-list">{% for p in position_suggestions %}<option value="{{ p }}">{% endfor %}</datalist>
+            {% if errors.position %}<div class="text-sm text-danger mt-1">{{ errors.position }}</div>{% endif %}
+          </div>
+        </div>
+        <div class="col-4 col-sm-12" style="padding: 0 0.5rem;">
+          <div class="mb-3">
+            <label class="form-label" for="department">Department</label>
+            <select name="department" id="department" class="form-control">
+              {% for key, label in departments %}<option value="{{ key }}"{% if key == posted.department %} selected{% endif %}>{{ label }}</option>{% endfor %}
+            </select>
+          </div>
+        </div>
+        <div class="col-4 col-sm-12" style="padding: 0 0.5rem;">
+          <div class="mb-3">
+            <label class="form-label" for="start_date">Start date</label>
+            <input type="date" name="start_date" id="start_date" class="form-control" value="{{ posted.start_date|default:'' }}" required>
+            {% if errors.start_date %}<div class="text-sm text-danger mt-1">{{ errors.start_date }}</div>{% endif %}
+          </div>
+        </div>
+        <div class="col-4 col-sm-12" style="padding: 0 0.5rem;">
+          <div class="mb-3">
+            <label class="form-label" for="duration_months">Duration</label>
+            <select name="duration_months" id="duration_months" class="form-control">
+              <option value="">Not fixed</option>
+              {% for n in durations %}<option value="{{ n }}"{% if posted.duration_months|stringformat:"s" == n|stringformat:"s" %} selected{% endif %}>{{ n }} month{{ n|pluralize }}</option>{% endfor %}
+            </select>
+          </div>
+        </div>
+        <div class="col-4 col-sm-12" style="padding: 0 0.5rem;">
+          <div class="mb-3">
+            <label class="form-label" for="work_mode">Work mode</label>
+            <select name="work_mode" id="work_mode" class="form-control">
+              {% for key, label in work_modes %}<option value="{{ key }}"{% if key == posted.work_mode %} selected{% endif %}>{{ label }}</option>{% endfor %}
+            </select>
+          </div>
+        </div>
+        <div class="col-8 col-sm-12" style="padding: 0 0.5rem;">
+          <div class="mb-3">
+            <label class="form-label" for="money_mode">Fee / stipend</label>
+            <select name="money_mode" id="money_mode" class="form-control">
+              {% for key, label in money_modes %}<option value="{{ key }}"{% if key == posted.money_mode %} selected{% endif %}>{{ label }}</option>{% endfor %}
+            </select>
+          </div>
+        </div>
+        <div class="col-4 col-sm-12" style="padding: 0 0.5rem;" id="amount-field">
+          <div class="mb-3">
+            <label class="form-label" for="amount">Amount per month (&#8377;)</label>
+            <input type="text" inputmode="decimal" name="amount" id="amount" class="form-control" value="{{ posted.amount|default:'' }}" placeholder="e.g. 750">
+            {% if errors.amount %}<div class="text-sm text-danger mt-1">{{ errors.amount }}</div>{% endif %}
+          </div>
+        </div>
+      </div>
+      <div class="mb-3">
+        <label class="form-label" for="terms">Terms <span class="text-muted">(one per line)</span></label>
+        <textarea name="terms" id="terms" class="form-control" rows="9">{{ posted.terms|default:'' }}</textarea>
+      </div>
+      <div class="mb-1">
+        <label class="form-label" for="accept_days">Candidate must respond within</label>
+        <select name="accept_days" id="accept_days" class="form-control" style="width: auto;">
+          {% if offer %}<option value="">Keep {{ offer.expires_at|date:"d M Y" }}</option>{% endif %}
+          <option value="3">3 days</option>
+          <option value="7">7 days</option>
+          <option value="14"{% if not offer %} selected{% endif %}>14 days</option>
+          <option value="30">30 days</option>
+        </select>
+      </div>
+    </div>
+  </div>
+
+  <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> {% if offer %}Save changes{% else %}Create offer &amp; get link{% endif %}</button>
+</form>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function () {
+  var student = document.getElementById('is_student');
+  var fields = document.getElementById('student-fields');
+  student.addEventListener('change', function () { fields.hidden = !student.checked; });
+  var mode = document.getElementById('money_mode');
+  var amount = document.getElementById('amount-field');
+  function sync() { amount.style.display = mode.value === 'none' ? 'none' : ''; }
+  mode.addEventListener('change', sync);
+  sync();
+})();
+</script>
+{% endblock %}

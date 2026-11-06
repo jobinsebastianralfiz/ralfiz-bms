@@ -1,0 +1,52 @@
+{% extends 'agreements/_doc_base.html' %}
+
+{% block title %}Internship Offer - Ralfiz Technologies{% endblock %}
+
+{% block body %}
+<div class="status-card">
+  {% if offer.status == 'approved' %}
+  <div class="status-icon ok">&#10003;</div>
+  <h1>Welcome aboard, {{ offer.first_name }}!</h1>
+  <p>Your acceptance has been approved. Download your offer letter below and keep it for your records.</p>
+  {% elif offer.status == 'accepted' %}
+  <div class="status-icon ok">&#10003;</div>
+  <h1>Thank you, {{ offer.first_name }}</h1>
+  <p>Your acceptance has been recorded. Once our team approves it, your offer letter will be ready
+     to download on this same page.</p>
+  {% else %}
+  <div class="status-icon stop">&times;</div>
+  <h1>Your response is recorded</h1>
+  <p>We have noted that you have declined this offer. Thank you for letting us know, and we wish you all the best.</p>
+  {% endif %}
+
+  <div class="receipt">
+    <div class="receipt-row"><span>Reference</span><span>{{ offer.reference }}</span></div>
+    <div class="receipt-row"><span>Position</span><span>{{ offer.position }}</span></div>
+    <div class="receipt-row"><span>Start date</span><span>{{ offer.start_date|date:"d M Y" }}</span></div>
+    {% if offer.status != 'declined' and offer.institution_name %}
+    <div class="receipt-row"><span>College</span><span>{{ offer.institution_name }}</span></div>
+    {% endif %}
+    <div class="receipt-row"><span>Responded on</span><span>{{ offer.responded_at|date:"d M Y, g:i a" }}</span></div>
+    <div class="receipt-row"><span>Status</span><span>
+      {% if offer.status == 'approved' %}<span class="pill ok">Approved</span>
+      {% elif offer.status == 'accepted' %}<span class="pill ok">Accepted &middot; awaiting approval</span>
+      {% else %}<span class="pill stop">Declined</span>{% endif %}
+    </span></div>
+  </div>
+
+  {% if offer.can_download %}
+  <div style="margin-top:26px; display:flex; gap:10px; justify-content:center; flex-wrap:wrap;">
+    <a href="{% url 'offer_copy_pdf' offer.token %}" class="copy-btn primary">Download offer letter (PDF)</a>
+    <a href="{% url 'offer_copy' offer.token %}" class="copy-btn">View letter</a>
+  </div>
+  {% if offer.enrolment and offer.enrolment.is_open %}
+  <p style="margin-top:22px;">Next step: fill in your enrolment form. Keep a clear photo of your face and your ID proof ready.</p>
+  <a href="{{ offer.enrolment.public_path }}" class="copy-btn primary" style="margin-top:6px;">Fill in my enrolment form</a>
+  {% endif %}
+  {% endif %}
+
+  <p style="margin-top:22px;font-size:13px;color:var(--agr-muted);">
+    Questions? Contact us at +91 98956 63498.
+  </p>
+</div>
+{% endblock %}

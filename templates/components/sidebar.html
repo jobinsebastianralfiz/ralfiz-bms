@@ -265,6 +265,10 @@
         <i class="fas fa-user-plus"></i>
         <span>Intern Enrolments</span>
       </a>
+      <a href="{% url 'offer_list' %}" class="nav-item {% if 'offer_' in n %}active{% endif %}">
+        <i class="fas fa-envelope-open-text"></i>
+        <span>Offer Letters</span>
+      </a>
       <a href="{% url 'emp_class_list' %}" class="nav-item {% if 'emp_class' in n %}active{% endif %}">
         <i class="fas fa-chalkboard-teacher"></i>
         <span>Intern Classes</span>

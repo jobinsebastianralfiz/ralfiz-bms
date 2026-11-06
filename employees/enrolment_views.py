@@ -103,6 +103,16 @@ def _context(enrolment, errors=None, posted=None):
             'full_name': enrolment.full_name or enrolment.invite_name,
             'phone': enrolment.phone or enrolment.invite_phone,
             'email': enrolment.email or enrolment.invite_email,
+            # An enrolment opened from an accepted offer letter arrives with
+            # these already known, so the student only checks them.
+            'college_name': enrolment.college_name,
+            'course': enrolment.course,
+            'year_of_study': enrolment.year_of_study,
+            'track': enrolment.track,
+            'duration_months': enrolment.duration_months,
+            'work_mode': enrolment.work_mode,
+            'preferred_start_date': (enrolment.preferred_start_date.isoformat()
+                                     if enrolment.preferred_start_date else ''),
         }
     sections = []
     for title, fields in SECTIONS:

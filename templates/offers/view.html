@@ -1,0 +1,94 @@
+{% extends 'agreements/_doc_base.html' %}
+
+{% block title %}Internship Offer - {{ company.company_name }}{% endblock %}
+
+{% block body %}
+<main class="doc-main">
+  {% include 'offers/_letter.html' %}
+</main>
+
+<form class="doc-form" method="post" novalidate>
+  {% csrf_token %}
+  <hr class="form-divider">
+
+  {% if errors %}
+  <div class="alert-error">Please check the highlighted fields below and try again.</div>
+  {% endif %}
+
+  <h3 class="form-heading">Your response</h3>
+  <div class="ofr-choice">
+    <label><input type="radio" name="decision" value="accept" {% if posted.decision != 'decline' %}checked{% endif %}> <span>Accept the offer</span></label>
+    <label><input type="radio" name="decision" value="decline" {% if posted.decision == 'decline' %}checked{% endif %}> <span>Decline</span></label>
+  </div>
+  {% if errors.decision %}<div class="field-error">{{ errors.decision }}</div>{% endif %}
+
+  <div id="panel-accept" {% if posted.decision == 'decline' %}hidden{% endif %}>
+    <hr class="form-divider">
+    {% if offer.is_student %}
+    <h3 class="form-heading">Your college details</h3>
+    <div class="field {% if errors.institution_name %}has-error{% endif %}">
+      <label for="institution_name">College / institution</label>
+      <input type="text" id="institution_name" name="institution_name" value="{{ posted.institution_name|default:'' }}" autocomplete="organization">
+      {% if errors.institution_name %}<div class="field-error">{{ errors.institution_name }}</div>{% endif %}
+    </div>
+    <div class="field-row">
+      <div class="field {% if errors.course %}has-error{% endif %}">
+        <label for="course">Course and branch</label>
+        <input type="text" id="course" name="course" value="{{ posted.course|default:'' }}" placeholder="e.g. B.Tech CSE, BCA, MBA">
+        {% if errors.course %}<div class="field-error">{{ errors.course }}</div>{% endif %}
+      </div>
+      <div class="field {% if errors.year_of_study %}has-error{% endif %}">
+        <label for="year_of_study">Current year <span class="opt">(optional)</span></label>
+        <select id="year_of_study" name="year_of_study">
+          <option value="">Choose&hellip;</option>
+          {% for key, label in years %}<option value="{{ key }}"{% if key == posted.year_of_study %} selected{% endif %}>{{ label }}</option>{% endfor %}
+        </select>
+        {% if errors.year_of_study %}<div class="field-error">{{ errors.year_of_study }}</div>{% endif %}
+      </div>
+    </div>
+    {% endif %}
+
+    <h3 class="form-heading">Accept and sign</h3>
+    <div class="field {% if errors.signed_name %}has-error{% endif %}">
+      <label for="signed_name">Type your full name to sign</label>
+      <input type="text" id="signed_name" name="signed_name" value="{{ posted.signed_name|default:'' }}" placeholder="e.g. {{ offer.candidate_name }}" autocomplete="name">
+      {% if errors.signed_name %}<div class="field-error">{{ errors.signed_name }}</div>{% endif %}
+    </div>
+    <div class="field">
+      <label for="today">Date</label>
+      <input type="text" id="today" value="{{ today|date:'d M Y' }}" readonly>
+    </div>
+    <div class="confirm-check {% if errors.agree %}has-error{% endif %}">
+      <input type="checkbox" id="agree" name="agree" {% if posted.agree %}checked{% endif %}>
+      <label for="agree">I have read this offer and I accept the internship as {{ offer.position }} on the terms above.</label>
+    </div>
+    {% if errors.agree %}<div class="field-error" style="margin-top:-8px;margin-bottom:14px;">{{ errors.agree }}</div>{% endif %}
+    <button type="submit" class="btn-submit">Accept the offer</button>
+  </div>
+
+  <div id="panel-decline" {% if posted.decision != 'decline' %}hidden{% endif %}>
+    <hr class="form-divider">
+    <div class="field">
+      <label for="decline_reason">Reason <span class="opt">(optional)</span></label>
+      <textarea id="decline_reason" name="decline_reason" rows="3" placeholder="Anything you would like us to know?">{{ posted.decline_reason|default:'' }}</textarea>
+    </div>
+    <button type="submit" class="btn-submit danger">Decline the offer</button>
+  </div>
+</form>
+{% endblock %}
+
+{% block scripts %}
+<script>
+(function () {
+  var accept = document.getElementById('panel-accept');
+  var decline = document.getElementById('panel-decline');
+  Array.prototype.forEach.call(document.querySelectorAll('input[name="decision"]'), function (radio) {
+    radio.addEventListener('change', function () {
+      var yes = radio.value === 'accept';
+      accept.hidden = !yes;
+      decline.hidden = yes;
+    });
+  });
+})();
+</script>
+{% endblock %}

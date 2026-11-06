@@ -1047,3 +1047,4 @@ class DailyReportComment(models.Model):
         if not self.author:
             return 'Removed user'
         return self.author.get_full_name() or self.author.username
+from .offer_models import InternOffer  # noqa: E402,F401

@@ -460,3 +460,31 @@ body {
 .own-hosting-ack input { margin-top: 3px; }
 .own-hosting-ack.has-error { color: #b91c1c; }
 .field label.own-hosting-ack { display: flex; margin: 0; font-size: 13px; font-weight: 600; letter-spacing: 0; text-transform: none; color: #78350f; }
+
+/* ---- Internship offer letter ---- */
+.ofr-meta { display: flex; justify-content: space-between; gap: 12px; font-size: 13px; color: var(--agr-muted); margin-bottom: 18px; }
+.ofr-meta strong { color: var(--agr-ink); font-weight: 600; }
+.ofr-to { margin-bottom: 16px; color: var(--agr-body); line-height: 1.5; }
+.ofr-to strong { color: var(--agr-ink); font-size: 15px; }
+.ofr-subject { font-weight: 700; color: var(--agr-ink); margin: 0 0 14px; }
+.ofr-body p { margin: 0 0 12px; }
+.ofr-body .kv-grid { margin: 16px 0 18px; }
+@media (min-width: 640px) { .ofr-body .kv-grid { grid-template-columns: 1fr 1fr 1fr; } }
+@media print { .ofr-body .kv-grid { grid-template-columns: 1fr 1fr 1fr; } }
+.ofr-sign { margin: 22px 0 8px; max-width: 280px; break-inside: avoid; page-break-inside: avoid; }
+.ofr-sign .sign-area { height: 76px; gap: 10px; }
+.ofr-sign .sign-image { max-height: 60px; }
+.ofr-sign .seal-image { max-height: 70px; }
+.ofr-sign strong { display: block; color: var(--agr-ink); font-size: 13px; margin-top: 6px; }
+.ofr-sign span { display: block; font-size: 12px; color: var(--agr-muted); }
+.ofr-accept { border: 1px solid #a7f3d0; background: #ecfdf5; border-radius: var(--agr-radius); padding: 14px 16px; margin: 22px 0 18px; color: #065f46; }
+.ofr-accept strong { color: #065f46; }
+.ofr-accept .sign-typed { color: #065f46; margin: 6px 0 2px; }
+.ofr-choice { display: flex; gap: 10px; margin: 6px 0 4px; }
+.ofr-choice label { flex: 1; display: flex; align-items: center; gap: 8px; border: 1px solid var(--agr-line); border-radius: var(--agr-radius); padding: 12px 14px; cursor: pointer; font-weight: 600; color: var(--agr-ink); }
+.ofr-choice input:checked + span { color: var(--agr-blue); }
+.ofr-choice label:has(input:checked) { border-color: var(--agr-blue); background: var(--agr-blue-soft); }
+.field select { width: 100%; padding: 11px 13px; border: 1px solid var(--agr-line); border-radius: 9px; font-family: inherit; font-size: 15px; color: var(--agr-ink); background: #fff; }
+.field.has-error select { border-color: var(--agr-red); }
+.field .opt { text-transform: none; letter-spacing: 0; font-weight: 400; }
+@media print { .ofr-accept { break-inside: avoid; } }

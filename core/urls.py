@@ -8,6 +8,7 @@ from ralfpos_licensing import web_views as ralfpos_web_views
 from . import agreement_web_views
 from . import client_agreement_views
 from . import enrolment_web_views
+from . import offer_web_views
 
 urlpatterns = [
     # Public Pages
@@ -353,6 +354,16 @@ urlpatterns = [
     path('hr/enrolments/<uuid:pk>/cancel/', enrolment_web_views.enrolment_cancel, name='enrolment_cancel'),
     path('hr/enrolments/<uuid:pk>/extend/', enrolment_web_views.enrolment_extend, name='enrolment_extend'),
     path('hr/enrolments/<uuid:pk>/file/<str:field>/', enrolment_web_views.enrolment_file, name='enrolment_file'),
+    path('hr/offers/', offer_web_views.offer_list, name='offer_list'),
+    path('hr/offers/new/', offer_web_views.offer_form, name='offer_new'),
+    path('hr/offers/<uuid:pk>/', offer_web_views.offer_detail, name='offer_detail'),
+    path('hr/offers/<uuid:pk>/edit/', offer_web_views.offer_form, name='offer_edit'),
+    path('hr/offers/<uuid:pk>/preview/', offer_web_views.offer_preview, name='offer_preview'),
+    path('hr/offers/<uuid:pk>/pdf/', offer_web_views.offer_pdf, name='offer_pdf'),
+    path('hr/offers/<uuid:pk>/approve/', offer_web_views.offer_approve, name='offer_approve'),
+    path('hr/offers/<uuid:pk>/enrolment/', offer_web_views.offer_create_enrolment, name='offer_create_enrolment'),
+    path('hr/offers/<uuid:pk>/cancel/', offer_web_views.offer_cancel, name='offer_cancel'),
+    path('hr/offers/<uuid:pk>/extend/', offer_web_views.offer_extend, name='offer_extend'),
     path('hr/agreements/', agreement_web_views.agreement_list, name='agreement_list'),
     path('hr/agreements/send/', agreement_web_views.agreement_send, name='agreement_send'),
     path('hr/agreements/batch/<uuid:batch>/', agreement_web_views.agreement_batch, name='agreement_batch'),
