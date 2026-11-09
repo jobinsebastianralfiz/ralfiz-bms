@@ -23,7 +23,7 @@ from .models import (
     ExerciseFile, LabProgress, Lesson, Question, QuizAnswer, Student, TestAttempt, Track,
 )
 from . import perks as perks_mod
-from .locks import course_lock, course_locks, lesson_lock, locked_lessons, locks_apply
+from .locks import course_lock, course_locks, lesson_lock, lesson_order_applies, locked_lessons
 from .progress import DONE, lesson_statuses, track_summary
 from .public_views import _contact
 from .sanitize import headings
@@ -439,7 +439,7 @@ def lesson_detail(request, lesson_id):
         'lead': _lead(lesson.summary_html),
         'files_kb': round(sum(f.size_bytes for f in files) / 1024, 1),
         'next_status': next_status,
-        'next_locked': bool(next_lesson and locks_apply(request) and status['status'] != DONE
+        'next_locked': bool(next_lesson and lesson_order_applies(request, lesson.track_id) and status['status'] != DONE
                             and next_status['status'] == 'not_started'),
         'lab_pct': round(status['lab_ticked'] / status['lab_total'] * 100) if status['lab_total'] else 100,
         'lesson_pct': _lesson_pct(status),

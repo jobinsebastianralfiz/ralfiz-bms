@@ -13,6 +13,9 @@ from .models import LabProgress, Lesson, QuizAnswer, TestAttempt, Track
 from .progress import DONE, NOT_STARTED, lesson_statuses, track_summary
 
 PREREQS = {'ab410': ['pl900'], 'pl300': ['pl900'], 'ab400': ['ab410'], 'dom': ['js']}
+# Mentor-led courses: the trainer sets the pace in class, so every lesson is
+# open and learners may read ahead or go back. The intern bootcamp is one.
+OPEN_LESSON_TRACKS = {'django'}
 
 
 def locks_apply(request):
@@ -51,12 +54,19 @@ def course_locks(request, summaries):
     return {s['track'].id: course_lock(request, s['track'], by_id) for s in summaries}
 
 
+def lesson_order_applies(request, track_id):
+    """True when this learner must take this course's lessons in order."""
+    return locks_apply(request) and track_id not in OPEN_LESSON_TRACKS
+
+
 def locked_lessons(request, lessons, statuses, course_reason=None):
     """{lesson_id: reason} for the locked lessons of one course, in order."""
     if not locks_apply(request):
         return {}
     if course_reason:
         return {l.id: course_reason for l in lessons}
+    if lessons and lessons[0].track_id in OPEN_LESSON_TRACKS:
+        return {}
     out, prev = {}, None
     for lesson in lessons:
         st = statuses[lesson.id]['status']
@@ -74,6 +84,8 @@ def lesson_lock(request, lesson):
     reason = course_lock(request, lesson.track)
     if reason:
         return reason
+    if lesson.track_id in OPEN_LESSON_TRACKS:
+        return None
     lessons = list(Lesson.objects.filter(track_id=lesson.track_id).only('id', 'num', 'title',
                                                                            'lab_steps'))
     idx = next(i for i, l in enumerate(lessons) if l.id == lesson.id)

@@ -189,6 +189,29 @@
       badge.textContent = st.status === 'done' ? 'Complete' : st.status === 'in_progress' ? 'In progress' : 'Not started';
       var dot = $('[data-dot="' + root.dataset.lesson + '"]');
       if (dot) dot.className = 'dot ' + (st.status === 'done' ? 'done' : st.status === 'in_progress' ? 'half' : '');
+      if (st.status === 'done') {
+        // The next lesson unlocks now; don't make the learner reload to see it.
+        $$('[data-unlock-pager]').forEach(function (el) {
+          var a = document.createElement('a');
+          a.className = 'btn primary';
+          a.href = el.dataset.unlockPager;
+          var span = document.createElement('span');
+          span.textContent = el.dataset.unlockLabel + ' \u2192';
+          a.appendChild(span);
+          el.replaceWith(a);
+        });
+        $$('[data-unlock-next]').forEach(function (el) {
+          var a = document.createElement('a');
+          a.className = 'rnext';
+          a.href = el.dataset.unlockNext;
+          a.innerHTML = el.innerHTML;
+          var tile = a.querySelector('.tile');
+          if (tile) { tile.className = 'tile sm'; tile.innerHTML = '<i class="fa-regular fa-file-lines"></i>'; }
+          var small = a.querySelector('small');
+          if (small) small.textContent = 'Unlocked. Open the next lesson';
+          el.replaceWith(a);
+        });
+      }
       $('#labMsg').innerHTML = st.lab_done ? '<div class="labdone">Lab complete. ' +
         (st.quiz_done ? 'This lesson is finished.' : 'Now take the quiz to finish the lesson.') + '</div>' : '';
       $('#quizMsg').innerHTML = st.quiz_done && st.quiz_total ? '<div class="labdone">' +

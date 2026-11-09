@@ -80,6 +80,16 @@ class BootcampPortalTests(StaffPortalTestBase):
         # A Student profile must not confine the intern to /academy/.
         self.assertEqual(self.client.get(reverse('staff:dashboard')).status_code, 200)
 
+    def test_bootcamp_lessons_are_all_open(self):
+        # Mentor-led: an intern can open lesson 2 without finishing lesson 1.
+        self.login_intern()
+        self.client.get(reverse('staff:bootcamp'))
+        res = self.client.get(reverse('academy:lesson', args=['dj2']))
+        self.assertEqual(res.status_code, 200)
+        self.assertNotContains(res, 'data-unlock-pager')
+        res = self.client.get(reverse('academy:track', args=['django']))
+        self.assertNotContains(res, 'Finish 1.1')
+
     def test_card_shows_progress(self):
         LabProgress.objects.create(user=self.intern_user, lesson_id='dj1', ticked_steps=[0, 1])
         self.login_intern()
