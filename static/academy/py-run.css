@@ -1,0 +1,16 @@
+/* Runnable Python examples (py-run.js). Uses the Academy tokens from academy.css,
+   which carry the light and dark themes. */
+.py-run{margin:0 0 16px;border:1px solid var(--line);border-radius:10px;overflow:hidden;background:var(--sunk)}
+.py-bar{display:flex;flex-wrap:wrap;gap:6px;padding:7px 8px;border-bottom:1px solid var(--line);background:var(--surface)}
+.py-btn{font:600 12.5px/1 inherit;font-family:inherit;padding:6px 11px;border-radius:7px;border:1px solid var(--line);background:var(--surface);color:var(--ink);cursor:pointer}
+.py-btn:hover{background:var(--sunk)}
+.py-btn.primary{background:#6A45E6;border-color:#6A45E6;color:#fff}
+.py-btn.primary:hover{background:#5935D2}
+.py-btn:focus-visible{outline:2px solid #6A45E6;outline-offset:2px}
+.deep .py-run pre.code{margin:0;border-radius:0}
+.deep .py-run pre.code.editing{outline:2px solid #6A45E6;outline-offset:-2px;background:var(--surface)}
+.deep pre.py-out{margin:0;padding:10px 14px;border-top:1px dashed var(--line);font-family:var(--mono);font-size:13px;line-height:1.5;white-space:pre-wrap;overflow-wrap:anywhere;background:var(--surface);color:var(--ink);max-height:360px;overflow:auto}
+.deep pre.py-out::before{content:"Output";display:block;font:600 10.5px/1.6 var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-bottom:4px}
+.deep pre.py-out.err{color:#B42318}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .deep pre.py-out.err{color:#FF8B85}}
+:root[data-theme="dark"] .deep pre.py-out.err{color:#FF8B85}

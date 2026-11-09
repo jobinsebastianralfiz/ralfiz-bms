@@ -39,15 +39,34 @@ class ImportTests(AcademyTestBase):
     def test_counts_match_the_package(self):
         c = self.counts
         self.assertEqual((c['tracks'], c['domains'], c['lessons'], c['files'], c['questions']),
-                         (10, 75, 305, 924, 8556))
+                         (11, 84, 342, 953, 8654))
 
     def test_reimport_is_a_no_op_and_keeps_answers(self):
         q = Question.objects.filter(source='lesson').first()
         QuizAnswer.objects.create(user=self.user, question=q, last_choice=0)
         run_import(log=_quiet, force=True)
-        self.assertEqual(Question.objects.count(), 8556)
+        self.assertEqual(Question.objects.count(), 8654)
         self.assertEqual(Question.objects.filter(is_active=False).count(), 0)
         self.assertTrue(QuizAnswer.objects.filter(question_id=q.pk).exists())
+
+    def test_python_tutorial_imports(self):
+        track = Track.objects.get(pk='python')
+        self.assertEqual((track.name, track.category), ('Complete Python Tutorial', 'development'))
+        self.assertEqual((track.domains.count(), track.lessons.count()), (9, 37))
+        self.assertEqual(Question.objects.filter(track=track).count(), 98)
+        lesson = Lesson.objects.get(pk='py4')
+        self.assertEqual((lesson.num, lesson.title), ('1.4', 'Strings in depth'))
+        self.assertIn('Exercise solutions', lesson.content_html)
+        self.assertEqual(list(lesson.lesson_files.values_list('file_id', flat=True)), ['python/04_strings.py'])
+        self.assertIn('Count the vowels in "Perinthalmanna".', lesson.lab_steps)
+        self.assertIn('<pre class="code run">', lesson.content_html)   # runnable in the browser
+        self.assertIn('Lesson 3.5', Lesson.objects.get(pk='py2').content_html)   # cross-references renumbered
+        # The free sample lesson loads the in-browser runner; a course without runnable code does not.
+        res = self.client.get(reverse('academy:catalog_lesson', args=['python', 'py1']))
+        self.assertContains(res, 'academy/py-run.js')
+        first_js = Lesson.objects.filter(track_id='js').order_by('sort_order').first()
+        res = self.client.get(reverse('academy:catalog_lesson', args=['js', first_js.pk]))
+        self.assertNotContains(res, 'py-run.js')
 
     def test_flutter_track_imports(self):
         track = Track.objects.get(pk='flutter')

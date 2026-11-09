@@ -29,7 +29,7 @@ from .public_views import _contact
 from .sanitize import headings
 
 REMEMBER_ME_SECONDS = 30 * 24 * 60 * 60
-PATH_ORDER = ['pl900', 'ab410', 'pl300', 'ab400', 'flutter', 'js', 'dom', 'net1', 'net2']
+PATH_ORDER = ['pl900', 'ab410', 'pl300', 'ab400', 'flutter', 'js', 'dom', 'python', 'net1', 'net2']
 PATH_LINES = {
     'pl900': 'Start with the basics and understand the core services.',
     'ab410': 'Build real business apps with AI and Dataverse.',
@@ -38,6 +38,7 @@ PATH_LINES = {
     'flutter': 'Build and publish mobile apps with Flutter and Dart.',
     'js': 'Learn modern JavaScript from the first line to job-ready.',
     'dom': 'Build real web pages with the DOM and browser APIs.',
+    'python': 'Learn Python from the first print() to databases, APIs and testing.',
     'net1': 'Teaching and research aptitude for UGC NET Paper 1.',
     'net2': 'Every unit of UGC NET Computer Science, with timed mock papers.',
 }

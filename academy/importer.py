@@ -17,7 +17,7 @@ from .models import (
 )
 from .sanitize import check_mocks, check_plays, check_solvers, check_stem, clean_html
 
-TRACK_ORDER = ['pl900', 'ab410', 'pl300', 'ab400', 'flutter', 'js', 'dom', 'net1', 'net2', 'django']
+TRACK_ORDER = ['pl900', 'ab410', 'pl300', 'ab400', 'flutter', 'js', 'dom', 'net1', 'net2', 'django', 'python']
 DEFAULT_PACKAGE_DIR = Path(__file__).resolve().parent / 'content'
 SHARED_PREFIXES = ('hd', 'pbi')
 

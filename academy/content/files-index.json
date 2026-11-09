@@ -3694,5 +3694,121 @@
  "django/snippets/orm_reports.py": {
   "path": "snippets/orm_reports.py",
   "description": "Eight ORM report queries for the Django shell, plus the N+1 problem measured."
+ },
+ "python/01_intro.py": {
+  "path": "01_intro.py",
+  "description": "Lesson 1.1: every runnable example from “Introduction & setup”."
+ },
+ "python/02_variables.py": {
+  "path": "02_variables.py",
+  "description": "Lesson 1.2: every runnable example from “Variables & data types”."
+ },
+ "python/03_operators.py": {
+  "path": "03_operators.py",
+  "description": "Lesson 1.3: every runnable example from “Operators”."
+ },
+ "python/04_strings.py": {
+  "path": "04_strings.py",
+  "description": "Lesson 1.4: every runnable example from “Strings in depth”."
+ },
+ "python/05_io.py": {
+  "path": "05_io.py",
+  "description": "Lesson 1.5: every runnable example from “Input & output”."
+ },
+ "python/06_conditions.py": {
+  "path": "06_conditions.py",
+  "description": "Lesson 1.6: every runnable example from “Conditions: if, elif, else, match”."
+ },
+ "python/07_loops.py": {
+  "path": "07_loops.py",
+  "description": "Lesson 1.7: every runnable example from “Loops: for & while”."
+ },
+ "python/08_lists.py": {
+  "path": "08_lists.py",
+  "description": "Lesson 2.1: every runnable example from “Lists”."
+ },
+ "python/09_tuples_sets.py": {
+  "path": "09_tuples_sets.py",
+  "description": "Lesson 2.2: every runnable example from “Tuples & sets”."
+ },
+ "python/10_dicts.py": {
+  "path": "10_dicts.py",
+  "description": "Lesson 2.3: every runnable example from “Dictionaries”."
+ },
+ "python/11_comprehensions.py": {
+  "path": "11_comprehensions.py",
+  "description": "Lesson 2.4: every runnable example from “Comprehensions”."
+ },
+ "python/12_functions.py": {
+  "path": "12_functions.py",
+  "description": "Lesson 3.1: every runnable example from “Functions”."
+ },
+ "python/13_functional.py": {
+  "path": "13_functional.py",
+  "description": "Lesson 3.2: every runnable example from “Lambda, recursion & higher-order functions”."
+ },
+ "python/14_modules.py": {
+  "path": "14_modules.py",
+  "description": "Lesson 3.3: every runnable example from “Modules, packages & the standard library”."
+ },
+ "python/15_files.py": {
+  "path": "15_files.py",
+  "description": "Lesson 3.4: every runnable example from “File handling: text, CSV & JSON”."
+ },
+ "python/16_exceptions.py": {
+  "path": "16_exceptions.py",
+  "description": "Lesson 3.5: every runnable example from “Errors & exceptions”."
+ },
+ "python/17_classes.py": {
+  "path": "17_classes.py",
+  "description": "Lesson 4.1: every runnable example from “Classes & objects”."
+ },
+ "python/18_inheritance.py": {
+  "path": "18_inheritance.py",
+  "description": "Lesson 4.2: every runnable example from “Inheritance & polymorphism”."
+ },
+ "python/19_encapsulation.py": {
+  "path": "19_encapsulation.py",
+  "description": "Lesson 4.3: every runnable example from “Encapsulation, properties & magic methods”."
+ },
+ "python/20_dataclasses.py": {
+  "path": "20_dataclasses.py",
+  "description": "Lesson 4.4: every runnable example from “Dataclasses & enums”."
+ },
+ "python/21_generators.py": {
+  "path": "21_generators.py",
+  "description": "Lesson 5.1: every runnable example from “Iterators & generators”."
+ },
+ "python/22_decorators.py": {
+  "path": "22_decorators.py",
+  "description": "Lesson 5.2: every runnable example from “Closures & decorators”."
+ },
+ "python/23_context.py": {
+  "path": "23_context.py",
+  "description": "Lesson 5.3: every runnable example from “Context managers”."
+ },
+ "python/24_typing.py": {
+  "path": "24_typing.py",
+  "description": "Lesson 5.4: every runnable example from “Type hints”."
+ },
+ "python/25_regex.py": {
+  "path": "25_regex.py",
+  "description": "Lesson 5.5: every runnable example from “Regular expressions”."
+ },
+ "python/27_datetime.py": {
+  "path": "27_datetime.py",
+  "description": "Lesson 6.1: every runnable example from “Dates, times & money”."
+ },
+ "python/28_sqlite.py": {
+  "path": "28_sqlite.py",
+  "description": "Lesson 6.2: every runnable example from “Databases with SQLite”."
+ },
+ "python/29_apis.py": {
+  "path": "29_apis.py",
+  "description": "Lesson 6.3: every runnable example from “Working with APIs & JSON”."
+ },
+ "python/30_testing.py": {
+  "path": "30_testing.py",
+  "description": "Lesson 6.4: every runnable example from “Testing, logging & clean code”."
  }
 }

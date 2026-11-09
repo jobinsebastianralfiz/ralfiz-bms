@@ -20,7 +20,7 @@ ALLOWED_TAGS = {
 }
 VOID_TAGS = {'br'}
 # Only these class values survive, and only on these tags.
-ALLOWED_CLASSES = {'pre': {'code'}, 'div': {'example', 'callout', 'warn'}}
+ALLOWED_CLASSES = {'pre': {'code', 'run'}, 'div': {'example', 'callout', 'warn'}}
 # Content of these is dropped along with the tag.
 DROP_WITH_CONTENT = {'script', 'style', 'iframe', 'object', 'embed', 'template'}
 

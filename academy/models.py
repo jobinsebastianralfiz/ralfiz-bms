@@ -69,7 +69,7 @@ class Track(models.Model):
              'pl300': 'fa-chart-column', 'ab400': 'fa-code', 'flutter': 'fa-mobile-screen-button',
              'js': 'fa-terminal', 'dom': 'fa-window-maximize',
              'net1': 'fa-chalkboard-user', 'net2': 'fa-microchip',
-             'django': 'fa-server'}
+             'django': 'fa-server', 'python': 'fa-file-code'}
 
     @property
     def icon(self):

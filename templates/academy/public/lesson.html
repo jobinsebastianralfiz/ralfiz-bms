@@ -11,6 +11,8 @@
 <link rel="stylesheet" href="{% static 'academy/ugc-solvers.css' %}?v=1">
 {% endif %}{% if lesson.plays %}
 <link rel="stylesheet" href="{% static 'academy/dom-play.css' %}?v=1">
+{% endif %}{% if 'class="code run"' in lesson.content_html %}
+<link rel="stylesheet" href="{% static 'academy/py-run.css' %}?v=1">
 {% endif %}{% endblock %}
 {% block jsonld %}
 <script type="application/ld+json">
@@ -89,4 +91,5 @@
 <script src="{% static 'academy/dom-play.js' %}?v=1"></script>{% endif %}
 {% if lesson.solvers %}{{ lesson.solvers|json_script:"lessonSolvers" }}
 <script src="{% static 'academy/ugc-solvers.js' %}?v=1"></script>{% endif %}
+{% if 'class="code run"' in lesson.content_html %}<script src="{% static 'academy/py-run.js' %}?v=1"></script>{% endif %}
 {% endblock %}
