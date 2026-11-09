@@ -5,6 +5,7 @@ from website import views as website_views
 from gympro_licensing import web_views as gympro_web_views
 from eduflow_licensing import web_views as eduflow_web_views
 from ralfpos_licensing import web_views as ralfpos_web_views
+from shopmanager_licensing import web_views as shopmanager_web_views
 from . import agreement_web_views
 from . import client_agreement_views
 from . import enrolment_web_views
@@ -303,6 +304,10 @@ urlpatterns = [
     path('ralfpos/licenses/create/', ralfpos_web_views.ralfpos_license_create, name='ralfpos_license_create'),
     path('ralfpos/licenses/<uuid:pk>/', ralfpos_web_views.ralfpos_license_detail, name='ralfpos_license_detail'),
     path('ralfpos/licenses/<uuid:pk>/update/', ralfpos_web_views.ralfpos_license_update, name='ralfpos_license_update'),
+    path('shopmanager/licenses/', shopmanager_web_views.shop_license_list, name='shop_license_list'),
+    path('shopmanager/licenses/create/', shopmanager_web_views.shop_license_create, name='shop_license_create'),
+    path('shopmanager/licenses/<uuid:pk>/', shopmanager_web_views.shop_license_detail, name='shop_license_detail'),
+    path('shopmanager/licenses/<uuid:pk>/update/', shopmanager_web_views.shop_license_update, name='shop_license_update'),
 
     # HR & Admin
     path('hr/employees/', views.emp_employee_list, name='emp_employee_list'),

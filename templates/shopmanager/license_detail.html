@@ -1,0 +1,151 @@
+{% extends 'base.html' %}
+
+{% block breadcrumb %}
+<a href="{% url 'dashboard' %}" class="breadcrumb-item">Dashboard</a>
+<span class="breadcrumb-separator">/</span>
+<a href="{% url 'shop_license_list' %}" class="breadcrumb-item">Shop Manager Licenses</a>
+<span class="breadcrumb-separator">/</span>
+<span class="breadcrumb-item active">{{ license.shop_name }}</span>
+{% endblock %}
+
+{% block content %}
+{% include 'shopmanager/_styles.html' %}
+<div class="page-header">
+  <div class="page-header__lead">
+    <span class="page-header__icon"><i class="fas fa-store"></i></span>
+    <div><h1 class="page-title">{{ license.shop_name }}</h1></div>
+  </div>
+</div>
+
+<div class="sm-layout">
+  <div>
+    <div class="sm-card">
+      <div class="sm-card__head" style="display:flex;align-items:center;justify-content:space-between">
+        <h3><i class="fas fa-key"></i>Licence</h3>{% include 'shopmanager/_state.html' %}
+      </div>
+      <div class="sm-card__body">
+        <div style="background:#F9FAFB;border:1px solid #E4E7EC;border-radius:8px;padding:1rem;margin-bottom:1rem;display:flex;align-items:center;justify-content:space-between;gap:1rem">
+          <div><p class="sm-k" style="text-transform:uppercase;letter-spacing:.05em">Licence key</p>
+            <code style="font-size:1.125rem;font-weight:700;color:#1D2939">{{ license.license_key }}</code></div>
+          <button type="button" class="sm-btn" onclick="navigator.clipboard.writeText('{{ license.license_key }}');this.textContent='Copied'"><i class="fas fa-copy"></i> Copy</button>
+        </div>
+        {% if license.status_reason %}<p class="sm-help" style="color:#B54708;margin-bottom:1rem">Reason shown to the shop: {{ license.status_reason }}</p>{% endif %}
+        <div class="sm-grid">
+          <div><p class="sm-k">Shop Manager address</p><p class="sm-v">{{ license.api_domain|default:"Not activated yet" }}</p></div>
+          <div><p class="sm-k">Plan · fee</p><p class="sm-v">{{ license.get_plan_display }} · ₹{{ license.yearly_fee|floatformat:0 }}</p></div>
+          <div><p class="sm-k">Valid from</p><p class="sm-v">{{ license.valid_from|date:"d M Y" }}</p></div>
+          <div><p class="sm-k">Valid until</p><p class="sm-v">{{ license.valid_until|date:"d M Y" }} ({{ license.days_remaining }} days)</p></div>
+          <div><p class="sm-k">When it expires</p><p class="sm-v">{{ license.get_on_expiry_display }}</p></div>
+          <div><p class="sm-k">Warn · grace</p><p class="sm-v">{{ license.warn_days }} days before · {{ license.grace_period_days }} days after</p></div>
+          <div><p class="sm-k">Renewals</p><p class="sm-v">{{ license.renewal_count }}{% if license.last_renewed_at %} (last {{ license.last_renewed_at|date:"d M Y" }}){% endif %}</p></div>
+          <div><p class="sm-k">App version</p><p class="sm-v">{{ license.app_version|default:"—" }}</p></div>
+          <div><p class="sm-k">Last check</p><p class="sm-v">{{ license.last_check_at|date:"d M Y H:i"|default:"Never" }}</p></div>
+          <div><p class="sm-k">Checks · last IP</p><p class="sm-v">{{ license.total_checks }} · {{ license.last_check_ip|default:"—" }}</p></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="sm-card">
+      <div class="sm-card__head"><h3><i class="fas fa-edit"></i>Edit licence</h3></div>
+      <form method="POST" action="{% url 'shop_license_update' pk=license.pk %}" class="sm-card__body">
+        {% csrf_token %}<input type="hidden" name="action" value="update_details">
+        <div class="sm-grid">
+          <div><label class="sm-label">Shop name</label><input type="text" name="shop_name" value="{{ license.shop_name }}" class="sm-input" required></div>
+          <div><label class="sm-label">Owner name</label><input type="text" name="owner_name" value="{{ license.owner_name }}" class="sm-input"></div>
+          <div><label class="sm-label">Phone</label><input type="text" name="shop_phone" value="{{ license.shop_phone }}" class="sm-input"></div>
+          <div><label class="sm-label">Email</label><input type="email" name="shop_email" value="{{ license.shop_email }}" class="sm-input"></div>
+          <div>
+            <label class="sm-label">Client</label>
+            <select name="client" class="sm-input"><option value="">— No client link —</option>
+              {% for c in clients %}<option value="{{ c.id }}" {% if license.client_id == c.id %}selected{% endif %}>{{ c.name }}</option>{% endfor %}
+            </select>
+          </div>
+          <div>
+            <label class="sm-label">Plan</label>
+            <select name="plan" class="sm-input">{% for v, l in plans %}<option value="{{ v }}" {% if license.plan == v %}selected{% endif %}>{{ l }}</option>{% endfor %}</select>
+          </div>
+          <div><label class="sm-label">Yearly fee (₹)</label><input type="number" step="0.01" min="0" name="yearly_fee" value="{{ license.yearly_fee|stringformat:'s' }}" class="sm-input"></div>
+          <div>
+            <label class="sm-label">When it expires</label>
+            <select name="on_expiry" class="sm-input">{% for v, l in on_expiry_choices %}<option value="{{ v }}" {% if license.on_expiry == v %}selected{% endif %}>{{ l }}</option>{% endfor %}</select>
+          </div>
+          <div><label class="sm-label">Start date</label><input type="date" name="valid_from" value="{{ license.valid_from|date:'Y-m-d' }}" class="sm-input"></div>
+          <div><label class="sm-label">End date</label><input type="date" name="valid_until" value="{{ license.valid_until|date:'Y-m-d' }}" class="sm-input"></div>
+          <div><label class="sm-label">Warn before (days)</label><input type="number" name="warn_days" value="{{ license.warn_days }}" min="0" class="sm-input"></div>
+          <div><label class="sm-label">Grace period (days)</label><input type="number" name="grace_period_days" value="{{ license.grace_period_days }}" min="0" max="60" class="sm-input"></div>
+          <div class="sm-span"><label class="sm-label">Address</label><textarea name="shop_address" rows="2" class="sm-input">{{ license.shop_address }}</textarea></div>
+          <div class="sm-span"><label class="sm-label">Internal notes</label><textarea name="notes" rows="3" class="sm-input">{{ license.notes }}</textarea></div>
+        </div>
+        <div style="margin-top:1rem;text-align:right"><button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> Save changes</button></div>
+      </form>
+    </div>
+
+    <div class="sm-card">
+      <div class="sm-card__head"><h3><i class="fas fa-list"></i>Event log</h3></div>
+      <div style="overflow-x:auto">
+        <table class="sm-table">
+          <thead><tr><th style="padding-left:1.5rem">Event</th><th>Status</th><th>Domain</th><th>IP</th><th>When</th></tr></thead>
+          <tbody>
+          {% for log in logs %}
+            <tr><td style="padding-left:1.5rem">{{ log.get_event_display }}{% if log.details.by %} <span class="sm-k">by {{ log.details.by }}</span>{% endif %}</td>
+              <td>{{ log.status }}</td><td class="sm-k">{{ log.domain|default:"—" }}</td><td class="sm-k">{{ log.ip_address|default:"—" }}</td>
+              <td class="sm-k">{{ log.created_at|date:"d M Y H:i" }}</td></tr>
+          {% empty %}
+            <tr><td colspan="5" style="padding:2rem;text-align:center;color:#98A2B3">No events yet.</td></tr>
+          {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div>
+    <div class="sm-card">
+      <div class="sm-card__head"><h3><i class="fas fa-rotate"></i>Renew</h3><p>Adds to the current end date, or starts from today if it has already lapsed.</p></div>
+      <form method="POST" action="{% url 'shop_license_update' pk=license.pk %}" class="sm-card__body">
+        {% csrf_token %}<input type="hidden" name="action" value="renew">
+        <button type="submit" class="btn btn-primary" style="width:100%;margin-bottom:.75rem"><i class="fas fa-calendar-plus"></i> Renew 1 year</button>
+        <div style="display:flex;gap:.5rem">
+          <input type="number" name="extend_days" placeholder="Or extend by days" min="1" class="sm-input" style="height:38px">
+          <button type="submit" class="sm-btn">Extend</button>
+        </div>
+      </form>
+    </div>
+
+    <div class="sm-card">
+      <div class="sm-card__head"><h3><i class="fas fa-toggle-on"></i>Status</h3><p>The shop picks up a change on its next check (every few hours) or when it clicks "Check now".</p></div>
+      <form method="POST" action="{% url 'shop_license_update' pk=license.pk %}" class="sm-card__body" style="display:flex;flex-direction:column;gap:.5rem">
+        {% csrf_token %}<input type="hidden" name="action" value="change_status">
+        {% if license.status != 'active' %}
+          <button type="submit" name="new_status" value="active" class="sm-btn sm-active" style="border-color:#D1FADF"><i class="fas fa-check-circle"></i> Reactivate</button>
+        {% else %}
+          <input type="text" name="reason" placeholder="Reason (shown to the shop), e.g. Payment pending" class="sm-input" style="height:38px">
+          <button type="submit" name="new_status" value="suspended" class="sm-btn sm-suspended" style="border-color:#FEF0C7"><i class="fas fa-pause-circle"></i> Suspend</button>
+          <button type="submit" name="new_status" value="revoked" class="sm-btn sm-expired" style="border-color:#FEE4E2" onclick="return confirm('Revoke this licence? The shop locks on its next check.')"><i class="fas fa-ban"></i> Revoke</button>
+        {% endif %}
+      </form>
+    </div>
+
+    <div class="sm-card">
+      <div class="sm-card__head"><h3><i class="fas fa-server"></i>Installation address</h3>
+        <p>Bound to <b>{{ license.api_domain|default:"nothing yet" }}</b>. Clear it when the shop moves to a new address; its next activation binds the new one.</p></div>
+      <form method="POST" action="{% url 'shop_license_update' pk=license.pk %}" class="sm-card__body" onsubmit="return confirm('Clear the bound address? Any server can then activate this key once.')">
+        {% csrf_token %}<input type="hidden" name="action" value="reset_domain">
+        <button type="submit" class="sm-btn" style="width:100%"><i class="fas fa-rotate-left"></i> Clear installation address</button>
+      </form>
+    </div>
+
+    <div class="sm-card">
+      <div class="sm-card__head"><h3><i class="fas fa-address-card"></i>Contact</h3></div>
+      <div class="sm-card__body">
+        <p class="sm-v">{{ license.owner_name|default:license.shop_name }}</p>
+        {% if license.shop_phone %}<p class="sm-help"><i class="fas fa-phone"></i> {{ license.shop_phone }}</p>{% endif %}
+        {% if license.shop_email %}<p class="sm-help"><i class="fas fa-envelope"></i> {{ license.shop_email }}</p>{% endif %}
+        {% if license.shop_address %}<p class="sm-help" style="white-space:pre-line"><i class="fas fa-map-marker-alt"></i> {{ license.shop_address }}</p>{% endif %}
+        {% if license.client %}<p class="sm-help">Client: <a href="{% url 'client_detail' pk=license.client.pk %}">{{ license.client }}</a></p>{% endif %}
+        {% if license.notes %}<p class="sm-help" style="white-space:pre-line;margin-top:.75rem">{{ license.notes }}</p>{% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

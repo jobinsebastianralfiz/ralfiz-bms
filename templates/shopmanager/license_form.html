@@ -1,0 +1,85 @@
+{% extends 'base.html' %}
+
+{% block breadcrumb %}
+<a href="{% url 'dashboard' %}" class="breadcrumb-item">Dashboard</a>
+<span class="breadcrumb-separator">/</span>
+<a href="{% url 'shop_license_list' %}" class="breadcrumb-item">Shop Manager Licenses</a>
+<span class="breadcrumb-separator">/</span>
+<span class="breadcrumb-item active">Issue New License</span>
+{% endblock %}
+
+{% block content %}
+{% include 'shopmanager/_styles.html' %}
+<div class="page-header">
+  <div class="page-header__lead">
+    <span class="page-header__icon"><i class="fas fa-plus-circle"></i></span>
+    <div><h1 class="page-title">Issue Shop Manager Licence</h1></div>
+  </div>
+</div>
+
+<form method="POST" style="max-width:820px">
+  {% csrf_token %}
+  <div class="sm-card">
+    <div class="sm-card__head"><h3><i class="fas fa-store"></i>Shop</h3></div>
+    <div class="sm-card__body sm-grid">
+      <div>
+        <label class="sm-label">Link to client</label>
+        <select name="client" class="sm-input">
+          <option value="">— No client link —</option>
+          {% for c in clients %}<option value="{{ c.id }}">{{ c.name }}{% if c.company_name %} ({{ c.company_name }}){% endif %}</option>{% endfor %}
+        </select>
+      </div>
+      <div><label class="sm-label">Shop name *</label><input type="text" name="shop_name" required class="sm-input"></div>
+      <div><label class="sm-label">Owner name</label><input type="text" name="owner_name" class="sm-input"></div>
+      <div><label class="sm-label">Phone</label><input type="text" name="shop_phone" class="sm-input"></div>
+      <div><label class="sm-label">Email</label><input type="email" name="shop_email" class="sm-input"></div>
+      <div>
+        <label class="sm-label">Shop Manager address</label>
+        <input type="text" name="api_domain" placeholder="shop.example.com" class="sm-input">
+        <p class="sm-help">Optional. Leave blank and it binds to the shop's address on first activation.</p>
+      </div>
+      <div class="sm-span"><label class="sm-label">Address</label><textarea name="shop_address" rows="2" class="sm-input"></textarea></div>
+    </div>
+  </div>
+
+  <div class="sm-card">
+    <div class="sm-card__head"><h3><i class="fas fa-key"></i>Licence</h3><p>Each shop runs on its own dates. The end date defaults to one year from the start.</p></div>
+    <div class="sm-card__body sm-grid sm-grid--3">
+      <div>
+        <label class="sm-label">Plan</label>
+        <select name="plan" class="sm-input" id="sm-plan">
+          {% for v, l in plans %}<option value="{{ v }}">{{ l }}</option>{% endfor %}
+        </select>
+      </div>
+      <div><label class="sm-label">Yearly fee (₹)</label><input type="number" step="0.01" min="0" name="yearly_fee" value="5500" class="sm-input" id="sm-fee"></div>
+      <div>
+        <label class="sm-label">When it expires</label>
+        <select name="on_expiry" class="sm-input">
+          {% for v, l in on_expiry_choices %}<option value="{{ v }}" {% if v == 'read_only' %}selected{% endif %}>{{ l }}</option>{% endfor %}
+        </select>
+      </div>
+      <div><label class="sm-label">Start date</label><input type="date" name="valid_from" value="{{ today|date:'Y-m-d' }}" class="sm-input"></div>
+      <div><label class="sm-label">End date</label><input type="date" name="valid_until" class="sm-input"><p class="sm-help">Blank = one year.</p></div>
+      <div></div>
+      <div><label class="sm-label">Warn before (days)</label><input type="number" name="warn_days" value="30" min="0" class="sm-input"></div>
+      <div><label class="sm-label">Grace period (days)</label><input type="number" name="grace_period_days" value="7" min="0" max="60" class="sm-input"></div>
+    </div>
+  </div>
+
+  <div class="sm-card"><div class="sm-card__body">
+    <label class="sm-label">Internal notes</label>
+    <textarea name="notes" rows="3" class="sm-input" placeholder="Payment reference, contact person, anything useful…"></textarea>
+  </div></div>
+
+  <div style="display:flex;gap:.75rem;justify-content:flex-end">
+    <a href="{% url 'shop_license_list' %}" class="sm-btn">Cancel</a>
+    <button type="submit" class="btn btn-primary"><i class="fas fa-key"></i> Issue Licence</button>
+  </div>
+</form>
+<script>
+  (function () {
+    var fees = {{ plan_fees|safe }}, plan = document.getElementById('sm-plan'), fee = document.getElementById('sm-fee');
+    plan.addEventListener('change', function () { if (fees[plan.value]) fee.value = fees[plan.value]; });
+  })();
+</script>
+{% endblock %}

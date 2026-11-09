@@ -47,6 +47,7 @@ INSTALLED_APPS = [
     'gympro_licensing',
     'eduflow_licensing',
     'ralfpos_licensing',
+    'shopmanager_licensing',
     'interiodesk',
     'client_portal',
     'pulse',

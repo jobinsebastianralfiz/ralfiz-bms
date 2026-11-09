@@ -1,0 +1,64 @@
+{% extends 'base.html' %}
+
+{% block breadcrumb %}
+<a href="{% url 'dashboard' %}" class="breadcrumb-item">Dashboard</a>
+<span class="breadcrumb-separator">/</span>
+<span class="breadcrumb-item active">Shop Manager Licenses</span>
+{% endblock %}
+
+{% block content %}
+{% include 'shopmanager/_styles.html' %}
+<div class="page-header">
+  <div class="page-header__lead">
+    <span class="page-header__icon"><i class="fas fa-store"></i></span>
+    <div>
+      <h1 class="page-title">Shop Manager Licenses</h1>
+      <p class="sm-help" style="margin:0">Yearly licences for shops on the Ralfiz Shop Manager (GST billing, stock &amp; accounts).</p>
+    </div>
+  </div>
+  <div class="page-actions">
+    <a href="{% url 'shop_license_create' %}" class="btn btn-primary"><i class="fas fa-plus"></i> Issue New License</a>
+  </div>
+</div>
+
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:1rem;margin-bottom:1.5rem">
+  <div class="sm-card" style="margin:0;padding:1.25rem"><p class="sm-k">Total</p><p style="font-size:1.5rem;font-weight:700;color:#1D2939">{{ total }}</p></div>
+  <div class="sm-card" style="margin:0;padding:1.25rem"><p class="sm-k">Active</p><p style="font-size:1.5rem;font-weight:700;color:#12B76A">{{ active }}</p></div>
+  <div class="sm-card" style="margin:0;padding:1.25rem"><p class="sm-k">Expiring in 30 days</p><p style="font-size:1.5rem;font-weight:700;color:#F79009">{{ expiring_soon }}</p></div>
+  <div class="sm-card" style="margin:0;padding:1.25rem"><p class="sm-k">Expired</p><p style="font-size:1.5rem;font-weight:700;color:#F04438">{{ expired }}</p></div>
+</div>
+
+<div class="sm-card">
+  <div style="padding:1rem 1.5rem;border-bottom:1px solid #e5e7eb">
+    <form method="GET" style="display:flex;gap:.75rem;align-items:center;flex-wrap:wrap">
+      <input type="text" name="search" value="{{ search }}" placeholder="Search shop, owner, phone, key, address…" class="sm-input" style="height:40px;flex:1;min-width:220px">
+      <select name="status" class="sm-input" style="height:40px;width:auto">
+        <option value="">All status</option>
+        {% for v, l in licenses.model.STATUS_CHOICES %}<option value="{{ v }}" {% if status_filter == v %}selected{% endif %}>{{ l }}</option>{% endfor %}
+      </select>
+      <button type="submit" class="btn btn-primary" style="height:40px">Filter</button>
+      {% if search or status_filter %}<a href="{% url 'shop_license_list' %}" class="sm-help">Clear</a>{% endif %}
+    </form>
+  </div>
+  <div style="overflow-x:auto">
+    <table class="sm-table">
+      <thead><tr><th style="padding-left:1.5rem">Shop</th><th>Licence key</th><th>Address</th><th>Plan</th><th>Valid until</th><th>Status</th><th></th></tr></thead>
+      <tbody>
+      {% for lic in licenses %}
+        <tr>
+          <td style="padding-left:1.5rem"><b>{{ lic.shop_name }}</b><br><span class="sm-k">{{ lic.owner_name }}{% if lic.shop_phone %} · {{ lic.shop_phone }}{% endif %}</span></td>
+          <td><code style="font-size:.75rem;background:#F2F4F7;padding:.25rem .5rem;border-radius:6px">{{ lic.license_key }}</code></td>
+          <td>{{ lic.api_domain|default:"Not activated" }}</td>
+          <td>{{ lic.get_plan_display }}</td>
+          <td>{{ lic.valid_until|date:"d M Y" }}<br><span class="sm-k">{% with d=lic.days_remaining %}{% if d < 0 %}{{ d|stringformat:"d"|slice:"1:" }} days ago{% else %}{{ d }} days left{% endif %}{% endwith %}</span></td>
+          <td>{% with state=lic.state %}{% include 'shopmanager/_state.html' %}{% endwith %}</td>
+          <td style="text-align:right;padding-right:1.5rem"><a href="{% url 'shop_license_detail' pk=lic.pk %}" class="sm-btn">View</a></td>
+        </tr>
+      {% empty %}
+        <tr><td colspan="7" style="padding:3rem;text-align:center;color:#98A2B3">No Shop Manager licences yet. <a href="{% url 'shop_license_create' %}">Issue the first one</a>.</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}
