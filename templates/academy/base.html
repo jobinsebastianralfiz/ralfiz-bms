@@ -31,6 +31,7 @@
         <span class="word">Ralfiz <span class="labs">Academy</span></span>
       </a>
       <nav class="mainnav" aria-label="Main">
+        {% if request.user.employee_profile %}<a href="{% url 'staff:dashboard' %}"><i class="fa-solid fa-arrow-left"></i><span>Staff portal</span></a>{% endif %}
         <a href="{% url 'academy:home' %}" {% if nav == 'home' %}aria-current="page"{% endif %}><i class="fa-solid fa-house"></i><span>Dashboard</span></a>
         <a href="{% url 'academy:courses' %}" {% if nav == 'courses' %}aria-current="page"{% endif %}><i class="fa-regular fa-map"></i><span>My Courses</span></a>
         <a href="{% url 'academy:assessments' %}" {% if nav == 'assessments' %}aria-current="page"{% endif %}><i class="fa-regular fa-file-lines"></i><span>Assessments</span></a>
@@ -58,7 +59,8 @@
   {% if side_track %}
   <div class="shell2 {% block shell_class %}{% endblock %}">
     <nav class="side2" id="side" aria-label="Course outline">
-      <a class="back" href="{% url 'academy:home' %}"><i class="fa-solid fa-arrow-left"></i> Back to Dashboard</a>
+      {% if request.user.employee_profile %}<a class="back" href="{% url 'staff:dashboard' %}"><i class="fa-solid fa-arrow-left"></i> Back to staff portal</a>
+      {% else %}<a class="back" href="{% url 'academy:home' %}"><i class="fa-solid fa-arrow-left"></i> Back to Dashboard</a>{% endif %}
       <div class="lbl">Current track</div>
       <label class="tsel" data-t="{{ side_track.id }}">
         <span class="tile"><i class="fa-solid {{ side_track.icon }}"></i></span>
@@ -115,7 +117,8 @@
   </main>
   {% endif %}
 
-  <nav class="botnav" aria-label="Main">
+  <nav class="botnav" aria-label="Main"{% if request.user.employee_profile %} style="grid-template-columns: repeat(5, 1fr)"{% endif %}>
+    {% if request.user.employee_profile %}<a href="{% url 'staff:dashboard' %}"><i class="fa-solid fa-arrow-left"></i>Staff</a>{% endif %}
     <a href="{% url 'academy:home' %}" {% if nav == 'home' %}aria-current="page"{% endif %}><i class="fa-solid fa-house"></i>Dashboard</a>
     <a href="{% url 'academy:courses' %}" {% if nav == 'courses' %}aria-current="page"{% endif %}><i class="fa-regular fa-map"></i>Courses</a>
     <a href="{% url 'academy:assessments' %}" {% if nav == 'assessments' %}aria-current="page"{% endif %}><i class="fa-regular fa-file-lines"></i>Tests</a>

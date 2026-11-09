@@ -39,13 +39,13 @@ class ImportTests(AcademyTestBase):
     def test_counts_match_the_package(self):
         c = self.counts
         self.assertEqual((c['tracks'], c['domains'], c['lessons'], c['files'], c['questions']),
-                         (10, 73, 302, 924, 8538))
+                         (10, 75, 305, 924, 8556))
 
     def test_reimport_is_a_no_op_and_keeps_answers(self):
         q = Question.objects.filter(source='lesson').first()
         QuizAnswer.objects.create(user=self.user, question=q, last_choice=0)
         run_import(log=_quiet, force=True)
-        self.assertEqual(Question.objects.count(), 8538)
+        self.assertEqual(Question.objects.count(), 8556)
         self.assertEqual(Question.objects.filter(is_active=False).count(), 0)
         self.assertTrue(QuizAnswer.objects.filter(question_id=q.pk).exists())
 

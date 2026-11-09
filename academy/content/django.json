@@ -5,19 +5,19 @@
  "level": "Intern bootcamp",
  "status": "Live",
  "outline": "Nov 2026",
- "order": "Five days, one domain per day",
- "blurb": "Five days from Python habits to a deployed Django product. You build a GST invoice engine and BookIt, a booking system with a staff dashboard and a JWT REST API for a mobile app, written the way Ralfiz ships client projects.",
+ "order": "Six days, Monday to Saturday",
+ "blurb": "Six days from “I know some Python” to a deployed Django product. You build a GST invoice engine and BookIt, a booking platform with a custom staff dashboard and a JWT REST API for a Flutter app, then deploy it on Railway and demo it like a client handover.",
  "facts": [
   [
-   "13",
-   "lessons, one domain per day"
+   "16",
+   "lessons over six days"
   ],
   [
-   "71",
+   "93",
    "hands-on lab steps"
   ],
   [
-   "52",
+   "70",
    "quiz questions with explanations"
   ],
   [
@@ -94,8 +94,102 @@
  "category": "development",
  "domains": [
   {
+   "id": "djd0",
+   "name": "Start here",
+   "weight": "Day 0",
+   "blurb": "Welcome, machine setup, ground rules and the week at a glance.",
+   "lessons": [
+    {
+     "id": "dj0",
+     "num": "0.1",
+     "title": "Welcome, setup and how the week works",
+     "minutes": 45,
+     "summaryHtml": "<p>Six days from “I know some Python” to a deployed Django product with a custom dashboard and a REST API a Flutter app can use. Get your machine ready, learn the ground rules, and see the week at a glance.</p>",
+     "contentHtml": "<h3>Welcome to the team</h3>\n<p>You are joining as a Junior Python Developer. Our clients in India, the GCC, the UK and Canada run on systems we build: ERPs, booking apps, LMS platforms, POS systems and SaaS dashboards. This week builds the habits those projects need, not memorised syntax:</p>\n<ul>\n<li><strong>Correctness first.</strong> Money in <code>Decimal</code>, time zones handled, no double bookings.</li>\n<li><strong>Thin views, fat services.</strong> Business rules live in one place and get tested.</li>\n<li><strong>No Django default admin in production.</strong> We build custom, modern dashboards for clients.</li>\n<li><strong>Ship it.</strong> Code isn’t done until it is on Git, tested and deployed.</li>\n</ul>\n<h3>What you will build: BookIt</h3>\n<p>From Day 3 every lesson adds a piece to one product: <strong>BookIt</strong>, a booking platform for a service business (car wash, clinic, salon, gym). We have built this pattern for real clients many times.</p>\n<p><strong>Customer (Flutter app) → REST API with JWT → Service layer (rules) → PostgreSQL ← Staff dashboard (Django + Tailwind)</strong></p>\n<h3>The six days</h3>\n<table><thead><tr><th>Day</th><th>Morning: concepts</th><th>Afternoon: real-world task</th><th>Deliverable</th></tr></thead><tbody>\n<tr><td>1 · Python core</td><td>venv and Git, mutability, comprehensions, closures, decorators, exceptions, files</td><td>Daily Sales Report CLI for a retail POS export</td><td><code>sales_report.py</code> + <code>errors.csv</code></td></tr>\n<tr><td>2 · Professional Python</td><td>OOP, dataclasses, typing, Enum, Decimal, generators, context managers, logging, requests, pytest</td><td>GST Invoice Engine with a full test suite</td><td><code>invoice.py</code> + passing tests</td></tr>\n<tr><td>3 · Django foundations</td><td>Request lifecycle, layout, split settings, PostgreSQL, custom User, models, constraints, migrations, ORM</td><td>BookIt data layer: models, seed command, 8 report queries</td><td>Migrations + seed + reports</td></tr>\n<tr><td>4 · Web layer and dashboard</td><td>URLs, CBVs, templates, forms, auth and roles, service layer, middleware</td><td>Staff dashboard with KPIs, search, status workflow, service CRUD</td><td>Working dashboard</td></tr>\n<tr><td>5 · REST APIs</td><td>DRF serializers, viewsets, JWT, permissions, throttling, CORS, OpenAPI, API tests</td><td>Mobile API for the Flutter app</td><td>Swagger docs + green tests</td></tr>\n<tr><td>6 · Production and demo</td><td>Prod settings, security checklist, WhiteNoise, Gunicorn, Railway, performance, Git workflow</td><td>Deploy BookIt, then demo it to the team at 3:00 PM</td><td>Live URL + demo</td></tr>\n</tbody></table>\n<h3>A typical day</h3>\n<table><tbody>\n<tr><td>9:30 – 9:45</td><td>Stand-up: what I finished, what I’m doing today, what’s blocking me</td></tr>\n<tr><td>9:45 – 11:15</td><td>Concept block 1: the mentor walks through lessons, you type along (no copy-paste)</td></tr>\n<tr><td>11:30 – 1:00</td><td>Concept block 2 + quiz questions in pairs</td></tr>\n<tr><td>2:00 – 4:30</td><td>Real-world task: work independently, commit small and often</td></tr>\n<tr><td>4:30 – 5:15</td><td>Demo and review: 5 minutes each, one mentor comment, one peer comment</td></tr>\n<tr><td>5:15 – 5:30</td><td>Push + daily log: three bullets in <code>LOG.md</code> (learned, built, still unclear)</td></tr>\n</tbody></table>\n<h3>Ground rules</h3>\n<ul>\n<li><strong>The 20-minute rule.</strong> Stuck for 20 minutes? Ask. Bring what you tried, the exact error, and what you expected to happen.</li>\n<li><strong>Commit every day.</strong> Push before 5:30 PM with clear messages (<code>feat: add booking model</code>). Mentors review your PR the next morning.</li>\n<li><strong>AI tools (Claude Code, Copilot).</strong> We use them every day, so you will too. On Days 1–2, write it yourself first, then compare with AI. From Day 3 use AI freely, but you must be able to explain every line in review.</li>\n</ul>\n<div class=\"callout\">Also post your daily update in the staff portal (Daily updates). It is how your mentor follows your week.</div>",
+     "terms": [
+      {
+       "term": "BookIt",
+       "definition": "The service-booking product you build from Day 3: a staff dashboard plus a REST API for a Flutter app."
+      },
+      {
+       "term": "Service layer",
+       "definition": "Plain functions in services.py that hold the business rules, called by both the dashboard and the API."
+      },
+      {
+       "term": "LOG.md",
+       "definition": "Your daily log in the repo: what you learned, what you built, what is still unclear."
+      },
+      {
+       "term": "PR (pull request)",
+       "definition": "A request to merge your branch; mentors review it the next morning."
+      },
+      {
+       "term": "Railway",
+       "definition": "The hosting platform Ralfiz deploys Django apps and PostgreSQL to."
+      }
+     ],
+     "examTip": "When you ask for help, lead with the exact error and what you already tried. You will get a useful answer in half the time.",
+     "lab": {
+      "files": [],
+      "steps": [
+       "Install Python 3.12 or newer and check it with python3 --version.",
+       "Install VS Code with the Python, Pylance and Ruff extensions (or PyCharm).",
+       "Install Git and set git config --global user.name and user.email.",
+       "Make sure your GitHub account is in the Ralfiz organisation, then create the repo bookit-<yourname>.",
+       "Get PostgreSQL 16 running locally (native install, or docker run -e POSTGRES_PASSWORD=bookit -p 5432:5432 postgres:16).",
+       "Install Postman or Bruno for API testing.",
+       "Create a Railway account (you need it on Day 6).",
+       "Create LOG.md in your repo with today’s date, commit it and push."
+      ],
+      "check": [
+       "python3 --version prints 3.12 or newer.",
+       "git log in bookit-<yourname> shows your first commit with your name.",
+       "psql or a database client connects to your local PostgreSQL."
+      ]
+     },
+     "quiz": [
+      {
+       "question": "You have been stuck on an error for 20 minutes. What should you do?",
+       "options": [
+        "Keep trying until it works",
+        "Ask, bringing what you tried, the exact error and what you expected",
+        "Skip the task",
+        "Ask AI to rewrite the whole file"
+       ],
+       "answer": 1,
+       "explanation": "The 20-minute rule: ask, and bring the evidence so the answer is quick."
+      },
+      {
+       "question": "On Days 1–2, how should you use AI tools?",
+       "options": [
+        "Not at all",
+        "Write it yourself first, then compare with AI",
+        "Let AI write everything",
+        "Only for tests"
+       ],
+       "answer": 1,
+       "explanation": "Writing it first builds the habit; comparing shows you better ways. From Day 3 use AI freely, but explain every line."
+      },
+      {
+       "question": "When must your code be pushed each day?",
+       "options": [
+        "Only on Saturday",
+        "Before 5:30 PM, with clear commit messages",
+        "Once a week",
+        "Only when it is perfect"
+       ],
+       "answer": 1,
+       "explanation": "Daily pushes let mentors review your PR the next morning."
+      }
+     ],
+     "widget": null,
+     "sorter": null
+    }
+   ]
+  },
+  {
    "id": "djd1",
-   "name": "Day 1 · Python for business code",
+   "name": "Day 1 · Python core",
    "weight": "Day 1",
    "blurb": "The Python habits that separate working code from code that ships bugs, then a real CSV tool.",
    "lessons": [
@@ -105,7 +199,7 @@
      "title": "Python traps every junior ships once",
      "minutes": 60,
      "summaryHtml": "<p>Mutable default arguments, shallow versus deep copies, and the comprehension and <code>collections</code> tools you will use every day to summarise business data.</p>",
-     "contentHtml": "<h3>In plain words</h3>\n<p>Python names point at objects. When two names point at the same list or dict, changing it through one name changes what the other name sees. Most “my cart has items from another customer” bugs come from this one fact.</p>\n<h3>Trap 1: the mutable default argument</h3>\n<p>A default value is created <strong>once</strong>, when the function is defined, not every time it is called. A list default is therefore shared by every call.</p>\n<pre class=\"code\">def add_item_buggy(item, cart=[]):        # default list is created ONCE\n    cart.append(item)\n    return cart\n\ndef add_item(item, cart=None):            # correct pattern\n    if cart is None:\n        cart = []\n    cart.append(item)\n    return cart\n\nprint(add_item_buggy(&quot;watch&quot;), add_item_buggy(&quot;strap&quot;))   # [&#x27;watch&#x27;, &#x27;strap&#x27;] twice!\nprint(add_item(&quot;watch&quot;), add_item(&quot;strap&quot;))               # [&#x27;watch&#x27;] [&#x27;strap&#x27;]</pre>\n<p>Rule: never use a list, dict or set as a default. Use <code>None</code> and create the object inside the function.</p>\n<h3>Trap 2: shallow copy</h3>\n<p><code>copy.copy()</code> copies only the outer container. The inner list of items is still shared. <code>copy.deepcopy()</code> copies all the way down.</p>\n<pre class=\"code\">order = {&quot;id&quot;: 1, &quot;items&quot;: [{&quot;sku&quot;: &quot;W1&quot;, &quot;qty&quot;: 1}]}\nshallow, deep = copy.copy(order), copy.deepcopy(order)\norder[&quot;items&quot;][0][&quot;qty&quot;] = 5\nprint(shallow[&quot;items&quot;][0][&quot;qty&quot;], deep[&quot;items&quot;][0][&quot;qty&quot;])  # 5 1</pre>\n<h3>Summarising data in one line</h3>\n<p>Business code is mostly “group these rows and add them up”. Learn these tools well:</p>\n<table><thead><tr><th>Tool</th><th>Use it for</th></tr></thead><tbody>\n<tr><td><code>sum(x for x in rows if ...)</code></td><td>A total with a filter, without building a list</td></tr>\n<tr><td><code>defaultdict(list)</code></td><td>Group rows by a key: order ids per customer</td></tr>\n<tr><td><code>Counter(...)</code></td><td>Count by a key; <code>.most_common(n)</code> gives the top n</td></tr>\n<tr><td><code>sorted(rows, key=..., reverse=True)[:n]</code></td><td>Top n rows by a field</td></tr>\n<tr><td><code>{k: v for ...}</code> and <code>{x for ...}</code></td><td>Dict and set comprehensions: lookup tables and unique values</td></tr>\n<tr><td><code>any()</code> / <code>all()</code></td><td>“Is there at least one refunded order?” / “Are all amounts positive?”</td></tr>\n</tbody></table>\n<pre class=\"code\">paid_total = sum(o[&quot;amount&quot;] for o in orders if o[&quot;status&quot;] == &quot;paid&quot;)\nids_by_customer = defaultdict(list)\nfor o in orders:\n    ids_by_customer[o[&quot;customer&quot;]].append(o[&quot;id&quot;])\nstatus_count = Counter(o[&quot;status&quot;] for o in orders)\ntop_two = sorted(orders, key=lambda o: o[&quot;amount&quot;], reverse=True)[:2]</pre>\n<p>Unpacking keeps loops readable: <code>first, *rest = ids</code>, and <code>for i, (name, amount) in enumerate(zip(names, amounts), start=1)</code>.</p>\n<div class=\"callout\"><strong>Habit:</strong> when you see a <code>for</code> loop that only builds a list or adds numbers, try writing it as a comprehension or a generator expression.</div>",
+     "contentHtml": "<h3>In plain words</h3>\n<p>Python names point at objects. When two names point at the same list or dict, changing it through one name changes what the other name sees. Most “my cart has items from another customer” bugs come from this one fact.</p>\n<h3>Trap 1: the mutable default argument</h3>\n<p>A default value is created <strong>once</strong>, when the function is defined, not every time it is called. A list default is therefore shared by every call.</p>\n<pre class=\"code\">def add_item_buggy(item, cart=[]):        # default list is created ONCE\n    cart.append(item)\n    return cart\n\ndef add_item(item, cart=None):            # correct pattern\n    if cart is None:\n        cart = []\n    cart.append(item)\n    return cart\n\nprint(add_item_buggy(&quot;watch&quot;), add_item_buggy(&quot;strap&quot;))   # [&#x27;watch&#x27;, &#x27;strap&#x27;] twice!\nprint(add_item(&quot;watch&quot;), add_item(&quot;strap&quot;))               # [&#x27;watch&#x27;] [&#x27;strap&#x27;]</pre>\n<p>Rule: never use a list, dict or set as a default. Use <code>None</code> and create the object inside the function.</p>\n<h3>Trap 2: shallow copy</h3>\n<p><code>copy.copy()</code> copies only the outer container. The inner list of items is still shared. <code>copy.deepcopy()</code> copies all the way down.</p>\n<pre class=\"code\">order = {&quot;id&quot;: 1, &quot;items&quot;: [{&quot;sku&quot;: &quot;W1&quot;, &quot;qty&quot;: 1}]}\nshallow, deep = copy.copy(order), copy.deepcopy(order)\norder[&quot;items&quot;][0][&quot;qty&quot;] = 5\nprint(shallow[&quot;items&quot;][0][&quot;qty&quot;], deep[&quot;items&quot;][0][&quot;qty&quot;])  # 5 1</pre>\n<h3>Identity, equality and fast lookups</h3>\n<ul>\n<li><code>==</code> compares values; <code>is</code> compares identity (the same object). Use <code>is</code> only for <code>None</code>, <code>True</code> and <code>False</code>.</li>\n<li>Immutable: <code>int</code>, <code>float</code>, <code>str</code>, <code>tuple</code>, <code>frozenset</code>, <code>Decimal</code>. Mutable: <code>list</code>, <code>dict</code>, <code>set</code> and most objects.</li>\n<li>Membership in a <code>set</code> is O(1); in a <code>list</code> it is O(n). Keep “already processed IDs” in a set.</li>\n<li><code>sorted(data, key=...)</code> returns a new list; <code>list.sort()</code> sorts in place and returns <code>None</code>.</li>\n</ul>\n<h3>Summarising data in one line</h3>\n<p>Business code is mostly “group these rows and add them up”. Learn these tools well:</p>\n<table><thead><tr><th>Tool</th><th>Use it for</th></tr></thead><tbody>\n<tr><td><code>sum(x for x in rows if ...)</code></td><td>A total with a filter, without building a list</td></tr>\n<tr><td><code>defaultdict(list)</code></td><td>Group rows by a key: order ids per customer</td></tr>\n<tr><td><code>Counter(...)</code></td><td>Count by a key; <code>.most_common(n)</code> gives the top n</td></tr>\n<tr><td><code>sorted(rows, key=..., reverse=True)[:n]</code></td><td>Top n rows by a field</td></tr>\n<tr><td><code>{k: v for ...}</code> and <code>{x for ...}</code></td><td>Dict and set comprehensions: lookup tables and unique values</td></tr>\n<tr><td><code>any()</code> / <code>all()</code></td><td>“Is there at least one refunded order?” / “Are all amounts positive?”</td></tr>\n</tbody></table>\n<pre class=\"code\">paid_total = sum(o[&quot;amount&quot;] for o in orders if o[&quot;status&quot;] == &quot;paid&quot;)\nids_by_customer = defaultdict(list)\nfor o in orders:\n    ids_by_customer[o[&quot;customer&quot;]].append(o[&quot;id&quot;])\nstatus_count = Counter(o[&quot;status&quot;] for o in orders)\ntop_two = sorted(orders, key=lambda o: o[&quot;amount&quot;], reverse=True)[:2]</pre>\n<p>Unpacking keeps loops readable: <code>first, *rest = ids</code>, and <code>for i, (name, amount) in enumerate(zip(names, amounts), start=1)</code>.</p>\n<div class=\"callout\"><strong>Readability check:</strong> use a comprehension when it fits on one or two lines and reads like English. If it has two <code>for</code> clauses and an <code>if</code>, write a loop. Your teammate reads code ten times more often than you write it.</div>\n<h3>The daily workflow</h3>\n<p>Every Ralfiz project has its own virtual environment and a pinned requirements file. “Works on my machine” is not an acceptable status.</p>\n<pre class=\"code\">python3 -m venv .venv &amp;&amp; source .venv/bin/activate\npip install -r requirements.txt\ngit switch -c feat/sales-report\ngit add -p &amp;&amp; git commit -m &quot;feat: validate sales rows&quot;</pre>\n<div class=\"warn\">Never commit <code>.env</code> files, passwords, API keys, <code>.venv/</code> or database files. A key leaked in a public repo is abused within minutes.</div>",
      "terms": [
       {
        "term": "Mutable",
@@ -199,6 +293,17 @@
        ],
        "answer": 2,
        "explanation": "Use None as the default and create a fresh list inside the function on each call."
+      },
+      {
+       "question": "When should you use is instead of ==?",
+       "options": [
+        "Always, it is faster",
+        "Only for singletons such as None, True and False",
+        "For comparing strings",
+        "For comparing numbers"
+       ],
+       "answer": 1,
+       "explanation": "== checks equal values; is checks the same object in memory. Two equal strings or numbers may be different objects."
       }
      ],
      "widget": null,
@@ -314,7 +419,7 @@
      "title": "Project: daily sales report from a CSV",
      "minutes": 90,
      "summaryHtml": "<p>A real command-line tool: read a POS export, validate every row, reject bad rows with a reason, and write a JSON summary. Dataclasses, <code>Decimal</code>, <code>argparse</code> and <code>pathlib</code>.</p>",
-     "contentHtml": "<h3>The job</h3>\n<p>A shop sends you its daily POS export. Some rows are broken: a missing quantity, <code>abc</code> as a price, a negative quantity. The tool must never crash on bad data. It keeps the good rows, explains every bad one, and produces totals.</p>\n<pre class=\"code\">python sales_report.py data/sales.csv --out report.json --top 5</pre>\n<h3>Model the row with a frozen dataclass</h3>\n<pre class=\"code\">@dataclass(frozen=True)\nclass Sale:\n    invoice_no: str\n    date: str\n    product: str\n    qty: int\n    unit_price: Decimal\n    payment_mode: str\n\n    @property\n    def total(self) -&gt; Decimal:\n        return self.unit_price * self.qty</pre>\n<p><code>frozen=True</code> means a Sale cannot be changed after it is created. A computed value such as <code>total</code> is a <code>@property</code>, so it can never get out of step with qty and price.</p>\n<h3>Money is Decimal, never float</h3>\n<p><code>0.1 + 0.2</code> is <code>0.30000000000000004</code> in float. On an invoice that is a wrong rupee figure. Parse prices with <code>Decimal(\"2450.00\")</code> (from the string, not from a float).</p>\n<h3>Validate in one place and raise a meaningful error</h3>\n<pre class=\"code\">def parse_row(row: dict[str, str]) -&gt; Sale:\n    missing = [key for key in REQUIRED if not (row.get(key) or &quot;&quot;).strip()]\n    if missing:\n        raise RowError(f&quot;missing {&#x27;, &#x27;.join(missing)}&quot;)\n    try:\n        qty = int(row[&quot;qty&quot;])\n        price = Decimal(row[&quot;unit_price&quot;])\n    except (ValueError, InvalidOperation) as exc:\n        raise RowError(&quot;bad number in qty/unit_price&quot;) from exc\n    if qty &lt;= 0 or price &lt; 0:\n        raise RowError(&quot;qty must be &gt; 0 and unit_price &gt;= 0&quot;)\n    ...</pre>\n<p><code>raise ... from exc</code> keeps the original error attached for debugging. The loader catches only <code>RowError</code>, records the line number (<code>enumerate(..., start=2)</code> because line 1 is the header) and moves on.</p>\n<h3>Clean the data while parsing</h3>\n<p>The export has <code>UPI</code>, <code>upi</code> and <code>Cash</code>. <code>.strip().upper()</code> normalises the payment mode so the summary groups them correctly.</p>\n<h3>A testable main()</h3>\n<p><code>main(argv=None)</code> parses arguments and returns an exit code, and the file ends with <code>sys.exit(main())</code>. A test can call <code>main([\"data/sales.csv\", \"--top\", \"3\"])</code> directly without starting a new process.</p>\n<div class=\"callout\">Money totals are written to JSON as strings (<code>str(Decimal)</code>). JSON has no decimal type, and a float would bring the rounding problem back.</div>",
+     "contentHtml": "<h3>The job</h3>\n<p>A shop sends you its daily POS export. Some rows are broken: a missing quantity, <code>abc</code> as a price, a negative quantity. The tool must never crash on bad data. It keeps the good rows, explains every bad one, and produces totals.</p>\n<pre class=\"code\">python sales_report.py data/sales.csv --out report.json --top 5</pre>\n<h3>Model the row with a frozen dataclass</h3>\n<pre class=\"code\">@dataclass(frozen=True)\nclass Sale:\n    invoice_no: str\n    date: str\n    product: str\n    qty: int\n    unit_price: Decimal\n    payment_mode: str\n\n    @property\n    def total(self) -&gt; Decimal:\n        return self.unit_price * self.qty</pre>\n<p><code>frozen=True</code> means a Sale cannot be changed after it is created. A computed value such as <code>total</code> is a <code>@property</code>, so it can never get out of step with qty and price.</p>\n<h3>Money is Decimal, never float</h3>\n<p><code>0.1 + 0.2</code> is <code>0.30000000000000004</code> in float. On an invoice that is a wrong rupee figure. Parse prices with <code>Decimal(\"2450.00\")</code> (from the string, not from a float).</p>\n<h3>Validate in one place and raise a meaningful error</h3>\n<pre class=\"code\">def parse_row(row: dict[str, str]) -&gt; Sale:\n    missing = [key for key in REQUIRED if not (row.get(key) or &quot;&quot;).strip()]\n    if missing:\n        raise RowError(f&quot;missing {&#x27;, &#x27;.join(missing)}&quot;)\n    try:\n        qty = int(row[&quot;qty&quot;])\n        price = Decimal(row[&quot;unit_price&quot;])\n    except (ValueError, InvalidOperation) as exc:\n        raise RowError(&quot;bad number in qty/unit_price&quot;) from exc\n    if qty &lt;= 0 or price &lt; 0:\n        raise RowError(&quot;qty must be &gt; 0 and unit_price &gt;= 0&quot;)\n    ...</pre>\n<p><code>raise ... from exc</code> keeps the original error attached for debugging. The loader catches only <code>RowError</code>, records the line number (<code>enumerate(..., start=2)</code> because line 1 is the header) and moves on.</p>\n<h3>Clean the data while parsing</h3>\n<p>The export has <code>UPI</code>, <code>upi</code> and <code>Cash</code>. <code>.strip().upper()</code> normalises the payment mode so the summary groups them correctly.</p>\n<h3>A testable main()</h3>\n<p><code>main(argv=None)</code> parses arguments and returns an exit code, and the file ends with <code>sys.exit(main())</code>. A test can call <code>main([\"data/sales.csv\", \"--top\", \"3\"])</code> directly without starting a new process.</p>\n<div class=\"callout\">Money totals are written to JSON as strings (<code>str(Decimal)</code>). JSON has no decimal type, and a float would bring the rounding problem back.</div>\n<h3>The brief</h3>\n<p>A watch retailer exports sales from their POS as CSV every evening. The owner wants a summary on WhatsApp each night, and the accountant wants every bad row explained.</p>\n<h3>Acceptance criteria (mentor checks at 4:30)</h3>\n<ul>\n<li>Grand total for the sample is exactly 14347.00, with 3 rejected rows (lines 6, 7, 9).</li>\n<li>No float anywhere in money calculations.</li>\n<li>A custom <code>RowError</code> exception; no bare <code>except</code>.</li>\n<li>Small functions, one job each: parse, load, summarise, write.</li>\n<li>Committed on branch <code>feat/sales-report</code> and pushed.</li>\n</ul>\n<p><strong>Stretch goals:</strong> a <code>--date</code> filter; a WhatsApp-ready text summary with ₹ formatting; three pytest tests for <code>parse_row</code>.</p>",
      "terms": [
       {
        "term": "dataclass",
@@ -419,7 +524,7 @@
   },
   {
    "id": "djd2",
-   "name": "Day 2 · Real-world Python",
+   "name": "Day 2 · Professional Python",
    "weight": "Day 2",
    "blurb": "A GST invoice engine, its tests, and calling an outside API without taking your site down.",
    "lessons": [
@@ -429,7 +534,7 @@
      "title": "Project: a GST invoice engine",
      "minutes": 90,
      "summaryHtml": "<p>Pure-Python invoicing as Indian businesses need it: CGST + SGST inside the state, IGST across states, round-off to the rupee, GSTIN validation and financial-year invoice numbers.</p>",
-     "contentHtml": "<h3>The rules</h3>\n<ul>\n<li>Money is always <code>Decimal</code>, rounded <code>ROUND_HALF_UP</code> to 2 places.</li>\n<li>Seller and buyer in the same state (same state code): <strong>CGST + SGST</strong>, half the rate each.</li>\n<li>Different states: <strong>IGST</strong> at the full rate.</li>\n<li>The grand total is rounded to the nearest rupee; the difference is shown as <code>round_off</code>.</li>\n<li>Invoice numbers follow the Indian financial year (April to March): <code>RLZ/2026-27/0001</code>.</li>\n</ul>\n<h3>Rounding in one helper</h3>\n<pre class=\"code\">PAISA = Decimal(&quot;0.01&quot;)\n\ndef money(value: Decimal) -&gt; Decimal:\n    return value.quantize(PAISA, rounding=ROUND_HALF_UP)</pre>\n<p>Python’s default rounding is banker’s rounding (<code>round(2.5) == 2</code>). Accountants expect half-up. Putting it in one function means nobody rounds differently by accident.</p>\n<h3>Validate when the object is created</h3>\n<p><code>__post_init__</code> runs right after a dataclass’s generated <code>__init__</code>. An invalid party or line item can never exist.</p>\n<pre class=\"code\">GSTIN_RE = re.compile(r&quot;^\\d{2}[A-Z]{5}\\d{4}[A-Z][1-9A-Z]Z[0-9A-Z]$&quot;)\n\n@dataclass(frozen=True)\nclass Party:\n    name: str\n    state_code: str  # &quot;32&quot; = Kerala, &quot;29&quot; = Karnataka ...\n    gstin: str | None = None\n\n    def __post_init__(self) -&gt; None:\n        if self.gstin:\n            if not GSTIN_RE.match(self.gstin):\n                raise ValueError(f&quot;Invalid GSTIN: {self.gstin}&quot;)\n            if self.gstin[:2] != self.state_code:\n                raise ValueError(&quot;GSTIN state code does not match party state&quot;)</pre>\n<p>The first two digits of a GSTIN are the state code, so a Karnataka party with a <code>32…</code> GSTIN is rejected.</p>\n<h3>An Enum instead of magic strings</h3>\n<pre class=\"code\">class SupplyType(str, Enum):\n    INTRA = &quot;intra&quot;  # CGST + SGST\n    INTER = &quot;inter&quot;  # IGST</pre>\n<p><code>Invoice.supply_type</code> is a property derived from the two state codes. It is never stored, so it can never be wrong.</p>\n<h3>The financial year</h3>\n<pre class=\"code\">def financial_year(d: date) -&gt; str:\n    &quot;&quot;&quot;Indian FY runs April -&gt; March. 9 Nov 2026 -&gt; &#x27;2026-27&#x27;.&quot;&quot;&quot;\n    start = d.year if d.month &gt;= 4 else d.year - 1\n    return f&quot;{start}-{str(start + 1)[-2:]}&quot;</pre>\n<div class=\"warn\">The <code>InvoiceNumberGenerator</code> here keeps its counter in memory. In Django two users saving at the same moment could get the same number. The fix is a database row locked with <code>select_for_update()</code>, which you will see in lesson 4.1.</div>\n<div class=\"callout\">GST slabs change by government notification. In real projects keep the allowed rates in settings or the database and confirm them with the accountant.</div>",
+     "contentHtml": "<h3>Classes that model the business</h3>\n<ul>\n<li>Class = a noun in the domain (<code>Invoice</code>, <code>LineItem</code>, <code>Party</code>). Method = a verb it can do (<code>add</code>, <code>totals</code>).</li>\n<li><code>@property</code> exposes calculated values (<code>taxable_value</code>) that read like attributes and are always up to date.</li>\n<li><code>@classmethod</code> for alternative constructors (<code>Invoice.from_dict(...)</code>); <code>@staticmethod</code> for helpers that need neither the instance nor the class.</li>\n<li>Dunder methods make objects feel native: <code>__str__</code> for users, <code>__repr__</code> for developers, <code>__eq__</code> for comparisons.</li>\n<li>Prefer composition over inheritance. An Invoice <em>has</em> LineItems; it is not a kind of list.</li>\n<li>In a dataclass, a list field needs <code>field(default_factory=list)</code>. It is the dataclass version of the mutable default bug from Day 1.</li>\n<li>Type hints (<code>list[LineItem]</code>, <code>str | None</code>) are documentation the editor checks for you.</li>\n</ul>\n<h3>The rules</h3>\n<ul>\n<li>Money is always <code>Decimal</code>, rounded <code>ROUND_HALF_UP</code> to 2 places.</li>\n<li>Seller and buyer in the same state (same state code): <strong>CGST + SGST</strong>, half the rate each.</li>\n<li>Different states: <strong>IGST</strong> at the full rate.</li>\n<li>The grand total is rounded to the nearest rupee; the difference is shown as <code>round_off</code>.</li>\n<li>Invoice numbers follow the Indian financial year (April to March): <code>RLZ/2026-27/0001</code>.</li>\n</ul>\n<h3>Rounding in one helper</h3>\n<pre class=\"code\">PAISA = Decimal(&quot;0.01&quot;)\n\ndef money(value: Decimal) -&gt; Decimal:\n    return value.quantize(PAISA, rounding=ROUND_HALF_UP)</pre>\n<p>Python’s default rounding is banker’s rounding (<code>round(2.5) == 2</code>). Accountants expect half-up. Putting it in one function means nobody rounds differently by accident.</p>\n<h3>Validate when the object is created</h3>\n<p><code>__post_init__</code> runs right after a dataclass’s generated <code>__init__</code>. An invalid party or line item can never exist.</p>\n<pre class=\"code\">GSTIN_RE = re.compile(r&quot;^\\d{2}[A-Z]{5}\\d{4}[A-Z][1-9A-Z]Z[0-9A-Z]$&quot;)\n\n@dataclass(frozen=True)\nclass Party:\n    name: str\n    state_code: str  # &quot;32&quot; = Kerala, &quot;29&quot; = Karnataka ...\n    gstin: str | None = None\n\n    def __post_init__(self) -&gt; None:\n        if self.gstin:\n            if not GSTIN_RE.match(self.gstin):\n                raise ValueError(f&quot;Invalid GSTIN: {self.gstin}&quot;)\n            if self.gstin[:2] != self.state_code:\n                raise ValueError(&quot;GSTIN state code does not match party state&quot;)</pre>\n<p>The first two digits of a GSTIN are the state code, so a Karnataka party with a <code>32…</code> GSTIN is rejected.</p>\n<h3>An Enum instead of magic strings</h3>\n<pre class=\"code\">class SupplyType(str, Enum):\n    INTRA = &quot;intra&quot;  # CGST + SGST\n    INTER = &quot;inter&quot;  # IGST</pre>\n<p><code>Invoice.supply_type</code> is a property derived from the two state codes. It is never stored, so it can never be wrong.</p>\n<h3>The financial year</h3>\n<pre class=\"code\">def financial_year(d: date) -&gt; str:\n    &quot;&quot;&quot;Indian FY runs April -&gt; March. 9 Nov 2026 -&gt; &#x27;2026-27&#x27;.&quot;&quot;&quot;\n    start = d.year if d.month &gt;= 4 else d.year - 1\n    return f&quot;{start}-{str(start + 1)[-2:]}&quot;</pre>\n<div class=\"warn\">The <code>InvoiceNumberGenerator</code> here keeps its counter in memory. In Django two users saving at the same moment could get the same number. The fix is a database row locked with <code>select_for_update()</code>, which you will see in lesson 4.1.</div>\n<div class=\"callout\">GST slabs change by government notification. In real projects keep the allowed rates in settings or the database and confirm them with the accountant.</div>",
      "terms": [
       {
        "term": "CGST / SGST",
@@ -511,6 +616,28 @@
        ],
        "answer": 1,
        "explanation": "Validating at construction makes invalid states impossible rather than merely discouraged."
+      },
+      {
+       "question": "Why does Invoice use items: list[LineItem] = field(default_factory=list)?",
+       "options": [
+        "It is shorter",
+        "A plain = [] would be shared by every invoice; the factory makes a fresh list each time",
+        "Lists cannot be type-hinted",
+        "It makes the list read-only"
+       ],
+       "answer": 1,
+       "explanation": "Dataclasses refuse a bare mutable default for exactly this reason. default_factory creates a new list per instance."
+      },
+      {
+       "question": "Why does the engine return Decimal values and not formatted strings like \"₹11,800.00\"?",
+       "options": [
+        "Strings are slower",
+        "Keep data and presentation separate: templates, PDFs and APIs decide the formatting",
+        "Decimal cannot be formatted",
+        "JSON needs Decimal"
+       ],
+       "answer": 1,
+       "explanation": "The engine computes exact values. Each place that shows them formats them for its own audience."
       },
       {
        "question": "Why is the in-memory InvoiceNumberGenerator not safe in a web app?",
@@ -634,7 +761,7 @@
      "title": "Calling real APIs safely",
      "minutes": 60,
      "summaryHtml": "<p>Address autofill from a PIN code: a reusable <code>requests.Session</code>, automatic retries with backoff, timeouts on every call, a timing context manager, and a generator for files too big for memory.</p>",
-     "contentHtml": "<h3>The feature</h3>\n<p>On a booking or checkout form the customer types a 6-digit PIN code and the district and state fill in. Your code calls a public API, and public APIs are slow, flaky and sometimes down.</p>\n<h3>Validate before you call</h3>\n<pre class=\"code\">if not (pin.isdigit() and len(pin) == 6):\n    raise ValueError(&quot;PIN code must be 6 digits&quot;)</pre>\n<p>Never send a request you already know is wrong. It wastes time and counts against rate limits.</p>\n<h3>A session with retries</h3>\n<pre class=\"code\">def build_session() -&gt; requests.Session:\n    session = requests.Session()\n    retry = Retry(total=3, backoff_factor=0.5, status_forcelist=(429, 500, 502, 503, 504), allowed_methods=(&quot;GET&quot;,))\n    session.mount(&quot;https://&quot;, HTTPAdapter(max_retries=retry))\n    session.headers.update({&quot;Accept&quot;: &quot;application/json&quot;, &quot;User-Agent&quot;: &quot;bookit/1.0&quot;})\n    return session</pre>\n<p>A session reuses the TCP connection between calls. The retry policy handles “server busy” (429) and server errors (5xx) automatically, waiting longer each time. It only retries <code>GET</code>, because retrying a <code>POST</code> could charge a customer twice.</p>\n<h3>ALWAYS set a timeout</h3>\n<pre class=\"code\">resp = session.get(API.format(pin=pin), timeout=(3, 10))  # (connect, read) seconds</pre>\n<div class=\"warn\">Without a timeout, <code>requests</code> can wait forever. One hung API call holds a web worker, and a few of them take your whole site down.</div>\n<h3>Check the answer, not just the status code</h3>\n<pre class=\"code\">resp.raise_for_status()\npayload = resp.json()[0]\nif payload.get(&quot;Status&quot;) != &quot;Success&quot; or not payload.get(&quot;PostOffice&quot;):\n    raise PincodeNotFound(pin)\nreturn [PostOffice(p[&quot;Name&quot;], p[&quot;District&quot;], p[&quot;State&quot;]) for p in payload[&quot;PostOffice&quot;]]</pre>\n<p>This API returns HTTP 200 even for an unknown PIN, with <code>\"Status\": \"Error\"</code> in the body. Convert the raw JSON into your own small dataclass so the rest of the code does not depend on the API’s field names.</p>\n<h3>Context managers and generators</h3>\n<p><code>@contextmanager</code> turns a function with one <code>yield</code> into a <code>with</code> block. The <code>timer</code> logs how long the block took, even if it raised.</p>\n<p>A generator function uses <code>yield</code> to hand back one batch at a time. <code>read_in_batches()</code> can process a 2 GB log file using the memory of 1,000 lines.</p>\n<pre class=\"code\">def read_in_batches(path: str, size: int = 1000):\n    batch = []\n    with open(path, encoding=&quot;utf-8&quot;) as f:\n        for line in f:\n            batch.append(line.rstrip(&quot;\\n&quot;))\n            if len(batch) == size:\n                yield batch\n                batch = []\n    if batch:\n        yield batch</pre>",
+     "contentHtml": "<h3>The feature</h3>\n<p>On a booking or checkout form the customer types a 6-digit PIN code and the district and state fill in. Your code calls a public API, and public APIs are slow, flaky and sometimes down.</p>\n<h3>Validate before you call</h3>\n<pre class=\"code\">if not (pin.isdigit() and len(pin) == 6):\n    raise ValueError(&quot;PIN code must be 6 digits&quot;)</pre>\n<p>Never send a request you already know is wrong. It wastes time and counts against rate limits.</p>\n<h3>A session with retries</h3>\n<pre class=\"code\">def build_session() -&gt; requests.Session:\n    session = requests.Session()\n    retry = Retry(total=3, backoff_factor=0.5, status_forcelist=(429, 500, 502, 503, 504), allowed_methods=(&quot;GET&quot;,))\n    session.mount(&quot;https://&quot;, HTTPAdapter(max_retries=retry))\n    session.headers.update({&quot;Accept&quot;: &quot;application/json&quot;, &quot;User-Agent&quot;: &quot;bookit/1.0&quot;})\n    return session</pre>\n<p>A session reuses the TCP connection between calls. The retry policy handles “server busy” (429) and server errors (5xx) automatically, waiting longer each time. It only retries <code>GET</code>, because retrying a <code>POST</code> could charge a customer twice.</p>\n<h3>ALWAYS set a timeout</h3>\n<pre class=\"code\">resp = session.get(API.format(pin=pin), timeout=(3, 10))  # (connect, read) seconds</pre>\n<div class=\"warn\">Without a timeout, <code>requests</code> can wait forever. One hung API call holds a web worker, and a few of them take your whole site down.</div>\n<h3>Check the answer, not just the status code</h3>\n<pre class=\"code\">resp.raise_for_status()\npayload = resp.json()[0]\nif payload.get(&quot;Status&quot;) != &quot;Success&quot; or not payload.get(&quot;PostOffice&quot;):\n    raise PincodeNotFound(pin)\nreturn [PostOffice(p[&quot;Name&quot;], p[&quot;District&quot;], p[&quot;State&quot;]) for p in payload[&quot;PostOffice&quot;]]</pre>\n<p>This API returns HTTP 200 even for an unknown PIN, with <code>\"Status\": \"Error\"</code> in the body. Convert the raw JSON into your own small dataclass so the rest of the code does not depend on the API’s field names.</p>\n<h3>logging, not print</h3>\n<p>Use <code>logger = logging.getLogger(__name__)</code> and lazy formatting: <code>logger.info(\"pin=%s\", pin)</code>, not an f-string. Logs carry a level and a source, can be switched off per module, and go to Railway’s log viewer in production. <code>print</code> does none of that.</p>\n<h3>Context managers and generators</h3>\n<p><code>@contextmanager</code> turns a function with one <code>yield</code> into a <code>with</code> block. The <code>timer</code> logs how long the block took, even if it raised.</p>\n<p>A generator function uses <code>yield</code> to hand back one batch at a time. <code>read_in_batches()</code> can process a 2 GB log file using the memory of 1,000 lines.</p>\n<pre class=\"code\">def read_in_batches(path: str, size: int = 1000):\n    batch = []\n    with open(path, encoding=&quot;utf-8&quot;) as f:\n        for line in f:\n            batch.append(line.rstrip(&quot;\\n&quot;))\n            if len(batch) == size:\n                yield batch\n                batch = []\n    if batch:\n        yield batch</pre>",
      "terms": [
       {
        "term": "requests.Session",
@@ -746,7 +873,7 @@
      "title": "A Django project laid out for production",
      "minutes": 75,
      "summaryHtml": "<p>BookIt, a booking system for a car-wash business, set up the way Ralfiz projects are: split settings, secrets from <code>.env</code>, apps under <code>apps/</code>, a custom User model from day one, and a small middleware.</p>",
-     "contentHtml": "<h3>The project</h3>\n<p>For the rest of the course you work on <strong>BookIt</strong>: customers book services (Full Car Wash, Interior Detailing), staff manage bookings in a dashboard, and a mobile app talks to a REST API. Download the whole project from the course page (Course files).</p>\n<pre class=\"code\">bookit/\n  config/\n    settings/base.py  dev.py  prod.py\n    urls.py  wsgi.py\n  apps/\n    core/        TimeStampedModel, middleware\n    accounts/    custom User with roles\n    catalog/     Service\n    bookings/    Booking, services.py (business rules)\n    dashboard/   staff web pages\n    api/         DRF API for the app\n  templates/\n  requirements/base.txt  dev.txt  prod.txt\n  .env.example  manage.py  pytest.ini</pre>\n<h3>Split settings</h3>\n<p><code>base.py</code> holds everything shared. <code>dev.py</code> and <code>prod.py</code> start with <code>from .base import *</code> and change only what differs: DEBUG, allowed hosts, HTTPS, static storage.</p>\n<h3>Secrets come from the environment</h3>\n<pre class=\"code\">env = environ.Env(DEBUG=(bool, False))\nenviron.Env.read_env(BASE_DIR / &quot;.env&quot;)\n\nSECRET_KEY = env(&quot;SECRET_KEY&quot;)\nDEBUG = env(&quot;DEBUG&quot;)\nDATABASES = {&quot;default&quot;: env.db(&quot;DATABASE_URL&quot;)}</pre>\n<p>The real <code>.env</code> is never committed; <code>.env.example</code> shows which variables exist. <code>DEBUG</code> defaults to <code>False</code>, so forgetting it in production is safe.</p>\n<h3>A custom User from day one</h3>\n<pre class=\"code\">class User(AbstractUser):\n    &quot;&quot;&quot;Custom user from day one — changing AUTH_USER_MODEL later is painful.&quot;&quot;&quot;\n\n    class Role(models.TextChoices):\n        ADMIN = &quot;admin&quot;, &quot;Admin&quot;\n        STAFF = &quot;staff&quot;, &quot;Staff&quot;\n        CUSTOMER = &quot;customer&quot;, &quot;Customer&quot;\n\n    role = models.CharField(max_length=20, choices=Role.choices, default=Role.CUSTOMER)\n    phone = models.CharField(max_length=15, unique=True, null=True, blank=True)\n\n    @property\n    def is_staff_member(self) -&gt; bool:\n        return self.role in {self.Role.ADMIN, self.Role.STAFF}</pre>\n<p>Set <code>AUTH_USER_MODEL = \"accounts.User\"</code> before the first migration. Switching later means rewriting every foreign key to users. Note <code>phone</code> is <code>null=True</code> with <code>unique=True</code>: many users may have no phone, and NULLs do not clash, but empty strings would.</p>\n<h3>Middleware</h3>\n<p>Middleware wraps every request. <code>SlowRequestLogMiddleware</code> times the request, logs any slower than 500 ms and adds an <code>X-Response-Time-ms</code> header.</p>\n<pre class=\"code\">class SlowRequestLogMiddleware:\n    def __init__(self, get_response):\n        self.get_response = get_response\n\n    def __call__(self, request):\n        start = time.perf_counter()\n        response = self.get_response(request)\n        elapsed_ms = (time.perf_counter() - start) * 1000\n        if elapsed_ms &gt; SLOW_MS:\n            logger.warning(&quot;SLOW %s %s took %.0f ms&quot;, request.method, request.path, elapsed_ms)\n        response[&quot;X-Response-Time-ms&quot;] = f&quot;{elapsed_ms:.0f}&quot;\n        return response</pre>\n<h3>Run it</h3>\n<pre class=\"code\">python -m venv venv &amp;&amp; source venv/bin/activate\npip install -r requirements/dev.txt\ncp .env.example .env            # then edit DATABASE_URL and SECRET_KEY\nexport DJANGO_SETTINGS_MODULE=config.settings.dev\npython manage.py migrate\npython manage.py seed_demo\npython manage.py createsuperuser   # then set role=&quot;admin&quot; in the shell\npython manage.py runserver</pre>\n<div class=\"callout\">No PostgreSQL on your laptop yet? Set <code>DATABASE_URL=sqlite:///db.sqlite3</code> in <code>.env</code> to start. The course uses PostgreSQL in production, like Ralfiz BMS on Railway.</div>",
+     "contentHtml": "<h3>The project</h3>\n<p>For the rest of the course you work on <strong>BookIt</strong>: customers book services (Full Car Wash, Interior Detailing), staff manage bookings in a dashboard, and a mobile app talks to a REST API. Download the whole project from the course page (Course files).</p>\n<pre class=\"code\">bookit/\n  config/\n    settings/base.py  dev.py  prod.py\n    urls.py  wsgi.py\n  apps/\n    core/        TimeStampedModel, middleware\n    accounts/    custom User with roles\n    catalog/     Service\n    bookings/    Booking, services.py (business rules)\n    dashboard/   staff web pages\n    api/         DRF API for the app\n  templates/\n  requirements/base.txt  dev.txt  prod.txt\n  .env.example  manage.py  pytest.ini</pre>\n<h3>How a request flows through Django</h3>\n<p><strong>Browser / Flutter app → Gunicorn → Middleware → URLconf → View → Service layer → Model / ORM → PostgreSQL</strong>, and the response travels back through the middleware in reverse order. When something breaks, ask which layer it broke in. That one question solves half of all debugging.</p>\n<p>Project = configuration (<code>config/</code>). App = one business area (<code>bookings</code>, <code>catalog</code>). MVT: Model (data), View (request → response logic), Template (HTML).</p>\n<h3>Split settings</h3>\n<p><code>base.py</code> holds everything shared. <code>dev.py</code> and <code>prod.py</code> start with <code>from .base import *</code> and change only what differs: DEBUG, allowed hosts, HTTPS, static storage.</p>\n<h3>Secrets come from the environment</h3>\n<pre class=\"code\">env = environ.Env(DEBUG=(bool, False))\nenviron.Env.read_env(BASE_DIR / &quot;.env&quot;)\n\nSECRET_KEY = env(&quot;SECRET_KEY&quot;)\nDEBUG = env(&quot;DEBUG&quot;)\nDATABASES = {&quot;default&quot;: env.db(&quot;DATABASE_URL&quot;)}</pre>\n<p>The real <code>.env</code> is never committed; <code>.env.example</code> shows which variables exist. <code>DEBUG</code> defaults to <code>False</code>, so forgetting it in production is safe.</p>\n<ul>\n<li><code>USE_TZ = True</code> and <code>TIME_ZONE = \"Asia/Kolkata\"</code>: the database stores UTC and users see IST. Gulf and UK clients just change the display zone.</li>\n<li><code>django.contrib.admin</code> is not installed. Clients get a custom dashboard (Day 4).</li>\n</ul>\n<h3>A custom User from day one</h3>\n<pre class=\"code\">class User(AbstractUser):\n    &quot;&quot;&quot;Custom user from day one — changing AUTH_USER_MODEL later is painful.&quot;&quot;&quot;\n\n    class Role(models.TextChoices):\n        ADMIN = &quot;admin&quot;, &quot;Admin&quot;\n        STAFF = &quot;staff&quot;, &quot;Staff&quot;\n        CUSTOMER = &quot;customer&quot;, &quot;Customer&quot;\n\n    role = models.CharField(max_length=20, choices=Role.choices, default=Role.CUSTOMER)\n    phone = models.CharField(max_length=15, unique=True, null=True, blank=True)\n\n    @property\n    def is_staff_member(self) -&gt; bool:\n        return self.role in {self.Role.ADMIN, self.Role.STAFF}</pre>\n<p>Set <code>AUTH_USER_MODEL = \"accounts.User\"</code> before the first migration. Switching later means rewriting every foreign key to users. Note <code>phone</code> is <code>null=True</code> with <code>unique=True</code>: many users may have no phone, and NULLs do not clash, but empty strings would.</p>\n<h3>Middleware</h3>\n<p>Middleware wraps every request. <code>SlowRequestLogMiddleware</code> times the request, logs any slower than 500 ms and adds an <code>X-Response-Time-ms</code> header.</p>\n<pre class=\"code\">class SlowRequestLogMiddleware:\n    def __init__(self, get_response):\n        self.get_response = get_response\n\n    def __call__(self, request):\n        start = time.perf_counter()\n        response = self.get_response(request)\n        elapsed_ms = (time.perf_counter() - start) * 1000\n        if elapsed_ms &gt; SLOW_MS:\n            logger.warning(&quot;SLOW %s %s took %.0f ms&quot;, request.method, request.path, elapsed_ms)\n        response[&quot;X-Response-Time-ms&quot;] = f&quot;{elapsed_ms:.0f}&quot;\n        return response</pre>\n<h3>Run it</h3>\n<pre class=\"code\">python -m venv venv &amp;&amp; source venv/bin/activate\npip install -r requirements/dev.txt\ncp .env.example .env            # then edit DATABASE_URL and SECRET_KEY\nexport DJANGO_SETTINGS_MODULE=config.settings.dev\npython manage.py migrate\npython manage.py seed_demo\npython manage.py createsuperuser   # then set role=&quot;admin&quot; in the shell\npython manage.py runserver</pre>\n<div class=\"callout\">No PostgreSQL on your laptop yet? Set <code>DATABASE_URL=sqlite:///db.sqlite3</code> in <code>.env</code> to start. The course uses PostgreSQL in production, like Ralfiz BMS on Railway.</div>",
      "terms": [
       {
        "term": "Split settings",
@@ -855,7 +982,7 @@
      "title": "Models that protect your data",
      "minutes": 75,
      "summaryHtml": "<p>Service and Booking: a timestamp base class, <code>TextChoices</code>, a price snapshot, <code>on_delete</code> choices, indexes, a database <code>CheckConstraint</code> and a tiny status state machine.</p>",
-     "contentHtml": "<h3>A base class for every table</h3>\n<pre class=\"code\">class TimeStampedModel(models.Model):\n    created_at = models.DateTimeField(auto_now_add=True)\n    updated_at = models.DateTimeField(auto_now=True)\n\n    class Meta:\n        abstract = True</pre>\n<p><code>abstract = True</code> means no table of its own; every model that inherits gets the two columns.</p>\n<h3>The Booking model</h3>\n<pre class=\"code\">class Booking(TimeStampedModel):\n    class Status(models.TextChoices):\n        PENDING = &quot;pending&quot;, &quot;Pending&quot;\n        CONFIRMED = &quot;confirmed&quot;, &quot;Confirmed&quot;\n        COMPLETED = &quot;completed&quot;, &quot;Completed&quot;\n        CANCELLED = &quot;cancelled&quot;, &quot;Cancelled&quot;\n\n    customer = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name=&quot;bookings&quot;)\n    staff = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True,\n                              related_name=&quot;assigned_bookings&quot;, limit_choices_to={&quot;role&quot;: &quot;staff&quot;})\n    service = models.ForeignKey(Service, on_delete=models.PROTECT, related_name=&quot;bookings&quot;)\n    start_at = models.DateTimeField()\n    end_at = models.DateTimeField()\n    status = models.CharField(max_length=20, choices=Status.choices, default=Status.PENDING)\n    # Snapshot of the price at booking time — later price changes must not rewrite history\n    price = models.DecimalField(max_digits=10, decimal_places=2)</pre>\n<h3>on_delete is a business decision</h3>\n<table><thead><tr><th>Choice</th><th>Meaning here</th></tr></thead><tbody>\n<tr><td><code>PROTECT</code></td><td>You cannot delete a customer or service that has bookings. Revenue history must survive.</td></tr>\n<tr><td><code>SET_NULL</code></td><td>If a staff member leaves, their bookings stay with no staff assigned.</td></tr>\n<tr><td><code>CASCADE</code></td><td>Delete the children too. Fine for things like a booking’s notes, dangerous for money.</td></tr>\n</tbody></table>\n<h3>Snapshot the price</h3>\n<p>The service price will go up next year. Last year’s bookings must still show what the customer actually paid, so the booking copies the price when it is created instead of reading <code>service.price</code> later.</p>\n<h3>Rules the database enforces</h3>\n<pre class=\"code\">class Meta:\n    ordering = [&quot;-start_at&quot;]\n    indexes = [\n        models.Index(fields=[&quot;status&quot;, &quot;start_at&quot;]),\n        models.Index(fields=[&quot;service&quot;, &quot;start_at&quot;]),\n    ]\n    constraints = [\n        models.CheckConstraint(condition=Q(end_at__gt=F(&quot;start_at&quot;)), name=&quot;booking_end_after_start&quot;),\n    ]</pre>\n<p>Python validation can be skipped by a bulk update, a shell session or another program. A <code>CheckConstraint</code> cannot. The indexes match the dashboard’s most common filters: by status and date, and by service and date.</p>\n<h3>A status state machine</h3>\n<pre class=\"code\">ALLOWED_TRANSITIONS = {\n    Status.PENDING: {Status.CONFIRMED, Status.CANCELLED},\n    Status.CONFIRMED: {Status.COMPLETED, Status.CANCELLED},\n    Status.COMPLETED: set(),\n    Status.CANCELLED: set(),\n}\n\ndef can_transition_to(self, new_status: str) -&gt; bool:\n    return new_status in self.ALLOWED_TRANSITIONS[self.status]</pre>\n<p>A completed booking can never be cancelled and a cancelled one can never be completed. The rule lives in one dictionary that anyone can read.</p>\n<div class=\"callout\">The <code>Service</code> model has its own constraint: <code>CheckConstraint(condition=Q(price__gte=0), name=\"service_price_non_negative\")</code>. Every rule that must never break belongs in the database.</div>",
+     "contentHtml": "<h3>A base class for every table</h3>\n<pre class=\"code\">class TimeStampedModel(models.Model):\n    created_at = models.DateTimeField(auto_now_add=True)\n    updated_at = models.DateTimeField(auto_now=True)\n\n    class Meta:\n        abstract = True</pre>\n<p><code>abstract = True</code> means no table of its own; every model that inherits gets the two columns.</p>\n<h3>The Booking model</h3>\n<pre class=\"code\">class Booking(TimeStampedModel):\n    class Status(models.TextChoices):\n        PENDING = &quot;pending&quot;, &quot;Pending&quot;\n        CONFIRMED = &quot;confirmed&quot;, &quot;Confirmed&quot;\n        COMPLETED = &quot;completed&quot;, &quot;Completed&quot;\n        CANCELLED = &quot;cancelled&quot;, &quot;Cancelled&quot;\n\n    customer = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name=&quot;bookings&quot;)\n    staff = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True,\n                              related_name=&quot;assigned_bookings&quot;, limit_choices_to={&quot;role&quot;: &quot;staff&quot;})\n    service = models.ForeignKey(Service, on_delete=models.PROTECT, related_name=&quot;bookings&quot;)\n    start_at = models.DateTimeField()\n    end_at = models.DateTimeField()\n    status = models.CharField(max_length=20, choices=Status.choices, default=Status.PENDING)\n    # Snapshot of the price at booking time — later price changes must not rewrite history\n    price = models.DecimalField(max_digits=10, decimal_places=2)</pre>\n<h3>on_delete is a business decision</h3>\n<table><thead><tr><th>Choice</th><th>Meaning here</th></tr></thead><tbody>\n<tr><td><code>PROTECT</code></td><td>You cannot delete a customer or service that has bookings. Revenue history must survive.</td></tr>\n<tr><td><code>SET_NULL</code></td><td>If a staff member leaves, their bookings stay with no staff assigned.</td></tr>\n<tr><td><code>CASCADE</code></td><td>Delete the children too. Fine for things like a booking’s notes, dangerous for money.</td></tr>\n</tbody></table>\n<h3>Snapshot the price</h3>\n<p>The service price will go up next year. Last year’s bookings must still show what the customer actually paid, so the booking copies the price when it is created instead of reading <code>service.price</code> later.</p>\n<h3>Rules the database enforces</h3>\n<pre class=\"code\">class Meta:\n    ordering = [&quot;-start_at&quot;]\n    indexes = [\n        models.Index(fields=[&quot;status&quot;, &quot;start_at&quot;]),\n        models.Index(fields=[&quot;service&quot;, &quot;start_at&quot;]),\n    ]\n    constraints = [\n        models.CheckConstraint(condition=Q(end_at__gt=F(&quot;start_at&quot;)), name=&quot;booking_end_after_start&quot;),\n    ]</pre>\n<p>Python validation can be skipped by a bulk update, a shell session or another program. A <code>CheckConstraint</code> cannot. The indexes match the dashboard’s most common filters: by status and date, and by service and date.</p>\n<h3>A status state machine</h3>\n<pre class=\"code\">ALLOWED_TRANSITIONS = {\n    Status.PENDING: {Status.CONFIRMED, Status.CANCELLED},\n    Status.CONFIRMED: {Status.COMPLETED, Status.CANCELLED},\n    Status.COMPLETED: set(),\n    Status.CANCELLED: set(),\n}\n\ndef can_transition_to(self, new_status: str) -&gt; bool:\n    return new_status in self.ALLOWED_TRANSITIONS[self.status]</pre>\n<p>A completed booking can never be cancelled and a cancelled one can never be completed. The rule lives in one dictionary that anyone can read.</p>\n<div class=\"callout\">The <code>Service</code> model has its own constraint: <code>CheckConstraint(condition=Q(price__gte=0), name=\"service_price_non_negative\")</code>. Every rule that must never break belongs in the database.</div>\n<h3>Migrations: the rules</h3>\n<ul>\n<li>Commit migration files with the model change, in the same PR.</li>\n<li>Never edit a migration that has already run on a shared database or in production. Create a new one.</li>\n<li>Two people changing the same app at once causes migration conflicts. Talk before touching models.</li>\n<li>Adding a non-null column to a big table needs a default or a 3-step migration. Ask a senior first.</li>\n</ul>\n<h3>The brief: BookIt data layer</h3>\n<p>A car wash chain wants online bookings. Today you deliver the database design and the reports the owner asked for in the kickoff meeting. Acceptance: <code>python manage.py check</code> is clean and migrations are committed; saving a booking with <code>end_at</code> before <code>start_at</code> raises <code>IntegrityError</code>; deleting a booked service raises <code>ProtectedError</code>.</p>\n<p><strong>Stretch goal:</strong> use PostgreSQL’s <code>ExclusionConstraint</code> (from <code>django.contrib.postgres</code>) to make overlapping active bookings for the same service impossible at the database level.</p>",
      "terms": [
       {
        "term": "Abstract model",
@@ -951,6 +1078,17 @@
        ],
        "answer": 2,
        "explanation": "Pending can become confirmed or cancelled. Completed and cancelled are final."
+      },
+      {
+       "question": "A migration has already run on production and has a mistake. What do you do?",
+       "options": [
+        "Edit the migration file and redeploy",
+        "Write a new migration that fixes it",
+        "Delete the migration",
+        "Drop the table"
+       ],
+       "answer": 1,
+       "explanation": "Production has recorded that migration as applied, so edits never run there. Fix forward with a new migration."
       }
      ],
      "widget": null,
@@ -1046,6 +1184,17 @@
        "explanation": "Read-modify-write in Python has a race: two requests read the old value and one overwrites the other."
       },
       {
+       "question": "Why does Booking.customer use on_delete=PROTECT rather than CASCADE?",
+       "options": [
+        "PROTECT is faster",
+        "Deleting a customer must not silently delete their financial history; deactivate the user instead",
+        "CASCADE is deprecated",
+        "PROTECT allows NULL"
+       ],
+       "answer": 1,
+       "explanation": "Set is_active=False on a customer who leaves. Their bookings and revenue stay correct."
+      },
+      {
        "question": "How do you search bookings where the customer name OR the service name matches?",
        "options": [
         "filter(customer__first_name=q, service__name=q)",
@@ -1064,7 +1213,7 @@
   },
   {
    "id": "djd4",
-   "name": "Day 4 · Business logic and the dashboard",
+   "name": "Day 4 · Custom staff dashboard",
    "weight": "Day 4",
    "blurb": "Booking rules in a service layer, safe under load, and the staff web dashboard.",
    "lessons": [
@@ -1179,7 +1328,7 @@
      "title": "The staff dashboard",
      "minutes": 75,
      "summaryHtml": "<p>Server-rendered pages with class-based views: a KPI home page, a searchable, filterable, paginated booking list, POST-only status changes with messages, and ModelForms with custom validation.</p>",
-     "contentHtml": "<h3>Who may see it</h3>\n<pre class=\"code\">class StaffRequiredMixin(LoginRequiredMixin, UserPassesTestMixin):\n    &quot;&quot;&quot;Logged-in AND role is admin/staff. Customers get 403, guests go to login.&quot;&quot;&quot;\n\n    def test_func(self):\n        return self.request.user.is_staff_member</pre>\n<p>Every dashboard view lists this mixin first. Login alone is not enough: a customer who logs in must get 403, not the business numbers.</p>\n<h3>KPIs in get_context_data</h3>\n<pre class=\"code\">class DashboardHomeView(StaffRequiredMixin, TemplateView):\n    template_name = &quot;dashboard/home.html&quot;\n\n    def get_context_data(self, **kwargs):\n        ctx = super().get_context_data(**kwargs)\n        ...\n        ctx[&quot;kpis&quot;] = {\n            &quot;today&quot;: bookings.filter(start_at__date=today).count(),\n            &quot;pending&quot;: bookings.filter(status=Booking.Status.PENDING).count(),\n            &quot;month_revenue&quot;: completed_this_month.aggregate(total=Sum(&quot;price&quot;))[&quot;total&quot;] or 0,\n            &quot;month_completed&quot;: completed_this_month.count(),\n        }\n        ctx[&quot;upcoming&quot;] = (...).select_related(&quot;customer&quot;, &quot;service&quot;, &quot;staff&quot;).order_by(&quot;start_at&quot;)[:8]</pre>\n<p>Note <code>or 0</code>: <code>Sum</code> over no rows is <code>None</code>, not 0.</p>\n<h3>A list with search, filter and pagination</h3>\n<pre class=\"code\">class BookingListView(StaffRequiredMixin, ListView):\n    template_name = &quot;dashboard/bookings/list.html&quot;\n    context_object_name = &quot;bookings&quot;\n    paginate_by = 20\n\n    def get_queryset(self):\n        qs = Booking.objects.select_related(&quot;customer&quot;, &quot;service&quot;, &quot;staff&quot;)\n        q = self.request.GET.get(&quot;q&quot;, &quot;&quot;).strip()\n        status = self.request.GET.get(&quot;status&quot;, &quot;&quot;)\n        if q:\n            qs = qs.filter(Q(customer__first_name__icontains=q) | Q(customer__phone__icontains=q) | Q(service__name__icontains=q))\n        if status in Booking.Status.values:\n            qs = qs.filter(status=status)\n        return qs</pre>\n<p>Only known statuses are applied (<code>status in Booking.Status.values</code>), so a tampered URL cannot cause an error. In the template, keep <code>q</code> and <code>status</code> in the pagination links so page 2 keeps the filter.</p>\n<h3>Changes are POST only</h3>\n<pre class=\"code\">@require_POST\n@login_required\ndef booking_change_status(request, pk):\n    if not request.user.is_staff_member:\n        raise PermissionDenied\n    booking = get_object_or_404(Booking, pk=pk)\n    try:\n        change_status(booking=booking, new_status=request.POST.get(&quot;status&quot;, &quot;&quot;), by=request.user)\n        messages.success(request, &quot;Booking status updated.&quot;)\n    except BookingError as exc:\n        messages.error(request, str(exc))\n    return redirect(&quot;dashboard:booking-detail&quot;, pk=pk)</pre>\n<p>A GET link that changes data can be triggered by a browser prefetch or an image tag on another site. POST plus <code>{% csrf_token %}</code> prevents that. After the POST, redirect (Post/Redirect/Get) so a refresh does not submit again.</p>\n<h3>ModelForm with a custom rule</h3>\n<pre class=\"code\">class ServiceForm(StyledFormMixin, forms.ModelForm):\n    class Meta:\n        model = Service\n        fields = [&quot;name&quot;, &quot;slug&quot;, &quot;description&quot;, &quot;duration_minutes&quot;, &quot;price&quot;, &quot;gst_rate&quot;, &quot;is_active&quot;]\n\n    def clean_duration_minutes(self):\n        minutes = self.cleaned_data[&quot;duration_minutes&quot;]\n        if minutes % 15:\n            raise forms.ValidationError(&quot;Duration must be in 15-minute steps.&quot;)\n        return minutes</pre>\n<p>Always list <code>fields</code> explicitly. <code>fields = \"__all__\"</code> silently exposes every new column you add later. <code>StyledFormMixin</code> adds CSS classes to every widget so templates stay clean.</p>\n<div class=\"callout\">Django 5 only logs out on POST. That is why base.html has a small logout form with a button rather than a link.</div>",
+     "contentHtml": "<h3>Why we don’t give clients the Django admin</h3>\n<table><thead><tr><th>Django admin</th><th>Custom dashboard</th></tr></thead><tbody>\n<tr><td>Generic look, hard to brand</td><td>Branded, modern UI</td></tr>\n<tr><td>Exposes every model</td><td>Shows only what that role needs</td></tr>\n<tr><td>Model-level permissions</td><td>Business-level permissions</td></tr>\n<tr><td>Workflows (approve, assign, refund) are awkward</td><td>Business actions are buttons that call service functions, with the same rules as the API</td></tr>\n</tbody></table>\n<p>The brief: the car wash manager opens the dashboard every morning on a laptop at the counter. They need today’s numbers at a glance, to find a customer by phone in two seconds, and to move bookings through their workflow without mistakes.</p>\n<h3>Who may see it</h3>\n<pre class=\"code\">class StaffRequiredMixin(LoginRequiredMixin, UserPassesTestMixin):\n    &quot;&quot;&quot;Logged-in AND role is admin/staff. Customers get 403, guests go to login.&quot;&quot;&quot;\n\n    def test_func(self):\n        return self.request.user.is_staff_member</pre>\n<p>Every dashboard view lists this mixin first. Login alone is not enough: a customer who logs in must get 403, not the business numbers.</p>\n<h3>KPIs in get_context_data</h3>\n<pre class=\"code\">class DashboardHomeView(StaffRequiredMixin, TemplateView):\n    template_name = &quot;dashboard/home.html&quot;\n\n    def get_context_data(self, **kwargs):\n        ctx = super().get_context_data(**kwargs)\n        ...\n        ctx[&quot;kpis&quot;] = {\n            &quot;today&quot;: bookings.filter(start_at__date=today).count(),\n            &quot;pending&quot;: bookings.filter(status=Booking.Status.PENDING).count(),\n            &quot;month_revenue&quot;: completed_this_month.aggregate(total=Sum(&quot;price&quot;))[&quot;total&quot;] or 0,\n            &quot;month_completed&quot;: completed_this_month.count(),\n        }\n        ctx[&quot;upcoming&quot;] = (...).select_related(&quot;customer&quot;, &quot;service&quot;, &quot;staff&quot;).order_by(&quot;start_at&quot;)[:8]</pre>\n<p>Note <code>or 0</code>: <code>Sum</code> over no rows is <code>None</code>, not 0.</p>\n<h3>A list with search, filter and pagination</h3>\n<pre class=\"code\">class BookingListView(StaffRequiredMixin, ListView):\n    template_name = &quot;dashboard/bookings/list.html&quot;\n    context_object_name = &quot;bookings&quot;\n    paginate_by = 20\n\n    def get_queryset(self):\n        qs = Booking.objects.select_related(&quot;customer&quot;, &quot;service&quot;, &quot;staff&quot;)\n        q = self.request.GET.get(&quot;q&quot;, &quot;&quot;).strip()\n        status = self.request.GET.get(&quot;status&quot;, &quot;&quot;)\n        if q:\n            qs = qs.filter(Q(customer__first_name__icontains=q) | Q(customer__phone__icontains=q) | Q(service__name__icontains=q))\n        if status in Booking.Status.values:\n            qs = qs.filter(status=status)\n        return qs</pre>\n<p>Only known statuses are applied (<code>status in Booking.Status.values</code>), so a tampered URL cannot cause an error. In the template, keep <code>q</code> and <code>status</code> in the pagination links so page 2 keeps the filter.</p>\n<h3>Changes are POST only</h3>\n<pre class=\"code\">@require_POST\n@login_required\ndef booking_change_status(request, pk):\n    if not request.user.is_staff_member:\n        raise PermissionDenied\n    booking = get_object_or_404(Booking, pk=pk)\n    try:\n        change_status(booking=booking, new_status=request.POST.get(&quot;status&quot;, &quot;&quot;), by=request.user)\n        messages.success(request, &quot;Booking status updated.&quot;)\n    except BookingError as exc:\n        messages.error(request, str(exc))\n    return redirect(&quot;dashboard:booking-detail&quot;, pk=pk)</pre>\n<p>A GET link that changes data can be triggered by a browser prefetch or an image tag on another site. POST plus <code>{% csrf_token %}</code> prevents that. After the POST, redirect (Post/Redirect/Get) so a refresh does not submit again.</p>\n<h3>ModelForm with a custom rule</h3>\n<pre class=\"code\">class ServiceForm(StyledFormMixin, forms.ModelForm):\n    class Meta:\n        model = Service\n        fields = [&quot;name&quot;, &quot;slug&quot;, &quot;description&quot;, &quot;duration_minutes&quot;, &quot;price&quot;, &quot;gst_rate&quot;, &quot;is_active&quot;]\n\n    def clean_duration_minutes(self):\n        minutes = self.cleaned_data[&quot;duration_minutes&quot;]\n        if minutes % 15:\n            raise forms.ValidationError(&quot;Duration must be in 15-minute steps.&quot;)\n        return minutes</pre>\n<p>Always list <code>fields</code> explicitly. <code>fields = \"__all__\"</code> silently exposes every new column you add later. <code>StyledFormMixin</code> adds CSS classes to every widget so templates stay clean.</p>\n<div class=\"callout\">Django 5 only logs out on POST. That is why base.html has a small logout form with a button rather than a link.</div>\n<h3>Templates and URLs</h3>\n<ul>\n<li>Every URL file has an <code>app_name</code>; templates use <code>{% url 'dashboard:booking-list' %}</code>. Never hard-code paths: if a prefix changes, reversed names keep working.</li>\n<li>One <code>base.html</code> with blocks; every page <code>{% extends %}</code> it.</li>\n<li>Django auto-escapes variables, so XSS is blocked by default. Never use <code>|safe</code> on user input.</li>\n<li><code>{% querystring page=... %}</code> (Django 5.1+) keeps the search and filter parameters when paging.</li>\n<li>The Tailwind CDN is fine for training. In production, build the CSS with the Tailwind CLI and serve the file.</li>\n</ul>\n<h3>Middleware and signals: use carefully</h3>\n<p>Middleware suits cross-cutting concerns: timing, audit logs, tenant detection in white-label SaaS. Signals (<code>post_save</code>) hide logic and make code hard to follow; prefer explicit calls in the service layer. If you do send an email or notification, do it in <code>transaction.on_commit(...)</code> so you never notify about a booking that was rolled back.</p>\n<h3>Acceptance criteria</h3>\n<ul>\n<li>No <code>django.contrib.admin</code> in <code>INSTALLED_APPS</code>.</li>\n<li>The bookings list runs at most 3 queries per page (check with django-debug-toolbar).</li>\n<li>Status changes go through <code>services.change_status</code> only.</li>\n<li>Works on a 13\" laptop and at mobile width.</li>\n</ul>\n<p><strong>Stretch goals:</strong> a 14-day revenue bar chart (Chart.js); CSV export of the filtered bookings; assign staff from the detail page.</p>",
      "terms": [
       {
        "term": "Class-based view (CBV)",
@@ -1271,6 +1420,17 @@
        "explanation": "SQL SUM over no rows is NULL, which Django returns as None. Hence the or 0."
       },
       {
+       "question": "You need to email the customer when a booking is confirmed. Where do you send it?",
+       "options": [
+        "In a post_save signal, immediately",
+        "From the service layer, inside transaction.on_commit()",
+        "In the template",
+        "In the middleware"
+       ],
+       "answer": 1,
+       "explanation": "on_commit runs only after the transaction succeeds, so nobody is told about a booking that was rolled back. The service layer keeps the logic visible."
+      },
+      {
        "question": "Why avoid fields = \"__all__\" in a ModelForm?",
        "options": [
         "It is slower",
@@ -1289,9 +1449,9 @@
   },
   {
    "id": "djd5",
-   "name": "Day 5 · API, tests and going live",
+   "name": "Day 5 · REST APIs",
    "weight": "Day 5",
-   "blurb": "The REST API for the mobile app, tests that prove it, and the production settings.",
+   "blurb": "The REST API for the mobile app and the tests that prove it.",
    "lessons": [
     {
      "id": "dj12",
@@ -1299,7 +1459,7 @@
      "title": "A REST API with DRF and JWT",
      "minutes": 90,
      "summaryHtml": "<p>The API the mobile app uses: register and JWT login, serializers that read nested and write by id, viewsets with a custom action, per-user querysets that prevent IDOR, one error shape, throttling and Swagger docs.</p>",
-     "contentHtml": "<h3>Endpoints</h3>\n<table><thead><tr><th>Method and path</th><th>What it does</th></tr></thead><tbody>\n<tr><td><code>POST /api/v1/auth/register/</code></td><td>Create a customer account</td></tr>\n<tr><td><code>POST /api/v1/auth/token/</code></td><td>Log in: returns <code>access</code> and <code>refresh</code> tokens</td></tr>\n<tr><td><code>POST /api/v1/auth/token/refresh/</code></td><td>New access token from a refresh token</td></tr>\n<tr><td><code>GET /api/v1/services/</code></td><td>Public list, with search and ordering</td></tr>\n<tr><td><code>GET /api/v1/services/&lt;slug&gt;/slots/?date=</code></td><td>Free slots for a day</td></tr>\n<tr><td><code>GET/POST /api/v1/bookings/</code></td><td>My bookings / book a slot</td></tr>\n<tr><td><code>POST /api/v1/bookings/&lt;id&gt;/cancel/</code></td><td>Cancel my booking</td></tr>\n<tr><td><code>GET /api/v1/docs/</code></td><td>Swagger UI generated by drf-spectacular</td></tr>\n</tbody></table>\n<h3>JWT in one paragraph</h3>\n<p>The app sends username and password once and receives a short-lived <strong>access</strong> token (30 minutes) and a longer <strong>refresh</strong> token (7 days). Every request carries <code>Authorization: Bearer &lt;access&gt;</code>. When it expires, the app swaps the refresh token for a new pair; with rotation and blacklisting, an old refresh token cannot be reused.</p>\n<h3>Serializers: nested on read, id on write</h3>\n<pre class=\"code\">class BookingSerializer(serializers.ModelSerializer):\n    service = ServiceSerializer(read_only=True)  # nested on read\n    service_id = serializers.PrimaryKeyRelatedField(  # plain id on write\n        queryset=Service.objects.filter(is_active=True), source=&quot;service&quot;, write_only=True\n    )\n    status_display = serializers.CharField(source=&quot;get_status_display&quot;, read_only=True)\n\n    class Meta:\n        model = Booking\n        fields = [&quot;id&quot;, &quot;service&quot;, &quot;service_id&quot;, &quot;start_at&quot;, &quot;end_at&quot;,\n                  &quot;status&quot;, &quot;status_display&quot;, &quot;price&quot;, &quot;notes&quot;, &quot;created_at&quot;]\n        read_only_fields = [&quot;end_at&quot;, &quot;status&quot;, &quot;price&quot;, &quot;created_at&quot;]\n\n    def create(self, validated_data):\n        try:\n            return create_booking(customer=self.context[&quot;request&quot;].user, **validated_data)\n        except BookingError as exc:\n            raise serializers.ValidationError({&quot;start_at&quot;: [str(exc)]}) from exc</pre>\n<p><code>price</code> and <code>status</code> are read-only: a client must never send its own price. The customer comes from the token, not the request body. The serializer calls the same <code>create_booking</code> as the dashboard.</p>\n<h3>Only your own rows: preventing IDOR</h3>\n<pre class=\"code\">def get_queryset(self):\n    qs = Booking.objects.select_related(&quot;service&quot;)\n    user = self.request.user\n    # Customers only ever see their own rows -&gt; no IDOR (guessing /bookings/42/)\n    return qs if user.is_staff_member else qs.filter(customer=user)</pre>\n<p>Because retrieve, list and the cancel action all start from this queryset, another customer’s booking returns <strong>404</strong>, not 403. The API does not even confirm it exists.</p>\n<h3>A custom action</h3>\n<pre class=\"code\">@action(detail=True, methods=[&quot;post&quot;])\ndef cancel(self, request, pk=None):\n    booking = self.get_object()\n    try:\n        booking = change_status(booking=booking, new_status=Booking.Status.CANCELLED, by=request.user)\n    except BookingError as exc:\n        return Response({&quot;success&quot;: False, &quot;errors&quot;: {&quot;detail&quot;: str(exc)}}, status=status.HTTP_400_BAD_REQUEST)\n    return Response(self.get_serializer(booking).data)</pre>\n<h3>One error shape for every endpoint</h3>\n<pre class=\"code\">def api_exception_handler(exc, context):\n    response = exception_handler(exc, context)\n    if response is not None:\n        response.data = {&quot;success&quot;: False, &quot;status_code&quot;: response.status_code, &quot;errors&quot;: response.data}\n    return response</pre>\n<p>The Flutter app can always read <code>response[\"errors\"]</code>, whatever went wrong. Settings also add default pagination (20 per page), filtering, and throttling (30/min anonymous, 120/min per user).</p>\n<div class=\"callout\">The booking viewset deliberately has no update or delete mixins. Customers cancel through the <code>cancel</code> action so the state machine always runs.</div>",
+     "contentHtml": "<h3>Endpoints</h3>\n<table><thead><tr><th>Method and path</th><th>What it does</th></tr></thead><tbody>\n<tr><td><code>POST /api/v1/auth/register/</code></td><td>Create a customer account</td></tr>\n<tr><td><code>POST /api/v1/auth/token/</code></td><td>Log in: returns <code>access</code> and <code>refresh</code> tokens</td></tr>\n<tr><td><code>POST /api/v1/auth/token/refresh/</code></td><td>New access token from a refresh token</td></tr>\n<tr><td><code>GET /api/v1/services/</code></td><td>Public list, with search and ordering</td></tr>\n<tr><td><code>GET /api/v1/services/&lt;slug&gt;/slots/?date=</code></td><td>Free slots for a day</td></tr>\n<tr><td><code>GET/POST /api/v1/bookings/</code></td><td>My bookings / book a slot</td></tr>\n<tr><td><code>POST /api/v1/bookings/&lt;id&gt;/cancel/</code></td><td>Cancel my booking</td></tr>\n<tr><td><code>GET /api/v1/docs/</code></td><td>Swagger UI generated by drf-spectacular</td></tr>\n</tbody></table>\n<h3>REST rules we follow</h3>\n<ul>\n<li>Version from day one (<code>/api/v1/</code>). Mobile apps in the Play Store cannot be force-updated.</li>\n<li>Plural nouns for resources; verbs only for actions (<code>/cancel/</code>).</li>\n<li>Status codes: 400 validation, 401 not logged in, 403 not allowed, 404 not found or not yours, 429 throttled.</li>\n<li>The default permission is <code>IsAuthenticated</code>, so every endpoint is private unless you open it on purpose.</li>\n<li>CORS allows only your own frontends (e.g. the Next.js app), never <code>*</code> in production.</li>\n</ul>\n<h3>JWT in one paragraph</h3>\n<p>The app sends username and password once and receives a short-lived <strong>access</strong> token (30 minutes) and a longer <strong>refresh</strong> token (7 days). Every request carries <code>Authorization: Bearer &lt;access&gt;</code>. When it expires, the app swaps the refresh token for a new pair; with rotation and blacklisting, an old refresh token cannot be reused.</p>\n<h3>Serializers: nested on read, id on write</h3>\n<pre class=\"code\">class BookingSerializer(serializers.ModelSerializer):\n    service = ServiceSerializer(read_only=True)  # nested on read\n    service_id = serializers.PrimaryKeyRelatedField(  # plain id on write\n        queryset=Service.objects.filter(is_active=True), source=&quot;service&quot;, write_only=True\n    )\n    status_display = serializers.CharField(source=&quot;get_status_display&quot;, read_only=True)\n\n    class Meta:\n        model = Booking\n        fields = [&quot;id&quot;, &quot;service&quot;, &quot;service_id&quot;, &quot;start_at&quot;, &quot;end_at&quot;,\n                  &quot;status&quot;, &quot;status_display&quot;, &quot;price&quot;, &quot;notes&quot;, &quot;created_at&quot;]\n        read_only_fields = [&quot;end_at&quot;, &quot;status&quot;, &quot;price&quot;, &quot;created_at&quot;]\n\n    def create(self, validated_data):\n        try:\n            return create_booking(customer=self.context[&quot;request&quot;].user, **validated_data)\n        except BookingError as exc:\n            raise serializers.ValidationError({&quot;start_at&quot;: [str(exc)]}) from exc</pre>\n<p><code>price</code> and <code>status</code> are read-only: a client must never send its own price. The customer comes from the token, not the request body. The serializer calls the same <code>create_booking</code> as the dashboard.</p>\n<h3>Only your own rows: preventing IDOR</h3>\n<pre class=\"code\">def get_queryset(self):\n    qs = Booking.objects.select_related(&quot;service&quot;)\n    user = self.request.user\n    # Customers only ever see their own rows -&gt; no IDOR (guessing /bookings/42/)\n    return qs if user.is_staff_member else qs.filter(customer=user)</pre>\n<p>Because retrieve, list and the cancel action all start from this queryset, another customer’s booking returns <strong>404</strong>, not 403. The API does not even confirm it exists.</p>\n<h3>A custom action</h3>\n<pre class=\"code\">@action(detail=True, methods=[&quot;post&quot;])\ndef cancel(self, request, pk=None):\n    booking = self.get_object()\n    try:\n        booking = change_status(booking=booking, new_status=Booking.Status.CANCELLED, by=request.user)\n    except BookingError as exc:\n        return Response({&quot;success&quot;: False, &quot;errors&quot;: {&quot;detail&quot;: str(exc)}}, status=status.HTTP_400_BAD_REQUEST)\n    return Response(self.get_serializer(booking).data)</pre>\n<h3>One error shape for every endpoint</h3>\n<pre class=\"code\">def api_exception_handler(exc, context):\n    response = exception_handler(exc, context)\n    if response is not None:\n        response.data = {&quot;success&quot;: False, &quot;status_code&quot;: response.status_code, &quot;errors&quot;: response.data}\n    return response</pre>\n<p>The Flutter app can always read <code>response[\"errors\"]</code>, whatever went wrong. Settings also add default pagination (20 per page), filtering, and throttling (30/min anonymous, 120/min per user).</p>\n<div class=\"callout\">The booking viewset deliberately has no update or delete mixins. Customers cancel through the <code>cancel</code> action so the state machine always runs.</div>\n<h3>The brief: mobile API for the Flutter app</h3>\n<p>Our Flutter developer starts the customer app on Monday. They need a stable, documented API and a Postman or Bruno collection today. Deliver: every endpoint above working with JWT; Swagger listing all of them; a <code>GET/PATCH /api/v1/me/</code> profile endpoint; an exported collection in <code>docs/</code> with variables for the base URL and token.</p>\n<p><strong>Stretch goals:</strong> <code>GET /bookings/{id}/invoice/</code> using Day 2’s <code>invoice.py</code> for the GST totals; a staff-only <code>/api/v1/staff/bookings/</code>; cursor pagination for an infinite-scroll list.</p>",
      "terms": [
       {
        "term": "Serializer",
@@ -1388,6 +1548,28 @@
        "explanation": "Access tokens are short-lived for safety. The refresh token renews them; with rotation each refresh gives a new refresh token."
       },
       {
+       "question": "Why not set CORS to allow * in production?",
+       "options": [
+        "It is slower",
+        "Any website’s scripts could then call your API from your users’ browsers",
+        "Flutter apps need CORS",
+        "JWT does not work with *"
+       ],
+       "answer": 1,
+       "explanation": "CORS is the browser rule for which sites may call your API from JavaScript. List only your own frontends."
+      },
+      {
+       "question": "Why does the API start at /api/v1/?",
+       "options": [
+        "Django requires it",
+        "Installed mobile apps cannot be force-updated, so old versions must keep working when the API changes",
+        "For SEO",
+        "JWT needs a version"
+       ],
+       "answer": 1,
+       "explanation": "With a version in the path you can ship /api/v2/ without breaking phones still running the old app."
+      },
+      {
        "question": "Why does the serializer’s create() call create_booking() instead of Booking.objects.create()?",
        "options": [
         "It is shorter",
@@ -1405,10 +1587,10 @@
     {
      "id": "dj13",
      "num": "5.2",
-     "title": "API tests, seed data and going live",
-     "minutes": 75,
-     "summaryHtml": "<p>pytest-django tests that prove the rules through the API, a <code>seed_demo</code> management command with <code>bulk_create</code>, and the production settings for Railway: HTTPS behind a proxy, secure cookies, HSTS and gunicorn.</p>",
-     "contentHtml": "<h3>Testing through the API</h3>\n<p>These tests use the real URLs, real serializers and a real test database. They prove what the mobile app will see.</p>\n<pre class=\"code\">def test_booking_snapshots_price_and_blocks_double_booking(api, customer, other_customer, service):\n    payload = {&quot;service_id&quot;: service.id, &quot;start_at&quot;: tomorrow_at(10).isoformat()}\n\n    api.force_authenticate(customer)\n    r = api.post(&quot;/api/v1/bookings/&quot;, payload, format=&quot;json&quot;)\n    assert r.status_code == 201, r.data\n    assert r.data[&quot;price&quot;] == &quot;499.00&quot;\n    assert r.data[&quot;status&quot;] == &quot;pending&quot;\n\n    api.force_authenticate(other_customer)\n    r = api.post(&quot;/api/v1/bookings/&quot;, payload, format=&quot;json&quot;)\n    assert r.status_code == 400\n    assert r.data[&quot;success&quot;] is False</pre>\n<ul>\n<li>The <code>db</code> fixture (pulled in by <code>customer</code> and <code>service</code>) gives each test a clean database.</li>\n<li><code>force_authenticate</code> skips the token dance when the test is not about login.</li>\n<li><code>assert r.status_code == 201, r.data</code> prints the error body when it fails.</li>\n<li>Test the security rules too: another customer gets 404, a customer gets 403 on the dashboard.</li>\n</ul>\n<pre class=\"code\">pip install -r requirements/dev.txt\npytest -q      # pytest.ini sets DJANGO_SETTINGS_MODULE=config.settings.dev</pre>\n<h3>Seed data with a management command</h3>\n<pre class=\"code\">class Command(BaseCommand):\n    help = &quot;Create demo services, staff, customers and bookings&quot;\n\n    def add_arguments(self, parser):\n        parser.add_argument(&quot;--bookings&quot;, type=int, default=200)\n\n    @transaction.atomic\n    def handle(self, *args, **options):\n        services = [Service.objects.get_or_create(slug=slugify(name), defaults={...})[0] for ...]\n        ...\n        # bulk_create = one INSERT instead of hundreds (seed data only; skips overlap rules)\n        Booking.objects.bulk_create(bookings, batch_size=500)</pre>\n<p><code>get_or_create</code> makes the command safe to run twice. <code>bulk_create</code> is fast because it skips <code>save()</code> and your service-layer rules, so use it only for demo or migration data.</p>\n<h3>Production settings</h3>\n<pre class=\"code\">DEBUG = False\nCSRF_TRUSTED_ORIGINS = env.list(&quot;CSRF_TRUSTED_ORIGINS&quot;, default=[])\n\n# Railway terminates TLS at its proxy and forwards X-Forwarded-Proto\nSECURE_PROXY_SSL_HEADER = (&quot;HTTP_X_FORWARDED_PROTO&quot;, &quot;https&quot;)\nSECURE_SSL_REDIRECT = env.bool(&quot;SECURE_SSL_REDIRECT&quot;, default=True)\nSESSION_COOKIE_SECURE = True\nCSRF_COOKIE_SECURE = True\nSECURE_HSTS_SECONDS = env.int(&quot;SECURE_HSTS_SECONDS&quot;, default=3600)  # raise to 31536000 once stable\nX_FRAME_OPTIONS = &quot;DENY&quot;</pre>\n<p>Railway (like most hosts) handles HTTPS at its proxy and talks plain HTTP to your app. <code>SECURE_PROXY_SSL_HEADER</code> tells Django to trust the proxy’s header, otherwise <code>SECURE_SSL_REDIRECT</code> would redirect forever. Start HSTS small and raise it once you are sure HTTPS works everywhere: browsers remember it.</p>\n<h3>Deploy checklist</h3>\n<ul>\n<li>Variables set: <code>SECRET_KEY</code>, <code>DATABASE_URL</code>, <code>ALLOWED_HOSTS</code>, <code>CSRF_TRUSTED_ORIGINS</code>, <code>DJANGO_SETTINGS_MODULE=config.settings.prod</code>.</li>\n<li>Start command: <code>python manage.py migrate &amp;&amp; python manage.py collectstatic --noinput &amp;&amp; gunicorn config.wsgi</code>.</li>\n<li>Static files served by WhiteNoise with hashed names (<code>CompressedManifestStaticFilesStorage</code>).</li>\n<li><code>python manage.py check --deploy</code> runs with no warnings you do not understand.</li>\n</ul>\n<div class=\"warn\">Railway’s disk is wiped on every deploy. Uploaded media needs a volume or object storage; never rely on the container’s filesystem.</div>",
+     "title": "API tests and seed data",
+     "minutes": 60,
+     "summaryHtml": "<p>pytest-django tests that prove the business rules through the real API, and a <code>seed_demo</code> management command that fills the database with realistic demo data in one fast query.</p>",
+     "contentHtml": "<h3>Testing through the API</h3>\n<p>These tests use the real URLs, real serializers and a real test database. They prove what the mobile app will see.</p>\n<pre class=\"code\">def test_booking_snapshots_price_and_blocks_double_booking(api, customer, other_customer, service):\n    payload = {&quot;service_id&quot;: service.id, &quot;start_at&quot;: tomorrow_at(10).isoformat()}\n\n    api.force_authenticate(customer)\n    r = api.post(&quot;/api/v1/bookings/&quot;, payload, format=&quot;json&quot;)\n    assert r.status_code == 201, r.data\n    assert r.data[&quot;price&quot;] == &quot;499.00&quot;\n    assert r.data[&quot;status&quot;] == &quot;pending&quot;\n\n    api.force_authenticate(other_customer)\n    r = api.post(&quot;/api/v1/bookings/&quot;, payload, format=&quot;json&quot;)\n    assert r.status_code == 400\n    assert r.data[&quot;success&quot;] is False</pre>\n<ul>\n<li>The <code>db</code> fixture (pulled in by <code>customer</code> and <code>service</code>) gives each test a clean database.</li>\n<li><code>force_authenticate</code> skips the token dance when the test is not about login.</li>\n<li><code>assert r.status_code == 201, r.data</code> prints the error body when it fails.</li>\n<li>Test what the business cares about: the price snapshot, double booking blocked, privacy (404), state rules.</li>\n</ul>\n<pre class=\"code\">pip install -r requirements/dev.txt\npytest -q      # pytest.ini sets DJANGO_SETTINGS_MODULE=config.settings.dev\n# expected: 5 passed</pre>\n<h3>Try it like the Flutter developer will</h3>\n<pre class=\"code\">curl -X POST http://127.0.0.1:8000/api/v1/auth/token/ \\\n     -H &quot;Content-Type: application/json&quot; -d &#x27;{&quot;username&quot;: &quot;anu&quot;, &quot;password&quot;: &quot;demo12345&quot;}&#x27;\n# copy &quot;access&quot; from the answer, then:\ncurl http://127.0.0.1:8000/api/v1/bookings/ -H &quot;Authorization: Bearer &lt;access&gt;&quot;</pre>\n<h3>Seed data with a management command</h3>\n<p>Every project needs realistic demo data for client demos and for testing the dashboard. Write a command; don’t click data in by hand.</p>\n<pre class=\"code\">class Command(BaseCommand):\n    help = &quot;Create demo services, staff, customers and bookings&quot;\n\n    def add_arguments(self, parser):\n        parser.add_argument(&quot;--bookings&quot;, type=int, default=200)\n\n    @transaction.atomic\n    def handle(self, *args, **options):\n        services = [Service.objects.get_or_create(slug=slugify(name), defaults={...})[0] for ...]\n        ...\n        # bulk_create = one INSERT instead of hundreds (seed data only; skips overlap rules)\n        Booking.objects.bulk_create(bookings, batch_size=500)</pre>\n<p><code>get_or_create</code> makes the command safe to run twice. <code>bulk_create</code> is fast because it skips <code>save()</code> and your service-layer rules, so use it only for demo or migration data.</p>",
      "terms": [
       {
        "term": "pytest-django",
@@ -1431,35 +1613,29 @@
        "definition": "Inserts many rows in few queries, skipping save() and signals."
       },
       {
-       "term": "HSTS",
-       "definition": "A header telling browsers to use HTTPS only for this site for a set time."
-      },
-      {
-       "term": "gunicorn",
-       "definition": "The production WSGI server that runs Django with several worker processes."
+       "term": "Idempotent",
+       "definition": "Safe to run more than once with the same result."
       }
      ],
-     "examTip": "Run python manage.py check --deploy before every first release. It lists the security settings you forgot.",
+     "examTip": "A good API test reads like a user story: who calls, what they send, what they must get back. Name it after the rule it proves.",
      "lab": {
       "files": [
        "django/bookit/apps/api/tests.py",
        "django/bookit/pytest.ini",
-       "django/bookit/apps/bookings/management/commands/seed_demo.py",
-       "django/bookit/config/settings/prod.py",
-       "django/bookit/requirements/prod.txt"
+       "django/bookit/apps/bookings/management/commands/seed_demo.py"
       ],
       "steps": [
        "Run pytest -q in the bookit folder. All 5 tests should pass (use PostgreSQL for the locking test to be meaningful).",
        "Write a test that a customer cannot cancel a completed booking through the API (expects 400).",
+       "Write a test that a client cannot set price or status when creating a booking.",
        "Write a test for your /bookings/upcoming/ endpoint from lesson 5.1.",
        "Run python manage.py seed_demo --bookings 1000 and time it. Then try the same with a loop of Booking.objects.create and compare.",
-       "Run DJANGO_SETTINGS_MODULE=config.settings.prod python manage.py check --deploy with test values in .env and read each warning.",
-       "Final project: deploy BookIt to a free Railway project (or ask your trainer for a sandbox) and share the /api/v1/docs/ link in your daily update."
+       "Export a Postman or Bruno collection of every endpoint into docs/ and commit it."
       ],
       "check": [
-       "pytest -q reports all tests passed, including your two new ones.",
-       "seed_demo with bulk_create is many times faster than the create() loop.",
-       "check --deploy shows no errors with the prod settings."
+       "pytest -q reports all tests passed, including your new ones.",
+       "Running seed_demo twice does not duplicate services or customers.",
+       "seed_demo with bulk_create is many times faster than the create() loop."
       ]
      },
      "quiz": [
@@ -1486,15 +1662,122 @@
        "explanation": "bulk_create inserts directly, so custom save logic and signals do not run. Fine for seed data, not for real bookings."
       },
       {
+       "question": "In an API test, why use force_authenticate(customer)?",
+       "options": [
+        "It tests the login endpoint",
+        "It skips getting a token when the test is about something else",
+        "It creates the user",
+        "It is required for every request"
+       ],
+       "answer": 1,
+       "explanation": "Keep each test about one thing. Login has its own test."
+      },
+      {
+       "question": "Which of these is most worth testing?",
+       "options": [
+        "That a getter returns its field",
+        "That another customer’s booking returns 404",
+        "That Django imports",
+        "That the settings file exists"
+       ],
+       "answer": 1,
+       "explanation": "Test the business and security rules, not trivial getters."
+      }
+     ],
+     "widget": null,
+     "sorter": null
+    }
+   ]
+  },
+  {
+   "id": "djd6",
+   "name": "Day 6 · Production and demo",
+   "weight": "Day 6",
+   "blurb": "Harden and deploy BookIt on Railway, then demo it like a client handover.",
+   "lessons": [
+    {
+     "id": "dj14",
+     "num": "6.1",
+     "title": "Production, security and deploying on Railway",
+     "minutes": 90,
+     "summaryHtml": "<p>Code on a laptop has no value to a client. Harden BookIt with production settings and the security checklist, deploy it on Railway with PostgreSQL, and learn the Ralfiz Git workflow.</p>",
+     "contentHtml": "<h3>Production settings</h3>\n<pre class=\"code\">DEBUG = False\nCSRF_TRUSTED_ORIGINS = env.list(&quot;CSRF_TRUSTED_ORIGINS&quot;, default=[])\n\n# Railway terminates TLS at its proxy and forwards X-Forwarded-Proto\nSECURE_PROXY_SSL_HEADER = (&quot;HTTP_X_FORWARDED_PROTO&quot;, &quot;https&quot;)\nSECURE_SSL_REDIRECT = env.bool(&quot;SECURE_SSL_REDIRECT&quot;, default=True)\nSESSION_COOKIE_SECURE = True\nCSRF_COOKIE_SECURE = True\nSECURE_HSTS_SECONDS = env.int(&quot;SECURE_HSTS_SECONDS&quot;, default=3600)  # raise to 31536000 once stable\nX_FRAME_OPTIONS = &quot;DENY&quot;</pre>\n<p>Railway handles HTTPS at its proxy and talks plain HTTP to your app. <code>SECURE_PROXY_SSL_HEADER</code> tells Django to trust the proxy’s header; without it <code>SECURE_SSL_REDIRECT</code> redirects forever. Start HSTS small and raise it once HTTPS works everywhere, because browsers remember it.</p>\n<h3>Security checklist (every project, every time)</h3>\n<ul>\n<li><code>DEBUG=False</code>, with a long random <code>SECRET_KEY</code> from env vars (never in Git).</li>\n<li><code>ALLOWED_HOSTS</code> and <code>CSRF_TRUSTED_ORIGINS</code> set to the real domains.</li>\n<li>HTTPS redirect, secure cookies, HSTS.</li>\n<li>Every queryset scoped to the user (IDOR); every endpoint has explicit permissions.</li>\n<li>Login and register throttled.</li>\n<li>Uploads validated for extension and size, and never served from the code directory.</li>\n<li>No <code>|safe</code> on user content; no raw SQL built with string formatting.</li>\n<li>CORS restricted to known frontends.</li>\n<li>Dependencies pinned; <code>pip-audit</code> run before release.</li>\n</ul>\n<h3>Deploy on Railway</h3>\n<ol>\n<li>Add <code>requirements.txt</code> at the root containing <code>-r requirements/prod.txt</code>, and pin Python with a <code>.python-version</code> file (e.g. <code>3.12</code>).</li>\n<li>Push to GitHub. In Railway: New Project → Deploy from GitHub repo.</li>\n<li>Add a PostgreSQL database to the project.</li>\n<li>In the web service’s Variables add <code>DJANGO_SETTINGS_MODULE=config.settings.prod</code>, <code>SECRET_KEY</code>, <code>DATABASE_URL</code> (a reference to the Postgres service), <code>ALLOWED_HOSTS</code> and <code>CSRF_TRUSTED_ORIGINS</code>.</li>\n<li>In Settings → Deploy set the pre-deploy command <code>python manage.py migrate</code> and the start command <code>python manage.py collectstatic --noinput &amp;&amp; gunicorn config.wsgi</code>.</li>\n<li>Generate a public domain under Settings → Networking, then create the first admin with <code>railway run python manage.py createsuperuser</code> and set their role to admin.</li>\n</ol>\n<div class=\"warn\"><strong>Common deploy errors.</strong> 400 Bad Request → <code>ALLOWED_HOSTS</code>. CSRF failed on login → <code>CSRF_TRUSTED_ORIGINS</code> needs <code>https://</code>. Static files 404 → WhiteNoise middleware order or collectstatic. Redirect loop → <code>SECURE_PROXY_SSL_HEADER</code>. Always read the deploy logs first.</div>\n<p>For client projects the domain is bought on Namecheap and pointed to Railway with a CNAME record from the service’s custom-domain settings. Add the new domain to <code>ALLOWED_HOSTS</code> and <code>CSRF_TRUSTED_ORIGINS</code>. Railway’s disk is wiped on every deploy, so uploaded media needs a volume or object storage.</p>\n<h3>Performance and observability basics</h3>\n<ul>\n<li>Measure before optimising: django-debug-toolbar in dev, the slow-request middleware in prod.</li>\n<li>Queries: <code>select_related</code>/<code>prefetch_related</code>, indexes on filtered columns, <code>.only()</code> for heavy tables, and always paginate.</li>\n<li>Caching: cache expensive, rarely-changing data (the service list, dashboard KPIs for 60 seconds) with Redis via Django’s cache framework.</li>\n<li>Background work: emails, SMS, WhatsApp messages and PDF invoices should not run inside the request. Use a task queue (Celery or RQ with Redis) once a project needs it.</li>\n<li>Errors: connect an error tracker (e.g. Sentry) so you hear about crashes before the client does.</li>\n</ul>\n<h3>The Ralfiz Git workflow</h3>\n<table><thead><tr><th>Branches</th><th>Commit messages</th></tr></thead><tbody>\n<tr><td><code>main</code>: production, deploys automatically</td><td><code>feat: add cancel action to bookings API</code></td></tr>\n<tr><td><code>develop</code>: staging</td><td><code>fix: use local date for slot lookup</code></td></tr>\n<tr><td><code>feat/BK-12-booking-cancel</code>, <code>fix/BK-19-slot-timezone</code></td><td><code>refactor:</code>, <code>test:</code>, <code>docs:</code>, <code>chore:</code></td></tr>\n</tbody></table>\n<p><strong>Pull request checklist:</strong> small PR (under about 400 lines, one purpose); tests added and green; migrations included and reviewed; no secrets, prints or commented-out code; screenshots for UI changes.</p>",
+     "terms": [
+      {
+       "term": "HSTS",
+       "definition": "A header telling browsers to use HTTPS only for this site for a set time."
+      },
+      {
+       "term": "SECURE_PROXY_SSL_HEADER",
+       "definition": "Tells Django to trust the proxy’s X-Forwarded-Proto header to know a request was HTTPS."
+      },
+      {
+       "term": "gunicorn",
+       "definition": "The production WSGI server that runs Django with several worker processes."
+      },
+      {
+       "term": "WhiteNoise",
+       "definition": "Serves static files straight from Django with caching headers, no separate web server needed."
+      },
+      {
+       "term": "Pre-deploy command",
+       "definition": "A command Railway runs before switching traffic to the new version, used for migrations."
+      },
+      {
+       "term": "pip-audit",
+       "definition": "Checks your installed packages against known security vulnerabilities."
+      },
+      {
+       "term": "Conventional Commits",
+       "definition": "Commit messages starting with a type such as feat:, fix: or docs:."
+      }
+     ],
+     "examTip": "Run python manage.py check --deploy before every first release. It lists the security settings you forgot.",
+     "lab": {
+      "files": [
+       "django/bookit/config/settings/prod.py",
+       "django/bookit/config/settings/base.py",
+       "django/bookit/requirements/prod.txt",
+       "django/bookit/.env.example"
+      ],
+      "steps": [
+       "Run DJANGO_SETTINGS_MODULE=config.settings.prod python manage.py check --deploy with test values in .env and fix or explain each warning.",
+       "Go through the security checklist line by line against your BookIt code and note anything missing in LOG.md.",
+       "Add requirements.txt (-r requirements/prod.txt) and .python-version at the repo root.",
+       "Create the Railway project with PostgreSQL, set the variables, the pre-deploy and the start commands.",
+       "Deploy, then open the public URL. Fix whatever breaks by reading the deploy logs first.",
+       "Run seed_demo on Railway and create your admin user.",
+       "Write the README: setup, environment variables, how to run tests, how to deploy."
+      ],
+      "check": [
+       "The live URL works over HTTPS and http:// redirects to https://.",
+       "check --deploy shows no critical warnings.",
+       "Staff login works on the live site and the dashboard shows seeded data.",
+       "/api/v1/docs/ loads on the live site."
+      ]
+     },
+     "quiz": [
+      {
        "question": "Why is SECURE_PROXY_SSL_HEADER needed on Railway?",
        "options": [
         "To enable gzip",
-        "The proxy handles HTTPS and forwards plain HTTP, so Django must trust X-Forwarded-Proto to know the request was secure",
+        "The proxy handles HTTPS and forwards plain HTTP, so Django must trust X-Forwarded-Proto",
         "To allow CORS",
         "To speed up the database"
        ],
        "answer": 1,
        "explanation": "Without it Django thinks every request is HTTP and SECURE_SSL_REDIRECT loops."
+      },
+      {
+       "question": "After deploying, logging in fails with “CSRF verification failed”. What is the likely fix?",
+       "options": [
+        "Turn off CSRF",
+        "Add https://your-domain to CSRF_TRUSTED_ORIGINS",
+        "Set DEBUG=True",
+        "Clear the database"
+       ],
+       "answer": 1,
+       "explanation": "Django 4+ checks the Origin header against CSRF_TRUSTED_ORIGINS, which must include the scheme."
       },
       {
        "question": "Why start SECURE_HSTS_SECONDS small?",
@@ -1506,6 +1789,102 @@
        ],
        "answer": 1,
        "explanation": "Raise it to a year only once HTTPS is confirmed working everywhere."
+      },
+      {
+       "question": "Where should sending a WhatsApp confirmation run in a busy app?",
+       "options": [
+        "Inside the request, before responding",
+        "In a background task queue",
+        "In the template",
+        "In a migration"
+       ],
+       "answer": 1,
+       "explanation": "Slow outside calls in the request make every user wait and can time out. A task queue sends them separately."
+      }
+     ],
+     "widget": null,
+     "sorter": null
+    },
+    {
+     "id": "dj15",
+     "num": "6.2",
+     "title": "Demo day: the BookIt brief and how you are scored",
+     "minutes": 60,
+     "summaryHtml": "<p>The client brief and user stories you built against all week, the demo format, the evaluation rubric, and what comes next.</p>",
+     "contentHtml": "<h3>The client brief</h3>\n<div class=\"example\">“We run a car wash in Perinthalmanna and plan to open two more branches. Customers call to book and we lose track. We want an app where customers book a service and time slot, and a dashboard where our manager sees the day’s bookings and revenue. No double bookings. Prices change sometimes, but old bills must stay the same.”</div>\n<h3>User stories</h3>\n<table><thead><tr><th>As a…</th><th>I want to…</th><th>Built on</th></tr></thead><tbody>\n<tr><td>Customer</td><td>register and log in from the app</td><td>Day 5</td></tr>\n<tr><td>Customer</td><td>see services with price and duration, and free slots for a date</td><td>Day 5</td></tr>\n<tr><td>Customer</td><td>book a slot and get a clear error if it was just taken</td><td>Days 4–5</td></tr>\n<tr><td>Customer</td><td>see and cancel my upcoming bookings, and nobody else’s</td><td>Day 5</td></tr>\n<tr><td>Manager</td><td>see today’s bookings, pending count and monthly revenue at a glance</td><td>Day 4</td></tr>\n<tr><td>Manager</td><td>find a booking by customer name or phone in seconds</td><td>Day 4</td></tr>\n<tr><td>Manager</td><td>confirm, complete or cancel bookings, never out of order</td><td>Days 3–4</td></tr>\n<tr><td>Manager</td><td>add and edit services and prices without changing old bookings</td><td>Days 3–4</td></tr>\n<tr><td>Owner</td><td>open it from anywhere on a secure link</td><td>Day 6</td></tr>\n</tbody></table>\n<h3>Non-functional requirements</h3>\n<ul>\n<li>PostgreSQL; money as Decimal; times stored in UTC and shown in IST.</li>\n<li>No Django admin; a role-based custom dashboard.</li>\n<li>API versioned, JWT-secured, documented with OpenAPI, with consistent errors.</li>\n<li>Concurrency-safe booking (row lock + overlap check).</li>\n<li>Automated tests for every business rule; deployed on Railway over HTTPS.</li>\n</ul>\n<h3>Demo format (15 minutes each)</h3>\n<p>Treat it as a handover to the car wash owner, then a technical review with the team.</p>\n<ol>\n<li><strong>Live demo (5 min):</strong> on the deployed URL, staff login → KPIs → find a customer by phone → confirm and complete a booking.</li>\n<li><strong>API demo (3 min):</strong> register → login → book a slot → try to double-book → cancel, in Swagger or Postman against production.</li>\n<li><strong>Code walkthrough (4 min):</strong> explain <code>create_booking</code> line by line, including why the row lock exists.</li>\n<li><strong>Q&amp;A (3 min):</strong> mentors pick any file and ask “why is it written this way?”</li>\n</ol>\n<h3>Evaluation rubric</h3>\n<p>Mentors score at the demo. You fill in a self-assessment first, and the gap between the two scores is part of the conversation.</p>\n<table><thead><tr><th>Area</th><th>Weight</th><th>Excellent</th><th>Needs work</th></tr></thead><tbody>\n<tr><td>Python fundamentals (Days 1–2)</td><td>20</td><td>Clean functions, correct Decimal maths, meaningful exceptions, tests green</td><td>Floats for money, bare except, one giant function</td></tr>\n<tr><td>Data modelling and ORM</td><td>15</td><td>Constraints, PROTECT, snapshots, indexes; no N+1</td><td>Free-text statuses, CASCADE everywhere, N+1 in lists</td></tr>\n<tr><td>Dashboard (views, forms, templates)</td><td>15</td><td>Thin views, role-protected, validated forms, filters keep state</td><td>Logic in templates or views, GET for state changes</td></tr>\n<tr><td>API and security</td><td>20</td><td>JWT, scoped querysets, read-only server fields, consistent errors, docs</td><td>IDOR possible, client can set price, no docs</td></tr>\n<tr><td>Testing</td><td>10</td><td>Business rules covered; tests readable and green</td><td>No tests, or tests of trivial getters only</td></tr>\n<tr><td>Deployment</td><td>10</td><td>Live on Railway over HTTPS, prod settings, README</td><td>Not deployed, DEBUG on, secrets in Git</td></tr>\n<tr><td>Git and communication</td><td>10</td><td>Daily commits, clear messages, good LOG.md, asks good questions</td><td>One huge commit on Saturday, silent when stuck</td></tr>\n</tbody></table>\n<table><thead><tr><th>Score</th><th>What happens next</th></tr></thead><tbody>\n<tr><td>85–100 · Ready</td><td>Join a live client project next week with a senior buddy.</td></tr>\n<tr><td>65–84 · Almost</td><td>One more week on BookIt extensions, then a live project.</td></tr>\n<tr><td>Below 65 · Rebuild</td><td>A targeted plan on the weak areas, with a re-demo in one week.</td></tr>\n</tbody></table>\n<h3>Next week</h3>\n<p>Strong finishers extend BookIt with multi-branch support (a Branch model, with staff and bookings scoped per branch), GST invoices from Day 2’s engine rendered as PDFs, and WhatsApp booking confirmations in a background task. That is the same architecture as our multi-branch clinic, gym and laundry products.</p>\n<h3>Keep learning</h3>\n<p>Official documentation first, then blogs and videos. When the docs and a blog disagree, the docs win.</p>\n<ul>\n<li><strong>Python:</strong> the official tutorial; the dataclasses, decimal and logging HOWTO pages; pytest; requests.</li>\n<li><strong>Django:</strong> Django 5.2 docs; Database access optimisation; Deployment checklist; Customising authentication.</li>\n<li><strong>APIs:</strong> Django REST Framework; Simple JWT; drf-spectacular; OWASP API Security Top 10.</li>\n<li><strong>Deployment and tools:</strong> Railway docs; WhiteNoise; Tailwind CSS; Conventional Commits.</li>\n</ul>",
+     "terms": [
+      {
+       "term": "User story",
+       "definition": "“As a <role> I want to <goal>”: one need of one kind of user."
+      },
+      {
+       "term": "Non-functional requirement",
+       "definition": "A quality the system must have (secure, fast, correct money) rather than a feature."
+      },
+      {
+       "term": "Rubric",
+       "definition": "The scoring table mentors use at the demo, with a weight per area."
+      },
+      {
+       "term": "Handover",
+       "definition": "Showing a finished system to the client so they can use and own it."
+      },
+      {
+       "term": "Self-assessment",
+       "definition": "Your own rubric score, compared with the mentors’ score."
+      }
+     ],
+     "examTip": "At the demo, “why is it written this way?” is the real test. If you can explain the row lock in create_booking and the 404 in get_queryset, you understood the week.",
+     "lab": {
+      "files": [],
+      "steps": [
+       "Read the user stories and tick each one you can show working on your live URL.",
+       "Rehearse the 5-minute live demo on the deployed site, start to finish, with a timer.",
+       "Rehearse the API demo: register, login, book, double-book, cancel, against production.",
+       "Practise explaining create_booking line by line to a teammate.",
+       "Fill in the rubric self-assessment with a score and one sentence of evidence per area.",
+       "Write a week retro in LOG.md: 3 strengths and 3 gaps.",
+       "Take the practice test for this course and aim for 700 or more."
+      ],
+      "check": [
+       "Every user story is demonstrable on the live URL.",
+       "All tests are green in your final commit and the README is complete.",
+       "Your self-assessment and week retro are committed."
+      ]
+     },
+     "quiz": [
+      {
+       "question": "The brief says “prices change sometimes, but old bills must stay the same”. Which design handles it?",
+       "options": [
+        "Reading service.price on every report",
+        "Snapshotting the price on each booking",
+        "Never changing prices",
+        "Storing prices as floats"
+       ],
+       "answer": 1,
+       "explanation": "Booking.price copies the service price at booking time, so history never changes."
+      },
+      {
+       "question": "Which rubric area is worth the most, together with Python fundamentals?",
+       "options": [
+        "Testing",
+        "Deployment",
+        "API and security",
+        "Git and communication"
+       ],
+       "answer": 2,
+       "explanation": "Python fundamentals and API and security are each worth 20."
+      },
+      {
+       "question": "“No double bookings” in the brief is met by…",
+       "options": [
+        "A message on the booking page",
+        "A row lock plus an overlap check in create_booking",
+        "Checking in the Flutter app",
+        "Sorting bookings by time"
+       ],
+       "answer": 1,
+       "explanation": "Only the server can guarantee it, and only with a lock taken before the overlap check."
       }
      ],
      "widget": null,

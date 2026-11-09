@@ -74,6 +74,9 @@ class BootcampPortalTests(StaffPortalTestBase):
         res = self.client.get(reverse('academy:track', args=['django']))
         self.assertEqual(res.status_code, 200)
         self.assertContains(res, 'Back to staff portal')
+        # Visible way back in the top bar and the phone bottom bar, not only in the name menu.
+        self.assertContains(res, '<span>Staff portal</span>', html=False)
+        self.assertContains(res, f'href="{reverse("staff:dashboard")}"', count=4)
         # A Student profile must not confine the intern to /academy/.
         self.assertEqual(self.client.get(reverse('staff:dashboard')).status_code, 200)
 
@@ -101,7 +104,7 @@ class BootcampContentTests(TestCase):
         track = json.loads((content / 'django.json').read_text(encoding='utf-8'))
         index = json.loads((content / 'files-index.json').read_text(encoding='utf-8'))
         lessons = [l for d in track['domains'] for l in d['lessons']]
-        self.assertEqual((len(track['domains']), len(lessons)), (5, 13))
+        self.assertEqual((len(track["domains"]), len(lessons)), (7, 16))
         self.assertGreaterEqual(sum(len(l['quiz']) for l in lessons), 30)  # enough for a 30-question test
         for lesson in lessons:
             self.assertTrue(lesson['lab']['steps'], lesson['id'])

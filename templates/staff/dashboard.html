@@ -76,7 +76,7 @@
         <span class="sv-ico violet"><i class="fas fa-server"></i></span>
         <div>
           <strong>{{ bootcamp.track.name }}</strong>
-          <span class="sub">{% if bootcamp.completed %}Completed · well done!{% elif bootcamp.started %}{{ bootcamp.done }} of {{ bootcamp.total }} lessons done{% if bootcamp.best_score is not None %} · best test {{ bootcamp.best_score }}{% endif %}{% else %}{{ bootcamp.total }} lessons over 5 days · Python to a live Django API{% endif %}</span>
+          <span class="sub">{% if bootcamp.completed %}Completed · well done!{% elif bootcamp.started %}{{ bootcamp.done }} of {{ bootcamp.total }} lessons done{% if bootcamp.best_score is not None %} · best test {{ bootcamp.best_score }}{% endif %}{% else %}{{ bootcamp.total }} lessons over 6 days · Python to a live Django product{% endif %}</span>
         </div>
         {% if bootcamp.completed %}<a href="{% url 'staff:bootcamp' %}" class="sv-btn"><i class="fas fa-trophy"></i> Review</a>
         {% elif bootcamp.done == bootcamp.total %}<a href="{% url 'academy:test_start' bootcamp.track.id %}" class="sv-btn"><i class="fas fa-file-pen"></i> Take Test</a>
