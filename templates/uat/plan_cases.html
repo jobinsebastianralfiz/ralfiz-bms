@@ -1,0 +1,33 @@
+{% extends 'base.html' %}
+
+{% block breadcrumb %}
+<a href="{% url 'dashboard' %}" class="breadcrumb-item">Dashboard</a>
+<span class="breadcrumb-separator">/</span>
+<a href="{% url 'uat_plan_list' %}" class="breadcrumb-item">UAT Testing</a>
+<span class="breadcrumb-separator">/</span>
+<a href="{% url 'uat_plan_detail' plan.pk %}" class="breadcrumb-item">{{ plan.name }}</a>
+<span class="breadcrumb-separator">/</span>
+<span class="breadcrumb-item active">All results</span>
+{% endblock %}
+
+{% block content %}
+{% include 'shopmanager/_styles.html' %}
+<style>.ut-c{display:inline-block;font-size:.75rem;font-weight:600;padding:.1rem .45rem;border-radius:999px}
+.ut-c.pass{background:#ECFDF3;color:#027A48}.ut-c.fail{background:#FEF3F2;color:#B42318}.ut-c.blocked{background:#FFFAEB;color:#B54708}.ut-c.none{background:#F2F4F7;color:#98A2B3}</style>
+<div class="page-header"><div class="page-header__lead"><span class="page-header__icon"><i class="fas fa-table"></i></span><div><h1 class="page-title">All results · {{ plan.name }}</h1></div></div></div>
+
+{% for block in sections %}
+<div class="sm-card">
+  <div class="sm-card__head"><h3>{{ block.section.name }}</h3></div>
+  <div style="overflow-x:auto"><table class="sm-table">
+    <thead><tr><th style="padding-left:1.5rem">Test</th>{% for t in testers %}<th>{{ t.full_name }}</th>{% endfor %}</tr></thead>
+    <tbody>
+    {% for row in block.rows %}
+      <tr><td style="padding-left:1.5rem"><span class="sm-k">{{ row.case.code }}</span> {{ row.case.title }}</td>
+        {% for cell in row.cells %}<td>{% if cell == 'na' %}<span class="sm-k">—</span>{% elif cell %}<span class="ut-c {{ cell.status }}" title="{{ cell.note }}">{{ cell.get_status_display }}</span>{% if cell.note %} <i class="fas fa-comment sm-k" title="{{ cell.note }}"></i>{% endif %}{% else %}<span class="ut-c none">Not yet</span>{% endif %}</td>{% endfor %}</tr>
+    {% endfor %}
+    </tbody>
+  </table></div>
+</div>
+{% endfor %}
+{% endblock %}

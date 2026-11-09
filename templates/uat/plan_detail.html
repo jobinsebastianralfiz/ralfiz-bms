@@ -1,0 +1,132 @@
+{% extends 'base.html' %}
+
+{% block breadcrumb %}
+<a href="{% url 'dashboard' %}" class="breadcrumb-item">Dashboard</a>
+<span class="breadcrumb-separator">/</span>
+<a href="{% url 'uat_plan_list' %}" class="breadcrumb-item">UAT Testing</a>
+<span class="breadcrumb-separator">/</span>
+<span class="breadcrumb-item active">{{ plan.name }}</span>
+{% endblock %}
+
+{% block content %}
+{% include 'shopmanager/_styles.html' %}
+<style>
+.ut-bar{height:8px;background:#EEF1F6;border-radius:8px;overflow:hidden;min-width:80px}.ut-bar i{display:block;height:100%;background:#465FFF}
+.ut-c{display:inline-block;font-size:.75rem;font-weight:600;padding:.1rem .45rem;border-radius:999px;margin-right:.2rem}
+.ut-c.pass{background:#ECFDF3;color:#027A48}.ut-c.fail{background:#FEF3F2;color:#B42318}.ut-c.blocked{background:#FFFAEB;color:#B54708}
+.ut-tabs{display:flex;gap:.5rem;flex-wrap:wrap}.ut-tabs a{padding:.35rem .8rem;border-radius:999px;border:1px solid #D0D5DD;font-size:.8125rem;color:#344054;text-decoration:none}
+.ut-tabs a.on{background:#465FFF;border-color:#465FFF;color:#fff}
+.ut-prob{border-top:1px solid #F2F4F7;padding:1rem 1.5rem;display:grid;grid-template-columns:1fr 280px;gap:1rem}
+@media (max-width:900px){.ut-prob{grid-template-columns:1fr}}
+.ut-assign{display:flex;flex-wrap:wrap;gap:.35rem .9rem}.ut-assign label{font-size:.8125rem;display:flex;gap:.35rem;align-items:center}
+</style>
+
+<div class="page-header">
+  <div class="page-header__lead">
+    <span class="page-header__icon"><i class="fas fa-clipboard-check"></i></span>
+    <div><h1 class="page-title">{{ plan.name }}</h1>
+      <p class="sm-help" style="margin:0">{{ plan.product }}{% if plan.site_url %} · <a href="{{ plan.site_url }}" target="_blank" rel="noopener">{{ plan.site_url }}</a>{% endif %}{% if plan.due_date %} · finish by {{ plan.due_date|date:"d M Y" }}{% endif %} · {{ ov.case_count }} tests</p></div>
+  </div>
+  <div class="page-actions"><a href="{% url 'uat_plan_cases' plan.pk %}" class="sm-btn"><i class="fas fa-table"></i> All results</a></div>
+</div>
+
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:1rem;margin-bottom:1.5rem">
+  <div class="sm-card" style="margin:0;padding:1.25rem"><p class="sm-k">Done</p><p style="font-size:1.5rem;font-weight:700">{{ ov.overall.pct }}%</p><div class="ut-bar"><i style="width:{{ ov.overall.pct }}%"></i></div></div>
+  <div class="sm-card" style="margin:0;padding:1.25rem"><p class="sm-k">Pass</p><p style="font-size:1.5rem;font-weight:700;color:#12B76A">{{ ov.totals.pass }}</p></div>
+  <div class="sm-card" style="margin:0;padding:1.25rem"><p class="sm-k">Fail</p><p style="font-size:1.5rem;font-weight:700;color:#F04438">{{ ov.totals.fail }}</p></div>
+  <div class="sm-card" style="margin:0;padding:1.25rem"><p class="sm-k">Blocked</p><p style="font-size:1.5rem;font-weight:700;color:#F79009">{{ ov.totals.blocked }}</p></div>
+</div>
+
+<div class="sm-card">
+  <div class="sm-card__head"><h3><i class="fas fa-users"></i>Testers</h3></div>
+  <div style="overflow-x:auto"><table class="sm-table">
+    <thead><tr><th style="padding-left:1.5rem">Tester</th><th>Sections</th><th>Progress</th><th>Results</th><th>Last activity</th></tr></thead>
+    <tbody>
+    {% for p in ov.people %}
+      <tr><td style="padding-left:1.5rem"><b>{{ p.employee.full_name }}</b><br><span class="sm-k">{{ p.employee.employee_id }}</span></td>
+        <td class="sm-k">{% for s in p.sections %}{{ s.name }}{% if not forloop.last %}, {% endif %}{% endfor %}</td>
+        <td style="min-width:150px"><div class="ut-bar"><i style="width:{{ p.pct }}%"></i></div><span class="sm-k">{{ p.done }} / {{ p.total }}</span></td>
+        <td><span class="ut-c pass">{{ p.pass }}</span><span class="ut-c fail">{{ p.fail }}</span><span class="ut-c blocked">{{ p.blocked }}</span></td>
+        <td class="sm-k">{{ p.last|date:"d M, h:i A"|default:"Not started" }}</td></tr>
+    {% empty %}<tr><td colspan="5" style="padding:2rem;text-align:center;color:#98A2B3">No testers yet. Add them below.</td></tr>{% endfor %}
+    </tbody>
+  </table></div>
+</div>
+
+<div class="sm-card" id="problems">
+  <div class="sm-card__head" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:.5rem">
+    <h3><i class="fas fa-bug"></i>Problems (Fail / Blocked)</h3>
+    <div class="ut-tabs">
+      <a href="?tab=open#problems" class="{% if tab == 'open' %}on{% endif %}">Open ({{ problem_counts.open }})</a>
+      <a href="?tab=fixed#problems" class="{% if tab == 'fixed' %}on{% endif %}">Fixed, awaiting retest ({{ problem_counts.fixed }})</a>
+      <a href="?tab=closed#problems" class="{% if tab == 'closed' %}on{% endif %}">Closed ({{ problem_counts.closed }})</a>
+    </div>
+  </div>
+  {% for r in problems %}
+  <div class="ut-prob">
+    <div>
+      <div><span class="ut-c {{ r.status }}">{{ r.get_status_display }}</span> <b>{{ r.case.code }} · {{ r.case.title }}</b></div>
+      <p class="sm-k" style="margin:.25rem 0">{{ r.case.section.name }} · {{ r.tester.full_name }} · {{ r.updated_at|date:"d M, h:i A" }}</p>
+      <p style="white-space:pre-line;font-size:.875rem;margin:.5rem 0">{{ r.note }}</p>
+      <details><summary class="sm-k" style="cursor:pointer">Steps &amp; expected</summary>
+        <ol style="font-size:.8125rem;margin:.5rem 0 .5rem 1.2rem">{% for s in r.case.steps %}<li>{{ s }}</li>{% endfor %}</ol>
+        <p style="font-size:.8125rem"><b>Should happen:</b> {{ r.case.expected }}</p></details>
+      {% if r.screenshot %}<a href="{{ r.screenshot.url }}" target="_blank" rel="noopener"><img src="{{ r.screenshot.url }}" alt="Screenshot from {{ r.tester.full_name }}" style="max-width:260px;max-height:170px;border-radius:8px;border:1px solid #E4E7EC;margin-top:.5rem"></a>{% endif %}
+      {% if r.fix_status %}<p class="sm-help">{{ r.get_fix_status_display }}{% if r.fixed_by %} by {{ r.fixed_by.get_full_name|default:r.fixed_by.username }}{% endif %}{% if r.fix_note %}: {{ r.fix_note }}{% endif %}</p>{% endif %}
+    </div>
+    <form method="POST" action="{% url 'uat_problem_update' r.pk %}" style="display:flex;flex-direction:column;gap:.5rem">
+      {% csrf_token %}<input type="hidden" name="tab" value="{{ tab }}">
+      <textarea name="fix_note" rows="2" class="sm-input" placeholder="Note to the tester (what was fixed)">{{ r.fix_note }}</textarea>
+      <div style="display:flex;gap:.4rem;flex-wrap:wrap">
+        {% if r.fix_status != 'fixed' %}<button name="fix_status" value="fixed" class="btn btn-primary" style="font-size:.8125rem">Fixed – ask to retest</button>{% endif %}
+        {% if r.fix_status != 'not_bug' %}<button name="fix_status" value="not_bug" class="sm-btn">Not a bug</button>{% endif %}
+        {% if r.fix_status != 'wont_fix' %}<button name="fix_status" value="wont_fix" class="sm-btn">Won't fix</button>{% endif %}
+        {% if r.fix_status %}<button name="fix_status" value="" class="sm-btn">Reopen</button>{% endif %}
+      </div>
+    </form>
+  </div>
+  {% empty %}
+  <p style="padding:2rem;text-align:center;color:#98A2B3;margin:0">Nothing here.</p>
+  {% endfor %}
+</div>
+
+<div class="sm-card">
+  <div class="sm-card__head"><h3><i class="fas fa-user-check"></i>Who tests what</h3><p>Pick the testers, then tick who does each section. A section with nobody ticked goes to every tester.</p></div>
+  <form method="POST" action="{% url 'uat_plan_update' plan.pk %}" class="sm-card__body">
+    {% csrf_token %}<input type="hidden" name="action" value="assign">
+    <label class="sm-label">Testers on this plan</label>
+    <div class="ut-assign" style="margin-bottom:1rem">
+      {% for e in staff %}<label><input type="checkbox" name="testers" value="{{ e.pk }}" {% if e.pk|stringformat:'s' in tester_ids %}checked{% endif %}> {{ e.full_name }} <span class="sm-k">{{ e.employee_id }}</span></label>{% endfor %}
+    </div>
+    <table class="sm-table">
+      <thead><tr><th>Section</th><th>Tests</th><th>Progress</th><th>Tested by</th></tr></thead>
+      <tbody>
+      {% for row in ov.sections %}
+        <tr><td><b>{{ row.section.name }}</b></td><td>{{ row.cases }}</td>
+          <td style="min-width:120px"><div class="ut-bar"><i style="width:{{ row.pct }}%"></i></div><span class="sm-k">{{ row.done }} / {{ row.total }}</span></td>
+          <td><div class="ut-assign">{% for e in plan.testers.all %}<label><input type="checkbox" name="section_{{ row.section.pk }}" value="{{ e.pk }}" {% if e in row.section.assignees.all %}checked{% endif %}> {{ e.full_name }}</label>{% empty %}<span class="sm-k">Add testers above and save first</span>{% endfor %}</div></td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+    <div style="display:flex;gap:1rem;align-items:center;justify-content:flex-end;margin-top:1rem;flex-wrap:wrap">
+      <label class="sm-k" style="display:flex;gap:.4rem;align-items:center"><input type="checkbox" name="notify" value="1"> Notify every tester again</label>
+      <button class="btn btn-primary"><i class="fas fa-save"></i> Save assignments</button>
+    </div>
+  </form>
+</div>
+
+<div class="sm-card">
+  <div class="sm-card__head"><h3><i class="fas fa-edit"></i>Plan details</h3></div>
+  <form method="POST" action="{% url 'uat_plan_update' plan.pk %}" class="sm-card__body sm-grid">
+    {% csrf_token %}<input type="hidden" name="action" value="details">
+    <div><label class="sm-label">Name</label><input name="name" value="{{ plan.name }}" class="sm-input" required></div>
+    <div><label class="sm-label">Product / project</label><input name="product" value="{{ plan.product }}" class="sm-input"></div>
+    <div><label class="sm-label">Test site address</label><input name="site_url" type="url" value="{{ plan.site_url }}" class="sm-input"></div>
+    <div><label class="sm-label">Finish by</label><input name="due_date" type="date" value="{{ plan.due_date|date:'Y-m-d' }}" class="sm-input"></div>
+    <div><label class="sm-label">Status</label><select name="status" class="sm-input">{% for v, l in plan.STATUS_CHOICES %}<option value="{{ v }}" {% if plan.status == v %}selected{% endif %}>{{ l }}</option>{% endfor %}</select>
+      <p class="sm-help">Closed plans disappear from the testers' portal.</p></div>
+    <div class="sm-span"><label class="sm-label">Instructions for testers</label><textarea name="instructions" rows="4" class="sm-input">{{ plan.instructions }}</textarea></div>
+    <div class="sm-span" style="text-align:right"><button class="btn btn-primary"><i class="fas fa-save"></i> Save</button></div>
+  </form>
+</div>
+{% endblock %}

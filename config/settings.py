@@ -48,6 +48,7 @@ INSTALLED_APPS = [
     'eduflow_licensing',
     'ralfpos_licensing',
     'shopmanager_licensing',
+    'uat',
     'interiodesk',
     'client_portal',
     'pulse',

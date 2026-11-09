@@ -1,0 +1,1010 @@
+{
+ "name": "Shop Manager UAT",
+ "product": "Shop Manager",
+ "site_url": "https://shop.ralfiz.com",
+ "sections": [
+  {
+   "key": "GEN0",
+   "name": "Getting started",
+   "owner": "Everyone",
+   "tests": [
+    {
+     "code": "GS-01",
+     "title": "Site opens securely",
+     "tags": [],
+     "steps": [
+      "Open https://shop.ralfiz.com in Chrome on the laptop.",
+      "Click the icon left of the address."
+     ],
+     "expected": "The login page loads with a padlock / 'Connection is secure'. No 'Not secure' warning."
+    },
+    {
+     "code": "GS-02",
+     "title": "Log in and out",
+     "tags": [],
+     "steps": [
+      "Log in with your own username and password.",
+      "Check the greeting on the home page.",
+      "Click your name → Log out.",
+      "Press the browser Back button."
+     ],
+     "expected": "Login works, the home page greets you by name. After logout, Back does not show the app; you are asked to log in again."
+    },
+    {
+     "code": "GS-03",
+     "title": "Wrong password",
+     "tags": [],
+     "steps": [
+      "Log in with your username and a wrong password."
+     ],
+     "expected": "A clear error is shown and you stay on the login page."
+    },
+    {
+     "code": "GS-04",
+     "title": "Change your own password",
+     "tags": [],
+     "steps": [
+      "Open Profile.",
+      "Change your password, log out, log in with the new one."
+     ],
+     "expected": "The new password works; the old one doesn't."
+    }
+   ]
+  },
+  {
+   "key": "SET",
+   "name": "Settings & users",
+   "owner": "Intern 1",
+   "tests": [
+    {
+     "code": "SET-01",
+     "title": "Business details",
+     "tags": [
+      "Admin"
+     ],
+     "steps": [
+      "Settings → Business: fill shop name, tagline, phone, address, city, state, pincode.",
+      "Upload a logo (PNG/JPG).",
+      "Pick a brand colour. Save."
+     ],
+     "expected": "'Settings saved'. Name and logo show in the app. They appear on receipts and A4 invoices (checked in BIL-14 and BIL-15)."
+    },
+    {
+     "code": "SET-02",
+     "title": "GST details",
+     "tags": [
+      "Admin"
+     ],
+     "steps": [
+      "Settings → GST: tick GST registered, enter a test GSTIN (e.g. 32ABCDE1234F1Z5), state Kerala, decide 'prices include GST'. Save."
+     ],
+     "expected": "Saved. Bills show CGST + SGST for Kerala customers (checked in BIL-04)."
+    },
+    {
+     "code": "SET-03",
+     "title": "A4 invoice style",
+     "tags": [
+      "Admin",
+      "Printer"
+     ],
+     "steps": [
+      "Settings → A4 invoice: style 'Classic GST form'.",
+      "Change heading, copy labels, minimum item rows to 10, declaration. Save.",
+      "Open any bill → A4 invoice PDF. Repeat with style 'Modern'."
+     ],
+     "expected": "The classic PDF looks like the paper GST form: boxed GSTIN, Original/Duplicate/Triplicate labels, billed-to and shipped-to boxes, totals box, bank details, signatory. Your changed text appears. Modern style also works. Each fits on one page for a short bill."
+    },
+    {
+     "code": "SET-04",
+     "title": "Letterhead image",
+     "tags": [
+      "Admin"
+     ],
+     "steps": [
+      "Upload a wide image as Letterhead header. Save.",
+      "Open an A4 invoice PDF.",
+      "Remove the image again."
+     ],
+     "expected": "With the image, it replaces the logo + name header. Without it, the logo and details are back."
+    },
+    {
+     "code": "SET-05",
+     "title": "Bank and UPI details",
+     "tags": [
+      "Admin"
+     ],
+     "steps": [
+      "Settings → Bank & UPI: enter bank name, account number, IFSC, branch and a UPI ID. Save."
+     ],
+     "expected": "Bank details print on A4 invoices. The UPI QR appears on the billing screen (BIL-07)."
+    },
+    {
+     "code": "SET-06",
+     "title": "Bill text",
+     "tags": [
+      "Admin"
+     ],
+     "steps": [
+      "Edit terms, warranty policy, keep-the-bill note and footer. Save.",
+      "Print a receipt and an A4 invoice."
+     ],
+     "expected": "The new text appears on both, nothing cut off."
+    },
+    {
+     "code": "SET-07",
+     "title": "Rows per page",
+     "tags": [
+      "Admin"
+     ],
+     "steps": [
+      "Set rows per page to 10. Open Products and Bills."
+     ],
+     "expected": "Lists show 10 rows with page links; next/previous work."
+    },
+    {
+     "code": "USR-01",
+     "title": "Create a Staff user",
+     "tags": [
+      "Admin"
+     ],
+     "steps": [
+      "Users → Add: name, username, role Staff, password twice. Save.",
+      "Log in as that user in another browser (or incognito)."
+     ],
+     "expected": "The staff user can bill, enter purchases, stock and daily entries. They do NOT see Users, Settings, Employees, Salaries, Catalog import, or Delete / Cancel buttons."
+    },
+    {
+     "code": "USR-02",
+     "title": "Create a second Admin",
+     "tags": [
+      "Admin"
+     ],
+     "steps": [
+      "Add a user with role Admin. Log in as them."
+     ],
+     "expected": "They see Settings and Users."
+    },
+    {
+     "code": "USR-03",
+     "title": "Deactivate a user",
+     "tags": [
+      "Admin"
+     ],
+     "steps": [
+      "Edit the staff user from USR-01, untick Active, save.",
+      "Try to log in as them."
+     ],
+     "expected": "Login is refused."
+    },
+    {
+     "code": "LIC-01",
+     "title": "Licence card in the sidebar",
+     "tags": [
+      "Admin"
+     ],
+     "steps": [
+      "Log in with the Admin login.",
+      "Look at the bottom of the left sidebar.",
+      "Log out and log in with a Staff login; look again."
+     ],
+     "expected": "Admin sees a licence card: Active, days left, a bar, 'Valid till' date and the Ralfiz phone number. Staff does not see the card."
+    },
+    {
+     "code": "LIC-02",
+     "title": "Check licence now",
+     "tags": [
+      "Admin"
+     ],
+     "steps": [
+      "As Admin, click the licence card in the sidebar.",
+      "On the Software licence page click 'Check now'."
+     ],
+     "expected": "A green message 'Licence checked: valid till …' appears, and 'Last checked with Ralfiz' shows the current time."
+    }
+   ]
+  },
+  {
+   "key": "INV",
+   "name": "Products & barcode labels",
+   "owner": "Intern 1",
+   "tests": [
+    {
+     "code": "INV-01",
+     "title": "Categories and brands",
+     "tags": [],
+     "steps": [
+      "Inventory → Categories & brands: add a category (Watches) and a brand (Titan)."
+     ],
+     "expected": "Both appear and can be picked on a product."
+    },
+    {
+     "code": "INV-02",
+     "title": "Add a product with automatic barcode",
+     "tags": [],
+     "steps": [
+      "Products → Add: name, category, brand, HSN 9102, GST 18%, cost 1500, MRP 2995, selling 2495.",
+      "Leave SKU and barcode blank. Warranty 12 months, cover type Warranty. Opening stock 10. Save."
+     ],
+     "expected": "Saved. A 13-digit barcode and an SKU are generated. Stock shows 10. Margin is shown."
+    },
+    {
+     "code": "INV-03",
+     "title": "Selling price above MRP",
+     "tags": [],
+     "steps": [
+      "Edit a product, set selling price higher than MRP, save."
+     ],
+     "expected": "A clear error 'Selling price is above MRP' and nothing is saved."
+    },
+    {
+     "code": "INV-04",
+     "title": "Product with its own barcode",
+     "tags": [
+      "Scanner"
+     ],
+     "steps": [
+      "Add a product. Click into the Barcode field and scan the printed barcode on a real box with the USB scanner. Save."
+     ],
+     "expected": "The scanned number fills the field (the form is not submitted early or doubled). Saved with that barcode."
+    },
+    {
+     "code": "INV-05",
+     "title": "Stock adjustment",
+     "tags": [],
+     "steps": [
+      "Open a product → Adjust stock: remove 1 as damaged, with a note.",
+      "Open Stock movements."
+     ],
+     "expected": "Stock drops by 1. The movement log shows the adjustment, the user and the note."
+    },
+    {
+     "code": "INV-06",
+     "title": "Find a product by scanning",
+     "tags": [
+      "Scanner"
+     ],
+     "steps": [
+      "Click the top search box. Scan a product's barcode."
+     ],
+     "expected": "The product's page opens directly."
+    },
+    {
+     "code": "INV-07",
+     "title": "Low stock alert",
+     "tags": [],
+     "steps": [
+      "Set a product's reorder level above its stock.",
+      "Open Home and Reports → Stock."
+     ],
+     "expected": "The home page warns about low stock and the item is on the reorder list."
+    },
+    {
+     "code": "INV-08",
+     "title": "Delete rules",
+     "tags": [
+      "Admin"
+     ],
+     "steps": [
+      "Delete a product that was never sold.",
+      "Try to delete one that has been sold."
+     ],
+     "expected": "The unused one is deleted. The sold one is refused with a clear message (not an error page)."
+    },
+    {
+     "code": "LBL-01",
+     "title": "Print a barcode label sheet",
+     "tags": [
+      "Printer"
+     ],
+     "steps": [
+      "Inventory → Barcode labels: pick 3 products, 4 labels each, show price and MRP. Create label sheet. Print on A4 (label paper if available)."
+     ],
+     "expected": "Labels are sized as in Settings, aligned to the sheet, and the text and barcode are sharp and not cut."
+    },
+    {
+     "code": "LBL-02",
+     "title": "Scan printed labels",
+     "tags": [
+      "Scanner",
+      "Printer"
+     ],
+     "steps": [
+      "Take the printed labels from LBL-01 to the billing screen and scan each with the USB scanner."
+     ],
+     "expected": "Every label adds the right product at the right price."
+    },
+    {
+     "code": "LBL-03",
+     "title": "Scan labels with a phone camera",
+     "tags": [
+      "Phone"
+     ],
+     "steps": [
+      "On the phone, open Billing, tap the camera button, scan a printed label."
+     ],
+     "expected": "The camera opens, reads the barcode and adds the product, with a beep."
+    }
+   ]
+  },
+  {
+   "key": "PUR",
+   "name": "Suppliers & purchases",
+   "owner": "Intern 1",
+   "tests": [
+    {
+     "code": "PUR-01",
+     "title": "Add suppliers",
+     "tags": [],
+     "steps": [
+      "Add a Kerala supplier with 30 credit days and GSTIN.",
+      "Add a supplier from another state (e.g. Maharashtra)."
+     ],
+     "expected": "Both saved and listed."
+    },
+    {
+     "code": "PUR-02",
+     "title": "Enter a purchase bill",
+     "tags": [
+      "Scanner"
+     ],
+     "steps": [
+      "Purchases → New purchase: Kerala supplier, bill number, date.",
+      "Add 3 items by scanning and by typing names. Enter qty, cost, GST, MRP and selling price. Pay part of it. Save."
+     ],
+     "expected": "Saved. Stock of each item goes up by the qty. Cost/MRP/selling price update on the products. Totals show CGST + SGST."
+    },
+    {
+     "code": "PUR-03",
+     "title": "Purchase from another state",
+     "tags": [],
+     "steps": [
+      "Enter a purchase from the other-state supplier."
+     ],
+     "expected": "Tax is IGST, not CGST + SGST."
+    },
+    {
+     "code": "PUR-04",
+     "title": "Supplier payments and statement",
+     "tags": [],
+     "steps": [
+      "Supplier payments → Add: pay the rest of PUR-02's bill.",
+      "Open the supplier → statement / PDF."
+     ],
+     "expected": "The supplier's balance becomes zero; the statement lists the bill and both payments."
+    },
+    {
+     "code": "PUR-05",
+     "title": "Overdue supplier bill",
+     "tags": [],
+     "steps": [
+      "Enter a purchase dated 40 days ago from the 30-day supplier, unpaid.",
+      "Open Home."
+     ],
+     "expected": "The home page warns that a supplier bill is overdue."
+    },
+    {
+     "code": "PUR-06",
+     "title": "Purchase return",
+     "tags": [],
+     "steps": [
+      "Open a purchase → Return 1 item."
+     ],
+     "expected": "Stock goes down by 1 and the supplier's balance goes down."
+    },
+    {
+     "code": "PUR-07",
+     "title": "New item while entering a purchase",
+     "tags": [
+      "Scanner"
+     ],
+     "steps": [
+      "On New purchase, scan a barcode that isn't in the system."
+     ],
+     "expected": "The app offers to add it as a new product; after saving you are back on the purchase with it added."
+    },
+    {
+     "code": "PUR-08",
+     "title": "Supplier catalog import",
+     "tags": [
+      "Admin"
+     ],
+     "steps": [
+      "Purchases → Catalog import: download the template.",
+      "Fill 3 rows: one existing barcode with a new price, two new items. Upload → check preview → Apply."
+     ],
+     "expected": "The preview shows 1 update and 2 new. After applying, the prices and new products are in Products."
+    }
+   ]
+  },
+  {
+   "key": "BIL",
+   "name": "Billing counter",
+   "owner": "Intern 2",
+   "tests": [
+    {
+     "code": "BIL-01",
+     "title": "Bill by scanning",
+     "tags": [
+      "Scanner"
+     ],
+     "steps": [
+      "Billing: press F2, scan a product. Scan the same product again. Scan a second product."
+     ],
+     "expected": "Each scan adds the right item and price. A repeat scan raises the quantity to 2 instead of adding a new line. The total updates at once."
+    },
+    {
+     "code": "BIL-02",
+     "title": "Bill by name search",
+     "tags": [],
+     "steps": [
+      "Type part of a product name, choose it from the list."
+     ],
+     "expected": "The item is added."
+    },
+    {
+     "code": "BIL-03",
+     "title": "Camera scanning on the laptop and phone",
+     "tags": [
+      "Phone"
+     ],
+     "steps": [
+      "Tap the camera button, allow camera, hold a barcode in front."
+     ],
+     "expected": "The barcode is read and the item added. Note any device where it doesn't work."
+    },
+    {
+     "code": "BIL-04",
+     "title": "Discounts, GST and round off",
+     "tags": [],
+     "steps": [
+      "Add 2 items. Give one a line discount of 50 and a bill discount of 100.",
+      "Save, open the A4 invoice."
+     ],
+     "expected": "The bill discount is shared across lines. CGST and SGST are each half the GST. Round off makes a whole-rupee total. The numbers on screen, receipt and A4 invoice all match. Check one line by hand."
+    },
+    {
+     "code": "BIL-05",
+     "title": "Cash payment and change",
+     "tags": [],
+     "steps": [
+      "Total ₹449: type cash received 500."
+     ],
+     "expected": "'Change to give ₹51' shows. The bill saves as paid."
+    },
+    {
+     "code": "BIL-06",
+     "title": "Split payment",
+     "tags": [],
+     "steps": [
+      "Click Split: part cash, part UPI. Save."
+     ],
+     "expected": "Both payments are on the bill detail page and in the daily ledger under cash and bank."
+    },
+    {
+     "code": "BIL-07",
+     "title": "UPI QR with amount",
+     "tags": [
+      "Phone"
+     ],
+     "steps": [
+      "Set the payment mode to UPI. Check the QR under Payment.",
+      "Click 'Show to customer'. Scan it with GPay / PhonePe on your phone. DON'T pay.",
+      "Change the amount (add an item) and scan again."
+     ],
+     "expected": "The QR appears only for UPI. The UPI app shows the shop's UPI ID and name and exactly the UPI amount, with the bill note. After the total changes the QR shows the new amount. Esc closes the full-screen view."
+    },
+    {
+     "code": "BIL-08",
+     "title": "Walk-in customer can't take credit",
+     "tags": [],
+     "steps": [
+      "Bill without choosing a customer and collect less than the total."
+     ],
+     "expected": "Saving is refused: walk-in bills must be fully paid."
+    },
+    {
+     "code": "BIL-09",
+     "title": "Credit bill and credit limit",
+     "tags": [],
+     "steps": [
+      "Choose a saved customer with credit limit 1000.",
+      "Bill ₹800 with nothing paid → save.",
+      "Bill another ₹800 unpaid."
+     ],
+     "expected": "The first saves as credit (unpaid). The second is refused because it would exceed the credit limit."
+    },
+    {
+     "code": "BIL-10",
+     "title": "Business (B2B) bill",
+     "tags": [],
+     "steps": [
+      "Enter a customer GSTIN from Kerala (32…) → save, open A4 invoice.",
+      "Repeat with a GSTIN from another state (e.g. 27…)."
+     ],
+     "expected": "The invoice shows the customer GSTIN and state code. The Kerala bill has CGST + SGST; the other-state bill has IGST."
+    },
+    {
+     "code": "BIL-11",
+     "title": "Pause a bill, serve the next customer",
+     "tags": [],
+     "steps": [
+      "Add 2 items for customer A. Press F8 (Pause bill).",
+      "Bill customer B fully and save.",
+      "Click A's paused bill in the bar at the top → finish and save.",
+      "Pause another bill, then discard it."
+     ],
+     "expected": "B's bill isn't mixed with A's. A's items, discounts and customer come back exactly. A discarded bill disappears from the bar."
+    },
+    {
+     "code": "BIL-12",
+     "title": "Not enough stock",
+     "tags": [],
+     "steps": [
+      "Bill more units of a product than are in stock."
+     ],
+     "expected": "Saving is refused with 'Only N of … in stock'."
+    },
+    {
+     "code": "BIL-13",
+     "title": "Thermal receipt prints correctly",
+     "tags": [
+      "Printer"
+     ],
+     "steps": [
+      "Save & print (F9). Print on the 80 mm printer."
+     ],
+     "expected": "One click prints. Logo, shop name, items, GST, total, payments, warranty lines, keep-the-bill note and barcode fit the paper width. Nothing is cut on the right. No browser header/footer text."
+    },
+    {
+     "code": "BIL-14",
+     "title": "A4 GST invoice prints correctly",
+     "tags": [
+      "Printer"
+     ],
+     "steps": [
+      "Bill detail → A4 invoice PDF → print on A4."
+     ],
+     "expected": "Everything is inside the page margins. The details match Settings and the bill."
+    },
+    {
+     "code": "BIL-15",
+     "title": "QR for a balance due",
+     "tags": [
+      "Printer",
+      "Phone"
+     ],
+     "steps": [
+      "Make a credit bill (BIL-09) and print its receipt and A4 invoice.",
+      "Scan the printed QR with a UPI app (don't pay).",
+      "Open the bill page on screen."
+     ],
+     "expected": "The receipt, A4 invoice and bill page show 'Scan to pay' with the balance due. The UPI app shows exactly the balance. A fully paid bill shows no QR."
+    },
+    {
+     "code": "BIL-16",
+     "title": "Scan the receipt barcode to find the bill",
+     "tags": [
+      "Scanner"
+     ],
+     "steps": [
+      "Click the top search box. Scan the barcode printed at the bottom of a receipt."
+     ],
+     "expected": "That bill's page opens."
+    },
+    {
+     "code": "BIL-17",
+     "title": "Share and email a bill",
+     "tags": [
+      "Phone"
+     ],
+     "steps": [
+      "On the phone, open a bill → Send → Share PDF (WhatsApp).",
+      "Try 'Email' with your address."
+     ],
+     "expected": "Share opens the phone's share sheet with the PDF. Email isn't set up yet on this server, so a clear message says so (not an error page). Note what you see."
+    },
+    {
+     "code": "BIL-18",
+     "title": "Cancel a bill",
+     "tags": [
+      "Admin"
+     ],
+     "steps": [
+      "As Staff, look for a Cancel button on a bill.",
+      "As Admin, cancel a bill."
+     ],
+     "expected": "Staff have no Cancel. After Admin cancels, the bill shows CANCELLED and its stock comes back."
+    },
+    {
+     "code": "BIL-19",
+     "title": "Billing on a phone",
+     "tags": [
+      "Phone"
+     ],
+     "steps": [
+      "Make a full bill on the phone browser: add items, customer, payment, save."
+     ],
+     "expected": "Everything is usable without zooming or sideways scrolling; buttons are easy to tap."
+    }
+   ]
+  },
+  {
+   "key": "RET",
+   "name": "Returns, customers & payments",
+   "owner": "Intern 2",
+   "tests": [
+    {
+     "code": "RET-01",
+     "title": "Return with cash refund",
+     "tags": [],
+     "steps": [
+      "Open a paid bill → Return 1 of 2 items, refund cash."
+     ],
+     "expected": "A credit note is created (CN/…). Stock comes back. The refund shows in the daily ledger as cash out."
+    },
+    {
+     "code": "RET-02",
+     "title": "Exchange / adjust to account",
+     "tags": [],
+     "steps": [
+      "Return an item from a customer's bill and choose exchange or adjust to their account."
+     ],
+     "expected": "The customer's balance changes by the return amount. The credit note shows how it was settled."
+    },
+    {
+     "code": "RET-03",
+     "title": "Credit note PDF",
+     "tags": [
+      "Printer"
+     ],
+     "steps": [
+      "Open the credit note → Print credit note."
+     ],
+     "expected": "The PDF shows the original bill number, items, GST reversed and amount."
+    },
+    {
+     "code": "RET-04",
+     "title": "Bill with a return can't be cancelled",
+     "tags": [
+      "Admin"
+     ],
+     "steps": [
+      "As Admin, try to cancel the bill from RET-01."
+     ],
+     "expected": "Refused with a clear message."
+    },
+    {
+     "code": "CUS-01",
+     "title": "Add and find customers",
+     "tags": [],
+     "steps": [
+      "Customers → Add: name, phone, GSTIN, state, credit limit.",
+      "On Billing, type part of the phone number in the customer box."
+     ],
+     "expected": "The customer is found and picked; their GSTIN fills in."
+    },
+    {
+     "code": "CUS-02",
+     "title": "Customer history and what they owe",
+     "tags": [],
+     "steps": [
+      "Open the customer from BIL-09."
+     ],
+     "expected": "Their bills, returns, payments and outstanding balance are listed and add up."
+    },
+    {
+     "code": "CUS-03",
+     "title": "Collect a payment",
+     "tags": [],
+     "steps": [
+      "Payments received → Add: the BIL-09 customer, ₹800 by UPI, against that bill."
+     ],
+     "expected": "The bill becomes Paid, the customer owes ₹0, and the UPI amount is in the bank column of the daily ledger."
+    }
+   ]
+  },
+  {
+   "key": "WAR",
+   "name": "Warranty & repairs",
+   "owner": "Intern 3",
+   "tests": [
+    {
+     "code": "WAR-01",
+     "title": "Guarantee printed on the bill",
+     "tags": [
+      "Printer"
+     ],
+     "steps": [
+      "Edit a product: warranty 12 months, cover type Guarantee (replacement). Sell it to a customer with a phone number.",
+      "Print the receipt."
+     ],
+     "expected": "The receipt and A4 invoice say 'Guarantee 1 year' with the valid-till date."
+    },
+    {
+     "code": "WAR-02",
+     "title": "Check cover",
+     "tags": [],
+     "steps": [
+      "Warranty → Check warranty: search by the customer's phone, then by the bill number, then by the item name."
+     ],
+     "expected": "The item is found each time with 'Covered · N days left', the bill number and the valid-till date. Items sold without warranty are not listed."
+    },
+    {
+     "code": "WAR-03",
+     "title": "Register a claim and print the slip",
+     "tags": [
+      "Printer"
+     ],
+     "steps": [
+      "Click Register claim on the item. Check the pre-filled fields.",
+      "Enter the serial number, complaint, condition, promised date. Save.",
+      "Print slip on the 80 mm printer."
+     ],
+     "expected": "Item, customer, bill date, cover type and valid-till are pre-filled. The claim gets a number like WC/26-27/0001. The slip prints cleanly with the claim number, complaint and 'Ready by' date."
+    },
+    {
+     "code": "WAR-04",
+     "title": "Track the repair",
+     "tags": [],
+     "steps": [
+      "On the claim: status 'Sent to service centre', sent to Titan Service, docket 12345, note 'couriered'. Save.",
+      "Then 'Ready for customer'. Then 'Returned to customer' with result 'Replaced with new' and the new serial in Edit."
+     ],
+     "expected": "Each step saves. Sent, back and returned dates fill in with today's date. Notes show the date and your name. The timeline reads correctly."
+    },
+    {
+     "code": "WAR-05",
+     "title": "Overdue claims",
+     "tags": [],
+     "steps": [
+      "Make a claim with a promised date yesterday. Leave it open.",
+      "Open Warranty and Claims & repairs → Overdue."
+     ],
+     "expected": "The 'Past promised date' tile counts it and it is listed under Overdue with the date in red."
+    },
+    {
+     "code": "WAR-06",
+     "title": "Claim without a bill / paid repair",
+     "tags": [],
+     "steps": [
+      "Check warranty → 'Claim without a bill': an item bought elsewhere, untick 'Within warranty', charge ₹300."
+     ],
+     "expected": "Saved. The slip says 'Not covered - chargeable'."
+    },
+    {
+     "code": "WAR-07",
+     "title": "Find claims",
+     "tags": [],
+     "steps": [
+      "Claims & repairs → search by serial number, docket number and phone. Try each status tab."
+     ],
+     "expected": "The right claim is found each time; the tabs filter correctly."
+    }
+   ]
+  },
+  {
+   "key": "FIN",
+   "name": "Daily accounts",
+   "owner": "Intern 3",
+   "tests": [
+    {
+     "code": "FIN-01",
+     "title": "Expenses",
+     "tags": [],
+     "steps": [
+      "Accounts → Expenses → Add: tea ₹120 cash, electricity ₹2400 bank, with categories."
+     ],
+     "expected": "Both listed. In the daily ledger the tea is under cash, the electricity under bank."
+    },
+    {
+     "code": "FIN-02",
+     "title": "Other income",
+     "tags": [],
+     "steps": [
+      "Add other income: battery replacement ₹250 cash."
+     ],
+     "expected": "Shown in the ledger and in the P&L."
+    },
+    {
+     "code": "FIN-03",
+     "title": "Cash to bank transfer",
+     "tags": [],
+     "steps": [
+      "Cash ⇄ Bank: move ₹5000 cash to bank."
+     ],
+     "expected": "Cash in drawer goes down 5000 and bank goes up 5000. Sales totals don't change."
+    },
+    {
+     "code": "FIN-04",
+     "title": "Employees and salary",
+     "tags": [
+      "Admin"
+     ],
+     "steps": [
+      "Add an employee. Pay an advance of ₹1000, then a salary.",
+      "Open the salary slip PDF.",
+      "Log in as Staff and look for Employees."
+     ],
+     "expected": "Payments are listed and the slip is correct. Staff can't see employees or salaries."
+    },
+    {
+     "code": "FIN-05",
+     "title": "Daily ledger and day close",
+     "tags": [],
+     "steps": [
+      "Open the daily ledger for today. Check the cash in drawer against what you added up from today's tests.",
+      "Day close: enter a counted amount ₹10 less than the computed balance."
+     ],
+     "expected": "The opening balance, cash sales, refunds, expenses and transfers add up to the drawer figure. Day close shows a variance of −₹10."
+    },
+    {
+     "code": "FIN-06",
+     "title": "Cash book",
+     "tags": [
+      "Printer"
+     ],
+     "steps": [
+      "Open the cash book for this week, download / print the PDF."
+     ],
+     "expected": "Every cash entry is there in date order with a running balance."
+    }
+   ]
+  },
+  {
+   "key": "REP",
+   "name": "Reports & GST",
+   "owner": "Intern 3",
+   "tests": [
+    {
+     "code": "REP-01",
+     "title": "Sales report matches the bills",
+     "tags": [
+      "Admin"
+     ],
+     "steps": [
+      "Reports → Sales for today. Add up today's bills from the Bills list."
+     ],
+     "expected": "The report total equals the bills total, less cancelled bills and returns."
+    },
+    {
+     "code": "REP-02",
+     "title": "Margin report",
+     "tags": [
+      "Admin"
+     ],
+     "steps": [
+      "Reports → Margin by item, category, brand and supplier."
+     ],
+     "expected": "Margin = selling value − cost for each line. Spot-check one item by hand."
+    },
+    {
+     "code": "REP-03",
+     "title": "Stock value and reorder list",
+     "tags": [
+      "Admin"
+     ],
+     "steps": [
+      "Reports → Stock."
+     ],
+     "expected": "Quantities match the product pages. Stock value = qty × cost. Low items are on the reorder list."
+    },
+    {
+     "code": "REP-04",
+     "title": "Monthly GST report",
+     "tags": [
+      "Admin"
+     ],
+     "steps": [
+      "Reports → GST for this month. Download the PDF and the Excel."
+     ],
+     "expected": "B2B lists the GSTIN bills from BIL-10. B2C is grouped by rate. The HSN summary, credit notes and purchase ITC are there. The PDF and Excel totals match the screen."
+    },
+    {
+     "code": "REP-05",
+     "title": "Profit & loss",
+     "tags": [
+      "Admin"
+     ],
+     "steps": [
+      "Reports → P&L for this month."
+     ],
+     "expected": "Sales, cost, gross margin, expenses and other income line up with the other reports."
+    },
+    {
+     "code": "REP-06",
+     "title": "Receivables and payables",
+     "tags": [
+      "Admin"
+     ],
+     "steps": [
+      "Reports → Outstanding."
+     ],
+     "expected": "Customers who owe (BIL-09 before payment) and suppliers you owe (PUR-05) are listed with the right amounts."
+    }
+   ]
+  },
+  {
+   "key": "GEN",
+   "name": "General checks",
+   "owner": "Everyone",
+   "tests": [
+    {
+     "code": "GEN-01",
+     "title": "Phone layout",
+     "tags": [
+      "Phone"
+     ],
+     "steps": [
+      "Open each menu section on the phone."
+     ],
+     "expected": "Every page fits the screen: no sideways scrolling, nothing overlapping, tables readable."
+    },
+    {
+     "code": "GEN-02",
+     "title": "Install as an app",
+     "tags": [
+      "Phone"
+     ],
+     "steps": [
+      "Chrome menu → 'Add to Home screen' / 'Install app'. Open it from the icon."
+     ],
+     "expected": "It opens full-screen like an app and you stay logged in."
+    },
+    {
+     "code": "GEN-03",
+     "title": "Global search",
+     "tags": [],
+     "steps": [
+      "Use the top search for a product name, customer phone, bill number and supplier."
+     ],
+     "expected": "Each is found."
+    },
+    {
+     "code": "GEN-04",
+     "title": "Two counters at once",
+     "tags": [],
+     "steps": [
+      "Two interns bill the same product at the same time on two devices and save within a few seconds of each other."
+     ],
+     "expected": "Both bills save with consecutive numbers and the stock goes down by both quantities."
+    },
+    {
+     "code": "GEN-05",
+     "title": "Speed on mobile data",
+     "tags": [
+      "Phone"
+     ],
+     "steps": [
+      "Turn off Wi-Fi on the phone and make a bill on mobile data."
+     ],
+     "expected": "Pages load in a few seconds; nothing times out. Note anything slow."
+    }
+   ]
+  },
+  {
+   "key": "E2E",
+   "name": "Full shop day (do together at the end)",
+   "owner": "Everyone",
+   "tests": [
+    {
+     "code": "E2E-01",
+     "title": "One complete day",
+     "tags": [
+      "Printer",
+      "Scanner",
+      "Phone"
+     ],
+     "steps": [
+      "Intern 1: enter a purchase of 5 new products and print their labels.",
+      "Intern 2: sell 6 bills using the scanner: cash, UPI with QR, split, one credit customer, one B2B. Print every receipt.",
+      "Intern 2: one return, one paused bill finished later.",
+      "Intern 3: one warranty claim from today's bill, one expense, one cash-to-bank transfer, then day close.",
+      "Together: open the dashboard, daily ledger, sales report and GST report."
+     ],
+     "expected": "Every figure agrees across the dashboard, ledger, reports and printed bills. Stock of the 5 products = purchased − sold + returned. Nothing needed a workaround."
+    }
+   ]
+  }
+ ],
+ "instructions": "Test on https://shop.ralfiz.com in Chrome on the shop laptop; keep your phone for camera scanning and UPI checks. Use the login your supervisor gave you. For every step: do it, compare with 'Should happen', then mark Pass, Fail or Blocked. Fail = it did something wrong. Blocked = you could not test it (page error, missing data, printer not connected). For Fail/Blocked write exactly what you did and what you saw, and attach a screenshot."
+}

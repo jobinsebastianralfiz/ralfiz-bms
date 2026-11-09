@@ -1,6 +1,8 @@
 """URLs for the staff portal (interns & employees) at /staff/."""
 from django.urls import path
 
+from uat import staff_views as uat_v
+
 from . import portal_views as v
 
 app_name = 'staff'
@@ -28,6 +30,10 @@ urlpatterns = [
     path('work/<uuid:pk>/', v.work_detail, name='work_detail'),
     path('tasks/<uuid:pk>/', v.board_task_detail, name='board_task_detail'),
     path('tasks/<uuid:pk>/update/', v.board_task_update, name='board_task_update'),
+
+    # UAT testing
+    path('uat/', uat_v.uat_home, name='uat_home'),
+    path('uat/<uuid:plan_pk>/<int:section_pk>/', uat_v.uat_section, name='uat_section'),
 
     # Classes & assessments
     path('classes/', v.class_list, name='class_list'),

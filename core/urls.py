@@ -6,6 +6,7 @@ from gympro_licensing import web_views as gympro_web_views
 from eduflow_licensing import web_views as eduflow_web_views
 from ralfpos_licensing import web_views as ralfpos_web_views
 from shopmanager_licensing import web_views as shopmanager_web_views
+from uat import web_views as uat_web_views
 from . import agreement_web_views
 from . import client_agreement_views
 from . import enrolment_web_views
@@ -308,6 +309,14 @@ urlpatterns = [
     path('shopmanager/licenses/create/', shopmanager_web_views.shop_license_create, name='shop_license_create'),
     path('shopmanager/licenses/<uuid:pk>/', shopmanager_web_views.shop_license_detail, name='shop_license_detail'),
     path('shopmanager/licenses/<uuid:pk>/update/', shopmanager_web_views.shop_license_update, name='shop_license_update'),
+
+    # UAT testing
+    path('uat/', uat_web_views.uat_plan_list, name='uat_plan_list'),
+    path('uat/new/', uat_web_views.uat_plan_create, name='uat_plan_create'),
+    path('uat/<uuid:pk>/', uat_web_views.uat_plan_detail, name='uat_plan_detail'),
+    path('uat/<uuid:pk>/results/', uat_web_views.uat_plan_cases, name='uat_plan_cases'),
+    path('uat/<uuid:pk>/update/', uat_web_views.uat_plan_update, name='uat_plan_update'),
+    path('uat/problems/<uuid:pk>/', uat_web_views.uat_problem_update, name='uat_problem_update'),
 
     # HR & Admin
     path('hr/employees/', views.emp_employee_list, name='emp_employee_list'),

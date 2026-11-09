@@ -1,0 +1,49 @@
+{% extends 'staff/base.html' %}
+
+{% block title %}UAT Testing{% endblock %}
+{% block heading %}UAT Testing{% endblock %}
+
+{% block page_hero %}
+{% include 'staff/_hero.html' with title='UAT Testing' subtitle='Test the software step by step and mark each test Pass, Fail or Blocked.' tagline='Test · Note · Improve' art='check' %}
+{% endblock %}
+
+{% block content %}
+{% include 'staff/uat/_styles.html' %}
+{% for p in plans %}
+<div class="ut-card">
+  <div class="ut-row">
+    <div>
+      <div style="font-size:18px;font-weight:700">{{ p.plan.name }}</div>
+      <div class="ut-muted">{% if p.plan.site_url %}Test on <a href="{{ p.plan.site_url }}" target="_blank" rel="noopener">{{ p.plan.site_url }}</a>{% endif %}{% if p.plan.due_date %} · finish by {{ p.plan.due_date|date:"D d M" }}{% endif %}</div>
+    </div>
+    <div style="text-align:right"><b style="font-size:20px">{{ p.done }}/{{ p.total }}</b><div class="ut-muted">tests done</div></div>
+  </div>
+  <div class="ut-bar"><i style="width:{{ p.pct }}%"></i></div>
+  {% if p.retest %}<p class="ut-fix" style="margin-top:12px"><i class="fas fa-rotate"></i> {{ p.retest }} test{{ p.retest|pluralize }} fixed by Ralfiz: please test again.</p>{% endif %}
+  {% if p.plan.instructions %}<details style="margin-top:12px"><summary class="ut-muted" style="cursor:pointer">How to test</summary><p style="white-space:pre-line;font-size:14px;margin-top:6px">{{ p.plan.instructions }}</p></details>{% endif %}
+</div>
+{% for r in p.sections %}
+<a class="ut-card ut-sec" href="{% url 'staff:uat_section' p.plan.pk r.section.pk %}">
+  <div class="ut-row">
+    <div>
+      <div style="font-weight:650">{{ r.section.name }}</div>
+      <div class="ut-muted">{{ r.done }} of {{ r.total }} done</div>
+    </div>
+    <div style="display:flex;gap:6px;flex-wrap:wrap">
+      {% if r.retest %}<span class="ut-chip retest">{{ r.retest }} retest</span>{% endif %}
+      {% if r.pass %}<span class="ut-chip pass">{{ r.pass }} pass</span>{% endif %}
+      {% if r.fail %}<span class="ut-chip fail">{{ r.fail }} fail</span>{% endif %}
+      {% if r.blocked %}<span class="ut-chip blocked">{{ r.blocked }} blocked</span>{% endif %}
+      <i class="fas fa-chevron-right" style="color:#98A2B3;align-self:center"></i>
+    </div>
+  </div>
+  <div class="ut-bar"><i style="width:{{ r.pct }}%"></i></div>
+</a>
+{% endfor %}
+{% empty %}
+<div class="ut-card" style="text-align:center;padding:36px">
+  <i class="fas fa-clipboard-check" style="font-size:30px;color:#98A2B3"></i>
+  <p style="margin-top:10px">No testing assigned to you right now.</p>
+</div>
+{% endfor %}
+{% endblock %}

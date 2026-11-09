@@ -1,0 +1,42 @@
+{% extends 'base.html' %}
+
+{% block breadcrumb %}
+<a href="{% url 'dashboard' %}" class="breadcrumb-item">Dashboard</a>
+<span class="breadcrumb-separator">/</span>
+<span class="breadcrumb-item active">UAT Testing</span>
+{% endblock %}
+
+{% block content %}
+{% include 'shopmanager/_styles.html' %}
+<div class="page-header">
+  <div class="page-header__lead">
+    <span class="page-header__icon"><i class="fas fa-clipboard-check"></i></span>
+    <div><h1 class="page-title">UAT Testing</h1>
+      <p class="sm-help" style="margin:0">Test plans for our products. Testers mark each test in the staff portal (UAT Testing).</p></div>
+  </div>
+  <div class="page-actions"><a href="{% url 'uat_plan_create' %}" class="btn btn-primary"><i class="fas fa-plus"></i> New test plan</a></div>
+</div>
+
+<div class="sm-card">
+  <div style="overflow-x:auto">
+    <table class="sm-table">
+      <thead><tr><th style="padding-left:1.5rem">Plan</th><th>Testers</th><th>Progress</th><th>Problems open</th><th>Due</th><th>Status</th><th></th></tr></thead>
+      <tbody>
+      {% for p in plans %}{% with s=p.stats %}
+        <tr>
+          <td style="padding-left:1.5rem"><b>{{ p.name }}</b><br><span class="sm-k">{{ p.product }}{% if p.site_url %} · {{ p.site_url }}{% endif %}</span></td>
+          <td>{% for t in p.testers.all %}{{ t.full_name }}{% if not forloop.last %}, {% endif %}{% empty %}<span class="sm-k">None yet</span>{% endfor %}</td>
+          <td style="min-width:140px"><div style="height:8px;background:#EEF1F6;border-radius:8px;overflow:hidden"><div style="height:100%;width:{{ s.pct }}%;background:#465FFF"></div></div><span class="sm-k">{{ s.pct }}%</span></td>
+          <td>{% if s.open %}<span class="sm-pill sm-expired">{{ s.open }} open</span>{% else %}<span class="sm-k">None</span>{% endif %}</td>
+          <td>{{ p.due_date|date:"d M Y"|default:"—" }}</td>
+          <td>{% if p.status == 'active' %}<span class="sm-pill sm-active">In testing</span>{% else %}<span class="sm-pill sm-revoked">Closed</span>{% endif %}</td>
+          <td style="text-align:right;padding-right:1.5rem"><a href="{% url 'uat_plan_detail' p.pk %}" class="sm-btn">Open</a></td>
+        </tr>
+      {% endwith %}{% empty %}
+        <tr><td colspan="7" style="padding:3rem;text-align:center;color:#98A2B3">No test plans yet. <a href="{% url 'uat_plan_create' %}">Create one</a>.</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}
