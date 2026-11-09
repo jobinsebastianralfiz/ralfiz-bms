@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% block heading %}Booking #{{ booking.pk }}{% endblock %}
+{% block content %}
+<div class="bg-white rounded-xl shadow-sm p-6 max-w-xl space-y-2 text-sm">
+  <p><b>Customer:</b> {{ booking.customer }} ({{ booking.customer.phone|default:"no phone" }})</p>
+  <p><b>Service:</b> {{ booking.service }} · ₹{{ booking.price }}</p>
+  <p><b>When:</b> {{ booking.start_at|date:"D d M Y, H:i" }} – {{ booking.end_at|date:"H:i" }}</p>
+  <p><b>Status:</b> {{ booking.get_status_display }}</p>
+  {% if next_statuses %}
+  <form method="post" action="{% url 'dashboard:booking-status' booking.pk %}" class="flex gap-2 pt-4">
+    {% csrf_token %}
+    {% for value, label in next_statuses %}
+      <button name="status" value="{{ value }}" class="rounded-lg border px-3 py-1.5 hover:bg-slate-100">Mark {{ label }}</button>
+    {% endfor %}
+  </form>
+  {% endif %}
+</div>
+{% endblock %}

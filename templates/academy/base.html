@@ -47,6 +47,7 @@
             <div class="wm-h"><b>{{ request.user.get_full_name|default:request.user.username }}</b>{% if request.student.batch %}{{ request.student.batch }}{% else %}{{ request.user.username }}{% endif %}</div>
             <a href="{% url 'academy:profile' %}">Profile and password</a>
             {% if request.is_preview %}<a href="{% url 'academy:manage_home' %}">Academy admin</a>{% endif %}
+            {% if request.user.employee_profile %}<a href="{% url 'staff:dashboard' %}">Back to staff portal</a>{% endif %}
             <a href="{% url 'academy:logout' %}">Sign out</a>
           </div>
         </details>

@@ -1,0 +1,14 @@
+from django.conf import settings
+from django.conf.urls.static import static
+from django.urls import include, path
+from django.views.generic import RedirectView
+
+urlpatterns = [
+    path("", RedirectView.as_view(pattern_name="dashboard:home", permanent=False)),
+    path("accounts/", include("apps.accounts.urls")),
+    path("dashboard/", include("apps.dashboard.urls")),
+    path("api/v1/", include("apps.api.urls")),
+]
+
+if settings.DEBUG:
+    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

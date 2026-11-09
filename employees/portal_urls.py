@@ -33,6 +33,7 @@ urlpatterns = [
     path('classes/', v.class_list, name='class_list'),
     path('classes/<uuid:pk>/', v.class_detail, name='class_detail'),
     path('assessments/', v.assessment_list, name='assessment_list'),
+    path('bootcamp/', v.bootcamp_open, name='bootcamp'),
 
     # Payslips
     path('payslips/', v.payslip_list, name='payslip_list'),

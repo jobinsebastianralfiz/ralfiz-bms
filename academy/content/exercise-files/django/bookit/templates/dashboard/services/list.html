@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block heading %}Services{% endblock %}
+{% block content %}
+<a href="{% url 'dashboard:service-create' %}" class="inline-block mb-4 rounded-lg bg-indigo-600 px-4 py-2 text-sm text-white">+ New service</a>
+<div class="bg-white rounded-xl shadow-sm">
+  <table class="w-full text-sm">
+    <thead class="bg-slate-50 text-left text-slate-500"><tr><th class="p-3">Name</th><th>Duration</th><th>Price</th><th>Bookings</th><th>Active</th><th></th></tr></thead>
+    <tbody>
+    {% for s in services %}
+      <tr class="border-t"><td class="p-3">{{ s.name }}</td><td>{{ s.duration_minutes }} min</td><td>₹{{ s.price }}</td>
+        <td>{{ s.total_bookings }}</td><td>{{ s.is_active|yesno:"Yes,No" }}</td>
+        <td><a class="text-indigo-600" href="{% url 'dashboard:service-edit' s.pk %}">Edit</a></td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

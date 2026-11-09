@@ -24,7 +24,7 @@ from django.urls import reverse
 from django.utils import timezone
 from django.views.decorators.cache import never_cache
 
-from . import work_calendar
+from . import bootcamp, work_calendar
 from .leave_rules import year_days_used
 from .models import (
     Attendance, DailyReport, Employee, InternAssessment, LeaveRequest, LeaveType,
@@ -252,6 +252,7 @@ def dashboard(request):
                      else 'Good afternoon' if timezone.localtime().hour < 17 else 'Good evening'),
         'pending_leave': pending_leave,
         'upcoming_classes': upcoming_classes,
+        'bootcamp': bootcamp.dashboard_summary(employee) if is_intern(employee) else None,
         'days_present': month_attendance.exclude(status='absent').count(),
         'todays_report': DailyReport.objects.filter(employee=employee, date=today).first(),
         'recent_notifications': Notification.objects.filter(
@@ -570,6 +571,24 @@ def work_detail(request, pk):
         'status_choices': WorkAssignment.STATUS_CHOICES,
     })
     return render(request, 'staff/work_detail.html', ctx)
+
+
+# --- Intern bootcamp (Academy course) --------------------------------------
+
+@staff_required
+def bootcamp_open(request):
+    """Enrol the intern in the bootcamp on first visit, then open the course or a lesson."""
+    employee = request.employee
+    if not is_intern(employee):
+        raise Http404
+    track = bootcamp.enrol(employee)
+    if track is None:
+        messages.info(request, 'The bootcamp is not available on your account right now. Please ask HR.')
+        return redirect('staff:dashboard')
+    lesson_id = request.GET.get('lesson', '')
+    if lesson_id and track.lessons.filter(pk=lesson_id).exists():
+        return redirect('academy:lesson', lesson_id=lesson_id)
+    return redirect('academy:track', track_id=track.id)
 
 
 # --- Classes & assessments -------------------------------------------------

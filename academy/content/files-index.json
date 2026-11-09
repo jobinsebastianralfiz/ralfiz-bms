@@ -3422,5 +3422,277 @@
  "net2/cs70/solutions.md": {
   "path": "solutions.md",
   "description": "Complete worked solutions for practice set 10.6, with every epoch table, forward and backward pass, weight matrix, distance and metric shown, and the trap behind each distractor."
+ },
+ "django/bookit/.env.example": {
+  "path": "bookit/.env.example",
+  "description": "BookIt project file: .env.example"
+ },
+ "django/bookit/apps/__init__.py": {
+  "path": "bookit/apps/__init__.py",
+  "description": "BookIt project file: apps/__init__.py"
+ },
+ "django/bookit/apps/accounts/__init__.py": {
+  "path": "bookit/apps/accounts/__init__.py",
+  "description": "BookIt project file: apps/accounts/__init__.py"
+ },
+ "django/bookit/apps/accounts/apps.py": {
+  "path": "bookit/apps/accounts/apps.py",
+  "description": "BookIt project file: apps/accounts/apps.py"
+ },
+ "django/bookit/apps/accounts/migrations/0001_initial.py": {
+  "path": "bookit/apps/accounts/migrations/0001_initial.py",
+  "description": "BookIt project file: apps/accounts/migrations/0001_initial.py"
+ },
+ "django/bookit/apps/accounts/migrations/__init__.py": {
+  "path": "bookit/apps/accounts/migrations/__init__.py",
+  "description": "BookIt project file: apps/accounts/migrations/__init__.py"
+ },
+ "django/bookit/apps/accounts/models.py": {
+  "path": "bookit/apps/accounts/models.py",
+  "description": "BookIt project file: apps/accounts/models.py"
+ },
+ "django/bookit/apps/accounts/urls.py": {
+  "path": "bookit/apps/accounts/urls.py",
+  "description": "BookIt project file: apps/accounts/urls.py"
+ },
+ "django/bookit/apps/api/__init__.py": {
+  "path": "bookit/apps/api/__init__.py",
+  "description": "BookIt project file: apps/api/__init__.py"
+ },
+ "django/bookit/apps/api/apps.py": {
+  "path": "bookit/apps/api/apps.py",
+  "description": "BookIt project file: apps/api/apps.py"
+ },
+ "django/bookit/apps/api/exceptions.py": {
+  "path": "bookit/apps/api/exceptions.py",
+  "description": "BookIt project file: apps/api/exceptions.py"
+ },
+ "django/bookit/apps/api/permissions.py": {
+  "path": "bookit/apps/api/permissions.py",
+  "description": "BookIt project file: apps/api/permissions.py"
+ },
+ "django/bookit/apps/api/serializers.py": {
+  "path": "bookit/apps/api/serializers.py",
+  "description": "BookIt project file: apps/api/serializers.py"
+ },
+ "django/bookit/apps/api/tests.py": {
+  "path": "bookit/apps/api/tests.py",
+  "description": "BookIt project file: apps/api/tests.py"
+ },
+ "django/bookit/apps/api/urls.py": {
+  "path": "bookit/apps/api/urls.py",
+  "description": "BookIt project file: apps/api/urls.py"
+ },
+ "django/bookit/apps/api/views.py": {
+  "path": "bookit/apps/api/views.py",
+  "description": "BookIt project file: apps/api/views.py"
+ },
+ "django/bookit/apps/bookings/__init__.py": {
+  "path": "bookit/apps/bookings/__init__.py",
+  "description": "BookIt project file: apps/bookings/__init__.py"
+ },
+ "django/bookit/apps/bookings/apps.py": {
+  "path": "bookit/apps/bookings/apps.py",
+  "description": "BookIt project file: apps/bookings/apps.py"
+ },
+ "django/bookit/apps/bookings/management/__init__.py": {
+  "path": "bookit/apps/bookings/management/__init__.py",
+  "description": "BookIt project file: apps/bookings/management/__init__.py"
+ },
+ "django/bookit/apps/bookings/management/commands/__init__.py": {
+  "path": "bookit/apps/bookings/management/commands/__init__.py",
+  "description": "BookIt project file: apps/bookings/management/commands/__init__.py"
+ },
+ "django/bookit/apps/bookings/management/commands/seed_demo.py": {
+  "path": "bookit/apps/bookings/management/commands/seed_demo.py",
+  "description": "BookIt project file: apps/bookings/management/commands/seed_demo.py"
+ },
+ "django/bookit/apps/bookings/migrations/0001_initial.py": {
+  "path": "bookit/apps/bookings/migrations/0001_initial.py",
+  "description": "BookIt project file: apps/bookings/migrations/0001_initial.py"
+ },
+ "django/bookit/apps/bookings/migrations/__init__.py": {
+  "path": "bookit/apps/bookings/migrations/__init__.py",
+  "description": "BookIt project file: apps/bookings/migrations/__init__.py"
+ },
+ "django/bookit/apps/bookings/models.py": {
+  "path": "bookit/apps/bookings/models.py",
+  "description": "BookIt project file: apps/bookings/models.py"
+ },
+ "django/bookit/apps/bookings/services.py": {
+  "path": "bookit/apps/bookings/services.py",
+  "description": "BookIt project file: apps/bookings/services.py"
+ },
+ "django/bookit/apps/catalog/__init__.py": {
+  "path": "bookit/apps/catalog/__init__.py",
+  "description": "BookIt project file: apps/catalog/__init__.py"
+ },
+ "django/bookit/apps/catalog/apps.py": {
+  "path": "bookit/apps/catalog/apps.py",
+  "description": "BookIt project file: apps/catalog/apps.py"
+ },
+ "django/bookit/apps/catalog/forms.py": {
+  "path": "bookit/apps/catalog/forms.py",
+  "description": "BookIt project file: apps/catalog/forms.py"
+ },
+ "django/bookit/apps/catalog/migrations/0001_initial.py": {
+  "path": "bookit/apps/catalog/migrations/0001_initial.py",
+  "description": "BookIt project file: apps/catalog/migrations/0001_initial.py"
+ },
+ "django/bookit/apps/catalog/migrations/__init__.py": {
+  "path": "bookit/apps/catalog/migrations/__init__.py",
+  "description": "BookIt project file: apps/catalog/migrations/__init__.py"
+ },
+ "django/bookit/apps/catalog/models.py": {
+  "path": "bookit/apps/catalog/models.py",
+  "description": "BookIt project file: apps/catalog/models.py"
+ },
+ "django/bookit/apps/core/__init__.py": {
+  "path": "bookit/apps/core/__init__.py",
+  "description": "BookIt project file: apps/core/__init__.py"
+ },
+ "django/bookit/apps/core/apps.py": {
+  "path": "bookit/apps/core/apps.py",
+  "description": "BookIt project file: apps/core/apps.py"
+ },
+ "django/bookit/apps/core/middleware.py": {
+  "path": "bookit/apps/core/middleware.py",
+  "description": "BookIt project file: apps/core/middleware.py"
+ },
+ "django/bookit/apps/core/migrations/__init__.py": {
+  "path": "bookit/apps/core/migrations/__init__.py",
+  "description": "BookIt project file: apps/core/migrations/__init__.py"
+ },
+ "django/bookit/apps/core/models.py": {
+  "path": "bookit/apps/core/models.py",
+  "description": "BookIt project file: apps/core/models.py"
+ },
+ "django/bookit/apps/dashboard/__init__.py": {
+  "path": "bookit/apps/dashboard/__init__.py",
+  "description": "BookIt project file: apps/dashboard/__init__.py"
+ },
+ "django/bookit/apps/dashboard/apps.py": {
+  "path": "bookit/apps/dashboard/apps.py",
+  "description": "BookIt project file: apps/dashboard/apps.py"
+ },
+ "django/bookit/apps/dashboard/mixins.py": {
+  "path": "bookit/apps/dashboard/mixins.py",
+  "description": "BookIt project file: apps/dashboard/mixins.py"
+ },
+ "django/bookit/apps/dashboard/urls.py": {
+  "path": "bookit/apps/dashboard/urls.py",
+  "description": "BookIt project file: apps/dashboard/urls.py"
+ },
+ "django/bookit/apps/dashboard/views.py": {
+  "path": "bookit/apps/dashboard/views.py",
+  "description": "BookIt project file: apps/dashboard/views.py"
+ },
+ "django/bookit/config/__init__.py": {
+  "path": "bookit/config/__init__.py",
+  "description": "BookIt project file: config/__init__.py"
+ },
+ "django/bookit/config/settings/__init__.py": {
+  "path": "bookit/config/settings/__init__.py",
+  "description": "BookIt project file: config/settings/__init__.py"
+ },
+ "django/bookit/config/settings/base.py": {
+  "path": "bookit/config/settings/base.py",
+  "description": "BookIt project file: config/settings/base.py"
+ },
+ "django/bookit/config/settings/dev.py": {
+  "path": "bookit/config/settings/dev.py",
+  "description": "BookIt project file: config/settings/dev.py"
+ },
+ "django/bookit/config/settings/prod.py": {
+  "path": "bookit/config/settings/prod.py",
+  "description": "BookIt project file: config/settings/prod.py"
+ },
+ "django/bookit/config/urls.py": {
+  "path": "bookit/config/urls.py",
+  "description": "BookIt project file: config/urls.py"
+ },
+ "django/bookit/config/wsgi.py": {
+  "path": "bookit/config/wsgi.py",
+  "description": "BookIt project file: config/wsgi.py"
+ },
+ "django/bookit/manage.py": {
+  "path": "bookit/manage.py",
+  "description": "BookIt project file: manage.py"
+ },
+ "django/bookit/pytest.ini": {
+  "path": "bookit/pytest.ini",
+  "description": "BookIt project file: pytest.ini"
+ },
+ "django/bookit/requirements/base.txt": {
+  "path": "bookit/requirements/base.txt",
+  "description": "BookIt project file: requirements/base.txt"
+ },
+ "django/bookit/requirements/dev.txt": {
+  "path": "bookit/requirements/dev.txt",
+  "description": "BookIt project file: requirements/dev.txt"
+ },
+ "django/bookit/requirements/prod.txt": {
+  "path": "bookit/requirements/prod.txt",
+  "description": "BookIt project file: requirements/prod.txt"
+ },
+ "django/bookit/requirements.txt": {
+  "path": "bookit/requirements.txt",
+  "description": "BookIt project file: requirements.txt"
+ },
+ "django/bookit/templates/base.html": {
+  "path": "bookit/templates/base.html",
+  "description": "BookIt project file: templates/base.html"
+ },
+ "django/bookit/templates/dashboard/bookings/detail.html": {
+  "path": "bookit/templates/dashboard/bookings/detail.html",
+  "description": "BookIt project file: templates/dashboard/bookings/detail.html"
+ },
+ "django/bookit/templates/dashboard/bookings/list.html": {
+  "path": "bookit/templates/dashboard/bookings/list.html",
+  "description": "BookIt project file: templates/dashboard/bookings/list.html"
+ },
+ "django/bookit/templates/dashboard/home.html": {
+  "path": "bookit/templates/dashboard/home.html",
+  "description": "BookIt project file: templates/dashboard/home.html"
+ },
+ "django/bookit/templates/dashboard/services/form.html": {
+  "path": "bookit/templates/dashboard/services/form.html",
+  "description": "BookIt project file: templates/dashboard/services/form.html"
+ },
+ "django/bookit/templates/dashboard/services/list.html": {
+  "path": "bookit/templates/dashboard/services/list.html",
+  "description": "BookIt project file: templates/dashboard/services/list.html"
+ },
+ "django/bookit/templates/registration/login.html": {
+  "path": "bookit/templates/registration/login.html",
+  "description": "BookIt project file: templates/registration/login.html"
+ },
+ "django/day1/data/sales.csv": {
+  "path": "day1/data/sales.csv",
+  "description": "Nine sales rows, three of them deliberately broken."
+ },
+ "django/day1/fundamentals.py": {
+  "path": "day1/fundamentals.py",
+  "description": "Day 1 warm-up: mutability, comprehensions, closures, decorators and exceptions."
+ },
+ "django/day1/sales_report.py": {
+  "path": "day1/sales_report.py",
+  "description": "Day 1 project: validate a POS sales CSV and write a JSON summary plus errors.csv."
+ },
+ "django/day2/invoice.py": {
+  "path": "day2/invoice.py",
+  "description": "Day 2 project: a GST invoice engine in plain Python (CGST/SGST/IGST, round-off, FY numbers)."
+ },
+ "django/day2/pincode_client.py": {
+  "path": "day2/pincode_client.py",
+  "description": "Address autofill from an Indian PIN code: requests session, retries, timeouts, a generator."
+ },
+ "django/day2/test_invoice.py": {
+  "path": "day2/test_invoice.py",
+  "description": "pytest suite for the invoice engine: fixtures, parametrize, pytest.raises."
+ },
+ "django/snippets/orm_reports.py": {
+  "path": "snippets/orm_reports.py",
+  "description": "Eight ORM report queries for the Django shell, plus the N+1 problem measured."
  }
 }

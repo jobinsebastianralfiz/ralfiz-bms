@@ -68,7 +68,8 @@ class Track(models.Model):
     ICONS = {'pl900': 'fa-cubes', 'ab410': 'fa-wand-magic-sparkles',
              'pl300': 'fa-chart-column', 'ab400': 'fa-code', 'flutter': 'fa-mobile-screen-button',
              'js': 'fa-terminal', 'dom': 'fa-window-maximize',
-             'net1': 'fa-chalkboard-user', 'net2': 'fa-microchip'}
+             'net1': 'fa-chalkboard-user', 'net2': 'fa-microchip',
+             'django': 'fa-server'}
 
     @property
     def icon(self):

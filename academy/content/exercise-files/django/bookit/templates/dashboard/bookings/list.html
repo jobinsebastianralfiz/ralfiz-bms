@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% block heading %}Bookings{% endblock %}
+{% block content %}
+<form method="get" class="flex flex-wrap gap-3 mb-5">
+  <input name="q" value="{{ request.GET.q }}" placeholder="Search name, phone, service"
+         class="rounded-lg border px-3 py-2 w-72">
+  <select name="status" class="rounded-lg border px-3 py-2">
+    <option value="">All statuses</option>
+    {% for value, label in statuses %}
+      <option value="{{ value }}" {% if request.GET.status == value %}selected{% endif %}>{{ label }}</option>
+    {% endfor %}
+  </select>
+  <button class="rounded-lg bg-slate-900 px-4 py-2 text-white">Filter</button>
+</form>
+
+<div class="bg-white rounded-xl shadow-sm overflow-x-auto">
+  <table class="w-full text-sm">
+    <thead class="bg-slate-50 text-left text-slate-500">
+      <tr><th class="p-3">#</th><th>When</th><th>Customer</th><th>Service</th><th>Status</th><th class="text-right p-3">Amount</th></tr>
+    </thead>
+    <tbody>
+    {% for b in bookings %}
+      <tr class="border-t hover:bg-slate-50">
+        <td class="p-3"><a class="text-indigo-600" href="{% url 'dashboard:booking-detail' b.pk %}">{{ b.pk }}</a></td>
+        <td>{{ b.start_at|date:"d M Y, H:i" }}</td>
+        <td>{{ b.customer }}<div class="text-xs text-slate-400">{{ b.customer.phone|default:"" }}</div></td>
+        <td>{{ b.service }}</td>
+        <td><span class="rounded-full bg-slate-100 px-2 py-0.5 text-xs">{{ b.get_status_display }}</span></td>
+        <td class="text-right p-3">₹{{ b.price }}</td>
+      </tr>
+    {% empty %}
+      <tr><td colspan="6" class="p-8 text-center text-slate-400">No bookings match your filters.</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+{% if is_paginated %}
+<nav class="flex items-center gap-3 mt-5 text-sm">
+  {% if page_obj.has_previous %}<a class="rounded border px-3 py-1" href="{% querystring page=page_obj.previous_page_number %}">← Prev</a>{% endif %}
+  <span>Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
+  {% if page_obj.has_next %}<a class="rounded border px-3 py-1" href="{% querystring page=page_obj.next_page_number %}">Next →</a>{% endif %}
+</nav>
+{% endif %}
+{% endblock %}

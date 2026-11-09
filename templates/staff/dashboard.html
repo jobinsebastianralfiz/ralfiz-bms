@@ -69,6 +69,28 @@
   </section>
 
   <div class="sv-stack">
+    {% if bootcamp %}
+    <section class="sv-card">
+      <header class="sv-card-head"><h2><span class="sv-head-ico"><i class="fas fa-graduation-cap"></i></span>Your Bootcamp</h2><a href="{% url 'staff:bootcamp' %}">Open course</a></header>
+      <div class="sv-action">
+        <span class="sv-ico violet"><i class="fas fa-server"></i></span>
+        <div>
+          <strong>{{ bootcamp.track.name }}</strong>
+          <span class="sub">{% if bootcamp.completed %}Completed · well done!{% elif bootcamp.started %}{{ bootcamp.done }} of {{ bootcamp.total }} lessons done{% if bootcamp.best_score is not None %} · best test {{ bootcamp.best_score }}{% endif %}{% else %}{{ bootcamp.total }} lessons over 5 days · Python to a live Django API{% endif %}</span>
+        </div>
+        {% if bootcamp.completed %}<a href="{% url 'staff:bootcamp' %}" class="sv-btn"><i class="fas fa-trophy"></i> Review</a>
+        {% elif bootcamp.done == bootcamp.total %}<a href="{% url 'academy:test_start' bootcamp.track.id %}" class="sv-btn"><i class="fas fa-file-pen"></i> Take Test</a>
+        {% else %}<a href="{% url 'staff:bootcamp' %}?lesson={{ bootcamp.next_lesson.id }}" class="sv-btn"><i class="fas fa-play"></i> {% if bootcamp.started %}Continue{% else %}Start{% endif %}</a>{% endif %}
+      </div>
+      <div class="sv-row" style="border-bottom: 0;">
+        <div class="sv-bar" style="margin-top: 0;" title="{{ bootcamp.percent }}% complete"><i style="width: {{ bootcamp.percent }}%"></i></div>
+        {% if bootcamp.next_lesson and not bootcamp.completed and bootcamp.done != bootcamp.total %}
+        <div class="sv-meta"><span><i class="fas fa-book-open"></i> Next: {{ bootcamp.next_lesson.num }} {{ bootcamp.next_lesson.title }}</span><span><i class="far fa-clock"></i> {{ bootcamp.next_lesson.minutes }} min</span></div>
+        {% endif %}
+      </div>
+    </section>
+    {% endif %}
+
     <section class="sv-card">
       <header class="sv-card-head"><h2><span class="sv-head-ico"><i class="fas fa-list-check"></i></span>Your Project Tasks</h2><a href="{% url 'staff:work_list' %}">View All</a></header>
       {% for t in board_tasks %}

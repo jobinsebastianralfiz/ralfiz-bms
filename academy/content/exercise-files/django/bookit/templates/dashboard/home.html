@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block heading %}Overview{% endblock %}
+{% block content %}
+<div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+  <div class="bg-white rounded-xl p-5 shadow-sm"><p class="text-sm text-slate-500">Today's bookings</p><p class="text-3xl font-semibold">{{ kpis.today }}</p></div>
+  <div class="bg-white rounded-xl p-5 shadow-sm"><p class="text-sm text-slate-500">Pending</p><p class="text-3xl font-semibold">{{ kpis.pending }}</p></div>
+  <div class="bg-white rounded-xl p-5 shadow-sm"><p class="text-sm text-slate-500">Revenue this month</p><p class="text-3xl font-semibold">₹{{ kpis.month_revenue|floatformat:0 }}</p></div>
+  <div class="bg-white rounded-xl p-5 shadow-sm"><p class="text-sm text-slate-500">Completed this month</p><p class="text-3xl font-semibold">{{ kpis.month_completed }}</p></div>
+</div>
+
+<section class="bg-white rounded-xl shadow-sm p-5">
+  <h2 class="font-semibold mb-4">Upcoming</h2>
+  <table class="w-full text-sm">
+    <thead class="text-left text-slate-500"><tr><th class="py-2">When</th><th>Customer</th><th>Service</th><th>Staff</th></tr></thead>
+    <tbody>
+    {% for b in upcoming %}
+      <tr class="border-t"><td class="py-2">{{ b.start_at|date:"d M, H:i" }}</td><td>{{ b.customer }}</td><td>{{ b.service }}</td><td>{{ b.staff|default:"—" }}</td></tr>
+    {% empty %}
+      <tr><td colspan="4" class="py-6 text-center text-slate-400">No upcoming bookings</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</section>
+{% endblock %}

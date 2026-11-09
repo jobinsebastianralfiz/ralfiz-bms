@@ -1,0 +1,10 @@
+invoice_no,date,product,qty,unit_price,payment_mode
+INV-1001,2026-11-02,Titan Analog Watch,2,2450.00,UPI
+INV-1002,2026-11-02,Leather Strap,5,350.00,cash
+INV-1003,2026-11-02,Titan Analog Watch,1,2450.00,Card
+INV-1003,2026-11-02,Leather Strap,1,350.00,Card
+INV-1004,2026-11-02,Smart Band,,1999.00,UPI
+INV-1005,2026-11-03,Smart Band,3,abc,UPI
+INV-1006,2026-11-03,Smart Band,2,1999.00,upi
+INV-1007,2026-11-03,Wall Clock,-1,899.00,Cash
+INV-1008,2026-11-03,Wall Clock,1,899.00,Cash
