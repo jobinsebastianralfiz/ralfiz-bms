@@ -1,0 +1,211 @@
+{
+  "name": "Coffee Shop POS UAT",
+  "product": "Coffee Shop POS (SaaS)",
+  "site_url": "",
+  "instructions": "What we're testing\nThe café / restaurant POS that restaurants get through GreenCard. Two parts:\n• The SaaS admin (admin.<POS site>): Ralfiz creates restaurants, sets plans, prices, hardware, invoices and payments, and can pause a restaurant.\n• Each restaurant's own POS (<name>.<POS site>): menu, tables and QR ordering, kitchen, billing, cash, reports.\n\nRoles inside a restaurant\n• Super Admin = owner. Everything, including Settings and Outlets.\n• Outlet Manager: menu categories, users, reports for their outlet.\n• Cashier: Billing Counter, Collections, Cash Drawer, Sales Reports.\n• Waiter: Floor Map, orders, waiter app (/waiter/).\n• Kitchen Staff: Kitchen Display.\nGuests need no login: they scan the table QR to order and pay.\n\nOrder\n1. Getting started: everyone.\n2. Setup: Sana, on the SaaS admin and the uat_owner login. Everything else stays locked until it's done.\n3. Then everyone tests their own sections at the same time.\n4. Last day: role checks, reports and the full café day together.\n\nRules for testing together\n• Test only in UAT Café (uatcafe) unless a test names another restaurant. Never touch Corner Café.\n• Order only the starter menu items from setup. Don't edit or delete them.\n• Start anything new you create with your initial: S - , F - , M - .\n• Change Settings only in your own Settings tests, and put them back.\n• Online payments use Razorpay TEST keys: no real money. Test card/UPI details are on the logins sheet.\n\nHow to mark\n• Pass: it did what 'Should happen' says.\n• Fail: it did something wrong. Write what you did and saw, add a screenshot.\n• Blocked: you couldn't test it (error page, missing data, no printer).\n• Chrome on a laptop for staff screens; your phone for QR ordering and paying.",
+  "sections": [
+    {
+      "key": "GEN0",
+      "name": "Getting started",
+      "owner": "Everyone",
+      "tests": [
+        {"code": "GS-01", "title": "Sign in with a password", "tags": [], "steps": ["Open the UAT Café address from the logins sheet → /login/. Sign in with your role login."], "expected": "You land on the Dashboard. The sidebar shows only the items for your role (see the role list at the top of this plan)."},
+        {"code": "GS-02", "title": "Sign in with a PIN", "tags": [], "steps": ["Sign out. Open /pin-login/ and type your 6-digit PIN."], "expected": "Signed in as the same person."},
+        {"code": "GS-03", "title": "Change your password", "tags": [], "steps": ["Header → My Profile → change password. Try 'abc123' first, then a proper one of 8+ characters.", "Sign out and in with the new one."], "expected": "Short password refused. The new one works; the old one doesn't. Tell Sana your new password is set (not the password itself)."},
+        {"code": "GS-04", "title": "Wrong login", "tags": [], "steps": ["Sign in with a wrong password, then a wrong PIN."], "expected": "Clear error, nothing else revealed."}
+      ]
+    },
+    {
+      "key": "SETUP",
+      "name": "Setup",
+      "owner": "Admin",
+      "tests": [
+        {"code": "SU-01", "title": "SaaS admin sign-in", "tags": ["SaaS admin"], "steps": ["Open the SaaS admin address → sign in with the SaaS admin login."], "expected": "Overview page with the top menu: Overview · Restaurants · Plans · Invoices · Payments · Activity, and a Settings chip."},
+        {"code": "SU-02", "title": "Company settings", "tags": ["SaaS admin"], "steps": ["Settings: company name, GSTIN (test, e.g. 32ABCDE1234F1Z5, state Kerala), bank, UPI ID, invoice prefix 'RT', GST 18%, payment terms 7 days, support phone and email. Save."], "expected": "Saved. The Overview no longer shows a 'settings missing' prompt."},
+        {"code": "SU-03", "title": "Create UAT Café", "tags": ["SaaS admin"], "steps": ["Restaurants → New.", "1 Business: name 'UAT Café', address 'uatcafe'.", "2 Plan & billing: Enterprise, No expiry.", "3 Owner login: username 'uat_owner', password from the logins sheet.", "4 Address & GST: a test GSTIN; check state and PAN fill in. Save."], "expected": "UAT Café is listed as Active. Its address opens the POS sign-in page. uat_owner can sign in and lands on the owner dashboard with charts."},
+        {"code": "SU-04", "title": "Online payment test keys", "tags": ["SaaS admin"], "steps": ["Restaurants → UAT Café → Online payments → Set up. Key ID and Key Secret: the Razorpay TEST keys from the logins sheet. UPI ID and name shown in UPI apps. → Test keys → Save."], "expected": "'Test keys' says they work. A webhook URL and webhook secret are shown. In the POS (as owner) Settings → Payment Gateway shows read-only details with a test-mode notice."},
+        {"code": "SU-05", "title": "Business, tax and bill text", "tags": [], "steps": ["As uat_owner → Settings.", "Business: name, phone, address, logo. Tax & Billing: CGST 2.5%, SGST 2.5%, service charge 0. Outlet Settings: receipt header and footer, order prefix, Enable tax calculation ticked, Allow QR Code Ordering ticked, QR order protection 'Table code, else staff confirms'. Save each tab."], "expected": "Each tab says saved and keeps the values after a reload."},
+        {"code": "SU-06", "title": "Starter menu", "tags": [], "steps": ["Cafe Menu → Add Category: 'Coffee', 'Food', 'Desserts'.", "Add Item: Cappuccino ₹120, Cold Coffee ₹150 (Coffee); Veg Sandwich ₹140, Chicken Burger ₹180 (Food); Brownie ₹90 (Desserts).", "Cappuccino → Variants & Add-ons: variants Regular/Large (+₹30); add-on group 'Extras' (Optional, multi-select): Extra shot ₹30, Oat milk ₹40."], "expected": "All 5 items show as available with the right prices. Cappuccino shows its variants and add-ons when ordering."},
+        {"code": "SU-07", "title": "Tables and floor", "tags": [], "steps": ["Floor Map → Add Floor 'Ground'. Add Table: T1, T2, T3, T4 (4 seats each) on Ground."], "expected": "4 tables shown as Vacant, each with a QR code."},
+        {"code": "SU-08", "title": "Kitchen stations", "tags": [], "steps": ["Kitchen Stations → Add Station 'Barista' (no printer IP) and 'Kitchen' (no printer IP). Make Kitchen the default.", "Category routing: Coffee → Barista; Food and Desserts → Kitchen. Save routing."], "expected": "Saved. Both stations show as display-only."},
+        {"code": "SU-09", "title": "Staff logins", "tags": [], "steps": ["Users → Add User four times: uat_manager (Outlet Manager), uat_cashier (Cashier), uat_waiter (Waiter), uat_chef (Kitchen Staff). Passwords and PINs from the logins sheet.", "Try giving uat_chef the same PIN as uat_waiter."], "expected": "All four created and active. Duplicate PIN refused ('This PIN is already in use…')."},
+        {"code": "SU-10", "title": "Opening cash", "tags": [], "steps": ["As uat_cashier → Cash Drawer → Open Drawer with ₹2,000."], "expected": "Drawer is open with ₹2,000 expected balance."}
+      ]
+    },
+    {
+      "key": "MENU",
+      "name": "Menu & tables",
+      "owner": "Intern 1",
+      "after": "SETUP",
+      "tests": [
+        {"code": "MNU-01", "title": "Add, edit and hide an item", "tags": ["Owner"], "steps": ["As uat_owner → Cafe Menu → Add Item 'S - Lemon Tea' ₹60 in Coffee. Edit to ₹70. Mark Unavailable."], "expected": "Shows ₹70. When unavailable it can't be ordered from the POS or the guest QR menu. Mark Available again."},
+        {"code": "MNU-02", "title": "Required add-on group", "tags": ["Owner"], "steps": ["Add-Ons → Add Group 'S - Milk', Required, single choice: Dairy ₹0, Oat ₹40. Attach to 'S - Lemon Tea'.", "Order 'S - Lemon Tea' from the POS without picking a milk."], "expected": "The order won't add the item until a milk is chosen. Oat adds ₹40."},
+        {"code": "MNU-03", "title": "Manager's menu rights", "tags": ["Manager"], "steps": ["As uat_manager → Cafe Menu. Add a category 'S - Specials'. Then try Add Item, Edit an item, and Mark Unavailable."], "expected": "Manager can add and edit categories. Item add/edit/availability are refused with a message (owner only)."},
+        {"code": "TBL-01", "title": "Add, edit and delete a table", "tags": ["Owner"], "steps": ["Floor Map → Add Table 'S - T9'. Edit seats to 6. Delete it."], "expected": "Each step works; the table disappears after delete."},
+        {"code": "TBL-02", "title": "QR cards", "tags": ["Owner"], "steps": ["Tables → Print QR cards. Pick tent layout, Headline 'Scan to order', Wi-Fi name. Print / Save as PDF. Then sticker layout."], "expected": "The PDF has one card per table, with the café name, logo, table number and a QR that opens that table's order page on a phone."},
+        {"code": "TBL-03", "title": "Regenerate a QR", "tags": ["Owner"], "steps": ["Table T4 → scan its QR on your phone (keep the page). Back on the laptop: Regenerate QR. Scan the old printed/saved QR again."], "expected": "The old QR no longer works (not found). The new QR works."},
+        {"code": "TBL-04", "title": "Merge tables", "tags": ["Waiter"], "steps": ["As uat_waiter → Floor Map → Merge tables T3 and T4. Take an order on the merged table. After paying, unmerge."], "expected": "One order/bill covers both tables; both show occupied; both are free after payment."}
+      ]
+    },
+    {
+      "key": "ORD",
+      "name": "Staff orders & kitchen",
+      "owner": "Intern 2",
+      "after": "SETUP",
+      "tests": [
+        {"code": "ORD-01", "title": "Waiter takes an order", "tags": ["Waiter"], "steps": ["As uat_waiter → Floor Map → T1 → take order: 2 Cappuccino (one Large with Extra shot), 1 Veg Sandwich → Send 3 to Kitchen."], "expected": "Order is created for T1; table shows Ordering/Preparing. The Cappuccinos go to the Barista station and the sandwich to Kitchen."},
+        {"code": "ORD-02", "title": "Kitchen display flow", "tags": ["Kitchen"], "steps": ["As uat_chef → Kitchen Display. Station filter Kitchen. Start Preparing on the sandwich, then Bump (Ready).", "Station filter Barista: do the same for the coffees."], "expected": "Each ticket moves Pending → Preparing → Ready to Serve without reloading. 'Waiting on other stations' shows until both stations are done. The waiter gets a ready notification."},
+        {"code": "ORD-03", "title": "Serve", "tags": ["Waiter"], "steps": ["As uat_waiter → the T1 order → Mark as Served."], "expected": "Order is Served; the floor map shows T1 as Ready to Serve/served state, and 'Process Payment' becomes available to the cashier."},
+        {"code": "ORD-04", "title": "Second round on the same table", "tags": ["Waiter"], "steps": ["Add 1 Brownie to the T1 order → Send 1 to Kitchen."], "expected": "Only the brownie goes to the kitchen. Earlier items stay served. The bill now includes the brownie."},
+        {"code": "ORD-05", "title": "Priority and recall", "tags": ["Kitchen"], "steps": ["Make a new order on T2. In the Kitchen Display set it to Rush, Bump it, then Recall."], "expected": "Rush orders stand out and sort first. Recall brings it back from Ready."},
+        {"code": "ORD-06", "title": "Void an item", "tags": ["Waiter", "Cashier"], "steps": ["On the T2 order, as uat_waiter try to void an item already sent to the kitchen. Then as uat_cashier void it."], "expected": "The waiter can't void a sent item; the cashier can. The kitchen gets a CANCELLED ticket. The bill drops by that item."},
+        {"code": "ORD-07", "title": "Add to bill only and parcel leftovers", "tags": ["Waiter"], "steps": ["On T2 add a Brownie with 'Add to bill only'. Then 'Parcel leftovers' for the sandwich."], "expected": "The 'bill only' brownie is billed but no kitchen ticket. Parcel makes a PARCEL ticket and adds no charge."},
+        {"code": "ORD-08", "title": "Cancel an unpaid order", "tags": ["Cashier"], "steps": ["Make an order on T3, don't pay. Cancel Order. Then try to cancel an order that has a part payment (after BIL-03)."], "expected": "Unpaid order cancels and frees T3. The part-paid one is refused: 'Cannot cancel a paid order. Process refund first.'"},
+        {"code": "ORD-09", "title": "Waiter app", "tags": ["Waiter", "Phone"], "steps": ["On your phone open <UAT Café>/waiter/ and sign in as uat_waiter. Tables → T4 → take an order → Send to Kitchen. Orders → open it."], "expected": "The app works on the phone; the order appears in the Kitchen Display and on the laptop."},
+        {"code": "ORD-10", "title": "Waiter app offline", "tags": ["Waiter", "Phone"], "steps": ["In the waiter app turn on aeroplane mode, take an order, then turn the network back on."], "expected": "It says 'Offline Mode - Orders will sync when back online' and the order appears once back online, only once (no duplicate)."}
+      ]
+    },
+    {
+      "key": "QR",
+      "name": "Guest QR ordering",
+      "owner": "Intern 2",
+      "after": "SETUP",
+      "tests": [
+        {"code": "QR-01", "title": "Guest orders from the table", "tags": ["Guest", "Phone"], "steps": ["Scan T2's QR on your phone (signed out). Order now → 'One bill for the table'. Add a Cold Coffee → submit."], "expected": "Asked for the 4-digit table code (protection is 'Table code, else staff confirms'). Waiting screen until it's entered."},
+        {"code": "QR-02", "title": "Table code", "tags": ["Guest", "Waiter"], "steps": ["Staff: Tables → T2 → note the Table code. Guest: type a wrong code twice, then the right one."], "expected": "Wrong code refused. Right code sends the order: it appears in the Kitchen Display and on the order list for T2."},
+        {"code": "QR-03", "title": "Staff confirms the guest", "tags": ["Guest", "Waiter"], "steps": ["Use a second phone (or incognito) on T2, order a Brownie and choose staff confirmation instead of the code.", "On the staff dashboard the pop-up 'New QR order · Table T2' appears → Guest is here."], "expected": "Pop-up shows; after 'Guest is here' the order goes to the kitchen. With 'Not at table' it is not sent."},
+        {"code": "QR-04", "title": "Call waiter", "tags": ["Guest", "Waiter"], "steps": ["Guest taps Call waiter twice quickly."], "expected": "Staff see 'Table T2 is calling a waiter' with 'On my way'. The second tap within 90 seconds is held back with a message."},
+        {"code": "QR-05", "title": "Separate seat bills", "tags": ["Guest"], "steps": ["On T3 from two phones: 'Sharing the table with others? Get a separate bill' → each picks a different seat and orders."], "expected": "Each guest sees only their own items and bill. Staff see one table with items by seat; Split by seat is possible at payment."},
+        {"code": "QR-06", "title": "Order limits", "tags": ["Guest"], "steps": ["Try 21 of one item in one line; then over 60 items in one round."], "expected": "Both are refused with a clear message."},
+        {"code": "QR-07", "title": "Track the order", "tags": ["Guest"], "steps": ["Guest taps Track while the kitchen moves the order to Preparing and Ready."], "expected": "The status page updates to match the kitchen."},
+        {"code": "QR-08", "title": "QR ordering off", "tags": ["Owner", "Guest"], "steps": ["Owner → Settings → Outlet Settings: untick Allow QR Code Ordering. Guest scans a table QR. Tick it again."], "expected": "Guest is told ordering isn't available; can still view the menu if offered. Works again after re-enabling."},
+        {"code": "QR-09", "title": "Table code changes after freeing", "tags": ["Waiter"], "steps": ["Note T2's code. Pay and free T2. Look at the code again."], "expected": "A new code is shown. The old one no longer works for a new guest."}
+      ]
+    },
+    {
+      "key": "BIL",
+      "name": "Billing & payments",
+      "owner": "Intern 3",
+      "after": "SETUP",
+      "tests": [
+        {"code": "BIL-01", "title": "Print the bill for guests", "tags": ["Waiter"], "steps": ["The T1 order (from ORD-04) → Print bill for guests."], "expected": "The print page shows café name/logo, items with variants and add-ons, CGST + SGST, total, receipt header/footer, and a pay QR. Prices and tax add up."},
+        {"code": "BIL-02", "title": "Cash at the Billing Counter", "tags": ["Cashier"], "steps": ["As uat_cashier → Billing Counter → Open bills → T1 → Cash. Amount received ₹1,000 → Confirm Cash."], "expected": "Change is right. 'Bill closed and table freed'. T1 is Vacant. Order is Completed."},
+        {"code": "BIL-03", "title": "Part payment", "tags": ["Cashier"], "steps": ["Order on T2 for about ₹400. Billing Counter: pay ₹200 by Card. Then the rest by Cash."], "expected": "After ₹200: 'Part payment: the rest stays on this bill', with ₹200 still due. After the rest, the bill closes."},
+        {"code": "BIL-04", "title": "UPI at the counter (test)", "tags": ["Cashier", "Phone"], "steps": ["New order → Process Payment → UPI. Scan the QR with your phone and pay using Razorpay test details.", "Do one more and use 'Manually Confirm Payment' instead."], "expected": "After the test payment the screen moves on by itself ('Waiting for payment…' ends). Manual confirm also closes the bill."},
+        {"code": "BIL-05", "title": "Guest pays online with a tip", "tags": ["Guest", "Phone"], "steps": ["Scan the pay QR on a printed bill (or open the guest's Pay button). Pick tip 10% → pay with Razorpay test card."], "expected": "'Payment successful', Download receipt works. The bill is closed in the Billing Counter; the tip shows under Collections → tips for the waiter who served."},
+        {"code": "BIL-06", "title": "Split by seat", "tags": ["Cashier"], "steps": ["Take the T3 seat-bill order from QR-05 → Process Payment → Split → Pay separately by seat number."], "expected": "Each seat's amount is right; paying both closes the order."},
+        {"code": "BIL-07", "title": "Customer display", "tags": ["Cashier"], "steps": ["Billing Counter → Open (customer display) in a second window. Pick a bill."], "expected": "The second window shows the bill and the pay QR for the guest."},
+        {"code": "BIL-08", "title": "Pay before the food is ready", "tags": ["Cashier"], "steps": ["New order still Preparing → take full payment."], "expected": "Payment is taken, the table is freed, and the kitchen can still finish the order. Note whether this is what the café wants."},
+        {"code": "BIL-09", "title": "Tax off at the outlet", "tags": ["Owner"], "steps": ["Owner → Settings → Outlet Settings → untick Enable tax calculation. Make an order and print the bill. Tick it again."], "expected": "No tax on the bill. (Known risk: the global rates may still be used — mark Fail if tax appears.)"},
+        {"code": "BIL-10", "title": "Discount on a café bill", "tags": ["Cashier"], "steps": ["Try to give 10% off on a café order from order detail or the Billing Counter."], "expected": "Known gap: there's no discount button for café orders. Mark Blocked with 'no discount option' so the client can decide if it's needed."}
+      ]
+    },
+    {
+      "key": "CASH",
+      "name": "Cash drawer, shifts & expenses",
+      "owner": "Intern 3",
+      "after": "SETUP",
+      "tests": [
+        {"code": "CSH-01", "title": "Start a shift", "tags": ["Cashier"], "steps": ["As uat_cashier → Start shift with opening balance ₹2,000."], "expected": "Shift started. (If the drawer were closed it would say 'Cash Drawer Not Open'.)"},
+        {"code": "CSH-02", "title": "Cash in and out", "tags": ["Cashier"], "steps": ["Cash Drawer → Cash In ₹500 'change from bank'; Cash Out ₹200 'milk'."], "expected": "Both listed in History; expected balance = opening + cash sales + 500 − 200."},
+        {"code": "CSH-03", "title": "End shift and close drawer", "tags": ["Cashier"], "steps": ["Do this on the last day. End shift: type an actual cash count ₹50 less than expected. Close Drawer."], "expected": "Variance shows −₹50. Shift History lists the shift. Sales Reports → My Recent Shifts shows it."},
+        {"code": "CSH-04", "title": "Expenses", "tags": ["Owner"], "steps": ["As uat_owner → Expenses → Manage Categories: add 'S - Supplies'. Add Expense ₹350 in it with a note. View All Expenses."], "expected": "The expense is listed with the right date, category and amount."}
+      ]
+    },
+    {
+      "key": "INV",
+      "name": "Inventory & retail",
+      "owner": "Intern 1",
+      "after": "SETUP",
+      "tests": [
+        {"code": "INV-01", "title": "Stock items", "tags": ["Owner"], "steps": ["Inventory → Categories: 'S - Dairy'. Items: 'S - Milk' unit litre, stock 20, low-stock alert 5."], "expected": "Item listed with 20 litres."},
+        {"code": "INV-02", "title": "Purchase order", "tags": ["Owner"], "steps": ["Inventory → Suppliers: add 'S - Milma'. Purchase Orders → create for S - Milma, 10 litres of S - Milk → mark sent → Receive."], "expected": "After receiving, stock is 30 and Stock Movements shows +10."},
+        {"code": "INV-03", "title": "Adjust and alert", "tags": ["Owner"], "steps": ["Adjust S - Milk down to 4 (reason 'spoilt')."], "expected": "Stock 4; an Alert appears for low stock. Resolve it."},
+        {"code": "RTL-01", "title": "Retail sale with QR pay", "tags": ["Cashier"], "steps": ["As uat_cashier → Retail POS. Add a retail product (owner adds 'S - Coffee Powder 250g' ₹220 under Retail → Products first), 10% discount, pay by UPI/QR and scan on your phone."], "expected": "Sale saved with the discount; the QR opens a pay page for this sale; after test payment it shows paid. It appears in Retail Sales and Collections."}
+      ]
+    },
+    {
+      "key": "REP",
+      "name": "Reports & points (do on the last day)",
+      "owner": "Intern 3",
+      "after": "SETUP",
+      "tests": [
+        {"code": "REP-01", "title": "Reports page", "tags": ["Owner"], "steps": ["As uat_owner → Reports. Check Revenue Trend, Orders by Hour, Top Selling Items, Payment Methods, Order Types."], "expected": "Numbers match the orders made during UAT (count Cappuccinos sold by hand and compare)."},
+        {"code": "REP-02", "title": "Collections and PDF", "tags": ["Cashier"], "steps": ["Collections → Day. Then Month. Download PDF."], "expected": "Totals by method (cash, card, UPI, online) match the payments made; tips by staff shown; the PDF matches the screen."},
+        {"code": "REP-03", "title": "Cashier sales report", "tags": ["Cashier"], "steps": ["As uat_cashier → Sales Reports → Today / This Week."], "expected": "Shows only this cashier's sales and shifts."},
+        {"code": "REP-04", "title": "Staff points", "tags": ["Waiter"], "steps": ["As uat_waiter → Points. As owner → Points → Adjust Points +10 for uat_waiter."], "expected": "Points earned from completed orders are shown; the adjustment appears in My History."},
+        {"code": "REP-05", "title": "Send a notification", "tags": ["Owner"], "steps": ["Owner → Send Notification → By Role: Waiter, 'Team meeting at 4'."], "expected": "uat_waiter sees it in the bell; uat_chef doesn't."}
+      ]
+    },
+    {
+      "key": "ROLE",
+      "name": "Role checks",
+      "owner": "Everyone",
+      "after": "SETUP",
+      "tests": [
+        {"code": "ROL-01", "title": "Each role's sidebar", "tags": [], "steps": ["Sign in as each of uat_owner, uat_manager, uat_cashier, uat_waiter, uat_chef and screenshot the sidebar."], "expected": "Owner: everything incl. Settings, Outlets, Expenses. Manager: no Settings/Outlets/Expenses. Cashier: Billing Counter, Collections, Cash Drawer, Sales Reports. Waiter: Orders, Floor Map, Cafe POS. Kitchen: Kitchen Display."},
+        {"code": "ROL-02", "title": "Typing hidden addresses", "tags": [], "steps": ["As uat_waiter type: /kitchen/, /billing/, /settings/, /users/, /reports/, /expenses/.", "As uat_chef type: /billing/, /orders/, /users/."], "expected": "Each is refused or sends you back. (Known risk: some pages like /kitchen/ may open — mark Fail with the address.)"},
+        {"code": "ROL-03", "title": "Waiter can't take payment", "tags": ["Waiter"], "steps": ["As uat_waiter open an order and look for Process Payment / Cancel Order. Also type <order address>/payment/."], "expected": "No payment or cancel option for the waiter, and the address is refused."},
+        {"code": "ROL-04", "title": "Manager can't make admins", "tags": ["Manager"], "steps": ["As uat_manager → Users → Add User with role Super Admin, then Outlet Manager."], "expected": "Refused: 'You cannot create admin users.'"},
+        {"code": "ROL-05", "title": "Deactivated user", "tags": ["Owner"], "steps": ["Owner → Users → Deactivate uat_chef. Chef tries password and PIN login. Activate again."], "expected": "Can't sign in while deactivated; can after."},
+        {"code": "ROL-06", "title": "Restaurants are kept apart", "tags": [], "steps": ["Try uat_owner on the Corner Café address and on the SaaS admin address.", "Open a UAT Café table QR address but change the host to another restaurant."], "expected": "All refused / not found. One restaurant's logins, tables and bills never work on another's address."}
+      ]
+    },
+    {
+      "key": "SAAS",
+      "name": "SaaS admin: plans & billing",
+      "owner": "Admin",
+      "after": "SETUP",
+      "tests": [
+        {"code": "SAS-01", "title": "Plans", "tags": ["SaaS admin"], "steps": ["Plans → open Pro. Look at each section: Name & price, Offer, Modules, Limits, Availability (trial days), Hardware. Don't change Basic/Pro/Enterprise.", "Plans → New: 'S - Mini', ₹499/month, 2 months free yearly, modules QR ordering + Kitchen display, limits 1 outlet / 3 staff / 5 tables, trial days 7. Save."], "expected": "Saved. 'S - Mini' shows in the plan list and on GreenCard's POS plans page with a 7-day trial."},
+        {"code": "SAS-02", "title": "Offer", "tags": ["SaaS admin"], "steps": ["S - Mini → Offer: 20% off, Monthly only, ends next month. Save."], "expected": "The offer price shows on the plan and on GreenCard; yearly price is unchanged."},
+        {"code": "SAS-03", "title": "Hardware catalogue and EMI", "tags": ["SaaS admin"], "steps": ["Plans → Hardware: add 'S - Tablet' ₹12,000 one-time, Split over 12 months. Add it to S - Mini as an Add-on."], "expected": "GreenCard shows it on S - Mini as '+₹1,000/month × 12 (₹12,000 in total)'."},
+        {"code": "SAS-04", "title": "Invoice and payment", "tags": ["SaaS admin"], "steps": ["Restaurants → UAT Café → New invoice: 1 month, price ₹4,999. Save and print (?print=1).", "Record a payment of half the amount by UPI."], "expected": "Number like RT/26-27/0001; CGST+SGST for a Kerala restaurant; amount in words. After the part payment the invoice shows the balance due. Note: the paid-until date jumps to the invoice end even on part payment (check it's acceptable)."},
+        {"code": "SAS-05", "title": "Cancel an invoice", "tags": ["SaaS admin"], "steps": ["Make a second invoice and Cancel it. Try to cancel the part-paid one."], "expected": "The unpaid one cancels (its number is not reused). The part-paid one can't be cancelled."},
+        {"code": "SAS-06", "title": "Hardware given to a restaurant", "tags": ["SaaS admin"], "steps": ["UAT Café → Hardware → Add hardware: S - Tablet ×1, price ₹12,000 over 12 months, a serial number. New invoice with 'Add the hardware instalments due' ticked."], "expected": "The invoice has a hardware line of ₹1,000. The restaurant shows '1 of 12 billed'. Cancelling that invoice makes the instalment due again."},
+        {"code": "SAS-07", "title": "Payments page and overview", "tags": ["SaaS admin"], "steps": ["Payments and Overview."], "expected": "This month's total matches the payments recorded. Overview counts and 'needs attention' match the restaurant list."},
+        {"code": "SAS-08", "title": "Log in as owner", "tags": ["SaaS admin"], "steps": ["UAT Café → Log in as owner ↗."], "expected": "Opens UAT Café signed in as owner, with a 'Support login by <name>' banner. Activity shows 'logged in as owner'."}
+      ]
+    },
+    {
+      "key": "LIFE",
+      "name": "Subscription states & plan limits",
+      "owner": "Admin",
+      "after": "SETUP",
+      "tests": [
+        {"code": "LIF-01", "title": "Create a Basic test restaurant", "tags": ["SaaS admin"], "steps": ["Restaurants → New: 'S - Limit Test', address 's-limit-test', plan Basic, Free trial 14 days, owner 's_limit' with a password."], "expected": "Created. Its owner can sign in."},
+        {"code": "LIF-02", "title": "Table and staff limits", "tags": [], "steps": ["As s_limit: add 15 tables, then a 16th. Add 5 staff (cashier/waiter/kitchen), then a 6th. Add 1 manager, then a 2nd. Try a 2nd outlet."], "expected": "Each extra one is refused with a message naming the limit (e.g. 'Cannot create more tables. Your Basic plan allows maximum 15…'). Note if any message names the wrong plan."},
+        {"code": "LIF-03", "title": "Per-restaurant override", "tags": ["SaaS admin"], "steps": ["SaaS admin → S - Limit Test → Edit → Limits: tables 20. Save. Owner adds the 16th table."], "expected": "Now allowed. The limit shows as custom."},
+        {"code": "LIF-04", "title": "Module not in plan", "tags": [], "steps": ["As s_limit type /waiter/, /inventory/, /retail/, /points/. Scan one of its table QRs on a phone."], "expected": "Staff see '<module> — This isn't part of your Basic plan. Contact us to add it.'; the sidebar has no link. Guests see 'Not available here'."},
+        {"code": "LIF-05", "title": "Expiring soon", "tags": ["SaaS admin"], "steps": ["Edit S - Limit Test: expiry = today + 3 days. Sign in as owner, and as a staff user."], "expected": "Owner sees 'Your Basic plan renews on … (in 3 days)'. Staff don't."},
+        {"code": "LIF-06", "title": "Grace period", "tags": ["SaaS admin"], "steps": ["Set expiry = yesterday (grace 7 days)."], "expected": "Everyone sees the grace banner; the POS still works."},
+        {"code": "LIF-07", "title": "Locked", "tags": ["SaaS admin"], "steps": ["Set expiry = 10 days ago. Try the owner login, a table QR and a pay link."], "expected": "Staff see 'Your subscription has ended… All your data is safe' with support phone/email, even on the login page. Guests see 'Not available right now'."},
+        {"code": "LIF-08", "title": "Payment unlocks", "tags": ["SaaS admin"], "steps": ["Record a payment of 1 month on S - Limit Test."], "expected": "Paid-until moves to one month from today; the POS works again with no banner."},
+        {"code": "LIF-09", "title": "Suspend and reactivate", "tags": ["SaaS admin"], "steps": ["Account → Suspend with reason 'UAT pause'. Owner opens the POS. Reactivate."], "expected": "'Your account is paused' with the reason. Back to normal after Reactivate."},
+        {"code": "LIF-10", "title": "Extend free", "tags": ["SaaS admin"], "steps": ["Extend free by 30 days, then try 120."], "expected": "30 adds 30 days; over 90 is refused."}
+      ]
+    },
+    {
+      "key": "GCL",
+      "name": "GreenCard link (POS side)",
+      "owner": "Admin",
+      "after": "SETUP",
+      "tests": [
+        {"code": "GCL-01", "title": "Restaurant created from GreenCard", "tags": ["SaaS admin"], "steps": ["Do this after GreenCard test GPOS-07. SaaS admin → Restaurants → find Paragon (address f-paragon)."], "expected": "Listed with the plan and paid-until set on GreenCard. Notes say 'Created from GreenCard'. Activity shows actor greencard."},
+        {"code": "GCL-02", "title": "Trial from GreenCard", "tags": ["SaaS admin"], "steps": ["After GPOS-02: find Café Lota."], "expected": "Expiry = start + the plan's trial days. Notes say 'N-day trial started…'."},
+        {"code": "GCL-03", "title": "Owner with no password", "tags": [], "steps": ["Try to sign in to Café Lota's POS on /login/ with username cafelota.owner (or as shown in Owner logins) and any password.", "Open the POS via GreenCard's Open POS → My Profile → set a password. Sign out and sign in with it."], "expected": "No password works at first. After setting one in Profile (no current password asked), normal login works."},
+        {"code": "GCL-04", "title": "Changes stay in step", "tags": ["SaaS admin"], "steps": ["In SaaS admin change Paragon's paid-until date. Reload GreenCard Admin → POS and Paragon's POS page."], "expected": "GreenCard shows the new date. Plan, status and dates always match on both sides."},
+        {"code": "GCL-05", "title": "No sales data leaves the POS", "tags": [], "steps": ["Make 2 orders in Paragon's POS. Look at every GreenCard POS screen (admin and restaurant)."], "expected": "GreenCard shows plan, status, staff/outlet counts and billing only — never orders, sales totals or customers."}
+      ]
+    },
+    {
+      "key": "E2E",
+      "name": "Full café day (do together at the end)",
+      "owner": "Everyone",
+      "after": "SETUP",
+      "tests": [
+        {"code": "E2E-01", "title": "A full day at UAT Café", "tags": [], "steps": ["Sana = owner/cashier, Fathima = waiter, Mithra = kitchen and guests (phone).", "1. Cashier opens the drawer and starts a shift.", "2. Two guests order by QR on T1 and T2; one waiter order on T3 with seat bills.", "3. Kitchen prepares and bumps by station; waiter serves; T1 adds a second round.", "4. T1 pays cash at the counter, T2 pays online with a tip, T3 splits by seat (one UPI, one card).", "5. Cash out ₹100 for supplies; owner adds an expense.", "6. Cashier ends the shift and closes the drawer.", "7. Owner checks Reports and Collections PDF."], "expected": "Every table ends Vacant, every order Completed, and the Collections totals, shift cash and reports agree with each other to the rupee."}
+      ]
+    }
+  ]
+}

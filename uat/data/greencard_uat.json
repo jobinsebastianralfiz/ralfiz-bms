@@ -1,0 +1,218 @@
+{
+  "name": "GreenCard UAT",
+  "product": "GreenCard",
+  "site_url": "https://web-production-06b4d9.up.railway.app",
+  "instructions": "What GreenCard is\nA website and phone app for Kerala restaurants. The public browse restaurants and jobs. Workers get a Green Card (an ID with a QR code and their verified work history). Restaurants hire, manage staff, licences and medical cards, get the POS and order from suppliers. The GreenCard admin approves restaurants and runs checks.\n\nThe three logins\n• Admin: the GreenCard team (web only).\n• Restaurant: the owner of a restaurant.\n• Employee: a worker / job seeker (signs in with a phone code).\nThe public need no login.\n\nOrder\n1. Getting started: everyone, just the logins.\n2. Setup: Sana, on the admin login. Everything else stays locked until it's done.\n3. Then everyone tests their own sections at the same time.\n4. Last day: access checks and the full journey together.\n\nRules for testing together\n• Use only the 3 demo restaurants (Saravana Bhavan, Paragon Restaurant, Café Lota) unless a test says to create one.\n• Start anything new you create with your initial: S - , F - , M - .\n• Phone codes: this is a test server, so no SMS is sent. The code shows on screen as 'Dev code'. Use a new made-up 10-digit phone number each time a test says 'new phone'.\n• Change Settings only in your own Settings tests, and put them back.\n\nHow to mark\n• Pass: it did what 'Should happen' says.\n• Fail: it did something wrong. Write what you did and saw, add a screenshot.\n• Blocked: you couldn't test it (error page, missing data, POS not reachable).\n• Use Chrome on a laptop; your phone for the app and QR scanning.",
+  "sections": [
+    {
+      "key": "GEN0",
+      "name": "Getting started",
+      "owner": "Everyone",
+      "tests": [
+        {"code": "GS-01", "title": "Open the site", "tags": [], "steps": ["Open the GreenCard site in Chrome.", "Look at the home page, then open Restaurants and Jobs from the top menu."], "expected": "The home page loads with no login. Restaurants and Jobs lists show the demo restaurants and their jobs."},
+        {"code": "GS-02", "title": "Sign in as a restaurant", "tags": [], "steps": ["Click Sign in. The page says 'Sign in or create account'.", "Enter your restaurant login from the logins sheet (Email address + Password) → Sign in."], "expected": "You land on the restaurant console (/restaurant) with 'Hi, <restaurant name>!' and the left menu: Dashboard, Jobs, Employees, Medical cards, Profile, Menu, Licenses, POS, Suppliers, Complaints, Notifications."},
+        {"code": "GS-03", "title": "Sign out and sign in with a one-time code", "tags": [], "steps": ["Sign out.", "On the sign-in page click 'Use a one-time code instead', enter the same restaurant's email or phone → Send code.", "Type the code (shown as 'Dev code' on this test server) → Verify & continue."], "expected": "You are signed in to the same restaurant console."},
+        {"code": "GS-04", "title": "Wrong password", "tags": [], "steps": ["Sign out. Sign in with the right email and a wrong password."], "expected": "A clear 'wrong email or password' type message. You stay on the sign-in page; nothing else is revealed."}
+      ]
+    },
+    {
+      "key": "SETUP",
+      "name": "Setup",
+      "owner": "Admin",
+      "tests": [
+        {"code": "SU-01", "title": "Admin sign-in", "tags": ["Admin"], "steps": ["Sign in with the admin login from the logins sheet."], "expected": "You land on /admin with 'Hi, Admin!' and the menu groups Network, Trust & safety, Operations, and Settings at the bottom."},
+        {"code": "SU-02", "title": "Demo restaurants are approved", "tags": ["Admin"], "steps": ["Restaurants → Approved tab."], "expected": "Saravana Bhavan, Paragon Restaurant and Café Lota are listed as Approved."},
+        {"code": "SU-03", "title": "Connect the POS", "tags": ["Admin"], "steps": ["Operations → POS. Scroll to Connection.", "POS admin address: the POS admin address from the logins sheet. Shared secret: from the logins sheet. → Save connection."], "expected": "Saved. The Shared secret box now shows 'Set — leave empty to keep' (the secret is never shown again). The Plans box lists the POS plans (Basic, Pro, Enterprise) with prices."},
+        {"code": "SU-04", "title": "Add two suppliers", "tags": ["Admin"], "steps": ["Operations → Suppliers → Suppliers tab → Add supplier.", "Supplier 1: Business name 'S - Fresh Veg Co', Type Vegetables & fruit, Contact person, Phone, WhatsApp (your own number), Email (your own), Areas 'Kochi', tick 'Show to restaurants'. Save.", "Supplier 2: 'S - Gas Agency', Type Gas, phone only (no email, no WhatsApp), tick 'Show to restaurants'. Save."], "expected": "Both appear in the table with status Live."},
+        {"code": "SU-05", "title": "Supplier needs a contact", "tags": ["Admin"], "steps": ["Add supplier: fill only Business name and Type, leave phone, WhatsApp and email empty. Save."], "expected": "Not saved. A message asks for at least one of phone, WhatsApp or email."},
+        {"code": "SU-06", "title": "Settings are write-only", "tags": ["Admin"], "steps": ["Settings. Look at the Google, SMTP, MSG91 and similar secret fields."], "expected": "Secret fields never show the saved value back (blank or 'set'). Site identity and contact details load. Change nothing."}
+      ]
+    },
+    {
+      "key": "PUB",
+      "name": "Public site & languages",
+      "owner": "Intern 3",
+      "after": "SETUP",
+      "tests": [
+        {"code": "PUB-01", "title": "Browse restaurants", "tags": ["Guest"], "steps": ["Signed out, open Restaurants. Search for 'Paragon'. Open it."], "expected": "Search finds it. The page shows photos, address, cuisines and the menu. No sign-in is asked for."},
+        {"code": "PUB-02", "title": "Browse jobs", "tags": ["Guest"], "steps": ["Open Jobs. Open any job."], "expected": "The job shows title, restaurant, pay/details. Clicking Apply asks you to sign in (it doesn't apply as a guest)."},
+        {"code": "PUB-03", "title": "Malayalam and Hindi", "tags": ["Guest"], "steps": ["Switch the language to Malayalam, then Hindi (or open /ml and /hi).", "Visit home, Restaurants and Jobs in each."], "expected": "Menus and buttons change language. Note any English text left over, or broken layout, as a Fail with a screenshot."},
+        {"code": "PUB-04", "title": "Trust and privacy pages", "tags": ["Guest"], "steps": ["Open the Trust page and the Privacy policy from the footer."], "expected": "Both pages load with real text (no placeholder or 'lorem ipsum')."},
+        {"code": "PUB-05", "title": "Suspended restaurant is hidden", "tags": ["Guest"], "steps": ["Do this after REG-07 (a restaurant has been suspended). Signed out, search Restaurants for it."], "expected": "The suspended restaurant does not appear in the public list, and its old link shows not found."},
+        {"code": "PUB-06", "title": "Phone layout", "tags": ["Guest"], "steps": ["Open the site on your phone's browser. Visit home, Restaurants, a restaurant, Jobs, a job."], "expected": "Everything fits the screen; no sideways scrolling; buttons are easy to tap."}
+      ]
+    },
+    {
+      "key": "REG",
+      "name": "Restaurant sign-up & approval",
+      "owner": "Intern 1",
+      "after": "SETUP",
+      "tests": [
+        {"code": "REG-01", "title": "A restaurant signs up", "tags": [], "steps": ["Signed out, click 'Run a restaurant? / List your restaurant'.", "Verify your phone with a new phone (use the Dev code).", "Tell us about your venue: Restaurant name 'F - Test Kitchen', Email (a new made-up one), Password, Address, Cuisines → submit."], "expected": "You land on the restaurant console. A banner says 'Your restaurant is under review. Upload your FSSAI / trade licence below…'."},
+        {"code": "REG-02", "title": "Upload a licence while pending", "tags": [], "steps": ["On the dashboard Documents panel: Type FSSAI licence, Number '12345678901234', upload a PDF or photo."], "expected": "The document is listed. It is not public."},
+        {"code": "REG-03", "title": "Pending restaurant is not public", "tags": ["Guest"], "steps": ["In another browser (or incognito), signed out, search Restaurants for 'F - Test Kitchen'."], "expected": "Not listed."},
+        {"code": "REG-04", "title": "Admin rejects with a reason", "tags": ["Admin"], "steps": ["Admin → Restaurants → Pending → open 'F - Test Kitchen'.", "Click Reject with an empty reason, then with 'ab', then with 'Licence photo unreadable'."], "expected": "Empty and 2-letter reasons are refused (at least 3 characters). The full reason works; status becomes Rejected. The owner's dashboard now says 'Your registration was rejected.' Note whether the owner got any email or notification (known gap: none is sent)."},
+        {"code": "REG-05", "title": "Admin approves", "tags": ["Admin"], "steps": ["Sign up a second restaurant 'F - Test Cafe' as in REG-01.", "Admin → Restaurants → Pending → open it → Approve."], "expected": "Status Approved. It now appears in the public Restaurants list. The owner's banner is gone. Note whether the owner was told (known gap: no notification)."},
+        {"code": "REG-06", "title": "Admin adds a restaurant", "tags": ["Admin"], "steps": ["Admin → Restaurants → Add a restaurant. Name 'F - Admin Added', an email you can read, tick 'Approve now' and 'Email the owner'. Save.", "Sign in as that owner with a one-time code."], "expected": "The restaurant is Approved straight away. A welcome email arrives. The owner gets in with a one-time code."},
+        {"code": "REG-07", "title": "Suspend and reactivate", "tags": ["Admin"], "steps": ["Admin → open 'F - Test Cafe' → Suspend with reason 'UAT test'.", "Sign in as its owner and look at the dashboard.", "Admin → Reactivate."], "expected": "While suspended: owner sees 'Your restaurant is suspended. Contact support.' and it's gone from the public list. After reactivating it's back."},
+        {"code": "REG-08", "title": "Edit on behalf of a restaurant", "tags": ["Admin"], "steps": ["Admin → open 'F - Test Cafe' → Edit business details (change the phone), Photos (add a cover photo), Documents → Upload on behalf.", "Sign in as the owner and look at Profile."], "expected": "The owner sees the new phone, cover photo and document."}
+      ]
+    },
+    {
+      "key": "RST",
+      "name": "Restaurant profile, menu & licences",
+      "owner": "Intern 1",
+      "after": "SETUP",
+      "tests": [
+        {"code": "RST-01", "title": "Edit profile", "tags": [], "steps": ["Restaurant login (Paragon) → Profile. Change the description and opening hours. Save.", "Open the restaurant's public page signed out."], "expected": "The public page shows the change. Put the old text back afterwards."},
+        {"code": "RST-02", "title": "Add a menu item", "tags": [], "steps": ["Menu → add an item 'F - Masala Tea', price ₹25, in a category. Save.", "Open the public page."], "expected": "The item shows on the public menu with ₹25."},
+        {"code": "RST-03", "title": "Edit and remove a menu item", "tags": [], "steps": ["Change 'F - Masala Tea' to ₹30, then delete it."], "expected": "Public menu shows ₹30, then the item is gone."},
+        {"code": "RST-04", "title": "Licences", "tags": [], "steps": ["Licenses → add a Trade licence with a number and expiry date next month.", "Click to reveal the full number."], "expected": "Saved. The number is masked until revealed. (Revealing is recorded in the admin Audit log, checked in ADM-04.)"},
+        {"code": "RST-05", "title": "Dashboard tiles", "tags": [], "steps": ["Dashboard. Click each tile: Menu, Employees, Open jobs, Medical cards, Complaints, POS, and each quick action (Post a job, Add employee, Look up card, Order supplies)."], "expected": "Each count is right and each goes to the matching page."}
+      ]
+    },
+    {
+      "key": "WRK",
+      "name": "Workers & the Green Card",
+      "owner": "Intern 2",
+      "after": "SETUP",
+      "tests": [
+        {"code": "WRK-01", "title": "Worker signs up with a phone", "tags": ["Employee"], "steps": ["Signed out → Sign in → enter a new phone → Send code → type the Dev code → Verify & continue."], "expected": "A new worker account is made and you land on My profile with a prompt to create your Green Card."},
+        {"code": "WRK-02", "title": "Can't apply before the profile", "tags": ["Employee"], "steps": ["Before creating the profile, open a job and click Apply."], "expected": "Refused with a message to create your Green Card profile first."},
+        {"code": "WRK-03", "title": "Create the Green Card profile", "tags": ["Employee"], "steps": ["Start the profile: name 'M - Test Worker', details, then the selfie (liveness) step with your laptop camera or the phone app."], "expected": "The selfie can't be skipped. After it, My profile shows a unique Green Card ID and a QR code. Card status is inactive/unverified (correct until hired and verified)."},
+        {"code": "WRK-04", "title": "Edit profile", "tags": ["Employee"], "steps": ["My profile → edit: add skills/experience, change photo. Save."], "expected": "Saved and shown on the profile."},
+        {"code": "WRK-05", "title": "Health card self-declaration", "tags": ["Employee"], "steps": ["Medical card → 'I already have a card' → upload a photo of a (sample) card with an expiry date."], "expected": "The card shows as 'Uploaded — valid' (or waits for a check) with its expiry."},
+        {"code": "WRK-06", "title": "Privacy centre", "tags": ["Employee"], "steps": ["Privacy → look at consents, request a data export. Do NOT delete the account."], "expected": "Consents are listed. The export is offered/downloaded."},
+        {"code": "WRK-07", "title": "Identity after hiring", "tags": ["Employee"], "steps": ["Do this after HIR-03 (you have been hired). Restaurant (Saravana) → Employees → your worker → attest in-person ID.", "Admin → Identity checks: approve it if it's waiting there."], "expected": "Before hiring, identity checks are refused. After attesting (and admin approval if needed), the worker's journey shows ID checked → Identity verified and the card becomes active."}
+      ]
+    },
+    {
+      "key": "HIR",
+      "name": "Jobs & hiring",
+      "owner": "Intern 2",
+      "after": "SETUP",
+      "tests": [
+        {"code": "HIR-01", "title": "Post a job", "tags": [], "steps": ["Restaurant (Saravana) → Jobs → post 'M - Waiter', salary, details. Leave 'requires health card' off. Publish."], "expected": "The job shows in the restaurant's list and on the public Jobs page."},
+        {"code": "HIR-02", "title": "Worker applies", "tags": ["Employee"], "steps": ["As the worker from WRK-03 → Jobs → 'M - Waiter' → Apply."], "expected": "Applied. It shows under Applications as Applied."},
+        {"code": "HIR-03", "title": "Review and hire", "tags": [], "steps": ["Restaurant → Jobs → 'M - Waiter' → applicants: move to Reviewed, then Shortlisted, then Hire. Type the code the worker gets (Dev code)."], "expected": "Worker's Applications shows each status change and gets a notification ('Your job application is now: …'). After Hire, the worker is in Employees and their Green Card shows Saravana Bhavan in work history."},
+        {"code": "HIR-04", "title": "Health-card gated job", "tags": [], "steps": ["Post 'M - Cook' with 'requires health card' on.", "Apply with a worker who has no valid health card, then with one who has (WRK-05)."], "expected": "Without a valid card: refused with a clear message. With one: applied."},
+        {"code": "HIR-05", "title": "Add a walk-in employee", "tags": [], "steps": ["Restaurant → Employees → add a walk-in employee with a new phone."], "expected": "The employee is listed. They can sign in with that phone and see the restaurant in their history."},
+        {"code": "HIR-06", "title": "Hire by Green Card ID", "tags": [], "steps": ["Restaurant (Café Lota) → Employees → hire by Green Card ID: type the worker's ID from WRK-03.", "Check the preview, confirm. The worker approves (in-app or with the Dev code)."], "expected": "The preview shows the right person. After approval, the worker is at Café Lota and the Saravana job is closed automatically in their history."},
+        {"code": "HIR-07", "title": "Look up a Green Card", "tags": [], "steps": ["Restaurant (Paragon) → Look up card → enter the worker's Green Card ID."], "expected": "Shows the verified history allowed for a non-employer. The worker gets a notification that Paragon looked them up."},
+        {"code": "HIR-08", "title": "Bulk import staff", "tags": [], "steps": ["Restaurant → Employees → Bulk import staff → Download template (.xlsx). Fill 3 staff with new phones. Upload, tick the consent, confirm."], "expected": "3 employees added. Admin → Bulk imports lists the batch. Wrong rows (bad phone) are reported, not silently skipped."},
+        {"code": "HIR-09", "title": "Close a job and an employment", "tags": [], "steps": ["Close the 'M - Waiter' job. Then Employees → open the walk-in from HIR-05 → close tenure."], "expected": "The job disappears from the public list. The employee's history shows an end date; past records can't be edited or deleted."}
+      ]
+    },
+    {
+      "key": "MED",
+      "name": "Medical cards",
+      "owner": "Intern 3",
+      "after": "SETUP",
+      "tests": [
+        {"code": "MED-01", "title": "Worker requests a medical card", "tags": ["Employee"], "steps": ["As a worker → Medical card → Request a medical card."], "expected": "Status Requested."},
+        {"code": "MED-02", "title": "Admin approves and assigns a lab", "tags": ["Admin"], "steps": ["Admin → Labs: check at least one lab exists (add 'M - Test Lab' with your email if none).", "Medical cards → the request → Approve → pick the lab → record the fee as Cash."], "expected": "Status moves Approved → At the lab. The lab gets an email. The worker sees the change."},
+        {"code": "MED-03", "title": "Issue the card", "tags": ["Admin"], "steps": ["Medical cards → the request → Issue (enter card number and expiry)."], "expected": "Status Issued. The worker's profile shows a valid health card. The restaurant employing them sees it on the employee page."},
+        {"code": "MED-04", "title": "Reject and cancel", "tags": ["Admin"], "steps": ["Make two more requests. Reject one, cancel the other."], "expected": "Rejected and Cancelled show for the worker with no card issued."},
+        {"code": "MED-05", "title": "Restaurant medical cards page", "tags": [], "steps": ["Restaurant → Medical cards."], "expected": "Lists its employees' card status and expiry; expiring-soon ones stand out."}
+      ]
+    },
+    {
+      "key": "CMP",
+      "name": "Complaints & notifications",
+      "owner": "Intern 3",
+      "after": "SETUP",
+      "tests": [
+        {"code": "CMP-01", "title": "Restaurant files a complaint", "tags": [], "steps": ["Restaurant → Complaints → new complaint about one of its employees, with a short description and a photo."], "expected": "Complaint is Open. The worker is notified."},
+        {"code": "CMP-02", "title": "Worker responds", "tags": ["Employee"], "steps": ["As that worker → Complaints → open it → add a response with evidence."], "expected": "Status Under response. The response can't be edited or deleted afterwards."},
+        {"code": "CMP-03", "title": "Admin decides", "tags": ["Admin"], "steps": ["Admin → Complaints → open it → decide (Verified / Disputed / Removed)."], "expected": "Both sides see the decision. It shows in the Audit log."},
+        {"code": "CMP-04", "title": "Dispute a work record", "tags": ["Employee"], "steps": ["Worker → My profile → a work record → dispute it.", "Admin → Complaints → record disputes → review → uphold or reject."], "expected": "Status moves open → reviewing → upheld/rejected. The original record is not deleted."},
+        {"code": "CMP-05", "title": "Notification centre", "tags": [], "steps": ["As worker and as restaurant, open the bell / Notifications. Click a notification."], "expected": "The events from the tests above are there, newest first, and clicking one opens the right page and marks it read."}
+      ]
+    },
+    {
+      "key": "POS",
+      "name": "POS on GreenCard",
+      "owner": "Intern 1",
+      "after": "SETUP",
+      "tests": [
+        {"code": "GPOS-01", "title": "Restaurant sees the plans", "tags": [], "steps": ["Restaurant (Café Lota) → Dashboard → 'Get the POS' card → See plans."], "expected": "/restaurant/pos shows 'Choose a POS plan' with each plan's price per month/year + GST, limits, modules and hardware add-ons. Ticking hardware updates the monthly-bill preview."},
+        {"code": "GPOS-02", "title": "Start a free trial", "tags": [], "steps": ["On a plan card → 'Start 14-day free trial' → Yes, start."], "expected": "The page turns into the plan view: Your plan, status, Paid until (today + 14 days), days left, and an 'Open POS' button."},
+        {"code": "GPOS-03", "title": "Open POS (single sign-on)", "tags": [], "steps": ["Click Open POS."], "expected": "A new tab opens the restaurant's POS, already signed in as the owner, with no password asked."},
+        {"code": "GPOS-04", "title": "The Open POS link is one-time", "tags": [], "steps": ["In the POS tab, copy the address it first opened (…/greencard-login/…) before it redirects, or from history.", "Sign out of the POS and paste that address again. Also try a fresh link after waiting over 60 seconds."], "expected": "Reused or expired link shows not found. A fresh Open POS click works."},
+        {"code": "GPOS-05", "title": "Enquire about a plan", "tags": [], "steps": ["Restaurant (Paragon) → POS → on a plan, tick a hardware add-on → Enquire. Then use 'Ask a question' to send a second one."], "expected": "First enquiry shows under 'Your enquiries' as Waiting, with the hardware. The second is refused: 'You already have an enquiry waiting…'."},
+        {"code": "GPOS-06", "title": "Admin handles the enquiry", "tags": ["Admin"], "steps": ["Admin → POS → 'POS enquiries (1 new)' → Mark contacted, then Close, then Reopen."], "expected": "Tabs New / Contacted / Closed move it correctly. Paragon sees its status change."},
+        {"code": "GPOS-07", "title": "Admin gives the POS", "tags": ["Admin"], "steps": ["Admin → POS → 'Give a restaurant the POS' → search Paragon → Open.", "Choose a plan (Pro), Billing cycle Monthly, POS address 'f-paragon' → Give the POS."], "expected": "Paragon now shows under 'Restaurants with the POS' as Active with a Paid until date. Its open enquiry is closed automatically. Paragon's POS page shows the plan and Open POS."},
+        {"code": "GPOS-08", "title": "POS address rules", "tags": ["Admin"], "steps": ["Give the POS to the restaurant from REG-06 and try addresses 'ab', '1cafe', 'Cafe!' and 'admin', then a good one."], "expected": "The bad ones are refused (3–32 lowercase letters, digits or hyphens, starting with a letter; 'admin' is reserved). The good one works."},
+        {"code": "GPOS-09", "title": "Change plan and renew", "tags": ["Admin"], "steps": ["Admin → POS → Paragon → Manage. Switch the plan to Basic. Save changes.", "Renew by one month. Save changes."], "expected": "Plan shows Basic on both GreenCard and the POS. Paid until moves forward by one month from the old date."},
+        {"code": "GPOS-10", "title": "Pause and reactivate the POS", "tags": ["Admin"], "steps": ["Pause the POS with reason 'UAT pause' → Pause POS. Paragon owner clicks Open POS.", "Try Pause with an empty reason on another restaurant.", "Reactivate POS."], "expected": "Paused: the POS shows a paused page with the reason. Empty reason should be refused (known gap: it is accepted — mark Fail if so). After Reactivate, Open POS works again."},
+        {"code": "GPOS-11", "title": "Owner's bill and invoices", "tags": [], "steps": ["Paragon → POS. Look at 'Your monthly bill', 'Hardware', 'Invoices' and 'How to pay'."], "expected": "Monthly bill matches the plan (+ any hardware), GST shown. UPI ID has a Copy button. No sales or order data from the POS appears anywhere on GreenCard."},
+        {"code": "GPOS-12", "title": "Not approved = no POS", "tags": [], "steps": ["Sign in as the rejected 'F - Test Kitchen' (REG-04) → POS. Try Start free trial and Enquire.", "Suspend Café Lota (admin), then as Café Lota click Open POS. Reactivate afterwards."], "expected": "Start trial and Open POS are refused with a clear reason. Note if Enquire still works for a not-approved restaurant (known gap)."},
+        {"code": "GPOS-13", "title": "Wrong shared secret", "tags": ["Admin"], "steps": ["Admin → POS → Connection: save a wrong 40-character secret. Reload POS.", "Put the right secret back and save."], "expected": "With the wrong secret the panels say to check the shared secret, without crashing. With the right one the plans load again."}
+      ]
+    },
+    {
+      "key": "SUP",
+      "name": "Suppliers",
+      "owner": "Intern 1",
+      "after": "SETUP",
+      "tests": [
+        {"code": "SUP-01", "title": "Restaurant finds a supplier", "tags": [], "steps": ["Restaurant (Saravana) → Suppliers. Use the search and the category chips."], "expected": "Both live suppliers from SU-04 show with call / WhatsApp / email icons. Filtering by Gas shows only the gas agency."},
+        {"code": "SUP-02", "title": "Send an order request", "tags": [], "steps": ["'S - Fresh Veg Co' → Send request. Items: Onion 10 kg, Tomato 5 kg (Add item). Deliver on: tomorrow. Note. → Send request.", "Try a past date first."], "expected": "Past date refused. Request saved under 'Your requests' as Sent; an email arrives at the supplier's email; a WhatsApp tab opens with the order text ready."},
+        {"code": "SUP-03", "title": "Supplier with only a phone", "tags": [], "steps": ["Send a request to 'S - Gas Agency'."], "expected": "Request saved. Check the message shown: it should not promise the supplier 'will see it' when there's no email or WhatsApp (known gap). Note what it says."},
+        {"code": "SUP-04", "title": "Request statuses", "tags": [], "steps": ["On the veg request: Supplier confirmed → Received. On another request: Cancel."], "expected": "Statuses Sent → Confirmed → Delivered; Cancel only offered while Sent. Admin's Requests tab shows the same."},
+        {"code": "SUP-05", "title": "Admin manages requests and suppliers", "tags": ["Admin"], "steps": ["Admin → Suppliers → Requests tab: filter New / Confirmed / Delivered / Cancelled.", "Suppliers tab: Turn off 'S - Gas Agency'. Try to delete 'S - Fresh Veg Co'."], "expected": "Filters work. The turned-off supplier disappears for restaurants. Delete is refused because it has requests."},
+        {"code": "SUP-06", "title": "Not approved can't order", "tags": [], "steps": ["As the rejected 'F - Test Kitchen' → Suppliers → Send request."], "expected": "Sending is refused with a clear reason."}
+      ]
+    },
+    {
+      "key": "ADM",
+      "name": "Admin console",
+      "owner": "Admin",
+      "after": "SETUP",
+      "tests": [
+        {"code": "ADM-01", "title": "Dashboard and analytics", "tags": ["Admin"], "steps": ["Open Dashboard and Analytics."], "expected": "Counts (restaurants by status, workers, jobs) match what you see in the lists."},
+        {"code": "ADM-02", "title": "Users: suspend and force sign-out", "tags": ["Admin"], "steps": ["Users → find the worker from WRK-01 → force logout, then suspend. Worker tries to sign in. Then activate."], "expected": "Worker is signed out; while suspended they can't sign in; after activate they can."},
+        {"code": "ADM-03", "title": "Employee registry is masked", "tags": ["Admin"], "steps": ["Employees → open a worker."], "expected": "Phone and ID numbers are masked."},
+        {"code": "ADM-04", "title": "Audit log", "tags": ["Admin"], "steps": ["Audit log. Find the approve/reject/suspend actions from REG and the licence reveal from RST-04. Export CSV."], "expected": "Each action is listed with who and when. The CSV downloads and opens in Excel."},
+        {"code": "ADM-05", "title": "Face duplicates and identity queue", "tags": ["Admin"], "steps": ["Open Face duplicates and Identity checks."], "expected": "Pages load; any items can be decided (Different people / Same person — duplicate; approve/reject). On this test server face matching is simulated, so an empty list is fine."},
+        {"code": "ADM-06", "title": "Promotions", "tags": ["Admin"], "steps": ["Promotions → feature Café Lota on the home page. Check the home page signed out. Remove it."], "expected": "Café Lota appears featured, then goes back to normal."},
+        {"code": "ADM-07", "title": "Designations", "tags": ["Admin"], "steps": ["Designations → add 'S - Barista'. Use it when posting a job (as a restaurant). Then remove it if allowed."], "expected": "The new designation is offered in the job form."}
+      ]
+    },
+    {
+      "key": "MOB",
+      "name": "Phone app",
+      "owner": "Intern 2",
+      "after": "SETUP",
+      "tests": [
+        {"code": "MOB-01", "title": "Install and browse", "tags": ["Phone"], "steps": ["Install the test APK from the logins sheet. Open it."], "expected": "Opens to Discover with restaurants and jobs; no sign-in wall."},
+        {"code": "MOB-02", "title": "Worker sign-in on the app", "tags": ["Phone", "Employee"], "steps": ["Sign in as the worker from WRK-03."], "expected": "Shows the Green Card with QR, applications, medical card and notifications — same data as the website."},
+        {"code": "MOB-03", "title": "Restaurant scan-to-hire", "tags": ["Phone"], "steps": ["Sign in on the app as Paragon → Manage → Scan. Scan the worker's Green Card QR (shown on another screen)."], "expected": "The worker's card opens with a hire option; the hire then needs the worker's approval."},
+        {"code": "MOB-04", "title": "Admin can't use the app", "tags": ["Phone"], "steps": ["Try signing in on the app with the admin login."], "expected": "Refused with a clear message (admin is web only)."},
+        {"code": "MOB-05", "title": "POS and suppliers on the app", "tags": ["Phone"], "steps": ["As a restaurant, look for POS and Suppliers in the app menu."], "expected": "Known gap: not in the app yet. Mark Blocked with the note 'not in app' — this is for the record, not a bug to fix now."}
+      ]
+    },
+    {
+      "key": "SEC",
+      "name": "Access checks",
+      "owner": "Everyone",
+      "after": "SETUP",
+      "tests": [
+        {"code": "SEC-01", "title": "Restaurant can't open admin pages", "tags": [], "steps": ["Signed in as a restaurant, type /admin, /admin/pos and /admin/suppliers in the address bar."], "expected": "Sent back to the restaurant console. No admin data shown."},
+        {"code": "SEC-02", "title": "Worker can't open restaurant pages", "tags": ["Employee"], "steps": ["Signed in as a worker, type /restaurant and /restaurant/pos."], "expected": "Sent away. No restaurant data shown."},
+        {"code": "SEC-03", "title": "Signed out can't open consoles", "tags": ["Guest"], "steps": ["Signed out, open /admin and /restaurant."], "expected": "Sent to the sign-in page."},
+        {"code": "SEC-04", "title": "One restaurant can't see another's", "tags": [], "steps": ["As Saravana, open an employee page and copy its address. Sign in as Paragon and open that address."], "expected": "Not found / not allowed. Paragon never sees Saravana's staff, jobs' applicants, enquiries or supplier requests."},
+        {"code": "SEC-05", "title": "Password reset", "tags": [], "steps": ["Sign-in page → Forgot password? → your restaurant email → follow the code (Dev code) → set a new password → sign in. Put the old password back afterwards."], "expected": "Works end to end; the old password stops working until changed back."}
+      ]
+    },
+    {
+      "key": "E2E",
+      "name": "Full journey (do together at the end)",
+      "owner": "Everyone",
+      "after": "SETUP",
+      "tests": [
+        {"code": "E2E-01", "title": "From sign-up to POS", "tags": [], "steps": ["Sana (admin), Fathima (restaurant), Mithra (worker), one after the other:", "1. Fathima signs up a new restaurant 'Team Cafe' and uploads an FSSAI licence.", "2. Sana approves it.", "3. Fathima posts a job; Mithra signs up with a new phone, makes a Green Card and applies.", "4. Fathima hires Mithra and attests her ID; Mithra's card becomes active.", "5. Fathima starts a POS free trial and clicks Open POS; in the POS she adds a menu item and makes one order.", "6. Fathima sends an order request to 'S - Fresh Veg Co'; Sana marks it confirmed.", "7. Sana pauses the POS; Fathima sees the paused page; Sana reactivates."], "expected": "Every step works without help and each person sees the right status at each step. Write down anything confusing even if it worked."}
+      ]
+    }
+  ]
+}
