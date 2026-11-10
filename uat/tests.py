@@ -168,8 +168,18 @@ class UATTests(TestCase):
                      '--owner', 'Admin=EMP014', '--owner', 'Intern 1=EMP014', '--owner', 'Intern 2=EMP015',
                      '--owner', 'Intern 3=EMP016', stdout=out)
         new = UATPlan.objects.get()
-        self.assertNotEqual(new.pk, plan.pk)
+        self.assertEqual(new.pk, plan.pk)  # same plan, so links keep working
         self.assertEqual(str(new.due_date), '2026-11-13')
         r = UATResult.objects.get()
         self.assertEqual((r.case.section.plan_id, r.case.code, r.note), (new.pk, 'GS-01', 'padlock missing'))
         self.assertIn('Kept 1 of 1', out.getvalue())
+
+
+class OldPlanLinkTests(TestCase):
+    def test_missing_plan_goes_to_list(self):
+        import uuid
+        from django.contrib.auth import get_user_model
+        u = get_user_model().objects.create_superuser('boss', 'b@x.in', 'pass12345')
+        self.client.force_login(u)
+        r = self.client.get(f'/uat/{uuid.uuid4()}/')
+        self.assertRedirects(r, '/uat/', fetch_redirect_response=False)

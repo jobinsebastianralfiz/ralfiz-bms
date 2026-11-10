@@ -37,17 +37,24 @@ class Command(BaseCommand):
             owner_map[label.strip()] = emps
             everyone += [e for e in emps if e not in everyone]
         existing = UATPlan.objects.filter(name=data['name'])
-        kept, old_due = [], None
+        kept, fields = [], {'product': data.get('product', ''), 'site_url': data.get('site_url', ''),
+                            'instructions': data.get('instructions', '')}
         if existing.exists():
             if not replace:
                 raise CommandError(f'A plan called {data["name"]!r} already exists (use --replace).')
             kept = [(r.case.code, r) for r in UATResult.objects.filter(case__section__plan__in=existing)
                     .select_related('case')]
-            old_due = existing.first().due_date
-            existing.delete()
-        plan = UATPlan.objects.create(name=data['name'], product=data.get('product', ''),
-                                      site_url=data.get('site_url', ''), instructions=data.get('instructions', ''),
-                                      due_date=due or old_due)
+            # Rebuild inside the same plan so its id, and every link to it, stays the same.
+            plan = existing.order_by('created_at').first()
+            existing.exclude(pk=plan.pk).delete()
+            plan.sections.all().delete()
+            for k, v in fields.items():
+                setattr(plan, k, v)
+            if due:
+                plan.due_date = due
+            plan.save()
+        else:
+            plan = UATPlan.objects.create(name=data['name'], due_date=due, **fields)
         plan.testers.set(everyone)
         load_cases(plan, data, owner_map)
         restored = self._restore(plan, kept)

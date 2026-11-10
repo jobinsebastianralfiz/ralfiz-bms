@@ -70,7 +70,10 @@ def load_cases(plan, data, owner_map=None):
 
 @login_required
 def uat_plan_detail(request, pk):
-    plan = get_object_or_404(UATPlan, pk=pk)
+    plan = UATPlan.objects.filter(pk=pk).first()
+    if not plan:
+        messages.info(request, 'That test plan was replaced. Open it again from this list.')
+        return redirect('uat_plan_list')
     tab = request.GET.get('tab', 'open')
     problems = services.open_problems(plan)
     problem_counts = {'open': problems.filter(fix_status='').count(),
@@ -88,7 +91,10 @@ def uat_plan_detail(request, pk):
 @login_required
 def uat_plan_cases(request, pk):
     """Every case with each tester's result: the full grid."""
-    plan = get_object_or_404(UATPlan, pk=pk)
+    plan = UATPlan.objects.filter(pk=pk).first()
+    if not plan:
+        messages.info(request, 'That test plan was replaced. Open it again from this list.')
+        return redirect('uat_plan_list')
     testers = list(plan.testers.select_related('user'))
     results = {(r.case_id, r.tester_id): r for r in UATResult.objects.filter(case__section__plan=plan)}
     sections = []
