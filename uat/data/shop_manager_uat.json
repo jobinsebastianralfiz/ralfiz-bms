@@ -473,7 +473,7 @@
       "Users → Add: name, username, role Staff, password twice. Leave the switches under 'What this staff member can do' as they are. Save.",
       "Log in as that user in another browser (or incognito)."
      ],
-     "expected": "A new Staff user starts with only Billing & bills, Sales returns and Warranty & repairs switched on. Their menu shows Billing, Sales, Warranty and Inventory (Products only). No Purchases, Accounts, Reports, Users, Settings, Delete or Cancel buttons. Home shows no cash drawer, supplier dues or profit."
+     "expected": "A new Staff user starts with only Billing & bills, Sales returns and Warranty & repairs switched on. On Users the Access column lists just those three. Their menu shows Billing, Sales, Warranty and Inventory (Products only). No Purchases, Accounts, Reports, Users, Settings, Delete or Cancel buttons. Home shows no cash drawer, supplier dues or profit."
     },
     {
      "code": "USR-02",
@@ -509,6 +509,19 @@
       "Complete the bill at the normal price."
      ],
      "expected": "The price and discount boxes cannot be edited. The bill saves at the normal selling price, and the receipt shows 'Billed by: <their name>'."
+    },
+    {
+     "code": "USR-09",
+     "title": "Staff see only their own bills",
+     "tags": [
+      "Admin"
+     ],
+     "steps": [
+      "As the USR-01 staff user (after USR-05 they have made one bill), open Sales → Bills and Home.",
+      "Try to open a bill made by someone else: type its number in the search box (e.g. INV/26-27/0001).",
+      "As Admin, switch on \"See everyone's bills\" for this user. Save. As the staff user, open Bills again. Then switch it off again before USR-06."
+     ],
+     "expected": "Before: Bills lists only the bills this user made, with no 'All staff' filter. Home says 'Your sales today' and 'Your sales this month' with only their own totals. Searching another person's bill opens its Return / exchange page, not the bill. After switching it on: every bill is listed and the 'All staff' filter appears."
     },
     {
      "code": "USR-06",

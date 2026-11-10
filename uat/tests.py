@@ -46,7 +46,7 @@ class UATTests(TestCase):
 
     def test_load_assigns_sections_and_notifies(self):
         plan = self.load()
-        self.assertEqual(plan.cases().count(), 98)
+        self.assertEqual(plan.cases().count(), 99)
         ham, fat, mit = self.emps
         billing = plan.sections.get(key='BIL')
         self.assertEqual([e.pk for e in billing.testers()], [fat.pk])
