@@ -113,7 +113,7 @@
     </div>
 
     <div class="sm-card">
-      <div class="sm-card__head"><h3><i class="fas fa-toggle-on"></i>Status</h3><p>The shop picks up a change on its next check (every few hours) or when it clicks "Check now".</p></div>
+      <div class="sm-card__head"><h3><i class="fas fa-toggle-on"></i>Status</h3><p>The shop picks up a change within 15 minutes, or at once when it clicks "Check now". Suspended follows "When it expires" (read-only or locked). Revoked always locks.</p></div>
       <form method="POST" action="{% url 'shop_license_update' pk=license.pk %}" class="sm-card__body" style="display:flex;flex-direction:column;gap:.5rem">
         {% csrf_token %}<input type="hidden" name="action" value="change_status">
         {% if license.status != 'active' %}
@@ -121,7 +121,7 @@
         {% else %}
           <input type="text" name="reason" placeholder="Reason (shown to the shop), e.g. Payment pending" class="sm-input" style="height:38px">
           <button type="submit" name="new_status" value="suspended" class="sm-btn sm-suspended" style="border-color:#FEF0C7"><i class="fas fa-pause-circle"></i> Suspend</button>
-          <button type="submit" name="new_status" value="revoked" class="sm-btn sm-expired" style="border-color:#FEE4E2" onclick="return confirm('Revoke this licence? The shop locks on its next check.')"><i class="fas fa-ban"></i> Revoke</button>
+          <button type="submit" name="new_status" value="revoked" class="sm-btn sm-expired" style="border-color:#FEE4E2" onclick="return confirm('Revoke this licence? The shop locks within 15 minutes.')"><i class="fas fa-ban"></i> Revoke</button>
         {% endif %}
       </form>
     </div>

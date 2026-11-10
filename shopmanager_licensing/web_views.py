@@ -157,7 +157,7 @@ def shop_license_update(request, pk):
             lic.status = 'active'
         lic.save()
         _log(lic, 'update', who, details_updated=True, valid_until=lic.valid_until.isoformat())
-        messages.success(request, 'Licence updated. The shop picks this up on its next check.')
+        messages.success(request, 'Licence updated. The shop picks this up within 15 minutes, or at once with "Check now" on its licence page.')
 
     elif action == 'renew':
         days = _int(p.get('extend_days'))
@@ -176,7 +176,7 @@ def shop_license_update(request, pk):
             lic.save(update_fields=['status', 'status_reason', 'updated_at'])
             event = {'active': 'reactivate', 'suspended': 'suspend', 'revoked': 'revoke'}[new_status]
             _log(lic, event, who, old_status=old_status, reason=lic.status_reason)
-            messages.success(request, f'Status changed to {new_status}. The shop picks this up on its next check.')
+            messages.success(request, f'Status changed to {new_status}. The shop picks this up within 15 minutes, or at once with "Check now" on its licence page.')
 
     elif action == 'reset_domain':
         old = lic.api_domain
