@@ -63,7 +63,7 @@
       "Admin"
      ],
      "steps": [
-      "Settings → Business: fill shop name, tagline, phone, address, city, state, pincode.",
+      "Settings → Shop settings → Business: fill shop name, tagline, phone, address, city, state, pincode.",
       "Upload a logo (PNG/JPG).",
       "Pick a brand colour. Save."
      ],
@@ -76,7 +76,7 @@
       "Admin"
      ],
      "steps": [
-      "Settings → GST: tick GST registered, enter a test GSTIN (e.g. 32ABCDE1234F1Z5), state Kerala, decide 'prices include GST'. Save."
+      "Settings → Shop settings → GST: tick GST registered, enter a test GSTIN (e.g. 32ABCDE1234F1Z5), state Kerala, decide 'prices include GST'. Save."
      ],
      "expected": "Saved. Bills show CGST + SGST for Kerala customers (checked in BIL-04)."
     },
@@ -87,7 +87,7 @@
       "Admin"
      ],
      "steps": [
-      "Settings → Billing: financial year starts in April (4).",
+      "Settings → Shop settings → Billing: financial year starts in April (4).",
       "Prefixes: sales invoice INV, credit note CN, purchase PUR, purchase return PR.",
       "Default bill format: thermal receipt. Leave 'Allow negative stock' unticked. Save."
      ],
@@ -100,7 +100,7 @@
       "Admin"
      ],
      "steps": [
-      "Settings → Bank & UPI: enter bank name, account number, IFSC, branch and a UPI ID. Save."
+      "Settings → Shop settings → Bank & UPI: enter bank name, account number, IFSC, branch and a UPI ID. Save."
      ],
      "expected": "Bank details print on A4 invoices. The UPI QR appears on the billing screen (BIL-07)."
     },
@@ -111,7 +111,7 @@
       "Admin"
      ],
      "steps": [
-      "Settings → Opening balances: date = today, opening cash in drawer ₹2,000, bank balance ₹50,000. Save.",
+      "Settings → Shop settings → Opening balances: date = today, opening cash in drawer ₹2,000, bank balance ₹50,000. Save.",
       "Open Accounts → Daily ledger for today."
      ],
      "expected": "The ledger starts with cash ₹2,000 and bank ₹50,000 before any sale."
@@ -123,7 +123,7 @@
       "Admin"
      ],
      "steps": [
-      "Settings → Bill text: edit terms, warranty policy, keep-the-bill note and footer. Save."
+      "Settings → Shop settings → Bill text: edit terms, warranty policy, keep-the-bill note and footer. Save."
      ],
      "expected": "Saved. The text is printed on receipts and A4 invoices (checked later in BIL-13 and BIL-14)."
     },
@@ -146,7 +146,7 @@
       "Admin"
      ],
      "steps": [
-      "Products → Add these 10, all GST 18%, SKU and barcode left blank:",
+      "Inventory → Products → Add product: add these 10, all GST 18%, SKU and barcode left blank:",
       "Titan Neo Analog · Watches / Titan · HSN 9102 · cost 1500 · MRP 2995 · selling 2495 · opening stock 20 · warranty 12 months, Warranty",
       "Fastrack Reflex Band · Watches / Fastrack · HSN 9102 · cost 1200 · MRP 2495 · selling 1995 · opening stock 15 · warranty 12 months, Guarantee (replacement)",
       "Casio Vintage A158 · Watches / Casio · HSN 9102 · cost 1600 · MRP 3195 · selling 2895 · opening stock 10 · warranty 24 months, Warranty",
@@ -167,7 +167,7 @@
       "Admin"
      ],
      "steps": [
-      "Customers → Add: 'Test Credit Customer', phone 9000000001, Kerala, credit limit 1000.",
+      "Sales → Customers → Add customer: 'Test Credit Customer', phone 9000000001, Kerala, credit limit 1000.",
       "Add 'Kerala B2B Traders', phone 9000000002, GSTIN 32AABCK1234L1Z2, Kerala.",
       "Add 'Mumbai Time House', phone 9000000003, GSTIN 27AABCM1234L1Z6, Maharashtra."
      ],
@@ -180,7 +180,7 @@
       "Admin"
      ],
      "steps": [
-      "Suppliers → Add 'Kochi Watch Distributors', Kerala, GSTIN 32AABCD1234E1Z3, 30 credit days.",
+      "Purchases → Suppliers → Add supplier 'Kochi Watch Distributors', Kerala, GSTIN 32AABCD1234E1Z3, 30 credit days.",
       "Add 'Mumbai Watch Co', Maharashtra, GSTIN 27AABCW1234E1Z9."
      ],
      "expected": "Both saved and listed."
@@ -192,10 +192,10 @@
       "Admin"
      ],
      "steps": [
-      "Accounts → Categories: add expense categories Tea & snacks, Electricity, Rent.",
-      "Add income category Battery replacement."
+      "Settings → Income & expense types: add expense types Tea & snacks, Electricity, Rent.",
+      "Add an income type: Battery replacement."
      ],
-     "expected": "They can be picked when adding an expense or income (FIN-01, FIN-02)."
+     "expected": "They can be picked when adding an expense or income (FIN-01, FIN-02). The new types also show under Settings → Income & expense types.."
     },
     {
      "code": "MST-06",
@@ -234,7 +234,7 @@
      "title": "Add your own product with automatic barcode",
      "tags": [],
      "steps": [
-      "Products → Add 'S - Test Watch' (your initial first): category Watches, brand Titan, HSN 9102, GST 18%, cost 1500, MRP 2995, selling 2495.",
+      "Inventory → Products → Add product: 'S - Test Watch' (your initial first): category Watches, brand Titan, HSN 9102, GST 18%, cost 1500, MRP 2995, selling 2495.",
       "Leave SKU and barcode blank. Warranty 12 months, cover type Warranty. Opening stock 10. Save."
      ],
      "expected": "Saved. A 13-digit barcode and an SKU are generated. Stock shows 10. Margin is shown."
@@ -286,7 +286,7 @@
      "tags": [],
      "steps": [
       "Set the reorder level of your own product from INV-02 above its stock.",
-      "Open Home and Reports → Stock."
+      "Open Home and Reports → Stock report."
      ],
      "expected": "The home page warns about low stock and the item is on the reorder list."
     },
@@ -370,7 +370,7 @@
      "title": "Supplier payments and statement",
      "tags": [],
      "steps": [
-      "Supplier payments → Add: pay the rest of PUR-02's bill.",
+      "Purchases → Supplier payments → Add: pay the rest of PUR-02's bill.",
       "Open the supplier → statement / PDF."
      ],
      "expected": "The supplier's balance becomes zero; the statement lists the bill and both payments."
@@ -407,15 +407,16 @@
     },
     {
      "code": "PUR-08",
-     "title": "Supplier catalog import",
+     "title": "Import products from Excel",
      "tags": [
       "Admin"
      ],
      "steps": [
-      "Purchases → Catalog import: download the template.",
-      "Fill 3 rows: one existing barcode with a new price, two new items. Upload → check preview → Apply."
+      "Inventory → Import from Excel: download the template.",
+      "Fill 3 rows: one existing product (same barcode) with a new price, and two new items with brand, category, opening qty and warranty months.",
+      "Upload it with Supplier left as 'None: my own product list' → Preview import → Apply."
      ],
-     "expected": "The preview shows 1 update and 2 new. After applying, the prices and new products are in Products."
+     "expected": "The preview shows 1 update and 2 new. After applying, the price is changed, the two new products are in Products with their own barcode, opening stock and warranty, and no product is listed twice."
     }
    ],
    "after": "SETUP"
@@ -433,7 +434,7 @@
       "Printer"
      ],
      "steps": [
-      "Settings → A4 invoice: style 'Classic GST form'.",
+      "Settings → Shop settings → A4 invoice: style 'Classic GST form'.",
       "Change heading, copy labels, minimum item rows to 10, declaration. Save.",
       "Open any bill → A4 invoice PDF. Repeat with style 'Modern'."
      ],
@@ -470,7 +471,7 @@
       "Admin"
      ],
      "steps": [
-      "Users → Add: name, username, role Staff, password twice. Leave the switches under 'What this staff member can do' as they are. Save.",
+      "Settings → Users → Add user: name, username, role Staff, password twice. Leave the switches under 'What this staff member can do' as they are. Save.",
       "Log in as that user in another browser (or incognito)."
      ],
      "expected": "A new Staff user starts with only Billing & bills, Sales returns and Warranty & repairs switched on. On Users the Access column lists just those three. Their menu shows Billing, Sales, Warranty and Inventory (Products only). No Purchases, Accounts, Reports, Users, Settings, Delete or Cancel buttons. Home shows no cash drawer, supplier dues or profit."
@@ -530,7 +531,7 @@
       "Admin"
      ],
      "steps": [
-      "As Admin, Users → edit the USR-01 user. Switch on Reports only. Save.",
+      "As Admin, Settings → Users → edit the USR-01 user. Switch on Reports only. Save.",
       "As the staff user, open Reports → Sales summary, and Inventory → Products."
      ],
      "expected": "Reports appears in their menu without Margin and Profit & loss. Sales summary has no Cost, Margin or Margin % columns, but has a 'Sales by staff' table. Products shows no Cost or Margin column."
@@ -862,7 +863,7 @@
      "title": "Add and find customers",
      "tags": [],
      "steps": [
-      "Customers → Add your own: name starting with your initial, phone, GSTIN, state, credit limit.",
+      "Sales → Customers → Add customer, your own one: name starting with your initial, phone, GSTIN, state, credit limit.",
       "On Billing, type part of the phone number in the customer box."
      ],
      "expected": "The customer is found and picked; their GSTIN fills in."
@@ -881,7 +882,7 @@
      "title": "Collect a payment",
      "tags": [],
      "steps": [
-      "Payments received → Add: the BIL-09 customer, ₹800 by UPI, against that bill."
+      "Sales → Payments received → Add: the BIL-09 customer, ₹800 by UPI, against that bill."
      ],
      "expected": "The bill becomes Paid, the customer owes ₹0, and the UPI amount is in the bank column of the daily ledger."
     }
@@ -1108,7 +1109,7 @@
       "Admin"
      ],
      "steps": [
-      "Reports → Sales for today. Add up today's bills from the Bills list."
+      "Reports → Sales summary for today. Add up today's bills from the Bills list."
      ],
      "expected": "The report total equals the bills total, less cancelled bills and returns."
     },
@@ -1119,7 +1120,7 @@
       "Admin"
      ],
      "steps": [
-      "Reports → Margin by item, category, brand and supplier."
+      "Reports → Margin (by item), category, brand and supplier."
      ],
      "expected": "Margin = selling value − cost for each line. Spot-check one item by hand."
     },
@@ -1130,7 +1131,7 @@
       "Admin"
      ],
      "steps": [
-      "Reports → Stock."
+      "Reports → Stock report."
      ],
      "expected": "Quantities match the product pages. Stock value = qty × cost. Low items are on the reorder list."
     },
@@ -1141,7 +1142,7 @@
       "Admin"
      ],
      "steps": [
-      "Reports → GST for this month. Download the PDF and the Excel."
+      "Reports → GST (monthly) for this month. Download the PDF and the Excel."
      ],
      "expected": "B2B lists the GSTIN bills from BIL-10. B2C is grouped by rate. The HSN summary, credit notes and purchase ITC are there. The PDF and Excel totals match the screen."
     },
@@ -1152,7 +1153,7 @@
       "Admin"
      ],
      "steps": [
-      "Reports → P&L for this month."
+      "Reports → Profit & loss (FY), this month's row."
      ],
      "expected": "Sales, cost, gross margin, expenses and other income line up with the other reports."
     },
