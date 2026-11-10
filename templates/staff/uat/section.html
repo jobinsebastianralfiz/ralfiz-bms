@@ -17,6 +17,10 @@
     <b><span id="ut-done">{{ done }}</span>/{{ total }} done</b></div>
   <div class="ut-bar"><i id="ut-bar" style="width:{% widthratio done total 100 %}%"></i></div>
 </div>
+{% if waiting_on %}
+<div class="ut-card ut-wait"><i class="fas fa-lock"></i> <b>Not yet.</b> These tests need the data from “{{ waiting_on.name }}”
+  ({{ waiting_done }} of {{ waiting_total }} done). Read the steps now; you can mark them once setup is finished.</div>
+{% endif %}
 
 {% for item in cases %}{% with c=item.case r=item.result %}
 <form class="ut-card ut-case {% if r %}s-{{ r.status }}{% endif %}" id="case-{{ c.pk }}" method="post" enctype="multipart/form-data" data-total="{{ total }}">
@@ -36,7 +40,7 @@
   <div class="ut-actions">
     <label class="ut-btn" style="cursor:pointer"><i class="fas fa-camera"></i> <span data-shot-label>{% if r.screenshot %}Replace screenshot{% else %}Add screenshot{% endif %}</span>
       <input type="file" name="screenshot" accept="image/*" hidden></label>
-    <button class="ut-save" type="submit">Save</button>
+    <button class="ut-save" type="submit"{% if waiting_on %} disabled{% endif %}>Save</button>
     <span class="ut-msg" data-msg aria-live="polite"></span>
   </div>
   {% if r.screenshot %}<a href="{{ r.screenshot.url }}" target="_blank" rel="noopener"><img class="ut-shot" src="{{ r.screenshot.url }}" alt="Screenshot for {{ c.code }}" data-shot></a>{% endif %}

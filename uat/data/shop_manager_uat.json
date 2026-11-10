@@ -52,9 +52,9 @@
    ]
   },
   {
-   "key": "SET",
-   "name": "Settings & users",
-   "owner": "Intern 1",
+   "key": "SETUP",
+   "name": "Step 1 · Shop setup (Admin – do this first)",
+   "owner": "Admin",
    "tests": [
     {
      "code": "SET-01",
@@ -67,7 +67,7 @@
       "Upload a logo (PNG/JPG).",
       "Pick a brand colour. Save."
      ],
-     "expected": "'Settings saved'. Name and logo show in the app. They appear on receipts and A4 invoices (checked in BIL-14 and BIL-15)."
+     "expected": "'Settings saved'. Name and logo show in the app. They appear on receipts and A4 invoices (checked later in BIL-13 and BIL-14)."
     },
     {
      "code": "SET-02",
@@ -81,31 +81,17 @@
      "expected": "Saved. Bills show CGST + SGST for Kerala customers (checked in BIL-04)."
     },
     {
-     "code": "SET-03",
-     "title": "A4 invoice style",
-     "tags": [
-      "Admin",
-      "Printer"
-     ],
-     "steps": [
-      "Settings → A4 invoice: style 'Classic GST form'.",
-      "Change heading, copy labels, minimum item rows to 10, declaration. Save.",
-      "Open any bill → A4 invoice PDF. Repeat with style 'Modern'."
-     ],
-     "expected": "The classic PDF looks like the paper GST form: boxed GSTIN, Original/Duplicate/Triplicate labels, billed-to and shipped-to boxes, totals box, bank details, signatory. Your changed text appears. Modern style also works. Each fits on one page for a short bill."
-    },
-    {
-     "code": "SET-04",
-     "title": "Letterhead image",
+     "code": "SET-08",
+     "title": "Financial year and bill numbers",
      "tags": [
       "Admin"
      ],
      "steps": [
-      "Upload a wide image as Letterhead header. Save.",
-      "Open an A4 invoice PDF.",
-      "Remove the image again."
+      "Settings → Billing: financial year starts in April (4).",
+      "Prefixes: sales invoice INV, credit note CN, purchase PUR, purchase return PR.",
+      "Default bill format: thermal receipt. Leave 'Allow negative stock' unticked. Save."
      ],
-     "expected": "With the image, it replaces the logo + name header. Without it, the logo and details are back."
+     "expected": "Saved. The first bill made later is numbered INV/26-27/0001, the first purchase PUR/26-27/0001 (the year part is this financial year, April 2026 – March 2027)."
     },
     {
      "code": "SET-05",
@@ -119,87 +105,122 @@
      "expected": "Bank details print on A4 invoices. The UPI QR appears on the billing screen (BIL-07)."
     },
     {
+     "code": "SET-09",
+     "title": "Opening balances",
+     "tags": [
+      "Admin"
+     ],
+     "steps": [
+      "Settings → Opening balances: date = today, opening cash in drawer ₹2,000, bank balance ₹50,000. Save.",
+      "Open Accounts → Daily ledger for today."
+     ],
+     "expected": "The ledger starts with cash ₹2,000 and bank ₹50,000 before any sale."
+    },
+    {
      "code": "SET-06",
      "title": "Bill text",
      "tags": [
       "Admin"
      ],
      "steps": [
-      "Edit terms, warranty policy, keep-the-bill note and footer. Save.",
-      "Print a receipt and an A4 invoice."
+      "Settings → Bill text: edit terms, warranty policy, keep-the-bill note and footer. Save."
      ],
-     "expected": "The new text appears on both, nothing cut off."
+     "expected": "Saved. The text is printed on receipts and A4 invoices (checked later in BIL-13 and BIL-14)."
     },
     {
-     "code": "SET-07",
-     "title": "Rows per page",
+     "code": "MST-01",
+     "title": "Categories and brands",
      "tags": [
       "Admin"
      ],
      "steps": [
-      "Set rows per page to 10. Open Products and Bills."
+      "Inventory → Categories & brands: add categories Watches, Clocks, Accessories.",
+      "Add brands Titan, Fastrack, Casio, Sonata, Ajanta."
      ],
-     "expected": "Lists show 10 rows with page links; next/previous work."
+     "expected": "All appear and can be picked on a product."
     },
     {
-     "code": "USR-01",
-     "title": "Create a Staff user",
+     "code": "MST-02",
+     "title": "Starter products (shared by everyone)",
      "tags": [
       "Admin"
      ],
      "steps": [
-      "Users → Add: name, username, role Staff, password twice. Save.",
-      "Log in as that user in another browser (or incognito)."
+      "Products → Add these 10, all GST 18%, SKU and barcode left blank:",
+      "Titan Neo Analog · Watches / Titan · HSN 9102 · cost 1500 · MRP 2995 · selling 2495 · opening stock 20 · warranty 12 months, Warranty",
+      "Fastrack Reflex Band · Watches / Fastrack · HSN 9102 · cost 1200 · MRP 2495 · selling 1995 · opening stock 15 · warranty 12 months, Guarantee (replacement)",
+      "Casio Vintage A158 · Watches / Casio · HSN 9102 · cost 1600 · MRP 3195 · selling 2895 · opening stock 10 · warranty 24 months, Warranty",
+      "Sonata Kids Watch · Watches / Sonata · HSN 9102 · cost 350 · MRP 799 · selling 699 · opening stock 25 · warranty 6 months, Warranty",
+      "Titan Couple Set · Watches / Titan · HSN 9102 · cost 4500 · MRP 8995 · selling 7995 · opening stock 3 · warranty 12 months, Warranty",
+      "Ajanta Wall Clock · Clocks / Ajanta · HSN 9105 · cost 450 · MRP 999 · selling 849 · opening stock 8 · warranty 12 months, Warranty",
+      "Ajanta Alarm Clock · Clocks / Ajanta · HSN 9105 · cost 180 · MRP 399 · selling 349 · opening stock 12 · warranty none",
+      "Casio Digital Clock · Clocks / Casio · HSN 9105 · cost 600 · MRP 1295 · selling 1095 · opening stock 5 · warranty 12 months, Warranty",
+      "Leather Strap 20mm · Accessories · HSN 9113 · cost 80 · MRP 299 · selling 249 · opening stock 30 · warranty none",
+      "Watch Battery SR626 · Accessories · HSN 8506 · cost 15 · MRP 60 · selling 50 · opening stock 100 · warranty none"
      ],
-     "expected": "The staff user can bill, enter purchases, stock and daily entries. They do NOT see Users, Settings, Employees, Salaries, Catalog import, or Delete / Cancel buttons."
+     "expected": "All 10 saved with their own barcode and SKU, stock as entered. Everyone else bills, returns and claims warranty on these."
     },
     {
-     "code": "USR-02",
-     "title": "Create a second Admin",
+     "code": "MST-03",
+     "title": "Starter customers",
      "tags": [
       "Admin"
      ],
      "steps": [
-      "Add a user with role Admin. Log in as them."
+      "Customers → Add: 'Test Credit Customer', phone 9000000001, Kerala, credit limit 1000.",
+      "Add 'Kerala B2B Traders', phone 9000000002, GSTIN 32AABCK1234L1Z2, Kerala.",
+      "Add 'Mumbai Time House', phone 9000000003, GSTIN 27AABCM1234L1Z6, Maharashtra."
      ],
-     "expected": "They see Settings and Users."
+     "expected": "All 3 listed and can be found by phone on the billing screen."
     },
     {
-     "code": "USR-03",
-     "title": "Deactivate a user",
+     "code": "MST-04",
+     "title": "Starter suppliers",
      "tags": [
       "Admin"
      ],
      "steps": [
-      "Edit the staff user from USR-01, untick Active, save.",
-      "Try to log in as them."
+      "Suppliers → Add 'Kochi Watch Distributors', Kerala, GSTIN 32AABCD1234E1Z3, 30 credit days.",
+      "Add 'Mumbai Watch Co', Maharashtra, GSTIN 27AABCW1234E1Z9."
      ],
-     "expected": "Login is refused."
+     "expected": "Both saved and listed."
     },
     {
-     "code": "LIC-01",
-     "title": "Licence card in the sidebar",
+     "code": "MST-05",
+     "title": "Expense and income categories",
      "tags": [
       "Admin"
      ],
      "steps": [
-      "Log in with the Admin login.",
-      "Look at the bottom of the left sidebar.",
-      "Log out and log in with a Staff login; look again."
+      "Accounts → Categories: add expense categories Tea & snacks, Electricity, Rent.",
+      "Add income category Battery replacement."
      ],
-     "expected": "Admin sees a licence card: Active, days left, a bar, 'Valid till' date and the Ralfiz phone number. Staff does not see the card."
+     "expected": "They can be picked when adding an expense or income (FIN-01, FIN-02)."
     },
     {
-     "code": "LIC-02",
-     "title": "Check licence now",
+     "code": "MST-06",
+     "title": "Starter barcode labels",
+     "tags": [
+      "Admin",
+      "Printer"
+     ],
+     "steps": [
+      "Inventory → Barcode labels: pick all 10 starter products, 3 labels each, show price. Print.",
+      "Hand the sheet to the billing tester."
+     ],
+     "expected": "Labels print clearly, one product per label, with name, price and barcode."
+    },
+    {
+     "code": "MST-07",
+     "title": "Tell the team setup is done",
      "tags": [
       "Admin"
      ],
      "steps": [
-      "As Admin, click the licence card in the sidebar.",
-      "On the Software licence page click 'Check now'."
+      "Check that SET-01 … MST-06 above are all marked.",
+      "Message the group: 'Shop setup done, start your sections.'"
      ],
-     "expected": "A green message 'Licence checked: valid till …' appears, and 'Last checked with Ralfiz' shows the current time."
+     "expected": "Once every test in this section is marked, the other sections unlock in everyone's UAT page."
     }
    ]
   },
@@ -209,20 +230,11 @@
    "owner": "Intern 1",
    "tests": [
     {
-     "code": "INV-01",
-     "title": "Categories and brands",
-     "tags": [],
-     "steps": [
-      "Inventory → Categories & brands: add a category (Watches) and a brand (Titan)."
-     ],
-     "expected": "Both appear and can be picked on a product."
-    },
-    {
      "code": "INV-02",
-     "title": "Add a product with automatic barcode",
+     "title": "Add your own product with automatic barcode",
      "tags": [],
      "steps": [
-      "Products → Add: name, category, brand, HSN 9102, GST 18%, cost 1500, MRP 2995, selling 2495.",
+      "Products → Add 'H - Test Watch' (your initial first): category Watches, brand Titan, HSN 9102, GST 18%, cost 1500, MRP 2995, selling 2495.",
       "Leave SKU and barcode blank. Warranty 12 months, cover type Warranty. Opening stock 10. Save."
      ],
      "expected": "Saved. A 13-digit barcode and an SKU are generated. Stock shows 10. Margin is shown."
@@ -232,7 +244,7 @@
      "title": "Selling price above MRP",
      "tags": [],
      "steps": [
-      "Edit a product, set selling price higher than MRP, save."
+      "Edit your own product from INV-02, set selling price higher than MRP, save."
      ],
      "expected": "A clear error 'Selling price is above MRP' and nothing is saved."
     },
@@ -252,7 +264,7 @@
      "title": "Stock adjustment",
      "tags": [],
      "steps": [
-      "Open a product → Adjust stock: remove 1 as damaged, with a note.",
+      "Open your own product from INV-02 → Adjust stock: remove 1 as damaged, with a note.",
       "Open Stock movements."
      ],
      "expected": "Stock drops by 1. The movement log shows the adjustment, the user and the note."
@@ -273,7 +285,7 @@
      "title": "Low stock alert",
      "tags": [],
      "steps": [
-      "Set a product's reorder level above its stock.",
+      "Set the reorder level of your own product from INV-02 above its stock.",
       "Open Home and Reports → Stock."
      ],
      "expected": "The home page warns about low stock and the item is on the reorder list."
@@ -285,8 +297,8 @@
       "Admin"
      ],
      "steps": [
-      "Delete a product that was never sold.",
-      "Try to delete one that has been sold."
+      "Add one more product of your own and delete it before selling it.",
+      "Try to delete the starter product Titan Neo Analog (it has been sold by then)."
      ],
      "expected": "The unused one is deleted. The sold one is refused with a clear message (not an error page)."
     },
@@ -324,23 +336,14 @@
      ],
      "expected": "The camera opens, reads the barcode and adds the product, with a beep."
     }
-   ]
+   ],
+   "after": "SETUP"
   },
   {
    "key": "PUR",
    "name": "Suppliers & purchases",
    "owner": "Intern 1",
    "tests": [
-    {
-     "code": "PUR-01",
-     "title": "Add suppliers",
-     "tags": [],
-     "steps": [
-      "Add a Kerala supplier with 30 credit days and GSTIN.",
-      "Add a supplier from another state (e.g. Maharashtra)."
-     ],
-     "expected": "Both saved and listed."
-    },
     {
      "code": "PUR-02",
      "title": "Enter a purchase bill",
@@ -414,7 +417,114 @@
      ],
      "expected": "The preview shows 1 update and 2 new. After applying, the prices and new products are in Products."
     }
-   ]
+   ],
+   "after": "SETUP"
+  },
+  {
+   "key": "SET",
+   "name": "More settings, users & licence",
+   "owner": "Intern 1",
+   "tests": [
+    {
+     "code": "SET-03",
+     "title": "A4 invoice style",
+     "tags": [
+      "Admin",
+      "Printer"
+     ],
+     "steps": [
+      "Settings → A4 invoice: style 'Classic GST form'.",
+      "Change heading, copy labels, minimum item rows to 10, declaration. Save.",
+      "Open any bill → A4 invoice PDF. Repeat with style 'Modern'."
+     ],
+     "expected": "The classic PDF looks like the paper GST form: boxed GSTIN, Original/Duplicate/Triplicate labels, billed-to and shipped-to boxes, totals box, bank details, signatory. Your changed text appears. Modern style also works. Each fits on one page for a short bill."
+    },
+    {
+     "code": "SET-04",
+     "title": "Letterhead image",
+     "tags": [
+      "Admin"
+     ],
+     "steps": [
+      "Upload a wide image as Letterhead header. Save.",
+      "Open an A4 invoice PDF.",
+      "Remove the image again."
+     ],
+     "expected": "With the image, it replaces the logo + name header. Without it, the logo and details are back."
+    },
+    {
+     "code": "SET-07",
+     "title": "Rows per page",
+     "tags": [
+      "Admin"
+     ],
+     "steps": [
+      "Set rows per page to 10. Open Products and Bills."
+     ],
+     "expected": "Lists show 10 rows with page links; next/previous work."
+    },
+    {
+     "code": "USR-01",
+     "title": "Create a Staff user",
+     "tags": [
+      "Admin"
+     ],
+     "steps": [
+      "Users → Add: name, username, role Staff, password twice. Save.",
+      "Log in as that user in another browser (or incognito)."
+     ],
+     "expected": "The staff user can bill, enter purchases, stock and daily entries. They do NOT see Users, Settings, Employees, Salaries, Catalog import, or Delete / Cancel buttons."
+    },
+    {
+     "code": "USR-02",
+     "title": "Create a second Admin",
+     "tags": [
+      "Admin"
+     ],
+     "steps": [
+      "Add a user with role Admin. Log in as them."
+     ],
+     "expected": "They see Settings and Users."
+    },
+    {
+     "code": "USR-03",
+     "title": "Deactivate a user",
+     "tags": [
+      "Admin"
+     ],
+     "steps": [
+      "Edit the staff user from USR-01, untick Active, save.",
+      "Try to log in as them."
+     ],
+     "expected": "Login is refused."
+    },
+    {
+     "code": "LIC-01",
+     "title": "Licence card in the sidebar",
+     "tags": [
+      "Admin"
+     ],
+     "steps": [
+      "Log in with the Admin login.",
+      "Look at the bottom of the left sidebar.",
+      "Log out and log in with a Staff login; look again."
+     ],
+     "expected": "Admin sees a licence card: Active, days left, a bar, 'Valid till' date and the Ralfiz phone number. Staff does not see the card."
+    },
+    {
+     "code": "LIC-02",
+     "title": "Check licence now",
+     "tags": [
+      "Admin"
+     ],
+     "steps": [
+      "As Admin, click the licence card in the sidebar.",
+      "On the Software licence page click 'Check now'."
+     ],
+     "expected": "A green message 'Licence checked: valid till …' appears, and 'Last checked with Ralfiz' shows the current time."
+    }
+   ],
+   "after": "SETUP"
   },
   {
    "key": "BIL",
@@ -507,7 +617,7 @@
      "title": "Credit bill and credit limit",
      "tags": [],
      "steps": [
-      "Choose a saved customer with credit limit 1000.",
+      "Choose 'Test Credit Customer' (credit limit 1000, from setup).",
       "Bill ₹800 with nothing paid → save.",
       "Bill another ₹800 unpaid."
      ],
@@ -518,8 +628,8 @@
      "title": "Business (B2B) bill",
      "tags": [],
      "steps": [
-      "Enter a customer GSTIN from Kerala (32…) → save, open A4 invoice.",
-      "Repeat with a GSTIN from another state (e.g. 27…)."
+      "Choose 'Kerala B2B Traders' (GSTIN 32…) → bill, save, open A4 invoice.",
+      "Repeat with 'Mumbai Time House' (GSTIN 27…)."
      ],
      "expected": "The invoice shows the customer GSTIN and state code. The Kerala bill has CGST + SGST; the other-state bill has IGST."
     },
@@ -540,7 +650,7 @@
      "title": "Not enough stock",
      "tags": [],
      "steps": [
-      "Bill more units of a product than are in stock."
+      "Bill 4 of 'Titan Couple Set' (only 3 in stock)."
      ],
      "expected": "Saving is refused with 'Only N of … in stock'."
     },
@@ -626,7 +736,8 @@
      ],
      "expected": "Everything is usable without zooming or sideways scrolling; buttons are easy to tap."
     }
-   ]
+   ],
+   "after": "SETUP"
   },
   {
    "key": "RET",
@@ -678,7 +789,7 @@
      "title": "Add and find customers",
      "tags": [],
      "steps": [
-      "Customers → Add: name, phone, GSTIN, state, credit limit.",
+      "Customers → Add your own: name starting with your initial, phone, GSTIN, state, credit limit.",
       "On Billing, type part of the phone number in the customer box."
      ],
      "expected": "The customer is found and picked; their GSTIN fills in."
@@ -701,7 +812,8 @@
      ],
      "expected": "The bill becomes Paid, the customer owes ₹0, and the UPI amount is in the bank column of the daily ledger."
     }
-   ]
+   ],
+   "after": "SETUP"
   },
   {
    "key": "WAR",
@@ -715,7 +827,7 @@
       "Printer"
      ],
      "steps": [
-      "Edit a product: warranty 12 months, cover type Guarantee (replacement). Sell it to a customer with a phone number.",
+      "Sell the starter product 'Fastrack Reflex Band' (12 months guarantee) to a customer with a phone number.",
       "Print the receipt."
      ],
      "expected": "The receipt and A4 invoice say 'Guarantee 1 year' with the valid-till date."
@@ -780,7 +892,8 @@
      ],
      "expected": "The right claim is found each time; the tabs filter correctly."
     }
-   ]
+   ],
+   "after": "SETUP"
   },
   {
    "key": "FIN",
@@ -828,16 +941,6 @@
      "expected": "Payments are listed and the slip is correct. Staff can't see employees or salaries."
     },
     {
-     "code": "FIN-05",
-     "title": "Daily ledger and day close",
-     "tags": [],
-     "steps": [
-      "Open the daily ledger for today. Check the cash in drawer against what you added up from today's tests.",
-      "Day close: enter a counted amount ₹10 less than the computed balance."
-     ],
-     "expected": "The opening balance, cash sales, refunds, expenses and transfers add up to the drawer figure. Day close shows a variance of −₹10."
-    },
-    {
      "code": "FIN-06",
      "title": "Cash book",
      "tags": [
@@ -847,12 +950,82 @@
       "Open the cash book for this week, download / print the PDF."
      ],
      "expected": "Every cash entry is there in date order with a running balance."
+    },
+    {
+     "code": "FIN-05",
+     "title": "Daily ledger and day close",
+     "tags": [],
+     "steps": [
+      "Do this last, after everyone has finished today's tests. Open the daily ledger for today and check the cash in drawer.",
+      "Day close: enter a counted amount ₹10 less than the computed balance."
+     ],
+     "expected": "Opening cash ₹2,000 (from SET-09) + cash sales − refunds − cash expenses − transfers = the drawer figure. Day close shows a variance of −₹10."
     }
-   ]
+   ],
+   "after": "SETUP"
+  },
+  {
+   "key": "GEN",
+   "name": "General checks",
+   "owner": "Everyone",
+   "tests": [
+    {
+     "code": "GEN-01",
+     "title": "Phone layout",
+     "tags": [
+      "Phone"
+     ],
+     "steps": [
+      "Open each menu section on the phone."
+     ],
+     "expected": "Every page fits the screen: no sideways scrolling, nothing overlapping, tables readable."
+    },
+    {
+     "code": "GEN-02",
+     "title": "Install as an app",
+     "tags": [
+      "Phone"
+     ],
+     "steps": [
+      "Chrome menu → 'Add to Home screen' / 'Install app'. Open it from the icon."
+     ],
+     "expected": "It opens full-screen like an app and you stay logged in."
+    },
+    {
+     "code": "GEN-03",
+     "title": "Global search",
+     "tags": [],
+     "steps": [
+      "Use the top search for a product name, customer phone, bill number and supplier."
+     ],
+     "expected": "Each is found."
+    },
+    {
+     "code": "GEN-04",
+     "title": "Two counters at once",
+     "tags": [],
+     "steps": [
+      "Two interns bill the same product at the same time on two devices and save within a few seconds of each other."
+     ],
+     "expected": "Both bills save with consecutive numbers and the stock goes down by both quantities."
+    },
+    {
+     "code": "GEN-05",
+     "title": "Speed on mobile data",
+     "tags": [
+      "Phone"
+     ],
+     "steps": [
+      "Turn off Wi-Fi on the phone and make a bill on mobile data."
+     ],
+     "expected": "Pages load in a few seconds; nothing times out. Note anything slow."
+    }
+   ],
+   "after": "SETUP"
   },
   {
    "key": "REP",
-   "name": "Reports & GST",
+   "name": "Reports & GST (do on the last day)",
    "owner": "Intern 3",
    "tests": [
     {
@@ -921,65 +1094,8 @@
      ],
      "expected": "Customers who owe (BIL-09 before payment) and suppliers you owe (PUR-05) are listed with the right amounts."
     }
-   ]
-  },
-  {
-   "key": "GEN",
-   "name": "General checks",
-   "owner": "Everyone",
-   "tests": [
-    {
-     "code": "GEN-01",
-     "title": "Phone layout",
-     "tags": [
-      "Phone"
-     ],
-     "steps": [
-      "Open each menu section on the phone."
-     ],
-     "expected": "Every page fits the screen: no sideways scrolling, nothing overlapping, tables readable."
-    },
-    {
-     "code": "GEN-02",
-     "title": "Install as an app",
-     "tags": [
-      "Phone"
-     ],
-     "steps": [
-      "Chrome menu → 'Add to Home screen' / 'Install app'. Open it from the icon."
-     ],
-     "expected": "It opens full-screen like an app and you stay logged in."
-    },
-    {
-     "code": "GEN-03",
-     "title": "Global search",
-     "tags": [],
-     "steps": [
-      "Use the top search for a product name, customer phone, bill number and supplier."
-     ],
-     "expected": "Each is found."
-    },
-    {
-     "code": "GEN-04",
-     "title": "Two counters at once",
-     "tags": [],
-     "steps": [
-      "Two interns bill the same product at the same time on two devices and save within a few seconds of each other."
-     ],
-     "expected": "Both bills save with consecutive numbers and the stock goes down by both quantities."
-    },
-    {
-     "code": "GEN-05",
-     "title": "Speed on mobile data",
-     "tags": [
-      "Phone"
-     ],
-     "steps": [
-      "Turn off Wi-Fi on the phone and make a bill on mobile data."
-     ],
-     "expected": "Pages load in a few seconds; nothing times out. Note anything slow."
-    }
-   ]
+   ],
+   "after": "SETUP"
   },
   {
    "key": "E2E",
@@ -1003,8 +1119,9 @@
      ],
      "expected": "Every figure agrees across the dashboard, ledger, reports and printed bills. Stock of the 5 products = purchased − sold + returned. Nothing needed a workaround."
     }
-   ]
+   ],
+   "after": "SETUP"
   }
  ],
- "instructions": "Test on https://shop.ralfiz.com in Chrome on the shop laptop; keep your phone for camera scanning and UPI checks. Use the login your supervisor gave you. For every step: do it, compare with 'Should happen', then mark Pass, Fail or Blocked. Fail = it did something wrong. Blocked = you could not test it (page error, missing data, printer not connected). For Fail/Blocked write exactly what you did and what you saw, and attach a screenshot."
+ "instructions": "Order of testing\n1. Everyone: do 'Getting started' (logins only).\n2. The Admin tester logs in as uat_admin and does 'Step 1 · Shop setup': company details, GST, financial year and bill numbers, bank/UPI, opening balances, and the starter products, customers, suppliers and labels. About 1–2 hours. Every other section stays locked until this is finished.\n3. Then all three test at the same time: Intern 1 products, purchases and settings; Intern 2 billing and returns; Intern 3 warranty and accounts.\n4. Last day: Reports, day close and the full shop day together.\n\nTesting at the same time without spoiling each other's tests\n• Sell, return and claim on the 10 starter products. Don't edit or delete them unless a test says so.\n• Anything new you create (products, customers) starts with your initial: H - , F - , M - .\n• Only change Settings in your own Settings tests, and put back what you changed.\n• Don't do day close until FIN-05 on the last day.\n\nHow to mark\nTest on https://shop.ralfiz.com in Chrome on the shop laptop; keep your phone for camera scanning and UPI checks. Use the login your supervisor gave you. For every step: do it, compare with 'Should happen', then mark Pass, Fail or Blocked. Fail = it did something wrong. Blocked = you could not test it (page error, missing data, printer not connected). For Fail/Blocked write exactly what you did and what you saw, and attach a screenshot."
 }

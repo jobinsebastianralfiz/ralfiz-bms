@@ -28,7 +28,7 @@ def uat_home(request):
             ids = list(s.cases.values_list('id', flat=True))
             done = [mine[i] for i in ids if i in mine]
             rows.append({'section': s, **services.progress(len(ids), len(done)), **services.counts(done),
-                         'retest': sum(1 for r in done if r.needs_retest)})
+                         'retest': sum(1 for r in done if r.needs_retest), 'waiting_on': s.waiting_on()})
         total = sum(r['total'] for r in rows)
         done = sum(r['done'] for r in rows)
         plans.append({'plan': plan, 'sections': rows, **services.progress(total, done),
@@ -46,7 +46,14 @@ def uat_section(request, plan_pk, section_pk):
     if not section.is_for(employee):
         raise Http404
 
+    waiting_on = section.waiting_on()
     if request.method == 'POST':
+        if waiting_on:
+            error = f'Wait until "{waiting_on.name}" is finished.'
+            if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+                return JsonResponse({'ok': False, 'error': error}, status=400)
+            messages.error(request, error)
+            return redirect('staff:uat_section', plan.pk, section.pk)
         return _save(request, employee, section)
 
     mine = {r.case_id: r for r in UATResult.objects.filter(tester=employee, case__section=section)}
@@ -55,7 +62,9 @@ def uat_section(request, plan_pk, section_pk):
     idx = [s.pk for s in sections].index(section.pk)
     ctx = _base_context(request, 'uat')
     ctx.update({'plan': plan, 'section': section, 'cases': cases,
-                'done': len(mine), 'total': len(cases),
+                'done': len(mine), 'total': len(cases), 'waiting_on': waiting_on,
+                'waiting_done': waiting_on.marked_count() if waiting_on else 0,
+                'waiting_total': waiting_on.cases.count() if waiting_on else 0,
                 'prev_section': sections[idx - 1] if idx > 0 else None,
                 'next_section': sections[idx + 1] if idx + 1 < len(sections) else None})
     return render(request, 'staff/uat/section.html', ctx)

@@ -51,11 +51,14 @@ def uat_plan_create(request):
 
 
 def load_cases(plan, data, owner_map=None):
-    """data = {"sections": [{"key", "name", "owner"?, "tests": [{"code","title","tags","steps","expected"}]}]}.
+    """data = {"sections": [{"key", "name", "owner"?, "after"? (key of an earlier section), "tests": [{"code","title","tags","steps","expected"}]}]}.
     owner_map maps a section's owner label (e.g. "Intern 1") to employees; other owners mean everyone."""
     owner_map = owner_map or {}
+    by_key = {}
     for i, s in enumerate(data['sections']):
-        section = UATSection.objects.create(plan=plan, key=s.get('key', '')[:20], name=s['name'][:200], order=i)
+        section = UATSection.objects.create(plan=plan, key=s.get('key', '')[:20], name=s['name'][:200], order=i,
+                                            starts_after=by_key.get(s.get('after')))
+        by_key[section.key] = section
         if owner_map.get(s.get('owner')):
             section.assignees.set(owner_map[s['owner']])
         UATCase.objects.bulk_create([

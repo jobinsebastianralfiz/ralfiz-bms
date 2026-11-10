@@ -45,12 +45,26 @@ class UATSection(models.Model):
     order = models.PositiveIntegerField(default=0)
     assignees = models.ManyToManyField('employees.Employee', blank=True, related_name='uat_sections',
                                        help_text='Empty = every tester on the plan')
+    starts_after = models.ForeignKey('self', on_delete=models.SET_NULL, null=True, blank=True, related_name='+',
+                                     help_text='Locked for testers until every test in that section is marked '
+                                               '(e.g. shop setup before billing)')
 
     class Meta:
         ordering = ['order', 'id']
 
     def __str__(self):
         return f'{self.plan.name} · {self.name}'
+
+    def marked_count(self):
+        """How many of this section's tests have a result from anyone."""
+        return self.cases.filter(results__isnull=False).distinct().count()
+
+    def waiting_on(self):
+        """The section that must be finished first, or None when this one is open."""
+        before = self.starts_after
+        if before and before.marked_count() < before.cases.count():
+            return before
+        return None
 
     def testers(self):
         people = list(self.assignees.all())

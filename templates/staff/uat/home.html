@@ -23,11 +23,11 @@
   {% if p.plan.instructions %}<details style="margin-top:12px"><summary class="ut-muted" style="cursor:pointer">How to test</summary><p style="white-space:pre-line;font-size:14px;margin-top:6px">{{ p.plan.instructions }}</p></details>{% endif %}
 </div>
 {% for r in p.sections %}
-<a class="ut-card ut-sec" href="{% url 'staff:uat_section' p.plan.pk r.section.pk %}">
+<a class="ut-card ut-sec{% if r.waiting_on %} ut-locked{% endif %}" href="{% url 'staff:uat_section' p.plan.pk r.section.pk %}">
   <div class="ut-row">
     <div>
       <div style="font-weight:650">{{ r.section.name }}</div>
-      <div class="ut-muted">{{ r.done }} of {{ r.total }} done</div>
+      <div class="ut-muted">{% if r.waiting_on %}<i class="fas fa-lock"></i> Starts after “{{ r.waiting_on.name }}” is finished{% else %}{{ r.done }} of {{ r.total }} done{% endif %}</div>
     </div>
     <div style="display:flex;gap:6px;flex-wrap:wrap">
       {% if r.retest %}<span class="ut-chip retest">{{ r.retest }} retest</span>{% endif %}

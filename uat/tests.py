@@ -36,13 +36,17 @@ class UATTests(TestCase):
 
     def load(self):
         call_command('load_uat_plan', 'uat/data/shop_manager_uat.json', '--due', '2026-11-13', '--notify',
-                     '--owner', 'Intern 1=EMP014', '--owner', 'Intern 2=EMP015', '--owner', 'Intern 3=EMP016',
-                     stdout=io.StringIO())
+                     '--owner', 'Admin=EMP014', '--owner', 'Intern 1=EMP014', '--owner', 'Intern 2=EMP015',
+                     '--owner', 'Intern 3=EMP016', stdout=io.StringIO())
         return UATPlan.objects.get()
+
+    def finish_setup(self, plan):
+        for case in plan.sections.get(key='SETUP').cases.all():
+            UATResult.objects.create(case=case, tester=self.emps[0], status='pass')
 
     def test_load_assigns_sections_and_notifies(self):
         plan = self.load()
-        self.assertEqual(plan.cases().count(), 86)
+        self.assertEqual(plan.cases().count(), 93)
         ham, fat, mit = self.emps
         billing = plan.sections.get(key='BIL')
         self.assertEqual([e.pk for e in billing.testers()], [fat.pk])
@@ -56,9 +60,10 @@ class UATTests(TestCase):
         self.client.login(username='u15', password=self.pw)  # Fathima
         home = self.client.get(reverse('staff:uat_home'))
         self.assertContains(home, 'Billing counter')
-        self.assertNotContains(home, 'Settings &amp; users')
+        self.assertNotContains(home, 'More settings')
         sett = plan.sections.get(key='SET')
         self.assertEqual(self.client.get(reverse('staff:uat_section', args=[plan.pk, sett.pk])).status_code, 404)
+        self.finish_setup(plan)
 
         billing = plan.sections.get(key='BIL')
         url = reverse('staff:uat_section', args=[plan.pk, billing.pk])
@@ -71,11 +76,11 @@ class UATTests(TestCase):
         r = self.client.post(url, {'case': case.pk, 'status': 'fail', 'note': 'Total wrong',
                                    'screenshot': SimpleUploadedFile('s.png', PNG, 'image/png')}, **ajax)
         self.assertEqual((r.status_code, r.json()['done']), (200, 1))
-        res = UATResult.objects.get()
+        res = UATResult.objects.get(tester=fat)
         self.assertTrue(res.screenshot.name.startswith('uat/screens/'))
         r = self.client.post(url, {'case': case.pk, 'status': 'pass', 'note': ''}, **ajax)
         res.refresh_from_db()
-        self.assertEqual((res.status, len(res.history), UATResult.objects.count()), ('pass', 1, 1))
+        self.assertEqual((res.status, len(res.history), UATResult.objects.filter(tester=fat).count()), ("pass", 1, 1))
 
     def test_dashboard_progress_and_fix_flow(self):
         plan = self.load()
@@ -128,3 +133,41 @@ class UATTests(TestCase):
     def test_login_required(self):
         self.assertEqual(self.client.get(reverse('uat_plan_list')).status_code, 302)
         self.assertEqual(self.client.get(reverse('staff:uat_home')).status_code, 302)
+
+
+    def test_sections_wait_for_shop_setup(self):
+        plan = self.load()
+        setup, billing = plan.sections.get(key='SETUP'), plan.sections.get(key='BIL')
+        self.assertEqual(billing.starts_after, setup)
+        self.assertEqual([e.pk for e in setup.testers()], [self.emps[0].pk])
+        self.client.login(username='u15', password=self.pw)  # Fathima, billing
+        self.assertContains(self.client.get(reverse('staff:uat_home')), 'Starts after')
+        url = reverse('staff:uat_section', args=[plan.pk, billing.pk])
+        self.assertContains(self.client.get(url), 'Not yet.')
+        ajax = {'HTTP_X_REQUESTED_WITH': 'XMLHttpRequest'}
+        r = self.client.post(url, {'case': billing.cases.first().pk, 'status': 'pass'}, **ajax)
+        self.assertEqual(r.status_code, 400)
+        cases = list(setup.cases.all())
+        for case in cases[:-1]:
+            UATResult.objects.create(case=case, tester=self.emps[0], status='pass')
+        self.assertIsNotNone(billing.waiting_on())  # one setup test still unmarked
+        UATResult.objects.create(case=cases[-1], tester=self.emps[0], status='blocked', note='printer off')
+        self.assertIsNone(billing.waiting_on())  # blocked counts as marked
+        self.assertNotContains(self.client.get(url), 'Not yet.')
+        r = self.client.post(url, {'case': billing.cases.first().pk, 'status': 'pass'}, **ajax)
+        self.assertEqual(r.status_code, 200)
+
+    def test_replace_keeps_results(self):
+        plan = self.load()
+        case = plan.sections.get(key='GEN0').cases.get(code='GS-01')
+        UATResult.objects.create(case=case, tester=self.emps[1], status='fail', note='padlock missing')
+        out = io.StringIO()
+        call_command('load_uat_plan', 'uat/data/shop_manager_uat.json', '--replace',
+                     '--owner', 'Admin=EMP014', '--owner', 'Intern 1=EMP014', '--owner', 'Intern 2=EMP015',
+                     '--owner', 'Intern 3=EMP016', stdout=out)
+        new = UATPlan.objects.get()
+        self.assertNotEqual(new.pk, plan.pk)
+        self.assertEqual(str(new.due_date), '2026-11-13')
+        r = UATResult.objects.get()
+        self.assertEqual((r.case.section.plan_id, r.case.code, r.note), (new.pk, 'GS-01', 'padlock missing'))
+        self.assertIn('Kept 1 of 1', out.getvalue())

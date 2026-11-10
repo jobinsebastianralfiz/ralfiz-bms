@@ -6,7 +6,7 @@ from django.db import transaction
 
 from employees.models import Employee
 from uat import services
-from uat.models import UATPlan
+from uat.models import UATCase, UATPlan, UATResult
 from uat.web_views import load_cases
 
 
@@ -21,7 +21,9 @@ class Command(BaseCommand):
                             help='"<owner label in the file>=<EMP id>[,<EMP id>]"; testers of that section')
         parser.add_argument('--due', help='Finish-by date, YYYY-MM-DD')
         parser.add_argument('--notify', action='store_true', help='Send each tester a notification')
-        parser.add_argument('--replace', action='store_true', help='Delete an existing plan with the same name first')
+        parser.add_argument('--replace', action='store_true',
+                            help='Rebuild an existing plan with the same name. Results already marked are kept '
+                                 'for tests whose code is still in the file.')
 
     @transaction.atomic
     def handle(self, path, owner, due, notify, replace, **_):
@@ -35,16 +37,34 @@ class Command(BaseCommand):
             owner_map[label.strip()] = emps
             everyone += [e for e in emps if e not in everyone]
         existing = UATPlan.objects.filter(name=data['name'])
+        kept, old_due = [], None
         if existing.exists():
             if not replace:
                 raise CommandError(f'A plan called {data["name"]!r} already exists (use --replace).')
+            kept = [(r.case.code, r) for r in UATResult.objects.filter(case__section__plan__in=existing)
+                    .select_related('case')]
+            old_due = existing.first().due_date
             existing.delete()
         plan = UATPlan.objects.create(name=data['name'], product=data.get('product', ''),
                                       site_url=data.get('site_url', ''), instructions=data.get('instructions', ''),
-                                      due_date=due or None)
+                                      due_date=due or old_due)
         plan.testers.set(everyone)
         load_cases(plan, data, owner_map)
+        restored = self._restore(plan, kept)
         if notify:
             services.notify_assigned(plan, everyone)
         self.stdout.write(f'{plan.name}: {plan.cases().count()} tests in {plan.sections.count()} sections, '
                           f'testers: {", ".join(e.full_name for e in everyone) or "none"} (id {plan.pk})')
+        if kept:
+            self.stdout.write(f'Kept {restored} of {len(kept)} earlier results.')
+
+    @staticmethod
+    def _restore(plan, kept):
+        cases = {c.code: c for c in UATCase.objects.filter(section__plan=plan)}
+        new = []
+        for code, r in kept:
+            if code in cases:
+                r.pk, r.id, r.case = None, None, cases[code]
+                new.append(r)
+        UATResult.objects.bulk_create(new)
+        return len(new)
