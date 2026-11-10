@@ -14,20 +14,45 @@
   <div class="ut-row">
     <div>
       <div style="font-size:18px;font-weight:700">{{ p.plan.name }}</div>
-      <div class="ut-muted">{% if p.plan.site_url %}Test on <a href="{{ p.plan.site_url }}" target="_blank" rel="noopener">{{ p.plan.site_url }}</a>{% endif %}{% if p.plan.due_date %} · finish by {{ p.plan.due_date|date:"D d M" }}{% endif %}</div>
+      <div class="ut-muted">{% if p.plan.site_url %}Test on <a href="{{ p.plan.site_url }}" target="_blank" rel="noopener">{{ p.plan.site_url|cut:"https://" }}</a>{% endif %}{% if p.plan.due_date %} · finish by {{ p.plan.due_date|date:"D d M" }}{% endif %}</div>
     </div>
     <div style="text-align:right"><b style="font-size:20px">{{ p.done }}/{{ p.total }}</b><div class="ut-muted">tests done</div></div>
   </div>
   <div class="ut-bar"><i style="width:{{ p.pct }}%"></i></div>
-  {% if p.retest %}<p class="ut-fix" style="margin-top:12px"><i class="fas fa-rotate"></i> {{ p.retest }} test{{ p.retest|pluralize }} fixed by Ralfiz: please test again.</p>{% endif %}
-  {% if p.plan.instructions %}<details style="margin-top:12px"><summary class="ut-muted" style="cursor:pointer">How to test</summary><p style="white-space:pre-line;font-size:14px;margin-top:6px">{{ p.plan.instructions }}</p></details>{% endif %}
 </div>
-{% for r in p.sections %}
-<a class="ut-card ut-sec{% if r.waiting_on %} ut-locked{% endif %}" href="{% url 'staff:uat_section' p.plan.pk r.section.pk %}">
+
+{% if p.retest %}<p class="ut-fix"><i class="fas fa-rotate"></i> {{ p.retest }} test{{ p.retest|pluralize }} fixed by Ralfiz: please test again.</p>{% endif %}
+
+{% if p.next %}
+<a class="ut-card ut-next" href="{% url 'staff:uat_section' p.plan.pk p.next.section.pk %}">
+  <div class="ut-next-label">Do this now</div>
+  <div class="ut-row">
+    <div><div class="ut-next-title">{{ p.next.section.name }}</div>
+      <div class="ut-muted">{{ p.next.done }} of {{ p.next.total }} done</div></div>
+    <span class="ut-go">{% if p.next.done %}Continue{% else %}Start{% endif %} <i class="fas fa-arrow-right"></i></span>
+  </div>
+</a>
+{% elif p.waiting %}
+<div class="ut-card ut-wait"><i class="fas fa-hourglass-half"></i> <b>Waiting for {{ p.waiting_who }}</b> to finish “{{ p.waiting.name }}” ({{ p.waiting_done }} of {{ p.waiting_total }} done). Your tests open after that.</div>
+{% endif %}
+
+<details class="ut-card ut-guide">
+  <summary><i class="fas fa-circle-info"></i> How to test <span class="ut-muted">· order, rules, how to mark</span></summary>
+  <div class="ut-guide-grid">
+  {% for b in p.guide %}
+    <div>{% if b.title %}<h3>{{ b.title }}</h3>{% endif %}
+      {% if b.numbered %}<ol>{% else %}<ul>{% endif %}{% for i in b.items %}<li>{{ i }}</li>{% endfor %}{% if b.numbered %}</ol>{% else %}</ul>{% endif %}</div>
+  {% endfor %}
+  </div>
+</details>
+
+{% if p.open %}<h2 class="ut-h">Your sections</h2>{% endif %}
+{% for r in p.open %}
+<a class="ut-card ut-sec" href="{% url 'staff:uat_section' p.plan.pk r.section.pk %}">
   <div class="ut-row">
     <div>
-      <div style="font-weight:650">{{ r.section.name }}</div>
-      <div class="ut-muted">{% if r.waiting_on %}<i class="fas fa-lock"></i> Starts after “{{ r.waiting_on.name }}” is finished{% else %}{{ r.done }} of {{ r.total }} done{% endif %}</div>
+      <div style="font-weight:650">{% if r.done == r.total %}<i class="fas fa-circle-check" style="color:#12B76A"></i> {% endif %}{{ r.section.name }}</div>
+      <div class="ut-muted">{{ r.done }} of {{ r.total }} done</div>
     </div>
     <div style="display:flex;gap:6px;flex-wrap:wrap">
       {% if r.retest %}<span class="ut-chip retest">{{ r.retest }} retest</span>{% endif %}
@@ -40,6 +65,15 @@
   <div class="ut-bar"><i style="width:{{ r.pct }}%"></i></div>
 </a>
 {% endfor %}
+
+{% if p.locked %}
+<h2 class="ut-h"><i class="fas fa-lock"></i> Opens after {{ p.waiting.name }}</h2>
+<div class="ut-card ut-locked-list">
+  {% for r in p.locked %}
+  <a href="{% url 'staff:uat_section' p.plan.pk r.section.pk %}"><span>{{ r.section.name }}</span><span class="ut-muted">{{ r.total }} test{{ r.total|pluralize }}</span></a>
+  {% endfor %}
+</div>
+{% endif %}
 {% empty %}
 <div class="ut-card" style="text-align:center;padding:36px">
   <i class="fas fa-clipboard-check" style="font-size:30px;color:#98A2B3"></i>

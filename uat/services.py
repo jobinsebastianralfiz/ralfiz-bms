@@ -86,3 +86,19 @@ def plan_stats(plans):
                      'open': open_problems(p).filter(fix_status='').count(), 'testers': len(ov['people'])}
     return out
 
+
+
+def instruction_blocks(text):
+    """Split plan instructions into [{title, items, numbered}] for a readable layout.
+    Paragraphs are separated by a blank line; the first line is the title, the rest are list items."""
+    import re
+    blocks = []
+    for para in re.split(r'\n\s*\n', (text or '').strip()):
+        lines = [l.strip() for l in para.splitlines() if l.strip()]
+        if not lines:
+            continue
+        title, rest = (lines[0], lines[1:]) if len(lines) > 1 else ('', lines)
+        numbered = bool(rest) and bool(re.match(r'\d+[.)]\s', rest[0]))
+        items = [re.sub(r'^(\d+[.)]|[•\-*])\s*', '', l) for l in rest]
+        blocks.append({'title': title, 'items': items, 'numbered': numbered})
+    return blocks

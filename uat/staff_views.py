@@ -31,8 +31,17 @@ def uat_home(request):
                          'retest': sum(1 for r in done if r.needs_retest), 'waiting_on': s.waiting_on()})
         total = sum(r['total'] for r in rows)
         done = sum(r['done'] for r in rows)
-        plans.append({'plan': plan, 'sections': rows, **services.progress(total, done),
-                      'retest': sum(r['retest'] for r in rows)})
+        open_rows = [r for r in rows if not r['waiting_on']]
+        locked = [r for r in rows if r['waiting_on']]
+        todo = [r for r in open_rows if r['retest'] or r['done'] < r['total']]
+        waiting = locked[0]['waiting_on'] if locked else None
+        plans.append({'plan': plan, 'open': open_rows, 'locked': locked, **services.progress(total, done),
+                      'retest': sum(r['retest'] for r in rows), 'next': todo[0] if todo else None,
+                      'waiting': waiting,
+                      'waiting_done': waiting.marked_count() if waiting else 0,
+                      'waiting_total': waiting.cases.count() if waiting else 0,
+                      'waiting_who': ', '.join(e.full_name.split()[0] for e in waiting.testers()) if waiting else '',
+                      'guide': services.instruction_blocks(plan.instructions)})
     ctx = _base_context(request, 'uat')
     ctx['plans'] = plans
     return render(request, 'staff/uat/home.html', ctx)

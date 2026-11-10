@@ -141,7 +141,9 @@ class UATTests(TestCase):
         self.assertEqual(billing.starts_after, setup)
         self.assertEqual([e.pk for e in setup.testers()], [self.emps[0].pk])
         self.client.login(username='u15', password=self.pw)  # Fathima, billing
-        self.assertContains(self.client.get(reverse('staff:uat_home')), 'Starts after')
+        home = self.client.get(reverse('staff:uat_home'))
+        self.assertContains(home, 'Opens after')
+        self.assertContains(home, 'Do this now')
         url = reverse('staff:uat_section', args=[plan.pk, billing.pk])
         self.assertContains(self.client.get(url), 'Not yet.')
         ajax = {'HTTP_X_REQUESTED_WITH': 'XMLHttpRequest'}

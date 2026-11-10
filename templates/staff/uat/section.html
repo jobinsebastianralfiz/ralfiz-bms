@@ -27,7 +27,7 @@
   {% csrf_token %}<input type="hidden" name="case" value="{{ c.pk }}">
   <div class="ut-row"><span class="ut-code">{{ c.code }}</span>
     <span>{% for t in c.tags %}<span class="ut-chip">{{ t }}</span> {% endfor %}{% if r %}<span class="ut-chip {{ r.status }}" data-badge>{{ r.get_status_display }}</span>{% else %}<span class="ut-chip" data-badge>Not tested</span>{% endif %}</span></div>
-  <div class="ut-title">{{ c.title }}</div>
+  <div class="ut-title" data-toggle>{{ c.title }}</div>
   {% if r.needs_retest %}<div class="ut-fix"><i class="fas fa-rotate"></i> Ralfiz fixed this{% if r.fix_note %}: {{ r.fix_note }}{% endif %}. Please test it again.</div>{% endif %}
   <ol class="ut-steps">{% for s in c.steps %}<li>{{ s }}</li>{% endfor %}</ol>
   <div class="ut-exp"><b>Should happen</b>{{ c.expected }}</div>
@@ -36,10 +36,12 @@
     <input type="radio" name="status" value="fail" id="f-{{ c.pk }}" {% if r.status == 'fail' %}checked{% endif %}><label class="fail" for="f-{{ c.pk }}"><i class="fas fa-xmark"></i> Fail</label>
     <input type="radio" name="status" value="blocked" id="b-{{ c.pk }}" {% if r.status == 'blocked' %}checked{% endif %}><label class="blocked" for="b-{{ c.pk }}"><i class="fas fa-ban"></i> Blocked</label>
   </div>
-  <textarea class="ut-note" name="note" placeholder="Note (needed for Fail / Blocked): what you did, what you saw">{{ r.note }}</textarea>
-  <div class="ut-actions">
-    <label class="ut-btn" style="cursor:pointer"><i class="fas fa-camera"></i> <span data-shot-label>{% if r.screenshot %}Replace screenshot{% else %}Add screenshot{% endif %}</span>
+  <div class="ut-more{% if r.note or r.screenshot %} has{% endif %}">
+    <textarea class="ut-note" name="note" placeholder="What did you do, and what did you see?">{{ r.note }}</textarea>
+    <label class="ut-btn" style="cursor:pointer;margin-top:8px"><i class="fas fa-camera"></i> <span data-shot-label>{% if r.screenshot %}Replace screenshot{% else %}Add screenshot{% endif %}</span>
       <input type="file" name="screenshot" accept="image/*" hidden></label>
+  </div>
+  <div class="ut-actions">
     <button class="ut-save" type="submit"{% if waiting_on %} disabled{% endif %}>Save</button>
     <span class="ut-msg" data-msg aria-live="polite"></span>
   </div>
@@ -56,6 +58,7 @@
 {% block extra_js %}
 <script>
 document.querySelectorAll('form.ut-case').forEach(function (form) {
+  form.querySelector('[data-toggle]').addEventListener('click', function () { form.classList.toggle('open'); });
   var msg = form.querySelector('[data-msg]'), btn = form.querySelector('.ut-save');
   form.querySelector('input[type=file]').addEventListener('change', function () {
     form.querySelector('[data-shot-label]').textContent = this.files[0] ? this.files[0].name : 'Add screenshot';
@@ -69,7 +72,7 @@ document.querySelectorAll('form.ut-case').forEach(function (form) {
         btn.disabled = false;
         if (!res.ok || !res.d.ok) { msg.className = 'ut-msg err'; msg.textContent = res.d.error || 'Could not save.'; return; }
         msg.className = 'ut-msg ok'; msg.textContent = 'Saved';
-        form.className = 'ut-card ut-case s-' + res.d.status;
+        form.className = 'ut-card ut-case open s-' + res.d.status;
         var badge = form.querySelector('[data-badge]'); badge.className = 'ut-chip ' + res.d.status; badge.textContent = res.d.label;
         var fix = form.querySelector('.ut-fix'); if (fix) fix.remove();
         if (res.d.screenshot) {
