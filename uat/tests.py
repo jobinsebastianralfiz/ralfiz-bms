@@ -143,7 +143,7 @@ class UATTests(TestCase):
         self.client.login(username='u15', password=self.pw)  # Fathima, billing
         home = self.client.get(reverse('staff:uat_home'))
         self.assertContains(home, 'Locked until')
-        self.assertContains(home, 'Your next step')
+        self.assertContains(home, 'class="ut-dock"')
         url = reverse('staff:uat_section', args=[plan.pk, billing.pk])
         self.assertContains(self.client.get(url), '<b>Locked.</b>')
         ajax = {'HTTP_X_REQUESTED_WITH': 'XMLHttpRequest'}

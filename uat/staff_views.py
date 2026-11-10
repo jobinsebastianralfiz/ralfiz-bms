@@ -35,6 +35,8 @@ def uat_home(request):
         locked = [r for r in rows if r['waiting_on']]
         todo = [r for r in open_rows if r['retest'] or r['done'] < r['total']]
         waiting = locked[0]['waiting_on'] if locked else None
+        if todo:
+            todo[0]['is_next'] = True
         plans.append({'plan': plan, 'open': open_rows, 'locked': locked, **services.progress(total, done),
                       'retest': sum(r['retest'] for r in rows), 'next': todo[0] if todo else None,
                       'waiting': waiting,
