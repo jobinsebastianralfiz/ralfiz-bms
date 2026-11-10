@@ -470,10 +470,10 @@
       "Admin"
      ],
      "steps": [
-      "Users → Add: name, username, role Staff, password twice. Save.",
+      "Users → Add: name, username, role Staff, password twice. Leave the switches under 'What this staff member can do' as they are. Save.",
       "Log in as that user in another browser (or incognito)."
      ],
-     "expected": "The staff user can bill, enter purchases, stock and daily entries. They do NOT see Users, Settings, Employees, Salaries, Catalog import, or Delete / Cancel buttons."
+     "expected": "A new Staff user starts with only Billing & bills, Sales returns and Warranty & repairs switched on. Their menu shows Billing, Sales, Warranty and Inventory (Products only). No Purchases, Accounts, Reports, Users, Settings, Delete or Cancel buttons. Home shows no cash drawer, supplier dues or profit."
     },
     {
      "code": "USR-02",
@@ -485,6 +485,66 @@
       "Add a user with role Admin. Log in as them."
      ],
      "expected": "They see Settings and Users."
+    },
+    {
+     "code": "USR-04",
+     "title": "Blocked pages stay blocked",
+     "tags": [
+      "Admin"
+     ],
+     "steps": [
+      "Logged in as the USR-01 staff user, type these addresses in the browser: /reports/sales/, /reports/pnl/, /purchases/, /finance/expenses/, /inventory/add/."
+     ],
+     "expected": "Each one goes back to Home with a red message: 'You don't have access to … Ask the shop admin to turn it on.'"
+    },
+    {
+     "code": "USR-05",
+     "title": "Price and discount locked",
+     "tags": [
+      "Admin"
+     ],
+     "steps": [
+      "As the USR-01 staff user, open Billing and add Titan Neo Analog.",
+      "Try to change the price, the line discount and the bill discount.",
+      "Complete the bill at the normal price."
+     ],
+     "expected": "The price and discount boxes cannot be edited. The bill saves at the normal selling price, and the receipt shows 'Billed by: <their name>'."
+    },
+    {
+     "code": "USR-06",
+     "title": "Turn on reports, cost stays hidden",
+     "tags": [
+      "Admin"
+     ],
+     "steps": [
+      "As Admin, Users → edit the USR-01 user. Switch on Reports only. Save.",
+      "As the staff user, open Reports → Sales summary, and Inventory → Products."
+     ],
+     "expected": "Reports appears in their menu without Margin and Profit & loss. Sales summary has no Cost, Margin or Margin % columns, but has a 'Sales by staff' table. Products shows no Cost or Margin column."
+    },
+    {
+     "code": "USR-07",
+     "title": "Give full access, then see it all",
+     "tags": [
+      "Admin"
+     ],
+     "steps": [
+      "As Admin, edit the same user: switch on every option, including 'Change price & give discount' and 'See cost & profit'. Save.",
+      "As the staff user, reload Home and Products, and change a price at Billing (don't save the bill)."
+     ],
+     "expected": "Purchases, Accounts and all Reports appear. Cost, margin and profit show again. The price box at Billing can be edited."
+    },
+    {
+     "code": "USR-08",
+     "title": "Bills by staff member",
+     "tags": [
+      "Admin"
+     ],
+     "steps": [
+      "As Admin, Sales → Bills. Pick the USR-01 user in the 'All staff' filter. Filter.",
+      "Reports → Sales summary: find the 'Sales by staff' table."
+     ],
+     "expected": "Only that person's bills are listed. 'Sales by staff' shows each person's bills, sales, discount given and average bill."
     },
     {
      "code": "USR-03",
