@@ -59,8 +59,12 @@ class UATTests(TestCase):
         ham, fat, _ = self.emps
         self.client.login(username='u15', password=self.pw)  # Fathima
         home = self.client.get(reverse('staff:uat_home'))
-        self.assertContains(home, 'Billing counter')
+        self.assertContains(home, 'class="ut-plan"')
+        self.assertContains(home, reverse('staff:uat_plan', args=[plan.pk]))
         self.assertNotContains(home, 'More settings')
+        page = self.client.get(reverse('staff:uat_plan', args=[plan.pk]))
+        self.assertContains(page, 'Billing counter')
+        self.assertNotContains(page, 'More settings')
         sett = plan.sections.get(key='SET')
         self.assertEqual(self.client.get(reverse('staff:uat_section', args=[plan.pk, sett.pk])).status_code, 404)
         self.finish_setup(plan)
@@ -103,7 +107,8 @@ class UATTests(TestCase):
 
         self.client.logout()
         self.client.login(username='u15', password=self.pw)
-        self.assertContains(self.client.get(reverse('staff:uat_home')), 'please test again')
+        self.assertContains(self.client.get(reverse('staff:uat_home')), 'to retest')
+        self.assertContains(self.client.get(reverse('staff:uat_plan', args=[plan.pk])), 'please test again')
         res.record('pass', '')
         self.assertFalse(res.needs_retest)
 
@@ -142,8 +147,10 @@ class UATTests(TestCase):
         self.assertEqual([e.pk for e in setup.testers()], [self.emps[0].pk])
         self.client.login(username='u15', password=self.pw)  # Fathima, billing
         home = self.client.get(reverse('staff:uat_home'))
-        self.assertContains(home, 'Locked until')
-        self.assertContains(home, 'class="ut-dock"')
+        self.assertContains(home, '<small>Next</small>Getting started')
+        page = self.client.get(reverse('staff:uat_plan', args=[plan.pk]))
+        self.assertContains(page, 'Locked until')
+        self.assertContains(page, 'class="ut-dock')
         url = reverse('staff:uat_section', args=[plan.pk, billing.pk])
         self.assertContains(self.client.get(url), '<b>Locked.</b>')
         ajax = {'HTTP_X_REQUESTED_WITH': 'XMLHttpRequest'}
@@ -173,6 +180,31 @@ class UATTests(TestCase):
         r = UATResult.objects.get()
         self.assertEqual((r.case.section.plan_id, r.case.code, r.note), (new.pk, 'GS-01', 'padlock missing'))
         self.assertIn('Kept 1 of 1', out.getvalue())
+
+    def test_home_shows_a_card_per_plan_and_card_opens_plan(self):
+        shop = self.load()
+        call_command('load_uat_plan', 'uat/data/greencard_uat.json', '--due', '2026-11-20',
+                     '--owner', 'Admin=EMP014', '--owner', 'Intern 1=EMP014', '--owner', 'Intern 2=EMP015',
+                     '--owner', 'Intern 3=EMP016', stdout=io.StringIO())
+        gc = UATPlan.objects.get(name='GreenCard UAT')
+        self.client.login(username='u15', password=self.pw)  # Fathima
+        home = self.client.get(reverse('staff:uat_home'))
+        self.assertContains(home, 'class="ut-plan"', count=2)
+        self.assertContains(home, 'Shop Manager UAT')
+        self.assertContains(home, 'GreenCard UAT')
+        self.assertNotContains(home, 'Your sections')  # sections live on the plan page now
+        page = self.client.get(reverse('staff:uat_plan', args=[gc.pk]))
+        self.assertContains(page, 'Workers &amp; the Green Card')  # Intern 2's section
+        self.assertContains(page, 'All UAT plans')
+        sec = gc.sections.get(key='WRK')
+        self.assertContains(self.client.get(reverse('staff:uat_section', args=[gc.pk, sec.pk])),
+                            reverse('staff:uat_plan', args=[gc.pk]))
+        # A plan you're not testing, or a closed one, is not found
+        gc.testers.remove(self.emps[1])
+        self.assertEqual(self.client.get(reverse('staff:uat_plan', args=[gc.pk])).status_code, 404)
+        shop.status = 'closed'
+        shop.save()
+        self.assertEqual(self.client.get(reverse('staff:uat_plan', args=[shop.pk])).status_code, 404)
 
 
 class OldPlanLinkTests(TestCase):

@@ -33,6 +33,7 @@ urlpatterns = [
 
     # UAT testing
     path('uat/', uat_v.uat_home, name='uat_home'),
+    path('uat/<uuid:plan_pk>/', uat_v.uat_plan, name='uat_plan'),
     path('uat/<uuid:plan_pk>/<int:section_pk>/', uat_v.uat_section, name='uat_section'),
 
     # Classes & assessments

@@ -3,6 +3,7 @@ from django.contrib import messages
 from django.http import Http404, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
+from django.utils import timezone
 
 from employees.portal_views import _base_context, staff_required
 
@@ -16,39 +17,59 @@ def _my_plans(employee):
     return UATPlan.objects.filter(testers=employee, status='active').distinct()
 
 
+def _summary(plan, employee):
+    """One plan as this tester sees it: their sections, progress, what to do next."""
+    sections = services.tester_sections(plan, employee)
+    mine = {r.case_id: r for r in UATResult.objects.filter(tester=employee, case__section__plan=plan)}
+    rows = []
+    for s in sections:
+        ids = list(s.cases.values_list('id', flat=True))
+        done = [mine[i] for i in ids if i in mine]
+        rows.append({'section': s, **services.progress(len(ids), len(done)), **services.counts(done),
+                     'retest': sum(1 for r in done if r.needs_retest), 'waiting_on': s.waiting_on()})
+    total = sum(r['total'] for r in rows)
+    done = sum(r['done'] for r in rows)
+    open_rows = [r for r in rows if not r['waiting_on']]
+    locked = [r for r in rows if r['waiting_on']]
+    todo = [r for r in open_rows if r['retest'] or r['done'] < r['total']]
+    waiting = locked[0]['waiting_on'] if locked else None
+    if todo:
+        todo[0]['is_next'] = True
+    return {'plan': plan, 'open': open_rows, 'locked': locked, **services.progress(total, done),
+            'retest': sum(r['retest'] for r in rows), 'next': todo[0] if todo else None,
+            'waiting': waiting,
+            'waiting_done': waiting.marked_count() if waiting else 0,
+            'waiting_total': waiting.cases.count() if waiting else 0,
+            'waiting_who': ', '.join(e.full_name.split()[0] for e in waiting.testers()) if waiting else '',
+            'guide': services.instruction_blocks(plan.instructions),
+            'todo': total - done, 'section_count': len(rows),
+            **_due(plan, total - done),
+            **{k: sum(r[k] for r in rows) for k in ('pass', 'fail', 'blocked')}}
+
+
+def _due(plan, todo):
+    if not plan.due_date or not todo:
+        return {'due_text': '', 'late': False}
+    days = (plan.due_date - timezone.localdate()).days
+    if days < 0:
+        return {'due_text': f'{-days} day{"s" if days < -1 else ""} late', 'late': True}
+    return {'due_text': {0: 'today', 1: 'tomorrow'}.get(days, f'{days} days left'), 'late': False}
+
+
 @staff_required
 def uat_home(request):
-    employee = request.employee
-    plans = []
-    for plan in _my_plans(employee):
-        sections = services.tester_sections(plan, employee)
-        mine = {r.case_id: r for r in UATResult.objects.filter(tester=employee, case__section__plan=plan)}
-        rows = []
-        for s in sections:
-            ids = list(s.cases.values_list('id', flat=True))
-            done = [mine[i] for i in ids if i in mine]
-            rows.append({'section': s, **services.progress(len(ids), len(done)), **services.counts(done),
-                         'retest': sum(1 for r in done if r.needs_retest), 'waiting_on': s.waiting_on()})
-        total = sum(r['total'] for r in rows)
-        done = sum(r['done'] for r in rows)
-        open_rows = [r for r in rows if not r['waiting_on']]
-        locked = [r for r in rows if r['waiting_on']]
-        todo = [r for r in open_rows if r['retest'] or r['done'] < r['total']]
-        waiting = locked[0]['waiting_on'] if locked else None
-        if todo:
-            todo[0]['is_next'] = True
-        plans.append({'plan': plan, 'open': open_rows, 'locked': locked, **services.progress(total, done),
-                      'retest': sum(r['retest'] for r in rows), 'next': todo[0] if todo else None,
-                      'waiting': waiting,
-                      'waiting_done': waiting.marked_count() if waiting else 0,
-                      'waiting_total': waiting.cases.count() if waiting else 0,
-                      'waiting_who': ', '.join(e.full_name.split()[0] for e in waiting.testers()) if waiting else '',
-                      'guide': services.instruction_blocks(plan.instructions),
-                      'todo': total - done, 'section_count': len(rows),
-                      **{k: sum(r[k] for r in rows) for k in ('pass', 'fail', 'blocked')}})
+    """A card per plan; the card opens the plan."""
     ctx = _base_context(request, 'uat')
-    ctx['plans'] = plans
+    ctx['plans'] = [_summary(plan, request.employee) for plan in _my_plans(request.employee).order_by('due_date', 'name')]
     return render(request, 'staff/uat/home.html', ctx)
+
+
+@staff_required
+def uat_plan(request, plan_pk):
+    plan = get_object_or_404(_my_plans(request.employee), pk=plan_pk)
+    ctx = _base_context(request, 'uat')
+    ctx['p'] = _summary(plan, request.employee)
+    return render(request, 'staff/uat/plan.html', ctx)
 
 
 @staff_required

@@ -1,0 +1,89 @@
+{% extends 'staff/base.html' %}
+
+{% block title %}{{ p.plan.name }} · UAT Testing{% endblock %}
+{% block heading %}UAT Testing{% endblock %}
+
+{% block content %}
+{% include 'staff/uat/_styles.html' %}
+<div class="ut">
+<section class="ut-panel">
+  <div class="ut-top">
+    <div>
+      <div class="ut-kicker"><a href="{% url 'staff:uat_home' %}"><i class="fas fa-arrow-left"></i> All UAT plans</a></div>
+      <h1>{{ p.plan.name }}</h1>
+    </div>
+    <div class="ut-chips">
+      {% if p.plan.site_url %}<a class="ut-chip" href="{{ p.plan.site_url }}" target="_blank" rel="noopener"><i class="fas fa-arrow-up-right-from-square"></i> {{ p.plan.site_url|cut:"https://" }}</a>{% endif %}
+      {% if p.plan.due_date %}<span class="ut-chip"><i class="fas fa-calendar"></i> Finish by {{ p.plan.due_date|date:"D d M" }}</span>{% endif %}
+      {% if p.retest %}<span class="ut-chip lime"><i class="fas fa-rotate"></i> {{ p.retest }} to retest</span>{% endif %}
+    </div>
+  </div>
+
+  <div class="ut-vitals">
+    <div class="ut-vital"><small>Progress</small><b>{{ p.done }}<span>/ {{ p.total }}</span></b></div>
+    <div class="ut-vital"><small><span class="dot" style="background:var(--u-pass)"></span>Passed</small><b>{{ p.pass }}</b></div>
+    <div class="ut-vital"><small><span class="dot" style="background:var(--u-fail)"></span>Failed</small><b>{{ p.fail }}</b></div>
+    <div class="ut-vital"><small><span class="dot" style="background:var(--u-block)"></span>Blocked</small><b>{{ p.blocked }}</b></div>
+    <div class="ut-vital"><small><span class="dot" style="background:var(--u-ink-3)"></span>Not tested</small><b>{{ p.todo }}</b></div>
+  </div>
+  <div class="ut-track" aria-label="{{ p.pct }}% done"><i style="width:{{ p.pct }}%"></i><span class="node" style="left:{{ p.pct }}%"></span><span class="end"></span></div>
+
+  {% if p.retest %}<p class="ut-fixnote" style="margin:16px 0 0"><i class="fas fa-rotate"></i> {{ p.retest }} test{{ p.retest|pluralize }} fixed by Ralfiz: please test again.</p>{% endif %}
+  {% if p.next %}
+  <a class="ut-dock" href="{% url 'staff:uat_section' p.plan.pk p.next.section.pk %}">
+    <span class="badge">{% if p.next.retest %}Retest{% else %}Next{% endif %}</span>
+    <span class="txt">{{ p.next.section.name }} <span>· {{ p.next.total }} tests{% if p.next.done %}, {{ p.next.done }} done{% endif %}</span></span>
+    <span class="go">{% if p.next.done %}Continue{% else %}Start{% endif %} <i class="fas fa-arrow-right"></i></span>
+  </a>
+  {% elif p.waiting %}
+  <div class="ut-dock wait"><span class="badge"><i class="fas fa-hourglass-half"></i> Waiting</span>
+    <span class="txt">{{ p.waiting_who }} is doing {{ p.waiting.name }} <span>· {{ p.waiting_done }} of {{ p.waiting_total }} done. Your tests open after that.</span></span></div>
+  {% endif %}
+</section>
+
+<section class="ut-panel">
+  <div class="ut-phead"><h2>Your sections</h2><span class="ut-chip ghost">{{ p.section_count }} sections</span></div>
+  <ol class="ut-timeline">
+    {% for r in p.open %}
+    <li class="{% if r.done == r.total and not r.retest %}done{% elif r.is_next %}current{% endif %}">
+      <span class="ut-node">{% if r.done == r.total and not r.retest %}<i class="fas fa-check"></i>{% elif r.is_next %}<i class="fas fa-play" style="font-size:11px"></i>{% else %}{{ forloop.counter }}{% endif %}</span>
+      <a class="ut-tcard" href="{% url 'staff:uat_section' p.plan.pk r.section.pk %}">
+        <span class="name"><small>{% if r.is_next %}Now{% elif r.done == r.total %}Finished{% elif r.done %}In progress{% else %}Not started{% endif %}</small><strong>{{ r.section.name }}</strong></span>
+        {% if r.retest %}<span class="ut-pill lime">{{ r.retest }} retest</span>{% endif %}
+        {% if r.fail %}<span class="ut-pill fail">{{ r.fail }} failed</span>{% endif %}
+        {% if r.blocked %}<span class="ut-pill blocked">{{ r.blocked }} blocked</span>{% endif %}
+        <span class="ut-mini"><i style="width:{{ r.pct }}%"></i></span>
+        <span class="ut-ratio">{{ r.done }}<span>/{{ r.total }}</span></span>
+        <span class="ut-arrow"><i class="fas fa-arrow-right"></i></span>
+      </a>
+    </li>
+    {% endfor %}
+    {% if p.locked %}
+    <li class="ut-divider"><i class="fas fa-lock" style="margin-right:6px"></i> Locked until {{ p.waiting.name }} is done</li>
+    {% for r in p.locked %}
+    <li class="locked">
+      <span class="ut-node"><i class="fas fa-lock" style="font-size:11px"></i></span>
+      <a class="ut-tcard" href="{% url 'staff:uat_section' p.plan.pk r.section.pk %}">
+        <span class="name"><strong>{{ r.section.name }}</strong></span>
+        <span class="ut-ratio"><span>{{ r.total }} test{{ r.total|pluralize }}</span></span>
+        <span class="ut-arrow"><i class="fas fa-arrow-right"></i></span>
+      </a>
+    </li>
+    {% endfor %}
+    {% endif %}
+  </ol>
+</section>
+
+{% if p.guide %}
+<details class="ut-panel ut-guide">
+  <summary><h2>How to test</h2><span class="ut-arrow"><i class="fas fa-chevron-down"></i></span></summary>
+  <div class="ut-guide-grid">
+    {% for b in p.guide %}
+    <div>{% if b.title %}<h3>{{ b.title }}</h3>{% endif %}
+      {% if b.numbered %}<ol>{% else %}<ul>{% endif %}{% for i in b.items %}<li>{{ i }}</li>{% endfor %}{% if b.numbered %}</ol>{% else %}</ul>{% endif %}</div>
+    {% endfor %}
+  </div>
+</details>
+{% endif %}
+</div>
+{% endblock %}

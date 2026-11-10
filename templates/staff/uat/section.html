@@ -4,7 +4,7 @@
 
 {% block appbar %}
 <div class="sf-appbar-main">
-  <a href="{% url 'staff:uat_home' %}" class="sf-back"><i class="fas fa-chevron-left"></i> UAT Testing</a>
+  <a href="{% url 'staff:uat_plan' plan.pk %}" class="sf-back"><i class="fas fa-chevron-left"></i> {{ plan.name }}</a>
 </div>
 {% endblock %}
 
@@ -14,7 +14,7 @@
 <section class="ut-panel">
   <div class="ut-top">
     <div>
-      <div class="ut-kicker"><a href="{% url 'staff:uat_home' %}"><i class="fas fa-arrow-left"></i> {{ plan.name }}</a></div>
+      <div class="ut-kicker"><a href="{% url 'staff:uat_plan' plan.pk %}"><i class="fas fa-arrow-left"></i> {{ plan.name }}</a></div>
       <h1>{{ section.name }}</h1>
     </div>
     <div class="ut-chips">
@@ -69,7 +69,7 @@
 
 <div class="ut-nav">
   {% if prev_section %}<a class="ut-chip" href="{% url 'staff:uat_section' plan.pk prev_section.pk %}"><i class="fas fa-arrow-left"></i> {{ prev_section.name }}</a>{% else %}<span></span>{% endif %}
-  {% if next_section %}<a class="ut-chip" href="{% url 'staff:uat_section' plan.pk next_section.pk %}">{{ next_section.name }} <i class="fas fa-arrow-right"></i></a>{% else %}<a class="ut-chip" href="{% url 'staff:uat_home' %}">All sections</a>{% endif %}
+  {% if next_section %}<a class="ut-chip" href="{% url 'staff:uat_section' plan.pk next_section.pk %}">{{ next_section.name }} <i class="fas fa-arrow-right"></i></a>{% else %}<a class="ut-chip" href="{% url 'staff:uat_plan' plan.pk %}">All sections</a>{% endif %}
 </div>
 </div>
 {% endblock %}
