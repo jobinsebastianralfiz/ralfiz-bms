@@ -41,7 +41,9 @@ def uat_home(request):
                       'waiting_done': waiting.marked_count() if waiting else 0,
                       'waiting_total': waiting.cases.count() if waiting else 0,
                       'waiting_who': ', '.join(e.full_name.split()[0] for e in waiting.testers()) if waiting else '',
-                      'guide': services.instruction_blocks(plan.instructions)})
+                      'guide': services.instruction_blocks(plan.instructions),
+                      'todo': total - done, 'section_count': len(rows),
+                      **{k: sum(r[k] for r in rows) for k in ('pass', 'fail', 'blocked')}})
     ctx = _base_context(request, 'uat')
     ctx['plans'] = plans
     return render(request, 'staff/uat/home.html', ctx)
@@ -67,11 +69,12 @@ def uat_section(request, plan_pk, section_pk):
 
     mine = {r.case_id: r for r in UATResult.objects.filter(tester=employee, case__section=section)}
     cases = [{'case': c, 'result': mine.get(c.id)} for c in section.cases.all()]
+    tally = services.counts(mine.values())
     sections = services.tester_sections(plan, employee)
     idx = [s.pk for s in sections].index(section.pk)
     ctx = _base_context(request, 'uat')
     ctx.update({'plan': plan, 'section': section, 'cases': cases,
-                'done': len(mine), 'total': len(cases), 'waiting_on': waiting_on,
+                'done': len(mine), 'total': len(cases), 'waiting_on': waiting_on, 'tally': tally,
                 'waiting_done': waiting_on.marked_count() if waiting_on else 0,
                 'waiting_total': waiting_on.cases.count() if waiting_on else 0,
                 'prev_section': sections[idx - 1] if idx > 0 else None,

@@ -68,7 +68,7 @@ class UATTests(TestCase):
         billing = plan.sections.get(key='BIL')
         url = reverse('staff:uat_section', args=[plan.pk, billing.pk])
         page = self.client.get(url)
-        self.assertContains(page, 'Should happen')
+        self.assertContains(page, 'Expected result')
         case = billing.cases.first()
         ajax = {'HTTP_X_REQUESTED_WITH': 'XMLHttpRequest'}
         r = self.client.post(url, {'case': case.pk, 'status': 'fail', 'note': ''}, **ajax)
@@ -142,10 +142,10 @@ class UATTests(TestCase):
         self.assertEqual([e.pk for e in setup.testers()], [self.emps[0].pk])
         self.client.login(username='u15', password=self.pw)  # Fathima, billing
         home = self.client.get(reverse('staff:uat_home'))
-        self.assertContains(home, 'Opens after')
-        self.assertContains(home, 'Do this now')
+        self.assertContains(home, 'Locked until')
+        self.assertContains(home, 'Your next step')
         url = reverse('staff:uat_section', args=[plan.pk, billing.pk])
-        self.assertContains(self.client.get(url), 'Not yet.')
+        self.assertContains(self.client.get(url), '<b>Locked.</b>')
         ajax = {'HTTP_X_REQUESTED_WITH': 'XMLHttpRequest'}
         r = self.client.post(url, {'case': billing.cases.first().pk, 'status': 'pass'}, **ajax)
         self.assertEqual(r.status_code, 400)
@@ -155,7 +155,7 @@ class UATTests(TestCase):
         self.assertIsNotNone(billing.waiting_on())  # one setup test still unmarked
         UATResult.objects.create(case=cases[-1], tester=self.emps[0], status='blocked', note='printer off')
         self.assertIsNone(billing.waiting_on())  # blocked counts as marked
-        self.assertNotContains(self.client.get(url), 'Not yet.')
+        self.assertNotContains(self.client.get(url), '<b>Locked.</b>')
         r = self.client.post(url, {'case': billing.cases.first().pk, 'status': 'pass'}, **ajax)
         self.assertEqual(r.status_code, 200)
 

@@ -53,7 +53,7 @@
   },
   {
    "key": "SETUP",
-   "name": "Step 1 · Shop setup (Admin – do this first)",
+   "name": "Shop setup",
    "owner": "Admin",
    "tests": [
     {

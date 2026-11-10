@@ -10,55 +10,75 @@
 
 {% block content %}
 {% include 'staff/uat/_styles.html' %}
-<div class="ut-card">
-  <div class="ut-muted">{{ plan.name }}</div>
-  <h1 style="font-size:21px;font-weight:700;margin:2px 0 4px">{{ section.name }}</h1>
-  <div class="ut-row"><span class="ut-muted">{% if plan.site_url %}Test on <a href="{{ plan.site_url }}" target="_blank" rel="noopener">{{ plan.site_url }}</a>{% endif %}</span>
-    <b><span id="ut-done">{{ done }}</span>/{{ total }} done</b></div>
-  <div class="ut-bar"><i id="ut-bar" style="width:{% widthratio done total 100 %}%"></i></div>
-</div>
-{% if waiting_on %}
-<div class="ut-card ut-wait"><i class="fas fa-lock"></i> <b>Not yet.</b> These tests need the data from “{{ waiting_on.name }}”
-  ({{ waiting_done }} of {{ waiting_total }} done). Read the steps now; you can mark them once setup is finished.</div>
-{% endif %}
+<div class="ut">
+<section class="sv-card">
+  <div class="ut-pad">
+    <div class="ut-head">
+      <div>
+        <div class="ut-eyebrow"><a href="{% url 'staff:uat_home' %}">{{ plan.name }}</a> <i class="fas fa-chevron-right" style="font-size:9px"></i> Section</div>
+        <h1>{{ section.name }}</h1>
+      </div>
+      {% if plan.site_url %}<a class="ut-btn" href="{{ plan.site_url }}" target="_blank" rel="noopener"><i class="fas fa-arrow-up-right-from-square"></i> Open {{ plan.site_url|cut:"https://" }}</a>{% endif %}
+    </div>
+    <div class="ut-progress"><div class="ut-bar"><i id="ut-bar" style="width:{% widthratio done total 100 %}%"></i></div><b><span id="ut-done">{{ done }}</span> of {{ total }} done</b></div>
+  </div>
+  {% if waiting_on %}
+  <div class="ut-lockbar"><i class="fas fa-lock"></i><span><b>Locked.</b> These tests need the data from {{ waiting_on.name }} ({{ waiting_done }} of {{ waiting_total }} done). You can read them now and mark them once it's finished.</span></div>
+  {% endif %}
+  <nav class="ut-index" aria-label="Tests in this section">
+    {% for item in cases %}<a href="#case-{{ item.case.pk }}" class="{{ item.result.status }}" data-index="{{ item.case.pk }}">{{ item.case.code }}</a>{% endfor %}
+  </nav>
+</section>
 
 {% for item in cases %}{% with c=item.case r=item.result %}
-<form class="ut-card ut-case {% if r %}s-{{ r.status }}{% endif %}" id="case-{{ c.pk }}" method="post" enctype="multipart/form-data" data-total="{{ total }}">
+<form class="sv-card ut-case{% if r %} s-{{ r.status }}{% endif %}" id="case-{{ c.pk }}" method="post" enctype="multipart/form-data" data-total="{{ total }}" data-pk="{{ c.pk }}">
   {% csrf_token %}<input type="hidden" name="case" value="{{ c.pk }}">
-  <div class="ut-row"><span class="ut-code">{{ c.code }}</span>
-    <span>{% for t in c.tags %}<span class="ut-chip">{{ t }}</span> {% endfor %}{% if r %}<span class="ut-chip {{ r.status }}" data-badge>{{ r.get_status_display }}</span>{% else %}<span class="ut-chip" data-badge>Not tested</span>{% endif %}</span></div>
-  <div class="ut-title" data-toggle>{{ c.title }}</div>
-  {% if r.needs_retest %}<div class="ut-fix"><i class="fas fa-rotate"></i> Ralfiz fixed this{% if r.fix_note %}: {{ r.fix_note }}{% endif %}. Please test it again.</div>{% endif %}
-  <ol class="ut-steps">{% for s in c.steps %}<li>{{ s }}</li>{% endfor %}</ol>
-  <div class="ut-exp"><b>Should happen</b>{{ c.expected }}</div>
-  <div class="ut-choice" role="radiogroup" aria-label="Result for {{ c.code }}">
-    <input type="radio" name="status" value="pass" id="p-{{ c.pk }}" {% if r.status == 'pass' %}checked{% endif %}><label class="pass" for="p-{{ c.pk }}"><i class="fas fa-check"></i> Pass</label>
-    <input type="radio" name="status" value="fail" id="f-{{ c.pk }}" {% if r.status == 'fail' %}checked{% endif %}><label class="fail" for="f-{{ c.pk }}"><i class="fas fa-xmark"></i> Fail</label>
-    <input type="radio" name="status" value="blocked" id="b-{{ c.pk }}" {% if r.status == 'blocked' %}checked{% endif %}><label class="blocked" for="b-{{ c.pk }}"><i class="fas fa-ban"></i> Blocked</label>
+  <div class="ut-case-head" data-toggle>
+    <div class="t">
+      <span class="ut-code">{{ c.code }}</span>
+      <span class="ut-title">{{ c.title }}</span>
+      {% if c.tags %}<span class="ut-tags">{% for t in c.tags %}<span class="ut-tag">{% if t == 'Printer' %}<i class="fas fa-print"></i> {% elif t == 'Scanner' %}<i class="fas fa-barcode"></i> {% elif t == 'Phone' %}<i class="fas fa-mobile-screen"></i> {% elif t == 'Admin' %}<i class="fas fa-user-shield"></i> {% endif %}{{ t }}</span>{% endfor %}</span>{% endif %}
+    </div>
+    {% if r %}<span class="sv-pill {% if r.status == 'pass' %}green{% elif r.status == 'fail' %}red{% else %}orange{% endif %}" data-badge>{{ r.get_status_display }}</span>{% else %}<span class="sv-pill grey" data-badge>Not tested</span>{% endif %}
   </div>
-  <div class="ut-more{% if r.note or r.screenshot %} has{% endif %}">
-    <textarea class="ut-note" name="note" placeholder="What did you do, and what did you see?">{{ r.note }}</textarea>
-    <label class="ut-btn" style="cursor:pointer;margin-top:8px"><i class="fas fa-camera"></i> <span data-shot-label>{% if r.screenshot %}Replace screenshot{% else %}Add screenshot{% endif %}</span>
-      <input type="file" name="screenshot" accept="image/*" hidden></label>
+  {% if r.needs_retest %}<div class="ut-fixnote"><i class="fas fa-rotate"></i> Fixed by Ralfiz{% if r.fix_note %}: {{ r.fix_note }}{% endif %}. Please test again.</div>{% endif %}
+  <div class="ut-body">
+    <p class="ut-label">Steps</p>
+    <ol class="ut-steps">{% for s in c.steps %}<li>{{ s }}</li>{% endfor %}</ol>
+    <p class="ut-label">Expected result</p>
+    <div class="ut-exp">{{ c.expected }}</div>
   </div>
-  <div class="ut-actions">
-    <button class="ut-save" type="submit"{% if waiting_on %} disabled{% endif %}>Save</button>
-    <span class="ut-msg" data-msg aria-live="polite"></span>
+  <div class="ut-foot">
+    <div class="ut-choice" role="radiogroup" aria-label="Result for {{ c.code }}">
+      <input type="radio" name="status" value="pass" id="p-{{ c.pk }}" {% if r.status == 'pass' %}checked{% endif %}><label class="pass" for="p-{{ c.pk }}"><i class="fas fa-check"></i> Pass</label>
+      <input type="radio" name="status" value="fail" id="f-{{ c.pk }}" {% if r.status == 'fail' %}checked{% endif %}><label class="fail" for="f-{{ c.pk }}"><i class="fas fa-xmark"></i> Fail</label>
+      <input type="radio" name="status" value="blocked" id="b-{{ c.pk }}" {% if r.status == 'blocked' %}checked{% endif %}><label class="blocked" for="b-{{ c.pk }}"><i class="fas fa-ban"></i> Blocked</label>
+    </div>
+    <div class="ut-more{% if r.note or r.screenshot %} has{% endif %}">
+      <textarea class="ut-note" name="note" placeholder="What did you do, and what happened instead?">{{ r.note }}</textarea>
+    </div>
+    <div class="ut-row">
+      <label class="ut-btn ut-more{% if r.note or r.screenshot %} has{% endif %}" style="margin-top:0"><i class="fas fa-camera"></i> <span data-shot-label>{% if r.screenshot %}Replace screenshot{% else %}Add screenshot{% endif %}</span>
+        <input type="file" name="screenshot" accept="image/*" hidden></label>
+      <span class="ut-msg grow" data-msg aria-live="polite"></span>
+      <button class="ut-btn-primary ut-save" type="submit"{% if waiting_on %} disabled title="Locked until setup is finished"{% endif %}>Save result</button>
+    </div>
+    {% if r.screenshot %}<a href="{{ r.screenshot.url }}" target="_blank" rel="noopener"><img class="ut-shot" src="{{ r.screenshot.url }}" alt="Screenshot for {{ c.code }}" data-shot></a>{% endif %}
   </div>
-  {% if r.screenshot %}<a href="{{ r.screenshot.url }}" target="_blank" rel="noopener"><img class="ut-shot" src="{{ r.screenshot.url }}" alt="Screenshot for {{ c.code }}" data-shot></a>{% endif %}
 </form>
 {% endwith %}{% endfor %}
 
 <div class="ut-nav">
-  {% if prev_section %}<a class="ut-btn" href="{% url 'staff:uat_section' plan.pk prev_section.pk %}"><i class="fas fa-chevron-left"></i> {{ prev_section.name }}</a>{% else %}<span></span>{% endif %}
-  {% if next_section %}<a class="ut-btn" href="{% url 'staff:uat_section' plan.pk next_section.pk %}">{{ next_section.name }} <i class="fas fa-chevron-right"></i></a>{% else %}<a class="ut-btn" href="{% url 'staff:uat_home' %}">All sections</a>{% endif %}
+  {% if prev_section %}<a class="ut-btn" href="{% url 'staff:uat_section' plan.pk prev_section.pk %}"><i class="fas fa-arrow-left"></i> {{ prev_section.name }}</a>{% else %}<span></span>{% endif %}
+  {% if next_section %}<a class="ut-btn" href="{% url 'staff:uat_section' plan.pk next_section.pk %}">{{ next_section.name }} <i class="fas fa-arrow-right"></i></a>{% else %}<a class="ut-btn" href="{% url 'staff:uat_home' %}">All sections</a>{% endif %}
+</div>
 </div>
 {% endblock %}
 
 {% block extra_js %}
 <script>
 document.querySelectorAll('form.ut-case').forEach(function (form) {
-  form.querySelector('[data-toggle]').addEventListener('click', function () { form.classList.toggle('open'); });
+  form.querySelector('[data-toggle]').addEventListener('click', function () { if (form.classList.contains('s-pass')) form.classList.toggle('open'); });
   var msg = form.querySelector('[data-msg]'), btn = form.querySelector('.ut-save');
   form.querySelector('input[type=file]').addEventListener('change', function () {
     form.querySelector('[data-shot-label]').textContent = this.files[0] ? this.files[0].name : 'Add screenshot';
@@ -72,12 +92,13 @@ document.querySelectorAll('form.ut-case').forEach(function (form) {
         btn.disabled = false;
         if (!res.ok || !res.d.ok) { msg.className = 'ut-msg err'; msg.textContent = res.d.error || 'Could not save.'; return; }
         msg.className = 'ut-msg ok'; msg.textContent = 'Saved';
-        form.className = 'ut-card ut-case open s-' + res.d.status;
-        var badge = form.querySelector('[data-badge]'); badge.className = 'ut-chip ' + res.d.status; badge.textContent = res.d.label;
-        var fix = form.querySelector('.ut-fix'); if (fix) fix.remove();
+        form.className = 'sv-card ut-case open s-' + res.d.status;
+        var badge = form.querySelector('[data-badge]'); badge.className = 'sv-pill ' + ({pass: 'green', fail: 'red', blocked: 'orange'})[res.d.status]; badge.textContent = res.d.label;
+        var idx = document.querySelector('[data-index="' + form.dataset.pk + '"]'); if (idx) idx.className = res.d.status;
+        var fix = form.querySelector('.ut-fixnote'); if (fix) fix.remove();
         if (res.d.screenshot) {
           var img = form.querySelector('[data-shot]');
-          if (!img) { var a = document.createElement('a'); a.target = '_blank'; img = document.createElement('img'); img.className = 'ut-shot'; img.setAttribute('data-shot', ''); img.alt = 'Screenshot'; a.appendChild(img); form.appendChild(a); }
+          if (!img) { var a = document.createElement('a'); a.target = '_blank'; img = document.createElement('img'); img.className = 'ut-shot'; img.setAttribute('data-shot', ''); img.alt = 'Screenshot'; a.appendChild(img); form.querySelector('.ut-foot').appendChild(a); }
           img.src = res.d.screenshot; img.parentNode.href = res.d.screenshot;
           form.querySelector('input[type=file]').value = ''; form.querySelector('[data-shot-label]').textContent = 'Replace screenshot';
         }

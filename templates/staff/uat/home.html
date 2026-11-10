@@ -3,81 +3,95 @@
 {% block title %}UAT Testing{% endblock %}
 {% block heading %}UAT Testing{% endblock %}
 
-{% block page_hero %}
-{% include 'staff/_hero.html' with title='UAT Testing' subtitle='Test the software step by step and mark each test Pass, Fail or Blocked.' tagline='Test · Note · Improve' art='check' %}
-{% endblock %}
-
 {% block content %}
 {% include 'staff/uat/_styles.html' %}
+<div class="ut">
 {% for p in plans %}
-<div class="ut-card">
-  <div class="ut-row">
-    <div>
-      <div style="font-size:18px;font-weight:700">{{ p.plan.name }}</div>
-      <div class="ut-muted">{% if p.plan.site_url %}Test on <a href="{{ p.plan.site_url }}" target="_blank" rel="noopener">{{ p.plan.site_url|cut:"https://" }}</a>{% endif %}{% if p.plan.due_date %} · finish by {{ p.plan.due_date|date:"D d M" }}{% endif %}</div>
+<section class="sv-card">
+  <div class="ut-pad">
+    <div class="ut-head">
+      <div>
+        <div class="ut-eyebrow">UAT Testing{% if p.plan.site_url %} · <a href="{{ p.plan.site_url }}" target="_blank" rel="noopener">{{ p.plan.site_url|cut:"https://" }} <i class="fas fa-arrow-up-right-from-square" style="font-size:10px"></i></a>{% endif %}</div>
+        <h1>{{ p.plan.name }}</h1>
+      </div>
+      {% if p.plan.due_date %}<span class="sv-pill big orange"><i class="fas fa-calendar"></i> Finish by {{ p.plan.due_date|date:"D, d M" }}</span>{% endif %}
     </div>
-    <div style="text-align:right"><b style="font-size:20px">{{ p.done }}/{{ p.total }}</b><div class="ut-muted">tests done</div></div>
+    <div class="ut-progress"><div class="ut-bar"><i style="width:{{ p.pct }}%"></i></div><b>{{ p.done }} of {{ p.total }} tests · {{ p.pct }}%</b></div>
   </div>
-  <div class="ut-bar"><i style="width:{{ p.pct }}%"></i></div>
-</div>
-
-{% if p.retest %}<p class="ut-fix"><i class="fas fa-rotate"></i> {{ p.retest }} test{{ p.retest|pluralize }} fixed by Ralfiz: please test again.</p>{% endif %}
-
-{% if p.next %}
-<a class="ut-card ut-next" href="{% url 'staff:uat_section' p.plan.pk p.next.section.pk %}">
-  <div class="ut-next-label">Do this now</div>
-  <div class="ut-row">
-    <div><div class="ut-next-title">{{ p.next.section.name }}</div>
-      <div class="ut-muted">{{ p.next.done }} of {{ p.next.total }} done</div></div>
-    <span class="ut-go">{% if p.next.done %}Continue{% else %}Start{% endif %} <i class="fas fa-arrow-right"></i></span>
+  <div class="ut-nums">
+    <div><span>Not tested</span><b>{{ p.todo }}</b></div>
+    <div class="p"><span>Passed</span><b>{{ p.pass }}</b></div>
+    <div class="f"><span>Failed</span><b>{{ p.fail }}</b></div>
+    <div class="k"><span>Blocked</span><b>{{ p.blocked }}</b></div>
   </div>
-</a>
-{% elif p.waiting %}
-<div class="ut-card ut-wait"><i class="fas fa-hourglass-half"></i> <b>Waiting for {{ p.waiting_who }}</b> to finish “{{ p.waiting.name }}” ({{ p.waiting_done }} of {{ p.waiting_total }} done). Your tests open after that.</div>
-{% endif %}
+  {% if p.retest %}<div class="ut-fixnote" style="margin:0;border-radius:0;border-top:1px solid var(--sf-line)"><i class="fas fa-rotate"></i> {{ p.retest }} test{{ p.retest|pluralize }} fixed by Ralfiz: please test again.</div>{% endif %}
+  {% if p.next %}
+  <a class="ut-next" href="{% url 'staff:uat_section' p.plan.pk p.next.section.pk %}">
+    <span class="ico"><i class="fas fa-play"></i></span>
+    <span class="txt"><small>{% if p.next.retest %}Retest needed{% else %}Your next step{% endif %}</small><strong>{{ p.next.section.name }}</strong>
+      <span class="muted"> · {{ p.next.total }} tests{% if p.next.done %}, {{ p.next.done }} done{% endif %}</span></span>
+    <span class="ut-btn-primary">{% if p.next.done %}Continue{% else %}Start{% endif %} <i class="fas fa-arrow-right"></i></span>
+  </a>
+  {% elif p.waiting %}
+  <div class="ut-wait"><i class="fas fa-hourglass-half"></i>
+    <span><b>Waiting for {{ p.waiting_who }}</b> to finish {{ p.waiting.name }} ({{ p.waiting_done }} of {{ p.waiting_total }} done). Your tests open after that.</span></div>
+  {% endif %}
+</section>
 
-<details class="ut-card ut-guide">
-  <summary><i class="fas fa-circle-info"></i> How to test <span class="ut-muted">· order, rules, how to mark</span></summary>
+<section class="sv-card">
+  <div class="sv-card-head"><h2><i class="fas fa-list-check" style="color:var(--sf-primary)"></i> Your sections</h2>
+    <span class="muted">{{ p.section_count }} sections</span></div>
+  <div class="ut-list">
+    {% for r in p.open %}
+    <a href="{% url 'staff:uat_section' p.plan.pk r.section.pk %}">
+      {% if r.done == r.total %}<span class="ut-st done"><i class="fas fa-check"></i></span>
+      {% elif r.done %}<span class="ut-st doing">{{ forloop.counter }}</span>
+      {% else %}<span class="ut-st">{{ forloop.counter }}</span>{% endif %}
+      <span class="name"><strong>{{ r.section.name }}</strong>
+        <span class="muted">{{ r.done }} of {{ r.total }} done</span>
+        {% if r.done and r.done < r.total %}<span class="ut-bar"><i style="width:{{ r.pct }}%"></i></span>{% endif %}</span>
+      <span class="meta">
+        {% if r.retest %}<span class="sv-pill blue">{{ r.retest }} retest</span>{% endif %}
+        {% if r.fail %}<span class="sv-pill red">{{ r.fail }} failed</span>{% endif %}
+        {% if r.blocked %}<span class="sv-pill orange">{{ r.blocked }} blocked</span>{% endif %}
+        {% if r.done == r.total %}<span class="sv-pill green">Done</span>
+        {% elif r.done %}<span class="sv-pill blue">In progress</span>
+        {% else %}<span class="sv-pill grey">Not started</span>{% endif %}
+        <i class="fas fa-chevron-right chev"></i>
+      </span>
+    </a>
+    {% endfor %}
+  </div>
+  {% if p.locked %}
+  <div class="ut-group"><i class="fas fa-lock"></i> Locked until {{ p.waiting.name }} is done</div>
+  <div class="ut-list">
+    {% for r in p.locked %}
+    <a class="locked" href="{% url 'staff:uat_section' p.plan.pk r.section.pk %}">
+      <span class="ut-st lock"><i class="fas fa-lock" style="font-size:11px"></i></span>
+      <span class="name"><strong>{{ r.section.name }}</strong></span>
+      <span class="meta"><span class="muted">{{ r.total }} test{{ r.total|pluralize }}</span><i class="fas fa-chevron-right chev"></i></span>
+    </a>
+    {% endfor %}
+  </div>
+  {% endif %}
+</section>
+
+{% if p.guide %}
+<details class="sv-card ut-guide">
+  <summary class="sv-card-head plain" style="border-bottom:0"><h2><i class="fas fa-circle-info" style="color:var(--sf-primary)"></i> How to test</h2><i class="fas fa-chevron-down"></i></summary>
   <div class="ut-guide-grid">
-  {% for b in p.guide %}
+    {% for b in p.guide %}
     <div>{% if b.title %}<h3>{{ b.title }}</h3>{% endif %}
       {% if b.numbered %}<ol>{% else %}<ul>{% endif %}{% for i in b.items %}<li>{{ i }}</li>{% endfor %}{% if b.numbered %}</ol>{% else %}</ul>{% endif %}</div>
-  {% endfor %}
+    {% endfor %}
   </div>
 </details>
-
-{% if p.open %}<h2 class="ut-h">Your sections</h2>{% endif %}
-{% for r in p.open %}
-<a class="ut-card ut-sec" href="{% url 'staff:uat_section' p.plan.pk r.section.pk %}">
-  <div class="ut-row">
-    <div>
-      <div style="font-weight:650">{% if r.done == r.total %}<i class="fas fa-circle-check" style="color:#12B76A"></i> {% endif %}{{ r.section.name }}</div>
-      <div class="ut-muted">{{ r.done }} of {{ r.total }} done</div>
-    </div>
-    <div style="display:flex;gap:6px;flex-wrap:wrap">
-      {% if r.retest %}<span class="ut-chip retest">{{ r.retest }} retest</span>{% endif %}
-      {% if r.pass %}<span class="ut-chip pass">{{ r.pass }} pass</span>{% endif %}
-      {% if r.fail %}<span class="ut-chip fail">{{ r.fail }} fail</span>{% endif %}
-      {% if r.blocked %}<span class="ut-chip blocked">{{ r.blocked }} blocked</span>{% endif %}
-      <i class="fas fa-chevron-right" style="color:#98A2B3;align-self:center"></i>
-    </div>
-  </div>
-  <div class="ut-bar"><i style="width:{{ r.pct }}%"></i></div>
-</a>
-{% endfor %}
-
-{% if p.locked %}
-<h2 class="ut-h"><i class="fas fa-lock"></i> Opens after {{ p.waiting.name }}</h2>
-<div class="ut-card ut-locked-list">
-  {% for r in p.locked %}
-  <a href="{% url 'staff:uat_section' p.plan.pk r.section.pk %}"><span>{{ r.section.name }}</span><span class="ut-muted">{{ r.total }} test{{ r.total|pluralize }}</span></a>
-  {% endfor %}
-</div>
 {% endif %}
 {% empty %}
-<div class="ut-card" style="text-align:center;padding:36px">
-  <i class="fas fa-clipboard-check" style="font-size:30px;color:#98A2B3"></i>
-  <p style="margin-top:10px">No testing assigned to you right now.</p>
-</div>
+<section class="sv-card ut-pad" style="text-align:center;padding:40px 16px">
+  <i class="fas fa-clipboard-check" style="font-size:28px;color:var(--sf-text-3)"></i>
+  <p style="margin:10px 0 0;color:var(--sf-text-2)">No testing assigned to you right now.</p>
+</section>
 {% endfor %}
+</div>
 {% endblock %}
