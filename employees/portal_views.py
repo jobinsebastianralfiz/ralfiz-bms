@@ -477,15 +477,66 @@ def _report_streak(employee, today):
 
 # --- Work assignments ------------------------------------------------------
 
+_TASK_PILLS = {  # status -> (label, ut-pill tone)
+    'todo': ('To do', ''), 'assigned': ('Assigned', ''), 'in_progress': ('In progress', 'dark'),
+    'review': ('In review', 'lime'), 'on_hold': ('On hold', 'blocked'),
+    'completed': ('Completed', 'pass'), 'cancelled': ('Cancelled', 'fail'),
+}
+_PRIORITY_RANK = {'urgent': 0, 'high': 1, 'medium': 2, 'low': 3}
+
+
+def _due_text(due, is_open):
+    """'3 days left', 'tomorrow', '2 days late' for an open item; '' otherwise."""
+    if not due or not is_open:
+        return '', False
+    days = (due - timezone.localdate()).days
+    if days < 0:
+        return f'{-days} day{"s" if days < -1 else ""} late', True
+    return {0: 'today', 1: 'tomorrow'}.get(days, f'{days} days left'), False
+
+
+def _task_card(obj, kind):
+    """A project-board task or a work assignment, shaped for the My Tasks card grid."""
+    is_board = kind == 'board'
+    is_open = obj.status not in ('completed', 'cancelled')
+    due_text, late = _due_text(obj.due_date, is_open)
+    label, tone = _TASK_PILLS.get(obj.status, (obj.get_status_display(), ''))
+    if late:
+        label, tone = 'Overdue', 'fail'
+    return {
+        'kind': kind,
+        'kicker': (obj.category or 'Project task') if is_board else 'Work assignment',
+        'title': obj.title,
+        'url': reverse('staff:board_task_detail' if is_board else 'staff:work_detail', args=[obj.pk]),
+        'desc': obj.description,
+        'project': obj.project.name if obj.project_id else '',
+        'due': obj.due_date, 'due_text': due_text, 'late': late,
+        'priority': obj.priority, 'priority_label': obj.get_priority_display(),
+        'pill': label, 'tone': tone,
+        'progress': obj.progress_percent if is_board else (100 if obj.status == 'completed' else None),
+        'files': obj.attachments.count() if is_board else (1 if obj.attachment else 0),
+        'assigned_by': '' if is_board else (
+            (obj.assigned_by.get_full_name() or obj.assigned_by.username) if obj.assigned_by_id else ''),
+        'done': not is_open,
+    }
+
+
+def _plan_status(p):
+    if p['total'] and p['done'] == p['total'] and not p['retest']:
+        return 'completed'
+    return 'in_progress' if p['done'] else 'assigned'
+
+
 @staff_required
 def work_list(request):
+    """My Tasks: project-board tasks, work assignments and UAT plans as one card grid."""
+    from uat.staff_views import _my_plans, _summary as uat_summary
     employee = request.employee
-    assignments = WorkAssignment.objects.filter(assigned_to=employee).select_related('project')
+    assignments = WorkAssignment.objects.filter(assigned_to=employee).select_related('project', 'assigned_by')
     status_filter = request.GET.get('status', '')
     if status_filter:
         assignments = assignments.filter(status=status_filter)
 
-    from core.models import Task
     board_tasks = board_tasks_for(employee, open_only=False)
     board_filter = {'assigned': 'todo', 'in_progress': 'in_progress', 'completed': 'completed'}.get(status_filter)
     if status_filter and board_filter:
@@ -495,15 +546,31 @@ def work_list(request):
     else:
         board_tasks = board_tasks.exclude(status='completed')
 
+    all_plans = [uat_summary(plan, employee) for plan in _my_plans(employee).order_by('due_date', 'name')]
+    for p in all_plans:
+        p['status_key'] = _plan_status(p)
+        p['due_text'], p['late'] = _due_text(p['plan'].due_date, p['status_key'] != 'completed')
+    plans = [p for p in all_plans if not status_filter or p['status_key'] == status_filter]
+
+    cards = ([_task_card(t, 'board') for t in board_tasks.prefetch_related('attachments')]
+             + [_task_card(w, 'work') for w in assignments])
+    far = date.max
+    cards.sort(key=lambda c: (c['done'], c['due'] or far, _PRIORITY_RANK.get(c['priority'], 9), c['title'].lower()))
+
     all_tasks = board_tasks_for(employee, open_only=False)
     all_work = WorkAssignment.objects.filter(assigned_to=employee)
     week_ago = timezone.now() - timedelta(days=7)
+    plan_keys = [p['status_key'] for p in all_plans]
     counts = {
-        'total': all_tasks.count() + all_work.count(),
-        'new_week': all_tasks.filter(created_at__gte=week_ago).count() + all_work.filter(created_at__gte=week_ago).count(),
-        'in_progress': all_tasks.filter(status__in=['in_progress', 'review']).count() + all_work.filter(status='in_progress').count(),
+        'total': all_tasks.count() + all_work.count() + len(all_plans),
+        'new_week': (all_tasks.filter(created_at__gte=week_ago).count()
+                     + all_work.filter(created_at__gte=week_ago).count()
+                     + sum(1 for p in all_plans if p['plan'].created_at >= week_ago)),
+        'in_progress': (all_tasks.filter(status__in=['in_progress', 'review']).count()
+                        + all_work.filter(status='in_progress').count() + plan_keys.count('in_progress')),
         'on_hold': all_work.filter(status='on_hold').count(),
-        'completed': all_tasks.filter(status='completed').count() + all_work.filter(status='completed').count(),
+        'completed': (all_tasks.filter(status='completed').count()
+                      + all_work.filter(status='completed').count() + plan_keys.count('completed')),
         'cancelled': all_work.filter(status='cancelled').count(),
     }
     total = counts['total'] or 1
@@ -514,10 +581,9 @@ def work_list(request):
     ctx.update(_summary(employee))
     ctx.update({
         'counts': counts,
-        'work_total': board_tasks.count() + assignments.count(),
-        'assignments': assignments,
-        'board_tasks': board_tasks.order_by('due_date', '-created_at'),
-        'task_status_choices': Task.STATUS_CHOICES,
+        'work_total': len(cards) + len(plans),
+        'cards': cards,
+        'plans': plans,
         'status_filter': status_filter,
         'status_choices': WorkAssignment.STATUS_CHOICES,
     })

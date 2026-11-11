@@ -58,7 +58,7 @@ class UATTests(TestCase):
         plan = self.load()
         ham, fat, _ = self.emps
         self.client.login(username='u15', password=self.pw)  # Fathima
-        home = self.client.get(reverse('staff:uat_home'))
+        home = self.client.get(reverse('staff:work_list'))
         self.assertContains(home, 'class="ut-plan"')
         self.assertContains(home, reverse('staff:uat_plan', args=[plan.pk]))
         self.assertNotContains(home, 'More settings')
@@ -107,7 +107,7 @@ class UATTests(TestCase):
 
         self.client.logout()
         self.client.login(username='u15', password=self.pw)
-        self.assertContains(self.client.get(reverse('staff:uat_home')), 'to retest')
+        self.assertContains(self.client.get(reverse('staff:work_list')), 'to retest')
         self.assertContains(self.client.get(reverse('staff:uat_plan', args=[plan.pk])), 'please test again')
         res.record('pass', '')
         self.assertFalse(res.needs_retest)
@@ -124,7 +124,7 @@ class UATTests(TestCase):
                          {'action': 'details', 'name': plan.name, 'status': 'closed'})
         self.client.logout()
         self.client.login(username='u16', password=self.pw)
-        self.assertContains(self.client.get(reverse('staff:uat_home')), 'No testing assigned')
+        self.assertContains(self.client.get(reverse('staff:work_list')), 'No tasks')
 
     def test_create_plan_from_dashboard_with_file(self):
         self.client.login(username='hr', password=self.pw)
@@ -135,8 +135,26 @@ class UATTests(TestCase):
         self.assertRedirects(r, reverse('uat_plan_detail', args=[plan.pk]))
         self.assertEqual(plan.cases().count(), 1)
 
+    def test_my_tasks_shows_uat_plans_and_work_together(self):
+        from employees.models import WorkAssignment
+        plan = self.load()
+        fat = self.emps[1]
+        work = WorkAssignment.objects.create(title='Enter AGC products', description='565 folders', priority='high')
+        work.assigned_to.add(fat)
+        self.client.login(username='u15', password=self.pw)  # Fathima
+        page = self.client.get(reverse('staff:work_list'))
+        self.assertContains(page, plan.name)
+        self.assertContains(page, 'Enter AGC products')
+        self.assertContains(page, reverse('staff:work_detail', args=[work.pk]))
+        self.assertContains(page, 'My Tasks')
+        self.assertNotContains(page, 'UAT Testing</a>')  # one menu item now
+        self.assertRedirects(self.client.get(reverse('staff:uat_home')), reverse('staff:work_list'))
+        # Status chips filter UAT plans too: a plan nobody has started is not "completed".
+        self.assertNotContains(self.client.get(reverse('staff:work_list') + '?status=completed'), plan.name)
+
     def test_login_required(self):
         self.assertEqual(self.client.get(reverse('uat_plan_list')).status_code, 302)
+        self.assertEqual(self.client.get(reverse('staff:work_list')).status_code, 302)
         self.assertEqual(self.client.get(reverse('staff:uat_home')).status_code, 302)
 
 
@@ -146,7 +164,7 @@ class UATTests(TestCase):
         self.assertEqual(billing.starts_after, setup)
         self.assertEqual([e.pk for e in setup.testers()], [self.emps[0].pk])
         self.client.login(username='u15', password=self.pw)  # Fathima, billing
-        home = self.client.get(reverse('staff:uat_home'))
+        home = self.client.get(reverse('staff:work_list'))
         self.assertContains(home, '<small>Next</small>Getting started')
         page = self.client.get(reverse('staff:uat_plan', args=[plan.pk]))
         self.assertContains(page, 'Locked until')
@@ -188,14 +206,14 @@ class UATTests(TestCase):
                      '--owner', 'Intern 3=EMP016', stdout=io.StringIO())
         gc = UATPlan.objects.get(name='GreenCard UAT')
         self.client.login(username='u15', password=self.pw)  # Fathima
-        home = self.client.get(reverse('staff:uat_home'))
+        home = self.client.get(reverse('staff:work_list'))
         self.assertContains(home, 'class="ut-plan"', count=2)
         self.assertContains(home, 'Shop Manager UAT')
         self.assertContains(home, 'GreenCard UAT')
         self.assertNotContains(home, 'Your sections')  # sections live on the plan page now
         page = self.client.get(reverse('staff:uat_plan', args=[gc.pk]))
         self.assertContains(page, 'Workers &amp; the Green Card')  # Intern 2's section
-        self.assertContains(page, 'All UAT plans')
+        self.assertContains(page, 'My Tasks')
         sec = gc.sections.get(key='WRK')
         self.assertContains(self.client.get(reverse('staff:uat_section', args=[gc.pk, sec.pk])),
                             reverse('staff:uat_plan', args=[gc.pk]))

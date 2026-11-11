@@ -43,9 +43,8 @@
   <nav class="sv-side-menu">
     <a href="{% url 'staff:dashboard' %}" class="{% if active_nav == 'dashboard' %}active{% endif %}"><i class="fas fa-house"></i> Home</a>
     <a href="{% url 'staff:attendance' %}" class="{% if active_nav == 'attendance' %}active{% endif %}"><i class="fas fa-fingerprint"></i> Attendance</a>
-    <a href="{% url 'staff:work_list' %}" class="{% if active_nav == 'work' %}active{% endif %}"><i class="fas fa-list-check"></i> Work</a>
+    <a href="{% url 'staff:work_list' %}" class="{% if active_nav == 'work' %}active{% endif %}"><i class="fas fa-list-check"></i> My Tasks</a>
     <a href="{% url 'staff:daily_report' %}" class="{% if active_nav == 'daily_report' %}active{% endif %}"><i class="fas fa-pen-to-square"></i> Daily updates</a>
-    <a href="{% url 'staff:uat_home' %}" class="{% if active_nav == 'uat' %}active{% endif %}"><i class="fas fa-clipboard-check"></i> UAT Testing</a>
     <a href="{% url 'staff:leave' %}" class="{% if active_nav == 'leave' %}active{% endif %}"><i class="fas fa-plane-departure"></i> Leave</a>
     <a href="{% url 'notes_home' %}"><i class="fas fa-book-open"></i> Notes</a>
     {% if is_intern %}
@@ -136,7 +135,7 @@
     <i class="fas fa-fingerprint"></i><span>Attendance</span>
   </a>
   <a href="{% url 'staff:work_list' %}" class="sf-tab {% if active_nav == 'work' %}active{% endif %}">
-    <i class="fas fa-list-check"></i><span>Work</span>
+    <i class="fas fa-list-check"></i><span>Tasks</span>
   </a>
   <a href="{% url 'staff:leave' %}" class="sf-tab {% if active_nav == 'leave' %}active{% endif %}">
     <i class="fas fa-plane-departure"></i><span>Leave</span>

@@ -1,13 +1,32 @@
 {% extends 'staff/base.html' %}
 
-{% block title %}Work{% endblock %}
-{% block heading %}Work{% endblock %}
+{% block title %}My Tasks{% endblock %}
+{% block heading %}My Tasks{% endblock %}
 
 {% block page_hero %}
-{% include 'staff/_hero.html' with title='Work' subtitle='Manage and track your project tasks and work assignments.' tagline='Plan · Execute · Deliver' art='check' %}
+{% include 'staff/_hero.html' with title='My Tasks' subtitle='Your project tasks, work assignments and UAT testing in one place.' tagline='Plan · Execute · Deliver' art='check' %}
 {% endblock %}
 
 {% block content %}
+{% include 'staff/uat/_styles.html' %}
+<style>
+.ut-bar { display:flex; gap:10px; align-items:center; flex-wrap:wrap; margin:4px 0 16px; }
+.ut-bar h2 { margin:0 auto 0 4px; font-size:18px; font-weight:700; letter-spacing:-.01em; }
+.ut-find { display:flex; align-items:center; gap:8px; height:42px; padding:0 16px; border-radius:999px; background:var(--u-canvas); color:var(--u-ink-3); min-width:220px; }
+.ut-find input { border:0; background:transparent; outline:none; font:600 14px 'Manrope',Inter,sans-serif; color:var(--u-ink); width:100%; }
+.ut-sort { height:42px; padding:0 14px; border:0; border-radius:999px; background:var(--u-canvas); font:600 14px 'Manrope',Inter,sans-serif; color:var(--u-ink); }
+.ut-plan-desc { margin:12px 0 0; font-size:14px; line-height:1.55; color:var(--u-ink-2); display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical; overflow:hidden; white-space:pre-line; }
+.ut-plan.is-done { opacity:.72; }
+.ut-plan[hidden] { display:none; }
+.ut-pager { display:flex; justify-content:space-between; align-items:center; gap:10px; margin-top:18px; font-size:13px; font-weight:600; color:var(--u-ink-2); flex-wrap:wrap; }
+.ut-pager button { width:38px; height:38px; border:0; border-radius:50%; background:var(--u-canvas); color:var(--u-ink); cursor:pointer; }
+.ut-pager button:disabled { opacity:.4; cursor:default; }
+.ut-pager .pg { display:inline-flex; align-items:center; gap:8px; }
+.ut-pager .on { display:inline-flex; align-items:center; justify-content:center; width:38px; height:38px; border-radius:50%; background:var(--u-dark); color:#fff; }
+.ut-pager select { height:38px; border:0; border-radius:999px; padding:0 12px; background:var(--u-canvas); color:var(--u-ink); font:600 13px 'Manrope',Inter,sans-serif; }
+@media (max-width:760px) { .ut-bar h2 { width:100%; } .ut-find { flex:1; min-width:0; } }
+</style>
+
 <div class="sf-chips sv-chip-row">
   <a href="{% url 'staff:work_list' %}" class="sf-chip {% if not status_filter %}active{% endif %}">All</a>
   {% for value, label in status_choices %}
@@ -15,7 +34,7 @@
   {% endfor %}
 </div>
 
-<section class="sv-stats five" aria-label="Work summary">
+<section class="sv-stats five" aria-label="Task summary">
   <div class="sv-stat"><span class="sv-ico violet"><i class="fas fa-list-check"></i></span><span class="sv-stat-body"><span class="sv-stat-lbl">Total Tasks</span><span class="sv-stat-val">{{ counts.total }}</span><span class="sv-pill green">{{ counts.new_week }} new this week</span></span></div>
   <div class="sv-stat"><span class="sv-ico blue"><i class="far fa-clock"></i></span><span class="sv-stat-body"><span class="sv-stat-lbl">In Progress</span><span class="sv-stat-val">{{ counts.in_progress }}</span><span class="sv-pill blue">{{ counts.in_progress_pct }}%</span></span></div>
   <div class="sv-stat"><span class="sv-ico orange"><i class="far fa-circle-pause"></i></span><span class="sv-stat-body"><span class="sv-stat-lbl">On Hold</span><span class="sv-stat-val">{{ counts.on_hold }}</span><span class="sv-pill orange">{{ counts.on_hold_pct }}%</span></span></div>
@@ -23,68 +42,75 @@
   <div class="sv-stat"><span class="sv-ico red"><i class="fas fa-ban"></i></span><span class="sv-stat-body"><span class="sv-stat-lbl">Cancelled</span><span class="sv-stat-val">{{ counts.cancelled }}</span><span class="sv-pill red">{{ counts.cancelled_pct }}%</span></span></div>
 </section>
 
-{% with total=work_total %}
-<section class="sv-card" id="sv-work">
-  <header class="sv-card-head sv-table-head">
-    <h2><span class="sv-head-ico"><i class="fas fa-list-check"></i></span>Project Tasks ({{ total }})</h2>
-    <div class="sv-tools">
-      <label class="sv-find"><i class="fas fa-magnifying-glass" aria-hidden="true"></i><input type="search" id="sv-find" placeholder="Search tasks…" aria-label="Search tasks"></label>
-      <select id="sv-sort" aria-label="Sort">
-        <option value="due">Sort: due date</option>
-        <option value="priority">Sort: priority</option>
-        <option value="title">Sort: title</option>
-      </select>
-      <div class="sv-view" role="group" aria-label="View">
-        <button type="button" data-view="list" class="on" aria-label="List view"><i class="fas fa-list"></i></button>
-        <button type="button" data-view="grid" aria-label="Grid view"><i class="fas fa-table-cells-large"></i></button>
-      </div>
-    </div>
-  </header>
+<div class="ut" id="sv-work">
+  <div class="ut-bar">
+    <h2>{{ work_total }} task{{ work_total|pluralize }}</h2>
+    {% if work_total %}
+    <label class="ut-find"><i class="fas fa-magnifying-glass" aria-hidden="true"></i><input type="search" id="sv-find" placeholder="Search tasks…" aria-label="Search tasks"></label>
+    <select id="sv-sort" class="ut-sort" aria-label="Sort">
+      <option value="due">Sort: due date</option>
+      <option value="priority">Sort: priority</option>
+      <option value="title">Sort: title</option>
+    </select>
+    {% endif %}
+  </div>
 
-  {% if total %}
-  <div class="sv-table" id="sv-rows">
-    <div class="sv-tr sv-th" aria-hidden="true"><span>Task</span><span>Project</span><span>Due Date</span><span>Files</span><span>Status</span><span>Priority</span><span></span></div>
-    {% for t in board_tasks %}
-    <div class="sv-tr" data-title="{{ t.title|lower }} {{ t.description|lower|truncatechars:200 }} {{ t.project.name|lower }}" data-due="{{ t.due_date|date:'Y-m-d'|default:'9999-12-31' }}" data-pri="{% if t.priority == 'urgent' %}0{% elif t.priority == 'high' %}1{% elif t.priority == 'medium' %}2{% else %}3{% endif %}">
-      <div class="sv-td-task">
-        <a href="{% url 'staff:board_task_detail' t.pk %}" class="sv-row-title">{{ t.title }}</a>
-        {% if t.description %}<p>{{ t.description|truncatechars:150 }}</p>{% endif %}
-        <div class="sv-chips">{% if t.category %}<span class="sv-chip">{{ t.category }}</span>{% endif %}<span class="sv-chip pri-{{ t.priority }}">{{ t.get_priority_display }}</span></div>
+  {% if work_total %}
+  <div class="ut-plans" id="sv-rows">
+    {% for p in plans %}{% include 'staff/uat/_plan_card.html' %}{% endfor %}
+
+    {% for c in cards %}
+    <a class="ut-plan{% if c.done %} is-done{% endif %}" href="{{ c.url }}"
+       data-title="{{ c.title|lower }} {{ c.desc|lower|truncatechars:200 }} {{ c.project|lower }}"
+       data-due="{{ c.due|date:'Y-m-d'|default:'9999-12-31' }}" data-done="{% if c.done %}1{% else %}0{% endif %}"
+       data-pri="{% if c.priority == 'urgent' %}0{% elif c.priority == 'high' %}1{% elif c.priority == 'medium' %}2{% else %}3{% endif %}">
+      <div class="ut-plan-top">
+        <span class="ut-plan-product">{{ c.kicker }}</span>
+        <span class="ut-pill {{ c.tone }}">{% if c.tone == 'pass' %}<i class="fas fa-check"></i> {% elif c.tone == 'fail' %}<i class="fas fa-triangle-exclamation"></i> {% endif %}{{ c.pill }}</span>
       </div>
-      <span class="sv-td" data-label="Project"><i class="far fa-folder"></i> {{ t.project.name }}</span>
-      <span class="sv-td{% if t.is_overdue %} late{% endif %}" data-label="Due"><i class="far fa-calendar"></i> {{ t.due_date|date:"M d, Y"|default:"—" }}</span>
-      {% with n=t.attachments.count %}<span class="sv-td" data-label="Files"><i class="fas fa-paperclip"></i> {{ n }} file{{ n|pluralize }}</span>{% endwith %}
-      <span class="sv-td" data-label="Status"><span class="sv-status s-{{ t.status }}">{{ t.get_status_display }}</span></span>
-      <span class="sv-td" data-label="Priority"><span class="sv-prio p-{{ t.priority }}"><i class="fas fa-arrow-up"></i> {{ t.get_priority_display }}</span></span>
-      <a class="sv-more" href="{% url 'staff:board_task_detail' t.pk %}" aria-label="Open {{ t.title }}"><i class="fas fa-ellipsis"></i></a>
-    </div>
-    {% endfor %}
-    {% for w in assignments %}
-    <div class="sv-tr" data-title="{{ w.title|lower }} {{ w.description|lower|truncatechars:200 }}" data-due="{{ w.due_date|date:'Y-m-d'|default:'9999-12-31' }}" data-pri="{% if w.priority == 'urgent' %}0{% elif w.priority == 'high' %}1{% elif w.priority == 'medium' %}2{% else %}3{% endif %}">
-      <div class="sv-td-task">
-        <a href="{% url 'staff:work_detail' w.pk %}" class="sv-row-title">{{ w.title }}</a>
-        {% if w.description %}<p>{{ w.description|truncatechars:150 }}</p>{% endif %}
-        <div class="sv-chips"><span class="sv-chip">Work assignment</span><span class="sv-chip pri-{{ w.priority }}">{{ w.get_priority_display }}</span></div>
+
+      <h2>{{ c.title }}</h2>
+      <div class="ut-plan-meta">
+        {% if c.due %}<span{% if c.late %} class="late"{% endif %}><i class="fas fa-calendar"></i> Finish by {{ c.due|date:"D d M" }}{% if c.due_text %} · {{ c.due_text }}{% endif %}</span>{% endif %}
+        {% if c.project %}<span><i class="fas fa-folder"></i> {{ c.project }}</span>{% endif %}
+        <span><i class="fas fa-flag"></i> {{ c.priority_label }}</span>
+        {% if c.files %}<span><i class="fas fa-paperclip"></i> {{ c.files }} file{{ c.files|pluralize }}</span>{% endif %}
       </div>
-      <span class="sv-td" data-label="Project"><i class="far fa-folder"></i> {{ w.project.name|default:"—" }}</span>
-      <span class="sv-td{% if w.is_overdue %} late{% endif %}" data-label="Due"><i class="far fa-calendar"></i> {{ w.due_date|date:"M d, Y"|default:"—" }}</span>
-      <span class="sv-td" data-label="Files">—</span>
-      <span class="sv-td" data-label="Status"><span class="sv-status s-{{ w.status }}">{% if w.is_overdue %}Overdue{% else %}{{ w.get_status_display }}{% endif %}</span></span>
-      <span class="sv-td" data-label="Priority"><span class="sv-prio p-{{ w.priority }}"><i class="fas fa-arrow-up"></i> {{ w.get_priority_display }}</span></span>
-      <a class="sv-more" href="{% url 'staff:work_detail' w.pk %}" aria-label="Open {{ w.title }}"><i class="fas fa-ellipsis"></i></a>
-    </div>
+
+      {% if c.desc %}<p class="ut-plan-desc">{{ c.desc|truncatechars:400 }}</p>{% endif %}
+
+      {% if c.progress is not None %}
+      <div class="ut-plan-progress">
+        <b>{{ c.progress }}<span>%</span></b>
+        <span class="pct">{% if c.done %}Done{% else %}progress{% endif %}</span>
+      </div>
+      <div class="ut-plan-bar" aria-label="{{ c.progress }}% done"><i style="width:{{ c.progress }}%"></i></div>
+      {% endif %}
+
+      <div class="ut-plan-foot">
+        <span class="txt">
+          {% if c.assigned_by %}<small>Assigned by</small>{{ c.assigned_by }}
+          {% elif c.project %}<small>Project</small>{{ c.project }}
+          {% else %}<small>Status</small>{{ c.pill }}{% endif %}
+        </span>
+        <span class="go">Open <i class="fas fa-arrow-right"></i></span>
+      </div>
+    </a>
     {% endfor %}
   </div>
-  <footer class="sv-pager">
+
+  <footer class="ut-pager">
     <span id="sv-showing"></span>
-    <div class="sv-pages"><button type="button" id="sv-prev" aria-label="Previous page"><i class="fas fa-chevron-left"></i></button><span id="sv-page" class="on">1</span><button type="button" id="sv-next" aria-label="Next page"><i class="fas fa-chevron-right"></i></button></div>
-    <select id="sv-per" aria-label="Rows per page"><option>10</option><option>25</option><option>50</option></select>
+    <span class="pg"><button type="button" id="sv-prev" aria-label="Previous page"><i class="fas fa-chevron-left"></i></button><span id="sv-page" class="on">1</span><button type="button" id="sv-next" aria-label="Next page"><i class="fas fa-chevron-right"></i></button></span>
+    <select id="sv-per" aria-label="Cards per page"><option>12</option><option>24</option><option>48</option></select>
   </footer>
   {% else %}
-  <p class="sv-empty">No work{% if status_filter %} with this status{% endif %} right now.</p>
+  <section class="ut-panel" style="text-align:center;padding:48px 16px">
+    <i class="fas fa-list-check" style="font-size:28px;color:var(--u-ink-3)"></i>
+    <p style="margin:10px 0 0;color:var(--u-ink-2)">No tasks{% if status_filter %} with this status{% endif %} right now.</p>
+  </section>
   {% endif %}
-</section>
-{% endwith %}
+</div>
 {% endblock %}
 
 {% block extra_js %}
@@ -92,21 +118,21 @@
 (function () {
   var box = document.getElementById('sv-rows');
   if (!box) return;
-  var rows = Array.prototype.slice.call(box.querySelectorAll('.sv-tr:not(.sv-th)'));
+  var cards = Array.prototype.slice.call(box.children);
   var find = document.getElementById('sv-find'), sort = document.getElementById('sv-sort'), per = document.getElementById('sv-per');
   var page = 1;
-  var VIEW_KEY = 'sf.work.view';
   function apply() {
     var q = find.value.trim().toLowerCase(), key = sort.value, size = Number(per.value);
-    var shown = rows.filter(function (r) { return !q || r.dataset.title.indexOf(q) !== -1; });
+    var shown = cards.filter(function (r) { return !q || r.dataset.title.indexOf(q) !== -1; });
     shown.sort(function (a, b) {
       if (key === 'priority') return a.dataset.pri - b.dataset.pri || a.dataset.due.localeCompare(b.dataset.due);
       if (key === 'title') return a.dataset.title.localeCompare(b.dataset.title);
-      return a.dataset.due.localeCompare(b.dataset.due);
+      // Due date: open work first, then the soonest due.
+      return a.dataset.done - b.dataset.done || a.dataset.due.localeCompare(b.dataset.due);
     });
     var pages = Math.max(1, Math.ceil(shown.length / size));
     page = Math.min(page, pages);
-    rows.forEach(function (r) { r.hidden = true; });
+    cards.forEach(function (r) { r.hidden = true; });
     shown.forEach(function (r, i) { box.appendChild(r); r.hidden = !(i >= (page - 1) * size && i < page * size); });
     document.getElementById('sv-page').textContent = page;
     document.getElementById('sv-prev').disabled = page <= 1;
@@ -119,14 +145,6 @@
   per.addEventListener('change', function () { page = 1; apply(); });
   document.getElementById('sv-prev').addEventListener('click', function () { page -= 1; apply(); });
   document.getElementById('sv-next').addEventListener('click', function () { page += 1; apply(); });
-  var btns = document.querySelectorAll('.sv-view button');
-  function setView(v) {
-    box.classList.toggle('grid', v === 'grid');
-    btns.forEach(function (b) { b.classList.toggle('on', b.dataset.view === v); b.setAttribute('aria-pressed', b.dataset.view === v); });
-    try { localStorage.setItem(VIEW_KEY, v); } catch (e) {}
-  }
-  btns.forEach(function (b) { b.addEventListener('click', function () { setView(b.dataset.view); }); });
-  try { if (localStorage.getItem(VIEW_KEY) === 'grid') setView('grid'); } catch (e) {}
   apply();
 })();
 </script>

@@ -1,21 +1,6 @@
-{% extends 'staff/base.html' %}
 {% load xp %}
-
-{% block title %}UAT Testing{% endblock %}
-{% block heading %}UAT Testing{% endblock %}
-
-{% block content %}
-{% include 'staff/uat/_styles.html' %}
-<div class="ut">
-{% if plans %}
-<div class="ut-intro">
-  <h1>UAT Testing</h1>
-  <p>{{ plans|length }} plan{{ plans|length|pluralize }} assigned to you. Open one to see your sections and tests.</p>
-</div>
-
-<div class="ut-plans">
-  {% for p in plans %}
-  <a class="ut-plan" href="{% url 'staff:uat_plan' p.plan.pk %}">
+{# One UAT plan card. Used on My Tasks. Needs `p` from uat.staff_views._summary. #}
+  <a class="ut-plan" data-title="{{ p.plan.name|lower }} {{ p.plan.product|lower }}" data-due="{{ p.plan.due_date|date:'Y-m-d'|default:'9999-12-31' }}" data-pri="1" data-done="{% if p.status_key == 'completed' %}1{% else %}0{% endif %}" href="{% url 'staff:uat_plan' p.plan.pk %}">
     <div class="ut-plan-top">
       <span class="ut-plan-product">{{ p.plan.product|default:"UAT" }}</span>
       {% if p.retest %}<span class="ut-pill lime"><i class="fas fa-rotate"></i> {{ p.retest }} to retest</span>
@@ -52,13 +37,3 @@
       <span class="go">Open <i class="fas fa-arrow-right"></i></span>
     </div>
   </a>
-  {% endfor %}
-</div>
-{% else %}
-<section class="ut-panel" style="text-align:center;padding:48px 16px">
-  <i class="fas fa-clipboard-check" style="font-size:28px;color:var(--u-ink-3)"></i>
-  <p style="margin:10px 0 0;color:var(--u-ink-2)">No testing assigned to you right now.</p>
-</section>
-{% endif %}
-</div>
-{% endblock %}

@@ -160,7 +160,7 @@ def uat_problem_update(request, pk):
         result.save(update_fields=['fix_status', 'fix_note', 'fixed_by', 'fixed_at', 'updated_at'])
         if fix == 'fixed':
             services.notify(result.tester, f'Please retest {result.case.code}',
-                            f'"{result.case.title}" was fixed. Open UAT Testing and test it again.'
+                            f'"{result.case.title}" was fixed. Open My Tasks and test it again.'
                             + (f' Note: {result.fix_note}' if result.fix_note else ''),
                             {'type': 'uat', 'plan_id': str(result.case.section.plan_id)})
         messages.success(request, f'{result.case.code}: {result.get_fix_status_display()}.')

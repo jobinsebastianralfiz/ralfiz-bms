@@ -58,16 +58,14 @@ def _due(plan, todo):
 
 @staff_required
 def uat_home(request):
-    """A card per plan; the card opens the plan."""
-    ctx = _base_context(request, 'uat')
-    ctx['plans'] = [_summary(plan, request.employee) for plan in _my_plans(request.employee).order_by('due_date', 'name')]
-    return render(request, 'staff/uat/home.html', ctx)
+    """UAT plans now sit with the rest of your work under My Tasks; keep old links working."""
+    return redirect('staff:work_list')
 
 
 @staff_required
 def uat_plan(request, plan_pk):
     plan = get_object_or_404(_my_plans(request.employee), pk=plan_pk)
-    ctx = _base_context(request, 'uat')
+    ctx = _base_context(request, 'work')
     ctx['p'] = _summary(plan, request.employee)
     return render(request, 'staff/uat/plan.html', ctx)
 
@@ -95,7 +93,7 @@ def uat_section(request, plan_pk, section_pk):
     tally = services.counts(mine.values())
     sections = services.tester_sections(plan, employee)
     idx = [s.pk for s in sections].index(section.pk)
-    ctx = _base_context(request, 'uat')
+    ctx = _base_context(request, 'work')
     ctx.update({'plan': plan, 'section': section, 'cases': cases,
                 'done': len(mine), 'total': len(cases), 'waiting_on': waiting_on, 'tally': tally,
                 'waiting_done': waiting_on.marked_count() if waiting_on else 0,

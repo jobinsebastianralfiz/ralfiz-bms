@@ -1,8 +1,8 @@
 {% extends 'staff/base.html' %}
 {% load xp %}
 
-{% block title %}{{ p.plan.name }} · UAT Testing{% endblock %}
-{% block heading %}UAT Testing{% endblock %}
+{% block title %}{{ p.plan.name }} · My Tasks{% endblock %}
+{% block heading %}My Tasks{% endblock %}
 
 {% block content %}
 {% include 'staff/uat/_styles.html' %}
@@ -10,7 +10,7 @@
 <section class="ut-panel">
   <div class="ut-top">
     <div>
-      <div class="ut-kicker"><a href="{% url 'staff:uat_home' %}"><i class="fas fa-arrow-left"></i> All UAT plans</a></div>
+      <div class="ut-kicker"><a href="{% url 'staff:work_list' %}"><i class="fas fa-arrow-left"></i> My Tasks</a></div>
       <h1>{{ p.plan.name }}</h1>
     </div>
     <div class="ut-chips">

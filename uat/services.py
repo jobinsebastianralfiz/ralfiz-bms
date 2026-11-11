@@ -68,7 +68,7 @@ def notify_assigned(plan, employees):
     for emp in employees:
         names = ', '.join(s.name for s in tester_sections(plan, emp))
         notify(emp, f'UAT: {plan.name}',
-               f'You are testing: {names}. Open "UAT Testing" in the staff portal.',
+               f'You are testing: {names}. Open "My Tasks" in the staff portal.',
                {'type': 'uat', 'plan_id': str(plan.id)})
 
 
