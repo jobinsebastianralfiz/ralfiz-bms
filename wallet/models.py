@@ -24,8 +24,8 @@ class XPSettings(models.Model):
                                                     help_text='XP per % scored in a graded assessment')
     xp_lead_converted = models.PositiveIntegerField(default=500, help_text='A lead the intern added becomes a client')
     monthly_cap = models.PositiveIntegerField(default=0, help_text='Most XP one person can earn in a month. 0 = no cap.')
-    include_employees = models.BooleanField(default=False,
-                                            help_text='Give employees a wallet as well. Off = interns only.')
+    include_employees = models.BooleanField(default=True,
+                                            help_text='Employees have wallets too. Off = interns only.')
     updated_by = models.ForeignKey('auth.User', on_delete=models.SET_NULL, null=True, blank=True, related_name='+')
     updated_at = models.DateTimeField(auto_now=True)
 

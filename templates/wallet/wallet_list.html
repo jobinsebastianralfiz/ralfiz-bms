@@ -6,7 +6,7 @@
 <div class="page-header">
   <div>
     <h1 class="page-title">XP Wallets</h1>
-    <p class="page-subtitle mb-0">One wallet per intern. Open one to see its ledger, add or remove XP, or cash it out. {{ settings.xp_per_rupee }} XP = ₹1.</p>
+    <p class="page-subtitle mb-0">One wallet per intern and employee. Open one to see its ledger, add or remove XP, or cash it out. {{ settings.xp_per_rupee }} XP = ₹1.</p>
   </div>
 </div>
 {% include 'wallet/_tabs.html' with tab='wallets' %}
@@ -33,7 +33,7 @@
     {% if rows %}
     <div class="table-responsive">
       <table class="table table-hover mb-0">
-        <thead><tr><th>Intern</th><th class="text-end">Balance</th><th class="text-end">Pending</th><th class="text-end">Paid this month</th><th class="text-end">Total paid</th><th></th></tr></thead>
+        <thead><tr><th>Person</th><th class="text-end">Balance</th><th class="text-end">Pending</th><th class="text-end">Paid this month</th><th class="text-end">Total paid</th><th></th></tr></thead>
         <tbody>
         {% for r in rows %}
           <tr>
@@ -50,7 +50,7 @@
       </table>
     </div>
     {% else %}
-    <div class="text-center text-muted" style="padding:48px"><i class="fas fa-wallet fa-2x mb-3 d-block"></i>No interns yet.</div>
+    <div class="text-center text-muted" style="padding:48px"><i class="fas fa-wallet fa-2x mb-3 d-block"></i>No one has a wallet yet.</div>
     {% endif %}
   </div>
 </div>

@@ -25,7 +25,7 @@
   </div>
 </div>
 
-{% if not has_wallet %}<div class="alert alert-warning">{{ emp.full_name }} isn't an intern, so they don't earn XP. Turn on "Give employees a wallet" in XP Settings to change that.</div>{% endif %}
+{% if not has_wallet %}<div class="alert alert-warning">{{ emp.full_name }} has no wallet: employees are switched off in XP Settings, or this is an owner or partner.</div>{% endif %}
 
 <div class="row mb-4">
   <div class="col-4 col-md-12" style="padding:.75rem"><div class="card stat-card"><div class="stat-card-header"><div class="stat-card-icon primary"><i class="fas fa-wallet"></i></div></div>
@@ -69,7 +69,7 @@
         <label style="font-weight:400;margin:0"><input type="radio" name="direction" value="remove"> Remove (penalty / write-off)</label>
       </div>
       <label for="adXp">XP</label><input id="adXp" type="number" name="xp" min="1" class="form-control" required>
-      <label for="adNote">Reason (the intern sees this)</label><input id="adNote" name="note" class="form-control" required maxlength="250" placeholder="e.g. Extra effort on the GreenCard launch">
+      <label for="adNote">Reason (they see this)</label><input id="adNote" name="note" class="form-control" required maxlength="250" placeholder="e.g. Extra effort on the GreenCard launch">
       <div style="margin-top:1rem"><button class="btn btn-secondary" {% if not has_wallet %}disabled{% endif %}><i class="fas fa-save"></i> Save</button></div>
     </form>
   </div>

@@ -64,14 +64,16 @@ class LedgerTests(WalletTestCase):
             XPEntry.objects.create(employee=self.anu, xp=5, kind='earned', content_type=e.content_type,
                                    object_id=e.object_id, title='dup')
 
-    def test_non_interns_have_no_wallet_unless_switched_on(self):
+    def test_employees_have_wallets_unless_switched_off(self):
         self.complete(self.work([self.staffer]))
-        self.assertFalse(XPEntry.objects.exists())
+        self.assertEqual(XPEntry.objects.filter(employee=self.staffer).count(), 1)
         s = XPSettings.current()
-        s.include_employees = True
+        s.include_employees = False
         s.save()
         self.complete(self.work([self.staffer]))
         self.assertEqual(XPEntry.objects.filter(employee=self.staffer).count(), 1)
+        owner = make_person('olivia', role='owner')
+        self.assertFalse(services.has_wallet(owner))
 
     def test_balance_is_sum_of_approved_rows(self):
         self.complete(self.work([self.anu], priority='high'))
@@ -278,8 +280,10 @@ class PageTests(WalletTestCase):
         self.assertContains(r, 'Great demo')
         self.assertContains(self.client.get(reverse('staff:dashboard')), 'Your XP Wallet')
 
-    def test_employee_without_wallet_gets_404(self):
+    def test_employee_wallet_shows_and_can_be_switched_off(self):
         self.client.login(username='sam', password='pw-12345')
+        self.assertEqual(self.client.get(reverse('staff:wallet')).status_code, 200)
+        XPSettings.objects.update(include_employees=False)
         self.assertEqual(self.client.get(reverse('staff:wallet')).status_code, 404)
         self.assertNotContains(self.client.get(reverse('staff:dashboard')), 'Your XP Wallet')
 

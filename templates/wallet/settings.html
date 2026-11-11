@@ -29,16 +29,16 @@
     <h3 class="card-title mt-4 mb-3">Other sources</h3>
     <div class="row">
       <div class="col-6 col-md-12"><label class="form-label">XP per % in a graded assessment</label><input type="number" min="0" step="0.01" name="xp_per_assessment_percent" value="{{ settings.xp_per_assessment_percent }}" class="form-control"><small class="text-muted">1 = 85% scores 85 XP.</small></div>
-      <div class="col-6 col-md-12"><label class="form-label">A lead the intern added becomes a client</label><input type="number" min="0" name="xp_lead_converted" value="{{ settings.xp_lead_converted }}" class="form-control"></div>
+      <div class="col-6 col-md-12"><label class="form-label">A lead they added becomes a client</label><input type="number" min="0" name="xp_lead_converted" value="{{ settings.xp_lead_converted }}" class="form-control"></div>
     </div>
 
     <h3 class="card-title mt-4 mb-3">Limits</h3>
-    <label class="form-label" for="cap">Monthly cap per intern (XP)</label>
+    <label class="form-label" for="cap">Monthly cap per person (XP)</label>
     <input id="cap" type="number" min="0" name="monthly_cap" value="{{ settings.monthly_cap }}" class="form-control" style="max-width:200px">
     <small class="text-muted">0 = no cap. Counts approved earnings in the month they are approved; manual adjustments don't count.</small>
     <div class="form-check mt-3">
       <input class="form-check-input" type="checkbox" name="include_employees" id="inclEmp" {% if settings.include_employees %}checked{% endif %}>
-      <label class="form-check-label" for="inclEmp">Give employees a wallet as well (off = interns only)</label>
+      <label class="form-check-label" for="inclEmp">Employees have wallets too (off = interns only). Owners and partners never do.</label>
     </div>
   </div>
   <div class="card-footer" style="padding: 1rem 1.5rem; text-align: right">

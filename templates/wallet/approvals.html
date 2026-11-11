@@ -40,7 +40,7 @@
       <table class="table table-hover mb-0">
         <thead><tr>
           <th style="width:32px"><input type="checkbox" id="xaAll" aria-label="Select all"></th>
-          <th>Intern</th><th>For</th><th class="text-end">XP</th><th class="text-end">Decide</th>
+          <th>Person</th><th>For</th><th class="text-end">XP</th><th class="text-end">Decide</th>
         </tr></thead>
         <tbody>
         {% for e in items %}
@@ -83,7 +83,7 @@
 <div class="card mt-4">
   <div class="card-header"><h3 class="card-title"><i class="fas fa-rotate-left"></i> Reversed after the work was reopened</h3></div>
   <div class="card-body p-0"><div class="table-responsive"><table class="table mb-0">
-    <thead><tr><th>Intern</th><th>For</th><th>When</th><th class="text-end">XP</th></tr></thead>
+    <thead><tr><th>Person</th><th>For</th><th>When</th><th class="text-end">XP</th></tr></thead>
     <tbody>{% for e in reversals %}
       <tr><td>{{ e.employee.full_name }}</td><td>{% if e.link %}<a href="{{ e.link }}">{{ e.title }}</a>{% else %}{{ e.title }}{% endif %}<div class="xa-sub">{{ e.note }}</div></td>
         <td class="text-sm text-muted">{{ e.created_at|date:"d M Y" }}</td><td class="text-end" style="color:#dc2626">{{ e.xp|xpn }}</td></tr>
@@ -95,7 +95,7 @@
 <div class="card mt-4">
   <div class="card-header"><h3 class="card-title"><i class="fas fa-clock-rotate-left"></i> Recently decided</h3></div>
   <div class="card-body p-0"><div class="table-responsive"><table class="table mb-0">
-    <thead><tr><th>Intern</th><th>For</th><th>Decision</th><th class="text-end">XP</th></tr></thead>
+    <thead><tr><th>Person</th><th>For</th><th>Decision</th><th class="text-end">XP</th></tr></thead>
     <tbody>{% for e in recent %}
       <tr><td>{{ e.employee.full_name }}</td><td>{% if e.link %}<a href="{{ e.link }}">{{ e.title }}</a>{% else %}{{ e.title }}{% endif %}</td>
         <td><span class="badge {% if e.status == 'approved' %}badge-success{% else %}badge-danger{% endif %}">{{ e.get_status_display }}</span>
