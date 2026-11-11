@@ -121,21 +121,9 @@
         <i class="fas fa-folder-open"></i>
         <span>Projects</span>
       </a>
-      <a href="{% url 'task_board' %}" class="nav-item {% if n == 'task_board' %}active{% endif %}">
-        <i class="fas fa-table-columns"></i>
-        <span>Task Board</span>
-      </a>
-      <a href="{% url 'task_list' %}" class="nav-item {% if 'task' in n and n != 'task_board' and 'daily_task' not in n %}active{% endif %}">
-        <i class="fas fa-tasks"></i>
-        <span>Tasks</span>
-      </a>
       <a href="{% url 'projects_dashboard' %}" class="nav-item {% if n == 'projects_dashboard' %}active{% endif %}">
         <i class="fas fa-thumbtack"></i>
         <span>Projects Board</span>
-      </a>
-      <a href="{% url 'daily_tasks_dashboard' %}" class="nav-item {% if 'daily_task' in n %}active{% endif %}">
-        <i class="fas fa-list-check"></i>
-        <span>Daily Tasks</span>
       </a>
       <a href="{% url 'feature_request_list' %}" class="nav-item {% if 'feature_request' in n or 'project_type' in n or 'project_feature' in n %}active{% endif %}">
         <i class="fas fa-list-check"></i>
@@ -151,6 +139,40 @@
         {% if expiring_credentials_count %}
         <span class="nav-badge">{{ expiring_credentials_count }}</span>
         {% endif %}
+      </a>
+      </div>
+    </div>
+
+    <div class="nav-section nav-group" data-group="work">
+      <button type="button" class="nav-section-title nav-group-toggle" aria-expanded="true">Work &amp; Tasks<i class="fas fa-chevron-down nav-group-caret" aria-hidden="true"></i></button>
+      <div class="nav-group-items">
+      <a href="{% url 'task_board' %}" class="nav-item {% if n == 'task_board' %}active{% endif %}">
+        <i class="fas fa-table-columns"></i>
+        <span>Task Board</span>
+      </a>
+      <a href="{% url 'task_list' %}" class="nav-item {% if 'task' in n and n != 'task_board' and 'daily_task' not in n %}active{% endif %}">
+        <i class="fas fa-tasks"></i>
+        <span>Project Tasks</span>
+      </a>
+      <a href="{% url 'emp_work_list' %}" class="nav-item {% if 'emp_work' in n %}active{% endif %}">
+        <i class="fas fa-clipboard-list"></i>
+        <span>Work Assignments</span>
+      </a>
+      <a href="{% url 'uat_plan_list' %}" class="nav-item {% if 'uat_' in n %}active{% endif %}">
+        <i class="fas fa-clipboard-check"></i>
+        <span>UAT Testing</span>
+      </a>
+      <a href="{% url 'daily_tasks_dashboard' %}" class="nav-item {% if 'daily_task' in n %}active{% endif %}">
+        <i class="fas fa-list-check"></i>
+        <span>Daily Tasks</span>
+      </a>
+      <a href="{% url 'emp_daily_report_list' %}" class="nav-item {% if 'emp_daily_report' in n %}active{% endif %}">
+        <i class="fas fa-pen-to-square"></i>
+        <span>Daily Updates</span>
+      </a>
+      <a href="{% url 'timeentry_list' %}" class="nav-item {% if 'time' in n %}active{% endif %}">
+        <i class="fas fa-clock"></i>
+        <span>Time Tracking</span>
       </a>
       </div>
     </div>
@@ -215,10 +237,6 @@
         <i class="fas fa-fingerprint"></i>
         <span>Attendance</span>
       </a>
-      <a href="{% url 'emp_daily_report_list' %}" class="nav-item {% if 'emp_daily_report' in n %}active{% endif %}">
-        <i class="fas fa-pen-to-square"></i>
-        <span>Daily Updates</span>
-      </a>
       <a href="{% url 'emp_leave_list' %}" class="nav-item {% if n == 'emp_leave_list' or n == 'emp_leave_action' %}active{% endif %}">
         <i class="fas fa-calendar-minus"></i>
         <span>Leave Requests</span>
@@ -234,14 +252,6 @@
       <a href="{% url 'emp_leave_types' %}" class="nav-item {% if n == 'emp_leave_types' %}active{% endif %}">
         <i class="fas fa-list-alt"></i>
         <span>Leave Types</span>
-      </a>
-      <a href="{% url 'emp_work_list' %}" class="nav-item {% if 'emp_work' in n %}active{% endif %}">
-        <i class="fas fa-clipboard-list"></i>
-        <span>Work Assignments</span>
-      </a>
-      <a href="{% url 'timeentry_list' %}" class="nav-item {% if 'time' in n %}active{% endif %}">
-        <i class="fas fa-clock"></i>
-        <span>Time Tracking</span>
       </a>
       <a href="{% url 'emp_payroll_list' %}" class="nav-item {% if 'emp_payroll' in n %}active{% endif %}">
         <i class="fas fa-money-bill-wave"></i>
@@ -377,10 +387,6 @@
       <a href="{% url 'shop_license_list' %}" class="nav-item {% if 'shop_license' in n %}active{% endif %}">
         <i class="fas fa-store"></i>
         <span>Shop Manager Licenses</span>
-      </a>
-      <a href="{% url 'uat_plan_list' %}" class="nav-item {% if 'uat_' in n %}active{% endif %}">
-        <i class="fas fa-clipboard-check"></i>
-        <span>UAT Testing</span>
       </a>
       </div>
     </div>

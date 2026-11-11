@@ -1,4 +1,5 @@
 {% extends 'staff/base.html' %}
+{% load xp %}
 
 {% block title %}{{ assignment.title }}{% endblock %}
 
@@ -20,6 +21,7 @@
     {{ assignment.get_priority_display }} priority
   </span>
   {% if assignment.is_overdue %}<span class="sf-badge sf-badge-danger">Overdue</span>{% endif %}
+  {% if xp and has_wallet %}<span class="sf-badge sf-badge-ok"><i class="fas fa-coins"></i> Reward: {{ xp|xpn }} XP · ₹{{ xp|xp_rs }}</span>{% endif %}
 </div>
 
 {% if assignment.description %}

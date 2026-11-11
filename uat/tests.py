@@ -145,6 +145,12 @@ class UATTests(TestCase):
         page = self.client.get(reverse('staff:work_list'))
         self.assertContains(page, plan.name)
         self.assertContains(page, 'Enter AGC products')
+        work.xp_reward = 6000
+        work.save()
+        from wallet.services import has_wallet
+        if has_wallet(fat):
+            self.assertContains(self.client.get(reverse('staff:work_list')), 'Reward: 6,000 XP')
+            self.assertContains(self.client.get(reverse('staff:work_detail', args=[work.pk])), 'Reward: 6,000 XP')
         self.assertContains(page, reverse('staff:work_detail', args=[work.pk]))
         self.assertContains(page, 'My Tasks')
         self.assertNotContains(page, 'UAT Testing</a>')  # one menu item now

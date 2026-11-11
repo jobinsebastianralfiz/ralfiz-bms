@@ -495,7 +495,7 @@ def _due_text(due, is_open):
     return {0: 'today', 1: 'tomorrow'}.get(days, f'{days} days left'), False
 
 
-def _task_card(obj, kind):
+def _task_card(obj, kind, xp_settings=None):
     """A project-board task or a work assignment, shaped for the My Tasks card grid."""
     is_board = kind == 'board'
     is_open = obj.status not in ('completed', 'cancelled')
@@ -518,6 +518,9 @@ def _task_card(obj, kind):
         'assigned_by': '' if is_board else (
             (obj.assigned_by.get_full_name() or obj.assigned_by.username) if obj.assigned_by_id else ''),
         'done': not is_open,
+        # Work assignments earn XP (blank = the priority default); board tasks don't.
+        'xp': None if is_board or xp_settings is None else (
+            obj.xp_reward if obj.xp_reward is not None else xp_settings.priority_xp(obj.priority)),
     }
 
 
@@ -552,8 +555,10 @@ def work_list(request):
         p['due_text'], p['late'] = _due_text(p['plan'].due_date, p['status_key'] != 'completed')
     plans = [p for p in all_plans if not status_filter or p['status_key'] == status_filter]
 
+    from wallet.models import XPSettings
+    xp_settings = XPSettings.current()
     cards = ([_task_card(t, 'board') for t in board_tasks.prefetch_related('attachments')]
-             + [_task_card(w, 'work') for w in assignments])
+             + [_task_card(w, 'work', xp_settings) for w in assignments])
     far = date.max
     cards.sort(key=lambda c: (c['done'], c['due'] or far, _PRIORITY_RANK.get(c['priority'], 9), c['title'].lower()))
 
@@ -642,9 +647,12 @@ def work_detail(request, pk):
     assignment = get_object_or_404(
         WorkAssignment.objects.filter(assigned_to=employee).select_related('project'), pk=pk)
 
+    from wallet.models import XPSettings
     ctx = _base_context(request, 'work')
     ctx.update({
         'assignment': assignment,
+        'xp': assignment.xp_reward if assignment.xp_reward is not None
+              else XPSettings.current().priority_xp(assignment.priority),
         'updates': assignment.updates.select_related('employee__user'),
         'status_choices': WorkAssignment.STATUS_CHOICES,
     })

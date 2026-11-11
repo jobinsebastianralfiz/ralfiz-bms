@@ -1,4 +1,5 @@
 {% extends 'staff/base.html' %}
+{% load xp %}
 
 {% block title %}My Tasks{% endblock %}
 {% block heading %}My Tasks{% endblock %}
@@ -75,6 +76,7 @@
         {% if c.project %}<span><i class="fas fa-folder"></i> {{ c.project }}</span>{% endif %}
         <span><i class="fas fa-flag"></i> {{ c.priority_label }}</span>
         {% if c.files %}<span><i class="fas fa-paperclip"></i> {{ c.files }} file{{ c.files|pluralize }}</span>{% endif %}
+        {% if c.xp and has_wallet %}<span><i class="fas fa-coins"></i> Reward: {{ c.xp|xpn }} XP · ₹{{ c.xp|xp_rs }}</span>{% endif %}
       </div>
 
       {% if c.desc %}<p class="ut-plan-desc">{{ c.desc|truncatechars:400 }}</p>{% endif %}
