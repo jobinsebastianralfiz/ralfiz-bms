@@ -20,13 +20,14 @@ class Command(BaseCommand):
         parser.add_argument('--owner', action='append', default=[],
                             help='"<owner label in the file>=<EMP id>[,<EMP id>]"; testers of that section')
         parser.add_argument('--due', help='Finish-by date, YYYY-MM-DD')
+        parser.add_argument('--xp', type=int, help='XP reward per tester, e.g. 600 (= ₹300 at 2 XP per ₹1)')
         parser.add_argument('--notify', action='store_true', help='Send each tester a notification')
         parser.add_argument('--replace', action='store_true',
                             help='Rebuild an existing plan with the same name. Results already marked are kept '
                                  'for tests whose code is still in the file.')
 
     @transaction.atomic
-    def handle(self, path, owner, due, notify, replace, **_):
+    def handle(self, path, owner, due, notify, replace, xp=None, **_):
         data = json.loads(Path(path).read_text())
         owner_map, everyone = {}, []
         for spec in owner:
@@ -52,9 +53,11 @@ class Command(BaseCommand):
                 setattr(plan, k, v)
             if due:
                 plan.due_date = due
+            if xp is not None:
+                plan.xp_reward = xp
             plan.save()
         else:
-            plan = UATPlan.objects.create(name=data['name'], due_date=due, **fields)
+            plan = UATPlan.objects.create(name=data['name'], due_date=due, xp_reward=xp or 0, **fields)
         plan.testers.set(everyone)
         load_cases(plan, data, owner_map)
         restored = self._restore(plan, kept)

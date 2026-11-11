@@ -161,9 +161,20 @@ def _summary(employee):
     }
 
 
+def _wallet_card(employee):
+    from wallet.staff_views import card
+    return card(employee)
+
+
+def _has_wallet(employee):
+    from wallet.services import has_wallet
+    return has_wallet(employee)
+
+
 def _base_context(request, active_nav=''):
     employee = request.employee
     return {
+        'has_wallet': _has_wallet(employee),
         'employee': employee,
         'is_intern': is_intern(employee),
         'active_nav': active_nav,
@@ -253,6 +264,7 @@ def dashboard(request):
         'pending_leave': pending_leave,
         'upcoming_classes': upcoming_classes,
         'bootcamp': bootcamp.dashboard_summary(employee) if is_intern(employee) else None,
+        'wallet': _wallet_card(employee),
         'days_present': month_attendance.exclude(status='absent').count(),
         'todays_report': DailyReport.objects.filter(employee=employee, date=today).first(),
         'recent_notifications': Notification.objects.filter(

@@ -1,0 +1,137 @@
+{% load xp %}
+<style>
+  .xp-hero { position: relative; overflow: hidden; border-radius: 22px; padding: 22px 24px; margin: 0 0 18px; color: #fff;
+    background:
+      radial-gradient(420px 220px at 92% -10%, rgba(251,191,36,.35), transparent 60%),
+      radial-gradient(360px 260px at -5% 110%, rgba(236,72,153,.28), transparent 60%),
+      linear-gradient(135deg, #7C3AED 0%, #5B21B6 55%, #3B0F86 100%);
+    box-shadow: 0 18px 40px -18px rgba(91,33,182,.65); }
+  .xp-hero::after { content: ""; position: absolute; inset: 0; pointer-events: none;
+    background-image: radial-gradient(rgba(255,255,255,.10) 1px, transparent 1px); background-size: 18px 18px;
+    mask-image: linear-gradient(120deg, transparent 35%, #000 100%); -webkit-mask-image: linear-gradient(120deg, transparent 35%, #000 100%); }
+  .xp-grid { position: relative; z-index: 1; display: grid; grid-template-columns: minmax(0,1.25fr) minmax(0,1fr) minmax(0,1.1fr); gap: 22px; align-items: stretch; }
+  .xp-grid > * { min-width: 0; }
+  .xp-eyebrow { display: inline-flex; align-items: center; gap: 8px; font-size: 11.5px; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; opacity: .9; }
+  .xp-eyebrow .xp-coin { width: 26px; height: 26px; border-radius: 50%; display: grid; place-items: center; font-size: 12px; color: #78350F;
+    background: radial-gradient(circle at 35% 30%, #FDE68A, #F59E0B 70%); box-shadow: 0 0 0 3px rgba(251,191,36,.25), 0 4px 10px rgba(0,0,0,.25); }
+  .xp-balance { display: flex; align-items: baseline; gap: 10px; margin: 12px 0 2px; }
+  .xp-balance b { font-size: 46px; line-height: 1; font-weight: 800; letter-spacing: -.035em; font-variant-numeric: tabular-nums; }
+  .xp-balance span { font-size: 18px; font-weight: 700; opacity: .85; }
+  .xp-worth { font-size: 15px; opacity: .92; }
+  .xp-worth strong { font-size: 20px; color: #FDE68A; font-weight: 800; }
+  .xp-chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
+  .xp-chip { display: inline-flex; align-items: center; gap: 6px; padding: 6px 11px; border-radius: 999px; font-size: 12.5px; font-weight: 600;
+    background: rgba(255,255,255,.14); border: 1px solid rgba(255,255,255,.18); backdrop-filter: blur(4px); white-space: nowrap; }
+  .xp-chip.gold { background: rgba(251,191,36,.2); border-color: rgba(251,191,36,.45); color: #FEF3C7; }
+  .xp-cta { display: inline-flex; align-items: center; gap: 8px; margin-top: 16px; padding: 9px 16px; border-radius: 12px; font-weight: 700; font-size: 13.5px;
+    background: #fff; color: #5B21B6; text-decoration: none; box-shadow: 0 6px 16px rgba(0,0,0,.18); transition: transform .15s ease; }
+  .xp-cta:hover { transform: translateY(-1px); color: #4C1D95; }
+  .xp-panel { background: rgba(255,255,255,.10); border: 1px solid rgba(255,255,255,.16); border-radius: 16px; padding: 14px 16px; display: flex; flex-direction: column; }
+  .xp-panel h3 { margin: 0 0 10px; font-size: 12px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; opacity: .85; display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; gap: 4px 10px; }
+  .xp-panel h3 em { font-style: normal; letter-spacing: 0; text-transform: none; color: #FDE68A; font-size: 13px; white-space: nowrap; }
+  .xp-bars { flex: 1; display: flex; align-items: flex-end; gap: 8px; min-height: 104px; }
+  .xp-bar { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; height: 100%; gap: 5px; }
+  .xp-bar i { width: 100%; max-width: 26px; border-radius: 7px 7px 3px 3px; background: rgba(255,255,255,.35); min-height: 4px;
+    transform-origin: bottom; animation: xpGrow .9s cubic-bezier(.2,.8,.2,1) both; }
+  .xp-bar.now i { background: linear-gradient(180deg, #FDE68A, #F59E0B); box-shadow: 0 0 14px rgba(251,191,36,.55); }
+  .xp-bar small { font-size: 10.5px; opacity: .8; } .xp-bar b { font-size: 10.5px; font-weight: 700; }
+  @keyframes xpGrow { from { transform: scaleY(0); } to { transform: scaleY(1); } }
+  .xp-feed { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+  .xp-feed li a, .xp-feed li > div { display: flex; align-items: center; gap: 10px; color: #fff; text-decoration: none; }
+  .xp-feed .ic { width: 30px; height: 30px; flex: none; border-radius: 9px; display: grid; place-items: center; font-size: 12px; background: rgba(255,255,255,.16); }
+  .xp-feed .t { flex: 1; min-width: 0; font-size: 13px; line-height: 1.25; }
+  .xp-feed .t span { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; font-weight: 600; }
+  .xp-feed .t small.amt { color: #FDE68A; opacity: 1; font-weight: 700; }
+  .xp-panel.wide { grid-column: span 2; }
+  .xp-panel.wide .xp-feed { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 12px 16px; }
+  .xp-feed .t small { opacity: .75; font-size: 11.5px; }
+  .xp-feed .v { font-weight: 800; font-size: 13px; color: #A7F3D0; white-space: nowrap; }
+  .xp-feed .v.wait { color: #FDE68A; }
+  .xp-feed .v.neg { color: #FECACA; }
+  .xp-empty-sub { font-size: 13.5px; opacity: .9; margin-top: 8px; max-width: 34ch; }
+  @media (max-width: 1100px) { .xp-grid { grid-template-columns: minmax(0,1fr) minmax(0,1fr); } .xp-main { grid-column: 1 / -1; } }
+  @media (max-width: 640px) {
+    .xp-hero { padding: 18px; border-radius: 18px; }
+    .xp-grid { grid-template-columns: minmax(0,1fr); gap: 14px; }
+    .xp-chip { white-space: normal; }
+    .xp-balance b { font-size: 40px; }
+    .xp-bars { min-height: 84px; }
+    .xp-panel.wide { grid-column: auto; }
+    .xp-panel.wide .xp-feed { grid-template-columns: minmax(0,1fr); }
+  }
+  @media (prefers-reduced-motion: reduce) { .xp-bar i { animation: none; } .xp-cta { transition: none; } }
+</style>
+
+<section class="xp-hero" aria-label="Your XP wallet">
+  <div class="xp-grid">
+    <div class="xp-main">
+      <div class="xp-eyebrow"><span class="xp-coin"><i class="fas fa-star"></i></span> Your XP Wallet</div>
+      <div class="xp-balance"><b data-count="{{ wallet.balance }}">{{ wallet.balance|xpn }}</b><span>XP</span></div>
+      {% if wallet.balance or wallet.pending or wallet.paid_xp %}
+        <div class="xp-worth">Worth <strong>₹{{ wallet.balance_rs|rs }}</strong> · {{ wallet.xp_per_rupee }} XP = ₹1</div>
+        <div class="xp-chips">
+          {% if wallet.month_xp %}<span class="xp-chip gold"><i class="fas fa-arrow-trend-up"></i> +{{ wallet.month_xp|xpn }} XP this month</span>{% endif %}
+          {% if wallet.pending %}<span class="xp-chip"><i class="fas fa-hourglass-half"></i> {{ wallet.pending|xpn }} XP waiting for approval</span>{% endif %}
+          <span class="xp-chip"><i class="fas fa-indian-rupee-sign"></i> ₹{{ wallet.paid_rs|rs }} paid so far</span>
+        </div>
+      {% else %}
+        <div class="xp-worth">{{ wallet.xp_per_rupee }} XP = ₹1, paid on your payslip or separately.</div>
+        <p class="xp-empty-sub">Finish real work, and once HR approves it the XP lands here as money you can be paid.</p>
+      {% endif %}
+      <a class="xp-cta" href="{% url 'staff:wallet' %}">Open wallet <i class="fas fa-arrow-right"></i></a>
+    </div>
+
+    {% if wallet.recent %}
+    <div class="xp-panel">
+      <h3>Monthly{% if wallet.month_xp %}<em>₹{{ wallet.month_rs|rs }} this month</em>{% endif %}</h3>
+      <div class="xp-bars" role="img" aria-label="XP earned in the last six months">
+        {% for m in wallet.chart %}
+        <div class="xp-bar{% if forloop.last %} now{% endif %}" title="{{ m.label }}: {{ m.xp }} XP">
+          {% if m.xp %}<b>{{ m.xp|xpn }}</b>{% endif %}
+          <i style="height: {{ m.pct }}%; animation-delay: {{ forloop.counter0 }}00ms"></i>
+          <small>{{ m.label }}</small>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+    {% endif %}
+
+    <div class="xp-panel{% if not wallet.recent %} wide{% endif %}">
+      {% if wallet.recent %}
+      <h3>Latest</h3>
+      <ul class="xp-feed">
+        {% for e in wallet.recent %}
+        <li>{% if e.link %}<a href="{{ e.link }}">{% else %}<div>{% endif %}
+          <span class="ic"><i class="fas {% if e.source_kind == 'work' %}fa-list-check{% elif e.source_kind == 'uat' %}fa-clipboard-check{% elif e.source_kind == 'assessment' %}fa-file-pen{% elif e.source_kind == 'lead' %}fa-bullseye{% elif e.xp < 0 %}fa-rotate-left{% else %}fa-gift{% endif %}"></i></span>
+          <span class="t"><span>{{ e.title }}</span><small>{% if e.status == 'pending' %}Waiting for approval{% else %}{{ e.decided_at|default:e.created_at|date:"d M" }}{% endif %}</small></span>
+          <span class="v{% if e.status == 'pending' %} wait{% elif e.xp < 0 %} neg{% endif %}">{% if e.xp >= 0 %}+{% else %}−{% endif %}{{ e.abs_xp|xpn }}</span>
+        {% if e.link %}</a>{% else %}</div>{% endif %}</li>
+        {% endfor %}
+      </ul>
+      {% else %}
+      <h3>How to earn XP</h3>
+      <ul class="xp-feed">
+        {% for icon, what, amount in wallet.ways %}
+        <li><div><span class="ic"><i class="fas {{ icon }}"></i></span><span class="t"><span>{{ what }}</span><small class="amt">{{ amount }}</small></span></div></li>
+        {% endfor %}
+      </ul>
+      {% endif %}
+    </div>
+  </div>
+</section>
+<script>
+  (function () {
+    var el = document.querySelector('.xp-balance b[data-count]');
+    if (!el || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    var end = parseInt(el.dataset.count, 10) || 0, final = el.textContent;
+    if (end < 10) return;
+    var start = null, dur = 900;
+    function step(t) {
+      start = start || t;
+      var p = Math.min((t - start) / dur, 1), eased = 1 - Math.pow(1 - p, 3);
+      el.textContent = Math.round(end * eased).toLocaleString('en-IN');
+      if (p < 1) requestAnimationFrame(step); else el.textContent = final;
+    }
+    requestAnimationFrame(step);
+  })();
+</script>

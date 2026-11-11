@@ -1,0 +1,5 @@
+<div class="d-flex gap-2 mb-4" style="flex-wrap:wrap">
+  <a href="{% url 'wallet:approvals' %}" class="btn btn-sm {% if tab == 'approvals' %}btn-primary{% else %}btn-ghost{% endif %}"><i class="fas fa-circle-check"></i> XP Approvals</a>
+  <a href="{% url 'wallet:list' %}" class="btn btn-sm {% if tab == 'wallets' %}btn-primary{% else %}btn-ghost{% endif %}"><i class="fas fa-wallet"></i> Wallets</a>
+  <a href="{% url 'wallet:settings' %}" class="btn btn-sm {% if tab == 'settings' %}btn-primary{% else %}btn-ghost{% endif %}"><i class="fas fa-sliders"></i> XP Settings</a>
+</div>

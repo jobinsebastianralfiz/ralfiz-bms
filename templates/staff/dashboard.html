@@ -11,6 +11,7 @@
 
 {% block content %}
 {% include 'staff/_stats.html' %}
+{% if wallet %}{% include 'staff/_xp_card.html' %}{% endif %}
 
 <div class="sv-home-a">
   <section class="sv-card">

@@ -40,6 +40,11 @@
             </div>
           </div>
           <div class="mb-3">
+            <label class="form-label">XP reward <span class="text-muted" style="font-weight:400;">(optional)</span></label>
+            <input type="number" name="xp_reward" min="0" class="form-control" style="max-width:220px" value="{{ assignment.xp_reward|default_if_none:'' }}" placeholder="Priority default">
+            <small class="text-muted">Blank = by priority: Low {{ xp_defaults.low }} · Medium {{ xp_defaults.medium }} · High {{ xp_defaults.high }} · Urgent {{ xp_defaults.urgent }} XP ({{ xp_defaults.per_rupee }} XP = ₹1). Approve it in <a href="{% url 'wallet:approvals' %}">XP Approvals</a> once it is completed.</small>
+          </div>
+          <div class="mb-3">
             <label class="form-label">Description</label>
             <textarea name="description" class="form-control" rows="3">{{ assignment.description }}</textarea>
           </div>

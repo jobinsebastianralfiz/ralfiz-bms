@@ -1,0 +1,57 @@
+{% extends 'base.html' %}
+{% load xp %}
+{% block title %}XP Wallets - Ralfiz BMS{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title">XP Wallets</h1>
+    <p class="page-subtitle mb-0">One wallet per intern. Open one to see its ledger, add or remove XP, or cash it out. {{ settings.xp_per_rupee }} XP = ₹1.</p>
+  </div>
+</div>
+{% include 'wallet/_tabs.html' with tab='wallets' %}
+
+<div class="row mb-4">
+  <div class="col-4 col-md-12" style="padding: 0.75rem;">
+    <div class="card stat-card"><div class="stat-card-header"><div class="stat-card-icon primary"><i class="fas fa-wallet"></i></div></div>
+      <div class="stat-card-value">₹{{ totals.balance_rs|rs }}</div><div class="stat-card-label">Owed: {{ totals.balance|xpn }} XP in wallets</div></div>
+  </div>
+  <div class="col-4 col-md-12" style="padding: 0.75rem;">
+    <a href="{% url 'wallet:approvals' %}" class="card stat-card" style="display:block;text-decoration:none">
+      <div class="stat-card-header"><div class="stat-card-icon warning"><i class="fas fa-inbox"></i></div></div>
+      <div class="stat-card-value">{{ queue }}</div><div class="stat-card-label">Waiting for approval · {{ totals.pending|xpn }} XP</div></a>
+  </div>
+  <div class="col-4 col-md-12" style="padding: 0.75rem;">
+    <a href="{% url 'wallet:settings' %}" class="card stat-card" style="display:block;text-decoration:none">
+      <div class="stat-card-header"><div class="stat-card-icon info"><i class="fas fa-coins"></i></div></div>
+      <div class="stat-card-value">{{ settings.xp_per_rupee }} XP = ₹1</div><div class="stat-card-label">{% if settings.monthly_cap %}Cap {{ settings.monthly_cap|xpn }} XP a month{% else %}No monthly cap{% endif %}</div></a>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-body p-0">
+    {% if rows %}
+    <div class="table-responsive">
+      <table class="table table-hover mb-0">
+        <thead><tr><th>Intern</th><th class="text-end">Balance</th><th class="text-end">Pending</th><th class="text-end">Paid this month</th><th class="text-end">Total paid</th><th></th></tr></thead>
+        <tbody>
+        {% for r in rows %}
+          <tr>
+            <td><div class="fw-medium">{{ r.employee.full_name }}</div>
+              <div class="text-sm text-muted">{{ r.employee.employee_id }}{% if r.left %} · <span class="badge badge-warning">Left · XP not paid</span>{% endif %}</div></td>
+            <td class="text-end"><div class="fw-medium">{{ r.balance|xpn }} XP</div><div class="text-sm text-muted">₹{{ r.balance_rs|rs }}</div></td>
+            <td class="text-end">{% if r.pending %}{{ r.pending|xpn }} XP{% else %}<span class="text-muted">0</span>{% endif %}</td>
+            <td class="text-end">₹{{ r.paid_month|rs }}</td>
+            <td class="text-end">₹{{ r.paid_total|rs }}</td>
+            <td class="text-end"><a href="{% url 'wallet:detail' r.employee.pk %}" class="btn btn-sm btn-ghost">Open</a></td>
+          </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <div class="text-center text-muted" style="padding:48px"><i class="fas fa-wallet fa-2x mb-3 d-block"></i>No interns yet.</div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

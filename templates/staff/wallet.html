@@ -1,0 +1,81 @@
+{% extends 'staff/base.html' %}
+{% load xp %}
+
+{% block title %}XP Wallet{% endblock %}
+{% block heading %}XP Wallet{% endblock %}
+
+{% block page_hero %}
+{% include 'staff/_hero.html' with title='XP Wallet' subtitle='XP you earn for approved work, and what it is worth.' tagline='Real work, real pay' art='check' %}
+{% endblock %}
+
+{% block content %}
+<style>
+  .xw-rate { font-size: 12.5px; color: var(--sf-text-2); margin: -4px 0 14px; }
+  .xw-big { font-size: 30px; font-weight: 700; letter-spacing: -.02em; color: var(--sf-teal); }
+  .xw-sub { font-size: 12.5px; color: var(--sf-text-2); margin-top: 2px; }
+  .xw-chart { display: flex; align-items: flex-end; gap: 10px; height: 120px; padding: 8px 4px 0; }
+  .xw-col { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; height: 100%; gap: 4px; }
+  .xw-bar { width: 100%; max-width: 38px; border-radius: 6px 6px 2px 2px; background: #8B5CF6; min-height: 2px; }
+  .xw-col small { font-size: 11px; color: var(--sf-text-2); }
+  .xw-col b { font-size: 11px; font-weight: 600; }
+  .xw-plus { color: var(--sf-green); font-weight: 700; white-space: nowrap; }
+  .xw-minus { color: var(--sf-red); font-weight: 700; white-space: nowrap; }
+  .xw-why { font-size: 12.5px; color: var(--sf-text-2); margin-top: 6px; }
+  .xw-item-title { color: inherit; text-decoration: none; }
+  .xw-item-title:hover { text-decoration: underline; }
+</style>
+
+<p class="xw-rate"><i class="fas fa-coins"></i> {{ s.xp_per_rupee }} XP = ₹1 · new XP waits for HR to approve it before it reaches your balance.</p>
+
+<div class="sf-stats">
+  <div class="sf-stat">
+    <div class="sf-stat-val">{{ s.balance|xpn }} XP</div>
+    <div class="sf-stat-lbl">Balance · ₹{{ s.balance_rs|rs }}</div>
+  </div>
+  <div class="sf-stat">
+    <div class="sf-stat-val">{{ s.pending|xpn }} XP</div>
+    <div class="sf-stat-lbl">Waiting for approval · ₹{{ s.pending_rs|rs }}</div>
+  </div>
+  <div class="sf-stat">
+    <div class="sf-stat-val">₹{{ s.paid_rs|rs }}</div>
+    <div class="sf-stat-lbl">Paid so far · {{ s.paid_xp|xpn }} XP</div>
+  </div>
+</div>
+
+<div class="sf-section-title">Earned each month</div>
+<div class="sf-card">
+  <div class="xw-chart" role="img" aria-label="XP earned in the last six months">
+    {% for m in chart %}
+    <div class="xw-col" title="{{ m.label }}: {{ m.xp }} XP">
+      {% if m.xp %}<b>{{ m.xp }}</b>{% endif %}
+      <div class="xw-bar" style="height: {{ m.pct }}%"></div>
+      <small>{{ m.label }}</small>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+
+<div class="sf-section-title">History</div>
+{% if entries %}
+<div class="sf-list">
+  {% for e in entries %}
+  <div class="sf-item">
+    <div class="sf-item-head">
+      <span class="sf-item-title">{% if e.link %}<a class="xw-item-title" href="{{ e.link }}">{{ e.title }}</a>{% else %}{{ e.title }}{% endif %}</span>
+      <span class="{% if e.xp >= 0 %}xw-plus{% else %}xw-minus{% endif %}">{% if e.xp >= 0 %}+{% else %}−{% endif %}{{ e.abs_xp|xpn }} XP · ₹{{ e.rupees|rs }}</span>
+    </div>
+    <div class="sf-item-meta">
+      <span><i class="fas fa-calendar"></i> {{ e.created_at|date:"d M Y" }}</span>
+      <span>{{ e.get_source_kind_display }}</span>
+      <span class="sf-badge sf-badge-{{ e.status_css }}">{{ e.display_status }}</span>
+    </div>
+    {% if e.status == 'rejected' and e.note %}<div class="xw-why"><i class="fas fa-circle-info"></i> {{ e.note }}</div>
+    {% elif e.note and e.suggested_xp and e.suggested_xp != e.xp %}<div class="xw-why">Changed from {{ e.suggested_xp }} XP: {{ e.note }}</div>
+    {% elif e.kind == 'reversal' and e.note %}<div class="xw-why">{{ e.note }}</div>{% endif %}
+  </div>
+  {% endfor %}
+</div>
+{% else %}
+<div class="sf-card"><p class="sf-muted" style="margin:0">No XP yet. Finish work assignments and UAT plans, and once HR approves them the XP appears here.</p></div>
+{% endif %}
+{% endblock %}

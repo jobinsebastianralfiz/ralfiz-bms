@@ -339,10 +339,10 @@ class PayrollSerializer(serializers.ModelSerializer):
             'month', 'year', 'month_name', 'base_salary',
             'working_days', 'days_present', 'days_absent',
             'paid_leave_days', 'unpaid_leave_days', 'leave_deduction',
-            'bonus', 'deductions', 'net_pay', 'status', 'notes',
+            'bonus', 'xp_payout', 'deductions', 'net_pay', 'status', 'notes',
             'created_at', 'updated_at',
         ]
-        read_only_fields = ['id', 'employee_name', 'employee_id_display', 'created_at', 'updated_at']
+        read_only_fields = ['id', 'employee_name', 'employee_id_display', 'xp_payout', 'created_at', 'updated_at']
 
     def get_month_name(self, obj):
         import calendar

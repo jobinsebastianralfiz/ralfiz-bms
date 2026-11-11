@@ -13,6 +13,11 @@ from . import services
 from .models import UATCase, UATPlan, UATResult, UATSection
 
 
+def _xp(post):
+    raw = (post.get('xp_reward') or '').strip()
+    return int(raw) if raw.isdigit() else 0
+
+
 def _staff_choices():
     return Employee.objects.filter(status='active').select_related('user').order_by('employee_id')
 
@@ -37,7 +42,8 @@ def uat_plan_create(request):
             plan = UATPlan.objects.create(name=name, product=p.get('product', '').strip(),
                                           site_url=p.get('site_url', '').strip(),
                                           instructions=p.get('instructions', '').strip(),
-                                          due_date=p.get('due_date') or None, created_by=request.user)
+                                          due_date=p.get('due_date') or None, created_by=request.user,
+                                          xp_reward=_xp(p))
             plan.testers.set(Employee.objects.filter(pk__in=p.getlist('testers')))
             upload = request.FILES.get('cases_json')
             if upload:
@@ -119,6 +125,7 @@ def uat_plan_update(request, pk):
         plan.site_url = p.get('site_url', '').strip()
         plan.instructions = p.get('instructions', '').strip()
         plan.due_date = p.get('due_date') or None
+        plan.xp_reward = _xp(p)
         plan.status = p.get('status') if p.get('status') in dict(UATPlan.STATUS_CHOICES) else plan.status
         plan.save()
         messages.success(request, 'Plan updated.')

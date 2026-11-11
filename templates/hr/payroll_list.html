@@ -70,7 +70,7 @@
             <td class="text-center">{{ p.unpaid_leave_days }}</td>
             <td class="text-center">{{ p.days_absent }}</td>
             <td class="text-end text-danger">{% if p.leave_deduction %}-{{ p.leave_deduction }}{% else %}0{% endif %}</td>
-            <td class="text-end text-success">{% if p.bonus %}+{{ p.bonus }}{% else %}0{% endif %}</td>
+            <td class="text-end text-success">{% if p.bonus %}+{{ p.bonus }}{% else %}0{% endif %}{% if p.xp_payout %}<div class="text-sm" title="XP wallet payout">+{{ p.xp_payout }} XP payout</div>{% endif %}</td>
             <td class="text-end text-danger">{% if p.deductions %}-{{ p.deductions }}{% else %}0{% endif %}</td>
             <td class="text-end fw-bold">{{ p.net_pay }}</td>
             <td>

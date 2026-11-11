@@ -8627,6 +8627,19 @@ def emp_attendance_report(request):
     return render(request, 'hr/attendance_report.html', context)
 
 
+def _xp_reward(post):
+    """The optional XP field on a work assignment: blank = the priority default."""
+    raw = (post.get('xp_reward') or '').strip()
+    return int(raw) if raw.isdigit() else None
+
+
+def _xp_defaults():
+    from wallet.models import XPSettings
+    s = XPSettings.current()
+    return {'low': s.xp_low, 'medium': s.xp_medium, 'high': s.xp_high, 'urgent': s.xp_urgent,
+            'per_rupee': s.xp_per_rupee}
+
+
 @login_required
 def emp_work_list(request):
     """List work assignments"""
@@ -8669,6 +8682,7 @@ def emp_work_create(request):
             due_date=request.POST.get('due_date') or None,
             attachment=request.FILES.get('attachment'),
             confidentiality_disclaimer=request.POST.get('confidentiality_disclaimer', ''),
+            xp_reward=_xp_reward(request.POST),
         )
         assignment.assigned_to.set(employees)
         for employee in employees:
@@ -8692,6 +8706,7 @@ def emp_work_create(request):
         'employees': employees,
         'projects': projects,
         'priority_choices': WorkAssignment.PRIORITY_CHOICES,
+        'xp_defaults': _xp_defaults(),
     }
     return render(request, 'hr/work_create.html', context)
 
@@ -8709,6 +8724,8 @@ def emp_work_detail(request, pk):
         assignment.status = request.POST.get('status', assignment.status)
         assignment.confidentiality_disclaimer = request.POST.get('confidentiality_disclaimer', assignment.confidentiality_disclaimer)
         assignment.due_date = request.POST.get('due_date') or None
+        if 'xp_reward' in request.POST:
+            assignment.xp_reward = _xp_reward(request.POST)
 
         employee_ids = request.POST.getlist('employees')
         if employee_ids:
@@ -8756,6 +8773,7 @@ def emp_work_detail(request, pk):
         'updates': updates,
         'status_choices': WorkAssignment.STATUS_CHOICES,
         'priority_choices': WorkAssignment.PRIORITY_CHOICES,
+        'xp_defaults': _xp_defaults(),
     }
     return render(request, 'hr/work_detail.html', context)
 

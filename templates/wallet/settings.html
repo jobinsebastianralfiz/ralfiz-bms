@@ -1,0 +1,49 @@
+{% extends 'base.html' %}
+{% block title %}XP Settings - Ralfiz BMS{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title">XP Settings</h1>
+    <p class="page-subtitle mb-0">The rupee rate and the XP each kind of work suggests. Every amount is only a suggestion: the approver can change it.</p>
+  </div>
+</div>
+{% include 'wallet/_tabs.html' with tab='settings' %}
+
+<form method="post" class="card" style="max-width: 760px">{% csrf_token %}
+  <div class="card-body">
+    <h3 class="card-title mb-3">Rate</h3>
+    <label class="form-label" for="rate">Paise per XP</label>
+    <input id="rate" type="number" name="rate_paise" min="1" value="{{ settings.rate_paise }}" class="form-control" style="max-width:200px" required>
+    <small class="text-muted">50 paise = 2 XP for ₹1 (now {{ settings.xp_per_rupee }} XP = ₹1). Each payout keeps the rate it was paid at, so changing this never changes past payouts.</small>
+
+    <h3 class="card-title mt-4 mb-3">Work assignments, by priority</h3>
+    <div class="row">
+      <div class="col-3 col-md-6"><label class="form-label">Low</label><input type="number" min="0" name="xp_low" value="{{ settings.xp_low }}" class="form-control"></div>
+      <div class="col-3 col-md-6"><label class="form-label">Medium</label><input type="number" min="0" name="xp_medium" value="{{ settings.xp_medium }}" class="form-control"></div>
+      <div class="col-3 col-md-6"><label class="form-label">High</label><input type="number" min="0" name="xp_high" value="{{ settings.xp_high }}" class="form-control"></div>
+      <div class="col-3 col-md-6"><label class="form-label">Urgent</label><input type="number" min="0" name="xp_urgent" value="{{ settings.xp_urgent }}" class="form-control"></div>
+    </div>
+    <small class="text-muted">The XP field on a work assignment overrides these. UAT plans have their own "XP reward per tester".</small>
+
+    <h3 class="card-title mt-4 mb-3">Other sources</h3>
+    <div class="row">
+      <div class="col-6 col-md-12"><label class="form-label">XP per % in a graded assessment</label><input type="number" min="0" step="0.01" name="xp_per_assessment_percent" value="{{ settings.xp_per_assessment_percent }}" class="form-control"><small class="text-muted">1 = 85% scores 85 XP.</small></div>
+      <div class="col-6 col-md-12"><label class="form-label">A lead the intern added becomes a client</label><input type="number" min="0" name="xp_lead_converted" value="{{ settings.xp_lead_converted }}" class="form-control"></div>
+    </div>
+
+    <h3 class="card-title mt-4 mb-3">Limits</h3>
+    <label class="form-label" for="cap">Monthly cap per intern (XP)</label>
+    <input id="cap" type="number" min="0" name="monthly_cap" value="{{ settings.monthly_cap }}" class="form-control" style="max-width:200px">
+    <small class="text-muted">0 = no cap. Counts approved earnings in the month they are approved; manual adjustments don't count.</small>
+    <div class="form-check mt-3">
+      <input class="form-check-input" type="checkbox" name="include_employees" id="inclEmp" {% if settings.include_employees %}checked{% endif %}>
+      <label class="form-check-label" for="inclEmp">Give employees a wallet as well (off = interns only)</label>
+    </div>
+  </div>
+  <div class="card-footer" style="padding: 1rem 1.5rem; text-align: right">
+    {% if settings.updated_by %}<span class="text-muted text-sm" style="margin-right:1rem">Last changed by {{ settings.updated_by.get_full_name|default:settings.updated_by.username }}, {{ settings.updated_at|date:"d M Y" }}</span>{% endif %}
+    <button class="btn btn-primary"><i class="fas fa-save"></i> Save</button>
+  </div>
+</form>
+{% endblock %}

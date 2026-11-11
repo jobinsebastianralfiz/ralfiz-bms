@@ -1,4 +1,5 @@
 {% extends 'staff/base.html' %}
+{% load xp %}
 
 {% block title %}UAT Testing{% endblock %}
 {% block heading %}UAT Testing{% endblock %}
@@ -28,6 +29,7 @@
     <div class="ut-plan-meta">
       {% if p.plan.due_date %}<span{% if p.late %} class="late"{% endif %}><i class="fas fa-calendar"></i> Finish by {{ p.plan.due_date|date:"D d M" }}{% if p.due_text %} · {{ p.due_text }}{% endif %}</span>{% endif %}
       <span><i class="fas fa-layer-group"></i> {{ p.section_count }} section{{ p.section_count|pluralize }}</span>
+      {% if p.plan.xp_reward and has_wallet %}<span><i class="fas fa-coins"></i> Reward: {{ p.plan.xp_reward|xpn }} XP · ₹{{ p.plan.xp_reward|xp_rs }}</span>{% endif %}
     </div>
 
     <div class="ut-plan-progress">

@@ -22,6 +22,8 @@ class UATPlan(models.Model):
     instructions = models.TextField(blank=True, help_text='Shown to testers at the top of the plan')
     due_date = models.DateField(null=True, blank=True)
     status = models.CharField(max_length=10, choices=STATUS_CHOICES, default='active')
+    xp_reward = models.PositiveIntegerField(
+        default=0, help_text='XP each tester earns once every test in their sections is marked. 0 = no reward.')
     testers = models.ManyToManyField('employees.Employee', blank=True, related_name='uat_plans',
                                      help_text='Everyone testing this plan (sections with no tester go to all of them)')
     created_by = models.ForeignKey('auth.User', on_delete=models.SET_NULL, null=True, blank=True)

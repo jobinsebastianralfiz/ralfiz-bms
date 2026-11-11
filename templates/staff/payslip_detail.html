@@ -38,6 +38,9 @@
   {% if payslip.bonus %}
     <div class="sf-kv"><span class="sf-kv-k">Bonus</span><span class="sf-kv-v" style="color:var(--sf-green)">+ ₹{{ payslip.bonus|floatformat:2 }}</span></div>
   {% endif %}
+  {% if payslip.xp_payout %}
+    <div class="sf-kv"><span class="sf-kv-k">XP payout</span><span class="sf-kv-v" style="color:var(--sf-green)">+ ₹{{ payslip.xp_payout|floatformat:2 }}</span></div>
+  {% endif %}
   {% if payslip.leave_deduction %}
     <div class="sf-kv"><span class="sf-kv-k">Leave deduction</span><span class="sf-kv-v" style="color:var(--sf-red)">− ₹{{ payslip.leave_deduction|floatformat:2 }}</span></div>
   {% endif %}

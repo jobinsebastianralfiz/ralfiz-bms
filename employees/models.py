@@ -464,6 +464,9 @@ class WorkAssignment(models.Model):
     status = models.CharField(max_length=12, choices=STATUS_CHOICES, default='assigned')
     due_date = models.DateField(null=True, blank=True)
     completed_at = models.DateTimeField(null=True, blank=True)
+    xp_reward = models.PositiveIntegerField(
+        null=True, blank=True,
+        help_text='XP each assignee earns when it is completed and approved. Blank = the priority default.')
     attachment = models.FileField(upload_to='employees/work_assignments/', blank=True, null=True,
                                   help_text='PDF or document attached to this task')
     notes = models.TextField(blank=True, help_text='Employee can add progress notes')
@@ -714,6 +717,8 @@ class Payroll(models.Model):
     bonus = models.DecimalField(max_digits=12, decimal_places=2, default=0)
     deductions = models.DecimalField(max_digits=12, decimal_places=2, default=0,
                                       help_text='Other deductions (tax, etc.)')
+    xp_payout = models.DecimalField(max_digits=12, decimal_places=2, default=0,
+                                    help_text='XP wallet cash-outs on this payslip. Set by the wallet, not typed in.')
 
     # Final
     net_pay = models.DecimalField(max_digits=12, decimal_places=2, default=0)
@@ -749,7 +754,7 @@ class Payroll(models.Model):
             self.leave_deduction = per_day * self.unpaid_leave_days
         else:
             self.leave_deduction = 0
-        self.net_pay = self.base_salary - self.leave_deduction + self.bonus - self.deductions
+        self.net_pay = self.base_salary - self.leave_deduction + self.bonus + self.xp_payout - self.deductions
 
 
 class CertificateTemplate(models.Model):

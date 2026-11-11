@@ -1,4 +1,5 @@
 {% extends 'staff/base.html' %}
+{% load xp %}
 
 {% block title %}{{ p.plan.name }} · UAT Testing{% endblock %}
 {% block heading %}UAT Testing{% endblock %}
@@ -15,6 +16,7 @@
     <div class="ut-chips">
       {% if p.plan.site_url %}<a class="ut-chip" href="{{ p.plan.site_url }}" target="_blank" rel="noopener"><i class="fas fa-arrow-up-right-from-square"></i> {{ p.plan.site_url|cut:"https://" }}</a>{% endif %}
       {% if p.plan.due_date %}<span class="ut-chip"><i class="fas fa-calendar"></i> Finish by {{ p.plan.due_date|date:"D d M" }}</span>{% endif %}
+      {% if p.plan.xp_reward and has_wallet %}<span class="ut-chip"><i class="fas fa-coins"></i> Reward: {{ p.plan.xp_reward|xpn }} XP · ₹{{ p.plan.xp_reward|xp_rs }}</span>{% endif %}
       {% if p.retest %}<span class="ut-chip lime"><i class="fas fa-rotate"></i> {{ p.retest }} to retest</span>{% endif %}
     </div>
   </div>

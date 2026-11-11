@@ -1,0 +1,138 @@
+{% extends 'base.html' %}
+{% load xp %}
+{% block title %}{{ emp.full_name }} · XP Wallet - Ralfiz BMS{% endblock %}
+
+{% block breadcrumb %}
+<a href="{% url 'dashboard' %}" class="breadcrumb-item">Dashboard</a>
+<span class="breadcrumb-separator">/</span>
+<a href="{% url 'wallet:list' %}" class="breadcrumb-item">XP Wallets</a>
+<span class="breadcrumb-separator">/</span>
+<span class="breadcrumb-item active">{{ emp.full_name }}</span>
+{% endblock %}
+
+{% block content %}
+<style>
+  .xw-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1rem; margin-bottom: 1rem; }
+  .xw-sub { font-size: .8125rem; color: var(--text-muted, #6b7280); }
+  .xw-plus { color: #16a34a; font-weight: 600; } .xw-minus { color: #dc2626; font-weight: 600; }
+  .xw-form label { font-size: .8125rem; font-weight: 500; display: block; margin: .5rem 0 .25rem; }
+  .xw-inline { display: flex; gap: .5rem; flex-wrap: wrap; }
+</style>
+<div class="page-header">
+  <div>
+    <h1 class="page-title">{{ emp.full_name }} · XP Wallet</h1>
+    <p class="page-subtitle mb-0">{{ emp.employee_id }} · {{ emp.get_role_display }}{% if emp.status != 'active' %} · <span class="badge badge-warning">{{ emp.get_status_display }}{% if s.balance %} · XP not paid{% endif %}</span>{% endif %} · {{ settings.xp_per_rupee }} XP = ₹1</p>
+  </div>
+</div>
+
+{% if not has_wallet %}<div class="alert alert-warning">{{ emp.full_name }} isn't an intern, so they don't earn XP. Turn on "Give employees a wallet" in XP Settings to change that.</div>{% endif %}
+
+<div class="row mb-4">
+  <div class="col-4 col-md-12" style="padding:.75rem"><div class="card stat-card"><div class="stat-card-header"><div class="stat-card-icon primary"><i class="fas fa-wallet"></i></div></div>
+    <div class="stat-card-value">{{ s.balance|xpn }} XP</div><div class="stat-card-label">Balance · ₹{{ s.balance_rs|rs }}</div></div></div>
+  <div class="col-4 col-md-12" style="padding:.75rem"><a href="{% url 'wallet:approvals' %}" class="card stat-card" style="display:block;text-decoration:none"><div class="stat-card-header"><div class="stat-card-icon warning"><i class="fas fa-hourglass-half"></i></div></div>
+    <div class="stat-card-value">{{ s.pending|xpn }} XP</div><div class="stat-card-label">Waiting for approval</div></a></div>
+  <div class="col-4 col-md-12" style="padding:.75rem"><div class="card stat-card"><div class="stat-card-header"><div class="stat-card-icon success"><i class="fas fa-indian-rupee-sign"></i></div></div>
+    <div class="stat-card-value">₹{{ s.paid_rs|rs }}</div><div class="stat-card-label">Paid so far · ₹{{ s.paid_month_rs|rs }} this month</div></div></div>
+</div>
+
+<div class="xw-grid">
+  <div class="card">
+    <div class="card-header"><h3 class="card-title"><i class="fas fa-money-bill-transfer"></i> Cash out</h3></div>
+    <form method="post" class="card-body xw-form">{% csrf_token %}<input type="hidden" name="action" value="cash_out">
+      <label for="coXp">XP to pay out (balance {{ s.balance|xpn }})</label>
+      <input id="coXp" type="number" name="xp" min="1" max="{{ s.balance }}" value="{{ s.balance }}" class="form-control" required data-rate="{{ settings.rate_paise }}">
+      <div class="xw-sub" id="coRs">= ₹{{ s.balance_rs|rs }} at today's rate</div>
+      <label>How</label>
+      <div class="xw-inline">
+        <label style="font-weight:400;margin:0"><input type="radio" name="method" value="payslip" checked> Add to payslip</label>
+        {% for k, l in methods %}<label style="font-weight:400;margin:0"><input type="radio" name="method" value="{{ k }}"> Pay separately: {{ l }}</label>{% endfor %}
+      </div>
+      <div id="coPayslip">
+        <label for="coMonth">Payslip month</label>
+        <select id="coMonth" name="payslip" class="form-control">{% for m, y, label in months %}<option value="{{ m }}-{{ y }}" {% if forloop.counter == 2 %}selected{% endif %}>{{ label }}</option>{% endfor %}</select>
+        <div class="xw-sub">Shown as its own "XP payout" line. A draft payslip is started if that month has none yet.</div>
+      </div>
+      <div id="coSeparate" style="display:none">
+        <label for="coRef">Reference</label><input id="coRef" name="reference" class="form-control" placeholder="UPI / bank reference">
+        <label for="coDate">Paid on</label><input id="coDate" type="date" name="paid_on" value="{{ today|date:'Y-m-d' }}" class="form-control">
+      </div>
+      <div style="margin-top:1rem"><button class="btn btn-primary" {% if not s.balance %}disabled{% endif %}><i class="fas fa-check"></i> Cash out</button></div>
+    </form>
+  </div>
+
+  <div class="card">
+    <div class="card-header"><h3 class="card-title"><i class="fas fa-plus-minus"></i> Add or remove XP</h3></div>
+    <form method="post" class="card-body xw-form">{% csrf_token %}<input type="hidden" name="action" value="adjust">
+      <div class="xw-inline">
+        <label style="font-weight:400;margin:0"><input type="radio" name="direction" value="add" checked> Add (bonus)</label>
+        <label style="font-weight:400;margin:0"><input type="radio" name="direction" value="remove"> Remove (penalty / write-off)</label>
+      </div>
+      <label for="adXp">XP</label><input id="adXp" type="number" name="xp" min="1" class="form-control" required>
+      <label for="adNote">Reason (the intern sees this)</label><input id="adNote" name="note" class="form-control" required maxlength="250" placeholder="e.g. Extra effort on the GreenCard launch">
+      <div style="margin-top:1rem"><button class="btn btn-secondary" {% if not has_wallet %}disabled{% endif %}><i class="fas fa-save"></i> Save</button></div>
+    </form>
+  </div>
+</div>
+
+{% if payouts %}
+<div class="card mb-4">
+  <div class="card-header"><h3 class="card-title"><i class="fas fa-receipt"></i> Payouts</h3></div>
+  <div class="card-body p-0"><div class="table-responsive"><table class="table mb-0">
+    <thead><tr><th>Paid on</th><th>How</th><th class="text-end">XP</th><th class="text-end">Amount</th><th>Status</th><th></th></tr></thead>
+    <tbody>{% for p in payouts %}
+      <tr>
+        <td>{{ p.paid_on|date:"d M Y" }}<div class="xw-sub">by {{ p.created_by.get_full_name|default:p.created_by.username|default:"—" }}</div></td>
+        <td>{{ p.get_method_display }}{% if p.month_label %} · {{ p.month_label }}{% if p.payroll.status != 'draft' %} ({{ p.payroll.get_status_display|lower }}){% endif %}{% endif %}{% if p.reference %}<div class="xw-sub">Ref {{ p.reference }}</div>{% endif %}</td>
+        <td class="text-end">{{ p.xp|xpn }}</td>
+        <td class="text-end">₹{{ p.amount|rs }}<div class="xw-sub">{{ p.rate_paise }} paise / XP</div></td>
+        <td>{% if p.status == 'paid' %}<span class="badge badge-success">Paid</span>{% else %}<span class="badge badge-secondary">Undone</span><div class="xw-sub">{{ p.undo_reason }}</div>{% endif %}</td>
+        <td class="text-end">{% if p.status == 'paid' and p.payroll.status != 'paid' %}
+          <form method="post" class="xw-inline" style="justify-content:flex-end">{% csrf_token %}<input type="hidden" name="action" value="undo_payout"><input type="hidden" name="payout" value="{{ p.pk }}">
+            <input name="note" class="form-control form-control-sm" style="width:170px" placeholder="Why undo?" required>
+            <button class="btn btn-sm btn-ghost"><i class="fas fa-rotate-left"></i> Undo</button></form>{% endif %}</td>
+      </tr>
+    {% endfor %}</tbody></table></div></div>
+</div>
+{% endif %}
+
+<div class="card">
+  <div class="card-header"><h3 class="card-title"><i class="fas fa-book"></i> Ledger</h3><span class="xw-sub">Rows are never edited or deleted; a mistake is fixed with a correcting row.</span></div>
+  <div class="card-body p-0">
+    {% if entries %}
+    <div class="table-responsive"><table class="table mb-0">
+      <thead><tr><th>Date</th><th>What for</th><th>Status</th><th class="text-end">XP</th></tr></thead>
+      <tbody>{% for e in entries %}
+        <tr>
+          <td class="text-sm">{{ e.created_at|date:"d M Y" }}</td>
+          <td>{% if e.link %}<a href="{{ e.link }}">{{ e.title }}</a>{% else %}{{ e.title }}{% endif %}
+            <div class="xw-sub">{{ e.get_kind_display }} · {{ e.get_source_kind_display }}{% if e.decided_by %} · {{ e.decided_by.get_full_name|default:e.decided_by.username }}{% if e.decided_at %}, {{ e.decided_at|date:"d M H:i" }}{% endif %}{% endif %}{% if e.suggested_xp and e.suggested_xp != e.xp and e.status == 'approved' %} · suggested {{ e.suggested_xp }}{% endif %}{% if e.note and e.note != e.title %} · {{ e.note }}{% endif %}</div></td>
+          <td><span class="badge {% if e.status_css == 'ok' %}badge-success{% elif e.status_css == 'warn' %}badge-warning{% elif e.status_css == 'danger' %}badge-danger{% else %}badge-info{% endif %}">{{ e.display_status }}</span></td>
+          <td class="text-end"><span class="{% if e.xp >= 0 %}xw-plus{% else %}xw-minus{% endif %}">{% if e.xp >= 0 %}+{% else %}−{% endif %}{{ e.abs_xp|xpn }}</span><div class="xw-sub">₹{{ e.rupees|rs }}</div></td>
+        </tr>
+      {% endfor %}</tbody></table></div>
+    {% else %}
+    <div class="text-center text-muted" style="padding:48px">No XP yet.</div>
+    {% endif %}
+  </div>
+</div>
+
+<script>
+  (function () {
+    var xp = document.getElementById('coXp'), out = document.getElementById('coRs');
+    var rate = parseInt(xp.dataset.rate, 10) || 0;
+    function money() {
+      var rs = (parseInt(xp.value, 10) || 0) * rate / 100;
+      out.textContent = '= ₹' + rs.toLocaleString('en-IN', {maximumFractionDigits: 2}) + " at today's rate";
+    }
+    xp.addEventListener('input', money);
+    document.querySelectorAll('input[name=method]').forEach(function (r) {
+      r.addEventListener('change', function () {
+        var slip = document.querySelector('input[name=method]:checked').value === 'payslip';
+        document.getElementById('coPayslip').style.display = slip ? '' : 'none';
+        document.getElementById('coSeparate').style.display = slip ? 'none' : '';
+      });
+    });
+  })();
+</script>
+{% endblock %}

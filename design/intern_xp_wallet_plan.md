@@ -1,6 +1,6 @@
 # Intern XP wallet: plan
 
-Drafted 10 Nov 2026. Not built yet.
+Drafted 10 Nov 2026. Steps 1-4 built 11 Nov 2026 (app `wallet`); step 5 (Flutter) not started. Open questions decided for now: XP never expires, employees get a wallet only if "Give employees a wallet" is on in XP Settings, no leaderboard.
 
 ## What it is
 

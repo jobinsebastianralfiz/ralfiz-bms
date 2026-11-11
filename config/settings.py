@@ -59,6 +59,7 @@ INSTALLED_APPS = [
     'cards',
     'notes',
     'doc_templates',
+    'wallet',
 ]
 
 MIDDLEWARE = [

@@ -2,6 +2,7 @@
 from django.urls import path
 
 from uat import staff_views as uat_v
+from wallet import staff_views as wallet_v
 
 from . import portal_views as v
 
@@ -41,6 +42,9 @@ urlpatterns = [
     path('classes/<uuid:pk>/', v.class_detail, name='class_detail'),
     path('assessments/', v.assessment_list, name='assessment_list'),
     path('bootcamp/', v.bootcamp_open, name='bootcamp'),
+
+    # XP wallet
+    path('wallet/', wallet_v.wallet, name='wallet'),
 
     # Payslips
     path('payslips/', v.payslip_list, name='payslip_list'),

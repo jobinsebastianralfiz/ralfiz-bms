@@ -277,6 +277,14 @@
         <i class="fas fa-file-signature"></i>
         <span>Agreements</span>
       </a>
+      <a href="{% url 'wallet:approvals' %}" class="nav-item {% if request.resolver_match.namespace == 'wallet' and n == 'approvals' %}active{% endif %}">
+        <i class="fas fa-circle-check"></i>
+        <span>XP Approvals</span>
+      </a>
+      <a href="{% url 'wallet:list' %}" class="nav-item {% if request.resolver_match.namespace == 'wallet' and n != 'approvals' %}active{% endif %}">
+        <i class="fas fa-wallet"></i>
+        <span>XP Wallets</span>
+      </a>
       <a href="{% url 'resignation_list' %}" class="nav-item {% if 'resignation' in n %}active{% endif %}">
         <i class="fas fa-door-open"></i>
         <span>Resignations</span>

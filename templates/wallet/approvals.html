@@ -1,0 +1,116 @@
+{% extends 'base.html' %}
+{% load xp %}
+{% block title %}XP Approvals - Ralfiz BMS{% endblock %}
+
+{% block content %}
+<style>
+  .xa-row td { vertical-align: top; }
+  .xa-form { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; justify-content: flex-end; }
+  .xa-form input[type=number] { width: 90px; }
+  .xa-form input[type=text] { width: 200px; }
+  .xa-sub { font-size: .8125rem; color: var(--text-muted, #6b7280); }
+</style>
+<div class="page-header">
+  <div>
+    <h1 class="page-title">XP Approvals</h1>
+    <p class="page-subtitle mb-0">Finished work waiting for your decision. Nothing reaches a wallet until it is approved. {{ settings.xp_per_rupee }} XP = ₹1.</p>
+  </div>
+</div>
+{% include 'wallet/_tabs.html' with tab='approvals' %}
+
+<div class="card">
+  <div class="card-header">
+    <h3 class="card-title"><i class="fas fa-inbox"></i> Waiting: {{ items|length }} item{{ items|length|pluralize }} · {{ pending_total|xpn }} XP (₹{{ pending_total|xp_rs }})</h3>
+    <div class="card-actions">
+      <form method="get">
+        <select name="source" class="form-control" style="width:auto" onchange="this.form.submit()">
+          <option value="">All sources</option>
+          {% for k, l in sources %}<option value="{{ k }}" {% if source == k %}selected{% endif %}>{{ l }}</option>{% endfor %}
+        </select>
+      </form>
+    </div>
+  </div>
+  <div class="card-body p-0">
+    {% if items %}
+    <form method="post" action="{% url 'wallet:decide' %}" id="bulkForm">{% csrf_token %}
+      <input type="hidden" name="action" value="approve_selected">
+      <input type="hidden" name="next" value="{{ request.get_full_path }}">
+    </form>
+    <div class="table-responsive">
+      <table class="table table-hover mb-0">
+        <thead><tr>
+          <th style="width:32px"><input type="checkbox" id="xaAll" aria-label="Select all"></th>
+          <th>Intern</th><th>For</th><th class="text-end">XP</th><th class="text-end">Decide</th>
+        </tr></thead>
+        <tbody>
+        {% for e in items %}
+          <tr class="xa-row">
+            <td><input type="checkbox" name="entries" value="{{ e.pk }}" form="bulkForm" class="xa-pick" aria-label="Select"></td>
+            <td><div class="fw-medium">{{ e.employee.full_name }}</div><div class="xa-sub">{{ e.employee.employee_id }}{% if e.employee.status != 'active' %} · left{% endif %}</div></td>
+            <td>
+              <div>{% if e.link %}<a href="{{ e.link }}">{{ e.title }}</a>{% else %}{{ e.title }}{% endif %}</div>
+              <div class="xa-sub">{{ e.get_source_kind_display }} · finished {{ e.created_at|date:"d M Y" }}{% if e.shared_with %} · also on it: {{ e.shared_with|join:", " }}{% endif %}</div>
+            </td>
+            <td class="text-end"><div class="fw-medium">{{ e.xp|xpn }} XP</div><div class="xa-sub">₹{{ e.rupees|rs }}</div></td>
+            <td>
+              <form method="post" action="{% url 'wallet:decide' %}" class="xa-form">{% csrf_token %}
+                <input type="hidden" name="entry" value="{{ e.pk }}">
+                <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                <input type="number" name="xp" min="1" value="{{ e.xp }}" class="form-control form-control-sm" aria-label="XP to approve">
+                <input type="text" name="note" class="form-control form-control-sm" placeholder="Reason (if you change it or reject)">
+                <button name="action" value="approve" class="btn btn-sm btn-success"><i class="fas fa-check"></i> Approve</button>
+                <button name="action" value="reject" class="btn btn-sm btn-ghost" style="color:#dc2626"><i class="fas fa-xmark"></i> Reject</button>
+              </form>
+            </td>
+          </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    <div style="padding: 12px 16px; display:flex; justify-content:space-between; align-items:center; gap:8px; flex-wrap:wrap">
+      <span class="xa-sub">Splitting shared work (e.g. 60 / 40)? Change each person's amount and give the reason.</span>
+      <button form="bulkForm" class="btn btn-primary btn-sm"><i class="fas fa-check-double"></i> Approve selected at suggested XP</button>
+    </div>
+    {% else %}
+    <div class="text-center text-muted" style="padding: 48px;">
+      <i class="fas fa-circle-check fa-2x mb-3 d-block"></i>Nothing waiting. Completed work assignments, finished UAT plans, graded assessments and converted leads land here.
+    </div>
+    {% endif %}
+  </div>
+</div>
+
+{% if reversals %}
+<div class="card mt-4">
+  <div class="card-header"><h3 class="card-title"><i class="fas fa-rotate-left"></i> Reversed after the work was reopened</h3></div>
+  <div class="card-body p-0"><div class="table-responsive"><table class="table mb-0">
+    <thead><tr><th>Intern</th><th>For</th><th>When</th><th class="text-end">XP</th></tr></thead>
+    <tbody>{% for e in reversals %}
+      <tr><td>{{ e.employee.full_name }}</td><td>{% if e.link %}<a href="{{ e.link }}">{{ e.title }}</a>{% else %}{{ e.title }}{% endif %}<div class="xa-sub">{{ e.note }}</div></td>
+        <td class="text-sm text-muted">{{ e.created_at|date:"d M Y" }}</td><td class="text-end" style="color:#dc2626">{{ e.xp|xpn }}</td></tr>
+    {% endfor %}</tbody></table></div></div>
+</div>
+{% endif %}
+
+{% if recent %}
+<div class="card mt-4">
+  <div class="card-header"><h3 class="card-title"><i class="fas fa-clock-rotate-left"></i> Recently decided</h3></div>
+  <div class="card-body p-0"><div class="table-responsive"><table class="table mb-0">
+    <thead><tr><th>Intern</th><th>For</th><th>Decision</th><th class="text-end">XP</th></tr></thead>
+    <tbody>{% for e in recent %}
+      <tr><td>{{ e.employee.full_name }}</td><td>{% if e.link %}<a href="{{ e.link }}">{{ e.title }}</a>{% else %}{{ e.title }}{% endif %}</td>
+        <td><span class="badge {% if e.status == 'approved' %}badge-success{% else %}badge-danger{% endif %}">{{ e.get_status_display }}</span>
+          <div class="xa-sub">{{ e.decided_by.get_full_name|default:e.decided_by.username }} · {{ e.decided_at|date:"d M, H:i" }}{% if e.note %} · {{ e.note }}{% endif %}</div></td>
+        <td class="text-end">{{ e.xp|xpn }}{% if e.suggested_xp and e.suggested_xp != e.xp %}<div class="xa-sub">suggested {{ e.suggested_xp }}</div>{% endif %}</td></tr>
+    {% endfor %}</tbody></table></div></div>
+</div>
+{% endif %}
+
+<script>
+  (function () {
+    var all = document.getElementById('xaAll');
+    if (all) all.addEventListener('change', function () {
+      document.querySelectorAll('.xa-pick').forEach(function (c) { c.checked = all.checked; });
+    });
+  })();
+</script>
+{% endblock %}
