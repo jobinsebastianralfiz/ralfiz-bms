@@ -7,7 +7,7 @@ from django.shortcuts import redirect
 # could open every other client's records by URL.
 OPEN_PREFIXES = (
     '/portal/', '/api/client/', '/static/', '/media/', '/logout/',
-    '/client-agreement/', '/agreement/', '/offer/', '/resign/', '/v/', '/card/', '/go/', '/.well-known/', '/favicon', '/robots.txt',
+    '/client-agreement/', '/signoff/', '/agreement/', '/offer/', '/resign/', '/v/', '/card/', '/go/', '/.well-known/', '/favicon', '/robots.txt',
     '/privacy/', '/terms/', '/data-deletion/',
 )
 

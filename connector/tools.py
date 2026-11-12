@@ -16,6 +16,7 @@ from decimal import Decimal, InvalidOperation
 from typing import Callable
 
 from django.db.models import Q
+from django.urls import reverse
 
 from core.models import (PAYMENT_TERMS_CHOICES, AMCContract, AMCPayment, Client, CompanySettings,
                          DailyTask, Expense, Invoice, Payment, Project, Quote, TeamMember)
@@ -1284,6 +1285,218 @@ view_tool(
     },
     required=('title', 'body'), write=True,
 )
+
+
+# ======================================================================
+# Project sign-offs
+# ======================================================================
+
+SIGNOFF_BLOCK = {
+    'type': 'object',
+    'properties': {
+        'type': s_str('Block kind.', ['text', 'checklist', 'table', 'bullets', 'cards', 'note']),
+        'text': s_str('text / note: the paragraph. Plain text, no Markdown.'),
+        'title': s_str('checklist: optional group heading, e.g. "Website (example.com)".'),
+        'items': {'type': 'array', 'items': {'type': 'string'},
+                  'description': 'checklist / bullets: one line per item.'},
+        'columns': {'type': 'array', 'items': {'type': 'string'},
+                    'description': 'table: column headings (up to 6).'},
+        'rows': {'type': 'array', 'items': {'type': 'array', 'items': {'type': 'string'}},
+                 'description': 'table: rows, each with one cell per column.'},
+        'cards': {
+            'type': 'array',
+            'description': 'cards: one to three boxes side by side, e.g. "covers" / "does not cover".',
+            'items': {'type': 'object', 'properties': {
+                'title': s_str('Card heading.'),
+                'note': s_str('Small text after the heading, e.g. "quoted separately".'),
+                'tone': s_str('good = green heading, bad = red heading.', ['good', 'bad', 'plain']),
+                'items': {'type': 'array', 'items': {'type': 'string'}},
+            }, 'required': ['title', 'items']},
+        },
+    },
+    'required': ['type'],
+}
+
+
+def _signoff(signoff_id):
+    from core.signoff_models import ProjectSignoff
+
+    signoff = ProjectSignoff.objects.select_related('project__client').filter(pk=signoff_id).first()
+    if signoff is None:
+        raise ToolError('No sign-off with that id. Use list_signoffs to find it.')
+    return signoff
+
+
+def _signoff_summary(ctx, signoff):
+    request = ctx.request
+    out = {
+        'id': str(signoff.id),
+        'reference': signoff.reference,
+        'version': signoff.snapshot_json.get('version', ''),
+        'title': signoff.title,
+        'project': signoff.project.name,
+        'client': str(signoff.project.client),
+        'status': signoff.status_label,
+        'sent_at': signoff.sent_at.isoformat(),
+        'expires_at': signoff.expires_at.isoformat(),
+        'client_opened': signoff.view_count,
+        'staff_page': request.build_absolute_uri(reverse('signoff_detail', kwargs={'pk': signoff.pk})),
+    }
+    if signoff.is_open:
+        out['client_link'] = signoff.public_url(request)
+        whatsapp = signoff.whatsapp_url(request)
+        if whatsapp:
+            out['whatsapp_link'] = whatsapp
+    if signoff.has_responded:
+        total = len(signoff.check_ids)
+        out.update({
+            'responded_at': signoff.responded_at.isoformat(),
+            'signed_by': signoff.signer_name,
+            'signer_role': signoff.signer_role,
+            'items_ticked': f'{len(signoff.checked_items or [])} of {total}',
+        })
+        if signoff.issue_notes:
+            out['problem_reported'] = signoff.issue_notes
+            out['left_unticked'] = signoff.unticked_items
+    if signoff.status == signoff.STATUS_APPROVED:
+        out['signed_pdf'] = request.build_absolute_uri(f'{signoff.public_path()}copy.pdf')
+    return out
+
+
+def _create_signoff(ctx, args):
+    from core.signoff_models import SignoffError, create_signoff
+
+    project = _project_for(args['project_id'])
+    replaces = None
+    if args.get('replaces_signoff_id'):
+        replaces = _signoff(args['replaces_signoff_id'])
+        if replaces.project_id != project.id:
+            raise ToolError('The sign-off being replaced belongs to another project.')
+        if replaces.status == replaces.STATUS_APPROVED:
+            raise ToolError(f'{replaces.reference} is already approved and signed; it cannot be replaced.')
+    document_date = date.fromisoformat(args['document_date']) if args.get('document_date') else None
+    try:
+        signoff = create_signoff(
+            project, ctx.user, title=args['title'], sections=args['sections'],
+            acceptance=args['acceptance'], eyebrow=args.get('eyebrow', ''),
+            document_date=document_date, expiry_days=args.get('expiry_days', 30), replaces=replaces,
+        )
+    except SignoffError as exc:
+        raise ToolError(str(exc)) from None
+    out = _signoff_summary(ctx, signoff)
+    out['checklist_items'] = len(signoff.check_ids)
+    out['next'] = ('Nothing was sent to the client. Give the user client_link (or whatsapp_link) '
+                   'to send, and staff_page to preview the PDF.')
+    return out
+
+
+register(Tool(
+    'create_signoff', 'Create project sign-off',
+    'Create a sign-off document for a project (go-live handover, UAT acceptance, phase or '
+    'milestone completion) and open a private link where the client ticks what was delivered, '
+    'signs and approves, or reports a problem. Every project differs, so you write the content: '
+    'sections, each with a heading and blocks. Block types: `text` (a paragraph), `checklist` '
+    '(delivered items the client must tick one by one before approving; optional group `title`), '
+    '`table` (`columns` + `rows`, e.g. where it runs and who owns it, or what is pending and who '
+    'does it), `bullets`, `cards` (side-by-side boxes such as what maintenance covers / does not '
+    'cover) and `note` (a highlighted remark). A typical go-live sign-off has: Purpose (text), '
+    'What was delivered (checklists), Where it runs and who owns it (table), Before the public '
+    'launch (table), Not included (bullets), Warranty and maintenance (text, table, cards). Take '
+    'the facts from the project, its agreement and what the user tells you; do not invent '
+    'deliverables, amounts or dates. Plain text only, no Markdown. Do not add a section for '
+    'acceptance or signatures: pass the acceptance statement in `acceptance` and the signature '
+    'block is added automatically. Nothing is sent to the client: the result has the link for the '
+    'user to send. Show the user the draft content and get a yes before calling this.',
+    _create_signoff,
+    {
+        'project_id': s_uuid('project'),
+        'title': s_str('Document title, e.g. "agccar.com Go-live Sign-off".'),
+        'sections': {'type': 'array', 'description': 'The document body, in order.', 'items': {
+            'type': 'object',
+            'properties': {
+                'heading': s_str('Section heading, e.g. "What was delivered".'),
+                'blocks': {'type': 'array', 'items': SIGNOFF_BLOCK},
+            },
+            'required': ['heading', 'blocks'],
+        }},
+        'acceptance': s_str('The statement the client agrees to by signing, e.g. "<Client> accepts '
+                            'the website and admin listed in What was delivered as handed over. '
+                            'This completes the go-live handover and its 20% milestone."'),
+        'eyebrow': s_str('Small label above the title (default "PROJECT HANDOVER").'),
+        'document_date': s_date('Date printed on the document (default today).'),
+        'expiry_days': s_int('Days the link stays open (default 30).', 1, 180),
+        'replaces_signoff_id': s_uuid('earlier sign-off of this project that this one corrects; '
+                                      'its link stops working'),
+    },
+    required=('project_id', 'title', 'sections', 'acceptance'), write=True,
+))
+
+
+def _list_signoffs(ctx, args):
+    from core.signoff_models import ProjectSignoff
+
+    qs = ProjectSignoff.objects.select_related('project__client')
+    if args.get('project_id'):
+        qs = qs.filter(project_id=args['project_id'])
+    if args.get('awaiting_only'):
+        qs = qs.filter(status__in=ProjectSignoff.OPEN_STATUSES)
+    limit = args.get('limit', 50)
+    total = qs.count()
+    return {'count': total, 'returned': min(total, limit),
+            'items': [_signoff_summary(ctx, s) for s in qs[:limit]]}
+
+
+register(Tool(
+    'list_signoffs', 'Project sign-offs',
+    'Sign-off documents sent to clients, newest first, with status (sent, opened, approved, '
+    'problem reported), who signed, and the client link while it is still open.',
+    _list_signoffs,
+    {
+        'project_id': s_uuid('project'),
+        'awaiting_only': s_bool('Only sign-offs the client has not answered yet.'),
+        'limit': LIMIT,
+    },
+))
+
+
+def _get_signoff(ctx, args):
+    signoff = _signoff(args['signoff_id'])
+    out = _signoff_summary(ctx, signoff)
+    out['acceptance'] = signoff.snapshot_json.get('acceptance', '')
+    out['sections'] = signoff.snapshot_json.get('sections', [])
+    return out
+
+
+register(Tool(
+    'get_signoff', 'Sign-off details',
+    'One sign-off in full: its content, status, who signed and when, what the client ticked, any '
+    'problem they reported, and the signed PDF link once approved. Read this before writing a '
+    'corrected sign-off with create_signoff and replaces_signoff_id.',
+    _get_signoff,
+    {'signoff_id': s_uuid('sign-off (from list_signoffs)')},
+    required=('signoff_id',),
+))
+
+
+def _cancel_signoff(ctx, args):
+    signoff = _signoff(args['signoff_id'])
+    if signoff.has_responded:
+        raise ToolError(f'{signoff.reference} has already been answered by the client.')
+    if signoff.status in (signoff.STATUS_CANCELLED, signoff.STATUS_SUPERSEDED):
+        raise ToolError(f'{signoff.reference} is already closed.')
+    signoff.status = signoff.STATUS_CANCELLED
+    signoff.save(update_fields=['status', 'updated_at'])
+    return _signoff_summary(ctx, signoff)
+
+
+register(Tool(
+    'cancel_signoff', 'Cancel sign-off link',
+    'Close a sign-off link the client has not answered, so it can no longer be opened. To send a '
+    'corrected version instead, use create_signoff with replaces_signoff_id.',
+    _cancel_signoff,
+    {'signoff_id': s_uuid('sign-off (from list_signoffs)')},
+    required=('signoff_id',), write=True,
+))
 
 
 # Social Hub tools register themselves into TOOLS.

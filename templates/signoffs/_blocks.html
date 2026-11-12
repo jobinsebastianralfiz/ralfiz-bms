@@ -1,0 +1,38 @@
+{% comment %}
+One sign-off section's blocks, from the frozen snapshot. `interactive` turns
+the checklist into real tick boxes (the signing page); otherwise ticks are
+shown as the client left them.
+{% endcomment %}
+{% for block in section.blocks %}
+  {% if block.type == 'text' %}
+  <p>{{ block.text }}</p>
+  {% elif block.type == 'note' %}
+  <div class="so-note">{{ block.text }}</div>
+  {% elif block.type == 'bullets' %}
+  <ul class="agr-list">{% for item in block.items %}<li>{{ item }}</li>{% endfor %}</ul>
+  {% elif block.type == 'checklist' %}
+  {% if block.title %}<div class="so-group-title">{{ block.title }}</div>{% endif %}
+  {% for item in block.items %}
+  <label class="so-check{% if not interactive %} is-static{% endif %}">
+    <input type="checkbox" name="check" value="{{ item.id }}" {% if item.id in ticked %}checked{% endif %} {% if not interactive %}disabled{% endif %}>
+    <span>{{ item.text }}</span>
+  </label>
+  {% endfor %}
+  {% elif block.type == 'table' %}
+  <div class="so-table-wrap">
+    <table class="so-table">
+      <thead><tr>{% for col in block.columns %}<th>{{ col }}</th>{% endfor %}</tr></thead>
+      <tbody>{% for row in block.rows %}<tr>{% for cell in row %}<td>{{ cell }}</td>{% endfor %}</tr>{% endfor %}</tbody>
+    </table>
+  </div>
+  {% elif block.type == 'cards' %}
+  <div class="so-cards">
+    {% for card in block.cards %}
+    <div class="so-card {{ card.tone }}">
+      <h3>{{ card.title }}{% if card.note %} <span>({{ card.note }})</span>{% endif %}</h3>
+      <ul class="agr-list">{% for item in card.items %}<li>{{ item }}</li>{% endfor %}</ul>
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+{% endfor %}

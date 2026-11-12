@@ -5,7 +5,7 @@ from django.shortcuts import redirect
 # @login_required, so without this an intern could open it by URL.
 OPEN_PREFIXES = (
     '/staff/', '/crm/', '/api/', '/static/', '/media/', '/login/', '/logout/',
-    '/agreement/', '/offer/', '/resign/', '/client-agreement/', '/enrol/', '/academy/', '/portal/', '/v/', '/card/', '/go/', '/social/report-link/',
+    '/agreement/', '/offer/', '/resign/', '/client-agreement/', '/signoff/', '/enrol/', '/academy/', '/portal/', '/v/', '/card/', '/go/', '/social/report-link/',
     '/oauth/', '/.well-known/', '/mcp', '/favicon', '/robots.txt',
     '/privacy/', '/terms/', '/data-deletion/',
     '/notes/',  # the Notes app and its API (/notes/api/); every note is private to its owner

@@ -1,0 +1,43 @@
+{% extends 'agreements/_doc_base.html' %}
+
+{% block title %}Response recorded - Ralfiz Technologies{% endblock %}
+{% block band_label %}Sign-off{% endblock %}
+
+{% block body %}
+<div class="status-card">
+  {% if signoff.status == 'approved' %}
+  <div class="status-icon ok">&#10003;</div>
+  <h1>Thank you, {{ signoff.signer_name }}</h1>
+  <p>Your sign-off for <strong>{{ doc.title }}</strong> is recorded.</p>
+  {% else %}
+  <div class="status-icon info">&#9998;</div>
+  <h1>We have your note</h1>
+  <p>Thanks, {{ signoff.signer_name }}. We will look into it and send you an updated sign-off
+     for <strong>{{ doc.project_name }}</strong> on a new link.</p>
+  {% endif %}
+
+  <div class="receipt">
+    <div class="receipt-row"><span>Reference</span><span>{{ signoff.reference }} {{ doc.version }}</span></div>
+    <div class="receipt-row"><span>Project</span><span>{{ doc.project_name }}</span></div>
+    <div class="receipt-row"><span>Response</span><span>
+      {% if signoff.status == 'approved' %}<span class="pill ok">Approved</span>{% else %}<span class="pill stop">Problem reported</span>{% endif %}
+    </span></div>
+    {% if check_total %}<div class="receipt-row"><span>Items ticked</span><span>{{ ticked|length }} of {{ check_total }}</span></div>{% endif %}
+    <div class="receipt-row"><span>Responded on</span><span>{{ signoff.responded_at|date:"d M Y, g:i a" }}</span></div>
+  </div>
+
+  {% if signoff.status == 'approved' %}
+  <div style="margin-top:26px; display:flex; gap:10px; justify-content:center; flex-wrap:wrap;">
+    <a href="{% url 'signoff_copy_pdf' signoff.token %}" class="copy-btn primary">Download signed copy (PDF)</a>
+  </div>
+  {% else %}
+  <div class="receipt" style="text-align:left;"><div class="receipt-row" style="display:block;">
+    <span>Your note</span><p class="pre-line" style="margin:6px 0 0;color:var(--agr-ink);">{{ signoff.issue_notes }}</p>
+  </div></div>
+  {% endif %}
+
+  <p style="margin-top:22px;font-size:13px;color:var(--agr-muted);">
+    Questions? Call or WhatsApp us on +91 98956 63498.
+  </p>
+</div>
+{% endblock %}

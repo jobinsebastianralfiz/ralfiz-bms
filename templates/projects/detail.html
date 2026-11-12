@@ -159,6 +159,14 @@
       </a>
       {% endif %}
       {% endwith %}
+      {% with so=project.signoffs.first %}
+      {% if so %}
+      <a href="{% url 'signoff_detail' so.pk %}" class="btn btn-outline-primary btn-sm" title="{{ so.title }} ({{ so.reference }})">
+        <i class="fas fa-clipboard-check"></i> Sign-off
+        <span class="badge" style="{{ so.status_css }} margin-left: 4px;">{{ so.status_label }}</span>
+      </a>
+      {% endif %}
+      {% endwith %}
       {% if project.status == 'completed' %}
       <a href="{% url 'project_completion_certificate' project.pk %}" class="btn btn-outline-primary btn-sm">
         <i class="fas fa-certificate"></i> Certificate

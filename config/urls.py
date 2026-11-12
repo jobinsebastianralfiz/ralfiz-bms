@@ -35,6 +35,7 @@ urlpatterns = [
     path('staff/', include('employees.portal_urls')),
     path('agreement/', include('employees.agreement_urls')),
     path('client-agreement/', include('core.client_agreement_urls')),
+    path('signoff/', include('core.signoff_urls')),
     path('enrol/', include('employees.enrolment_urls')),
     path('offer/', include('employees.offer_urls')),
     path('resign/', include('employees.resignation_urls')),

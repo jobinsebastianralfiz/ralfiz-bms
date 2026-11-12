@@ -9,6 +9,7 @@ from shopmanager_licensing import web_views as shopmanager_web_views
 from uat import web_views as uat_web_views
 from . import agreement_web_views
 from . import client_agreement_views
+from . import signoff_views
 from . import enrolment_web_views
 from . import offer_web_views
 from . import resignation_web_views
@@ -89,6 +90,9 @@ urlpatterns = [
     path('client-agreements/<uuid:pk>/', client_agreement_views.client_agreement_detail, name='client_agreement_detail'),
     path('client-agreements/<uuid:pk>/cancel/', client_agreement_views.client_agreement_cancel, name='client_agreement_cancel'),
     path('client-agreements/<uuid:pk>/pdf/', client_agreement_views.client_agreement_staff_pdf, name='client_agreement_staff_pdf'),
+    path('signoffs/<uuid:pk>/', signoff_views.signoff_detail, name='signoff_detail'),
+    path('signoffs/<uuid:pk>/cancel/', signoff_views.signoff_cancel, name='signoff_cancel'),
+    path('signoffs/<uuid:pk>/pdf/', signoff_views.signoff_staff_pdf, name='signoff_staff_pdf'),
 
     # Credentials
     path('credentials/', views.credential_list, name='credential_list'),

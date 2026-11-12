@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{{ doc.title }} - {{ signoff.reference }}</title>
+  <style>
+    {% if for_pdf %}
+    @font-face { font-family: 'Inter'; src: url({{ font_dir }}/Inter-400.ttf) format('truetype'); font-weight: 400; }
+    @font-face { font-family: 'Inter'; src: url({{ font_dir }}/Inter-500.ttf) format('truetype'); font-weight: 500; }
+    @font-face { font-family: 'Inter'; src: url({{ font_dir }}/Inter-600.ttf) format('truetype'); font-weight: 600; }
+    @font-face { font-family: 'Inter'; src: url({{ font_dir }}/Inter-700.ttf) format('truetype'); font-weight: 700; }
+    @font-face { font-family: 'Poppins'; src: url({{ font_dir }}/Poppins-600.ttf) format('truetype'); font-weight: 600; }
+    @font-face { font-family: 'Poppins'; src: url({{ font_dir }}/Poppins-700.ttf) format('truetype'); font-weight: 700; }
+    @font-face { font-family: 'SignSerif'; src: url({{ font_dir }}/SourceSerif4-400i.ttf) format('truetype'); font-style: italic; }
+    {% endif %}
+
+    @page {
+      size: A4; margin: 18mm 18mm 20mm;
+      @bottom-left { content: element(foot); width: 78%; border-top: .2mm solid #d9dce1; padding-top: 2mm; vertical-align: top; }
+      @bottom-right { width: 22%; content: "Page " counter(page) " of " counter(pages); font-family: 'Inter', sans-serif; font-size: 7.5pt; color: #8a8f98; border-top: .2mm solid #d9dce1; padding-top: 2mm; vertical-align: top; }
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Inter', -apple-system, 'Helvetica Neue', Arial, sans-serif; font-size: 9.5pt; line-height: 1.5; color: #2b2726; }
+    .run-foot { position: running(foot); font-size: 7.5pt; color: #8a8f98; white-space: nowrap; }
+    @media screen {
+      body { background: #e9eaec; }
+      .run-foot { display: none; }
+      .sheet { width: 210mm; min-height: 297mm; margin: 24px auto; padding: 18mm; background: #fff; box-shadow: 0 10px 30px rgba(15, 23, 42, .15); }
+    }
+
+    .top-bar { height: 2.6mm; border-radius: 1.3mm; background: #b3100f; }
+    .head { display: flex; justify-content: space-between; align-items: center; padding: 7mm 0 6mm; border-bottom: .7mm solid #2b2726; }
+    .head .brand img { height: 15mm; width: auto; display: block; }
+    .head .brand-name { font-family: 'Poppins', sans-serif; font-weight: 700; font-size: 15pt; color: #2b2726; }
+    .head .for { text-align: right; font-size: 8pt; color: #6b6f76; }
+    .head .for img { max-height: 11mm; max-width: 42mm; display: block; margin: 0 0 1.5mm auto; }
+    .head .for strong { display: block; color: #2b2726; font-weight: 700; }
+
+    .eyebrow { margin-top: 9mm; font-size: 7.5pt; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; color: #d0110f; }
+    h1 { font-family: 'Poppins', sans-serif; font-weight: 700; font-size: 23pt; line-height: 1.2; color: #2b2726; margin: 1.5mm 0 2mm; }
+    .meta { font-size: 8.5pt; color: #6b6f76; }
+    .meta span { margin-right: 8mm; }
+    .meta strong { color: #2b2726; font-weight: 700; }
+
+    .stamp { margin-top: 5mm; border-left: 1mm solid #15803d; background: #f0fdf4; padding: 2.2mm 3.5mm; font-size: 8.5pt; color: #14532d; page-break-inside: avoid; }
+    .stamp strong { display: block; font-size: 9pt; }
+
+    h2 { font-family: 'Poppins', sans-serif; font-weight: 600; font-size: 12.5pt; color: #2b2726; border-left: 1.1mm solid #d0110f; padding-left: 3mm; margin: 8mm 0 3mm; page-break-after: avoid; }
+    p { margin: 0 0 2.5mm; white-space: pre-line; }
+
+    .group-title { font-size: 8.5pt; font-weight: 700; color: #2b2726; margin: 4mm 0 1.5mm; page-break-after: avoid; }
+    .check { display: flex; gap: 3mm; align-items: flex-start; margin-bottom: 1.6mm; page-break-inside: avoid; }
+    .check svg { flex: none; width: 4.2mm; height: 4.2mm; margin-top: .4mm; }
+
+    table.grid { width: 100%; border-collapse: collapse; margin: 0 0 3mm; font-size: 8.8pt; }
+    table.grid th { text-align: left; background: #2b2726; color: #fff; font-weight: 600; padding: 2.4mm 3mm; }
+    table.grid td { padding: 2.6mm 3mm; border-bottom: .2mm solid #dfe1e5; vertical-align: top; }
+    table.grid tr:nth-child(even) td { background: #f8f8f9; }
+    table.grid tr { page-break-inside: avoid; }
+
+    ul.dots { list-style: none; margin: 0 0 3mm; }
+    ul.dots li { position: relative; padding-left: 5mm; margin-bottom: 1.2mm; }
+    ul.dots li::before { content: ''; position: absolute; left: 1mm; top: 1.9mm; width: 1.4mm; height: 1.4mm; border-radius: 50%; background: #d0110f; }
+
+    .cards { display: flex; gap: 6mm; margin: 0 0 3mm; }
+    .card { flex: 1; border: .25mm solid #dfe1e5; border-radius: 2mm; padding: 4mm 4.5mm; page-break-inside: avoid; }
+    .card h3 { font-size: 8.8pt; font-weight: 700; margin-bottom: 2mm; color: #2b2726; }
+    .card h3 span { font-weight: 400; color: #6b6f76; }
+    .card.good h3 { color: #15803d; }
+    .card.bad h3 { color: #d0110f; }
+    .card.good ul.dots li::before { background: #2b2726; }
+    .card ul.dots { margin-bottom: 0; }
+
+    .note { border: .25mm solid #f1c9c8; background: #fdf3f3; border-radius: 2mm; padding: 3mm 4.5mm; margin: 0 0 3mm; font-size: 8.8pt; white-space: pre-line; page-break-inside: avoid; }
+
+    table.sign { width: 100%; border-collapse: collapse; margin-top: 3mm; font-size: 8.8pt; page-break-inside: avoid; }
+    table.sign th { text-align: left; background: #2b2726; color: #fff; font-weight: 700; padding: 2.4mm 3mm; }
+    table.sign th:first-child { background: none; width: 24mm; }
+    table.sign td { padding: 3mm; border-bottom: .2mm solid #dfe1e5; height: 11mm; vertical-align: middle; color: #2b2726; }
+    table.sign td:first-child { color: #6b6f76; }
+    table.sign tr.sig td { height: 21mm; }
+    table.sign img.sig { max-height: 15mm; max-width: 48mm; vertical-align: middle; }
+    table.sign img.seal { max-height: 17mm; max-width: 20mm; vertical-align: middle; opacity: .9; margin-left: 2mm; }
+    .typed { font-family: 'Brush Script MT', 'Segoe Script', 'SignSerif', cursive; font-style: italic; font-size: 15pt; }
+
+    .record { margin-top: 6mm; padding: 3mm 4mm; background: #f8f8f9; font-size: 7.5pt; color: #4b5563; page-break-inside: avoid; }
+    .record strong { color: #2b2726; font-size: 8pt; letter-spacing: .06em; text-transform: uppercase; }
+    .record-grid { display: flex; flex-wrap: wrap; gap: 1mm 6mm; margin: 1.5mm 0; }
+    .record-grid div { width: 78mm; }
+    .record-grid span { color: #8a8f98; display: inline-block; width: 24mm; }
+    .record code { font-family: 'Courier New', monospace; font-size: 7pt; word-break: break-all; color: #2b2726; }
+  </style>
+</head>
+<body>
+  <div class="run-foot">{{ doc.provider_name }} &middot; {{ doc.title }} &middot; {{ doc.date }}</div>
+  <div class="sheet">
+    <div class="top-bar"></div>
+    <div class="head">
+      <div class="brand">
+        {% if letterhead.logo_data_uri %}<img src="{{ letterhead.logo_data_uri }}" alt="{{ doc.provider_name }}">
+        {% else %}<div class="brand-name">{{ doc.provider_name }}</div>{% endif %}
+      </div>
+      <div class="for">
+        {% if client_logo %}<img src="{{ client_logo }}" alt="">{% endif %}
+        Prepared for
+        <strong>{{ doc.client_party }}</strong>
+      </div>
+    </div>
+
+    <div class="eyebrow">{{ doc.eyebrow }}</div>
+    <h1>{{ doc.title }}</h1>
+    <div class="meta">
+      <span><strong>Date</strong> {{ doc.date }}</span>
+      <span><strong>From</strong> {{ doc.provider_name }}</span>
+      <span><strong>To</strong> {{ doc.client_party }}</span>
+      <span><strong>Ref</strong> {{ signoff.reference }} {{ doc.version }}</span>
+    </div>
+
+    {% if approved %}
+    <div class="stamp"><strong>Approved &amp; signed electronically</strong>
+      by {{ signoff.signed_name }} on {{ signoff.responded_at|date:"d M Y, g:i a" }}</div>
+    {% endif %}
+
+    {% for section in sections %}
+    <h2>{{ section.heading }}</h2>
+    {% for block in section.blocks %}
+      {% if block.type == 'text' %}
+      <p>{{ block.text }}</p>
+      {% elif block.type == 'note' %}
+      <div class="note">{{ block.text }}</div>
+      {% elif block.type == 'bullets' %}
+      <ul class="dots">{% for item in block.items %}<li>{{ item }}</li>{% endfor %}</ul>
+      {% elif block.type == 'checklist' %}
+      {% if block.title %}<div class="group-title">{{ block.title }}</div>{% endif %}
+      {% for item in block.items %}
+      <div class="check">
+        {% if item.id in ticked %}
+        <svg viewBox="0 0 16 16"><rect x=".75" y=".75" width="14.5" height="14.5" rx="3" fill="#15803d" stroke="#15803d" stroke-width="1.5"/><path d="M4 8.4l2.7 2.7L12 5.6" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        {% else %}
+        <svg viewBox="0 0 16 16"><rect x=".75" y=".75" width="14.5" height="14.5" rx="3" fill="#fff" stroke="#2b2726" stroke-width="1.5"/></svg>
+        {% endif %}
+        <span>{{ item.text }}</span>
+      </div>
+      {% endfor %}
+      {% elif block.type == 'table' %}
+      <table class="grid">
+        <thead><tr>{% for col in block.columns %}<th>{{ col }}</th>{% endfor %}</tr></thead>
+        <tbody>{% for row in block.rows %}<tr>{% for cell in row %}<td>{{ cell }}</td>{% endfor %}</tr>{% endfor %}</tbody>
+      </table>
+      {% elif block.type == 'cards' %}
+      <div class="cards">
+        {% for card in block.cards %}
+        <div class="card {{ card.tone }}">
+          <h3>{{ card.title }}{% if card.note %} <span>({{ card.note }})</span>{% endif %}</h3>
+          <ul class="dots">{% for item in card.items %}<li>{{ item }}</li>{% endfor %}</ul>
+        </div>
+        {% endfor %}
+      </div>
+      {% endif %}
+    {% endfor %}
+    {% endfor %}
+
+    <h2>Acceptance</h2>
+    <p>{{ doc.acceptance }}</p>
+
+    <table class="sign">
+      <thead><tr><th></th><th>{{ doc.client_party }}</th><th>{{ doc.provider_name }}</th></tr></thead>
+      <tbody>
+        <tr><td>Name</td><td>{{ signoff.signer_name }}</td><td>{{ company.signatory_name }}</td></tr>
+        <tr><td>Role</td><td>{{ signoff.signer_role }}</td><td>{{ company.signatory_designation }}</td></tr>
+        <tr class="sig"><td>Signature</td>
+          <td>{% if approved %}{% if signature_src %}<img class="sig" src="{{ signature_src }}" alt="Signature">{% else %}<span class="typed">{{ signoff.signed_name }}</span>{% endif %}{% endif %}</td>
+          <td>{% if company.signature_src %}<img class="sig" src="{{ company.signature_src }}" alt="Authorised signature">{% endif %}{% if company.seal_src %}<img class="seal" src="{{ company.seal_src }}" alt="Company seal">{% endif %}</td>
+        </tr>
+        <tr><td>Date</td><td>{% if approved %}{{ signoff.responded_at|date:"d M Y" }}{% endif %}</td><td>{{ signoff.sent_at|date:"d M Y" }}</td></tr>
+      </tbody>
+    </table>
+
+    {% if approved %}
+    <div class="record">
+      <strong>Electronic signature record</strong>
+      <div class="record-grid">
+        <div><span>Reference</span>{{ signoff.reference }} {{ doc.version }}</div>
+        <div><span>Signed by</span>{{ signoff.signed_name }}</div>
+        <div><span>Signed at</span>{{ signoff.responded_at|date:"d M Y, g:i a" }}</div>
+        {% if signoff.ip_address %}<div><span>Signed from IP</span>{{ signoff.ip_address }}</div>{% endif %}
+      </div>
+      <div><span style="color:#8a8f98;">Document fingerprint (SHA-256):</span> <code>{{ signoff.body_hash }}</code></div>
+    </div>
+    {% endif %}
+  </div>
+</body>
+</html>

@@ -1,0 +1,159 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}{{ signoff.reference }} - Ralfiz BMS{% endblock %}
+
+{% block breadcrumb %}
+<a href="{% url 'project_list' %}" class="breadcrumb-item">Projects</a>
+<span class="breadcrumb-separator">/</span>
+<a href="{% url 'project_detail' project.pk %}" class="breadcrumb-item">{{ project.name }}</a>
+<span class="breadcrumb-separator">/</span>
+<span class="breadcrumb-item active">{{ signoff.reference }}</span>
+{% endblock %}
+
+{% block content %}
+<link rel="stylesheet" href="{% static 'css/agreement.css' %}?v=14">
+<div class="page-header">
+  <div>
+    <h1 class="page-title">{{ signoff.title }}</h1>
+    <p class="page-subtitle mb-0">Sign-off {{ signoff.reference }} {{ doc.version }} &middot; {{ project.name }} &middot; {{ project.client.name }}</p>
+  </div>
+  <div class="page-actions d-flex gap-2">
+    <a href="{% url 'project_detail' project.pk %}" class="btn btn-ghost"><i class="fas fa-arrow-left"></i> Project</a>
+    <a href="{% url 'signoff_staff_pdf' signoff.pk %}" target="_blank" rel="noopener" class="btn btn-ghost"><i class="fas fa-file-pdf"></i> {% if signoff.status == 'approved' %}Signed copy{% else %}Preview PDF{% endif %}</a>
+    {% if signoff.is_open %}
+    <form method="post" action="{% url 'signoff_cancel' signoff.pk %}"
+          onsubmit="return confirm('Cancel this link? The client will no longer be able to open it.')">
+      {% csrf_token %}
+      <button type="submit" class="btn btn-ghost text-danger"><i class="fas fa-ban"></i> Cancel link</button>
+    </form>
+    {% endif %}
+  </div>
+</div>
+
+<div class="row">
+  <div class="col-8 col-md-12" style="padding: 0.75rem;">
+    <div class="card mb-4">
+      <div class="card-header">
+        <h3 class="card-title"><i class="fas fa-file-signature"></i> Client response</h3>
+        <span class="badge" style="{{ signoff.status_css }}">{{ signoff.status_label }}</span>
+      </div>
+      <div class="card-body">
+        {% if signoff.has_responded %}
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1rem;">
+          <div><label class="text-muted text-sm">Name</label><div class="fw-medium">{{ signoff.signer_name }}</div></div>
+          {% if signoff.signer_role %}<div><label class="text-muted text-sm">Role</label><div class="fw-medium">{{ signoff.signer_role }}</div></div>{% endif %}
+          {% if signoff.signer_email %}<div><label class="text-muted text-sm">Email</label><div class="fw-medium">{{ signoff.signer_email }}</div></div>{% endif %}
+          {% if signoff.signed_name %}<div><label class="text-muted text-sm">Typed signature</label><div class="fw-medium">{{ signoff.signed_name }}</div></div>{% endif %}
+          {% if check_total %}<div><label class="text-muted text-sm">Items ticked</label><div class="fw-medium">{{ ticked|length }} of {{ check_total }}</div></div>{% endif %}
+          <div><label class="text-muted text-sm">Responded at</label><div class="fw-medium">{{ signoff.responded_at|date:"d M Y, g:i a" }}</div></div>
+        </div>
+        {% if signoff.issue_notes %}
+        <div class="mt-4" style="padding: 12px; border-radius: 8px; background: var(--danger-bg);">
+          <label class="text-muted text-sm">Problem reported</label>
+          <div>{{ signoff.issue_notes|linebreaksbr }}</div>
+          {% if unticked %}
+          <label class="text-muted text-sm mt-3" style="display: block;">Left unticked</label>
+          <ul class="mb-0" style="padding-left: 1.2rem;">{% for item in unticked %}<li>{{ item }}</li>{% endfor %}</ul>
+          {% endif %}
+          <p class="text-sm text-muted mt-3 mb-0">Once it is fixed, ask Claude for a corrected sign-off that replaces {{ signoff.reference }}.</p>
+        </div>
+        {% endif %}
+        {% if signoff.signature_image %}
+        <div class="mt-4"><label class="text-muted text-sm">Drawn signature</label>
+          <div style="border: 1px solid var(--border); border-radius: 8px; padding: 10px; background: #fff; max-width: 340px;">
+            <img src="{{ signoff.signature_image.url }}" alt="Signature" style="max-width: 100%; display: block;">
+          </div></div>
+        {% endif %}
+        {% else %}
+        <p class="text-muted mb-3">
+          {% if signoff.is_expired %}This link expired on {{ signoff.expires_at|date:"d M Y" }} without a response.
+          {% elif signoff.status == 'cancelled' %}This link was cancelled.
+          {% elif signoff.status == 'superseded' %}Replaced by {% if signoff.superseded_by %}<a href="{% url 'signoff_detail' signoff.superseded_by.pk %}">{{ signoff.superseded_by.reference }}</a>{% else %}a newer version{% endif %}.
+          {% elif signoff.first_viewed_at %}Opened {{ signoff.view_count }} time{{ signoff.view_count|pluralize }}, last on {{ signoff.last_viewed_at|date:"d M Y, g:i a" }}, not answered yet.
+          {% else %}Not opened by the client yet.{% endif %}
+        </p>
+        {% if signoff.is_open %}
+        <label class="form-label">Client link</label>
+        <div class="d-flex gap-2" style="flex-wrap: wrap;">
+          <input type="text" class="form-control" id="link-field" value="{{ url }}" readonly style="flex: 1; min-width: 220px;">
+          <button type="button" class="btn btn-ghost" id="btn-copy" title="Copy link"><i class="fas fa-copy"></i></button>
+          <a href="{{ url }}" target="_blank" rel="noopener" class="btn btn-ghost" title="Open as the client sees it"><i class="fas fa-external-link-alt"></i></a>
+          {% if whatsapp_url %}<a href="{{ whatsapp_url }}" target="_blank" rel="noopener" class="btn btn-primary"><i class="fab fa-whatsapp"></i> WhatsApp</a>{% endif %}
+          {% if mailto_url %}<a href="{{ mailto_url }}" class="btn btn-ghost"><i class="fas fa-envelope"></i> Email</a>{% endif %}
+        </div>
+        {% endif %}
+        {% endif %}
+      </div>
+    </div>
+
+    <div class="card mb-4">
+      <div class="card-header"><h3 class="card-title"><i class="fas fa-file-alt"></i> What was sent</h3></div>
+      <div class="card-body" style="--agr-ink: var(--text-primary, #0f172a);">
+        {% for section in sections %}
+        <section class="agr-section so-section">
+          <h2>{{ section.heading }}</h2>
+          {% include "signoffs/_blocks.html" with interactive=False %}
+        </section>
+        {% endfor %}
+        <section class="agr-section so-section">
+          <h2>Acceptance</h2>
+          <div class="so-accept">{{ doc.acceptance }}</div>
+        </section>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-4 col-md-12" style="padding: 0.75rem;">
+    <div class="card mb-4">
+      <div class="card-header"><h3 class="card-title"><i class="fas fa-shield-alt"></i> Audit trail</h3></div>
+      <div class="card-body">
+        <div style="display: grid; gap: 0.75rem;">
+          <div><label class="text-muted text-sm">Sent by</label><div>{% if signoff.sent_by %}{{ signoff.sent_by.get_full_name|default:signoff.sent_by.username }}{% else %}&mdash;{% endif %}</div></div>
+          <div><label class="text-muted text-sm">Sent at</label><div>{{ signoff.sent_at|date:"d M Y, g:i a" }}</div></div>
+          <div><label class="text-muted text-sm">Expires</label><div>{{ signoff.expires_at|date:"d M Y" }}</div></div>
+          <div><label class="text-muted text-sm">Opened by the client</label><div>{{ signoff.view_count }} time{{ signoff.view_count|pluralize }}</div></div>
+          {% if signoff.ip_address %}<div><label class="text-muted text-sm">Responded from IP</label><div>{{ signoff.ip_address }}</div></div>{% endif %}
+        </div>
+        {% if signoff.body_hash %}
+        <div class="mt-3"><label class="text-muted text-sm">Document fingerprint (SHA-256)</label>
+          <div class="text-sm" style="font-family: monospace; word-break: break-all;">{{ signoff.body_hash }}</div></div>
+        {% endif %}
+      </div>
+    </div>
+
+    {% if history %}
+    <div class="card">
+      <div class="card-header"><h3 class="card-title"><i class="fas fa-history"></i> Other sign-offs for this project</h3></div>
+      <div class="card-body p-0">
+        <table class="table table-hover mb-0"><tbody>
+          {% for h in history %}
+          <tr>
+            <td><a href="{% url 'signoff_detail' h.pk %}">{{ h.title }}</a><div class="text-muted text-sm">{{ h.reference }} {{ h.snapshot_json.version }} &middot; {{ h.sent_at|date:"d M Y" }}</div></td>
+            <td><span class="badge" style="{{ h.status_css }}">{{ h.status_label }}</span></td>
+          </tr>
+          {% endfor %}
+        </tbody></table>
+      </div>
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+var copyBtn = document.getElementById('btn-copy');
+if (copyBtn) {
+  copyBtn.addEventListener('click', function () {
+    var field = document.getElementById('link-field');
+    field.select(); field.setSelectionRange(0, 99999);
+    var done = function () {
+      copyBtn.innerHTML = '<i class="fas fa-check"></i>';
+      setTimeout(function () { copyBtn.innerHTML = '<i class="fas fa-copy"></i>'; }, 1600);
+    };
+    if (navigator.clipboard && window.isSecureContext) { navigator.clipboard.writeText(field.value).then(done); }
+    else { try { document.execCommand('copy'); done(); } catch (e) {} }
+  });
+}
+</script>
+{% endblock %}
