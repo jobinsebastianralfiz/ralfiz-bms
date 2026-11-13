@@ -10,7 +10,7 @@ from django.views.decorators.http import require_POST
 from employees.models import Employee
 
 from . import services
-from .models import UATCase, UATPlan, UATResult, UATSection
+from .models import UATCase, UATFile, UATPlan, UATResult, UATSection
 
 
 def _xp(post):
@@ -92,6 +92,7 @@ def uat_plan_detail(request, pk):
         'problem_counts': problem_counts, 'staff': _staff_choices(),
         'tester_ids': {str(e.pk) for e in plan.testers.all()},
         'unresolved': problem_counts['open'] + problem_counts['fixed'],
+        'files': plan.files.select_related('uploaded_by'), 'file_max_mb': UATFile.MAX_MB,
     })
 
 
@@ -191,3 +192,30 @@ def uat_problem_update(request, pk):
         messages.success(request, f'{result.case.code}: {result.get_fix_status_display()}.')
     plan_id = result.case.section.plan_id
     return redirect(f"{redirect('uat_plan_detail', pk=plan_id).url}?tab={request.POST.get('tab', 'open')}#problems")
+
+
+@login_required
+@require_POST
+def uat_file_upload(request, pk):
+    """Attach files (a build zip, test data, an APK) to the plan. Testers download them in the staff portal."""
+    plan = get_object_or_404(UATPlan, pk=pk)
+    n, error = services.add_files(plan, request.FILES.getlist('files'), request.user, request.POST.get('note', ''))
+    if error:
+        messages.error(request, error)
+    else:
+        messages.success(request, f'{n} file{"s" if n != 1 else ""} uploaded. Testers can download {"them" if n != 1 else "it"} from the plan in My Tasks.')
+    return redirect(f"{redirect('uat_plan_detail', pk=pk).url}#files")
+
+
+@login_required
+def uat_file_download(request, pk, file_id):
+    return services.file_response(get_object_or_404(UATFile, pk=file_id, plan_id=pk))
+
+
+@login_required
+@require_POST
+def uat_file_delete(request, pk, file_id):
+    f = get_object_or_404(UATFile, pk=file_id, plan_id=pk)
+    services.delete_file(f)
+    messages.success(request, f'"{f.name}" deleted.')
+    return redirect(f"{redirect('uat_plan_detail', pk=pk).url}#files")

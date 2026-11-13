@@ -256,6 +256,72 @@ class UATTests(TestCase):
         shop.save()
         self.assertContains(self.client.get(reverse('staff:uat_plan', args=[shop.pk])), 'Thank you, Fathima!')
 
+    def test_plan_files_shared_between_ralfiz_and_testers(self):
+        import os
+        from .models import UATFile
+        plan = self.load()
+        ham, fat, _ = self.emps
+        up = reverse('uat_file_upload', args=[plan.pk])
+
+        # Ralfiz uploads the build zip on the plan page
+        self.client.login(username='hr', password=self.pw)
+        r = self.client.post(up, {'files': SimpleUploadedFile('files.zip', b'PK\x03\x04build', 'application/zip'),
+                                  'note': 'Build 1.4'})
+        self.assertRedirects(r, reverse('uat_plan_detail', args=[plan.pk]) + '#files', fetch_redirect_response=False)
+        build = UATFile.objects.get()
+        self.assertEqual((build.name, build.note, build.size, build.from_tester), ('files.zip', 'Build 1.4', 9, False))
+        self.assertIn(os.path.join(MEDIA, 'private', 'uat_files'), build.file.path)  # never under the public /media/
+        self.assertContains(self.client.get(reverse('uat_plan_detail', args=[plan.pk])), 'files.zip')
+        self.assertEqual(self.client.post(up).status_code, 302)  # no file chosen: nothing saved
+        self.assertEqual(UATFile.objects.count(), 1)
+
+        # a tester on the plan sees it, downloads it, and sends a zip back
+        self.client.login(username='u15', password=self.pw)
+        page = self.client.get(reverse('staff:uat_plan', args=[plan.pk]))
+        self.assertContains(page, 'files.zip')
+        self.assertContains(page, 'From Ralfiz')
+        got = self.client.get(reverse('staff:uat_file_download', args=[plan.pk, build.pk]))
+        self.assertEqual(b''.join(got.streaming_content), b'PK\x03\x04build')
+        self.assertIn('attachment', got['Content-Disposition'])
+        self.client.post(reverse('staff:uat_file_upload', args=[plan.pk]),
+                         {'files': SimpleUploadedFile('logs.zip', b'PKlogs', 'application/zip')})
+        logs = UATFile.objects.get(name='logs.zip')
+        self.assertTrue(logs.from_tester)
+        self.assertEqual(logs.uploaded_by, fat.user)
+        # she cannot delete the Ralfiz file, only her own
+        self.assertEqual(self.client.post(reverse('staff:uat_file_delete', args=[plan.pk, build.pk])).status_code, 404)
+
+        # another tester cannot delete hers; someone not on the plan cannot download at all
+        self.client.login(username='u14', password=self.pw)
+        self.assertEqual(self.client.post(reverse('staff:uat_file_delete', args=[plan.pk, logs.pk])).status_code, 404)
+        plan.testers.remove(ham)
+        self.assertEqual(self.client.get(reverse('staff:uat_file_download', args=[plan.pk, build.pk])).status_code, 404)
+        self.assertEqual(self.client.post(reverse('staff:uat_file_upload', args=[plan.pk]),
+                                          {'files': SimpleUploadedFile('x.zip', b'x')}).status_code, 404)
+
+        # completed plan: still downloadable, no more tester uploads
+        plan.set_completed(True)
+        plan.save()
+        self.client.login(username='u15', password=self.pw)
+        self.client.post(reverse('staff:uat_file_upload', args=[plan.pk]), {'files': SimpleUploadedFile('late.zip', b'x')})
+        self.assertFalse(UATFile.objects.filter(name='late.zip').exists())
+        self.assertEqual(self.client.get(reverse('staff:uat_file_download', args=[plan.pk, logs.pk])).status_code, 200)
+        path = logs.file.path
+        self.client.post(reverse('staff:uat_file_delete', args=[plan.pk, logs.pk]))
+        self.assertFalse(UATFile.objects.filter(pk=logs.pk).exists())
+        self.assertFalse(os.path.exists(path))
+
+        # Ralfiz sees the tester's file marked as such and can delete any file; an oversize file is refused
+        self.client.login(username='hr', password=self.pw)
+        keep, UATFile.MAX_MB = UATFile.MAX_MB, 0
+        try:
+            self.client.post(up, {'files': SimpleUploadedFile('big.zip', b'xx')})
+        finally:
+            UATFile.MAX_MB = keep
+        self.assertFalse(UATFile.objects.filter(name='big.zip').exists())
+        self.client.post(reverse('uat_file_delete', args=[plan.pk, build.pk]))
+        self.assertEqual(UATFile.objects.count(), 0)
+
 
 class OldPlanLinkTests(TestCase):
     def test_missing_plan_goes_to_list(self):

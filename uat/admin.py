@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from .models import UATCase, UATPlan, UATResult, UATSection
+from .models import UATCase, UATFile, UATPlan, UATResult, UATSection
 
 
 class SectionInline(admin.TabularInline):
@@ -27,3 +27,9 @@ class UATCaseAdmin(admin.ModelAdmin):
 class UATResultAdmin(admin.ModelAdmin):
     list_display = ('case', 'tester', 'status', 'fix_status', 'updated_at')
     list_filter = ('status', 'fix_status', 'case__section__plan')
+
+
+@admin.register(UATFile)
+class UATFileAdmin(admin.ModelAdmin):
+    list_display = ('name', 'plan', 'size', 'uploaded_by', 'from_tester', 'created_at')
+    list_filter = ('plan', 'from_tester')

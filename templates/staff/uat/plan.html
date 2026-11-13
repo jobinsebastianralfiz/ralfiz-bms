@@ -90,6 +90,35 @@
 </section>
 {% endif %}
 
+{% if files or not p.completed %}
+<section class="ut-panel" id="files">
+  <div class="ut-phead"><h2>Files</h2>{% if files %}<span class="ut-chip ghost">{{ files|length }} file{{ files|length|pluralize }}</span>{% endif %}</div>
+  {% for f in files %}
+  <div class="ut-file">
+    <a class="ut-tcard" href="{% url 'staff:uat_file_download' p.plan.pk f.pk %}">
+      <span class="ut-node"><i class="fas fa-file-zipper"></i></span>
+      <span class="name"><small>{{ f.size|filesizeformat }} · {% if f.from_tester %}{{ f.uploader_name }}{% else %}From Ralfiz{% endif %} · {{ f.created_at|date:"d M" }}</small><strong>{{ f.name }}</strong>{% if f.note %}<small>{{ f.note }}</small>{% endif %}</span>
+      <span class="ut-arrow"><i class="fas fa-download"></i></span>
+    </a>
+    {% if f.from_tester and f.uploaded_by_id == request.user.id %}
+    <form method="POST" action="{% url 'staff:uat_file_delete' p.plan.pk f.pk %}" onsubmit="return confirm('Delete this file?')">{% csrf_token %}<button class="ut-filedel" title="Delete" aria-label="Delete {{ f.name }}"><i class="fas fa-trash"></i></button></form>
+    {% endif %}
+  </div>
+  {% empty %}
+  <p class="ut-filehint" style="margin:0 0 12px">No files yet. Anything Ralfiz shares for this test (a build, test data) shows up here.</p>
+  {% endfor %}
+  {% if not p.completed %}
+  <form class="ut-fileup" method="POST" action="{% url 'staff:uat_file_upload' p.plan.pk %}" enctype="multipart/form-data">
+    {% csrf_token %}
+    <label>Send a file to Ralfiz <span>a .zip of logs, recordings or exported data, up to {{ file_max_mb }} MB each</span>
+      <input type="file" name="files" multiple required></label>
+    <input type="text" name="note" maxlength="255" placeholder="Note (optional)">
+    <button><i class="fas fa-upload"></i> Upload</button>
+  </form>
+  {% endif %}
+</section>
+{% endif %}
+
 {% if p.guide and not p.completed %}
 <details class="ut-panel ut-guide">
   <summary><h2>How to test</h2><span class="ut-arrow"><i class="fas fa-chevron-down"></i></span></summary>

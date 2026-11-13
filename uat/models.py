@@ -6,10 +6,13 @@ testers (employees / interns). Testers mark every case Pass / Fail / Blocked in 
 with a note and a screenshot. Ralfiz staff follow progress and handle problems in the BMS dashboard.
 """
 
+import os
 import uuid
 
 from django.db import models
 from django.utils import timezone
+
+from core.models import _private_storage
 
 
 class UATPlan(models.Model):
@@ -146,3 +149,35 @@ class UATResult(models.Model):
         if self.fix_status == 'fixed':  # retested after a fix: the new result stands on its own
             self.fix_status = ''
         self.save()
+
+
+def uat_file_path(instance, filename):
+    return f'uat_files/{instance.plan_id}/{uuid.uuid4().hex[:8]}_{os.path.basename(filename)}'
+
+
+class UATFile(models.Model):
+    """A file kept with a plan: the build or test data Ralfiz gives the testers, or a zip of logs /
+    recordings a tester sends back. Stored under media/private/, downloaded only through a login view."""
+    MAX_MB = 200
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    plan = models.ForeignKey(UATPlan, on_delete=models.CASCADE, related_name='files')
+    file = models.FileField(upload_to=uat_file_path, storage=_private_storage, max_length=300)
+    name = models.CharField(max_length=255)
+    note = models.CharField(max_length=255, blank=True)
+    size = models.BigIntegerField(default=0)
+    uploaded_by = models.ForeignKey('auth.User', on_delete=models.SET_NULL, null=True, blank=True, related_name='+')
+    from_tester = models.BooleanField(default=False, help_text='Uploaded by a tester in the staff portal')
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-created_at']
+        verbose_name = 'UAT file'
+
+    def __str__(self):
+        return self.name
+
+    @property
+    def uploader_name(self):
+        u = self.uploaded_by
+        return (u.get_full_name() or u.username) if u else 'Ralfiz'

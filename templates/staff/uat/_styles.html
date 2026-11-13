@@ -199,4 +199,16 @@ a.ut-tcard:hover { background:var(--u-raised); }
   .ut-choice label { flex:1; justify-content:center; }
   .ut-save { width:100%; justify-content:center; }
 }
+.ut-file { display:flex; align-items:center; gap:8px; margin-bottom:8px; }
+.ut-file .ut-tcard strong { display:block; overflow-wrap:anywhere; }
+.ut-file form { margin:0; }
+.ut-filedel { width:40px; height:40px; border:0; border-radius:50%; background:var(--u-card); color:var(--u-ink-2); cursor:pointer; }
+.ut-filedel:hover { background:var(--u-fail-bg); color:var(--u-fail); }
+.ut-filehint { font-size:13.5px; color:var(--u-ink-2); }
+.ut-fileup { display:flex; flex-wrap:wrap; gap:10px; align-items:flex-end; background:var(--u-card); border-radius:20px; padding:14px 16px; margin-top:12px; }
+.ut-fileup label { flex:1 1 240px; min-width:0; font-size:13.5px; font-weight:700; }
+.ut-fileup label span { display:block; font-size:12px; font-weight:600; color:var(--u-ink-3); margin:2px 0 8px; }
+.ut-fileup input[type=file] { display:block; width:100%; font-size:13px; color:var(--u-ink-2); }
+.ut-fileup input[type=text] { flex:1 1 180px; min-width:0; height:42px; padding:0 14px; border-radius:999px; border:1px solid var(--u-line); background:var(--u-raised); color:var(--u-ink); font:inherit; font-size:13.5px; }
+.ut-fileup button { height:42px; padding:0 20px; border:0; border-radius:999px; background:var(--u-dark); color:#fff; font:inherit; font-weight:700; font-size:14px; cursor:pointer; white-space:nowrap; }
 </style>

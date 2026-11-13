@@ -8,7 +8,7 @@ from django.utils import timezone
 from employees.portal_views import _base_context, staff_required
 
 from . import services
-from .models import UATCase, UATPlan, UATResult
+from .models import UATCase, UATFile, UATPlan, UATResult
 
 MAX_SCREENSHOT = 8 * 1024 * 1024
 
@@ -72,7 +72,45 @@ def uat_plan(request, plan_pk):
     plan = get_object_or_404(_my_plans(request.employee), pk=plan_pk)
     ctx = _base_context(request, 'work')
     ctx['p'] = _summary(plan, request.employee)
+    ctx['files'] = plan.files.select_related('uploaded_by')
+    ctx['file_max_mb'] = UATFile.MAX_MB
     return render(request, 'staff/uat/plan.html', ctx)
+
+
+@staff_required
+def uat_file_upload(request, plan_pk):
+    """A tester sends files back on the plan (a zip of logs, recordings, exported data)."""
+    plan = get_object_or_404(_my_plans(request.employee), pk=plan_pk)
+    back = f"{reverse('staff:uat_plan', args=[plan.pk])}#files"
+    if request.method != 'POST':
+        return redirect(back)
+    if plan.is_completed:
+        messages.error(request, 'This UAT is completed, so files can no longer be added.')
+        return redirect(back)
+    n, error = services.add_files(plan, request.FILES.getlist('files'), request.user,
+                                  request.POST.get('note', ''), from_tester=True)
+    if error:
+        messages.error(request, error)
+    else:
+        messages.success(request, f'{n} file{"s" if n != 1 else ""} uploaded.')
+    return redirect(back)
+
+
+@staff_required
+def uat_file_download(request, plan_pk, file_id):
+    plan = get_object_or_404(_my_plans(request.employee), pk=plan_pk)
+    return services.file_response(get_object_or_404(UATFile, pk=file_id, plan=plan))
+
+
+@staff_required
+def uat_file_delete(request, plan_pk, file_id):
+    """Testers can remove only what they uploaded themselves."""
+    plan = get_object_or_404(_my_plans(request.employee), pk=plan_pk)
+    f = get_object_or_404(UATFile, pk=file_id, plan=plan, uploaded_by=request.user, from_tester=True)
+    if request.method == 'POST':
+        services.delete_file(f)
+        messages.success(request, f'"{f.name}" deleted.')
+    return redirect(f"{reverse('staff:uat_plan', args=[plan.pk])}#files")
 
 
 @staff_required

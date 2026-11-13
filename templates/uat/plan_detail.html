@@ -108,6 +108,30 @@
   {% endfor %}
 </div>
 
+<div class="sm-card" id="files">
+  <div class="sm-card__head"><h3><i class="fas fa-file-zipper"></i>Files</h3><p>Upload the build, a .zip of test data or anything else the testers need. They download it from the plan in My Tasks, and can send files back here. Up to {{ file_max_mb }} MB each.</p></div>
+  {% if files %}
+  <div style="overflow-x:auto"><table class="sm-table">
+    <thead><tr><th style="padding-left:1.5rem">File</th><th>Size</th><th>Uploaded by</th><th>When</th><th></th></tr></thead>
+    <tbody>
+    {% for f in files %}
+      <tr><td style="padding-left:1.5rem"><a href="{% url 'uat_file_download' plan.pk f.pk %}"><i class="fas fa-download"></i> <b>{{ f.name }}</b></a>{% if f.note %}<br><span class="sm-k">{{ f.note }}</span>{% endif %}</td>
+        <td class="sm-k">{{ f.size|filesizeformat }}</td>
+        <td class="sm-k">{{ f.uploader_name }}{% if f.from_tester %} <span class="ut-c blocked">Tester</span>{% endif %}</td>
+        <td class="sm-k">{{ f.created_at|date:"d M, h:i A" }}</td>
+        <td style="text-align:right;padding-right:1.5rem"><form method="POST" action="{% url 'uat_file_delete' plan.pk f.pk %}" onsubmit="return confirm('Delete this file? Testers will no longer be able to download it.')">{% csrf_token %}<button class="sm-btn" title="Delete" aria-label="Delete {{ f.name }}"><i class="fas fa-trash"></i></button></form></td></tr>
+    {% endfor %}
+    </tbody>
+  </table></div>
+  {% endif %}
+  <form method="POST" action="{% url 'uat_file_upload' plan.pk %}" enctype="multipart/form-data" class="sm-card__body" style="display:flex;gap:.75rem;align-items:center;flex-wrap:wrap{% if files %};border-top:1px solid #F2F4F7{% endif %}">
+    {% csrf_token %}
+    <input type="file" name="files" multiple required style="flex:1 1 220px;min-width:0;font-size:.875rem">
+    <input name="note" maxlength="255" class="sm-input" placeholder="Note (optional), e.g. Build 1.4 installer" style="flex:2 1 240px">
+    <button class="btn btn-primary"><i class="fas fa-upload"></i> Upload</button>
+  </form>
+</div>
+
 <div class="sm-card">
   <div class="sm-card__head"><h3><i class="fas fa-user-check"></i>Who tests what</h3><p>Pick the testers, then tick who does each section. A section with nobody ticked goes to every tester.</p></div>
   <form method="POST" action="{% url 'uat_plan_update' plan.pk %}" class="sm-card__body">

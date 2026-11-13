@@ -1,6 +1,7 @@
 import logging
+import os
 
-from .models import UATCase, UATResult
+from .models import UATCase, UATFile, UATResult
 
 log = logging.getLogger(__name__)
 
@@ -102,3 +103,29 @@ def instruction_blocks(text):
         items = [re.sub(r'^(\d+[.)]|[•\-*])\s*', '', l) for l in rest]
         blocks.append({'title': title, 'items': items, 'numbered': numbered})
     return blocks
+
+
+def add_files(plan, uploads, user, note='', from_tester=False):
+    """Save uploaded files on a plan. Returns (saved_count, error); nothing is saved when there is an error."""
+    if not uploads:
+        return 0, 'Choose a file to upload.'
+    too_big = [f.name for f in uploads if f.size > UATFile.MAX_MB * 1024 * 1024]
+    if too_big:
+        return 0, f'{", ".join(too_big)} is over {UATFile.MAX_MB} MB. Nothing was uploaded.'
+    for f in uploads:
+        UATFile.objects.create(plan=plan, file=f, name=os.path.basename(f.name)[:255], note=note.strip()[:255],
+                               size=f.size, uploaded_by=user, from_tester=from_tester)
+    return len(uploads), None
+
+
+def file_response(uat_file):
+    from django.http import FileResponse, Http404
+    try:
+        return FileResponse(uat_file.file.open('rb'), as_attachment=True, filename=uat_file.name)
+    except FileNotFoundError:
+        raise Http404('File missing from storage.')
+
+
+def delete_file(uat_file):
+    uat_file.file.delete(save=False)
+    uat_file.delete()

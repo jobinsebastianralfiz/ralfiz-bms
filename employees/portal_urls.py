@@ -35,6 +35,9 @@ urlpatterns = [
     # UAT testing
     path('uat/', uat_v.uat_home, name='uat_home'),
     path('uat/<uuid:plan_pk>/', uat_v.uat_plan, name='uat_plan'),
+    path('uat/<uuid:plan_pk>/files/upload/', uat_v.uat_file_upload, name='uat_file_upload'),
+    path('uat/<uuid:plan_pk>/files/<uuid:file_id>/download/', uat_v.uat_file_download, name='uat_file_download'),
+    path('uat/<uuid:plan_pk>/files/<uuid:file_id>/delete/', uat_v.uat_file_delete, name='uat_file_delete'),
     path('uat/<uuid:plan_pk>/<int:section_pk>/', uat_v.uat_section, name='uat_section'),
 
     # Classes & assessments

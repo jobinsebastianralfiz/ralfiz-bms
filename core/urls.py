@@ -320,6 +320,9 @@ urlpatterns = [
     path('uat/<uuid:pk>/', uat_web_views.uat_plan_detail, name='uat_plan_detail'),
     path('uat/<uuid:pk>/results/', uat_web_views.uat_plan_cases, name='uat_plan_cases'),
     path('uat/<uuid:pk>/update/', uat_web_views.uat_plan_update, name='uat_plan_update'),
+    path('uat/<uuid:pk>/files/upload/', uat_web_views.uat_file_upload, name='uat_file_upload'),
+    path('uat/<uuid:pk>/files/<uuid:file_id>/download/', uat_web_views.uat_file_download, name='uat_file_download'),
+    path('uat/<uuid:pk>/files/<uuid:file_id>/delete/', uat_web_views.uat_file_delete, name='uat_file_delete'),
     path('uat/problems/<uuid:pk>/', uat_web_views.uat_problem_update, name='uat_problem_update'),
 
     # HR & Admin
