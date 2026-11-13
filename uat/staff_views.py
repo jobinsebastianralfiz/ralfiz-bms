@@ -13,8 +13,10 @@ from .models import UATCase, UATPlan, UATResult
 MAX_SCREENSHOT = 8 * 1024 * 1024
 
 
-def _my_plans(employee):
-    return UATPlan.objects.filter(testers=employee, status='active').distinct()
+def _my_plans(employee, open_only=False):
+    """The tester's plans. Completed ones stay listed (as a thank-you card) but can't be marked any more."""
+    plans = UATPlan.objects.filter(testers=employee).distinct()
+    return plans.filter(status='active') if open_only else plans
 
 
 def _summary(plan, employee):
@@ -33,6 +35,8 @@ def _summary(plan, employee):
     locked = [r for r in rows if r['waiting_on']]
     todo = [r for r in open_rows if r['retest'] or r['done'] < r['total']]
     waiting = locked[0]['waiting_on'] if locked else None
+    if plan.is_completed:  # nothing left to do: the card and the page say thanks instead
+        todo, waiting = [], None
     if todo:
         todo[0]['is_next'] = True
     return {'plan': plan, 'open': open_rows, 'locked': locked, **services.progress(total, done),
@@ -42,7 +46,8 @@ def _summary(plan, employee):
             'waiting_total': waiting.cases.count() if waiting else 0,
             'waiting_who': ', '.join(e.full_name.split()[0] for e in waiting.testers()) if waiting else '',
             'guide': services.instruction_blocks(plan.instructions),
-            'todo': total - done, 'section_count': len(rows),
+            'todo': total - done, 'section_count': len(rows), 'completed': plan.is_completed,
+            'found': sum(r['fail'] + r['blocked'] for r in rows), 'first_name': employee.full_name.split()[0] if employee.full_name else '',
             **_due(plan, total - done),
             **{k: sum(r[k] for r in rows) for k in ('pass', 'fail', 'blocked')}}
 
@@ -74,6 +79,8 @@ def uat_plan(request, plan_pk):
 def uat_section(request, plan_pk, section_pk):
     employee = request.employee
     plan = get_object_or_404(_my_plans(employee), pk=plan_pk)
+    if plan.is_completed:
+        return redirect('staff:uat_plan', plan.pk)
     section = get_object_or_404(plan.sections.prefetch_related('assignees'), pk=section_pk)
     if not section.is_for(employee):
         raise Http404

@@ -135,14 +135,19 @@ def uat_plan_update(request, pk):
         plan.save()
         for emp in plan.testers.all():
             services.notify(emp, f'UAT completed: {plan.name}',
-                            'Testing is finished and the plan is closed. Thank you for testing.',
+                            'Testing is finished. Thank you for testing! Open it in My Tasks to see your summary.',
                             {'type': 'uat', 'plan_id': str(plan.id)})
-        messages.success(request, f'"{plan.name}" is marked completed. The testers were told and no longer see it.')
+        messages.success(request, f'"{plan.name}" is marked completed. Each tester was told and now sees a thank-you card.')
+        if plan.xp_reward:
+            messages.info(request, 'The XP reward for everyone who tested is waiting in XP Approvals.')
+        else:
+            messages.warning(request, 'No XP reward is set on this plan, so nothing went to XP Approvals. '
+                                      'Set "XP reward per tester" under Plan details and save to send it.')
 
     elif action == 'reopen' and plan.is_completed:
         plan.set_completed(False)
         plan.save()
-        messages.success(request, f'"{plan.name}" is back in testing. The testers can see it again.')
+        messages.success(request, f'"{plan.name}" is back in testing. The testers can mark tests again.')
 
     elif action == 'assign':
         before = set(plan.testers.values_list('pk', flat=True))

@@ -525,7 +525,7 @@ def _task_card(obj, kind, xp_settings=None):
 
 
 def _plan_status(p):
-    if p['total'] and p['done'] == p['total'] and not p['retest']:
+    if p.get('completed') or (p['total'] and p['done'] == p['total'] and not p['retest']):
         return 'completed'
     return 'in_progress' if p['done'] else 'assigned'
 

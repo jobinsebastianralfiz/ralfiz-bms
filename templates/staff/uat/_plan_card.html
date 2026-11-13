@@ -3,7 +3,8 @@
   <a class="ut-plan" data-title="{{ p.plan.name|lower }} {{ p.plan.product|lower }}" data-due="{{ p.plan.due_date|date:'Y-m-d'|default:'9999-12-31' }}" data-pri="1" data-done="{% if p.status_key == 'completed' %}1{% else %}0{% endif %}" href="{% url 'staff:uat_plan' p.plan.pk %}">
     <div class="ut-plan-top">
       <span class="ut-plan-product">{{ p.plan.product|default:"UAT" }}</span>
-      {% if p.retest %}<span class="ut-pill lime"><i class="fas fa-rotate"></i> {{ p.retest }} to retest</span>
+      {% if p.completed %}<span class="ut-pill pass"><i class="fas fa-circle-check"></i> UAT completed</span>
+      {% elif p.retest %}<span class="ut-pill lime"><i class="fas fa-rotate"></i> {{ p.retest }} to retest</span>
       {% elif p.total and p.done == p.total %}<span class="ut-pill pass"><i class="fas fa-check"></i> Finished</span>
       {% elif p.next and p.done %}<span class="ut-pill dark">In progress</span>
       {% elif p.next %}<span class="ut-pill dark">Ready to start</span>
@@ -19,9 +20,9 @@
 
     <div class="ut-plan-progress">
       <b>{{ p.done }}<span>/ {{ p.total }} tests</span></b>
-      <span class="pct">{{ p.pct }}%</span>
+      <span class="pct">{% if p.completed %}Completed{% else %}{{ p.pct }}%{% endif %}</span>
     </div>
-    <div class="ut-plan-bar" aria-label="{{ p.pct }}% done"><i style="width:{{ p.pct }}%"></i></div>
+    <div class="ut-plan-bar" aria-label="{% if p.completed %}Completed{% else %}{{ p.pct }}% done{% endif %}"><i style="width:{% if p.completed %}100{% else %}{{ p.pct }}{% endif %}%"></i></div>
     <div class="ut-plan-counts">
       <span><i class="dot" style="background:var(--u-pass)"></i>{{ p.pass }} passed</span>
       <span><i class="dot" style="background:var(--u-fail)"></i>{{ p.fail }} failed</span>
@@ -30,7 +31,8 @@
 
     <div class="ut-plan-foot">
       <span class="txt">
-        {% if p.next %}<small>{% if p.next.retest %}Retest{% else %}Next{% endif %}</small>{{ p.next.section.name }}
+        {% if p.completed %}<small>UAT completed</small>Thank you{% if p.first_name %}, {{ p.first_name }}{% endif %}!
+        {% elif p.next %}<small>{% if p.next.retest %}Retest{% else %}Next{% endif %}</small>{{ p.next.section.name }}
         {% elif p.waiting %}<small>Waiting for {{ p.waiting_who }}</small>{{ p.waiting.name }} · {{ p.waiting_done }} of {{ p.waiting_total }} done
         {% else %}<small>All done</small>Thank you!{% endif %}
       </span>

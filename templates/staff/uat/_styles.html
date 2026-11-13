@@ -26,6 +26,12 @@
 a.ut-chip:hover { box-shadow:inset 0 0 0 1px var(--u-ink-3); }
 
 /* Vitals row: small label over a big number */
+.ut-thanks { display:flex; gap:14px; align-items:flex-start; background:var(--u-pass-bg); border-radius:20px; padding:18px 20px; margin-top:20px; }
+.ut-thanks .ico { flex:none; width:40px; height:40px; border-radius:50%; background:var(--u-pass); color:#fff; display:grid; place-items:center; font-size:16px; }
+.ut-thanks h2 { margin:0 0 4px; font-size:20px; font-weight:700; letter-spacing:-.01em; }
+.ut-thanks p { margin:0 0 6px; font-size:14px; line-height:1.5; color:var(--u-ink-2); }
+.ut-thanks p b { color:var(--u-ink); }
+.ut-thanks small { font-size:12px; font-weight:600; color:var(--u-ink-3); }
 .ut-vitals { display:grid; grid-template-columns:repeat(5,minmax(0,1fr)); gap:10px; margin-top:20px; }
 .ut-vital { background:var(--u-card); border-radius:20px; padding:14px 16px; }
 .ut-vital small { display:block; font-size:12px; font-weight:600; color:var(--u-ink-3); margin-bottom:6px; }

@@ -189,6 +189,20 @@ class SourceTests(WalletTestCase):
         r.record('pass', 'again')
         self.assertEqual(XPEntry.objects.filter(employee=self.anu).count(), 1)
 
+    def test_uat_reward_when_plan_is_marked_completed(self):
+        plan, (s1, b1, b2) = self.uat_plan()
+        UATResult.objects.create(case=b1, tester=self.ben, status='pass')  # ben left B-2 unmarked; anu tested nothing
+        self.assertFalse(XPEntry.objects.exists())
+        plan.set_completed(True)
+        plan.save()
+        self.assertEqual(XPEntry.objects.get().employee, self.ben)
+        self.assertEqual(XPEntry.objects.get().status, 'pending')
+        plan.set_completed(False)
+        plan.save()
+        plan.set_completed(True)
+        plan.save()
+        self.assertEqual(XPEntry.objects.count(), 1)
+
     def test_uat_reward_set_after_finishing_still_arrives(self):
         plan, (_, b1, b2) = self.uat_plan(xp=0)
         for c in (b1, b2):

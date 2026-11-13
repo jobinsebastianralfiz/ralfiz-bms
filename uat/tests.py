@@ -133,7 +133,15 @@ class UATTests(TestCase):
         self.assertContains(self.client.get(reverse('uat_plan_list')), 'Completed')
         self.client.logout()
         self.client.login(username='u16', password=self.pw)
-        self.assertContains(self.client.get(reverse('staff:work_list')), 'No tasks')
+        self.assertContains(self.client.get(reverse('staff:work_list')), 'Thank you, Mithra!')
+        page = self.client.get(reverse('staff:uat_plan', args=[plan.pk]))
+        self.assertContains(page, 'Thank you, Mithra!')
+        self.assertNotContains(page, 'Your sections')
+        sec = reverse('staff:uat_section', args=[plan.pk, bil.pk])
+        self.assertRedirects(self.client.get(sec), reverse('staff:uat_plan', args=[plan.pk]))
+        case = bil.cases.first()
+        self.client.post(sec, {'case': case.pk, 'status': 'pass'})
+        self.assertFalse(UATResult.objects.filter(case=case).exists())
         self.client.logout()
         self.client.login(username='hr', password=self.pw)
         self.client.post(url, {'action': 'reopen'})
@@ -142,7 +150,7 @@ class UATTests(TestCase):
         self.assertIsNone(plan.completed_at)
         self.client.logout()
         self.client.login(username='u16', password=self.pw)
-        self.assertNotContains(self.client.get(reverse('staff:work_list')), 'No tasks')
+        self.assertNotContains(self.client.get(reverse('staff:uat_plan', args=[plan.pk])), 'Thank you, Mithra!')
 
     def test_create_plan_from_dashboard_with_file(self):
         self.client.login(username='hr', password=self.pw)
@@ -241,12 +249,12 @@ class UATTests(TestCase):
         sec = gc.sections.get(key='WRK')
         self.assertContains(self.client.get(reverse('staff:uat_section', args=[gc.pk, sec.pk])),
                             reverse('staff:uat_plan', args=[gc.pk]))
-        # A plan you're not testing, or a closed one, is not found
+        # A plan you're not testing is not found; a completed one opens as a thank-you card
         gc.testers.remove(self.emps[1])
         self.assertEqual(self.client.get(reverse('staff:uat_plan', args=[gc.pk])).status_code, 404)
         shop.status = 'closed'
         shop.save()
-        self.assertEqual(self.client.get(reverse('staff:uat_plan', args=[shop.pk])).status_code, 404)
+        self.assertContains(self.client.get(reverse('staff:uat_plan', args=[shop.pk])), 'Thank you, Fathima!')
 
 
 class OldPlanLinkTests(TestCase):

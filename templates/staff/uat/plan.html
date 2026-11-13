@@ -15,11 +15,23 @@
     </div>
     <div class="ut-chips">
       {% if p.plan.site_url %}<a class="ut-chip" href="{{ p.plan.site_url }}" target="_blank" rel="noopener"><i class="fas fa-arrow-up-right-from-square"></i> {{ p.plan.site_url|cut:"https://" }}</a>{% endif %}
-      {% if p.plan.due_date %}<span class="ut-chip"><i class="fas fa-calendar"></i> Finish by {{ p.plan.due_date|date:"D d M" }}</span>{% endif %}
+      {% if p.completed %}<span class="ut-chip"><i class="fas fa-circle-check"></i> Completed{% if p.plan.completed_at %} {{ p.plan.completed_at|date:"D d M" }}{% endif %}</span>
+      {% elif p.plan.due_date %}<span class="ut-chip"><i class="fas fa-calendar"></i> Finish by {{ p.plan.due_date|date:"D d M" }}</span>{% endif %}
       {% if p.plan.xp_reward and has_wallet %}<span class="ut-chip"><i class="fas fa-coins"></i> Reward: {{ p.plan.xp_reward|xpn }} XP · ₹{{ p.plan.xp_reward|xp_rs }}</span>{% endif %}
       {% if p.retest %}<span class="ut-chip lime"><i class="fas fa-rotate"></i> {{ p.retest }} to retest</span>{% endif %}
     </div>
   </div>
+
+  {% if p.completed %}
+  <div class="ut-thanks">
+    <span class="ico"><i class="fas fa-heart"></i></span>
+    <div>
+      <h2>Thank you{% if p.first_name %}, {{ p.first_name }}{% endif %}!</h2>
+      <p>The {{ p.plan.name }} is completed. You checked <b>{{ p.done }}</b> test{{ p.done|pluralize }}{% if p.found %} and reported <b>{{ p.found }}</b> problem{{ p.found|pluralize }} that helped us fix {{ p.plan.product|default:"the product" }} before it reached the customer{% endif %}. Your testing made it better.</p>
+      <small>From the Ralfiz team{% if p.plan.completed_at %} · {{ p.plan.completed_at|date:"d M Y" }}{% endif %}</small>
+    </div>
+  </div>
+  {% endif %}
 
   <div class="ut-vitals">
     <div class="ut-vital"><small>Progress</small><b>{{ p.done }}<span>/ {{ p.total }}</span></b></div>
@@ -43,6 +55,7 @@
   {% endif %}
 </section>
 
+{% if not p.completed %}
 <section class="ut-panel">
   <div class="ut-phead"><h2>Your sections</h2><span class="ut-chip ghost">{{ p.section_count }} sections</span></div>
   <ol class="ut-timeline">
@@ -75,8 +88,9 @@
     {% endif %}
   </ol>
 </section>
+{% endif %}
 
-{% if p.guide %}
+{% if p.guide and not p.completed %}
 <details class="ut-panel ut-guide">
   <summary><h2>How to test</h2><span class="ut-arrow"><i class="fas fa-chevron-down"></i></span></summary>
   <div class="ut-guide-grid">

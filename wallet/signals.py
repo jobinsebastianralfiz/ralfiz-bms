@@ -53,7 +53,8 @@ def uat_result_saved(sender, instance, **kwargs):
 @receiver(post_save, sender=UATPlan)
 @_safe
 def uat_plan_saved(sender, instance, created, **kwargs):
-    # A reward set (or raised) after someone already finished still reaches them.
+    # A reward set (or raised) after someone already finished still reaches them, and marking the
+    # plan completed sends every tester's reward for approval.
     if not created and instance.xp_reward:
         for emp in instance.testers.all():
             services.sync_uat_tester(instance, emp)

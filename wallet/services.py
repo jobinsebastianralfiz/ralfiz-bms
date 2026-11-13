@@ -241,6 +241,9 @@ def uat_tester_done(plan, employee):
     if not case_ids:
         return False
     marked = set(UATResult.objects.filter(tester=employee, case_id__in=case_ids).values_list('case_id', flat=True))
+    if plan.status == 'closed':
+        # Ralfiz marked the whole UAT completed: everyone who tested is done, even with a few tests left unmarked.
+        return bool(marked)
     return marked == case_ids
 
 
