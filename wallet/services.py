@@ -255,6 +255,38 @@ def sync_uat_tester(plan, employee):
     return sync_source(employee, plan, True, plan.xp_reward, f'UAT: {plan.name}')
 
 
+def uat_reward_report(plan):
+    """Send each tester's UAT reward for approval and say, per tester, what happened and why.
+    Unlike the save hooks this does not hide errors: it is what the "Send rewards" button shows."""
+    out = []
+    for emp in plan.testers.select_related('user'):
+        name = emp.full_name or emp.employee_id
+        try:
+            if not plan.xp_reward:
+                state = 'no XP reward is set on the plan'
+            elif not has_wallet(emp):
+                state = 'has no XP wallet (owners and partners never do; staff need "include employees" in XP Settings)'
+            elif not uat_tester_done(plan, emp):
+                state = ('has not marked any test' if plan.status == 'closed'
+                         else 'still has tests to mark (or mark the UAT completed)')
+            else:
+                sync_source(emp, plan, True, plan.xp_reward, f'UAT: {plan.name}')
+                _, rows = _source_rows(emp, plan)
+                if rows.filter(status='pending').exists():
+                    state = f'{plan.xp_reward} XP is waiting in XP Approvals'
+                elif _sum(rows.filter(status='approved')) > 0:
+                    state = 'already approved earlier'
+                elif rows.filter(status='rejected').exists():
+                    state = 'was rejected earlier in XP Approvals, so it is not asked for again (add it by hand in Wallets)'
+                else:
+                    state = 'nothing was created (unexpected)'
+        except Exception as e:  # noqa: BLE001
+            log.exception('UAT reward for %s failed', emp)
+            state = f'failed: {type(e).__name__}: {e}'
+        out.append((name, state))
+    return out
+
+
 def sync_assessment(assessment):
     settings = XPSettings.current()
     pct = assessment.percentage

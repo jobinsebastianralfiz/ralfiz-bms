@@ -144,6 +144,12 @@ def uat_plan_update(request, pk):
             messages.warning(request, 'No XP reward is set on this plan, so nothing went to XP Approvals. '
                                       'Set "XP reward per tester" under Plan details and save to send it.')
 
+    elif action == 'rewards':
+        from wallet.services import uat_reward_report
+        for name, state in uat_reward_report(plan):
+            (messages.success if 'waiting in XP Approvals' in state or 'already approved' in state
+             else messages.warning)(request, f'{name}: {state}.')
+
     elif action == 'reopen' and plan.is_completed:
         plan.set_completed(False)
         plan.save()

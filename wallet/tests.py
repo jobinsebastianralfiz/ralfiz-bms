@@ -203,6 +203,26 @@ class SourceTests(WalletTestCase):
         plan.save()
         self.assertEqual(XPEntry.objects.count(), 1)
 
+    def test_uat_reward_arrives_from_the_dashboard(self):
+        """Completing from the plan page, or saving the details of a plan completed earlier, sends the reward."""
+        from django.urls import reverse
+        plan, (s1, b1, b2) = self.uat_plan(xp=800)
+        UATResult.objects.create(case=b1, tester=self.ben, status='pass')
+        UATPlan.objects.filter(pk=plan.pk).update(status='closed')  # completed before rewards were sent on completion
+        self.client.force_login(self.hr)
+        url = reverse('uat_plan_update', args=[plan.pk])
+        self.client.post(url, {'action': 'details', 'name': plan.name, 'product': 'Shop', 'site_url': 'https://shop.ralfiz.com',
+                               'due_date': '2026-11-13', 'xp_reward': '800', 'instructions': 'x'})
+        self.assertEqual(XPEntry.objects.get().employee, self.ben)
+        self.assertContains(self.client.get(reverse('wallet:approvals')), 'Shop UAT')
+        # The button reports per tester: ben is waiting, anu never tested; pressing it twice adds nothing
+        for _ in range(2):
+            page = self.client.post(url, {'action': 'rewards'}, follow=True)
+        self.assertContains(page, 'ben')
+        self.assertContains(page, '800 XP is waiting in XP Approvals')
+        self.assertContains(page, 'has not marked any test')
+        self.assertEqual(XPEntry.objects.count(), 1)
+
     def test_uat_reward_set_after_finishing_still_arrives(self):
         plan, (_, b1, b2) = self.uat_plan(xp=0)
         for c in (b1, b2):

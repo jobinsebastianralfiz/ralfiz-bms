@@ -29,6 +29,10 @@
   </div>
   <div class="page-actions" style="display:flex;gap:.5rem;align-items:center;flex-wrap:wrap">
     <a href="{% url 'uat_plan_cases' plan.pk %}" class="sm-btn"><i class="fas fa-table"></i> All results</a>
+    {% if plan.xp_reward %}
+    <form method="POST" action="{% url 'uat_plan_update' plan.pk %}">{% csrf_token %}<input type="hidden" name="action" value="rewards">
+      <button class="sm-btn" title="Sends each tester's XP reward to XP Approvals and tells you what happened for each person"><i class="fas fa-coins"></i> Send rewards for approval</button></form>
+    {% endif %}
     {% if plan.is_completed %}
     <form method="POST" action="{% url 'uat_plan_update' plan.pk %}">{% csrf_token %}<input type="hidden" name="action" value="reopen">
       <button class="sm-btn"><i class="fas fa-undo"></i> Reopen testing</button></form>
