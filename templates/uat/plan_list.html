@@ -29,7 +29,7 @@
           <td style="min-width:140px"><div style="height:8px;background:#EEF1F6;border-radius:8px;overflow:hidden"><div style="height:100%;width:{{ s.pct }}%;background:#465FFF"></div></div><span class="sm-k">{{ s.pct }}%</span></td>
           <td>{% if s.open %}<span class="sm-pill sm-expired">{{ s.open }} open</span>{% else %}<span class="sm-k">None</span>{% endif %}</td>
           <td>{{ p.due_date|date:"d M Y"|default:"—" }}</td>
-          <td>{% if p.status == 'active' %}<span class="sm-pill sm-active">In testing</span>{% else %}<span class="sm-pill sm-revoked">Closed</span>{% endif %}</td>
+          <td>{% if p.status == 'active' %}<span class="sm-pill sm-active">In testing</span>{% else %}<span class="sm-pill sm-revoked">Completed</span>{% if p.completed_at %}<br><span class="sm-k">{{ p.completed_at|date:"d M Y" }}</span>{% endif %}{% endif %}</td>
           <td style="text-align:right;padding-right:1.5rem"><a href="{% url 'uat_plan_detail' p.pk %}" class="sm-btn">Open</a></td>
         </tr>
       {% endwith %}{% empty %}

@@ -91,6 +91,7 @@ def uat_plan_detail(request, pk):
         'plan': plan, 'ov': services.plan_overview(plan), 'problems': problems, 'tab': tab,
         'problem_counts': problem_counts, 'staff': _staff_choices(),
         'tester_ids': {str(e.pk) for e in plan.testers.all()},
+        'unresolved': problem_counts['open'] + problem_counts['fixed'],
     })
 
 
@@ -126,9 +127,22 @@ def uat_plan_update(request, pk):
         plan.instructions = p.get('instructions', '').strip()
         plan.due_date = p.get('due_date') or None
         plan.xp_reward = _xp(p)
-        plan.status = p.get('status') if p.get('status') in dict(UATPlan.STATUS_CHOICES) else plan.status
         plan.save()
         messages.success(request, 'Plan updated.')
+
+    elif action == 'complete' and not plan.is_completed:
+        plan.set_completed(True, request.user)
+        plan.save()
+        for emp in plan.testers.all():
+            services.notify(emp, f'UAT completed: {plan.name}',
+                            'Testing is finished and the plan is closed. Thank you for testing.',
+                            {'type': 'uat', 'plan_id': str(plan.id)})
+        messages.success(request, f'"{plan.name}" is marked completed. The testers were told and no longer see it.')
+
+    elif action == 'reopen' and plan.is_completed:
+        plan.set_completed(False)
+        plan.save()
+        messages.success(request, f'"{plan.name}" is back in testing. The testers can see it again.')
 
     elif action == 'assign':
         before = set(plan.testers.values_list('pk', flat=True))

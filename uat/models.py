@@ -13,7 +13,7 @@ from django.utils import timezone
 
 
 class UATPlan(models.Model):
-    STATUS_CHOICES = [('active', 'In testing'), ('closed', 'Closed')]
+    STATUS_CHOICES = [('active', 'In testing'), ('closed', 'Completed')]
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     name = models.CharField(max_length=200)
@@ -28,10 +28,22 @@ class UATPlan(models.Model):
                                      help_text='Everyone testing this plan (sections with no tester go to all of them)')
     created_by = models.ForeignKey('auth.User', on_delete=models.SET_NULL, null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
+    completed_at = models.DateTimeField(null=True, blank=True)
+    completed_by = models.ForeignKey('auth.User', on_delete=models.SET_NULL, null=True, blank=True, related_name='+')
 
     class Meta:
         ordering = ['-created_at']
         verbose_name = 'UAT plan'
+
+    @property
+    def is_completed(self):
+        return self.status == 'closed'
+
+    def set_completed(self, done, user=None):
+        """Mark the whole UAT completed (testers no longer see it) or put it back into testing."""
+        self.status = 'closed' if done else 'active'
+        self.completed_at = timezone.now() if done else None
+        self.completed_by = user if done else None
 
     def __str__(self):
         return self.name

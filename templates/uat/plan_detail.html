@@ -27,8 +27,22 @@
     <div><h1 class="page-title">{{ plan.name }}</h1>
       <p class="sm-help" style="margin:0">{{ plan.product }}{% if plan.site_url %} · <a href="{{ plan.site_url }}" target="_blank" rel="noopener">{{ plan.site_url }}</a>{% endif %}{% if plan.due_date %} · finish by {{ plan.due_date|date:"d M Y" }}{% endif %} · {{ ov.case_count }} tests</p></div>
   </div>
-  <div class="page-actions"><a href="{% url 'uat_plan_cases' plan.pk %}" class="sm-btn"><i class="fas fa-table"></i> All results</a></div>
+  <div class="page-actions" style="display:flex;gap:.5rem;align-items:center;flex-wrap:wrap">
+    <a href="{% url 'uat_plan_cases' plan.pk %}" class="sm-btn"><i class="fas fa-table"></i> All results</a>
+    {% if plan.is_completed %}
+    <form method="POST" action="{% url 'uat_plan_update' plan.pk %}">{% csrf_token %}<input type="hidden" name="action" value="reopen">
+      <button class="sm-btn"><i class="fas fa-undo"></i> Reopen testing</button></form>
+    {% else %}
+    <form method="POST" action="{% url 'uat_plan_update' plan.pk %}" onsubmit="return confirm('Mark this UAT completed?{% if unresolved %} {{ unresolved }} problem(s) are still not closed.{% endif %}{% if ov.overall.done < ov.overall.total %} Only {{ ov.overall.done }} of {{ ov.overall.total }} tests are marked.{% endif %} Testers will be told and the plan leaves their portal.')">{% csrf_token %}<input type="hidden" name="action" value="complete">
+      <button class="btn btn-primary"><i class="fas fa-check-circle"></i> Mark UAT completed</button></form>
+    {% endif %}
+  </div>
 </div>
+{% if plan.is_completed %}
+<div class="sm-card" style="padding:.75rem 1.25rem;background:#ECFDF3;border-color:#A6F4C5;color:#027A48;font-size:.875rem">
+  <i class="fas fa-check-circle"></i> <b>UAT completed</b>{% if plan.completed_at %} on {{ plan.completed_at|date:"d M Y, h:i A" }}{% endif %}{% if plan.completed_by %} by {{ plan.completed_by.get_full_name|default:plan.completed_by.username }}{% endif %}. Testers no longer see this plan.
+</div>
+{% endif %}
 
 <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:1rem;margin-bottom:1.5rem">
   <div class="sm-card" style="margin:0;padding:1.25rem"><p class="sm-k">Done</p><p style="font-size:1.5rem;font-weight:700">{{ ov.overall.pct }}%</p><div class="ut-bar"><i style="width:{{ ov.overall.pct }}%"></i></div></div>
@@ -125,8 +139,6 @@
     <div><label class="sm-label">Finish by</label><input name="due_date" type="date" value="{{ plan.due_date|date:'Y-m-d' }}" class="sm-input"></div>
     <div><label class="sm-label">XP reward per tester</label><input name="xp_reward" type="number" min="0" value="{{ plan.xp_reward }}" class="sm-input">
       <p class="sm-help">{% if plan.xp_reward %}Worth ₹{% load xp %}{{ plan.xp_reward|xp_rs }} per tester. {% endif %}Paid once a tester has marked every test in their sections and you approve it in <a href="{% url 'wallet:approvals' %}">XP Approvals</a>. 0 = no reward.</p></div>
-    <div><label class="sm-label">Status</label><select name="status" class="sm-input">{% for v, l in plan.STATUS_CHOICES %}<option value="{{ v }}" {% if plan.status == v %}selected{% endif %}>{{ l }}</option>{% endfor %}</select>
-      <p class="sm-help">Closed plans disappear from the testers' portal.</p></div>
     <div class="sm-span"><label class="sm-label">Instructions for testers</label><textarea name="instructions" rows="4" class="sm-input">{{ plan.instructions }}</textarea></div>
     <div class="sm-span" style="text-align:right"><button class="btn btn-primary"><i class="fas fa-save"></i> Save</button></div>
   </form>
