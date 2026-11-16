@@ -442,7 +442,7 @@
   {
    "key": "MOB",
    "name": "On a phone",
-   "owner": "Intern 2",
+   "owner": "Intern 3",
    "after": "GEN0",
    "tests": [
     {
@@ -763,7 +763,7 @@
   {
    "key": "SET",
    "name": "Content manager: pictures, settings and safety",
-   "owner": "Intern 1",
+   "owner": "Intern 3",
    "after": "GEN0",
    "tests": [
     {
