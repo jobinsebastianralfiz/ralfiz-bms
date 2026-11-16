@@ -1,0 +1,969 @@
+{
+ "name": "jyothisgeorge.com UAT",
+ "product": "jyothisgeorge.com (website and content manager)",
+ "site_url": "https://jyothisgeorge.ralfiztechnologies.workers.dev",
+ "instructions": "What this is\nThe personal website of Dr Jyothis Thomas George and its content manager (the admin where he edits the site himself). This is a preview copy on Cloudflare; it is not public and not on Google.\n\nThe two parts\n• Website: https://jyothisgeorge.ralfiztechnologies.workers.dev (no login).\n• Content manager: https://jyothisgeorge.ralfiztechnologies.workers.dev/admin/ (your own login, given to you by Jobin).\n\nOrder\n1. Getting started: everyone, just open the site and sign in.\n2. Then everyone tests their own sections at the same time.\n3. Last: the backup and full-journey section, together.\n\nRules for testing together\n• Everyone edits the same website, so change only what your test says, and put it back the way it was.\n• Start anything new you add with your initial and 'UAT': for example 'S UAT - test paper'. Delete it when the test is done.\n• Never delete or rewrite the real content (papers, videos, press, career roles).\n• Do not type a wrong password more than twice. Five wrong tries lock sign-in for the whole office for 15 minutes.\n• Do not use Backup › Restore until the last section.\n• Do not enter anything in Site settings › Analytics and search.\n• After you save in the content manager, wait 5 seconds, then refresh the website page to see the change.\n\nHow to mark\n• Pass: it did what 'Should happen' says.\n• Fail: it did something wrong, or looks broken. Write what you did and saw, add a screenshot.\n• Blocked: you couldn't test it (error page, login not working, no phone).\n• Use Chrome on a laptop; your own phone for the phone tests and the QR code.",
+ "sections": [
+  {
+   "key": "GEN0",
+   "name": "Getting started",
+   "owner": "Everyone",
+   "tests": [
+    {
+     "code": "GS-01",
+     "title": "Site opens securely",
+     "tags": [],
+     "steps": [
+      "Open https://jyothisgeorge.ralfiztechnologies.workers.dev in Chrome on the laptop.",
+      "Click the icon left of the address."
+     ],
+     "expected": "The Home page loads with a padlock / 'Connection is secure'. The name at the top reads 'Dr Jyothis Thomas George'."
+    },
+    {
+     "code": "GS-02",
+     "title": "Sign in to the content manager",
+     "tags": [
+      "Admin"
+     ],
+     "steps": [
+      "Open https://jyothisgeorge.ralfiztechnologies.workers.dev/admin/.",
+      "Sign in with your own username and password.",
+      "Look at the Dashboard."
+     ],
+     "expected": "You are asked to sign in first. After signing in the Dashboard opens and greets you by name. The left menu shows Dashboard, Content, Pages, Reports, SEO, Site settings and More."
+    },
+    {
+     "code": "GS-03",
+     "title": "Sign out",
+     "tags": [
+      "Admin"
+     ],
+     "steps": [
+      "Click 'Sign out' at the bottom of the left menu.",
+      "Press the browser Back button.",
+      "Open https://jyothisgeorge.ralfiztechnologies.workers.dev/admin/home/ directly."
+     ],
+     "expected": "You are signed out. Back does not show the content manager, and opening an admin address takes you to the sign-in page."
+    }
+   ]
+  },
+  {
+   "key": "NAV",
+   "name": "Menu, footer and links",
+   "owner": "Intern 1",
+   "after": "GEN0",
+   "tests": [
+    {
+     "code": "NAV-01",
+     "title": "Top menu",
+     "tags": [],
+     "steps": [
+      "On the website, click each item in the top menu: Home, About, Publications, Thought leadership, Board, Contact."
+     ],
+     "expected": "Each page opens. The item for the page you are on is highlighted in gold. There is no item called 'Media', 'Research' or 'Speaking'."
+    },
+    {
+     "code": "NAV-02",
+     "title": "Logo goes home",
+     "tags": [],
+     "steps": [
+      "Open the About page.",
+      "Click the round 'JG' badge and name at the top left."
+     ],
+     "expected": "The Home page opens."
+    },
+    {
+     "code": "NAV-03",
+     "title": "Footer",
+     "tags": [],
+     "steps": [
+      "Scroll to the bottom of any page.",
+      "Click each page link in the footer.",
+      "Click the outside links (Rezera, Oxford RDM, CMH Foundation, Google Scholar, LinkedIn)."
+     ],
+     "expected": "Page links open the right page. Outside links open the right website in a new tab. The footer does not show 'Oxford, United Kingdom'."
+    },
+    {
+     "code": "NAV-04",
+     "title": "Page not found",
+     "tags": [],
+     "steps": [
+      "Open https://jyothisgeorge.ralfiztechnologies.workers.dev/nothing-here.html."
+     ],
+     "expected": "A 'page not found' page in the site's own design appears, with a way back to Home. No error text or code is shown."
+    },
+    {
+     "code": "NAV-05",
+     "title": "Short address",
+     "tags": [],
+     "steps": [
+      "Open https://jyothisgeorge.ralfiztechnologies.workers.dev/about (without .html)."
+     ],
+     "expected": "It goes to the About page."
+    },
+    {
+     "code": "NAV-06",
+     "title": "Name is the same everywhere",
+     "tags": [],
+     "steps": [
+      "Open every page.",
+      "Read the headings, the top bar, the footer and the browser tab title."
+     ],
+     "expected": "The name is always 'Dr Jyothis Thomas George'. You do not find 'Dr Jyothis George' anywhere except inside published press headlines."
+    },
+    {
+     "code": "NAV-07",
+     "title": "No cookie banner",
+     "tags": [],
+     "steps": [
+      "Open the website in a new Incognito window.",
+      "Look at the top and bottom of the page."
+     ],
+     "expected": "No cookie or consent banner appears."
+    },
+    {
+     "code": "NAV-08",
+     "title": "Colours and look",
+     "tags": [],
+     "steps": [
+      "Look through all pages."
+     ],
+     "expected": "Pages use dark blue, white and gold only. The one exception is the Financial Times box on Thought leadership, which is pink. Nothing overlaps, is cut off or looks unfinished."
+    }
+   ]
+  },
+  {
+   "key": "HOME",
+   "name": "Home and About pages",
+   "owner": "Intern 1",
+   "after": "GEN0",
+   "tests": [
+    {
+     "code": "HOM-01",
+     "title": "Top of Home",
+     "tags": [],
+     "steps": [
+      "Open Home.",
+      "Read the headline and the paragraph under it.",
+      "Click 'About Dr Jyothis Thomas George'."
+     ],
+     "expected": "The headline, portrait and intro show properly. The button opens the About page."
+    },
+    {
+     "code": "HOM-02",
+     "title": "Latest videos slider",
+     "tags": [],
+     "steps": [
+      "On Home, find 'Latest videos'.",
+      "Click the right and left arrows.",
+      "Click a video.",
+      "Click 'All videos'."
+     ],
+     "expected": "The arrows move through the videos, each with a picture, date, title and 'With …' name. Clicking a video opens or plays it. 'All videos' opens the Thought leadership page."
+    },
+    {
+     "code": "HOM-03",
+     "title": "Four highlights and Recent work",
+     "tags": [],
+     "steps": [
+      "Scroll down Home.",
+      "Read the four highlights.",
+      "Click each tile under Recent work."
+     ],
+     "expected": "Four highlights show in one row (Chief Medical Officer, Visiting Professor, citations, Founder). Each Recent work tile opens the right page or link."
+    },
+    {
+     "code": "HOM-04",
+     "title": "Removed sections stay removed",
+     "tags": [],
+     "steps": [
+      "Scroll through the whole Home page."
+     ],
+     "expected": "Home has NO 'Career so far' section, NO Honours and Awards list, NO large YouTube player band and NO 'Oxford' location line."
+    },
+    {
+     "code": "ABT-01",
+     "title": "Section links on About",
+     "tags": [],
+     "steps": [
+      "Open About.",
+      "Click 'Career', then 'Recognition', then 'Background' in the row of section links."
+     ],
+     "expected": "Each link scrolls to its section. The order down the page is Career, then Recognition, then Background last."
+    },
+    {
+     "code": "ABT-02",
+     "title": "Career timeline order",
+     "tags": [],
+     "steps": [
+      "On About, go to the career timeline.",
+      "Read the stops from left to right."
+     ],
+     "expected": "Six stops run in date order from the earliest (Edinburgh, 2008) on the left to Rezera on the right. Rezera is selected when the page opens and its details show below."
+    },
+    {
+     "code": "ABT-03",
+     "title": "Choosing a role",
+     "tags": [],
+     "steps": [
+      "Click each of the six stops, one by one."
+     ],
+     "expected": "The details card changes to that role each time: name, years, job title, description and its figures. The chosen stop is highlighted."
+    },
+    {
+     "code": "ABT-04",
+     "title": "Timeline does not move by itself",
+     "tags": [],
+     "steps": [
+      "Open About and scroll to the timeline.",
+      "Watch for 20 seconds without clicking."
+     ],
+     "expected": "The stops appear once when the timeline comes into view. After that nothing changes or slides on its own."
+    },
+    {
+     "code": "ABT-05",
+     "title": "Recognition and Background",
+     "tags": [],
+     "steps": [
+      "Read the Recognition section.",
+      "Read the Background section."
+     ],
+     "expected": "Awards and qualifications are listed clearly. Background text reads properly, with no placeholder or broken text."
+    }
+   ]
+  },
+  {
+   "key": "PUB",
+   "name": "Publications, Thought leadership and Board",
+   "owner": "Intern 2",
+   "after": "GEN0",
+   "tests": [
+    {
+     "code": "PUB-01",
+     "title": "Section links on Publications",
+     "tags": [],
+     "steps": [
+      "Open Publications.",
+      "Click 'Featured papers', 'Most cited' and 'Research themes'."
+     ],
+     "expected": "Each link scrolls to its section."
+    },
+    {
+     "code": "PUB-02",
+     "title": "Paper links",
+     "tags": [],
+     "steps": [
+      "On Publications, click five different papers or their links."
+     ],
+     "expected": "Each opens the real paper (journal or PubMed page) in a new tab. No link is dead or goes to the wrong paper."
+    },
+    {
+     "code": "PUB-03",
+     "title": "Papers read correctly",
+     "tags": [],
+     "steps": [
+      "Read the featured papers and the most cited list."
+     ],
+     "expected": "Each paper shows a title, journal and year. The first featured paper is marked 'Latest'. No text is cut off."
+    },
+    {
+     "code": "TL-01",
+     "title": "Page is called Thought leadership",
+     "tags": [],
+     "steps": [
+      "Open Thought leadership.",
+      "Look at the top menu, the line 'Home / …', the large outline word and the browser tab."
+     ],
+     "expected": "All four say 'Thought leadership'. The word 'Media' does not appear."
+    },
+    {
+     "code": "TL-02",
+     "title": "Featured film",
+     "tags": [],
+     "steps": [
+      "Under 'In conversation', click the play button on 'Leading Beyond the Lab'."
+     ],
+     "expected": "The film plays. Around it are the outline words 'evidence' and 'impact' and gold shapes, with a row of organisations under it."
+    },
+    {
+     "code": "TL-03",
+     "title": "Rezera leadership videos",
+     "tags": [],
+     "steps": [
+      "Scroll to the Rezera leadership videos.",
+      "Open three of them."
+     ],
+     "expected": "Each opens or plays the right interview. Pictures, dates and titles match."
+    },
+    {
+     "code": "TL-04",
+     "title": "Financial Times box",
+     "tags": [],
+     "steps": [
+      "Scroll to 'Coverage and announcements'.",
+      "Look at the Financial Times box.",
+      "Click it or its article link."
+     ],
+     "expected": "The Financial Times box is pink. It shows the quote and the article title 'The race to launch a pill for weight loss'. The link opens the FT article."
+    },
+    {
+     "code": "TL-05",
+     "title": "Press and LinkedIn",
+     "tags": [],
+     "steps": [
+      "Click each trade press card.",
+      "Click each LinkedIn post."
+     ],
+     "expected": "Each opens the right article or post in a new tab."
+    },
+    {
+     "code": "TL-06",
+     "title": "No invitation to speak",
+     "tags": [],
+     "steps": [
+      "Scroll to the very bottom of Thought leadership."
+     ],
+     "expected": "There is no banner inviting people to book him as a speaker."
+    },
+    {
+     "code": "BRD-01",
+     "title": "Board page",
+     "tags": [],
+     "steps": [
+      "Open Board.",
+      "Read the whole page and click any links or buttons."
+     ],
+     "expected": "The page reads properly and every link works."
+    }
+   ]
+  },
+  {
+   "key": "CON",
+   "name": "Contact, visiting card and privacy",
+   "owner": "Intern 2",
+   "after": "GEN0",
+   "tests": [
+    {
+     "code": "CON-01",
+     "title": "Contact details",
+     "tags": [],
+     "steps": [
+      "Open Contact.",
+      "Count the tiles under Contact details.",
+      "Click 'Open LinkedIn' and 'Open X'."
+     ],
+     "expected": "Three tiles: Email, LinkedIn and X. There is NO 'Based in Oxford' tile. The buttons open his LinkedIn and X pages."
+    },
+    {
+     "code": "CON-02",
+     "title": "Copy the email address",
+     "tags": [],
+     "steps": [
+      "Click 'Copy address'.",
+      "Paste into a note."
+     ],
+     "expected": "The button says 'Copied'. The pasted text is a proper email address (jg@…), not 'jg [at] …'."
+    },
+    {
+     "code": "CON-03",
+     "title": "Form checks what you type",
+     "tags": [],
+     "steps": [
+      "On 'Send a message', click 'Send message' with everything empty.",
+      "Fill only the name and a wrong email like 'abc', and send again."
+     ],
+     "expected": "The message is not sent. You are told to fill in your name, a valid email, a topic and your message."
+    },
+    {
+     "code": "CON-04",
+     "title": "Topic buttons",
+     "tags": [],
+     "steps": [
+      "Click a topic such as 'Speaking' under 'Choose a topic to start'."
+     ],
+     "expected": "'Your enquiry is about' changes to that topic."
+    },
+    {
+     "code": "CON-05",
+     "title": "Send one message",
+     "tags": [],
+     "steps": [
+      "Only do this once.",
+      "Fill the form with your own name and email. Start the message with 'UAT TEST - please ignore'.",
+      "Click 'Send message'."
+     ],
+     "expected": "The button shows 'Sending…', then a thank-you line appears and the form empties. If you see 'The message could not be sent', mark Fail."
+    },
+    {
+     "code": "VC-01",
+     "title": "Visiting card",
+     "tags": [],
+     "steps": [
+      "Click the round card button at the bottom right of any page.",
+      "Click the card, or 'Show QR code'.",
+      "Click 'Close', then open it again and press Esc."
+     ],
+     "expected": "A visiting card opens with his name, qualifications and three roles. It flips to show a QR code. Close and Esc both shut it."
+    },
+    {
+     "code": "VC-02",
+     "title": "Scan the QR code",
+     "tags": [
+      "Phone"
+     ],
+     "steps": [
+      "Open the visiting card and show the QR code.",
+      "Point your phone camera at it."
+     ],
+     "expected": "The phone offers to add a contact: Dr Jyothis Thomas George, Chief Medical Officer, Rezera, with his email and website."
+    },
+    {
+     "code": "VC-03",
+     "title": "Save contact",
+     "tags": [],
+     "steps": [
+      "On the visiting card click 'Save contact'.",
+      "Open the downloaded file."
+     ],
+     "expected": "A contact file downloads and opens as his contact with name, title, organisation, email and website."
+    },
+    {
+     "code": "PRV-01",
+     "title": "Privacy notice",
+     "tags": [],
+     "steps": [
+      "Open the privacy notice from the footer or from the line under the message form.",
+      "Read it to the end."
+     ],
+     "expected": "The notice opens, has a date, and reads as finished text with no placeholder words."
+    }
+   ]
+  },
+  {
+   "key": "MOB",
+   "name": "On a phone",
+   "owner": "Intern 3",
+   "after": "GEN0",
+   "tests": [
+    {
+     "code": "MOB-01",
+     "title": "Menu on a phone",
+     "tags": [
+      "Phone"
+     ],
+     "steps": [
+      "Open the website on your phone.",
+      "Tap the menu button at the top right.",
+      "Tap each page."
+     ],
+     "expected": "The menu opens and closes cleanly and every page opens. The name at the top fits on one line beside the badge."
+    },
+    {
+     "code": "MOB-02",
+     "title": "Nothing slides sideways",
+     "tags": [
+      "Phone"
+     ],
+     "steps": [
+      "On your phone, scroll each page from top to bottom.",
+      "Try to drag the page left and right."
+     ],
+     "expected": "Pages only scroll up and down. No text or picture is cut off at the edge."
+    },
+    {
+     "code": "MOB-03",
+     "title": "Career timeline on a phone",
+     "tags": [
+      "Phone"
+     ],
+     "steps": [
+      "On your phone open About and go to the career timeline.",
+      "Tap the back arrow several times, then the forward arrow.",
+      "Tap different dots."
+     ],
+     "expected": "One line of six dots, '2008' on the left and 'Today' on the right. It opens on Rezera. The bar under the dots names the role and shows a position like '4 / 6'. Arrows and dots change the details card."
+    },
+    {
+     "code": "MOB-04",
+     "title": "Swipe the role card",
+     "tags": [
+      "Phone"
+     ],
+     "steps": [
+      "On the timeline details card, swipe left, then right."
+     ],
+     "expected": "Swiping moves to the next or previous role. Scrolling up and down still works normally."
+    },
+    {
+     "code": "MOB-05",
+     "title": "Videos and film on a phone",
+     "tags": [
+      "Phone"
+     ],
+     "steps": [
+      "On your phone, use the Latest videos slider on Home.",
+      "Play the featured film on Thought leadership."
+     ],
+     "expected": "The slider can be swiped or stepped, and the film plays."
+    },
+    {
+     "code": "MOB-06",
+     "title": "Visiting card on a phone",
+     "tags": [
+      "Phone"
+     ],
+     "steps": [
+      "On your phone tap the card button, flip the card, tap 'Save contact'."
+     ],
+     "expected": "The card fits the screen. The phone offers to add him as a contact."
+    },
+    {
+     "code": "MOB-07",
+     "title": "Content manager on a phone",
+     "tags": [
+      "Phone",
+      "Admin"
+     ],
+     "steps": [
+      "On your phone open https://jyothisgeorge.ralfiztechnologies.workers.dev/admin/ and sign in.",
+      "Open Menu, then Pages › Home.",
+      "Change nothing; just look."
+     ],
+     "expected": "Sign-in works, the menu opens, and the editing screen is readable and usable without sideways scrolling."
+    }
+   ]
+  },
+  {
+   "key": "EDT",
+   "name": "Content manager: editing pages",
+   "owner": "Intern 1",
+   "after": "GEN0",
+   "tests": [
+    {
+     "code": "EDT-01",
+     "title": "Edit a line and see it on the site",
+     "tags": [
+      "Admin"
+     ],
+     "steps": [
+      "Sign in. Open Pages › Home › Closing banner.",
+      "Add ' UAT' and your initial to the end of the heading. Click Save.",
+      "Wait 5 seconds, refresh the Home page."
+     ],
+     "expected": "A 'saved' message appears. The Home page closing banner shows your change."
+    },
+    {
+     "code": "EDT-02",
+     "title": "Put it back",
+     "tags": [
+      "Admin"
+     ],
+     "steps": [
+      "Remove what you added in EDT-01. Save.",
+      "Refresh the Home page."
+     ],
+     "expected": "The heading is back exactly as it was."
+    },
+    {
+     "code": "EDT-03",
+     "title": "Gold italic words",
+     "tags": [
+      "Admin"
+     ],
+     "steps": [
+      "Open Pages › About › Top of page.",
+      "In the heading, put stars around one word, like *word*. Save and look at the About page.",
+      "Put it back."
+     ],
+     "expected": "The word between stars shows in gold italics on the site; the stars themselves are not shown."
+    },
+    {
+     "code": "EDT-04",
+     "title": "Typed code is not run",
+     "tags": [
+      "Admin"
+     ],
+     "steps": [
+      "In Pages › Board › Top of page, add <b>UAT</b> to the intro. Save and open the Board page.",
+      "Put it back."
+     ],
+     "expected": "The page shows the characters <b>UAT</b> as plain text. Nothing turns bold and the page is not broken."
+    },
+    {
+     "code": "EDT-05",
+     "title": "Tabs on a page screen",
+     "tags": [
+      "Admin"
+     ],
+     "steps": [
+      "Open Pages › Thought leadership.",
+      "Click each tab: Top of page, Interviews, Forums, Press, LinkedIn, SEO."
+     ],
+     "expected": "Each tab opens its own fields. Nothing is lost when you move between tabs without saving."
+    },
+    {
+     "code": "EDT-06",
+     "title": "Preview page",
+     "tags": [
+      "Admin"
+     ],
+     "steps": [
+      "On any page screen click 'Preview page' (or 'Preview on site')."
+     ],
+     "expected": "That page of the website opens in a new tab."
+    },
+    {
+     "code": "EDT-07",
+     "title": "Page title and description (SEO)",
+     "tags": [
+      "Admin"
+     ],
+     "steps": [
+      "Open Pages › Contact › SEO.",
+      "Add ' UAT' to the page title. Save.",
+      "Refresh the Contact page and read the browser tab. Put it back."
+     ],
+     "expected": "The browser tab shows the changed title; after putting it back, the original."
+    },
+    {
+     "code": "EDT-08",
+     "title": "Menu label",
+     "tags": [
+      "Admin"
+     ],
+     "steps": [
+      "Open Site settings › Menu.",
+      "Change 'Board' to 'Board UAT'. Save and look at the website menu and footer.",
+      "Put it back."
+     ],
+     "expected": "The menu and footer show the new label, then the original after you put it back."
+    },
+    {
+     "code": "EDT-09",
+     "title": "Empty a required line",
+     "tags": [
+      "Admin"
+     ],
+     "steps": [
+      "Open Pages › Home › Top of page.",
+      "Delete the whole headline and Save.",
+      "Look at the Home page. Then type the headline back exactly and Save."
+     ],
+     "expected": "Either you are told the line is needed, or the site keeps showing a sensible headline. The Home page is never left with an empty gap."
+    }
+   ]
+  },
+  {
+   "key": "LST",
+   "name": "Content manager: lists (papers, videos, press, career)",
+   "owner": "Intern 2",
+   "after": "GEN0",
+   "tests": [
+    {
+     "code": "LST-01",
+     "title": "Open every list",
+     "tags": [
+      "Admin"
+     ],
+     "steps": [
+      "Sign in. Under Content open each: Publications, Videos, Press, LinkedIn posts, Investor forums, Awards, Career."
+     ],
+     "expected": "Each opens a list of its items with Edit, Delete and move buttons."
+    },
+    {
+     "code": "LST-02",
+     "title": "Add a paper",
+     "tags": [
+      "Admin"
+     ],
+     "steps": [
+      "Content › Publications › 'Add a paper' (or '+ Add').",
+      "Title: your initial + ' UAT - test paper'. Fill the other fields with test text. Click Add.",
+      "Wait 5 seconds and open the Publications page."
+     ],
+     "expected": "The new paper appears in the list and on the Publications page."
+    },
+    {
+     "code": "LST-03",
+     "title": "Edit it",
+     "tags": [
+      "Admin"
+     ],
+     "steps": [
+      "Open your test paper with Edit.",
+      "Change the title slightly. Save. Refresh the Publications page."
+     ],
+     "expected": "The page shows the changed title."
+    },
+    {
+     "code": "LST-04",
+     "title": "Move it",
+     "tags": [
+      "Admin"
+     ],
+     "steps": [
+      "In the list, use Move up and Move down on your test paper.",
+      "Refresh the Publications page."
+     ],
+     "expected": "The paper changes position in the list and on the page. Leave the real papers in their original order."
+    },
+    {
+     "code": "LST-05",
+     "title": "Delete it",
+     "tags": [
+      "Admin"
+     ],
+     "steps": [
+      "Click Delete on your test paper.",
+      "Read the question, then confirm.",
+      "Refresh the Publications page."
+     ],
+     "expected": "You are asked 'Delete this item? This cannot be undone.' After confirming it is gone from the list and the page. No real paper was removed."
+    },
+    {
+     "code": "LST-06",
+     "title": "Cancel does nothing",
+     "tags": [
+      "Admin"
+     ],
+     "steps": [
+      "Open any real item with Edit.",
+      "Change a word, then click Cancel.",
+      "Open it again."
+     ],
+     "expected": "The word is unchanged."
+    },
+    {
+     "code": "LST-07",
+     "title": "Add and remove a LinkedIn post",
+     "tags": [
+      "Admin"
+     ],
+     "steps": [
+      "Content › LinkedIn posts › add one with your initial + ' UAT' and any LinkedIn link.",
+      "Check the Thought leadership page.",
+      "Delete it."
+     ],
+     "expected": "It appears under the LinkedIn section, then disappears after deleting."
+    },
+    {
+     "code": "LST-08",
+     "title": "Career role screen",
+     "tags": [
+      "Admin"
+     ],
+     "steps": [
+      "Content › Career. Open the Rezera role.",
+      "Look at its fields. Change nothing. Click Cancel."
+     ],
+     "expected": "The role opens with its name, years, job title, description and figures. The list is shown most recent first."
+    }
+   ]
+  },
+  {
+   "key": "SET",
+   "name": "Content manager: pictures, settings and safety",
+   "owner": "Intern 3",
+   "after": "GEN0",
+   "tests": [
+    {
+     "code": "PIC-01",
+     "title": "Upload a picture",
+     "tags": [
+      "Admin"
+     ],
+     "steps": [
+      "Sign in. Open Pages › Board › Top of page (or any screen with 'Choose picture').",
+      "Click 'Choose picture' and pick a JPG photo from the laptop. Do not Save the screen.",
+      "Open More › Pictures."
+     ],
+     "expected": "The upload finishes without error. The picture appears on the Pictures screen with its size, marked 'Not used'."
+    },
+    {
+     "code": "PIC-02",
+     "title": "Wrong file type",
+     "tags": [
+      "Admin"
+     ],
+     "steps": [
+      "Click 'Choose picture' and pick a PDF or Word file."
+     ],
+     "expected": "It is refused with 'Please choose a JPG, PNG or WebP picture.'"
+    },
+    {
+     "code": "PIC-03",
+     "title": "Delete an unused picture",
+     "tags": [
+      "Admin"
+     ],
+     "steps": [
+      "More › Pictures. Click Delete on the picture you uploaded."
+     ],
+     "expected": "'The picture was deleted.' It is gone from the screen."
+    },
+    {
+     "code": "PIC-04",
+     "title": "PNG and large photo",
+     "tags": [
+      "Admin"
+     ],
+     "steps": [
+      "Upload a PNG.",
+      "Upload a large phone photo (3 MB or more).",
+      "Delete both from More › Pictures afterwards."
+     ],
+     "expected": "Both upload. The large photo is stored much smaller than the original."
+    },
+    {
+     "code": "SET-01",
+     "title": "Footer text",
+     "tags": [
+      "Admin"
+     ],
+     "steps": [
+      "Site settings › Footer. Add ' UAT' to the tagline. Save.",
+      "Refresh any website page. Put it back."
+     ],
+     "expected": "The footer shows the change, then the original."
+    },
+    {
+     "code": "SET-02",
+     "title": "Visiting card and QR code",
+     "tags": [
+      "Admin",
+      "Phone"
+     ],
+     "steps": [
+      "Site settings › Visiting card.",
+      "Look at the QR preview. Click 'Download QR code'."
+     ],
+     "expected": "A QR code picture shows and downloads. Scanning it offers his contact."
+    },
+    {
+     "code": "SET-03",
+     "title": "Small labels",
+     "tags": [
+      "Admin"
+     ],
+     "steps": [
+      "Site settings › Small labels. Change the 'Menu' label to 'Menu UAT'. Save.",
+      "Look at the website on a narrow window or phone. Put it back."
+     ],
+     "expected": "The menu button label changes, then goes back."
+    },
+    {
+     "code": "SET-04",
+     "title": "SEO screen",
+     "tags": [
+      "Admin"
+     ],
+     "steps": [
+      "Open SEO in the left menu.",
+      "Read the screen. Change nothing."
+     ],
+     "expected": "It shows the whole-site search settings and a way to open each page's title and description."
+    },
+    {
+     "code": "REP-01",
+     "title": "Reports",
+     "tags": [
+      "Admin"
+     ],
+     "steps": [
+      "Open Reports."
+     ],
+     "expected": "It shows an SEO score and a speed score for the site, a list of pages, and any issues to fix. It says visitor numbers are not collected. No error."
+    },
+    {
+     "code": "SEC-01",
+     "title": "Wrong password",
+     "tags": [
+      "Admin"
+     ],
+     "steps": [
+      "Sign out. Try to sign in ONCE with a wrong password. Then sign in correctly."
+     ],
+     "expected": "The wrong try shows a message that the details are not right and does not sign you in. The correct password then works. (Do not try more than twice.)"
+    },
+    {
+     "code": "SEC-02",
+     "title": "Change your password",
+     "tags": [
+      "Admin"
+     ],
+     "steps": [
+      "More › Password.",
+      "Try a new password of 6 characters.",
+      "Then change it to a proper one of 12+ characters, sign out and in with it. Change it back and tell Jobin if you could not."
+     ],
+     "expected": "The short password is refused. The proper one is accepted and works for signing in."
+    },
+    {
+     "code": "SEC-03",
+     "title": "Left alone",
+     "tags": [
+      "Admin"
+     ],
+     "steps": [
+      "Sign in, then leave the content manager untouched for 35 minutes.",
+      "Click any menu item."
+     ],
+     "expected": "You are asked to sign in again."
+    }
+   ]
+  },
+  {
+   "key": "E2E",
+   "name": "Backup and full journey (do together at the end)",
+   "owner": "Everyone",
+   "after": "GEN0",
+   "tests": [
+    {
+     "code": "BKP-01",
+     "title": "Download a backup",
+     "tags": [
+      "Admin"
+     ],
+     "steps": [
+      "One person: More › Backup › 'Download backup'."
+     ],
+     "expected": "A file named jyothisgeorge-content-<date>.json downloads."
+    },
+    {
+     "code": "BKP-02",
+     "title": "Restore the backup",
+     "tags": [
+      "Admin"
+     ],
+     "steps": [
+      "Everyone stop editing.",
+      "The same person changes the footer tagline to 'UAT RESTORE TEST' and saves; check the website.",
+      "Then More › Backup › Restore, choose the file from BKP-01, confirm.",
+      "Wait 10 seconds and refresh the website."
+     ],
+     "expected": "You are asked to confirm. A message says how many sections were restored. The footer tagline is back to the original."
+    },
+    {
+     "code": "E2E-01",
+     "title": "Full journey",
+     "tags": [],
+     "steps": [
+      "Together, act as a visitor: start on Home, watch a video, read About and the timeline, open a paper, read Thought leadership, open the visiting card and save the contact, then send nothing.",
+      "Then act as the owner: sign in, add a press item starting with 'UAT', see it on the site, delete it, sign out."
+     ],
+     "expected": "Everything works from start to finish with no error page, no broken picture and no leftover UAT text on the website."
+    },
+    {
+     "code": "E2E-02",
+     "title": "Clean up",
+     "tags": [],
+     "steps": [
+      "Each tester searches the website pages for 'UAT'.",
+      "Open More › Pictures and delete any test pictures."
+     ],
+     "expected": "No text containing 'UAT' is left on the website and no test pictures remain."
+    }
+   ]
+  }
+ ]
+}
