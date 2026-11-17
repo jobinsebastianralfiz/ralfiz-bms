@@ -49,7 +49,7 @@ Needs: project, m, quotes, payments, expenses, staff (bool).{% endcomment %}
     <tr><td>{{ pay.payment_date|date:"d M Y" }}</td>
       <td>{{ pay.get_kind_display }}{% if pay.notes %}<div class="bp-muted" style="font-size:.78rem">{{ pay.notes }}</div>{% endif %}</td>
       <td>{{ pay.get_method_display }}</td><td>{{ pay.reference|default:"—" }}</td>
-      <td class="num {% if pay.is_client_payment %}in{% else %}out{% endif %}">{{ cur }} {{ pay.amount|sar }}</td>
+      <td class="num {% if pay.is_client_payment %}in{% else %}out{% endif %}">{{ cur }} {{ pay.amount|sar }}{% if pay.is_converted %}<span class="bp-orig">paid {{ pay.paid_currency }} {{ pay.paid_amount|sar }} @ {{ pay.exchange_rate|floatformat:"-4" }}</span>{% endif %}</td>
       <td class="num">
         {% if pay.receipt %}<a href="{% if staff %}{% url 'bizpartners:item_file' project.pk 'payment' pay.pk %}{% else %}{% url 'bizpartners_portal:item_file' project.pk 'payment' pay.pk %}{% endif %}" target="_blank" title="Receipt"><i class="fas fa-paperclip"></i></a>{% endif %}
         {% if staff %}<a href="{% url 'bizpartners:item_edit' project.pk 'payment' pay.pk %}" title="Edit" style="margin-left:.5rem"><i class="fas fa-pen"></i></a>
@@ -67,7 +67,7 @@ Needs: project, m, quotes, payments, expenses, staff (bool).{% endcomment %}
     {% for e in expenses %}
     <tr><td>{{ e.expense_date|date:"d M Y" }}</td><td>{{ e.description }}</td>
       <td>{% if e.paid_by == 'partner' %}{{ project.partner.display_name }}{% else %}Ralfiz{% endif %}</td>
-      <td class="num">{{ cur }} {{ e.amount|sar }}</td>
+      <td class="num">{{ cur }} {{ e.amount|sar }}{% if e.is_converted %}<span class="bp-orig">paid {{ e.paid_currency }} {{ e.paid_amount|sar }} @ {{ e.exchange_rate|floatformat:"-4" }}</span>{% endif %}</td>
       <td class="num">
         {% if e.receipt %}<a href="{% if staff %}{% url 'bizpartners:item_file' project.pk 'expense' e.pk %}{% else %}{% url 'bizpartners_portal:item_file' project.pk 'expense' e.pk %}{% endif %}" target="_blank" title="Receipt"><i class="fas fa-paperclip"></i></a>{% endif %}
         {% if staff %}<a href="{% url 'bizpartners:item_edit' project.pk 'expense' e.pk %}" title="Edit" style="margin-left:.5rem"><i class="fas fa-pen"></i></a>

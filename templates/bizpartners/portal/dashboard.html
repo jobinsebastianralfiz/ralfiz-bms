@@ -47,7 +47,7 @@
       {% for pay in recent_payments %}
       <tr><td>{{ pay.payment_date|date:"d M Y" }}<div class="bp-muted" style="font-size:.78rem">{{ pay.project.title }}</div></td>
         <td>{{ pay.get_kind_display }}</td>
-        <td class="num {% if pay.is_client_payment %}in{% else %}out{% endif %}">{{ cur }} {{ pay.amount|sar }}</td></tr>
+        <td class="num {% if pay.is_client_payment %}in{% else %}out{% endif %}">{{ cur }} {{ pay.amount|sar }}{% if pay.is_converted %}<span class="bp-orig">paid {{ pay.paid_currency }} {{ pay.paid_amount|sar }} @ {{ pay.exchange_rate|floatformat:"-4" }}</span>{% endif %}</td></tr>
       {% endfor %}
     </table></div>
     {% else %}

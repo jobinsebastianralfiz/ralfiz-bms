@@ -48,3 +48,5 @@
 [data-theme="dark"] .bp-tag { filter: brightness(.9); }
 .bp-meta span + span::before { content: " · "; }
 #updates textarea { font-family: inherit; }
+.bp-convert { margin: .25rem .5rem .5rem; padding: .7rem .9rem; border-radius: 10px; background: #eef2ff; color: #3730a3; font-weight: 600; font-size: .9rem; }
+.bp-orig { display: block; font-size: .75rem; color: var(--text-muted, #6b7280); font-weight: 400; }

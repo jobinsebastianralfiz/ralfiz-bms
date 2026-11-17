@@ -18,7 +18,7 @@
   <tr><td>{{ pay.payment_date|date:"d M Y" }}</td>
     <td><a href="{% url 'bizpartners_portal:project' pay.project_id %}">{{ pay.project.title }}</a></td>
     <td>{{ pay.get_kind_display }}</td><td>{{ pay.get_method_display }}</td><td>{{ pay.reference|default:"—" }}</td>
-    <td class="num {% if pay.is_client_payment %}in{% else %}out{% endif %}">{{ cur }} {{ pay.amount|sar }}
+    <td class="num {% if pay.is_client_payment %}in{% else %}out{% endif %}">{{ cur }} {{ pay.amount|sar }}{% if pay.is_converted %}<span class="bp-orig">paid {{ pay.paid_currency }} {{ pay.paid_amount|sar }} @ {{ pay.exchange_rate|floatformat:"-4" }}</span>{% endif %}
       {% if pay.receipt %}<a href="{% url 'bizpartners_portal:item_file' pay.project_id 'payment' pay.pk %}" target="_blank" title="Receipt"><i class="fas fa-paperclip"></i></a>{% endif %}</td></tr>
   {% empty %}<tr><td colspan="6" class="pv-empty">No payments recorded yet.</td></tr>{% endfor %}
   </tbody></table></div></section>

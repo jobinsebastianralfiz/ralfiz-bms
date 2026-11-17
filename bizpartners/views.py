@@ -163,7 +163,11 @@ def item_form(request, project_pk, kind, pk=None):
     model, form_cls, label, anchor = _item(kind)
     project = get_object_or_404(JointProject.objects.select_related('partner'), pk=project_pk)
     obj = get_object_or_404(model, pk=pk, project=project) if pk else None
-    form = form_cls(request.POST or None, request.FILES or None, instance=obj)
+    extra = {} if kind == 'quote' else {'project': project}
+    if request.method == 'POST':
+        form = form_cls(request.POST, request.FILES, instance=obj, **extra)
+    else:
+        form = form_cls(instance=obj, **extra)
     if request.method == 'POST' and form.is_valid():
         obj = form.save(commit=False)
         obj.project = project

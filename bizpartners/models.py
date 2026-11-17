@@ -254,7 +254,33 @@ class JointQuote(models.Model):
         super().save(*args, **kwargs)
 
 
-class JointPayment(models.Model):
+class ConvertedAmount(models.Model):
+    """Money paid in one currency, booked in the project's currency.
+
+    A client in India pays in INR, but the project and the split are in SAR.
+    We keep what was actually paid (paid_amount in paid_currency) and the rate
+    used, and `amount` holds the converted value in the project's currency,
+    which is what every total and the profit split use.
+    """
+    amount = models.DecimalField(max_digits=14, decimal_places=2, validators=[MinValueValidator(Decimal('0.01'))],
+                                 help_text="In the project's currency (converted).")
+    paid_currency = models.CharField(max_length=3, choices=CURRENCY_CHOICES, blank=True,
+                                     help_text='Currency the money actually moved in.')
+    paid_amount = models.DecimalField(max_digits=14, decimal_places=2, null=True, blank=True)
+    exchange_rate = models.DecimalField(
+        max_digits=14, decimal_places=4, null=True, blank=True,
+        help_text="How many of the paid currency make 1 of the project's currency, e.g. 23.45 (INR per SAR).")
+
+    class Meta:
+        abstract = True
+
+    @property
+    def is_converted(self):
+        return bool(self.paid_currency and self.paid_amount is not None
+                    and self.paid_currency != self.project.currency)
+
+
+class JointPayment(ConvertedAmount):
     KIND_CHOICES = [
         ('client_to_ralfiz', 'Client paid Ralfiz'),
         ('client_to_partner', 'Client paid partner'),
@@ -273,7 +299,6 @@ class JointPayment(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     project = models.ForeignKey(JointProject, on_delete=models.CASCADE, related_name='payments')
     kind = models.CharField(max_length=20, choices=KIND_CHOICES, default='client_to_ralfiz')
-    amount = models.DecimalField(max_digits=14, decimal_places=2, validators=[MinValueValidator(Decimal('0.01'))])
     payment_date = models.DateField(default=timezone.localdate)
     method = models.CharField(max_length=20, choices=METHOD_CHOICES, default='bank_transfer')
     reference = models.CharField(max_length=120, blank=True, help_text='Transaction / cheque number')
@@ -292,13 +317,12 @@ class JointPayment(models.Model):
         return self.kind.startswith('client_')
 
 
-class JointExpense(models.Model):
+class JointExpense(ConvertedAmount):
     PAID_BY_CHOICES = [('ralfiz', 'Ralfiz'), ('partner', 'Partner')]
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     project = models.ForeignKey(JointProject, on_delete=models.CASCADE, related_name='expenses')
     description = models.CharField(max_length=255)
-    amount = models.DecimalField(max_digits=14, decimal_places=2, validators=[MinValueValidator(Decimal('0.01'))])
     expense_date = models.DateField(default=timezone.localdate)
     paid_by = models.CharField(max_length=10, choices=PAID_BY_CHOICES, default='ralfiz')
     receipt = models.FileField(upload_to=_file_path, storage=_private_storage, max_length=300, blank=True)

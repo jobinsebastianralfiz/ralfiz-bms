@@ -142,11 +142,11 @@ class StaffTests(TestCase):
         self.assertEqual(project.partner, partner)
 
         self.client.post(reverse('bizpartners:item_create', args=[project.pk, 'payment']), {
-            'kind': 'client_to_ralfiz', 'amount': '10000', 'payment_date': '2026-11-17', 'method': 'bank_transfer'})
+            'kind': 'client_to_ralfiz', 'paid_currency': 'SAR', 'paid_amount': '10000', 'payment_date': '2026-11-17', 'method': 'bank_transfer'})
         self.client.post(reverse('bizpartners:item_create', args=[project.pk, 'quote']), {
             'title': 'Phase 1', 'amount': '20000', 'quote_date': '2026-11-01', 'status': 'accepted'})
         self.client.post(reverse('bizpartners:item_create', args=[project.pk, 'expense']), {
-            'description': 'Hosting', 'amount': '500', 'expense_date': '2026-11-10', 'paid_by': 'ralfiz'})
+            'description': 'Hosting', 'paid_currency': 'SAR', 'paid_amount': '500', 'expense_date': '2026-11-10', 'paid_by': 'ralfiz'})
         self.assertEqual(project.money()['due_to_partner'], D('3800.00'))  # 40% of 9,500
 
         for url in (reverse('bizpartners:list'), reverse('bizpartners:detail', args=[partner.pk]),
@@ -163,6 +163,47 @@ class StaffTests(TestCase):
         self.assertContains(r, 'secret-pw-1')
         r = self.client.get(reverse('bizpartners:detail', args=[partner.pk]))
         self.assertNotContains(r, 'secret-pw-1')
+
+    def test_inr_payment_converted_to_sar(self):
+        partner = BusinessPartner.objects.create(name='Arfad', default_partner_share=D('50'))
+        project = JointProject.objects.create(partner=partner, title='Nous', contract_value=D('2900'))
+        url = reverse('bizpartners:item_create', args=[project.pk, 'payment'])
+        r = self.client.post(url, {'kind': 'client_to_ralfiz', 'paid_currency': 'INR', 'paid_amount': '10000',
+                                   'payment_date': '2026-11-17', 'method': 'bank_transfer'})
+        self.assertContains(r, 'Enter how many INR make 1 SAR')
+        self.assertFalse(project.payments.exists())
+
+        self.client.post(url, {'kind': 'client_to_ralfiz', 'paid_currency': 'INR', 'paid_amount': '10000',
+                               'exchange_rate': '23.5', 'payment_date': '2026-11-17', 'method': 'bank_transfer'})
+        pay = project.payments.get()
+        self.assertEqual(pay.amount, D('425.53'))
+        self.assertEqual((pay.paid_currency, pay.paid_amount, pay.exchange_rate), ('INR', D('10000'), D('23.5')))
+        self.assertEqual(project.money()['received'], D('425.53'))
+        r = self.client.get(reverse('bizpartners:project', args=[project.pk]))
+        self.assertContains(r, 'paid INR 10,000.00 @ 23.5')
+
+        # The next entry remembers INR and the rate.
+        r = self.client.get(reverse('bizpartners:item_create', args=[project.pk, 'expense']))
+        self.assertContains(r, '<option value="INR" selected>')
+        self.assertContains(r, 'value="23.5000"')
+
+        # Paid in SAR: no rate needed, booked one to one.
+        self.client.post(reverse('bizpartners:item_create', args=[project.pk, 'expense']), {
+            'description': 'Domain', 'paid_currency': 'SAR', 'paid_amount': '50', 'expense_date': '2026-11-17',
+            'paid_by': 'ralfiz'})
+        e = project.expenses.get()
+        self.assertEqual((e.amount, e.exchange_rate), (D('50'), D('1')))
+
+    def test_editing_an_old_payment_switches_it_to_inr(self):
+        partner = BusinessPartner.objects.create(name='Arfad')
+        project = JointProject.objects.create(partner=partner, title='Nous', contract_value=D('2900'))
+        pay = JointPayment.objects.create(project=project, kind='client_to_ralfiz', amount=D('10000'))
+        url = reverse('bizpartners:item_edit', args=[project.pk, 'payment', pay.pk])
+        self.assertContains(self.client.get(url), 'value="10000.00"')
+        self.client.post(url, {'kind': 'client_to_ralfiz', 'paid_currency': 'INR', 'paid_amount': '10000',
+                               'exchange_rate': '25', 'payment_date': '2026-11-17', 'method': 'bank_transfer'})
+        pay.refresh_from_db()
+        self.assertEqual(pay.amount, D('400.00'))
 
     def test_unknown_item_kind_404(self):
         partner = BusinessPartner.objects.create(name='X')
