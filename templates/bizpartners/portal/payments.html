@@ -5,10 +5,15 @@
 {% with cur=partner.currency %}
 <h1 style="font-size:1.35rem; margin:0 0 1rem">Payments</h1>
 <div class="bp-money">
-  <div class="pos"><small>Received from clients</small><strong><span class="bp-cur">{{ cur }}</span>{{ t.received|sar }}</strong></div>
-  <div class="neg"><small>Pending from clients</small><strong><span class="bp-cur">{{ cur }}</span>{{ t.pending_from_client|sar }}</strong></div>
+  {% if t.fixed_projects %}
+  <div><small>Due to Ralfiz so far</small><strong><span class="bp-cur">{{ cur }}</span>{{ t.fixed_due|sar }}</strong><span>Agreed amounts{% if t.amc_due or t.server_due %}, AMC and server{% endif %}</span></div>
+  <div class="pos"><small>Paid to Ralfiz</small><strong><span class="bp-cur">{{ cur }}</span>{{ t.fixed_paid|sar }}</strong></div>
+  <div class="{% if t.fixed_balance > 0 %}neg{% endif %}"><small>Balance to pay</small><strong><span class="bp-cur">{{ cur }}</span>{{ t.fixed_balance|sar }}</strong>{% if t.split_projects %}<span>On fixed-amount projects</span>{% endif %}</div>
+  {% endif %}
+  {% if t.split_projects %}
+  <div class="pos"><small>Received from clients</small><strong><span class="bp-cur">{{ cur }}</span>{{ t.received|sar }}</strong><span>{{ cur }} {{ t.pending_from_client|sar:0 }} pending</span></div>
   <div><small>Ralfiz paid you</small><strong><span class="bp-cur">{{ cur }}</span>{{ t.paid_to_partner|sar }}</strong></div>
-  <div><small>You paid Ralfiz</small><strong><span class="bp-cur">{{ cur }}</span>{{ t.paid_to_ralfiz|sar }}</strong></div>
+  {% endif %}
 </div>
 {% include 'bizpartners/_balance.html' with due=t.due_to_partner viewer='partner' fixed=t.only_fixed mixed=t.mixed %}
 <section class="pv-card"><div class="bp-table-wrap"><table class="bp-table">

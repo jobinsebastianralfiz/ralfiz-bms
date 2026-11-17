@@ -6,7 +6,7 @@
   <div style="display:flex; justify-content:space-between; gap:1rem; flex-wrap:wrap; align-items:flex-start">
     <div style="min-width:0">
       <h1 style="font-size:1.4rem; margin:0">{{ project.title }}</h1>
-      <div class="bp-muted">{% if project.client_name %}<span>For {{ project.client_name }}</span>{% endif %}{% if project.start_date %}<span>Started {{ project.start_date|date:"d M Y" }}</span>{% endif %}{% if project.deadline %}<span>Due {{ project.deadline|date:"d M Y" }}</span>{% endif %}</div>
+      <div class="bp-muted bp-meta">{% if project.client_name %}<span>For {{ project.client_name }}</span>{% endif %}{% if project.start_date %}<span>Started {{ project.start_date|date:"d M Y" }}</span>{% endif %}{% if project.deadline %}<span>Due {{ project.deadline|date:"d M Y" }}</span>{% endif %}</div>
     </div>
     <span class="bp-tag {{ project.status }}" style="font-size:.85rem">{{ project.get_status_display }}</span>
   </div>

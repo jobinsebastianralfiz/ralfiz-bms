@@ -141,6 +141,24 @@ class FixedDealTests(TestCase):
         p.recurring_end_date = date(2026, 3, 1)
         self.assertEqual(p.periods_due(date(2026, 1, 1), 'monthly', today=date(2026, 12, 1)), 3)
 
+    def test_next_charge_date_and_calendar(self):
+        p = self.project
+        self.assertEqual(p.next_charge_date(date(2026, 1, 1), 'yearly', today=date(2026, 11, 17)), date(2027, 1, 1))
+        self.assertEqual(p.next_charge_date(date(2026, 1, 31), 'monthly', today=date(2026, 2, 1)), date(2026, 2, 28))
+        self.assertEqual(p.next_charge_date(date(2026, 12, 1), 'yearly', today=date(2026, 11, 17)), date(2026, 12, 1))
+        p.recurring_end_date = date(2026, 12, 31)
+        self.assertIsNone(p.next_charge_date(date(2026, 1, 1), 'yearly', today=date(2026, 11, 17)))
+        p.recurring_end_date = None
+        p.save()
+        user = User.objects.create_user('arfad2', password='pass12345')
+        self.partner.user = user
+        self.partner.save()
+        self.client.force_login(user)
+        r = self.client.get(reverse('bizpartners_portal:dashboard'))
+        self.assertContains(r, 'Hello, Arfad')
+        self.assertContains(r, 'AMC due')
+        self.assertContains(r, 'Server charges due')
+
     def test_fixed_money_ignores_split_and_client_price(self):
         with self.settings(TIME_ZONE='Asia/Kolkata'):
             from unittest import mock
@@ -172,7 +190,7 @@ class FixedDealTests(TestCase):
         self.client.force_login(user)
         r = self.client.get(reverse('bizpartners_portal:dashboard'))
         self.assertContains(r, 'All settled')
-        self.assertContains(r, 'Paid to Ralfiz')
+        self.assertContains(r, 'Due to Ralfiz so far')
         self.assertNotContains(r, 'profit share')
         r = self.client.get(reverse('bizpartners_portal:project', args=[self.project.pk]))
         self.assertContains(r, 'Agreed amount for Ralfiz')

@@ -3,63 +3,134 @@
 {% block title %}Dashboard{% endblock %}
 {% block content %}
 {% with cur=partner.currency %}
-<section class="pv-welcome" style="grid-template-columns: 1fr;">
-  <div class="pv-welcome-text">
-    <div class="pv-eyebrow">{{ greeting|upper }}</div>
-    <h1>Welcome back, <span class="pv-grad">{{ partner.name }}</span></h1>
-    {% if partner.company_name %}<p class="pv-company">{{ partner.company_name }}</p>{% endif %}
-    <p class="pv-muted">Our projects together: status, what is due and what has been paid. All amounts in {{ cur }}.</p>
+<header class="pp-head">
+  <div>
+    <h1>Hello, {{ first_name }}</h1>
+    <p>Today is {{ today|date:"l, j F Y" }}</p>
   </div>
+  <div class="pp-head-actions">
+    <a class="pp-icon-btn" href="{% url 'bizpartners_portal:projects' %}" aria-label="All projects"><i class="fas fa-magnifying-glass"></i></a>
+    {% if company_email %}<a class="pp-dark-btn" href="mailto:{{ company_email }}?subject={{ 'New project enquiry'|urlencode }}"><i class="fas fa-plus"></i><span>Start a new project</span></a>{% endif %}
+  </div>
+</header>
+
+<section class="pp-cards" aria-label="Projects">
+  {% for p in cards %}
+  <a class="pp-card {{ p.tone }}" href="{% url 'bizpartners_portal:project' p.pk %}">
+    <div class="pp-card-top">
+      <span class="pp-chips" aria-hidden="true">{% if p.client_name %}<span>{{ p.client_name|make_list|first|upper }}</span>{% endif %}<span>R</span></span>
+      <span class="pp-card-status">{{ p.get_status_display }}</span>
+    </div>
+    <h3>{{ p.title }}</h3>
+    <div class="pp-card-meta">
+      <span>{% if p.client_name %}{{ p.client_name }}{% elif p.is_fixed %}Fixed deal{% else %}Split {{ p.ratio_label }}{% endif %}</span>
+      <span>{{ p.progress }}%</span>
+    </div>
+    <div class="pp-card-bar"><i style="width: {{ p.progress }}%"></i></div>
+  </a>
+  {% empty %}
+  <div class="pp-card empty" style="grid-column: 1 / -1">No projects yet. The Ralfiz team adds them here.</div>
+  {% endfor %}
 </section>
 
-<div class="bp-money">
-  <div><small>Projects</small><strong>{{ t.projects }}</strong><span>{{ active|length }} running now</span></div>
-  {% if t.fixed_projects %}
-  <div><small>Due to Ralfiz so far</small><strong><span class="bp-cur">{{ cur }}</span>{{ t.fixed_due|sar:0 }}</strong><span>Agreed amounts{% if t.amc_due or t.server_due %} + AMC / server{% endif %}</span></div>
-  <div class="pos"><small>Paid to Ralfiz</small><strong><span class="bp-cur">{{ cur }}</span>{{ t.fixed_paid|sar:0 }}</strong></div>
-  <div class="{% if t.fixed_balance > 0 %}neg{% endif %}"><small>Balance to pay</small><strong><span class="bp-cur">{{ cur }}</span>{{ t.fixed_balance|sar:0 }}</strong><span>{% if t.split_projects %}On fixed-amount projects{% else %}Across all projects{% endif %}</span></div>
-  {% endif %}
-  {% if t.split_projects %}
-  <div class="pos"><small>Received from clients</small><strong><span class="bp-cur">{{ cur }}</span>{{ t.received|sar:0 }}</strong><span>{{ cur }} {{ t.pending_from_client|sar:0 }} still pending</span></div>
-  <div><small>Your profit share so far</small><strong><span class="bp-cur">{{ cur }}</span>{{ t.partner_share|sar:0 }}</strong><span>{{ cur }} {{ t.projected_partner_share|sar:0 }} when all is paid</span></div>
-  {% endif %}
-</div>
-
-{% include 'bizpartners/_balance.html' with due=t.due_to_partner viewer='partner' fixed=t.only_fixed mixed=t.mixed %}
-
-<div class="pv-grid">
-  <section class="pv-card">
-    <header class="pv-card-head"><h2><span class="pv-head-ico violet"><i class="fas fa-folder"></i></span>Projects</h2><a href="{% url 'bizpartners_portal:projects' %}">View all <i class="fas fa-arrow-right"></i></a></header>
-    {% for p in projects %}
-    <a class="pv-proj" href="{% url 'bizpartners_portal:project' p.pk %}">
-      <span class="pv-thumb"><span>{{ p.title|make_list|first|upper }}</span></span>
-      <span class="pv-proj-body">
-        <span class="pv-proj-top"><strong>{{ p.title }}</strong><span class="bp-tag {{ p.status }}">{{ p.get_status_display }}</span></span>
-        <span class="pv-muted">{% if p.client_name %}{{ p.client_name }} · {% endif %}{% if p.is_fixed %}Agreed {{ cur }} {{ p.contract_value|sar:0 }}{% else %}Split {{ p.ratio_label }}{% endif %}</span>
-        <span class="pv-proj-meta">{% if p.is_fixed %}<span><i class="fas fa-coins"></i> {{ cur }} {{ p.m.fixed_paid|sar:0 }} of {{ p.m.fixed_due|sar:0 }} paid</span>{% else %}<span><i class="fas fa-coins"></i> {{ cur }} {{ p.m.received|sar:0 }} of {{ p.contract_value|sar:0 }} received</span>{% endif %}
-          {% if p.deadline %}<span><i class="far fa-calendar"></i> Due {{ p.deadline|date:"d M Y" }}</span>{% endif %}</span>
-        <span class="pv-bar-row"><span class="pv-bar"><i style="width: {{ p.progress }}%"></i></span>{{ p.progress }}%</span>
-      </span>
-    </a>
-    {% empty %}
-    <p class="pv-empty">No projects yet. The Ralfiz team adds them here.</p>
-    {% endfor %}
-  </section>
-
-  <section class="pv-card">
-    <header class="pv-card-head"><h2><span class="pv-head-ico orange"><i class="fas fa-money-bill-transfer"></i></span>Recent payments</h2><a href="{% url 'bizpartners_portal:payments' %}">View all <i class="fas fa-arrow-right"></i></a></header>
-    {% if recent_payments %}
-    <div class="bp-table-wrap"><table class="bp-table">
-      {% for pay in recent_payments %}
-      <tr><td>{{ pay.payment_date|date:"d M Y" }}<div class="bp-muted" style="font-size:.78rem">{{ pay.project.title }}</div></td>
-        <td>{{ pay.get_kind_display }}</td>
-        <td class="num {% if pay.is_client_payment %}in{% else %}out{% endif %}">{{ cur }} {{ pay.amount|sar }}{% if pay.is_converted %}<span class="bp-orig">paid {{ pay.paid_currency }} {{ pay.paid_amount|sar }} @ {{ pay.exchange_rate|floatformat:"-4" }}</span>{% endif %}</td></tr>
+<div class="pp-grid">
+  <section>
+    <h2 class="pp-h2">Payments due <a href="{% url 'bizpartners_portal:projects' %}">All projects</a></h2>
+    <div class="pp-dues">
+      {% for p in projects|slice:":5" %}
+      <a class="pp-due {{ p.tone }}" href="{% url 'bizpartners_portal:project' p.pk %}#payments">
+        <span class="pp-due-body">
+          <strong>{{ p.title }}</strong>
+          <span>{% if p.to_pay > 0 %}{{ cur }} {{ p.to_pay|sar }} to pay{% elif p.to_pay < 0 %}{% if p.is_fixed %}{{ cur }} {{ p.to_pay|absval|sar }} paid in advance{% else %}Ralfiz owes you {{ cur }} {{ p.to_pay|absval|sar }}{% endif %}{% else %}All paid{% endif %}</span>
+        </span>
+        <span class="pp-check {% if p.to_pay <= 0 %}on{% endif %}" aria-label="{% if p.to_pay <= 0 %}Nothing to pay{% else %}Payment due{% endif %}">{% if p.to_pay <= 0 %}<i class="fas fa-check"></i>{% endif %}</span>
+      </a>
+      {% empty %}
+      <p class="pp-cal-empty">Nothing here yet.</p>
       {% endfor %}
-    </table></div>
-    {% else %}
-    <p class="pv-empty">No payments recorded yet.</p>
-    {% endif %}
+    </div>
+  </section>
+
+  <section>
+    <h2 class="pp-h2">Statistics</h2>
+    <div class="pp-stats">
+      {% if t.fixed_projects %}
+      <div class="pp-stat"><strong><small>{{ cur }}</small>{{ t.fixed_due|sar:0 }}</strong><span>Due to Ralfiz so far</span></div>
+      <div class="pp-stat"><strong><small>{{ cur }}</small>{{ t.fixed_paid|sar:0 }}</strong><span>Paid</span></div>
+      {% else %}
+      <div class="pp-stat"><strong><small>{{ cur }}</small>{{ t.received|sar:0 }}</strong><span>Received from clients</span></div>
+      <div class="pp-stat"><strong><small>{{ cur }}</small>{{ t.partner_share|sar:0 }}</strong><span>Your profit share</span></div>
+      {% endif %}
+      <a class="pp-stat link" href="{% url 'bizpartners_portal:payments' %}"><i class="fas fa-plus"></i><span>All payments</span></a>
+    </div>
+
+    <div class="pp-promo {% if balance <= 0 %}settled{% endif %}">
+      {% if balance > 0 %}
+      <div class="big">{{ cur }} {{ balance|sar:0 }} <small>to pay</small></div>
+      <div class="label">Balance to Ralfiz</div>
+      <p>{% if t.mixed %}Fixed amounts and profit shares due so far, minus payments.{% else %}Agreed amounts{% if t.amc_due or t.server_due %}, AMC and server charges{% endif %} due so far, minus payments.{% endif %}</p>
+      {% elif balance < 0 %}
+      <div class="big">{{ cur }} {{ balance|absval|sar:0 }}</div>
+      <div class="label">{% if t.only_fixed %}Paid in advance{% else %}Ralfiz owes you{% endif %}</div>
+      <p>{% if t.only_fixed %}You have paid more than is due so far.{% else %}Your share of the profit on money received.{% endif %}</p>
+      {% else %}
+      <div class="big">All settled</div>
+      <div class="label">Nothing to pay right now</div>
+      <p>Thank you. Everything due so far has been paid.</p>
+      {% endif %}
+      <svg viewBox="0 0 170 120" aria-hidden="true">
+        <circle cx="120" cy="56" r="44" fill="#FBE6D8"/>
+        <path d="M58 120l40-62 22 30 14-18 30 50z" fill="#F6844F"/>
+        <path d="M98 58l22 30-14 32H58z" fill="#6B3A8C" opacity=".9"/>
+        <rect x="112" y="16" width="34" height="24" rx="4" fill="#fff" stroke="#1E1B2E" stroke-width="2"/>
+        <path d="M118 34l7-7 5 4 9-9" fill="none" stroke="#F6844F" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+        <circle cx="88" cy="38" r="9" fill="#1E1B2E"/>
+        <path d="M80 50h16l4 30H76z" fill="#8FCFD1"/>
+        <path d="M96 56l16-14" stroke="#1E1B2E" stroke-width="3" stroke-linecap="round"/>
+      </svg>
+    </div>
   </section>
 </div>
+{% endwith %}
+{% endblock %}
+
+{% block aside %}
+{% with cur=partner.currency %}
+<aside class="pp-cal" aria-label="Calendar">
+  <div class="pp-cal-head"><h2>Calendar</h2><span><i class="far fa-bell"></i></span></div>
+
+  <div class="pp-cal-group">Coming up</div>
+  {% for day in upcoming %}
+  <div class="pp-cal-day">
+    <div class="pp-cal-date"><span>{{ day.date|date:"M j, Y" }}</span><span>{{ day.date|timeuntil }}</span></div>
+    {% for e in day.events %}
+    <div class="pp-ev">
+      <span class="pp-ev-when">{% if e.amount %}{{ e.amount|sar:0 }}{% else %}<i class="far fa-flag"></i>{% endif %}</span>
+      <span class="pp-ev-bar {{ e.tone }}"></span>
+      <span class="pp-ev-body"><span>{{ e.what }}</span><strong>{{ e.title }}</strong></span>
+    </div>
+    {% endfor %}
+  </div>
+  {% empty %}
+  <p class="pp-cal-empty">No deadlines or charges coming up.</p>
+  {% endfor %}
+
+  <div class="pp-cal-group">Recent payments</div>
+  {% for day in recent %}
+  <div class="pp-cal-day">
+    <div class="pp-cal-date"><span>{{ day.date|date:"M j, Y" }}</span></div>
+    {% for e in day.events %}
+    <div class="pp-ev">
+      <span class="pp-ev-when">{{ e.amount|sar:0 }}</span>
+      <span class="pp-ev-bar {{ e.tone }}"></span>
+      <span class="pp-ev-body"><span>{{ e.what }}</span><strong>{{ e.title }}</strong></span>
+    </div>
+    {% endfor %}
+  </div>
+  {% empty %}
+  <p class="pp-cal-empty">No payments yet.</p>
+  {% endfor %}
+  <p class="pp-cal-empty" style="font-size:11px">Amounts in {{ cur }}.</p>
+</aside>
 {% endwith %}
 {% endblock %}

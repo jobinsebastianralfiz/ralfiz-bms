@@ -214,6 +214,24 @@ class JointProject(models.Model):
         months = (today.year - start.year) * 12 + today.month - start.month - (1 if today.day < start.day else 0)
         return months // self.CYCLE_MONTHS.get(cycle, 12) + 1
 
+    @staticmethod
+    def add_months(d, months):
+        import calendar
+        y, m = divmod(d.month - 1 + months, 12)
+        y, m = d.year + y, m + 1
+        return d.replace(year=y, month=m, day=min(d.day, calendar.monthrange(y, m)[1]))
+
+    def next_charge_date(self, start, cycle, today=None):
+        """When the next AMC/server period starts (and falls due), or None if it has ended."""
+        today = today or timezone.localdate()
+        if not start:
+            return None
+        n = self.periods_due(start, cycle, today)
+        nxt = self.add_months(start, n * self.CYCLE_MONTHS.get(cycle, 12))
+        if self.recurring_end_date and nxt > self.recurring_end_date:
+            return None
+        return nxt
+
     def recurring_lines(self):
         """AMC and server charges due so far, one dict each (only the opted ones)."""
         lines = []
@@ -224,7 +242,7 @@ class JointProject(models.Model):
                 n = self.periods_due(start, cycle)
                 lines.append({'key': key, 'label': label, 'amount': amount, 'cycle': cycle,
                               'cycle_label': dict(self.CYCLE_CHOICES).get(cycle, cycle), 'start': start,
-                              'periods': n, 'due': amount * n})
+                              'periods': n, 'due': amount * n, 'next': self.next_charge_date(start, cycle)})
         return lines
 
     def _fixed_money(self, pays_by_purpose, pays):

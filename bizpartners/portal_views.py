@@ -79,19 +79,60 @@ def _projects(partner):
     return projects
 
 
+CARD_TONES = ('plum', 'teal', 'coral')
+
+
+def _calendar(projects, payments, today):
+    """Right-hand column: what falls due next, then the latest payments, grouped by date."""
+    upcoming = []
+    horizon = today.replace(year=today.year + 1)
+    for p in projects:
+        if p.status in ('completed', 'cancelled') and not p.is_fixed:
+            continue
+        for line in p.m.get('recurring', []):
+            if line['next'] and line['next'] <= horizon:
+                upcoming.append({'date': line['next'], 'title': p.title, 'what': f"{line['label']} due",
+                                 'amount': line['amount'], 'tone': p.tone})
+        if p.deadline and p.deadline >= today and p.status not in ('completed', 'cancelled'):
+            upcoming.append({'date': p.deadline, 'title': p.title, 'what': 'Delivery deadline', 'tone': p.tone})
+    upcoming.sort(key=lambda e: e['date'])
+    tones = {p.pk: p.tone for p in projects}
+    recent = [{'date': pay.payment_date, 'title': pay.project.title, 'what': pay.get_kind_display(),
+               'amount': pay.amount, 'tone': tones.get(pay.project_id, 'plum')} for pay in payments]
+
+    def group(events):
+        out = []
+        for e in events:
+            if out and out[-1]['date'] == e['date']:
+                out[-1]['events'].append(e)
+            else:
+                out.append({'date': e['date'], 'events': [e]})
+        return out
+    return group(upcoming[:8]), group(recent)
+
+
 @partner_required
 def dashboard(request):
     partner = request.partner
     projects = _projects(partner)
     live = [p for p in projects if p.status != 'cancelled']
+    # Running projects first, then the rest, newest first within each.
+    live.sort(key=lambda p: (p.status not in JointProject.ACTIVE, p.status == 'completed'))
+    for i, p in enumerate(live):
+        p.tone = CARD_TONES[i % len(CARD_TONES)]
+        if p.is_fixed:
+            p.to_pay = p.m['fixed_balance']
+        else:
+            p.to_pay = -p.m['due_to_partner']
     t = partner.totals(live)
-    hour = timezone.localtime().hour
+    today = timezone.localdate()
+    payments = list(JointPayment.objects.filter(project__partner=partner).select_related('project')[:5])
+    upcoming, recent = _calendar(live, payments, today)
     return render(request, 'bizpartners/portal/dashboard.html', _ctx(
-        request, 'dashboard', t=t,
-        greeting='Good morning' if hour < 12 else ('Good afternoon' if hour < 17 else 'Good evening'),
-        active=[p for p in live if p.status in JointProject.ACTIVE],
-        projects=live[:6],
-        recent_payments=JointPayment.objects.filter(project__partner=partner).select_related('project')[:6],
+        request, 'dashboard', t=t, today=today,
+        first_name=partner.name.split()[0] if partner.name else partner.display_name,
+        cards=live[:3], projects=live, upcoming=upcoming, recent=recent,
+        balance=-t['due_to_partner'],
     ))
 
 
