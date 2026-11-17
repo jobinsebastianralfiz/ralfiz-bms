@@ -8,39 +8,5 @@
   {% if icon %}</div></div>{% endif %}
   {% if action_label %}{% if action_href %}<a class="sv-btn sv-hero-action" href="{{ action_href }}"><i class="fas {{ action_icon|default:'fa-plus' }}"></i> {{ action_label }}</a>{% else %}<button type="button" class="sv-btn sv-hero-action" id="{{ action_id }}"><i class="fas {{ action_icon|default:'fa-plus' }}"></i> {{ action_label }}</button>{% endif %}{% endif %}
   {% if tagline %}<div class="sv-tagline" aria-hidden="true">{{ tagline }}</div>{% endif %}
-  <svg class="sv-hero-art" viewBox="0 0 300 150" fill="none" aria-hidden="true">
-    {% if art == 'calendar' %}
-    <rect x="96" y="30" width="150" height="104" rx="14" fill="#fff" stroke="#D9CFFB" stroke-width="2"/>
-    <rect x="96" y="30" width="150" height="30" rx="14" fill="#8B5CF6"/><rect x="96" y="46" width="150" height="14" fill="#8B5CF6"/>
-    <g fill="#6D3DF2"><rect x="118" y="20" width="8" height="22" rx="4"/><rect x="146" y="20" width="8" height="22" rx="4"/><rect x="174" y="20" width="8" height="22" rx="4"/><rect x="202" y="20" width="8" height="22" rx="4"/></g>
-    <g fill="#E4DCFD"><rect x="110" y="72" width="22" height="16" rx="4"/><rect x="138" y="72" width="22" height="16" rx="4"/><rect x="166" y="72" width="22" height="16" rx="4"/><rect x="110" y="96" width="22" height="16" rx="4"/><rect x="138" y="96" width="22" height="16" rx="4"/></g>
-    <circle cx="222" cy="108" r="28" fill="#fff" stroke="#6D3DF2" stroke-width="5"/><path d="M222 92v17l11 7" stroke="#6D3DF2" stroke-width="5" stroke-linecap="round"/>
-    {% elif art == 'bell' %}
-    <g transform="rotate(-6 210 80)"><rect x="196" y="62" width="84" height="62" rx="9" fill="#fff" stroke="#D9CFFB" stroke-width="2"/>
-    <rect x="208" y="76" width="16" height="12" rx="3" fill="#C9BCF8"/><rect x="230" y="78" width="38" height="7" rx="3.5" fill="#D6CDFA"/>
-    <rect x="208" y="96" width="60" height="6" rx="3" fill="#E4DCFD"/><rect x="208" y="108" width="44" height="6" rx="3" fill="#E4DCFD"/></g>
-    <g transform="rotate(10 160 80)">
-      <path d="M160 26c-25 0-40 19-40 44v24l-10 14h100l-10-14V70c0-25-15-44-40-44z" fill="#7C4DF4"/>
-      <path d="M134 50c4-10 12-16 22-18" stroke="#B79CFB" stroke-width="7" stroke-linecap="round" fill="none"/>
-      <rect x="106" y="104" width="108" height="12" rx="6" fill="#5B2EDB"/>
-      <circle cx="160" cy="124" r="11" fill="#5B2EDB"/><circle cx="160" cy="22" r="7" fill="#5B2EDB"/>
-    </g>
-    <circle cx="196" cy="30" r="11" fill="#F05252" stroke="#fff" stroke-width="3"/>
-    <g fill="#A78BFA"><circle cx="104" cy="40" r="4"/><rect x="236" y="22" width="6" height="16" rx="3" transform="rotate(30 239 30)" fill="#F59E0B"/><rect x="110" y="20" width="12" height="6" rx="3" transform="rotate(-25 116 23)" fill="#F472B6"/></g>
-    {% elif art == 'check' %}
-    <g transform="rotate(-5 175 85)"><rect x="104" y="36" width="150" height="96" rx="10" fill="#2A1F5C"/><rect x="112" y="44" width="134" height="80" rx="5" fill="#EEEAFD"/>
-    <g fill="#C9BCF8"><rect x="122" y="56" width="70" height="8" rx="4"/><rect x="122" y="72" width="100" height="8" rx="4"/><rect x="122" y="88" width="84" height="8" rx="4"/><rect x="122" y="104" width="60" height="8" rx="4"/></g></g>
-    <circle cx="236" cy="34" r="20" fill="#8B5CF6"/><path d="M227 34l6 6 12-12" stroke="#fff" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
-    {% else %}
-    <g transform="rotate(-5 175 80)"><rect x="104" y="30" width="150" height="96" rx="10" fill="#2A1F5C"/><rect x="112" y="38" width="134" height="80" rx="5" fill="#EEEAFD"/>
-    <circle cx="128" cy="54" r="7" fill="#C9BCF8"/><rect x="142" y="50" width="60" height="7" rx="3" fill="#D6CDFA"/>
-    <rect x="122" y="68" width="48" height="40" rx="5" fill="#fff"/><rect x="178" y="68" width="58" height="40" rx="5" fill="#fff"/>
-    <rect x="188" y="92" width="7" height="10" rx="2" fill="#A78BFA"/><rect x="199" y="84" width="7" height="18" rx="2" fill="#8B5CF6"/><rect x="210" y="76" width="7" height="26" rx="2" fill="#6D3DF2"/></g>
-    {% endif %}
-    <g transform="translate(40 52)">
-      <g fill="#3DAA5C"><ellipse cx="26" cy="36" rx="7" ry="24" transform="rotate(-26 26 36)"/><ellipse cx="42" cy="30" rx="7" ry="27" transform="rotate(4 42 30)"/><ellipse cx="58" cy="38" rx="7" ry="23" transform="rotate(30 58 38)"/></g>
-      <g fill="#2E8B4A"><ellipse cx="16" cy="54" rx="6" ry="18" transform="rotate(-52 16 54)"/><ellipse cx="68" cy="56" rx="6" ry="18" transform="rotate(54 68 56)"/></g>
-      <path d="M22 66h40l-5 32H27z" fill="#fff"/><rect x="19" y="62" width="46" height="8" rx="3" fill="#E4DEFB"/>
-    </g>
-  </svg>
+  {% include 'staff/_board_art.html' with art_class='sv-hero-art' %}
 </section>

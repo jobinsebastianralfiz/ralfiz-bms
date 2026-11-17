@@ -160,3 +160,81 @@
   .sd-promo .big, .sd-promo p, .sd-promo-bar { max-width: 62%; }
 }
 [data-theme="dark"] .sd-stat.link i, [data-theme="dark"] .sd-check.on { background: var(--sf-primary); border-color: var(--sf-primary); }
+
+/* ───── Every other staff page in the same look ───── */
+:root:not([data-theme="dark"]) {
+  --sf-primary: #6B3A8C; --sf-primary-text: #5A2E78;
+  --sf-primary-dim: rgba(107, 58, 140, .10); --sf-primary-line: rgba(107, 58, 140, .36); --sf-primary-ring: rgba(107, 58, 140, .16);
+  --sf-line: #ECE7EF; --sf-line-soft: #F1EDF3;
+}
+[data-theme="dark"] {
+  --sf-primary: #B184D3; --sf-primary-text: #CDA9EA;
+  --sf-primary-dim: rgba(177, 132, 211, .16); --sf-primary-line: rgba(177, 132, 211, .42);
+}
+/* Page banners: warm panel with the same illustration as Home. */
+.sv-hero { background: var(--sd-cal); border: 0; border-radius: 18px; }
+[data-theme="dark"] .sv-hero { background: var(--sd-cal); }
+.sv-hero .sv-hero-art { width: 120px; right: 10px; bottom: 0; opacity: 1; }
+.sv-grad { background: linear-gradient(95deg, #F6844F, #6B3A8C); -webkit-background-clip: text; background-clip: text; }
+[data-theme="dark"] .sv-grad { background: linear-gradient(95deg, #F6A27A, #C9A2E6); -webkit-background-clip: text; background-clip: text; }
+.sv-tagline { color: var(--sd-plum); }
+.sv-eyebrow { color: var(--sd-coral); }
+.sv-hero-icon { background: var(--sd-plum) !important; color: #fff !important; }
+@media (min-width: 1024px) {
+  .sv-hero { min-height: 150px; }
+  .sv-hero .sv-hero-art { width: 210px; right: 30px; }
+}
+
+/* Buttons: dark ink, like Home. */
+.sf-btn:not(.sf-btn-ghost):not(.sf-btn-danger), .sv-btn { background: #1E1B2E; border-color: #1E1B2E; color: #fff; border-radius: 12px; box-shadow: none; }
+.sf-btn:not(.sf-btn-ghost):not(.sf-btn-danger):hover, .sv-btn:hover { background: #2F2A45; color: #fff; filter: none; }
+[data-theme="dark"] .sf-btn:not(.sf-btn-ghost):not(.sf-btn-danger), [data-theme="dark"] .sv-btn { background: var(--sf-primary); border-color: var(--sf-primary); color: #1E1B2E; }
+.sv-outline-btn { border-color: var(--sd-dash); }
+.sv-outline-btn:hover { background: var(--sd-soft); }
+.sf-chip.active, .sv-chip-row .sf-chip.active { background: #1E1B2E; border-color: #1E1B2E; color: #fff; }
+[data-theme="dark"] .sf-chip.active, [data-theme="dark"] .sv-chip-row .sf-chip.active { background: var(--sf-primary); border-color: var(--sf-primary); color: #1E1B2E; }
+
+/* Cards and tiles: soft, borderless tiles; white cards with a gentle shadow. */
+.sv-card, .sf-card, .sf-item { border-color: var(--sf-line-soft); border-radius: 16px; box-shadow: var(--sd-shadow); }
+.sv-stat, .sf-stat { background: var(--sd-soft); border-color: transparent; box-shadow: none; border-radius: 14px; }
+.sv-ico { border-radius: 50%; }
+.sv-ico.violet, .sv-head-ico { background: var(--sd-plum); color: #fff; }
+.sv-ico.green, .sv-ico.blue, .sv-head-ico.blue { background: var(--sd-teal); color: #fff; }
+.sv-ico.orange, .sv-ico.red { background: var(--sd-coral); color: #fff; }
+[data-theme="dark"] .sv-ico.violet, [data-theme="dark"] .sv-head-ico { background: var(--sd-plum); }
+[data-theme="dark"] .sv-ico.green, [data-theme="dark"] .sv-ico.blue, [data-theme="dark"] .sv-head-ico.blue { background: var(--sd-teal); }
+[data-theme="dark"] .sv-ico.orange, [data-theme="dark"] .sv-ico.red { background: var(--sd-coral); }
+.sv-chip { background: var(--sd-soft); color: var(--sd-plum); }
+.sv-bar i, .sf-progress i { background: linear-gradient(90deg, var(--sd-coral), var(--sd-plum)) !important; }
+@media (min-width: 1024px) {
+  .sv-side-menu a.active { color: var(--sf-text); }
+  .sv-search { background: var(--sd-soft); border-color: transparent; border-radius: 12px; }
+  .sf-main { padding: 28px 34px 40px; }
+}
+
+/* Sidebar scrolls with the page: no inner scrollbar. */
+@media (min-width: 1024px) {
+  .sv-side { position: relative; top: 0; height: auto; align-self: stretch; overflow: visible; }
+}
+/* Home: empty task list fills its column instead of leaving a blank area. */
+.sd-task-empty { border: 1.5px dashed var(--sd-dash); border-radius: 16px; padding: 28px 22px; text-align: center; display: flex; flex-direction: column; align-items: center; gap: 6px; min-height: 260px; justify-content: center; }
+.sd-task-empty-ico { width: 46px; height: 46px; border-radius: 50%; background: var(--sd-teal); color: #fff; display: inline-flex; align-items: center; justify-content: center; font-size: 18px; margin-bottom: 6px; }
+.sd-task-empty strong { font-size: 15px; }
+.sd-task-empty > span { font-size: 12.5px; color: var(--sf-text-3); max-width: 300px; }
+.sd-task-empty-links { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; margin-top: 12px; }
+.sd-task-empty-links a { display: inline-flex; align-items: center; gap: 7px; height: 34px; padding: 0 14px; border-radius: 10px; background: var(--sd-soft); color: var(--sf-text); font-size: 12.5px; font-weight: 600; text-decoration: none; }
+.sd-task-empty-links a:hover { background: var(--sf-primary-dim); }
+/* XP wallet card in the board palette (plum, warm glow) instead of bright violet. */
+.sv-board .xp-hero { background:
+    radial-gradient(420px 220px at 92% -10%, rgba(246,132,79,.35), transparent 60%),
+    radial-gradient(360px 260px at -5% 110%, rgba(109,189,192,.25), transparent 60%),
+    linear-gradient(135deg, #6B3A8C 0%, #55306F 55%, #3A1F4E 100%);
+  box-shadow: 0 18px 40px -20px rgba(70, 35, 90, .55); border-radius: 18px; }
+/* Leftover violet pieces on inner pages. */
+.sv-meter i { background: var(--sd-plum); }
+.sv-meter.green i, .sv-meter.blue i { background: var(--sd-teal); }
+.sv-meter.red i { background: var(--sd-coral); }
+.sv-board .sv-today-bar { background: linear-gradient(120deg, #6B3A8C, #8A55AD 60%, #F6844F 140%); box-shadow: 0 14px 30px -18px rgba(70, 35, 90, .55); }
+.sv-update-ico.violet { background: var(--sd-soft); color: var(--sd-plum); }
+.sv-bar-col i { background: var(--sd-plum); }
+.sv-today-btn { color: var(--sd-plum); }

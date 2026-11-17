@@ -59,7 +59,16 @@
         <span class="sd-check {% if t.done %}on{% endif %}" title="{{ t.status }}">{% if t.done %}<i class="fas fa-check"></i>{% endif %}</span>
       </a>
       {% empty %}
-      <p class="sd-empty">No open tasks. New work from your lead will appear here.</p>
+      <div class="sd-task-empty">
+        <span class="sd-task-empty-ico"><i class="fas fa-check"></i></span>
+        <strong>You're all caught up</strong>
+        <span>No open tasks right now. New work from your lead will appear here.</span>
+        <div class="sd-task-empty-links">
+          <a href="{% url 'staff:daily_report' %}"><i class="fas fa-pen-to-square"></i> Daily update</a>
+          <a href="{% url 'staff:work_list' %}"><i class="fas fa-list-check"></i> Past tasks</a>
+          <a href="{% url 'notes_home' %}"><i class="fas fa-book-open"></i> Notes</a>
+        </div>
+      </div>
       {% endfor %}
     </div>
   </section>
