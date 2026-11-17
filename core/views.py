@@ -43,10 +43,13 @@ def interiodesk_guide(request):
 def _staff_portal_user(user):
     """True if this user belongs in the staff portal rather than the admin site.
 
-    Interns and employees get /staff/. Owners, partners, team members and
-    Django staff/superusers keep the existing admin dashboard.
+    Interns and employees get /staff/, even when they are also a team member
+    (linked for the project board): business pages stay closed to them, and
+    the staff portal already lists their board tasks. Owners, partners, team
+    members without a staff profile and Django staff/superusers keep the
+    admin site.
     """
-    if user.is_staff or user.is_superuser or hasattr(user, 'team_profile'):
+    if user.is_staff or user.is_superuser:
         return False
     from employees.models import Employee
     return Employee.objects.filter(
@@ -56,11 +59,11 @@ def _staff_portal_user(user):
 
 def login_view(request):
     if request.user.is_authenticated:
+        if _staff_portal_user(request.user):
+            return redirect('staff:dashboard')
         # Check if user is a team member
         if hasattr(request.user, 'team_profile'):
             return redirect('team_dashboard')
-        if _staff_portal_user(request.user):
-            return redirect('staff:dashboard')
         if student_only(request.user):
             return redirect('academy:home')
         return redirect('dashboard')
@@ -77,12 +80,12 @@ def login_view(request):
             next_url = safe_next(request, request.GET.get('next', ''), '')
             if next_url.startswith('/oauth/authorize/'):
                 return redirect(next_url)
+            # Interns/employees belong in the staff portal (even if also a team member)
+            if _staff_portal_user(user) and not request.GET.get('next'):
+                return redirect('staff:dashboard')
             # Redirect team members to their dashboard
             if hasattr(user, 'team_profile'):
                 return redirect('team_dashboard')
-            # Interns/employees belong in the staff portal
-            if _staff_portal_user(user) and not request.GET.get('next'):
-                return redirect('staff:dashboard')
             # Academy students have their own portal
             if student_only(user):
                 return redirect('academy:home')
@@ -263,10 +266,39 @@ def world_clock(request):
     })
 
 
+def own_home_url(user):
+    """Where a login that may not see business figures belongs, or None if it may.
+
+    Only owners, partners (Employee role) and Django staff see company figures
+    (pulse.scoping.resolve_scope). Everyone else has a home of their own: the
+    staff portal for an active employee or intern (even one who is also a
+    team member, for the project board), else the team member dashboard.
+    """
+    from pulse.scoping import resolve_scope
+    scope = resolve_scope(user)
+    if scope.can_query_business:
+        return None
+    if scope.employee is not None:
+        return reverse('staff:dashboard')
+    if getattr(user, 'team_profile', None) is not None:
+        return reverse('team_dashboard')
+    return ''
+
+
 @login_required
 def dashboard(request):
     import json
     from dateutil.relativedelta import relativedelta
+
+    # This page is all company money (income, bank balances, dues). It used to
+    # check only that someone was signed in, so a staff login that is also a
+    # team member could open it from Notes' "Back" link.
+    home = own_home_url(request.user)
+    if home is not None:
+        if home:
+            return redirect(home)
+        from django.http import HttpResponseForbidden
+        return HttpResponseForbidden('This account has no dashboard. Ask the office to set up your access.')
 
     # Get summary stats
     total_clients = Client.objects.filter(is_active=True).count()

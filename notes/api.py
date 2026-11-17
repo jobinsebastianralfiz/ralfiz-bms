@@ -90,9 +90,12 @@ class MeView(NotesAPIMixin, APIView):
         user = request.user
         if not (user.is_authenticated and IsNotesUser().has_permission(request, self)):
             return Response({"user": None})
-        from core.views import _staff_portal_user
+        from core.views import own_home_url
 
-        staff_portal = _staff_portal_user(user)
+        # Only accounts allowed to see company figures go back to the BMS
+        # dashboard; staff (even those also on the project board) go to their portal.
+        own = own_home_url(user)
+        staff_portal = bool(own) and own == reverse("staff:dashboard")
         return Response({
             "user": {
                 "id": user.id,
@@ -102,8 +105,8 @@ class MeView(NotesAPIMixin, APIView):
                 "is_staff": user.is_staff,
             },
             # Where "Back to Ralfiz" goes: interns and employees live in the staff portal.
-            "home_url": reverse("staff:dashboard") if staff_portal else "/",
-            "home_label": "Staff portal" if staff_portal else "Ralfiz BMS",
+            "home_url": own or "/",
+            "home_label": "Staff portal" if staff_portal else ("My dashboard" if own else "Ralfiz BMS"),
             "logout_url": reverse("logout"),
         })
 

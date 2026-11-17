@@ -618,6 +618,62 @@ class StaffConfinementTests(StaffPortalTestBase):
         self.assertEqual(self.client.get('/invoices/').status_code, 200)
 
 
+class ClassicDashboardFiguresTests(StaffPortalTestBase):
+    """The classic dashboard is company money. A staff login that is also a
+    team member (for the project board) is not confined, and reached it from
+    Notes' "Back" link; it must go to its own home instead."""
+
+    def _team_employee(self):
+        from core.models import TeamMember
+        TeamMember.objects.create(name='Ravi', user=self.employee_user)
+        self.client.login(username='portal_employee', password=self.password)
+
+    def test_team_member_employee_is_sent_to_the_staff_portal(self):
+        self._team_employee()
+        for path in ('/', '/dashboard/legacy/'):
+            res = self.client.get(path, follow=True)
+            self.assertEqual(res.redirect_chain[-1][0], reverse('staff:dashboard'), path)
+            self.assertNotContains(res, 'Cash in Hand')
+
+    def test_notes_back_link_goes_to_the_staff_portal(self):
+        self._team_employee()
+        me = self.client.get('/notes/api/auth/me/').json()
+        self.assertEqual(me['home_url'], reverse('staff:dashboard'))
+
+    def test_team_member_without_staff_profile_gets_the_team_dashboard(self):
+        from core.models import TeamMember
+        u = User.objects.create_user(username='tm_only', password=self.password)
+        TeamMember.objects.create(name='Designer', user=u)
+        self.client.login(username='tm_only', password=self.password)
+        res = self.client.get('/dashboard/legacy/')
+        self.assertRedirects(res, reverse('team_dashboard'), fetch_redirect_response=False)
+
+    def test_team_member_employee_cannot_open_business_pages(self):
+        self._team_employee()
+        for path in ('/invoices/', '/clients/', '/payments/', '/expenses/', '/my-dashboard/'):
+            res = self.client.get(path)
+            self.assertRedirects(res, reverse('staff:dashboard'), fetch_redirect_response=False,
+                                 msg_prefix=path)
+        self.assertEqual(self.client.get(reverse('staff:dashboard')).status_code, 200)
+
+    def test_team_member_employee_logs_in_to_the_staff_portal(self):
+        from core.models import TeamMember
+        TeamMember.objects.create(name='Ravi', user=self.employee_user)
+        res = self.client.post(reverse('login'), {'username': 'portal_employee', 'password': self.password})
+        self.assertRedirects(res, reverse('staff:dashboard'))
+
+    def test_plain_login_without_a_role_is_refused(self):
+        self.client.login(username='portal_outsider', password=self.password)
+        self.assertEqual(self.client.get('/dashboard/legacy/').status_code, 403)
+
+    def test_owner_still_sees_the_classic_dashboard(self):
+        owner = User.objects.create_user(username='cd_owner', password=self.password)
+        Employee.objects.create(user=owner, employee_id='EMPT09', employment_type='fulltime',
+                                role='owner', status='active')
+        self.client.login(username='cd_owner', password=self.password)
+        self.assertEqual(self.client.get('/dashboard/legacy/').status_code, 200)
+
+
 class StaffPortalWorkFileTests(StaffPortalTestBase):
     """Interns attach ZIPs, PDFs and images to work updates from /staff/work/<id>/."""
 
