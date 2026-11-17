@@ -111,7 +111,11 @@ def partner_login_toggle(request, pk):
 def project_form(request, partner_pk=None, pk=None):
     project = get_object_or_404(JointProject.objects.select_related('partner'), pk=pk) if pk else None
     partner = project.partner if project else get_object_or_404(BusinessPartner, pk=partner_pk)
-    initial = {} if project else {'partner_share_percent': partner.default_partner_share}
+    initial = {}
+    if not project:
+        last = partner.projects.order_by('-created_at').first()
+        initial = {'partner_share_percent': partner.default_partner_share,
+                   'deal_type': last.deal_type if last else 'fixed'}
     form = JointProjectForm(request.POST or None, instance=project, initial=initial)
     if request.method == 'POST' and form.is_valid():
         project = form.save(commit=False)

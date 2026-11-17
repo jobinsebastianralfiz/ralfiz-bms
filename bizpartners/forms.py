@@ -31,14 +31,40 @@ class BusinessPartnerForm(_Styled):
 class JointProjectForm(_Styled):
     class Meta:
         model = JointProject
-        fields = ['title', 'client_name', 'status', 'progress', 'contract_value', 'partner_share_percent',
+        fields = ['title', 'client_name', 'status', 'progress', 'deal_type', 'contract_value',
+                  'partner_share_percent', 'amc_amount', 'amc_cycle', 'amc_start_date', 'server_amount',
+                  'server_cycle', 'server_start_date', 'recurring_end_date',
                   'start_date', 'deadline', 'completed_date', 'linked_project', 'description', 'notes',
                   'internal_notes']
-        widgets = {'start_date': DATE, 'deadline': DATE, 'completed_date': DATE}
+        widgets = {'start_date': DATE, 'deadline': DATE, 'completed_date': DATE, 'amc_start_date': DATE,
+                   'server_start_date': DATE, 'recurring_end_date': DATE}
         labels = {'notes': 'Notes for the partner'}
+
+    deal_toggle = True
+    SPLIT_ONLY = ('partner_share_percent',)
+    FIXED_ONLY = ('amc_amount', 'amc_cycle', 'amc_start_date', 'server_amount', 'server_cycle',
+                  'server_start_date', 'recurring_end_date')
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        for name in self.SPLIT_ONLY:
+            self.fields[name].widget.attrs['data-deal'] = 'split'
+        for name in self.FIXED_ONLY:
+            self.fields[name].widget.attrs['data-deal'] = 'fixed'
+            self.fields[name].required = False
+
+    def clean(self):
+        data = super().clean()
+        for key in ('amc', 'server'):
+            if data.get(f'{key}_amount') is None:
+                data[f'{key}_amount'] = Decimal('0')
+            if not data.get(f'{key}_cycle'):
+                data[f'{key}_cycle'] = 'yearly'
+        if data.get('deal_type') == 'fixed':
+            for key, label in (('amc', 'AMC'), ('server', 'server charges')):
+                if (data.get(f'{key}_amount') or 0) > 0 and not data.get(f'{key}_start_date'):
+                    self.add_error(f'{key}_start_date', f'Pick the date the {label} start.')
+        return data
         self.fields['linked_project'].queryset = self.fields['linked_project'].queryset.select_related('client')
         self.fields['linked_project'].required = False
 
@@ -122,10 +148,22 @@ class _ConvertedForm(_Styled):
 class JointPaymentForm(_ConvertedForm):
     class Meta:
         model = JointPayment
-        fields = ['kind', 'paid_currency', 'paid_amount', 'exchange_rate', 'payment_date', 'method',
+        fields = ['kind', 'purpose', 'paid_currency', 'paid_amount', 'exchange_rate', 'payment_date', 'method',
                   'reference', 'notes', 'receipt']
         widgets = {'payment_date': DATE}
         labels = {'kind': 'Who paid whom'}
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['purpose'].required = False
+        if self.instance._state.adding and not self.is_bound and self.project.is_fixed:
+            self.initial['kind'] = 'partner_to_ralfiz'
+
+    def clean(self):
+        data = super().clean()
+        if not data.get('purpose'):
+            data['purpose'] = 'development'
+        return data
 
 
 class JointExpenseForm(_ConvertedForm):

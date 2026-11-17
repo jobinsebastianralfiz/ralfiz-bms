@@ -1,3 +1,4 @@
+from datetime import date
 from decimal import Decimal as D
 
 from django.contrib.auth.models import User
@@ -121,6 +122,63 @@ class PortalTests(TestCase):
         self.assertRedirects(r, reverse('bizpartners_portal:login'), fetch_redirect_response=False)
 
 
+class FixedDealTests(TestCase):
+    def setUp(self):
+        self.partner = BusinessPartner.objects.create(name='Arfad')
+        self.project = JointProject.objects.create(
+            partner=self.partner, title='Nous', deal_type='fixed', contract_value=D('2900'),
+            amc_amount=D('500'), amc_cycle='yearly', amc_start_date=date(2026, 1, 1),
+            server_amount=D('50'), server_cycle='monthly', server_start_date=date(2026, 10, 15))
+
+    def test_periods_due(self):
+        p = self.project
+        self.assertEqual(p.periods_due(date(2026, 1, 1), 'yearly', today=date(2025, 12, 31)), 0)
+        self.assertEqual(p.periods_due(date(2026, 1, 1), 'yearly', today=date(2026, 1, 1)), 1)
+        self.assertEqual(p.periods_due(date(2026, 1, 1), 'yearly', today=date(2027, 1, 1)), 2)
+        self.assertEqual(p.periods_due(date(2026, 10, 15), 'monthly', today=date(2026, 11, 14)), 1)
+        self.assertEqual(p.periods_due(date(2026, 10, 15), 'monthly', today=date(2026, 11, 15)), 2)
+        self.assertEqual(p.periods_due(date(2026, 1, 31), 'quarterly', today=date(2026, 4, 30)), 1)
+        p.recurring_end_date = date(2026, 3, 1)
+        self.assertEqual(p.periods_due(date(2026, 1, 1), 'monthly', today=date(2026, 12, 1)), 3)
+
+    def test_fixed_money_ignores_split_and_client_price(self):
+        with self.settings(TIME_ZONE='Asia/Kolkata'):
+            from unittest import mock
+            with mock.patch('django.utils.timezone.localdate', return_value=date(2026, 11, 17)):
+                pay(self.project, 'client_to_partner', '9999')  # partner's own deal with the client
+                JointPayment.objects.create(project=self.project, kind='partner_to_ralfiz', amount=D('2000'))
+                JointPayment.objects.create(project=self.project, kind='partner_to_ralfiz', amount=D('500'),
+                                            purpose='amc')
+                m = JointProject.objects.get(pk=self.project.pk).money()
+        self.assertTrue(m['is_fixed'])
+        self.assertEqual(m['amc_due'], D('500'))       # one yearly period from 1 Jan 2026
+        self.assertEqual(m['server_due'], D('100'))    # 15 Oct and 15 Nov
+        self.assertEqual(m['fixed_due'], D('3500'))
+        self.assertEqual(m['fixed_paid'], D('2500'))
+        self.assertEqual(m['fixed_balance'], D('1000'))
+        self.assertEqual(m['due_to_partner'], D('-1000'))
+        self.assertEqual(m['partner_share'], D('0'))
+        lines = {l['key']: l for l in m['recurring']}
+        self.assertEqual((lines['amc']['paid'], lines['server']['paid']), (D('500'), D('0')))
+        self.assertEqual(m['fixed_agreed_paid'], D('2000'))
+
+    def test_partner_sees_fixed_balance(self):
+        user = User.objects.create_user('arfad', password='pass12345')
+        self.partner.user = user
+        self.partner.save()
+        JointPayment.objects.create(project=self.project, kind='partner_to_ralfiz', amount=D('2900'))
+        self.project.amc_amount = self.project.server_amount = D('0')
+        self.project.save()
+        self.client.force_login(user)
+        r = self.client.get(reverse('bizpartners_portal:dashboard'))
+        self.assertContains(r, 'All settled')
+        self.assertContains(r, 'Paid to Ralfiz')
+        self.assertNotContains(r, 'profit share')
+        r = self.client.get(reverse('bizpartners_portal:project', args=[self.project.pk]))
+        self.assertContains(r, 'Agreed amount for Ralfiz')
+        self.assertNotContains(r, 'Profit split')
+
+
 class StaffTests(TestCase):
     def setUp(self):
         self.staff = User.objects.create_superuser('boss', 'b@x.in', 'pass12345')
@@ -137,7 +195,7 @@ class StaffTests(TestCase):
         self.assertContains(r, 'value="40.00"')
         r = self.client.post(reverse('bizpartners:project_create', args=[partner.pk]), {
             'title': 'Clinic app', 'client_name': 'Al Noor', 'status': 'in_progress', 'progress': '30',
-            'contract_value': '20000', 'partner_share_percent': '40'})
+            'deal_type': 'split', 'contract_value': '20000', 'partner_share_percent': '40'})
         project = JointProject.objects.get()
         self.assertEqual(project.partner, partner)
 
@@ -204,6 +262,26 @@ class StaffTests(TestCase):
                                'exchange_rate': '25', 'payment_date': '2026-11-17', 'method': 'bank_transfer'})
         pay.refresh_from_db()
         self.assertEqual(pay.amount, D('400.00'))
+
+    def test_fixed_project_form(self):
+        partner = BusinessPartner.objects.create(name='Arfad')
+        url = reverse('bizpartners:project_create', args=[partner.pk])
+        base = {'title': 'Nous', 'status': 'in_progress', 'progress': '90', 'deal_type': 'fixed',
+                'contract_value': '2900', 'partner_share_percent': '50'}
+        r = self.client.post(url, {**base, 'amc_amount': '500'})
+        self.assertContains(r, 'Pick the date the AMC start')
+        self.client.post(url, {**base, 'amc_amount': '500', 'amc_cycle': 'yearly', 'amc_start_date': '2026-12-01'})
+        project = JointProject.objects.get()
+        self.assertTrue(project.is_fixed)
+        self.assertEqual((project.server_amount, project.server_cycle), (D('0'), 'yearly'))
+        r = self.client.get(reverse('bizpartners:item_create', args=[project.pk, 'payment']))
+        self.assertContains(r, '<option value="partner_to_ralfiz" selected>')
+        r = self.client.get(reverse('bizpartners:project', args=[project.pk]))
+        self.assertContains(r, 'What is charged')
+        self.assertContains(r, 'Not started yet')
+        # The next project for this partner starts as a fixed deal too.
+        r = self.client.get(url)
+        self.assertContains(r, '<option value="fixed" selected>')
 
     def test_unknown_item_kind_404(self):
         partner = BusinessPartner.objects.create(name='X')

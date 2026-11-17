@@ -8,18 +8,24 @@
     <div class="pv-eyebrow">{{ greeting|upper }}</div>
     <h1>Welcome back, <span class="pv-grad">{{ partner.name }}</span></h1>
     {% if partner.company_name %}<p class="pv-company">{{ partner.company_name }}</p>{% endif %}
-    <p class="pv-muted">Our joint projects, what the clients have paid, and your share of the profit. All amounts in {{ cur }}.</p>
+    <p class="pv-muted">Our projects together: status, what is due and what has been paid. All amounts in {{ cur }}.</p>
   </div>
 </section>
 
 <div class="bp-money">
   <div><small>Projects</small><strong>{{ t.projects }}</strong><span>{{ active|length }} running now</span></div>
-  <div><small>Contract value</small><strong><span class="bp-cur">{{ cur }}</span>{{ t.contract_value|sar:0 }}</strong><span>Total the clients will pay</span></div>
+  {% if t.fixed_projects %}
+  <div><small>Due to Ralfiz so far</small><strong><span class="bp-cur">{{ cur }}</span>{{ t.fixed_due|sar:0 }}</strong><span>Agreed amounts{% if t.amc_due or t.server_due %} + AMC / server{% endif %}</span></div>
+  <div class="pos"><small>Paid to Ralfiz</small><strong><span class="bp-cur">{{ cur }}</span>{{ t.fixed_paid|sar:0 }}</strong></div>
+  <div class="{% if t.fixed_balance > 0 %}neg{% endif %}"><small>Balance to pay</small><strong><span class="bp-cur">{{ cur }}</span>{{ t.fixed_balance|sar:0 }}</strong><span>{% if t.split_projects %}On fixed-amount projects{% else %}Across all projects{% endif %}</span></div>
+  {% endif %}
+  {% if t.split_projects %}
   <div class="pos"><small>Received from clients</small><strong><span class="bp-cur">{{ cur }}</span>{{ t.received|sar:0 }}</strong><span>{{ cur }} {{ t.pending_from_client|sar:0 }} still pending</span></div>
-  <div><small>Your share so far</small><strong><span class="bp-cur">{{ cur }}</span>{{ t.partner_share|sar:0 }}</strong><span>{{ cur }} {{ t.projected_partner_share|sar:0 }} when all is paid</span></div>
+  <div><small>Your profit share so far</small><strong><span class="bp-cur">{{ cur }}</span>{{ t.partner_share|sar:0 }}</strong><span>{{ cur }} {{ t.projected_partner_share|sar:0 }} when all is paid</span></div>
+  {% endif %}
 </div>
 
-{% include 'bizpartners/_balance.html' with due=t.due_to_partner viewer='partner' %}
+{% include 'bizpartners/_balance.html' with due=t.due_to_partner viewer='partner' fixed=t.only_fixed mixed=t.mixed %}
 
 <div class="pv-grid">
   <section class="pv-card">
@@ -29,8 +35,8 @@
       <span class="pv-thumb"><span>{{ p.title|make_list|first|upper }}</span></span>
       <span class="pv-proj-body">
         <span class="pv-proj-top"><strong>{{ p.title }}</strong><span class="bp-tag {{ p.status }}">{{ p.get_status_display }}</span></span>
-        <span class="pv-muted">{% if p.client_name %}{{ p.client_name }} · {% endif %}Split {{ p.ratio_label }}</span>
-        <span class="pv-proj-meta"><span><i class="fas fa-coins"></i> {{ cur }} {{ p.m.received|sar:0 }} of {{ p.contract_value|sar:0 }} received</span>
+        <span class="pv-muted">{% if p.client_name %}{{ p.client_name }} · {% endif %}{% if p.is_fixed %}Agreed {{ cur }} {{ p.contract_value|sar:0 }}{% else %}Split {{ p.ratio_label }}{% endif %}</span>
+        <span class="pv-proj-meta">{% if p.is_fixed %}<span><i class="fas fa-coins"></i> {{ cur }} {{ p.m.fixed_paid|sar:0 }} of {{ p.m.fixed_due|sar:0 }} paid</span>{% else %}<span><i class="fas fa-coins"></i> {{ cur }} {{ p.m.received|sar:0 }} of {{ p.contract_value|sar:0 }} received</span>{% endif %}
           {% if p.deadline %}<span><i class="far fa-calendar"></i> Due {{ p.deadline|date:"d M Y" }}</span>{% endif %}</span>
         <span class="pv-bar-row"><span class="pv-bar"><i style="width: {{ p.progress }}%"></i></span>{{ p.progress }}%</span>
       </span>

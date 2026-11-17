@@ -1,13 +1,13 @@
-{% load sar %}{% comment %}Who owes whom on a project or across a partner. Needs: due (Decimal), cur, viewer ('staff'|'partner').{% endcomment %}
+{% load sar %}{% comment %}Who owes whom on a project or across a partner. Needs: due (Decimal), cur, viewer ('staff'|'partner'), fixed (bool: only fixed deals), mixed (bool: both kinds).{% endcomment %}
 {% if due > 0 %}
 <div class="bp-balance owe-partner"><i class="fas fa-arrow-right-arrow-left"></i>
   <div><strong>{% if viewer == 'partner' %}Ralfiz owes you {{ cur }} {{ due|sar }}{% else %}We owe the partner {{ cur }} {{ due|sar }}{% endif %}</strong>
-  <div style="font-size:.82rem">{% if viewer == 'partner' %}Your{% else %}Their{% endif %} share of the profit on client money received so far, plus expenses {% if viewer == 'partner' %}you{% else %}they{% endif %} paid, minus what {% if viewer == 'partner' %}you{% else %}they{% endif %} already hold.</div></div></div>
+  <div style="font-size:.82rem">{% if mixed %}Across all projects: what is due on fixed-amount projects and the profit shares on split projects, minus what has been paid.{% else %}{% if fixed %}More has been paid than is due so far (an advance).{% else %}{% if viewer == 'partner' %}Your{% else %}Their{% endif %} share of the profit on client money received so far, plus expenses {% if viewer == 'partner' %}you{% else %}they{% endif %} paid, minus what {% if viewer == 'partner' %}you{% else %}they{% endif %} already hold.{% endif %}{% endif %}</div></div></div>
 {% elif due < 0 %}
 <div class="bp-balance owe-ralfiz"><i class="fas fa-arrow-right-arrow-left"></i>
   <div><strong>{% if viewer == 'partner' %}You owe Ralfiz {{ cur }} {{ due|absval|sar }}{% else %}The partner owes us {{ cur }} {{ due|absval|sar }}{% endif %}</strong>
-  <div style="font-size:.82rem">{% if viewer == 'partner' %}You hold{% else %}They hold{% endif %} more client money than {% if viewer == 'partner' %}your{% else %}their{% endif %} share of the profit.</div></div></div>
+  <div style="font-size:.82rem">{% if mixed %}Across all projects: what is due on fixed-amount projects and the profit shares on split projects, minus what has been paid.{% else %}{% if fixed %}The agreed amount{% if viewer == 'partner' %} for Ralfiz{% endif %} plus any AMC and server charges due so far, minus what has been paid.{% else %}{% if viewer == 'partner' %}You hold{% else %}They hold{% endif %} more client money than {% if viewer == 'partner' %}your{% else %}their{% endif %} share of the profit.{% endif %}{% endif %}</div></div></div>
 {% else %}
 <div class="bp-balance settled"><i class="fas fa-circle-check"></i><div><strong>All settled</strong>
-  <div style="font-size:.82rem">Neither side owes the other anything on the money received so far.</div></div></div>
+  <div style="font-size:.82rem">{% if mixed %}Across all projects: what is due on fixed-amount projects and the profit shares on split projects, minus what has been paid.{% else %}{% if fixed %}Everything due so far has been paid.{% else %}Neither side owes the other anything on the money received so far.{% endif %}{% endif %}</div></div></div>
 {% endif %}

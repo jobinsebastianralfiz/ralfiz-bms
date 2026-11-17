@@ -10,7 +10,7 @@
   <div><small>Ralfiz paid you</small><strong><span class="bp-cur">{{ cur }}</span>{{ t.paid_to_partner|sar }}</strong></div>
   <div><small>You paid Ralfiz</small><strong><span class="bp-cur">{{ cur }}</span>{{ t.paid_to_ralfiz|sar }}</strong></div>
 </div>
-{% include 'bizpartners/_balance.html' with due=t.due_to_partner viewer='partner' %}
+{% include 'bizpartners/_balance.html' with due=t.due_to_partner viewer='partner' fixed=t.only_fixed mixed=t.mixed %}
 <section class="pv-card"><div class="bp-table-wrap"><table class="bp-table">
   <thead><tr><th>Date</th><th>Project</th><th>Who paid whom</th><th>Method</th><th>Reference</th><th class="num">Amount</th></tr></thead>
   <tbody>

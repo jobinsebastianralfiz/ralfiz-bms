@@ -16,28 +16,33 @@
 </div>
 
 <div class="bp-money">
-  <div><small>Projects</small><strong>{{ t.projects }}</strong><span>Default split {{ partner.default_ralfiz_share|floatformat:"-2" }} / {{ partner.default_partner_share|floatformat:"-2" }}</span></div>
-  <div><small>Contract value</small><strong><span class="bp-cur">{{ cur }}</span>{{ t.contract_value|sar }}</strong></div>
-  <div class="pos"><small>Received from clients</small><strong><span class="bp-cur">{{ cur }}</span>{{ t.received|sar }}</strong></div>
-  <div class="{% if t.pending_from_client > 0 %}neg{% endif %}"><small>Pending from clients</small><strong><span class="bp-cur">{{ cur }}</span>{{ t.pending_from_client|sar }}</strong></div>
-  <div><small>Ralfiz share so far</small><strong><span class="bp-cur">{{ cur }}</span>{{ t.ralfiz_share|sar }}</strong></div>
-  <div><small>Partner share so far</small><strong><span class="bp-cur">{{ cur }}</span>{{ t.partner_share|sar }}</strong></div>
+  <div><small>Projects</small><strong>{{ t.projects }}</strong><span>{{ t.fixed_projects }} fixed · {{ t.split_projects }} split</span></div>
+  {% if t.fixed_projects %}
+  <div><small>Due to us so far</small><strong><span class="bp-cur">{{ cur }}</span>{{ t.fixed_due|sar }}</strong><span>Agreed{% if t.amc_due or t.server_due %} + AMC {{ t.amc_due|sar:0 }} + server {{ t.server_due|sar:0 }}{% endif %}</span></div>
+  <div class="pos"><small>Paid to us</small><strong><span class="bp-cur">{{ cur }}</span>{{ t.fixed_paid|sar }}</strong></div>
+  <div class="{% if t.fixed_balance > 0 %}neg{% endif %}"><small>Balance (fixed deals)</small><strong><span class="bp-cur">{{ cur }}</span>{{ t.fixed_balance|sar }}</strong></div>
+  {% endif %}
+  {% if t.split_projects %}
+  <div><small>Split: contract value</small><strong><span class="bp-cur">{{ cur }}</span>{{ t.split_contract_value|sar }}</strong></div>
+  <div class="pos"><small>Split: received from clients</small><strong><span class="bp-cur">{{ cur }}</span>{{ t.received|sar }}</strong><span>{{ cur }} {{ t.pending_from_client|sar:0 }} pending</span></div>
+  <div><small>Split: Ralfiz / partner share</small><strong><span class="bp-cur">{{ cur }}</span>{{ t.ralfiz_share|sar:0 }}</strong><span>Partner {{ cur }} {{ t.partner_share|sar:0 }}</span></div>
+  {% endif %}
 </div>
-{% include 'bizpartners/_balance.html' with due=t.due_to_partner viewer='staff' %}
+{% include 'bizpartners/_balance.html' with due=t.due_to_partner viewer='staff' fixed=t.only_fixed mixed=t.mixed %}
 
 <div class="row">
   <div class="col-lg-8" style="padding:.5rem">
     <div class="card"><div class="card-body" style="padding-bottom:.25rem"><h3 style="font-size:1rem; font-weight:700; margin:0">Joint projects</h3></div>
       <div class="bp-table-wrap"><table class="bp-table">
-        <thead><tr><th>Project</th><th>Status</th><th>Split</th><th class="num">Contract</th><th class="num">Received</th><th class="num">Balance</th></tr></thead>
+        <thead><tr><th>Project</th><th>Status</th><th>Deal</th><th class="num">Amount</th><th class="num">Paid / received</th><th class="num">Balance</th></tr></thead>
         <tbody>
         {% for p in projects %}
         <tr {% if p.status == 'cancelled' %}style="opacity:.5"{% endif %}>
           <td><a href="{% url 'bizpartners:project' p.pk %}"><strong>{{ p.title }}</strong></a>{% if p.client_name %}<div class="bp-muted" style="font-size:.78rem">{{ p.client_name }}</div>{% endif %}</td>
           <td><span class="bp-tag {{ p.status }}">{{ p.get_status_display }}</span>{% if p.is_overdue %} <span class="bp-tag cancelled">Overdue</span>{% endif %}<div class="bp-muted" style="font-size:.78rem">{{ p.progress }}%</div></td>
-          <td>{{ p.ratio_label }}</td>
+          <td>{% if p.is_fixed %}Fixed{% else %}{{ p.ratio_label }}{% endif %}</td>
           <td class="num">{{ cur }} {{ p.contract_value|sar:0 }}</td>
-          <td class="num in">{{ cur }} {{ p.m.received|sar:0 }}</td>
+          <td class="num in">{{ cur }} {% if p.is_fixed %}{{ p.m.fixed_paid|sar:0 }}{% else %}{{ p.m.received|sar:0 }}{% endif %}</td>
           <td class="num">{% if p.m.due_to_partner > 0 %}<span class="out">We owe {{ p.m.due_to_partner|sar:0 }}</span>{% elif p.m.due_to_partner < 0 %}<span style="color:#1e40af">They owe {{ p.m.due_to_partner|absval|sar:0 }}</span>{% else %}<span class="bp-muted">—</span>{% endif %}</td>
         </tr>
         {% empty %}

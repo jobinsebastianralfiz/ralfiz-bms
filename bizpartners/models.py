@@ -92,15 +92,19 @@ class BusinessPartner(models.Model):
             projects = self.projects.exclude(status='cancelled').prefetch_related('payments', 'expenses')
         keys = ('contract_value', 'received', 'pending_from_client', 'expenses', 'profit',
                 'partner_share', 'ralfiz_share', 'paid_to_partner', 'paid_to_ralfiz',
-                'due_to_partner', 'projected_partner_share')
+                'due_to_partner', 'projected_partner_share',
+                'fixed_agreed', 'fixed_due', 'fixed_paid', 'fixed_balance', 'amc_due', 'server_due',
+                'split_contract_value')
         out = {k: ZERO for k in keys}
-        count = 0
+        out.update(projects=0, split_projects=0, fixed_projects=0)
         for p in projects:
             m = p.money()
-            count += 1
+            out['projects'] += 1
+            out['fixed_projects' if m['is_fixed'] else 'split_projects'] += 1
             for k in keys:
                 out[k] += m[k]
-        out['projects'] = count
+        out['only_fixed'] = bool(out['fixed_projects'] and not out['split_projects'])
+        out['mixed'] = bool(out['fixed_projects'] and out['split_projects'])
         return out
 
 
@@ -116,6 +120,17 @@ class JointProject(models.Model):
         ('cancelled', 'Cancelled'),
     ]
     ACTIVE = ('confirmed', 'in_progress', 'review')
+    DEAL_CHOICES = [
+        ('fixed', 'Fixed amount for Ralfiz'),
+        ('split', 'Profit split'),
+    ]
+    CYCLE_CHOICES = [
+        ('monthly', 'Monthly'),
+        ('quarterly', 'Quarterly'),
+        ('half_yearly', 'Half-yearly'),
+        ('yearly', 'Yearly'),
+    ]
+    CYCLE_MONTHS = {'monthly': 1, 'quarterly': 3, 'half_yearly': 6, 'yearly': 12}
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     partner = models.ForeignKey(BusinessPartner, on_delete=models.CASCADE, related_name='projects')
@@ -125,8 +140,27 @@ class JointProject(models.Model):
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='lead')
     progress = models.PositiveSmallIntegerField(default=0, validators=[MaxValueValidator(100)],
                                                 help_text='0-100, shown to the partner.')
-    contract_value = models.DecimalField(max_digits=14, decimal_places=2, default=ZERO,
-                                         help_text='What the end client pays in total.')
+    deal_type = models.CharField(
+        max_length=10, choices=DEAL_CHOICES, default='split', verbose_name='How Ralfiz earns',
+        help_text='Fixed: the partner pays Ralfiz an agreed amount, whatever they charge the client. '
+                  'Split: client money minus expenses is shared by the percentages.')
+    contract_value = models.DecimalField(
+        max_digits=14, decimal_places=2, default=ZERO, verbose_name='Amount',
+        help_text="Fixed deal: Ralfiz's agreed amount. Split deal: what the end client pays in total.")
+    # Recurring charges, fixed deals only. Amount 0 = not opted.
+    amc_amount = models.DecimalField(max_digits=14, decimal_places=2, default=ZERO, verbose_name='AMC amount',
+                                     help_text='Per cycle. Leave 0 if there is no AMC.')
+    amc_cycle = models.CharField(max_length=12, choices=CYCLE_CHOICES, default='yearly', verbose_name='AMC cycle')
+    amc_start_date = models.DateField(null=True, blank=True, verbose_name='AMC starts',
+                                      help_text='The first AMC period starts (and is due) on this date.')
+    server_amount = models.DecimalField(max_digits=14, decimal_places=2, default=ZERO,
+                                        verbose_name='Server charges',
+                                        help_text='Per cycle. Leave 0 if they did not opt for our server.')
+    server_cycle = models.CharField(max_length=12, choices=CYCLE_CHOICES, default='yearly',
+                                    verbose_name='Server cycle')
+    server_start_date = models.DateField(null=True, blank=True, verbose_name='Server starts')
+    recurring_end_date = models.DateField(null=True, blank=True, verbose_name='AMC / server end',
+                                          help_text='Optional. No new periods fall due after this date.')
     partner_share_percent = models.DecimalField(
         max_digits=5, decimal_places=2, default=Decimal('50'), validators=PERCENT,
         verbose_name="Partner's profit share %")
@@ -166,6 +200,65 @@ class JointProject(models.Model):
         return bool(self.deadline and self.status not in ('completed', 'cancelled')
                     and timezone.localdate() > self.deadline)
 
+    @property
+    def is_fixed(self):
+        return self.deal_type == 'fixed'
+
+    def periods_due(self, start, cycle, today=None):
+        """How many billing periods have started by today (each is due when it starts)."""
+        today = today or timezone.localdate()
+        if self.recurring_end_date and self.recurring_end_date < today:
+            today = self.recurring_end_date
+        if not start or today < start:
+            return 0
+        months = (today.year - start.year) * 12 + today.month - start.month - (1 if today.day < start.day else 0)
+        return months // self.CYCLE_MONTHS.get(cycle, 12) + 1
+
+    def recurring_lines(self):
+        """AMC and server charges due so far, one dict each (only the opted ones)."""
+        lines = []
+        for key, label, amount, cycle, start in (
+                ('amc', 'AMC', self.amc_amount, self.amc_cycle, self.amc_start_date),
+                ('server', 'Server charges', self.server_amount, self.server_cycle, self.server_start_date)):
+            if amount and amount > 0:
+                n = self.periods_due(start, cycle)
+                lines.append({'key': key, 'label': label, 'amount': amount, 'cycle': cycle,
+                              'cycle_label': dict(self.CYCLE_CHOICES).get(cycle, cycle), 'start': start,
+                              'periods': n, 'due': amount * n})
+        return lines
+
+    def _fixed_money(self, pays_by_purpose, pays):
+        lines = self.recurring_lines()
+        amc_due = sum((l['due'] for l in lines if l['key'] == 'amc'), ZERO)
+        server_due = sum((l['due'] for l in lines if l['key'] == 'server'), ZERO)
+        # Money that reached Ralfiz, from the partner or straight from the client.
+        paid = pays['partner_to_ralfiz'] + pays['client_to_ralfiz'] - pays['ralfiz_to_partner']
+        due = self.contract_value + amc_due + server_due
+        for l in lines:
+            l['paid'] = pays_by_purpose.get(l['key'], ZERO)
+        out = {k: ZERO for k in (
+            'received', 'received_by_ralfiz', 'received_by_partner', 'pending_from_client', 'expenses',
+            'expenses_ralfiz', 'expenses_partner', 'profit', 'partner_share', 'ralfiz_share',
+            'paid_to_partner', 'paid_to_ralfiz', 'projected_profit', 'projected_partner_share',
+            'projected_ralfiz_share')}
+        out.update({
+            'is_fixed': True,
+            'contract_value': self.contract_value,
+            'split_contract_value': ZERO,
+            'fixed_agreed': self.contract_value,
+            'fixed_agreed_paid': pays_by_purpose.get('development', ZERO) + pays_by_purpose.get('other', ZERO),
+            'amc_due': amc_due,
+            'server_due': server_due,
+            'recurring_due': amc_due + server_due,
+            'fixed_due': due,
+            'fixed_paid': paid,
+            'fixed_balance': due - paid,
+            'due_to_partner': paid - due,
+            'recurring': lines,
+            'collected_percent': int(min(paid / due * 100, 100)) if due > 0 else 0,
+        })
+        return out
+
     def money(self):
         """Each side's share and who owes whom, from what has actually come in.
 
@@ -176,8 +269,13 @@ class JointProject(models.Model):
         due_to_partner > 0 means Ralfiz owes the partner, < 0 the other way.
         """
         pays = {k: ZERO for k, _ in JointPayment.KIND_CHOICES}
+        by_purpose = {}
         for pay in self.payments.all():
             pays[pay.kind] += pay.amount
+            sign = -1 if pay.kind == 'ralfiz_to_partner' else (0 if pay.kind == 'client_to_partner' else 1)
+            by_purpose[pay.purpose] = by_purpose.get(pay.purpose, ZERO) + sign * pay.amount
+        if self.is_fixed:
+            return self._fixed_money(by_purpose, pays)
         exp_ralfiz = exp_partner = ZERO
         for e in self.expenses.all():
             if e.paid_by == 'partner':
@@ -195,6 +293,9 @@ class JointProject(models.Model):
         partner_holds = pays['client_to_partner'] + pays['ralfiz_to_partner'] - pays['partner_to_ralfiz']
         projected_profit = self.contract_value - expenses
         return {
+            'is_fixed': False,
+            'fixed_agreed': ZERO, 'fixed_due': ZERO, 'fixed_paid': ZERO, 'fixed_balance': ZERO,
+            'amc_due': ZERO, 'server_due': ZERO, 'recurring': [], 'split_contract_value': self.contract_value,
             'contract_value': self.contract_value,
             'received': received,
             'received_by_ralfiz': pays['client_to_ralfiz'],
@@ -284,8 +385,8 @@ class JointPayment(ConvertedAmount):
     KIND_CHOICES = [
         ('client_to_ralfiz', 'Client paid Ralfiz'),
         ('client_to_partner', 'Client paid partner'),
-        ('ralfiz_to_partner', 'Ralfiz paid partner (share)'),
-        ('partner_to_ralfiz', 'Partner paid Ralfiz (share)'),
+        ('ralfiz_to_partner', 'Ralfiz paid partner'),
+        ('partner_to_ralfiz', 'Partner paid Ralfiz'),
     ]
     METHOD_CHOICES = [
         ('bank_transfer', 'Bank Transfer'),
@@ -298,7 +399,15 @@ class JointPayment(ConvertedAmount):
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     project = models.ForeignKey(JointProject, on_delete=models.CASCADE, related_name='payments')
+    PURPOSE_CHOICES = [
+        ('development', 'Project / development'),
+        ('amc', 'AMC'),
+        ('server', 'Server charges'),
+        ('other', 'Other'),
+    ]
     kind = models.CharField(max_length=20, choices=KIND_CHOICES, default='client_to_ralfiz')
+    purpose = models.CharField(max_length=12, choices=PURPOSE_CHOICES, default='development',
+                               verbose_name='Payment for')
     payment_date = models.DateField(default=timezone.localdate)
     method = models.CharField(max_length=20, choices=METHOD_CHOICES, default='bank_transfer')
     reference = models.CharField(max_length=120, blank=True, help_text='Transaction / cheque number')

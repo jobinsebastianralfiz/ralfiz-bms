@@ -13,7 +13,7 @@
 
 <div class="card">
   <div class="bp-table-wrap"><table class="bp-table">
-    <thead><tr><th>Partner</th><th>Country</th><th class="num">Projects</th><th class="num">Contract value</th><th class="num">Received</th><th class="num">Pending from clients</th><th class="num">Balance</th><th>Portal</th></tr></thead>
+    <thead><tr><th>Partner</th><th>Country</th><th class="num">Projects</th><th class="num">Fixed: due so far</th><th class="num">Fixed: paid</th><th class="num">Split: received</th><th class="num">Balance</th><th>Portal</th></tr></thead>
     <tbody>
     {% for p in partners %}
     <tr {% if not p.is_active %}style="opacity:.55"{% endif %}>
@@ -21,9 +21,9 @@
         <div class="bp-muted" style="font-size:.78rem">{% if p.company_name %}{{ p.name }} · {% endif %}default split {{ p.default_ralfiz_share|floatformat:"-2" }}/{{ p.default_partner_share|floatformat:"-2" }}{% if not p.is_active %} · inactive{% endif %}</div></td>
       <td>{{ p.country|default:"—" }}</td>
       <td class="num">{{ p.t.projects }}</td>
-      <td class="num">{{ p.currency }} {{ p.t.contract_value|sar:0 }}</td>
-      <td class="num in">{{ p.currency }} {{ p.t.received|sar:0 }}</td>
-      <td class="num">{{ p.currency }} {{ p.t.pending_from_client|sar:0 }}</td>
+      <td class="num">{% if p.t.fixed_projects %}{{ p.currency }} {{ p.t.fixed_due|sar:0 }}{% else %}<span class="bp-muted">—</span>{% endif %}</td>
+      <td class="num in">{% if p.t.fixed_projects %}{{ p.currency }} {{ p.t.fixed_paid|sar:0 }}{% else %}<span class="bp-muted">—</span>{% endif %}</td>
+      <td class="num">{% if p.t.split_projects %}{{ p.currency }} {{ p.t.received|sar:0 }}{% else %}<span class="bp-muted">—</span>{% endif %}</td>
       <td class="num">{% if p.t.due_to_partner > 0 %}<span class="out">We owe {{ p.t.due_to_partner|sar:0 }}</span>{% elif p.t.due_to_partner < 0 %}<span style="color:#1e40af">They owe {{ p.t.due_to_partner|absval|sar:0 }}</span>{% else %}<span class="bp-muted">Settled</span>{% endif %}</td>
       <td>{% if p.user %}{% if p.user.is_active %}<span class="bp-tag completed">On</span>{% else %}<span class="bp-tag cancelled">Disabled</span>{% endif %}{% else %}<span class="bp-tag draft">No login</span>{% endif %}</td>
     </tr>

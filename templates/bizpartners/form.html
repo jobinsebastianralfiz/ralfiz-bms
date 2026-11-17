@@ -35,6 +35,22 @@
 </form>
 {% endblock %}
 {% block extra_js %}
+{% if form.deal_toggle %}
+<script>
+(function () {
+  var deal = document.getElementById('id_deal_type'), label = document.querySelector('label[for="id_contract_value"]');
+  function update() {
+    var fixed = deal.value === 'fixed';
+    document.querySelectorAll('[data-deal]').forEach(function (el) {
+      el.closest('[class*="col-"]').style.display = (el.dataset.deal === 'fixed') === fixed ? '' : 'none';
+    });
+    label.textContent = fixed ? "Ralfiz's agreed amount *" : 'Contract value (what the client pays) *';
+  }
+  deal.addEventListener('change', update);
+  update();
+})();
+</script>
+{% endif %}
 {% if form.converter %}
 <script>
 (function () {

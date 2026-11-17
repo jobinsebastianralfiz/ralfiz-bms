@@ -11,16 +11,23 @@
 </div>
 <section class="pv-card">
   <div class="bp-table-wrap"><table class="bp-table">
-    <thead><tr><th>Project</th><th>Status</th><th>Split (Ralfiz / you)</th><th class="num">Contract</th><th class="num">Received</th><th class="num">Your share</th></tr></thead>
+    <thead><tr><th>Project</th><th>Status</th><th>Deal</th><th class="num">Due so far</th><th class="num">Paid / received</th><th class="num">Balance</th></tr></thead>
     <tbody>
     {% for p in projects %}
     <tr>
       <td><a href="{% url 'bizpartners_portal:project' p.pk %}"><strong>{{ p.title }}</strong></a>{% if p.client_name %}<div class="bp-muted" style="font-size:.78rem">{{ p.client_name }}</div>{% endif %}</td>
       <td><span class="bp-tag {{ p.status }}">{{ p.get_status_display }}</span><div class="bp-muted" style="font-size:.78rem">{{ p.progress }}% done</div></td>
-      <td>{{ p.ratio_label }}</td>
+      {% if p.is_fixed %}
+      <td>Fixed {{ p.currency }} {{ p.contract_value|sar:0 }}{% if p.amc_amount or p.server_amount %}<div class="bp-muted" style="font-size:.78rem">{% if p.amc_amount %}AMC{% endif %}{% if p.amc_amount and p.server_amount %} + {% endif %}{% if p.server_amount %}server{% endif %}</div>{% endif %}</td>
+      <td class="num">{{ p.currency }} {{ p.m.fixed_due|sar }}</td>
+      <td class="num in">{{ p.currency }} {{ p.m.fixed_paid|sar }}</td>
+      <td class="num">{% if p.m.fixed_balance > 0 %}<span class="out">{{ p.currency }} {{ p.m.fixed_balance|sar }} to pay</span>{% elif p.m.fixed_balance < 0 %}{{ p.currency }} {{ p.m.fixed_balance|absval|sar }} advance{% else %}<span class="bp-muted">Paid</span>{% endif %}</td>
+      {% else %}
+      <td>Split {{ p.ratio_label }}</td>
       <td class="num">{{ p.currency }} {{ p.contract_value|sar }}</td>
       <td class="num in">{{ p.currency }} {{ p.m.received|sar }}</td>
-      <td class="num">{{ p.currency }} {{ p.m.partner_share|sar }}</td>
+      <td class="num">{% if p.m.due_to_partner > 0 %}Ralfiz owes {{ p.m.due_to_partner|sar }}{% elif p.m.due_to_partner < 0 %}<span class="out">You owe {{ p.m.due_to_partner|absval|sar }}</span>{% else %}<span class="bp-muted">Settled</span>{% endif %}</td>
+      {% endif %}
     </tr>
     {% empty %}
     <tr><td colspan="6" class="pv-empty">No projects{% if status %} with this status{% endif %}.</td></tr>
