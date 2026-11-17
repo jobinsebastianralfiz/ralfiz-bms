@@ -1,0 +1,31 @@
+{% extends 'bizpartners/portal/base.html' %}
+{% load sar %}
+{% block title %}Projects{% endblock %}
+{% block content %}
+<div class="bp-section" style="margin-top:0">
+  <h2><span style="font-size:1.35rem">Projects</span>
+    <form method="get"><select name="status" class="form-control" onchange="this.form.submit()" style="width:auto">
+      <option value="">All statuses</option>
+      {% for v, l in statuses %}<option value="{{ v }}" {% if v == status %}selected{% endif %}>{{ l }}</option>{% endfor %}
+    </select></form></h2>
+</div>
+<section class="pv-card">
+  <div class="bp-table-wrap"><table class="bp-table">
+    <thead><tr><th>Project</th><th>Status</th><th>Split (Ralfiz / you)</th><th class="num">Contract</th><th class="num">Received</th><th class="num">Your share</th></tr></thead>
+    <tbody>
+    {% for p in projects %}
+    <tr>
+      <td><a href="{% url 'bizpartners_portal:project' p.pk %}"><strong>{{ p.title }}</strong></a>{% if p.client_name %}<div class="bp-muted" style="font-size:.78rem">{{ p.client_name }}</div>{% endif %}</td>
+      <td><span class="bp-tag {{ p.status }}">{{ p.get_status_display }}</span><div class="bp-muted" style="font-size:.78rem">{{ p.progress }}% done</div></td>
+      <td>{{ p.ratio_label }}</td>
+      <td class="num">{{ p.currency }} {{ p.contract_value|sar }}</td>
+      <td class="num in">{{ p.currency }} {{ p.m.received|sar }}</td>
+      <td class="num">{{ p.currency }} {{ p.m.partner_share|sar }}</td>
+    </tr>
+    {% empty %}
+    <tr><td colspan="6" class="pv-empty">No projects{% if status %} with this status{% endif %}.</td></tr>
+    {% endfor %}
+    </tbody>
+  </table></div>
+</section>
+{% endblock %}

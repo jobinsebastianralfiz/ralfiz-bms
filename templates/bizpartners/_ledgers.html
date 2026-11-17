@@ -1,0 +1,79 @@
+{% load sar %}{% comment %}Money summary + quotes/payments/expenses tables for one joint project.
+Needs: project, m, quotes, payments, expenses, staff (bool).{% endcomment %}
+{% with cur=project.currency %}
+<div class="bp-money">
+  <div><small>Contract value</small><strong><span class="bp-cur">{{ cur }}</span>{{ m.contract_value|sar }}</strong><span>{{ m.collected_percent }}% collected</span></div>
+  <div class="pos"><small>Received from client</small><strong><span class="bp-cur">{{ cur }}</span>{{ m.received|sar }}</strong><span>Ralfiz {{ m.received_by_ralfiz|sar:0 }} · Partner {{ m.received_by_partner|sar:0 }}</span></div>
+  <div class="{% if m.pending_from_client > 0 %}neg{% endif %}"><small>Pending from client</small><strong><span class="bp-cur">{{ cur }}</span>{{ m.pending_from_client|sar }}</strong><span>Still to come in</span></div>
+  <div><small>Expenses</small><strong><span class="bp-cur">{{ cur }}</span>{{ m.expenses|sar }}</strong><span>Ralfiz {{ m.expenses_ralfiz|sar:0 }} · Partner {{ m.expenses_partner|sar:0 }}</span></div>
+  <div><small>Profit so far</small><strong><span class="bp-cur">{{ cur }}</span>{{ m.profit|sar }}</strong><span>{{ cur }} {{ m.projected_profit|sar:0 }} when fully paid</span></div>
+</div>
+
+<section class="{% if staff %}card mb-3{% else %}pv-card{% endif %}" style="padding: 1rem 1.1rem; margin-bottom: 1.25rem;">
+  <div style="font-weight:700; margin-bottom:.6rem">Profit split · {{ project.ratio_label }} <span class="bp-muted" style="font-weight:400">(Ralfiz / {{ project.partner.display_name }})</span></div>
+  {% include 'bizpartners/_split.html' %}
+  <div class="bp-split-legend" style="margin-top:.6rem">
+    <span>When fully paid: Ralfiz <b>{{ cur }} {{ m.projected_ralfiz_share|sar }}</b></span>
+    <span>{{ project.partner.display_name }} <b>{{ cur }} {{ m.projected_partner_share|sar }}</b></span>
+  </div>
+</section>
+
+{% include 'bizpartners/_balance.html' with due=m.due_to_partner viewer=staff|yesno:'staff,partner' %}
+
+<div class="bp-section" id="quotes">
+  <h2>Quotes {% if staff %}<a class="btn btn-sm btn-outline-primary" href="{% url 'bizpartners:item_create' project.pk 'quote' %}"><i class="fas fa-plus"></i> Add quote</a>{% endif %}</h2>
+  <div class="{% if staff %}card{% else %}pv-card{% endif %}"><div class="bp-table-wrap"><table class="bp-table">
+    <thead><tr><th>Number</th><th>Title</th><th>Date</th><th>Status</th><th class="num">Amount</th><th></th></tr></thead>
+    <tbody>
+    {% for q in quotes %}
+    <tr><td>{{ q.quote_number }}</td>
+      <td>{{ q.title }}{% if q.details %}<div class="bp-muted" style="font-size:.78rem; white-space:pre-line">{{ q.details|truncatechars:160 }}</div>{% endif %}</td>
+      <td>{{ q.quote_date|date:"d M Y" }}{% if q.valid_until %}<div class="bp-muted" style="font-size:.78rem">valid to {{ q.valid_until|date:"d M Y" }}</div>{% endif %}</td>
+      <td><span class="bp-tag {{ q.status }}">{{ q.get_status_display }}</span></td>
+      <td class="num">{{ cur }} {{ q.amount|sar }}</td>
+      <td class="num">
+        {% if q.file %}<a href="{% if staff %}{% url 'bizpartners:item_file' project.pk 'quote' q.pk %}{% else %}{% url 'bizpartners_portal:item_file' project.pk 'quote' q.pk %}{% endif %}" target="_blank" title="Open PDF"><i class="far fa-file-pdf"></i></a>{% endif %}
+        {% if staff %}<a href="{% url 'bizpartners:item_edit' project.pk 'quote' q.pk %}" title="Edit" style="margin-left:.5rem"><i class="fas fa-pen"></i></a>
+        <a href="{% url 'bizpartners:item_delete' project.pk 'quote' q.pk %}" title="Delete" style="margin-left:.5rem; color:var(--danger,#dc2626)"><i class="fas fa-trash"></i></a>{% endif %}
+      </td></tr>
+    {% empty %}<tr><td colspan="6" class="bp-muted">No quotes yet.</td></tr>{% endfor %}
+    </tbody></table></div></div>
+</div>
+
+<div class="bp-section" id="payments">
+  <h2>Payments {% if staff %}<a class="btn btn-sm btn-outline-primary" href="{% url 'bizpartners:item_create' project.pk 'payment' %}"><i class="fas fa-plus"></i> Record payment</a>{% endif %}</h2>
+  <div class="{% if staff %}card{% else %}pv-card{% endif %}"><div class="bp-table-wrap"><table class="bp-table">
+    <thead><tr><th>Date</th><th>Who paid whom</th><th>Method</th><th>Reference</th><th class="num">Amount</th><th></th></tr></thead>
+    <tbody>
+    {% for pay in payments %}
+    <tr><td>{{ pay.payment_date|date:"d M Y" }}</td>
+      <td>{{ pay.get_kind_display }}{% if pay.notes %}<div class="bp-muted" style="font-size:.78rem">{{ pay.notes }}</div>{% endif %}</td>
+      <td>{{ pay.get_method_display }}</td><td>{{ pay.reference|default:"—" }}</td>
+      <td class="num {% if pay.is_client_payment %}in{% else %}out{% endif %}">{{ cur }} {{ pay.amount|sar }}</td>
+      <td class="num">
+        {% if pay.receipt %}<a href="{% if staff %}{% url 'bizpartners:item_file' project.pk 'payment' pay.pk %}{% else %}{% url 'bizpartners_portal:item_file' project.pk 'payment' pay.pk %}{% endif %}" target="_blank" title="Receipt"><i class="fas fa-paperclip"></i></a>{% endif %}
+        {% if staff %}<a href="{% url 'bizpartners:item_edit' project.pk 'payment' pay.pk %}" title="Edit" style="margin-left:.5rem"><i class="fas fa-pen"></i></a>
+        <a href="{% url 'bizpartners:item_delete' project.pk 'payment' pay.pk %}" title="Delete" style="margin-left:.5rem; color:var(--danger,#dc2626)"><i class="fas fa-trash"></i></a>{% endif %}
+      </td></tr>
+    {% empty %}<tr><td colspan="6" class="bp-muted">No payments recorded yet.</td></tr>{% endfor %}
+    </tbody></table></div></div>
+</div>
+
+<div class="bp-section" id="expenses">
+  <h2>Expenses <span class="bp-muted" style="font-weight:400; font-size:.8rem; margin-right:auto">come off the top before the split; whoever paid gets it back</span>{% if staff %}<a class="btn btn-sm btn-outline-primary" href="{% url 'bizpartners:item_create' project.pk 'expense' %}"><i class="fas fa-plus"></i> Add expense</a>{% endif %}</h2>
+  <div class="{% if staff %}card{% else %}pv-card{% endif %}"><div class="bp-table-wrap"><table class="bp-table">
+    <thead><tr><th>Date</th><th>Description</th><th>Paid by</th><th class="num">Amount</th><th></th></tr></thead>
+    <tbody>
+    {% for e in expenses %}
+    <tr><td>{{ e.expense_date|date:"d M Y" }}</td><td>{{ e.description }}</td>
+      <td>{% if e.paid_by == 'partner' %}{{ project.partner.display_name }}{% else %}Ralfiz{% endif %}</td>
+      <td class="num">{{ cur }} {{ e.amount|sar }}</td>
+      <td class="num">
+        {% if e.receipt %}<a href="{% if staff %}{% url 'bizpartners:item_file' project.pk 'expense' e.pk %}{% else %}{% url 'bizpartners_portal:item_file' project.pk 'expense' e.pk %}{% endif %}" target="_blank" title="Receipt"><i class="fas fa-paperclip"></i></a>{% endif %}
+        {% if staff %}<a href="{% url 'bizpartners:item_edit' project.pk 'expense' e.pk %}" title="Edit" style="margin-left:.5rem"><i class="fas fa-pen"></i></a>
+        <a href="{% url 'bizpartners:item_delete' project.pk 'expense' e.pk %}" title="Delete" style="margin-left:.5rem; color:var(--danger,#dc2626)"><i class="fas fa-trash"></i></a>{% endif %}
+      </td></tr>
+    {% empty %}<tr><td colspan="5" class="bp-muted">No expenses.</td></tr>{% endfor %}
+    </tbody></table></div></div>
+</div>
+{% endwith %}

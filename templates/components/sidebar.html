@@ -203,9 +203,13 @@
         <span class="nav-badge">{{ pending_transfer_count }}</span>
         {% endif %}
       </a>
-      <a href="{% url 'partner_list' %}" class="nav-item {% if 'partner' in n or 'contribution' in n %}active{% endif %}">
+      <a href="{% url 'partner_list' %}" class="nav-item {% if 'partner' in n or 'contribution' in n %}{% if request.resolver_match.app_name != 'bizpartners' %}active{% endif %}{% endif %}">
         <i class="fas fa-handshake"></i>
         <span>Partners</span>
+      </a>
+      <a href="{% url 'bizpartners:list' %}" class="nav-item {% if request.resolver_match.app_name == 'bizpartners' %}active{% endif %}">
+        <i class="fas fa-people-arrows"></i>
+        <span>Business Partners</span>
       </a>
       <a href="{% url 'asset_list' %}" class="nav-item {% if 'asset' in n %}active{% endif %}">
         <i class="fas fa-coins"></i>

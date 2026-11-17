@@ -60,6 +60,7 @@ INSTALLED_APPS = [
     'notes',
     'doc_templates',
     'wallet',
+    'bizpartners',
 ]
 
 MIDDLEWARE = [
@@ -74,6 +75,7 @@ MIDDLEWARE = [
     'employees.middleware.StaffConfinementMiddleware',
     'social.middleware.SocialConfinementMiddleware',
     'client_portal.middleware.ClientConfinementMiddleware',
+    'bizpartners.middleware.PartnerConfinementMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]

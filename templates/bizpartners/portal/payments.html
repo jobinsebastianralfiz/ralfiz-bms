@@ -1,0 +1,26 @@
+{% extends 'bizpartners/portal/base.html' %}
+{% load sar %}
+{% block title %}Payments{% endblock %}
+{% block content %}
+{% with cur=partner.currency %}
+<h1 style="font-size:1.35rem; margin:0 0 1rem">Payments</h1>
+<div class="bp-money">
+  <div class="pos"><small>Received from clients</small><strong><span class="bp-cur">{{ cur }}</span>{{ t.received|sar }}</strong></div>
+  <div class="neg"><small>Pending from clients</small><strong><span class="bp-cur">{{ cur }}</span>{{ t.pending_from_client|sar }}</strong></div>
+  <div><small>Ralfiz paid you</small><strong><span class="bp-cur">{{ cur }}</span>{{ t.paid_to_partner|sar }}</strong></div>
+  <div><small>You paid Ralfiz</small><strong><span class="bp-cur">{{ cur }}</span>{{ t.paid_to_ralfiz|sar }}</strong></div>
+</div>
+{% include 'bizpartners/_balance.html' with due=t.due_to_partner viewer='partner' %}
+<section class="pv-card"><div class="bp-table-wrap"><table class="bp-table">
+  <thead><tr><th>Date</th><th>Project</th><th>Who paid whom</th><th>Method</th><th>Reference</th><th class="num">Amount</th></tr></thead>
+  <tbody>
+  {% for pay in payments %}
+  <tr><td>{{ pay.payment_date|date:"d M Y" }}</td>
+    <td><a href="{% url 'bizpartners_portal:project' pay.project_id %}">{{ pay.project.title }}</a></td>
+    <td>{{ pay.get_kind_display }}</td><td>{{ pay.get_method_display }}</td><td>{{ pay.reference|default:"—" }}</td>
+    <td class="num {% if pay.is_client_payment %}in{% else %}out{% endif %}">{{ cur }} {{ pay.amount|sar }}
+      {% if pay.receipt %}<a href="{% url 'bizpartners_portal:item_file' pay.project_id 'payment' pay.pk %}" target="_blank" title="Receipt"><i class="fas fa-paperclip"></i></a>{% endif %}</td></tr>
+  {% empty %}<tr><td colspan="6" class="pv-empty">No payments recorded yet.</td></tr>{% endfor %}
+  </tbody></table></div></section>
+{% endwith %}
+{% endblock %}

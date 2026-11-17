@@ -1,0 +1,92 @@
+{% extends 'base.html' %}
+{% load static sar %}
+{% block title %}{{ partner.display_name }} - Business Partners{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'css/bizpartners.css' %}?v=1">{% endblock %}
+{% block content %}
+{% with cur=partner.currency %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title">{{ partner.display_name }} {% if not partner.is_active %}<span class="badge badge-warning">Inactive</span>{% endif %}</h1>
+    <p class="page-subtitle mb-0">{% if partner.company_name %}{{ partner.name }} · {% endif %}{% if partner.city %}{{ partner.city }}, {% endif %}{{ partner.country }}{% if partner.email %} · {{ partner.email }}{% endif %}{% if partner.phone %} · {{ partner.phone }}{% endif %}</p>
+  </div>
+  <div class="page-actions">
+    <a href="{% url 'bizpartners:edit' partner.pk %}" class="btn btn-outline-secondary"><i class="fas fa-edit"></i> Edit</a>
+    <a href="{% url 'bizpartners:project_create' partner.pk %}" class="btn btn-primary"><i class="fas fa-plus"></i> New joint project</a>
+  </div>
+</div>
+
+<div class="bp-money">
+  <div><small>Projects</small><strong>{{ t.projects }}</strong><span>Default split {{ partner.default_ralfiz_share|floatformat:"-2" }} / {{ partner.default_partner_share|floatformat:"-2" }}</span></div>
+  <div><small>Contract value</small><strong><span class="bp-cur">{{ cur }}</span>{{ t.contract_value|sar }}</strong></div>
+  <div class="pos"><small>Received from clients</small><strong><span class="bp-cur">{{ cur }}</span>{{ t.received|sar }}</strong></div>
+  <div class="{% if t.pending_from_client > 0 %}neg{% endif %}"><small>Pending from clients</small><strong><span class="bp-cur">{{ cur }}</span>{{ t.pending_from_client|sar }}</strong></div>
+  <div><small>Ralfiz share so far</small><strong><span class="bp-cur">{{ cur }}</span>{{ t.ralfiz_share|sar }}</strong></div>
+  <div><small>Partner share so far</small><strong><span class="bp-cur">{{ cur }}</span>{{ t.partner_share|sar }}</strong></div>
+</div>
+{% include 'bizpartners/_balance.html' with due=t.due_to_partner viewer='staff' %}
+
+<div class="row">
+  <div class="col-lg-8" style="padding:.5rem">
+    <div class="card"><div class="card-body" style="padding-bottom:.25rem"><h3 style="font-size:1rem; font-weight:700; margin:0">Joint projects</h3></div>
+      <div class="bp-table-wrap"><table class="bp-table">
+        <thead><tr><th>Project</th><th>Status</th><th>Split</th><th class="num">Contract</th><th class="num">Received</th><th class="num">Balance</th></tr></thead>
+        <tbody>
+        {% for p in projects %}
+        <tr {% if p.status == 'cancelled' %}style="opacity:.5"{% endif %}>
+          <td><a href="{% url 'bizpartners:project' p.pk %}"><strong>{{ p.title }}</strong></a>{% if p.client_name %}<div class="bp-muted" style="font-size:.78rem">{{ p.client_name }}</div>{% endif %}</td>
+          <td><span class="bp-tag {{ p.status }}">{{ p.get_status_display }}</span>{% if p.is_overdue %} <span class="bp-tag cancelled">Overdue</span>{% endif %}<div class="bp-muted" style="font-size:.78rem">{{ p.progress }}%</div></td>
+          <td>{{ p.ratio_label }}</td>
+          <td class="num">{{ cur }} {{ p.contract_value|sar:0 }}</td>
+          <td class="num in">{{ cur }} {{ p.m.received|sar:0 }}</td>
+          <td class="num">{% if p.m.due_to_partner > 0 %}<span class="out">We owe {{ p.m.due_to_partner|sar:0 }}</span>{% elif p.m.due_to_partner < 0 %}<span style="color:#1e40af">They owe {{ p.m.due_to_partner|absval|sar:0 }}</span>{% else %}<span class="bp-muted">—</span>{% endif %}</td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="6" class="bp-muted">No projects yet. <a href="{% url 'bizpartners:project_create' partner.pk %}">Add the first joint project</a>.</td></tr>
+        {% endfor %}
+        </tbody>
+      </table></div>
+    </div>
+  </div>
+
+  <div class="col-lg-4" style="padding:.5rem">
+    <div class="card"><div class="card-body">
+      <h3 style="font-size:1rem; font-weight:700">Partner portal login</h3>
+      {% if new_password %}
+      <div class="alert alert-success" style="word-break:break-all">
+        Sign in at <strong>{{ request.scheme }}://{{ request.get_host }}{% url 'bizpartners_portal:login' %}</strong><br>
+        Username: <strong>{{ partner.user.username }}</strong><br>Password: <strong>{{ new_password }}</strong>
+      </div>
+      {% endif %}
+      {% if partner.user %}
+        <p class="text-muted" style="font-size:.85rem">Username <strong>{{ partner.user.username }}</strong> ·
+          {% if partner.user.is_active %}<span class="bp-tag completed">Active</span>{% else %}<span class="bp-tag cancelled">Disabled</span>{% endif %}
+          {% if partner.user.last_login %}<br>Last signed in {{ partner.user.last_login|date:"d M Y, H:i" }}{% endif %}</p>
+        <form method="post" action="{% url 'bizpartners:login' partner.pk %}" style="display:flex; gap:.4rem; flex-wrap:wrap">
+          {% csrf_token %}
+          <input type="text" name="password" class="form-control" placeholder="New password (blank = random)" style="flex:1; min-width:160px" autocomplete="off">
+          <button class="btn btn-outline-primary" type="submit">Reset password</button>
+        </form>
+        <form method="post" action="{% url 'bizpartners:login_toggle' partner.pk %}" style="margin-top:.5rem">{% csrf_token %}
+          <button class="btn btn-sm btn-ghost" type="submit">{% if partner.user.is_active %}Disable login{% else %}Enable login{% endif %}</button></form>
+      {% else %}
+        <p class="text-muted" style="font-size:.85rem">The partner sees their projects, quotes, payments and their share. Nothing else in the BMS.</p>
+        <form method="post" action="{% url 'bizpartners:login' partner.pk %}">
+          {% csrf_token %}
+          <input type="text" name="username" class="form-control mb-2" placeholder="Username" value="{{ partner.email }}" autocomplete="off">
+          <input type="text" name="password" class="form-control mb-2" placeholder="Password (blank = random)" autocomplete="off">
+          <button class="btn btn-primary" type="submit"><i class="fas fa-key"></i> Create login</button>
+        </form>
+      {% endif %}
+    </div></div>
+
+    {% if partner.notes or partner.tax_number or partner.address %}
+    <div class="card mt-3"><div class="card-body" style="font-size:.88rem">
+      {% if partner.tax_number %}<div><span class="text-muted">VAT / CR:</span> {{ partner.tax_number }}</div>{% endif %}
+      {% if partner.address %}<div style="white-space:pre-line; margin-top:.4rem">{{ partner.address }}</div>{% endif %}
+      {% if partner.notes %}<div class="text-muted" style="white-space:pre-line; margin-top:.6rem"><strong>Internal notes:</strong> {{ partner.notes }}</div>{% endif %}
+    </div></div>
+    {% endif %}
+  </div>
+</div>
+{% endwith %}
+{% endblock %}

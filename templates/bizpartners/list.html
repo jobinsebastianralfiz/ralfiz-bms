@@ -1,0 +1,37 @@
+{% extends 'base.html' %}
+{% load static sar %}
+{% block title %}Business Partners - Ralfiz BMS{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'css/bizpartners.css' %}?v=1">{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title">Business Partners</h1>
+    <p class="page-subtitle mb-0">Companies we run joint projects with on a profit split. Each partner gets a login at <code>/partner/</code>.</p>
+  </div>
+  <div class="page-actions"><a href="{% url 'bizpartners:create' %}" class="btn btn-primary"><i class="fas fa-plus"></i> Add partner</a></div>
+</div>
+
+<div class="card">
+  <div class="bp-table-wrap"><table class="bp-table">
+    <thead><tr><th>Partner</th><th>Country</th><th class="num">Projects</th><th class="num">Contract value</th><th class="num">Received</th><th class="num">Pending from clients</th><th class="num">Balance</th><th>Portal</th></tr></thead>
+    <tbody>
+    {% for p in partners %}
+    <tr {% if not p.is_active %}style="opacity:.55"{% endif %}>
+      <td><a href="{% url 'bizpartners:detail' p.pk %}"><strong>{{ p.display_name }}</strong></a>
+        <div class="bp-muted" style="font-size:.78rem">{% if p.company_name %}{{ p.name }} · {% endif %}default split {{ p.default_ralfiz_share|floatformat:"-2" }}/{{ p.default_partner_share|floatformat:"-2" }}{% if not p.is_active %} · inactive{% endif %}</div></td>
+      <td>{{ p.country|default:"—" }}</td>
+      <td class="num">{{ p.t.projects }}</td>
+      <td class="num">{{ p.currency }} {{ p.t.contract_value|sar:0 }}</td>
+      <td class="num in">{{ p.currency }} {{ p.t.received|sar:0 }}</td>
+      <td class="num">{{ p.currency }} {{ p.t.pending_from_client|sar:0 }}</td>
+      <td class="num">{% if p.t.due_to_partner > 0 %}<span class="out">We owe {{ p.t.due_to_partner|sar:0 }}</span>{% elif p.t.due_to_partner < 0 %}<span style="color:#1e40af">They owe {{ p.t.due_to_partner|absval|sar:0 }}</span>{% else %}<span class="bp-muted">Settled</span>{% endif %}</td>
+      <td>{% if p.user %}{% if p.user.is_active %}<span class="bp-tag completed">On</span>{% else %}<span class="bp-tag cancelled">Disabled</span>{% endif %}{% else %}<span class="bp-tag draft">No login</span>{% endif %}</td>
+    </tr>
+    {% empty %}
+    <tr><td colspan="8" class="bp-muted" style="padding:1.5rem">No business partners yet. <a href="{% url 'bizpartners:create' %}">Add the first one</a>.</td></tr>
+    {% endfor %}
+    </tbody>
+  </table></div>
+</div>
+<p class="bp-muted" style="font-size:.8rem; margin-top:.75rem">These are business partners. Capital partners (the owners of Ralfiz) are under Finance → <a href="{% url 'partner_list' %}">Partners</a>.</p>
+{% endblock %}

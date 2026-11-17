@@ -1,0 +1,86 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}Partner Portal{% endblock %} - {{ company_name|default:"Ralfiz Technologies" }}</title>
+  <link rel="icon" type="image/svg+xml" href="{% static 'favicon.svg' %}">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <link rel="stylesheet" href="{% static 'css/styles.css' %}">
+  <link rel="stylesheet" href="{% static 'css/client_portal.css' %}">
+  <link rel="stylesheet" href="{% static 'css/portal-velora.css' %}?v=3">
+  <link rel="stylesheet" href="{% static 'css/bizpartners.css' %}?v=1">
+  {% block extra_css %}{% endblock %}
+</head>
+<body>
+  <div class="pv-app">
+    <aside class="pv-side" id="pvSide">
+      <a href="{% url 'bizpartners_portal:dashboard' %}" class="pv-brand">
+        <span class="pv-brand-mark" aria-hidden="true">R</span>
+        <span class="pv-brand-name">{{ company_name|default:"Ralfiz Technologies" }}<small>Partner Portal</small></span>
+      </a>
+
+      <nav class="pv-menu" aria-label="Partner portal">
+        <a href="{% url 'bizpartners_portal:dashboard' %}" class="{% if active_nav == 'dashboard' %}active{% endif %}"><i class="fas fa-house"></i> Dashboard</a>
+        <a href="{% url 'bizpartners_portal:projects' %}" class="{% if active_nav == 'projects' %}active{% endif %}"><i class="fas fa-folder-open"></i> Projects</a>
+        <a href="{% url 'bizpartners_portal:payments' %}" class="{% if active_nav == 'payments' %}active{% endif %}"><i class="fas fa-money-bill-transfer"></i> Payments</a>
+        <a href="{% url 'bizpartners_portal:quotes' %}" class="{% if active_nav == 'quotes' %}active{% endif %}"><i class="far fa-file-lines"></i> Quotes</a>
+        <hr>
+        <a href="{% url 'bizpartners_portal:password' %}" class="{% if active_nav == 'password' %}active{% endif %}"><i class="fas fa-lock"></i> Change password</a>
+        {% if company_email %}<a href="mailto:{{ company_email }}?subject={{ 'Partner portal'|urlencode }}"><i class="far fa-circle-question"></i> Help &amp; Support</a>{% endif %}
+      </nav>
+    </aside>
+    <div class="pv-scrim" id="pvScrim" onclick="togglePortalNav()"></div>
+
+    <div class="pv-main">
+      <header class="pv-top">
+        <button class="pv-icon-btn pv-burger" onclick="togglePortalNav()" aria-label="Open menu"><i class="fas fa-bars"></i></button>
+        <div style="flex:1"></div>
+        <div class="pv-top-right">
+          <button class="pv-icon-btn" onclick="toggleTheme()" aria-label="Switch light or dark"><i class="fas fa-moon" id="themeIcon"></i></button>
+          <div class="portal-user-menu">
+            <button class="pv-user" onclick="toggleUserDropdown()" aria-haspopup="true">
+              <span class="pv-avatar">{{ partner.display_name|make_list|first|upper }}</span>
+              <span class="pv-user-name">{{ partner.name|truncatewords:2 }}<small>Partner</small></span>
+              <i class="fas fa-chevron-down" style="font-size: .65rem;"></i>
+            </button>
+            <div class="portal-user-dropdown" id="userDropdown">
+              <div style="padding: .75rem 1rem; border-bottom: 1px solid var(--border-color);">
+                <div style="font-weight: 600; color: var(--text-primary); font-size: .875rem;">{{ partner.name }}</div>
+                <div style="font-size: .75rem; color: var(--text-muted);">{{ partner.company_name }}</div>
+              </div>
+              <a href="{% url 'bizpartners_portal:password' %}"><i class="fas fa-lock"></i> Change Password</a>
+              <div class="dropdown-divider"></div>
+              <form method="post" action="{% url 'bizpartners_portal:logout' %}">
+                {% csrf_token %}
+                <button type="submit"><i class="fas fa-sign-out-alt"></i> Sign Out</button>
+              </form>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <main class="portal-content">
+        {% if messages %}
+        <div style="margin-bottom: 1rem;">
+          {% for message in messages %}
+          <div class="alert alert-{{ message.tags }} alert-dismissible">
+            <span>{{ message }}</span>
+            <button type="button" class="alert-close" onclick="this.parentElement.remove()"><i class="fas fa-times"></i></button>
+          </div>
+          {% endfor %}
+        </div>
+        {% endif %}
+        {% block content %}{% endblock %}
+      </main>
+    </div>
+  </div>
+
+  <script src="{% static 'js/client_portal.js' %}?v=2"></script>
+  {% block extra_js %}{% endblock %}
+</body>
+</html>

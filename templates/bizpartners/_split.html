@@ -1,0 +1,8 @@
+{% load sar %}{% comment %}Profit split bar. Needs: project, m.{% endcomment %}
+<div class="bp-split" role="img" aria-label="Profit split Ralfiz {{ project.ralfiz_share_percent|floatformat:"-2" }}% partner {{ project.partner_share_percent|floatformat:"-2" }}%">
+  <i class="r" style="width: {{ project.ralfiz_share_percent|floatformat:"0" }}%"></i><i class="p" style="width: {{ project.partner_share_percent|floatformat:"0" }}%"></i>
+</div>
+<div class="bp-split-legend">
+  <span><span class="bp-dot r"></span>Ralfiz {{ project.ralfiz_share_percent|floatformat:"-2" }}% · <b>{{ project.currency }} {{ m.ralfiz_share|sar }}</b> so far</span>
+  <span><span class="bp-dot p"></span>{{ project.partner.display_name }} {{ project.partner_share_percent|floatformat:"-2" }}% · <b>{{ project.currency }} {{ m.partner_share|sar }}</b> so far</span>
+</div>

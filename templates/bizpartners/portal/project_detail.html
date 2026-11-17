@@ -1,0 +1,19 @@
+{% extends 'bizpartners/portal/base.html' %}
+{% block title %}{{ project.title }}{% endblock %}
+{% block content %}
+<p style="margin:0 0 .5rem"><a href="{% url 'bizpartners_portal:projects' %}"><i class="fas fa-arrow-left"></i> All projects</a></p>
+<section class="pv-card" style="padding:1.1rem 1.2rem; margin-bottom:1.25rem">
+  <div style="display:flex; justify-content:space-between; gap:1rem; flex-wrap:wrap; align-items:flex-start">
+    <div style="min-width:0">
+      <h1 style="font-size:1.4rem; margin:0">{{ project.title }}</h1>
+      <div class="bp-muted">{% if project.client_name %}<span>For {{ project.client_name }}</span>{% endif %}{% if project.start_date %}<span>Started {{ project.start_date|date:"d M Y" }}</span>{% endif %}{% if project.deadline %}<span>Due {{ project.deadline|date:"d M Y" }}</span>{% endif %}</div>
+    </div>
+    <span class="bp-tag {{ project.status }}" style="font-size:.85rem">{{ project.get_status_display }}</span>
+  </div>
+  <div class="pv-bar-row" style="margin-top:.8rem"><span class="pv-bar"><i style="width: {{ project.progress }}%"></i></span>{{ project.progress }}% done</div>
+  {% if project.description %}<p style="margin:.8rem 0 0; white-space:pre-line">{{ project.description }}</p>{% endif %}
+  {% if project.notes %}<p class="bp-muted" style="margin:.6rem 0 0; white-space:pre-line">{{ project.notes }}</p>{% endif %}
+</section>
+{% include 'bizpartners/_ledgers.html' with staff=False %}
+{% include 'bizpartners/_updates.html' with staff=False %}
+{% endblock %}

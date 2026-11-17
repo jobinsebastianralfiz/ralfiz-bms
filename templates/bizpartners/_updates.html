@@ -1,0 +1,17 @@
+{% comment %}Update thread on a joint project. Needs: updates, update_form, project.{% endcomment %}
+<div class="bp-section" id="updates">
+  <h2>Updates &amp; messages</h2>
+  <div class="{% if staff %}card{% else %}pv-card{% endif %}" style="padding: .9rem 1.1rem;">
+    <form method="post" style="display:flex; gap:.5rem; align-items:flex-start; margin-bottom:.5rem">
+      {% csrf_token %}
+      <div style="flex:1">{{ update_form.message }}</div>
+      <button class="{% if staff %}btn btn-primary{% else %}pv-btn{% endif %}" type="submit"><i class="fas fa-paper-plane"></i> {% if staff %}Post{% else %}Send{% endif %}</button>
+    </form>
+    <ul class="bp-updates">
+      {% for u in updates %}
+      <li><div class="who"><strong>{% if u.from_partner %}{{ project.partner.display_name }}{% else %}Ralfiz{% if staff and u.author %} · {{ u.author.get_full_name|default:u.author.username }}{% endif %}{% endif %}</strong> · {{ u.created_at|date:"d M Y, H:i" }}</div>
+        <div class="msg">{{ u.message }}</div></li>
+      {% empty %}<li class="bp-muted">No updates yet.</li>{% endfor %}
+    </ul>
+  </div>
+</div>

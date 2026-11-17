@@ -1,0 +1,13 @@
+{% load sar %}{% comment %}Who owes whom on a project or across a partner. Needs: due (Decimal), cur, viewer ('staff'|'partner').{% endcomment %}
+{% if due > 0 %}
+<div class="bp-balance owe-partner"><i class="fas fa-arrow-right-arrow-left"></i>
+  <div><strong>{% if viewer == 'partner' %}Ralfiz owes you {{ cur }} {{ due|sar }}{% else %}We owe the partner {{ cur }} {{ due|sar }}{% endif %}</strong>
+  <div style="font-size:.82rem">{% if viewer == 'partner' %}Your{% else %}Their{% endif %} share of the profit on client money received so far, plus expenses {% if viewer == 'partner' %}you{% else %}they{% endif %} paid, minus what {% if viewer == 'partner' %}you{% else %}they{% endif %} already hold.</div></div></div>
+{% elif due < 0 %}
+<div class="bp-balance owe-ralfiz"><i class="fas fa-arrow-right-arrow-left"></i>
+  <div><strong>{% if viewer == 'partner' %}You owe Ralfiz {{ cur }} {{ due|absval|sar }}{% else %}The partner owes us {{ cur }} {{ due|absval|sar }}{% endif %}</strong>
+  <div style="font-size:.82rem">{% if viewer == 'partner' %}You hold{% else %}They hold{% endif %} more client money than {% if viewer == 'partner' %}your{% else %}their{% endif %} share of the profit.</div></div></div>
+{% else %}
+<div class="bp-balance settled"><i class="fas fa-circle-check"></i><div><strong>All settled</strong>
+  <div style="font-size:.82rem">Neither side owes the other anything on the money received so far.</div></div></div>
+{% endif %}

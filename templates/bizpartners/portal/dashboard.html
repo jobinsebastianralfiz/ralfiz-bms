@@ -1,0 +1,59 @@
+{% extends 'bizpartners/portal/base.html' %}
+{% load sar %}
+{% block title %}Dashboard{% endblock %}
+{% block content %}
+{% with cur=partner.currency %}
+<section class="pv-welcome" style="grid-template-columns: 1fr;">
+  <div class="pv-welcome-text">
+    <div class="pv-eyebrow">{{ greeting|upper }}</div>
+    <h1>Welcome back, <span class="pv-grad">{{ partner.name }}</span></h1>
+    {% if partner.company_name %}<p class="pv-company">{{ partner.company_name }}</p>{% endif %}
+    <p class="pv-muted">Our joint projects, what the clients have paid, and your share of the profit. All amounts in {{ cur }}.</p>
+  </div>
+</section>
+
+<div class="bp-money">
+  <div><small>Projects</small><strong>{{ t.projects }}</strong><span>{{ active|length }} running now</span></div>
+  <div><small>Contract value</small><strong><span class="bp-cur">{{ cur }}</span>{{ t.contract_value|sar:0 }}</strong><span>Total the clients will pay</span></div>
+  <div class="pos"><small>Received from clients</small><strong><span class="bp-cur">{{ cur }}</span>{{ t.received|sar:0 }}</strong><span>{{ cur }} {{ t.pending_from_client|sar:0 }} still pending</span></div>
+  <div><small>Your share so far</small><strong><span class="bp-cur">{{ cur }}</span>{{ t.partner_share|sar:0 }}</strong><span>{{ cur }} {{ t.projected_partner_share|sar:0 }} when all is paid</span></div>
+</div>
+
+{% include 'bizpartners/_balance.html' with due=t.due_to_partner viewer='partner' %}
+
+<div class="pv-grid">
+  <section class="pv-card">
+    <header class="pv-card-head"><h2><span class="pv-head-ico violet"><i class="fas fa-folder"></i></span>Projects</h2><a href="{% url 'bizpartners_portal:projects' %}">View all <i class="fas fa-arrow-right"></i></a></header>
+    {% for p in projects %}
+    <a class="pv-proj" href="{% url 'bizpartners_portal:project' p.pk %}">
+      <span class="pv-thumb"><span>{{ p.title|make_list|first|upper }}</span></span>
+      <span class="pv-proj-body">
+        <span class="pv-proj-top"><strong>{{ p.title }}</strong><span class="bp-tag {{ p.status }}">{{ p.get_status_display }}</span></span>
+        <span class="pv-muted">{% if p.client_name %}{{ p.client_name }} · {% endif %}Split {{ p.ratio_label }}</span>
+        <span class="pv-proj-meta"><span><i class="fas fa-coins"></i> {{ cur }} {{ p.m.received|sar:0 }} of {{ p.contract_value|sar:0 }} received</span>
+          {% if p.deadline %}<span><i class="far fa-calendar"></i> Due {{ p.deadline|date:"d M Y" }}</span>{% endif %}</span>
+        <span class="pv-bar-row"><span class="pv-bar"><i style="width: {{ p.progress }}%"></i></span>{{ p.progress }}%</span>
+      </span>
+    </a>
+    {% empty %}
+    <p class="pv-empty">No projects yet. The Ralfiz team adds them here.</p>
+    {% endfor %}
+  </section>
+
+  <section class="pv-card">
+    <header class="pv-card-head"><h2><span class="pv-head-ico orange"><i class="fas fa-money-bill-transfer"></i></span>Recent payments</h2><a href="{% url 'bizpartners_portal:payments' %}">View all <i class="fas fa-arrow-right"></i></a></header>
+    {% if recent_payments %}
+    <div class="bp-table-wrap"><table class="bp-table">
+      {% for pay in recent_payments %}
+      <tr><td>{{ pay.payment_date|date:"d M Y" }}<div class="bp-muted" style="font-size:.78rem">{{ pay.project.title }}</div></td>
+        <td>{{ pay.get_kind_display }}</td>
+        <td class="num {% if pay.is_client_payment %}in{% else %}out{% endif %}">{{ cur }} {{ pay.amount|sar }}</td></tr>
+      {% endfor %}
+    </table></div>
+    {% else %}
+    <p class="pv-empty">No payments recorded yet.</p>
+    {% endif %}
+  </section>
+</div>
+{% endwith %}
+{% endblock %}

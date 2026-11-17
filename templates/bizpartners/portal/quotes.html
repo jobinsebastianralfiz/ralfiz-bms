@@ -1,0 +1,18 @@
+{% extends 'bizpartners/portal/base.html' %}
+{% load sar %}
+{% block title %}Quotes{% endblock %}
+{% block content %}
+<h1 style="font-size:1.35rem; margin:0 0 1rem">Quotes</h1>
+<section class="pv-card"><div class="bp-table-wrap"><table class="bp-table">
+  <thead><tr><th>Number</th><th>Project</th><th>Title</th><th>Date</th><th>Status</th><th class="num">Amount</th></tr></thead>
+  <tbody>
+  {% for q in quotes %}
+  <tr><td>{{ q.quote_number }}</td>
+    <td><a href="{% url 'bizpartners_portal:project' q.project_id %}">{{ q.project.title }}</a></td>
+    <td>{{ q.title }}</td><td>{{ q.quote_date|date:"d M Y" }}</td>
+    <td><span class="bp-tag {{ q.status }}">{{ q.get_status_display }}</span></td>
+    <td class="num">{{ partner.currency }} {{ q.amount|sar }}
+      {% if q.file %}<a href="{% url 'bizpartners_portal:item_file' q.project_id 'quote' q.pk %}" target="_blank" title="Open PDF"><i class="far fa-file-pdf"></i></a>{% endif %}</td></tr>
+  {% empty %}<tr><td colspan="6" class="pv-empty">No quotes yet.</td></tr>{% endfor %}
+  </tbody></table></div></section>
+{% endblock %}

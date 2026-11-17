@@ -1,0 +1,24 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}{{ project.title }} - Business Partners{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'css/bizpartners.css' %}?v=1">{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title">{{ project.title }} <span class="bp-tag {{ project.status }}" style="vertical-align:middle">{{ project.get_status_display }}</span></h1>
+    <p class="page-subtitle mb-0">With <a href="{% url 'bizpartners:detail' partner.pk %}">{{ partner.display_name }}</a>{% if project.client_name %} · for {{ project.client_name }}{% endif %}{% if project.deadline %} · due {{ project.deadline|date:"d M Y" }}{% endif %}{% if project.linked_project %} · BMS project <a href="{% url 'project_detail' project.linked_project.pk %}">{{ project.linked_project.name }}</a>{% endif %}</p>
+  </div>
+  <div class="page-actions">
+    <a href="{% url 'bizpartners:project_edit' project.pk %}" class="btn btn-outline-secondary"><i class="fas fa-edit"></i> Edit</a>
+    <a href="{% url 'bizpartners:project_delete' project.pk %}" class="btn btn-outline-danger"><i class="fas fa-trash"></i></a>
+  </div>
+</div>
+<div class="card mb-3"><div class="card-body">
+  <div class="pv-bar-row" style="display:flex; align-items:center; gap:.6rem"><div class="bp-split" style="flex:1"><i class="r" style="width: {{ project.progress }}%"></i></div><strong>{{ project.progress }}% done</strong></div>
+  {% if project.description %}<p style="margin:.7rem 0 0; white-space:pre-line">{{ project.description }}</p>{% endif %}
+  {% if project.notes %}<p class="text-muted" style="margin:.5rem 0 0; white-space:pre-line"><strong>For the partner:</strong> {{ project.notes }}</p>{% endif %}
+  {% if project.internal_notes %}<p class="text-muted" style="margin:.5rem 0 0; white-space:pre-line"><strong>Internal:</strong> {{ project.internal_notes }}</p>{% endif %}
+</div></div>
+{% include 'bizpartners/_ledgers.html' with staff=True %}
+{% include 'bizpartners/_updates.html' with staff=True %}
+{% endblock %}

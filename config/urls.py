@@ -32,6 +32,8 @@ urlpatterns = [
     path('api/client/', include('client_portal.api_urls')),
     path('api/pulse/', include('pulse.urls')),
     path('portal/', include('client_portal.urls')),
+    path('partner/', include('bizpartners.portal_urls')),
+    path('business-partners/', include('bizpartners.urls')),
     path('staff/', include('employees.portal_urls')),
     path('agreement/', include('employees.agreement_urls')),
     path('client-agreement/', include('core.client_agreement_urls')),
