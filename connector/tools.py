@@ -318,14 +318,36 @@ def _search(ctx, args):
                 | Q(lead__contact_person__icontains=term)
             ).order_by('-issue_date')[:SEARCH_PER_TYPE]
         ]
+    if 'business_partners' in kinds:
+        from bizpartners.models import BusinessPartner
+        out['business_partners'] = [
+            {'id': str(b.id), 'name': b.name, 'company': b.company_name, 'country': b.country,
+             'currency': b.currency, 'is_active': b.is_active}
+            for b in BusinessPartner.objects.filter(
+                Q(name__icontains=term) | Q(company_name__icontains=term)
+                | Q(email__icontains=term) | Q(phone__icontains=term)
+            ).order_by('name')[:SEARCH_PER_TYPE]
+        ]
+    if 'joint_projects' in kinds:
+        from bizpartners.models import JointProject
+        out['joint_projects'] = [
+            {'id': str(j.id), 'title': j.title, 'client': j.client_name,
+             'partner': j.partner.display_name, 'status': j.status}
+            for j in JointProject.objects.select_related('partner').filter(
+                Q(title__icontains=term) | Q(client_name__icontains=term)
+                | Q(partner__name__icontains=term) | Q(partner__company_name__icontains=term)
+            ).order_by('-created_at')[:SEARCH_PER_TYPE]
+        ]
     return out
 
 
-SEARCH_TYPES = ('clients', 'projects', 'leads', 'employees', 'team_members', 'invoices', 'quotes')
+SEARCH_TYPES = ('clients', 'projects', 'leads', 'employees', 'team_members', 'invoices', 'quotes',
+                'business_partners', 'joint_projects')
 
 register(Tool(
     'search', 'Search the BMS',
-    'Find clients, projects, leads, employees, team members, invoices and quotes by name, '
+    'Find clients, projects, leads, employees, team members, invoices, quotes, business partners '
+    'and their joint projects by name, '
     'company, phone, email or number. Call this FIRST whenever the user names something '
     'instead of giving an ID, then pass the returned id to the detail tool. Leads have '
     'integer ids; everything else uses UUIDs.',
@@ -1499,5 +1521,6 @@ register(Tool(
 ))
 
 
-# Social Hub tools register themselves into TOOLS.
+# Social Hub and Business Partner tools register themselves into TOOLS.
 import social.mcp_tools  # noqa: E402,F401
+import bizpartners.mcp_tools  # noqa: E402,F401
