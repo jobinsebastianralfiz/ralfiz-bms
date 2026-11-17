@@ -35,7 +35,7 @@ from .models import (
 # changes. Whitenoise serves these unhashed, and the service worker is
 # cache-first for static assets, so an unversioned URL is served from the old
 # cache forever -- which is exactly how the app icon got stuck.
-ASSET_V = '19'
+ASSET_V = '20'
 
 MONTHS = [
     '', 'January', 'February', 'March', 'April', 'May', 'June',
@@ -270,7 +270,84 @@ def dashboard(request):
         'recent_notifications': Notification.objects.filter(
             Q(employee=employee) | Q(employee__isnull=True))[:5],
     })
+    ctx.update(_board_dashboard(employee, today, record, board_tasks, list(open_work),
+                                ctx['upcoming_leave'], upcoming_classes, ctx['recent_notifications']))
     return render(request, 'staff/dashboard.html', ctx)
+
+
+TONES = ('plum', 'teal', 'coral')
+
+
+def _board_dashboard(employee, today, record, board_tasks, open_work, leave, classes, notes):
+    """Pieces for the card-and-calendar Home: today's three cards, one task list
+    and a calendar column of what is coming up and what happened lately."""
+    from collections import OrderedDict
+    from datetime import timedelta
+    from .models import Holiday
+
+    # Hours worked today against this person's required hours.
+    required = float(employee.attendance_policy().required_hours or 6)
+    worked = 0.0
+    if record and record.check_in:
+        end = record.check_out or timezone.now()
+        worked = max(0.0, (end - record.check_in).total_seconds() / 3600)
+    att_pct = min(100, round(worked * 100 / required)) if required else 0
+
+    tasks = []
+    for t in board_tasks:
+        tasks.append({'title': t.title, 'url': reverse('staff:board_task_detail', args=[t.pk]),
+                      'project': t.project.name if t.project_id else '', 'due': t.due_date,
+                      'overdue': t.is_overdue, 'status': t.get_status_display(),
+                      'progress': t.progress, 'files': t.attachments.count(),
+                      'done': t.status == 'review'})
+    for w in open_work:
+        tasks.append({'title': w.title, 'url': reverse('staff:work_detail', args=[w.pk]),
+                      'project': w.project.name if w.project_id else '', 'due': w.due_date,
+                      'overdue': w.is_overdue, 'status': 'Overdue' if w.is_overdue else w.get_status_display(),
+                      'progress': 0, 'files': 0, 'done': False})
+    far = today + timedelta(days=3650)
+    tasks.sort(key=lambda x: (not x['overdue'], x['due'] or far))
+    for i, t in enumerate(tasks):
+        t['tone'] = 'coral' if t['overdue'] else TONES[i % 2]
+    with_progress = [t['progress'] for t in tasks if t['progress']]
+    task_pct = round(sum(with_progress) / len(with_progress)) if with_progress else 0
+
+    # Calendar: the next two months.
+    horizon = today + timedelta(days=60)
+    days = {}
+
+    def add(day, when, what, title, tone, url=''):
+        days.setdefault(day, []).append({'when': when, 'what': what, 'title': title, 'tone': tone, 'url': url})
+
+    for c in classes:
+        if c.date <= horizon:
+            add(c.date, c.start_time.strftime('%I:%M %p').lstrip('0'), 'Class', c.title, 'plum',
+                reverse('staff:class_detail', args=[c.pk]))
+    for t in tasks:
+        if t['due'] and today <= t['due'] <= horizon:
+            add(t['due'], 'Due', t['project'] or 'Task', t['title'], 'teal', t['url'])
+    for l in leave:
+        add(max(l.start_date, today), f"{l.total_days:g}d" if l.total_days else 'Leave',
+            f"{l.leave_type.name if l.leave_type_id else 'Leave'} · {l.get_status_display()}",
+            'Your leave', 'coral', reverse('staff:leave'))
+    for h in Holiday.objects.filter(date__gte=today, date__lte=horizon).order_by('date')[:6]:
+        add(h.date, 'Holiday', h.get_kind_display(), h.name, 'coral')
+    upcoming = [{'date': d, 'events': days[d]} for d in sorted(days)][:8]
+
+    recent = OrderedDict()
+    for n in notes:
+        recent.setdefault(timezone.localtime(n.created_at).date(), []).append(n)
+    recent = [{'date': d, 'events': ev} for d, ev in recent.items()]
+
+    return {
+        'first_name': (employee.user.first_name or employee.full_name.split(' ')[0] or employee.user.username),
+        'hours_worked': worked,
+        'att_pct': att_pct,
+        'tasks': tasks[:6],
+        'task_pct': task_pct,
+        'upcoming': upcoming,
+        'recent': recent,
+    }
 
 
 # --- Attendance ------------------------------------------------------------

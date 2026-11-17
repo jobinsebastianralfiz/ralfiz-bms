@@ -30,15 +30,23 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
   <link rel="stylesheet" href="{% static 'css/staff.css' %}?v={{ asset_v }}">
   <link rel="stylesheet" href="{% static 'css/staff-velora.css' %}?v={{ asset_v }}">
+  <link rel="stylesheet" href="{% static 'css/staff-board.css' %}?v={{ asset_v }}">
   {% block extra_css %}{% endblock %}
 </head>
 <body>
 
 {# Wide screens: a left sidebar like the client portal; phones keep the bottom tab bar. #}
+<div class="sv-board">
 <aside class="sv-side" aria-label="Menu">
   <a href="{% url 'staff:dashboard' %}" class="sv-side-brand">
     <img src="{% static 'staff/icon-192.png' %}?v={{ asset_v }}" alt="" width="40" height="40">
     <span>Ralfiz Technologies<small>Staff Portal</small></span>
+  </a>
+  <a href="{% url 'staff:profile' %}" class="sv-side-me">
+    {% if photo_url %}<img class="sv-side-me-photo" src="{{ photo_url }}" alt="">{% else %}<span class="sv-side-me-photo">{{ employee.full_name|slice:":1"|upper }}</span>{% endif %}
+    <strong>{{ employee.full_name }}</strong>
+    <span>{{ employee.designation|default:employee.get_role_display }}</span>
+    {% if employee.employee_id %}<span>{{ employee.employee_id }}</span>{% endif %}
   </a>
   <nav class="sv-side-menu">
     <a href="{% url 'staff:dashboard' %}" class="{% if active_nav == 'dashboard' %}active{% endif %}"><i class="fas fa-house"></i> Home</a>
@@ -63,15 +71,13 @@
     <a href="#" onclick="document.getElementById('sfThemeToggle').click(); return false;"><i class="fas fa-circle-half-stroke"></i> Light / dark</a>
     <a href="{% url 'staff:logout' %}"><i class="fas fa-right-from-bracket"></i> Sign out</a>
   </nav>
-  <div class="sv-side-user">
-    <div class="sv-side-user-row">
-      {% if photo_url %}<img class="sf-avatar" src="{{ photo_url }}" alt="">{% else %}<div class="sf-avatar">{{ employee.full_name|slice:":1"|upper }}</div>{% endif %}
-      <div><strong>{{ employee.full_name }}</strong><span>{{ employee.designation|default:employee.get_role_display }}</span></div>
-    </div>
-    <a href="{% url 'staff:profile' %}" class="sv-side-profile">View Profile <i class="fas fa-arrow-right"></i></a>
-  </div>
+  <svg class="sv-side-blob" viewBox="0 0 200 170" aria-hidden="true">
+    <path d="M0 40C40 30 70 70 110 80s70 10 90 60v30H0z" fill="#8FCFD1" opacity=".5"/>
+    <circle cx="120" cy="120" r="34" fill="#F6E7C8" opacity=".85"/>
+  </svg>
 </aside>
 
+<div class="sv-page">
 <header class="sf-appbar">
   {% block appbar %}
   {# Wide screens: search, notifications, theme and the person, like the client portal. #}
@@ -83,11 +89,6 @@
     <div class="sv-top-right">
       <a href="{% url 'staff:notification_list' %}" class="sv-icon-btn" aria-label="Notifications{% if unread_count %}, {{ unread_count }} unread{% endif %}"><i class="far fa-bell"></i>{% if unread_count %}<span class="sv-dot"></span>{% endif %}</a>
       <button type="button" class="sv-icon-btn" onclick="document.getElementById('sfThemeToggle').click()" aria-label="Switch light or dark"><i class="fas fa-moon"></i></button>
-      <a href="{% url 'staff:profile' %}" class="sv-user">
-        {% if photo_url %}<img class="sv-user-photo" src="{{ photo_url }}" alt="">{% else %}<span class="sv-user-photo">{{ employee.full_name|slice:":1"|upper }}</span>{% endif %}
-        <span class="sv-user-name">{{ employee.full_name }}<small>{{ employee.designation|default:employee.get_role_display }}</small></span>
-        <i class="fas fa-chevron-down" style="font-size:.65rem;"></i>
-      </a>
     </div>
   </div>
   <div class="sf-appbar-main">
@@ -112,6 +113,9 @@
   {% block page_hero %}{% endblock %}
   {% block content %}{% endblock %}
 </main>
+</div>
+{% block aside %}{% endblock %}
+</div>
 
 <div class="sf-install" id="sfInstallBanner" hidden>
   <div class="sf-install-icon"><i class="fas fa-mobile-screen-button"></i></div>

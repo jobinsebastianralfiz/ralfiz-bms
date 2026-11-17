@@ -1,0 +1,162 @@
+/* Staff portal: warm backdrop with one rounded board, a profile sidebar, and a
+   Home of coloured cards, a task list and a calendar column (same look as the
+   partner portal). Loaded after staff.css and staff-velora.css. */
+:root {
+  --sd-backdrop: #EFE8E1;
+  --sd-ink: #1E1B2E;
+  --sd-plum: #6B3A8C;
+  --sd-teal: #6DBDC0;
+  --sd-coral: #F6844F;
+  --sd-cal: #FBF3EC;
+  --sd-cal-line: #EFE2D6;
+  --sd-soft: #F7F5F9;
+  --sd-dash: #DCD5E3;
+  --sd-shadow: 0 10px 24px -14px rgba(30, 27, 46, .25);
+}
+[data-theme="dark"] {
+  --sd-backdrop: #0B0C15;
+  --sd-ink: #ECEAF6;
+  --sd-cal: #1C1F33;
+  --sd-cal-line: #2A2E47;
+  --sd-soft: #1E2136;
+  --sd-dash: #3A3E5C;
+  --sd-shadow: 0 10px 24px -14px rgba(0, 0, 0, .6);
+}
+
+/* ───── Shell on wide screens ───── */
+.sv-side-me, .sv-side-blob { display: none; }
+@media (min-width: 1024px) {
+  html, body { background: var(--sd-backdrop); }
+  body { padding: 28px; padding-left: 28px; box-sizing: border-box; }
+  .sv-board { display: flex; max-width: 1440px; margin: 0 auto; min-height: calc(100vh - 56px); background: var(--sf-card-solid);
+    border-radius: 28px; box-shadow: 0 30px 60px -30px rgba(70, 45, 20, .25); overflow: clip; }
+  .sv-page { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+  .sv-side { position: sticky; top: 28px; align-self: flex-start; height: calc(100vh - 56px); width: 240px; flex: none;
+    background: transparent; border-right: 1px solid var(--sf-line); padding: 26px 16px 20px; gap: 16px; overflow: hidden auto; }
+  .sv-side-brand span { font-size: 13.5px; }
+  .sv-side-brand img { width: 34px; height: 34px; }
+  .sv-side-me { display: flex; flex-direction: column; align-items: center; text-align: center; text-decoration: none; color: var(--sf-text); padding: 6px 0 4px; }
+  .sv-side-me-photo { width: 64px; height: 64px; border-radius: 50%; object-fit: cover; margin-bottom: 10px; display: inline-flex; align-items: center; justify-content: center;
+    font-weight: 800; font-size: 24px; color: #fff; background: linear-gradient(135deg, var(--sd-teal), var(--sd-plum));
+    box-shadow: 0 0 0 4px var(--sf-card-solid), 0 0 0 6px #F3E3D6; }
+  .sv-side-me strong { font-size: 14.5px; }
+  .sv-side-me span { font-size: 12px; color: var(--sf-text-3); margin-top: 2px; }
+  .sv-side-menu { position: relative; z-index: 1; }
+  .sv-side-menu a { height: 38px; font-size: 13.5px; border-radius: 12px; }
+  .sv-side-menu a.active { background: var(--sd-soft); color: var(--sf-text); font-weight: 700; }
+  .sv-side-menu a.active::before { display: none; }
+  .sv-side-blob { display: block; flex: none; width: 200px; height: 150px; margin: auto -16px -20px; pointer-events: none; }
+  .sf-appbar { background: var(--sf-card-solid); border-bottom: 1px solid var(--sf-line-soft); }
+  .sf-main { flex: 1; }
+
+  /* Home has its own header, so the search bar goes. */
+  .sv-board:has(.sd-cal) .sf-appbar { display: none; }
+  .sv-board:has(.sd-cal) .sf-main { padding: 32px 34px 40px; }
+}
+
+/* ───── Home ───── */
+.sd-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; margin: 4px 0 22px; flex-wrap: wrap; }
+.sd-head h1 { font-size: 22px; font-weight: 800; margin: 0; letter-spacing: -.01em; }
+.sd-head p { margin: 4px 0 0; font-size: 12.5px; color: var(--sf-text-3); }
+.sd-head-actions { display: flex; gap: 10px; align-items: center; }
+.sd-icon-btn { width: 40px; height: 40px; border-radius: 12px; background: var(--sd-soft); color: var(--sf-text); display: inline-flex; align-items: center; justify-content: center; text-decoration: none; }
+.sd-dark-btn { height: 40px; padding: 0 18px; border-radius: 12px; background: #1E1B2E; color: #fff; font-size: 13px; font-weight: 600;
+  display: inline-flex; align-items: center; gap: 8px; text-decoration: none; white-space: nowrap; border: 0; }
+.sd-dark-btn:hover { background: #2F2A45; color: #fff; }
+[data-theme="dark"] .sd-dark-btn { background: var(--sf-primary); }
+
+.sd-cards { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px; margin-bottom: 30px; }
+.sd-card { border-radius: 16px; padding: 16px 18px 18px; color: #fff; text-decoration: none; display: flex; flex-direction: column; min-height: 150px;
+  transition: transform .15s ease, box-shadow .15s ease; }
+.sd-card:hover { color: #fff; transform: translateY(-2px); box-shadow: 0 14px 24px -14px rgba(30, 27, 46, .45); }
+.sd-card.plum { background: var(--sd-plum); } .sd-card.teal { background: var(--sd-teal); } .sd-card.coral { background: var(--sd-coral); }
+.sd-card-top { display: flex; justify-content: space-between; align-items: center; }
+.sd-card-ico { width: 30px; height: 30px; border-radius: 50%; background: rgba(255,255,255,.22); display: inline-flex; align-items: center; justify-content: center; font-size: 13px; }
+.sd-card-status { font-size: 10.5px; font-weight: 700; background: rgba(255,255,255,.22); padding: 3px 9px; border-radius: 99px; }
+.sd-card h3 { font-size: 17px; font-weight: 800; line-height: 1.25; margin: 18px 0 auto; color: #fff; }
+.sd-card-meta { display: flex; justify-content: space-between; font-size: 11.5px; opacity: .92; margin: 16px 0 6px; gap: 8px; }
+.sd-card-meta span:first-child { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sd-card-bar { height: 4px; border-radius: 4px; background: rgba(255,255,255,.35); overflow: hidden; }
+.sd-card-bar i { display: block; height: 100%; background: #fff; border-radius: 4px; }
+
+.sd-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 30px; }
+.sd-h2 { font-size: 15px; font-weight: 800; margin: 0 0 16px; display: flex; justify-content: space-between; align-items: center; }
+.sd-h2 a, .sd-cal-group a { font-size: 12px; font-weight: 600; color: var(--sf-text-3); text-decoration: none; letter-spacing: 0; text-transform: none; }
+.sd-tasks { display: flex; flex-direction: column; gap: 14px; }
+.sd-task { display: flex; align-items: center; gap: 14px; background: var(--sf-card-solid); border-radius: 14px; padding: 14px 16px 14px 18px; position: relative;
+  box-shadow: var(--sd-shadow); text-decoration: none; color: var(--sf-text); overflow: hidden; border: 1px solid var(--sf-line-soft); }
+.sd-task:hover { color: var(--sf-text); box-shadow: 0 12px 26px -12px rgba(30, 27, 46, .32); }
+.sd-task::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 5px; }
+.sd-task.plum::before { background: var(--sd-plum); } .sd-task.teal::before { background: var(--sd-teal); } .sd-task.coral::before { background: var(--sd-coral); }
+.sd-task-body { flex: 1; min-width: 0; }
+.sd-task-body strong { display: block; font-size: 13.5px; }
+.sd-task-body > span { display: block; font-size: 12px; color: var(--sf-text-3); margin-top: 3px; }
+.sd-task-body .late { color: #DC2626; font-weight: 600; }
+.sd-check { width: 22px; height: 22px; border-radius: 50%; border: 1.5px solid var(--sd-dash); flex: none; display: inline-flex; align-items: center; justify-content: center; font-size: 10px; }
+.sd-check.on { background: #1E1B2E; border-color: #1E1B2E; color: #fff; }
+
+.sd-stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin-bottom: 18px; }
+.sd-stat { background: var(--sd-soft); border-radius: 12px; padding: 14px 12px; min-width: 0; text-decoration: none; color: var(--sf-text); }
+.sd-stat strong { display: block; font-size: 20px; font-weight: 800; font-variant-numeric: tabular-nums; }
+.sd-stat span { display: block; font-size: 11.5px; color: var(--sf-text-3); margin-top: 4px; line-height: 1.3; }
+.sd-stat.link { background: transparent; border: 1.5px dashed var(--sd-dash); display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; gap: 2px; }
+.sd-stat.link:hover { border-color: var(--sd-plum); }
+.sd-stat.link i { width: 22px; height: 22px; border-radius: 50%; background: #1E1B2E; color: #fff; display: inline-flex; align-items: center; justify-content: center; font-size: 10px; }
+.sd-promo { position: relative; background: var(--sf-card-solid); border: 1px solid var(--sf-line-soft); border-radius: 16px; padding: 18px 20px; min-height: 150px;
+  box-shadow: 0 14px 30px -16px rgba(30, 27, 46, .3); overflow: hidden; }
+.sd-promo .label { font-size: 11px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; color: var(--sf-text-3); }
+.sd-promo .big { font-size: 18px; font-weight: 800; margin-top: 6px; max-width: 60%; line-height: 1.25; }
+.sd-promo p { font-size: 12px; color: var(--sf-text-3); margin: 6px 0 0; max-width: 56%; }
+.sd-promo p.next { color: var(--sf-text-2); font-weight: 600; }
+.sd-promo-bar { height: 5px; border-radius: 5px; background: var(--sd-soft); max-width: 56%; margin: 12px 0 14px; overflow: hidden; }
+.sd-promo-bar i { display: block; height: 100%; background: var(--sd-coral); }
+.sd-promo > .sd-dark-btn { margin-top: 14px; }
+.sd-promo-bar + .sd-dark-btn { margin-top: 0; }
+.sd-promo-art { position: absolute; right: 8px; bottom: 0; width: 40%; max-width: 170px; height: auto; pointer-events: none; }
+.sd-wallet { margin-top: 30px; }
+.sd-empty { font-size: 12.5px; color: var(--sf-text-3); padding: 10px 0; margin: 0; }
+
+/* Calendar column */
+.sd-cal { background: var(--sd-cal); padding: 24px 16px calc(var(--sf-tabbar, 64px) + 28px); }
+.sd-cal-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+.sd-cal-head h2 { font-size: 16px; font-weight: 800; margin: 0; }
+.sd-cal-head a { position: relative; width: 36px; height: 36px; border-radius: 12px; background: var(--sf-card-solid); color: var(--sf-text); display: inline-flex; align-items: center; justify-content: center; font-size: 13px; text-decoration: none; }
+.sd-cal-head b { position: absolute; top: -5px; right: -5px; min-width: 17px; height: 17px; border-radius: 9px; background: var(--sd-coral); color: #fff; font-size: 10px; display: flex; align-items: center; justify-content: center; padding: 0 4px; }
+.sd-cal-group { font-size: 11px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; color: var(--sf-text-3); margin: 22px 0 4px; display: flex; justify-content: space-between; align-items: center; }
+.sd-cal-day { border-bottom: 1px solid var(--sd-cal-line); padding: 14px 0; }
+.sd-cal-day:last-of-type { border-bottom: 0; }
+.sd-cal-date { font-size: 11px; color: var(--sf-text-3); margin-bottom: 12px; display: flex; justify-content: space-between; }
+.sd-ev { display: grid; grid-template-columns: 62px 3px 1fr; gap: 10px; align-items: start; margin-bottom: 12px; text-decoration: none; color: var(--sf-text); }
+.sd-ev:last-child { margin-bottom: 0; }
+.sd-ev-when { font-size: 12px; font-weight: 800; padding-top: 1px; }
+.sd-ev-bar { width: 3px; border-radius: 2px; align-self: stretch; min-height: 30px; }
+.sd-ev-bar.plum { background: var(--sd-plum); } .sd-ev-bar.teal { background: var(--sd-teal); } .sd-ev-bar.coral { background: var(--sd-coral); } .sd-ev-bar.grey { background: var(--sd-dash); }
+.sd-ev-body { min-width: 0; }
+.sd-ev-body span { display: block; font-size: 11px; color: var(--sf-text-3); }
+.sd-ev-body strong { display: block; font-size: 12.5px; font-weight: 700; margin: 2px 0; overflow-wrap: anywhere; }
+
+@media (min-width: 1024px) {
+  .sd-cal { width: 300px; flex: none; padding: 34px 24px; }
+}
+@media (min-width: 1024px) and (max-width: 1280px) {
+  .sv-board:has(.sd-cal) { flex-wrap: wrap; }
+  .sv-board:has(.sd-cal) .sv-page { flex: 1 1 0; }
+  .sd-cal { width: 100%; order: 3; }
+  .sv-board:has(.sd-cal) .sv-side { position: relative; top: 0; height: auto; min-height: 100%; }
+}
+@media (max-width: 1023px) {
+  .sd-cal { margin-top: -28px; }
+  .sv-board:has(.sd-cal) .sf-main { padding-bottom: 28px; }
+}
+@media (max-width: 900px) {
+  .sd-cards { grid-template-columns: 1fr; gap: 12px; }
+  .sd-card { min-height: 120px; }
+  .sd-grid { grid-template-columns: 1fr; }
+}
+@media (max-width: 420px) {
+  .sd-stats { gap: 8px; }
+  .sd-stat { padding: 12px 9px; }
+  .sd-head-actions .sd-dark-btn span { display: none; }
+  .sd-promo .big, .sd-promo p, .sd-promo-bar { max-width: 62%; }
+}
+[data-theme="dark"] .sd-stat.link i, [data-theme="dark"] .sd-check.on { background: var(--sf-primary); border-color: var(--sf-primary); }
