@@ -86,6 +86,17 @@ body { color: var(--pp-ink); font-family: 'Inter', system-ui, sans-serif; }
 .pp-card-bar i { display: block; height: 100%; background: #fff; border-radius: 4px; }
 .pp-card.empty { background: #F7F4F9; color: var(--pp-muted); border: 1.5px dashed #DCD5E3; align-items: center; justify-content: center; text-align: center; font-size: 13px; }
 
+/* Free card slots: money at a glance, or a new-project invitation. */
+.pp-card h3 small { font-size: 12px; font-weight: 600; opacity: .85; }
+.pp-card-ico { width: 30px; height: 30px; border-radius: 50%; background: rgba(255,255,255,.22); display: inline-flex; align-items: center; justify-content: center; font-size: 13px; }
+.pp-card.new { background: #FBF7F3; color: var(--pp-ink); border: 1.5px dashed #E3D6CA; align-items: center; justify-content: center; text-align: center; gap: 6px; }
+.pp-card.new:hover { color: var(--pp-ink); border-color: var(--pp-coral); }
+.pp-card.new strong { font-size: 14px; }
+.pp-card.new > span:not(.pp-card-plus) { font-size: 11.5px; color: var(--pp-muted); max-width: 200px; }
+.pp-card-plus { width: 32px; height: 32px; border-radius: 50%; background: var(--pp-ink); color: #fff; display: inline-flex; align-items: center; justify-content: center; font-size: 12px; margin-bottom: 4px; }
+.pp-main .pp-card.new { color: var(--pp-ink); }
+.pp-card.empty { grid-column: span 1; }
+
 /* Lower grid */
 .pp-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 30px; }
 .pp-h2 { font-size: 15px; font-weight: 800; margin: 0 0 16px; display: flex; justify-content: space-between; align-items: center; }

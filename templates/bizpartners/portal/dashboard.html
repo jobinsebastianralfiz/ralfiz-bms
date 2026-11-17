@@ -29,7 +29,30 @@
     <div class="pp-card-bar"><i style="width: {{ p.progress }}%"></i></div>
   </a>
   {% empty %}
-  <div class="pp-card empty" style="grid-column: 1 / -1">No projects yet. The Ralfiz team adds them here.</div>
+  <div class="pp-card empty">No projects yet. The Ralfiz team adds them here.</div>
+  {% endfor %}
+  {% for c in fillers %}
+  {% if c.kind == 'paid' %}
+  <a class="pp-card {{ c.tone }}" href="{% url 'bizpartners_portal:payments' %}">
+    <div class="pp-card-top"><span class="pp-card-ico"><i class="fas fa-money-bill-transfer"></i></span><span class="pp-card-status">{{ c.pct }}% paid</span></div>
+    <h3>{{ cur }} {{ c.amount|sar:0 }} <small>of {{ c.of|sar:0 }}</small></h3>
+    <div class="pp-card-meta"><span>{{ c.label }}</span><span>{{ c.pct }}%</span></div>
+    <div class="pp-card-bar"><i style="width: {{ c.pct }}%"></i></div>
+  </a>
+  {% elif c.kind == 'next' %}
+  <a class="pp-card {{ c.tone }}" href="{% url 'bizpartners_portal:projects' %}">
+    <div class="pp-card-top"><span class="pp-card-ico"><i class="far fa-calendar"></i></span><span class="pp-card-status">{{ c.date|date:"j M Y" }}</span></div>
+    <h3>{{ cur }} {{ c.amount|sar:0 }} {{ c.label }}</h3>
+    <div class="pp-card-meta"><span>{{ c.title }}</span><span>in {{ c.date|timeuntil }}</span></div>
+    <div class="pp-card-bar"><i style="width: 0%"></i></div>
+  </a>
+  {% else %}
+  {% if company_email %}<a class="pp-card new" href="mailto:{{ company_email }}?subject={{ 'New project enquiry'|urlencode }}">{% else %}<div class="pp-card new">{% endif %}
+    <span class="pp-card-plus"><i class="fas fa-plus"></i></span>
+    <strong>Start a new project</strong>
+    <span>Tell us about the next one, and we'll plan it together.</span>
+  {% if company_email %}</a>{% else %}</div>{% endif %}
+  {% endif %}
   {% endfor %}
 </section>
 
@@ -49,6 +72,17 @@
       <p class="pp-cal-empty">Nothing here yet.</p>
       {% endfor %}
     </div>
+    {% if projects|length < 3 and recent_pays %}
+    <h2 class="pp-h2" style="margin-top: 26px">Recent payments <a href="{% url 'bizpartners_portal:payments' %}">All payments</a></h2>
+    <div class="pp-dues">
+      {% for e in recent_pays %}
+      <a class="pp-due {{ e.tone }}" href="{% url 'bizpartners_portal:payments' %}">
+        <span class="pp-due-body"><strong>{{ cur }} {{ e.amount|sar }}</strong><span>{{ e.what }} · {{ e.title }} · {{ e.date|date:"j M Y" }}</span></span>
+        <span class="pp-check on" aria-hidden="true"><i class="fas fa-check"></i></span>
+      </a>
+      {% endfor %}
+    </div>
+    {% endif %}
   </section>
 
   <section>

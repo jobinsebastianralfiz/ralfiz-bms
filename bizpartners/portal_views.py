@@ -111,6 +111,32 @@ def _calendar(projects, payments, today):
     return group(upcoming[:8]), group(recent)
 
 
+def _filler_cards(t, upcoming, used):
+    """With fewer than three projects the card row would be mostly empty, so the
+    free slots show money at a glance: what has been paid, then the next charge
+    (or an invitation to start a project)."""
+    out = []
+    if t['fixed_projects']:
+        due, paid = t['fixed_due'], t['fixed_paid']
+        out.append({'kind': 'paid', 'amount': paid, 'of': due, 'label': 'Paid to Ralfiz',
+                    'pct': min(100, round(paid * 100 / due)) if due else 0})
+    elif t['split_projects']:
+        cv, rec = t['split_contract_value'], t['received']
+        out.append({'kind': 'paid', 'amount': rec, 'of': cv, 'label': 'Received from clients',
+                    'pct': min(100, round(rec * 100 / cv)) if cv else 0})
+    nxt = next((e for d in upcoming for e in d['events'] if e.get('amount')), None)
+    if nxt:
+        nxt_date = next(d['date'] for d in upcoming if nxt in d['events'])
+        out.append({'kind': 'next', 'amount': nxt['amount'], 'label': nxt['what'], 'title': nxt['title'],
+                    'date': nxt_date})
+    out.append({'kind': 'new'})
+    tones = CARD_TONES[used:] + CARD_TONES
+    out = out[:max(0, 3 - used)]
+    for i, c in enumerate(out):
+        c['tone'] = tones[i]
+    return out
+
+
 @partner_required
 def dashboard(request):
     partner = request.partner
@@ -128,10 +154,13 @@ def dashboard(request):
     today = timezone.localdate()
     payments = list(JointPayment.objects.filter(project__partner=partner).select_related('project')[:5])
     upcoming, recent = _calendar(live, payments, today)
+    cards = live[:3]
     return render(request, 'bizpartners/portal/dashboard.html', _ctx(
         request, 'dashboard', t=t, today=today,
         first_name=partner.name.split()[0] if partner.name else partner.display_name,
-        cards=live[:3], projects=live, upcoming=upcoming, recent=recent,
+        cards=cards, fillers=_filler_cards(t, upcoming, len(cards)),
+        projects=live, upcoming=upcoming, recent=recent,
+        recent_pays=[{**e, 'date': d['date']} for d in recent for e in d['events']][:3],
         balance=-t['due_to_partner'],
     ))
 
