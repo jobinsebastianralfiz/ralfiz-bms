@@ -8,6 +8,7 @@ from django.http import Http404
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils import timezone
+from django.views.decorators.cache import never_cache
 
 from .forms import JointUpdateForm
 from .models import BusinessPartner, JointPayment, JointProject, JointQuote
@@ -176,6 +177,7 @@ def projects(request):
 
 
 @partner_required
+@never_cache  # it shows server and domain passwords: never keep a copy in a browser or proxy cache
 def project_detail(request, pk):
     project = get_object_or_404(JointProject, pk=pk, partner=request.partner)
     if request.method == 'POST':
@@ -189,8 +191,8 @@ def project_detail(request, pk):
     return render(request, 'bizpartners/portal/project_detail.html', _ctx(
         request, 'projects', project=project, m=project.money(),
         quotes=project.quotes.exclude(status='draft'), payments=project.payments.all(),
-        expenses=project.expenses.all(), updates=project.updates.select_related('author'),
-        update_form=JointUpdateForm()))
+        expenses=project.expenses.all(), credentials=project.credentials.filter(shared_with_partner=True),
+        updates=project.updates.select_related('author'), update_form=JointUpdateForm()))
 
 
 @partner_required

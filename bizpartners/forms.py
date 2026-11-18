@@ -2,7 +2,8 @@ from decimal import ROUND_HALF_UP, Decimal
 
 from django import forms
 
-from .models import BusinessPartner, JointExpense, JointPayment, JointProject, JointQuote, JointUpdate
+from .models import (BusinessPartner, JointCredential, JointExpense, JointPayment, JointProject, JointQuote,
+                     JointUpdate)
 
 
 class _Styled(forms.ModelForm):
@@ -34,8 +35,8 @@ class JointProjectForm(_Styled):
         fields = ['title', 'client_name', 'status', 'progress', 'deal_type', 'contract_value',
                   'partner_share_percent', 'amc_amount', 'amc_cycle', 'amc_start_date', 'server_amount',
                   'server_cycle', 'server_start_date', 'recurring_end_date',
-                  'start_date', 'deadline', 'completed_date', 'linked_project', 'description', 'notes',
-                  'internal_notes']
+                  'start_date', 'deadline', 'completed_date', 'linked_project', 'repo_url', 'live_url',
+                  'description', 'notes', 'internal_notes']
         widgets = {'start_date': DATE, 'deadline': DATE, 'completed_date': DATE, 'amc_start_date': DATE,
                    'server_start_date': DATE, 'recurring_end_date': DATE}
         labels = {'notes': 'Notes for the partner'}
@@ -67,6 +68,15 @@ class JointProjectForm(_Styled):
         return data
         self.fields['linked_project'].queryset = self.fields['linked_project'].queryset.select_related('client')
         self.fields['linked_project'].required = False
+
+
+class JointCredentialForm(_Styled):
+    class Meta:
+        model = JointCredential
+        fields = ['kind', 'name', 'url', 'username', 'password', 'notes', 'shared_with_partner']
+        # Plain text so an edit shows the saved password instead of blanking it.
+        widgets = {'password': forms.TextInput(attrs={'autocomplete': 'off', 'spellcheck': 'false'}),
+                   'username': forms.TextInput(attrs={'autocomplete': 'off'})}
 
 
 class JointQuoteForm(_Styled):

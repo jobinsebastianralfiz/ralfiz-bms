@@ -1,0 +1,49 @@
+{% comment %}Code repository, live link and logins for one joint project.
+Needs: project, credentials (shared ones only for the partner), staff (bool).{% endcomment %}
+<div class="bp-section" id="access">
+  <h2>Access &amp; credentials {% if staff %}<a class="btn btn-sm btn-outline-primary" href="{% url 'bizpartners:item_create' project.pk 'credential' %}"><i class="fas fa-plus"></i> Add credential</a>{% endif %}</h2>
+  {% if project.repo_url or project.live_url %}
+  <div class="bp-links">
+    {% if project.repo_url %}<a class="bp-link" href="{{ project.repo_url }}" target="_blank" rel="noopener"><i class="fab fa-github"></i><span><small>Code repository</small>{{ project.repo_url|cut:"https://"|cut:"http://" }}</span><i class="fas fa-arrow-up-right-from-square bp-link-go"></i></a>{% endif %}
+    {% if project.live_url %}<a class="bp-link" href="{{ project.live_url }}" target="_blank" rel="noopener"><i class="fas fa-globe"></i><span><small>Live site / app</small>{{ project.live_url|cut:"https://"|cut:"http://" }}</span><i class="fas fa-arrow-up-right-from-square bp-link-go"></i></a>{% endif %}
+  </div>
+  {% elif staff %}<p class="bp-muted" style="font-size:.85rem; margin:0 0 .6rem">Add the GitHub link and live site with <a href="{% url 'bizpartners:project_edit' project.pk %}">Edit</a>.</p>{% endif %}
+  <div class="{% if staff %}card{% else %}pv-card{% endif %}"><div class="bp-table-wrap"><table class="bp-table bp-creds">
+    <thead><tr><th>Type</th><th>Name</th><th>URL / host</th><th>Username</th><th>Password</th><th></th></tr></thead>
+    <tbody>
+    {% for c in credentials %}
+    <tr><td><span class="bp-tag">{{ c.get_kind_display }}</span></td>
+      <td><strong>{{ c.name }}</strong>{% if c.notes %}<div class="bp-muted bp-secret-note" style="font-size:.78rem; white-space:pre-line">{{ c.notes }}</div>{% endif %}
+        {% if staff and not c.shared_with_partner %}<div class="bp-muted" style="font-size:.75rem"><i class="fas fa-eye-slash"></i> Not shown to the partner</div>{% endif %}</td>
+      <td data-l="URL / host">{% if c.url %}{% if c.url|slice:":4" == "http" %}<a href="{{ c.url }}" target="_blank" rel="noopener">{{ c.url|cut:"https://"|cut:"http://"|truncatechars:40 }}</a>{% else %}<code>{{ c.url }}</code>{% endif %}{% else %}—{% endif %}</td>
+      <td data-l="Username">{% if c.username %}<span class="bp-copy-wrap"><code>{{ c.username }}</code><button type="button" class="bp-copy" data-copy="{{ c.username }}" title="Copy username" aria-label="Copy username"><i class="far fa-copy"></i></button></span>{% else %}—{% endif %}</td>
+      <td data-l="Password">{% if c.password %}<span class="bp-copy-wrap"><code class="bp-pw" data-pw="{{ c.password }}">••••••••</code>
+        <button type="button" class="bp-copy bp-reveal" title="Show password" aria-label="Show password"><i class="far fa-eye"></i></button>
+        <button type="button" class="bp-copy" data-copy="{{ c.password }}" title="Copy password" aria-label="Copy password"><i class="far fa-copy"></i></button></span>{% else %}—{% endif %}</td>
+      <td class="num">{% if staff %}<a href="{% url 'bizpartners:item_edit' project.pk 'credential' c.pk %}" title="Edit"><i class="fas fa-pen"></i></a>
+        <a href="{% url 'bizpartners:item_delete' project.pk 'credential' c.pk %}" title="Delete" style="margin-left:.5rem; color:var(--danger,#dc2626)"><i class="fas fa-trash"></i></a>{% endif %}</td></tr>
+    {% empty %}<tr><td colspan="6" class="bp-muted">{% if staff %}No logins saved yet. Add the server, domain, hosting or admin logins here.{% else %}No logins shared yet.{% endif %}</td></tr>{% endfor %}
+    </tbody></table></div></div>
+</div>
+<script>
+(function () {
+  var box = document.getElementById('access');
+  if (!box || box.dataset.ready) return;
+  box.dataset.ready = '1';
+  box.addEventListener('click', function (e) {
+    var btn = e.target.closest('.bp-copy');
+    if (!btn) return;
+    if (btn.classList.contains('bp-reveal')) {
+      var code = btn.parentNode.querySelector('.bp-pw');
+      var shown = code.textContent !== '••••••••';
+      code.textContent = shown ? '••••••••' : code.dataset.pw;
+      btn.firstElementChild.className = shown ? 'far fa-eye' : 'far fa-eye-slash';
+      return;
+    }
+    var text = btn.dataset.copy, icon = btn.firstElementChild;
+    var done = function () { icon.className = 'fas fa-check'; setTimeout(function () { icon.className = 'far fa-copy'; }, 1200); };
+    if (navigator.clipboard) { navigator.clipboard.writeText(text).then(done, function () {}); }
+    else { var t = document.createElement('textarea'); t.value = text; document.body.appendChild(t); t.select(); try { document.execCommand('copy'); done(); } catch (x) {} t.remove(); }
+  });
+})();
+</script>

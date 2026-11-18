@@ -305,3 +305,69 @@ class StaffTests(TestCase):
         partner = BusinessPartner.objects.create(name='X')
         project = JointProject.objects.create(partner=partner, title='P')
         self.assertEqual(self.client.get(f'/business-partners/projects/{project.pk}/bogus/new/').status_code, 404)
+
+
+class CredentialTests(TestCase):
+    """Server/domain logins and the GitHub link on a joint project."""
+
+    def setUp(self):
+        from .models import JointCredential  # noqa: F401
+        self.staff = User.objects.create_superuser('boss2', 'b2@x.in', 'pass12345')
+        self.puser = User.objects.create_user('p@rt.sa', 'p@rt.sa', 'partner-pass-1')
+        self.partner = BusinessPartner.objects.create(user=self.puser, name='Arfad', email='p@rt.sa')
+        self.project = JointProject.objects.create(partner=self.partner, title='Nous QR', deal_type='fixed',
+                                                   contract_value=D('2900'), status='in_progress',
+                                                   repo_url='https://github.com/ralfiz/nous-web')
+
+    def add(self, **extra):
+        self.client.force_login(self.staff)
+        data = {'kind': 'server', 'name': 'Hostinger VPS', 'url': '82.25.1.9', 'username': 'root',
+                'password': 'S3cret-Pass!', 'notes': 'SSH port 2222', 'shared_with_partner': 'on'}
+        data.update(extra)
+        r = self.client.post(reverse('bizpartners:item_create', args=[self.project.pk, 'credential']), data)
+        self.assertEqual(r.status_code, 302)
+        self.client.logout()
+
+    def test_password_and_notes_are_encrypted_at_rest(self):
+        from .models import JointCredential
+        self.add()
+        from django.db import connection
+        with connection.cursor() as cur:
+            cur.execute(f'SELECT password, notes FROM {JointCredential._meta.db_table}')
+            raw = cur.fetchone()
+        self.assertTrue(raw[0].startswith('enc1:') and raw[1].startswith('enc1:'))
+        self.assertEqual(JointCredential.objects.get().password, 'S3cret-Pass!')
+
+    def test_partner_sees_shared_logins_and_repo_not_hidden_ones(self):
+        self.add()
+        self.add(name='Internal DB', password='only-us', shared_with_partner='')
+        self.client.login(username='p@rt.sa', password='partner-pass-1')
+        r = self.client.get(reverse('bizpartners_portal:project', args=[self.project.pk]))
+        self.assertContains(r, 'Hostinger VPS')
+        self.assertContains(r, 'S3cret-Pass!')
+        self.assertContains(r, 'https://github.com/ralfiz/nous-web')
+        self.assertNotContains(r, 'Internal DB')
+        self.assertNotContains(r, 'only-us')
+        self.assertIn('no-cache', r['Cache-Control'])
+
+    def test_another_partner_cannot_open_the_project(self):
+        self.add()
+        other = User.objects.create_user('o@x.sa', 'o@x.sa', 'other-pass-1')
+        BusinessPartner.objects.create(user=other, name='Other')
+        self.client.login(username='o@x.sa', password='other-pass-1')
+        r = self.client.get(reverse('bizpartners_portal:project', args=[self.project.pk]))
+        self.assertEqual(r.status_code, 404)
+
+    def test_staff_page_lists_hidden_ones_too_and_edit_keeps_password(self):
+        from .models import JointCredential
+        self.add(shared_with_partner='')
+        self.client.force_login(self.staff)
+        r = self.client.get(reverse('bizpartners:project', args=[self.project.pk]))
+        self.assertContains(r, 'Not shown to the partner')
+        c = JointCredential.objects.get()
+        r = self.client.get(reverse('bizpartners:item_edit', args=[self.project.pk, 'credential', c.pk]))
+        self.assertContains(r, 'value="S3cret-Pass!"')
+        r = self.client.get(reverse('bizpartners:item_delete', args=[self.project.pk, 'credential', c.pk]))
+        self.assertEqual(r.status_code, 200)
+        self.client.post(reverse('bizpartners:item_delete', args=[self.project.pk, 'credential', c.pk]))
+        self.assertFalse(JointCredential.objects.exists())

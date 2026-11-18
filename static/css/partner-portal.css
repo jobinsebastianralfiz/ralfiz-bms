@@ -167,7 +167,7 @@ body { color: var(--pp-ink); font-family: 'Inter', system-ui, sans-serif; }
 }
 @media (max-width: 900px) {
   .pp-shell { padding: 0; }
-  .pp-board { border-radius: 0; min-height: 100vh; flex-direction: column; }
+  .pp-board { border-radius: 0; min-height: 100vh; flex-direction: column; flex-wrap: nowrap; }
   .pp-side { width: 100%; padding: 16px; border-right: 0; border-bottom: 1px solid var(--pp-line); }
   .pp-side-top { display: flex; justify-content: space-between; align-items: center; }
   .pp-burger { display: inline-flex; }

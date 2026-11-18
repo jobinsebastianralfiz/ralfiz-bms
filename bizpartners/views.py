@@ -9,15 +9,16 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.views.decorators.http import require_POST
 
-from .forms import (BusinessPartnerForm, JointExpenseForm, JointPaymentForm, JointProjectForm,
-                    JointQuoteForm, JointUpdateForm)
-from .models import BusinessPartner, JointExpense, JointPayment, JointProject, JointQuote
+from .forms import (BusinessPartnerForm, JointCredentialForm, JointExpenseForm, JointPaymentForm,
+                    JointProjectForm, JointQuoteForm, JointUpdateForm)
+from .models import BusinessPartner, JointCredential, JointExpense, JointPayment, JointProject, JointQuote
 
 # The three ledgers on a joint project share one add/edit/delete flow.
 ITEMS = {
     'quote': (JointQuote, JointQuoteForm, 'Quote', 'quotes'),
     'payment': (JointPayment, JointPaymentForm, 'Payment', 'payments'),
     'expense': (JointExpense, JointExpenseForm, 'Expense', 'expenses'),
+    'credential': (JointCredential, JointCredentialForm, 'Credential', 'access'),
 }
 FILE_FIELD = {'quote': 'file', 'payment': 'receipt', 'expense': 'receipt'}
 
@@ -144,6 +145,7 @@ def project_detail(request, pk):
     return render(request, 'bizpartners/project_detail.html', {
         'project': project, 'partner': project.partner, 'm': project.money(),
         'quotes': project.quotes.all(), 'payments': project.payments.all(), 'expenses': project.expenses.all(),
+        'credentials': project.credentials.all(),
         'updates': project.updates.select_related('author'), 'update_form': JointUpdateForm(),
     })
 
@@ -167,7 +169,7 @@ def item_form(request, project_pk, kind, pk=None):
     model, form_cls, label, anchor = _item(kind)
     project = get_object_or_404(JointProject.objects.select_related('partner'), pk=project_pk)
     obj = get_object_or_404(model, pk=pk, project=project) if pk else None
-    extra = {} if kind == 'quote' else {'project': project}
+    extra = {'project': project} if kind in ('payment', 'expense') else {}
     if request.method == 'POST':
         form = form_cls(request.POST, request.FILES, instance=obj, **extra)
     else:
@@ -192,7 +194,7 @@ def item_delete(request, project_pk, kind, pk):
     obj = get_object_or_404(model, pk=pk, project_id=project_pk)
     back = reverse('bizpartners:project', args=[project_pk]) + f'#{anchor}'
     if request.method == 'POST':
-        f = getattr(obj, FILE_FIELD[kind])
+        f = getattr(obj, FILE_FIELD[kind]) if kind in FILE_FIELD else None
         if f:
             f.delete(save=False)
         obj.delete()
@@ -202,6 +204,8 @@ def item_delete(request, project_pk, kind, pk):
 
 
 def send_item_file(obj, kind):
+    if kind not in FILE_FIELD:
+        raise Http404
     f = getattr(obj, FILE_FIELD[kind])
     if not f:
         raise Http404

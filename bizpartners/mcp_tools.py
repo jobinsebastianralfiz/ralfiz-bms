@@ -202,6 +202,13 @@ def _get_project(ctx, args):
         'paid_by': e.get_paid_by_display(), 'amount': _m(e.amount),
         **({'paid_as': f'{e.paid_currency} {_m(e.paid_amount)} at {e.exchange_rate}'} if e.is_converted else {}),
     } for e in project.expenses.order_by('-expense_date')]
+    if project.repo_url:
+        out['code_repository'] = project.repo_url
+    if project.live_url:
+        out['live_site'] = project.live_url
+    # Names only: passwords stay in the BMS (open staff_page to see them).
+    out['logins_saved'] = [{'type': c.get_kind_display(), 'name': c.name, 'url': c.url,
+                            'shared_with_partner': c.shared_with_partner} for c in project.credentials.all()]
     out['quotes'] = [{'number': q.quote_number, 'title': q.title, 'amount': _m(q.amount),
                       'status': q.get_status_display(), 'date': q.quote_date.isoformat()}
                      for q in project.quotes.order_by('-quote_date')]

@@ -50,3 +50,26 @@
 #updates textarea { font-family: inherit; }
 .bp-convert { margin: .25rem .5rem .5rem; padding: .7rem .9rem; border-radius: 10px; background: #eef2ff; color: #3730a3; font-weight: 600; font-size: .9rem; }
 .bp-orig { display: block; font-size: .75rem; color: var(--text-muted, #6b7280); font-weight: 400; }
+
+/* Access & credentials on a joint project */
+.bp-links { display: flex; flex-wrap: wrap; gap: .6rem; margin-bottom: .7rem; }
+.bp-link { display: inline-flex; align-items: center; gap: .65rem; padding: .6rem .85rem; border-radius: 12px; border: 1px solid var(--border-color, #E6E2EC);
+  background: var(--card-bg, #fff); text-decoration: none; color: inherit; min-width: 0; max-width: 100%; }
+.bp-link > i:first-child { font-size: 1.25rem; }
+.bp-link span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; font-size: .88rem; }
+.bp-link small { display: block; font-weight: 500; font-size: .72rem; opacity: .7; }
+.bp-link-go { font-size: .75rem; opacity: .55; }
+.bp-creds code { font-size: .82rem; background: rgba(120, 110, 140, .09); padding: .1rem .35rem; border-radius: 5px; word-break: break-all; }
+.bp-copy-wrap { display: inline-flex; align-items: center; gap: .25rem; flex-wrap: wrap; }
+.bp-copy { border: 0; background: transparent; color: inherit; opacity: .6; cursor: pointer; padding: .15rem .3rem; border-radius: 6px; font-size: .85rem; }
+.bp-copy:hover { opacity: 1; background: rgba(120, 110, 140, .12); }
+@media (max-width: 700px) {
+  .bp-creds thead { display: none; }
+  .bp-creds, .bp-creds tbody, .bp-creds tr, .bp-creds td { display: block; width: 100%; box-sizing: border-box; }
+  .bp-creds tr { padding: .75rem .9rem; border-bottom: 1px solid var(--border-color, #E6E2EC); }
+  .bp-creds tr:last-child { border-bottom: 0; }
+  .bp-creds td { border: 0 !important; padding: .15rem 0 !important; text-align: left !important; }
+  .bp-creds td[data-l]::before { content: attr(data-l); display: inline-block; width: 5.2rem; font-size: .74rem; opacity: .6; }
+  .bp-creds td:empty { display: none; }
+  .bp-link { flex: 1 1 100%; }
+}

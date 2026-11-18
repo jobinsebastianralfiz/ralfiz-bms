@@ -23,6 +23,7 @@ from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
 from django.utils import timezone
 
+from core.fields import EncryptedTextField
 from core.models import _private_storage
 
 ZERO = Decimal('0')
@@ -170,6 +171,9 @@ class JointProject(models.Model):
     linked_project = models.ForeignKey(
         'core.Project', on_delete=models.SET_NULL, null=True, blank=True, related_name='joint_ventures',
         help_text='Optional: the internal BMS project where the team does the work.')
+    repo_url = models.URLField(blank=True, verbose_name='Code repository (GitHub)',
+                               help_text='Link to the code, e.g. https://github.com/ralfiz/nous-web. The partner sees it.')
+    live_url = models.URLField(blank=True, verbose_name='Live site / app link', help_text='The partner sees it.')
     notes = models.TextField(blank=True, help_text='Shown to the partner.')
     internal_notes = models.TextField(blank=True, help_text='Internal. The partner never sees this.')
     created_at = models.DateTimeField(auto_now_add=True)
@@ -477,3 +481,42 @@ class JointUpdate(models.Model):
     def __str__(self):
         return self.message[:60]
 
+
+
+class JointCredential(models.Model):
+    """A login for a joint project (server, domain, hosting, admin panel...).
+
+    Password and notes are encrypted at rest like core.Credential. Shared ones
+    show in the partner's portal on the project page.
+    """
+    KIND_CHOICES = [
+        ('server', 'Server / SSH'),
+        ('domain', 'Domain'),
+        ('hosting', 'Hosting / cPanel'),
+        ('database', 'Database'),
+        ('admin', 'Admin panel / app login'),
+        ('email', 'Email account'),
+        ('git', 'Git / GitHub access'),
+        ('store', 'App Store / Play Console'),
+        ('api', 'API key / service'),
+        ('other', 'Other'),
+    ]
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    project = models.ForeignKey(JointProject, on_delete=models.CASCADE, related_name='credentials')
+    kind = models.CharField(max_length=12, choices=KIND_CHOICES, default='server', verbose_name='Type')
+    name = models.CharField(max_length=255, help_text='e.g. "Hostinger VPS" or "nous.sa domain (GoDaddy)".')
+    url = models.CharField(max_length=500, blank=True, verbose_name='URL / host / IP',
+                           help_text='Login page, server IP or host name.')
+    username = models.CharField(max_length=255, blank=True)
+    password = EncryptedTextField(blank=True)
+    notes = EncryptedTextField(blank=True, help_text='Port, SSH key, PIN, renewal date... Stored encrypted.')
+    shared_with_partner = models.BooleanField(default=True, help_text='Show it in the partner portal.')
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['kind', 'name']
+
+    def __str__(self):
+        return f'{self.name} ({self.get_kind_display()})'
