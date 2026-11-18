@@ -24,9 +24,10 @@
      "title": "Read what changed",
      "tags": [],
      "steps": [
-      "Read the instructions at the top of this plan."
+      "Go back to the plan's main page: click Back, or open My Tasks and then this plan (not a section).",
+      "Open the panel called \"How to test\" (click it to expand) and read it."
      ],
-     "expected": "You know which sections are yours and that this round checks the changes from Dr George's review."
+     "expected": "You know which sections are yours (Sana: Home and About, and the content manager checks; Bishara: Publications and Thought leadership; Mithra: Board, Contact and Privacy; everyone: Whole site), and that this round checks the changes from Dr George's review."
     }
    ]
   },
