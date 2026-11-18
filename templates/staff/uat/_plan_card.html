@@ -36,6 +36,6 @@
         {% elif p.waiting %}<small>Waiting for {{ p.waiting_who }}</small>{{ p.waiting.name }} · {{ p.waiting_done }} of {{ p.waiting_total }} done
         {% else %}<small>All done</small>Thank you!{% endif %}
       </span>
-      <span class="go">Open <i class="fas fa-arrow-right"></i></span>
+      {% if not p.completed %}<span class="go">Open <i class="fas fa-arrow-right"></i></span>{% endif %}
     </div>
   </a>

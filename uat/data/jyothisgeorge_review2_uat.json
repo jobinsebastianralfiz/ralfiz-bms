@@ -14,6 +14,7 @@
      "title": "Open the test site",
      "tags": [],
      "steps": [
+      "Use Chrome on a laptop for the laptop checks.",
       "On a laptop in Chrome, open https://jyothisgeorge.ralfiztechnologies.workers.dev.",
       "On your own phone, open the same address."
      ],
@@ -73,7 +74,8 @@
      "tags": [],
      "steps": [
       "Open https://jyothisgeorge.ralfiztechnologies.workers.dev/.",
-      "Reload the home page, ideally on a phone on mobile data."
+      "Reload the home page, ideally on a phone on mobile data.",
+      "Use your own phone (Chrome or Safari), not a laptop window made narrow."
      ],
      "expected": "The portrait appears with the rest of the first screen, not as an empty white frame.\n(Why: Plan (images): portrait was 524 KB, now 188 KB, loaded first.)"
     },
@@ -106,7 +108,8 @@
      "steps": [
       "Open https://jyothisgeorge.ralfiztechnologies.workers.dev/about.",
       "On a phone, scroll to Career.",
-      "Use the arrows in the bar under the dots, then swipe left and right on the role card."
+      "Use the arrows in the bar under the dots, then swipe left and right on the role card.",
+      "Use your own phone (Chrome or Safari), not a laptop window made narrow."
      ],
      "expected": "The bar names the role (e.g. \"Amgen · 2022 – 2025 · 5 / 6\") and the card changes with it.\n(Why: Plan: keep the phone controls working.)"
     },
@@ -307,7 +310,8 @@
      ],
      "steps": [
       "Open https://jyothisgeorge.ralfiztechnologies.workers.dev/board.",
-      "Scroll below the four experience cards."
+      "Scroll below the four experience cards.",
+      "This is waiting on Dr George's approval: check that it works and shows; the wording or numbers may still change after he replies."
      ],
      "expected": "Heading \"Board and governance appointments\" and four cards: Amgen Technologies Ireland, OCDEM, CardioMetabolic Health Foundation, and trial steering committees naming 7 trials. Two columns on a computer, one on a phone.\n(Why: Review: describe each board role.)"
     },
@@ -319,7 +323,8 @@
      ],
      "steps": [
       "Open https://jyothisgeorge.ralfiztechnologies.workers.dev/board.",
-      "Compare the number in the top strip with the trials listed in B2."
+      "Compare the number in the top strip with the trials listed in B2.",
+      "This is waiting on Dr George's approval: check that it works and shows; the wording or numbers may still change after he replies."
      ],
      "expected": "Note what you see; Dr George will confirm which number is right.\n(Why: Open question: the strip says 6, the card names 7 trials.)"
     },
@@ -329,7 +334,8 @@
      "tags": [],
      "steps": [
       "Open https://jyothisgeorge.ralfiztechnologies.workers.dev/board.",
-      "Scroll to the end and click \"Get in touch →\"."
+      "Scroll to the end and click \"Get in touch →\".",
+      "Do NOT press Send on the contact form: it emails Dr George."
      ],
      "expected": "Banner reads \"Available for select Non-Executive Director and Scientific Advisory Board mandates\". The button opens https://jyothisgeorge.ralfiztechnologies.workers.dev/contact?topic=board with \"Board roles\" selected and the form in view.\n(Why: Review: a clear call to action for board roles.)"
     },
@@ -339,7 +345,8 @@
      "tags": [],
      "steps": [
       "Open https://jyothisgeorge.ralfiztechnologies.workers.dev/contact.",
-      "Read the top of the page."
+      "Read the top of the page.",
+      "Do NOT press Send on the contact form: it emails Dr George."
      ],
      "expected": "\"Select a topic below to route your enquiry directly to Dr George’s inbox. He replies by email.\" appears once.\n(Why: Review: the sentence appeared twice.)"
     },
@@ -349,7 +356,8 @@
      "tags": [],
      "steps": [
       "Open https://jyothisgeorge.ralfiztechnologies.workers.dev/contact.",
-      "Click the email address, then the Copy button."
+      "Click the email address, then the Copy button.",
+      "Do NOT press Send on the contact form: it emails Dr George."
      ],
      "expected": "Clicking the address takes you to the message form. Copy shows a \"Copied\" message and pasting gives the full address.\n(Why: Review: the email card could not be clicked.)"
     },
@@ -359,7 +367,8 @@
      "tags": [],
      "steps": [
       "Open https://jyothisgeorge.ralfiztechnologies.workers.dev/contact.",
-      "Click \"Save contact card\" next to Copy (and on a phone)."
+      "Click \"Save contact card\" next to Copy (and on a phone).",
+      "Do NOT press Send on the contact form: it emails Dr George."
      ],
      "expected": "A contact file (.vcf) downloads, or the phone offers to add the contact.\n(Why: Review: \"Save contact\" only opened the contact page.)"
     },
@@ -368,7 +377,8 @@
      "title": "Topic links choose the topic",
      "tags": [],
      "steps": [
-      "Open https://jyothisgeorge.ralfiztechnologies.workers.dev/contact?topic=media, then https://jyothisgeorge.ralfiztechnologies.workers.dev/contact?topic=speaking."
+      "Open https://jyothisgeorge.ralfiztechnologies.workers.dev/contact?topic=media, then https://jyothisgeorge.ralfiztechnologies.workers.dev/contact?topic=speaking.",
+      "Do NOT press Send on the contact form: it emails Dr George."
      ],
      "expected": "The matching topic button is selected each time and the page scrolls to the form.\n(Why: Plan: ?topic= links from other pages.)"
     },
@@ -378,7 +388,8 @@
      "tags": [],
      "steps": [
       "Open https://jyothisgeorge.ralfiztechnologies.workers.dev/contact.",
-      "On a phone, open any page and watch the round button in the corner for 5 seconds."
+      "On a phone, open any page and watch the round button in the corner for 5 seconds.",
+      "Use your own phone (Chrome or Safari), not a laptop window made narrow."
      ],
      "expected": "Its label slides out briefly, then hides again.\n(Why: Review: make the card button clear on phones.)"
     },
@@ -405,6 +416,7 @@
      "title": "Short addresses",
      "tags": [],
      "steps": [
+      "Pages now have short addresses (/about, /publications, /thought-leadership, /board, /contact, /privacy); old .html links should forward to them.",
       "Click through the menu.",
       "Then type these addresses: https://jyothisgeorge.ralfiztechnologies.workers.dev/about.html, https://jyothisgeorge.ralfiztechnologies.workers.dev/media.html, https://jyothisgeorge.ralfiztechnologies.workers.dev/about/, https://jyothisgeorge.ralfiztechnologies.workers.dev/nope."
      ],
@@ -433,7 +445,8 @@
      "title": "Phones: nothing runs off the side",
      "tags": [],
      "steps": [
-      "On a phone, open every page and try to scroll sideways."
+      "On a phone, open every page and try to scroll sideways.",
+      "Use your own phone (Chrome or Safari), not a laptop window made narrow."
      ],
      "expected": "No page scrolls sideways; text links are easy to tap.\n(Why: Phase 6 check.)"
     }
@@ -450,9 +463,11 @@
      "title": "Home sections switch in the content manager",
      "tags": [],
      "steps": [
+      "Sign in to the content manager at https://jyothisgeorge.ralfiztechnologies.workers.dev/admin/ with your own login (from Jobin). Never type a wrong password more than twice: five wrong tries lock sign-in for everyone for 15 minutes.",
       "Content manager (https://jyothisgeorge.ralfiztechnologies.workers.dev/admin/) → Home → Sections.",
       "Switch the new option off, save, reload Home.",
-      "Switch it back on."
+      "Switch it back on.",
+      "Before you finish, put everything back exactly as it was. Only Sana does this test."
      ],
      "expected": "Name and roles disappear when off and come back when on. Home → Top of page has editable \"Name\" and \"Roles\" fields.\n(Why: Plan: new \"Name and roles under the headline\" switch.)"
     },
@@ -463,8 +478,11 @@
       "Waiting on Dr George"
      ],
      "steps": [
+      "Sign in to the content manager at https://jyothisgeorge.ralfiztechnologies.workers.dev/admin/ with your own login (from Jobin). Never type a wrong password more than twice: five wrong tries lock sign-in for everyone for 15 minutes.",
       "Content manager (https://jyothisgeorge.ralfiztechnologies.workers.dev/admin/) → Publications → Most cited → open CARMELINA, type \"1,100+\" in \"Times cited\", save, reload Publications.",
-      "Then clear the field again."
+      "Then clear the field again.",
+      "Before you finish, put everything back exactly as it was. Only Sana does this test.",
+      "This is waiting on Dr George's approval: check that it works and shows; the wording or numbers may still change after he replies."
      ],
      "expected": "A small gold \"1,100+ CITATIONS\" badge appears on that card only, and goes when the field is cleared.\n(Why: Review: show citation counts on Most cited.)"
     },
@@ -473,7 +491,9 @@
      "title": "PNG photo saved as JPEG",
      "tags": [],
      "steps": [
-      "Content manager (https://jyothisgeorge.ralfiztechnologies.workers.dev/admin/): upload a photo saved as .png into any picture field (then put the old picture back)."
+      "Sign in to the content manager at https://jyothisgeorge.ralfiztechnologies.workers.dev/admin/ with your own login (from Jobin). Never type a wrong password more than twice: five wrong tries lock sign-in for everyone for 15 minutes.",
+      "Content manager (https://jyothisgeorge.ralfiztechnologies.workers.dev/admin/): upload a photo saved as .png into any picture field (then put the old picture back).",
+      "Before you finish, put everything back exactly as it was. Only Sana does this test."
      ],
      "expected": "The new picture address ends in .jpg. A logo with a transparent background stays .png.\n(Why: Plan (images): stop heavy PNG photos in future.)"
     },
@@ -482,8 +502,10 @@
      "title": "Content manager changes show on the site",
      "tags": [],
      "steps": [
+      "Sign in to the content manager at https://jyothisgeorge.ralfiztechnologies.workers.dev/admin/ with your own login (from Jobin). Never type a wrong password more than twice: five wrong tries lock sign-in for everyone for 15 minutes.",
       "Content manager (https://jyothisgeorge.ralfiztechnologies.workers.dev/admin/): change one word in Home → Top of page → Roles, save, reload Home.",
-      "Change it back."
+      "Change it back.",
+      "Before you finish, put everything back exactly as it was. Only Sana does this test."
      ],
      "expected": "The change shows on the next reload.\n(Why: Plan: everything editable still comes from the content manager.)"
     }
