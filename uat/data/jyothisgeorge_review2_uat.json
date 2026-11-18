@@ -1,0 +1,492 @@
+{
+ "name": "jyothisgeorge.com UAT: Dr George review (Nov 2026)",
+ "product": "jyothisgeorge.com (website and content manager)",
+ "site_url": "https://jyothisgeorge.ralfiztechnologies.workers.dev",
+ "instructions": "What this round is\nDr George reviewed the website and asked for changes. Ralfiz has made them on the test site. Check each change is there and works, on a laptop and on your phone.\n\nWhere\n• Website: https://jyothisgeorge.ralfiztechnologies.workers.dev (no login).\n• Content manager: https://jyothisgeorge.ralfiztechnologies.workers.dev/admin/ (your own login, from Jobin). Only the content manager section needs it.\n\nOrder\n1. Getting started: everyone.\n2. Then your own section: Sana: Home and About, and the content manager checks. Bishara: Publications and Thought leadership. Mithra: Board, Contact and Privacy.\n3. Everyone: Whole site.\n\nRules\n• Pages now have short addresses: /about, /publications, /thought-leadership, /board, /contact, /privacy. Old .html links should forward there.\n• Content manager checks change the shared test site. Only Sana does them, and puts everything back straight after.\n• Do NOT send the contact form. It emails Dr George.\n• Tests tagged \"Waiting on Dr George\": check they work. The wording may still change after he replies.\n• Never delete or rewrite real content.\n\nHow to mark\n• Pass: it matches \"Should happen\".\n• Fail: it doesn't. Write what you did and saw, add a screenshot.\n• Blocked: you couldn't test it (error page, no login, no phone).",
+ "sections": [
+  {
+   "key": "R2GEN",
+   "name": "Getting started",
+   "owner": "Everyone",
+   "tests": [
+    {
+     "code": "R2-G1",
+     "title": "Open the test site",
+     "tags": [],
+     "steps": [
+      "On a laptop in Chrome, open https://jyothisgeorge.ralfiztechnologies.workers.dev.",
+      "On your own phone, open the same address."
+     ],
+     "expected": "The home page opens on both, with the quote, the portrait and the menu. No \"coming soon\" page."
+    },
+    {
+     "code": "R2-G2",
+     "title": "Read what changed",
+     "tags": [],
+     "steps": [
+      "Read the instructions at the top of this plan."
+     ],
+     "expected": "You know which sections are yours and that this round checks the changes from Dr George's review."
+    }
+   ]
+  },
+  {
+   "key": "R2HOME",
+   "name": "Home and About",
+   "owner": "Sana",
+   "after": "R2GEN",
+   "tests": [
+    {
+     "code": "R2-H1",
+     "title": "Name and roles under the quote",
+     "tags": [],
+     "steps": [
+      "Open https://jyothisgeorge.ralfiztechnologies.workers.dev/.",
+      "Open the home page on a computer and on a phone."
+     ],
+     "expected": "Under the quote: \"DR JYOTHIS THOMAS GEORGE\" and three lines: Chief Medical Officer, Rezera / Visiting Professor of Cardiometabolic Medicine, University of Oxford / Founder, CardioMetabolic Health Foundation.\n(Why: Review: who he is should be clear on the first screen.)"
+    },
+    {
+     "code": "R2-H2",
+     "title": "Job title on each career stop",
+     "tags": [],
+     "steps": [
+      "Open https://jyothisgeorge.ralfiztechnologies.workers.dev/.",
+      "Scroll to the career strip."
+     ],
+     "expected": "Each stop shows its title: Clinical training & PhD, Senior Clinical Researcher, Global Head, Clinical Development, Corporate Vice President, VP & Therapeutic Area Head, Chief Medical Officer. Nothing overlaps on a phone.\n(Why: Review: show the job title on the timeline.)"
+    },
+    {
+     "code": "R2-H3",
+     "title": "Career stop opens the right role on About",
+     "tags": [],
+     "steps": [
+      "Open https://jyothisgeorge.ralfiztechnologies.workers.dev/.",
+      "Click (or tap) the Amgen stop."
+     ],
+     "expected": "Opens https://jyothisgeorge.ralfiztechnologies.workers.dev/about#career-r4 with the Amgen role shown and the timeline in view.\n(Why: Plan: links from Home keep working after the About rebuild.)"
+    },
+    {
+     "code": "R2-H4",
+     "title": "Portrait appears straight away",
+     "tags": [],
+     "steps": [
+      "Open https://jyothisgeorge.ralfiztechnologies.workers.dev/.",
+      "Reload the home page, ideally on a phone on mobile data."
+     ],
+     "expected": "The portrait appears with the rest of the first screen, not as an empty white frame.\n(Why: Plan (images): portrait was 524 KB, now 188 KB, loaded first.)"
+    },
+    {
+     "code": "R2-A1",
+     "title": "All six roles are in the page itself",
+     "tags": [],
+     "steps": [
+      "Open https://jyothisgeorge.ralfiztechnologies.workers.dev/about.",
+      "Open the page, press Ctrl+U (Cmd+Option+U on a Mac) to view the source, and search for \"Novo Nordisk\", then \"University of Edinburgh\"."
+     ],
+     "expected": "Both are found, with their full role text and impact lists.\n(Why: Review: search engines and LinkedIn should read the full career, not only what scripts draw.)"
+    },
+    {
+     "code": "R2-A2",
+     "title": "Switching roles works",
+     "tags": [],
+     "steps": [
+      "Open https://jyothisgeorge.ralfiztechnologies.workers.dev/about.",
+      "Click each stop.",
+      "Use the ← → buttons inside a role.",
+      "Tab to a stop and use the keyboard arrow keys."
+     ],
+     "expected": "The chosen role shows and the others hide. ← goes to the earlier role, → to the later one. Rezera is shown first.\n(Why: Plan: same behaviour as before the rebuild.)"
+    },
+    {
+     "code": "R2-A3",
+     "title": "Phone: role bar and swipe",
+     "tags": [],
+     "steps": [
+      "Open https://jyothisgeorge.ralfiztechnologies.workers.dev/about.",
+      "On a phone, scroll to Career.",
+      "Use the arrows in the bar under the dots, then swipe left and right on the role card."
+     ],
+     "expected": "The bar names the role (e.g. \"Amgen · 2022 – 2025 · 5 / 6\") and the card changes with it.\n(Why: Plan: keep the phone controls working.)"
+    },
+    {
+     "code": "R2-A4",
+     "title": "Grammar fixes in each role",
+     "tags": [],
+     "steps": [
+      "Open https://jyothisgeorge.ralfiztechnologies.workers.dev/about.",
+      "Open each role and read its text."
+     ],
+     "expected": "Rezera: \"both trials completed on time\", \"Delivered a JACC publication alongside an EAS presentation\". Boehringer: \"Founding steering committee member and clinical development lead\". Oxford: \"Global Clinical Lead for one of the first GLP-1 outcome trials\", \"and served as principal investigator\", OCDEM written in full. Novo Nordisk: \"Corporate Vice President, leading 300+ team members\". Amgen: \"Served on the Board of Amgen Technologies Ireland\". Edinburgh: \"gonadotrophin-inhibitory hormone\", \"characterising its function and translational potential\".\n(Why: Review: his wording corrections.)"
+    },
+    {
+     "code": "R2-A5",
+     "title": "Prix Galien wording",
+     "tags": [],
+     "steps": [
+      "Open https://jyothisgeorge.ralfiztechnologies.workers.dev/about.",
+      "Go to Recognition."
+     ],
+     "expected": "The Prix Galien card uses his highlighted wording.\n(Why: Review: his highlighted wording.)"
+    },
+    {
+     "code": "R2-A6",
+     "title": "Background section",
+     "tags": [],
+     "steps": [
+      "Open https://jyothisgeorge.ralfiztechnologies.workers.dev/about.",
+      "Go to Background."
+     ],
+     "expected": "Mentions \"diabetes, obesity and cardiovascular disease\". The last paragraph is about the CardioMetabolic Health Foundation.\n(Why: Review: add obesity and cardiovascular disease, and the Foundation.)"
+    },
+    {
+     "code": "R2-A7",
+     "title": "Banner photo",
+     "tags": [],
+     "steps": [
+      "Open https://jyothisgeorge.ralfiztechnologies.workers.dev/about.",
+      "Look at the top of the page."
+     ],
+     "expected": "The office photo shows clearly, not blurry or stretched.\n(Why: Plan (images): banner was 1.5 MB, now 83 KB.)"
+    }
+   ]
+  },
+  {
+   "key": "R2PUB",
+   "name": "Publications and Thought leadership",
+   "owner": "Bishara",
+   "after": "R2GEN",
+   "tests": [
+    {
+     "code": "R2-P1",
+     "title": "Four featured papers, nothing rotating",
+     "tags": [],
+     "steps": [
+      "Open https://jyothisgeorge.ralfiztechnologies.workers.dev/publications.",
+      "Open the page and wait 15 seconds."
+     ],
+     "expected": "The JACC paper is large and marked Latest. Three papers beside it each show a summary. No dots, no Pause button, no \"More featured papers\" heading, and nothing changes by itself.\n(Why: Review: show all featured papers with summaries; stop the rotation.)"
+    },
+    {
+     "code": "R2-P2",
+     "title": "JACC summary",
+     "tags": [],
+     "steps": [
+      "Open https://jyothisgeorge.ralfiztechnologies.workers.dev/publications.",
+      "Read the large card."
+     ],
+     "expected": "\"Data showing an 82% reduction in hsCRP with oral NLRP3 inhibition, alongside reductions in IL-6, fibrinogen and Lp(a).\"\n(Why: Review: his correction.)"
+    },
+    {
+     "code": "R2-P3",
+     "title": "\"CV\" written out",
+     "tags": [],
+     "steps": [
+      "Open https://jyothisgeorge.ralfiztechnologies.workers.dev/publications.",
+      "Search the page (Ctrl+F) for \" CV \"."
+     ],
+     "expected": "Not found. The text says \"cardiovascular\".\n(Why: Review: no abbreviations.)"
+    },
+    {
+     "code": "R2-P5",
+     "title": "Papers linked to him for Google",
+     "tags": [],
+     "steps": [
+      "Open https://jyothisgeorge.ralfiztechnologies.workers.dev/publications.",
+      "View the source and search for \"ScholarlyArticle\".",
+      "Optional: paste the page source into validator.schema.org."
+     ],
+     "expected": "About 10 papers listed, each with its journal and DOI, all pointing to the same person. The validator shows no errors.\n(Why: Plan: structured data (ScholarlyArticle).)"
+    },
+    {
+     "code": "R2-P6",
+     "title": "Paper links open the right papers",
+     "tags": [],
+     "steps": [
+      "Open https://jyothisgeorge.ralfiztechnologies.workers.dev/publications.",
+      "Click Read paper on two or three cards."
+     ],
+     "expected": "Each opens the publisher page for that paper.\n(Why: Phase 6 link check.)"
+    },
+    {
+     "code": "R2-T1",
+     "title": "Interviews heading",
+     "tags": [],
+     "steps": [
+      "Open https://jyothisgeorge.ralfiztechnologies.workers.dev/thought-leadership.",
+      "Look at the first section."
+     ],
+     "expected": "Small label \"Interviews\" and heading \"Conversations with clinical leaders\".\n(Why: Review: the first section needs a proper heading.)"
+    },
+    {
+     "code": "R2-T2",
+     "title": "J.P. Morgan line",
+     "tags": [],
+     "steps": [
+      "Open https://jyothisgeorge.ralfiztechnologies.workers.dev/thought-leadership.",
+      "Find the J.P.",
+      "Morgan item."
+     ],
+     "expected": "\"represented Rezera at J.P. Morgan\".\n(Why: Review: say Rezera.)"
+    },
+    {
+     "code": "R2-T3",
+     "title": "FT feature",
+     "tags": [],
+     "steps": [
+      "Open https://jyothisgeorge.ralfiztechnologies.workers.dev/thought-leadership.",
+      "Find the FT box and click its link."
+     ],
+     "expected": "Text reads \"from the evolution of the cardiometabolic market\". The link reads \"Read on FT.com (subscription)\" and opens the FT article.\n(Why: Review: wording fix and the article link.)"
+    },
+    {
+     "code": "R2-T4",
+     "title": "Sachs forum date",
+     "tags": [],
+     "steps": [
+      "Open https://jyothisgeorge.ralfiztechnologies.workers.dev/thought-leadership.",
+      "Find the Sachs European Neuroscience Innovation Forum card."
+     ],
+     "expected": "Shows \"March 2027\" (Zurich).\n(Why: Review: give it a date like the others.)"
+    },
+    {
+     "code": "R2-T5",
+     "title": "NodThera press marked \"now Rezera\"",
+     "tags": [],
+     "steps": [
+      "Open https://jyothisgeorge.ralfiztechnologies.workers.dev/thought-leadership.",
+      "Look at the press list dates."
+     ],
+     "expected": "Four NodThera items end in \"· now Rezera\".\n(Why: Review: readers should see it is the same company.)"
+    },
+    {
+     "code": "R2-T6",
+     "title": "LinkedIn cards open the matching post",
+     "tags": [],
+     "steps": [
+      "Open https://jyothisgeorge.ralfiztechnologies.workers.dev/thought-leadership.",
+      "Open every LinkedIn card.",
+      "Check the post matches the card title, especially \"residual inflammatory risk\" and \"healthy lifespan\"."
+     ],
+     "expected": "Every card opens a linkedin.com/posts address (no lnkd.in) and the post matches its card.\n(Why: Review: full LinkedIn addresses instead of short links.)"
+    },
+    {
+     "code": "R2-T7",
+     "title": "\"Upstream is mainstream\" image",
+     "tags": [],
+     "steps": [
+      "Open https://jyothisgeorge.ralfiztechnologies.workers.dev/thought-leadership.",
+      "Find the card in the LinkedIn section."
+     ],
+     "expected": "The image shows clearly.\n(Why: Plan (images): was 2 MB, now 181 KB.)"
+    }
+   ]
+  },
+  {
+   "key": "R2BRD",
+   "name": "Board, Contact and Privacy",
+   "owner": "Mithra",
+   "after": "R2GEN",
+   "tests": [
+    {
+     "code": "R2-B1",
+     "title": "OCDEM in full",
+     "tags": [],
+     "steps": [
+      "Open https://jyothisgeorge.ralfiztechnologies.workers.dev/board.",
+      "Look at the strip under the top banner."
+     ],
+     "expected": "\"Oxford Centre for Diabetes, Endocrinology and Metabolism\".\n(Why: Review: write abbreviations out the first time.)"
+    },
+    {
+     "code": "R2-B2",
+     "title": "Board and governance appointments",
+     "tags": [
+      "Waiting on Dr George"
+     ],
+     "steps": [
+      "Open https://jyothisgeorge.ralfiztechnologies.workers.dev/board.",
+      "Scroll below the four experience cards."
+     ],
+     "expected": "Heading \"Board and governance appointments\" and four cards: Amgen Technologies Ireland, OCDEM, CardioMetabolic Health Foundation, and trial steering committees naming 7 trials. Two columns on a computer, one on a phone.\n(Why: Review: describe each board role.)"
+    },
+    {
+     "code": "R2-B3",
+     "title": "Steering committee count",
+     "tags": [
+      "Waiting on Dr George"
+     ],
+     "steps": [
+      "Open https://jyothisgeorge.ralfiztechnologies.workers.dev/board.",
+      "Compare the number in the top strip with the trials listed in B2."
+     ],
+     "expected": "Note what you see; Dr George will confirm which number is right.\n(Why: Open question: the strip says 6, the card names 7 trials.)"
+    },
+    {
+     "code": "R2-B4",
+     "title": "Closing banner opens Contact with Board roles",
+     "tags": [],
+     "steps": [
+      "Open https://jyothisgeorge.ralfiztechnologies.workers.dev/board.",
+      "Scroll to the end and click \"Get in touch →\"."
+     ],
+     "expected": "Banner reads \"Available for select Non-Executive Director and Scientific Advisory Board mandates\". The button opens https://jyothisgeorge.ralfiztechnologies.workers.dev/contact?topic=board with \"Board roles\" selected and the form in view.\n(Why: Review: a clear call to action for board roles.)"
+    },
+    {
+     "code": "R2-C1",
+     "title": "Intro line",
+     "tags": [],
+     "steps": [
+      "Open https://jyothisgeorge.ralfiztechnologies.workers.dev/contact.",
+      "Read the top of the page."
+     ],
+     "expected": "\"Select a topic below to route your enquiry directly to Dr George’s inbox. He replies by email.\" appears once.\n(Why: Review: the sentence appeared twice.)"
+    },
+    {
+     "code": "R2-C2",
+     "title": "Email can be tapped, selected and copied",
+     "tags": [],
+     "steps": [
+      "Open https://jyothisgeorge.ralfiztechnologies.workers.dev/contact.",
+      "Click the email address, then the Copy button."
+     ],
+     "expected": "Clicking the address takes you to the message form. Copy shows a \"Copied\" message and pasting gives the full address.\n(Why: Review: the email card could not be clicked.)"
+    },
+    {
+     "code": "R2-C3",
+     "title": "Save contact card",
+     "tags": [],
+     "steps": [
+      "Open https://jyothisgeorge.ralfiztechnologies.workers.dev/contact.",
+      "Click \"Save contact card\" next to Copy (and on a phone)."
+     ],
+     "expected": "A contact file (.vcf) downloads, or the phone offers to add the contact.\n(Why: Review: \"Save contact\" only opened the contact page.)"
+    },
+    {
+     "code": "R2-C4",
+     "title": "Topic links choose the topic",
+     "tags": [],
+     "steps": [
+      "Open https://jyothisgeorge.ralfiztechnologies.workers.dev/contact?topic=media, then https://jyothisgeorge.ralfiztechnologies.workers.dev/contact?topic=speaking."
+     ],
+     "expected": "The matching topic button is selected each time and the page scrolls to the form.\n(Why: Plan: ?topic= links from other pages.)"
+    },
+    {
+     "code": "R2-C5",
+     "title": "Visiting-card label on phones",
+     "tags": [],
+     "steps": [
+      "Open https://jyothisgeorge.ralfiztechnologies.workers.dev/contact.",
+      "On a phone, open any page and watch the round button in the corner for 5 seconds."
+     ],
+     "expected": "Its label slides out briefly, then hides again.\n(Why: Review: make the card button clear on phones.)"
+    },
+    {
+     "code": "R2-R1",
+     "title": "Sign-in cookie line",
+     "tags": [],
+     "steps": [
+      "Open https://jyothisgeorge.ralfiztechnologies.workers.dev/privacy.",
+      "Read the cookies part."
+     ],
+     "expected": "Says there are no cookies except a sign-in cookie for people who manage the site.\n(Why: Review: say exactly which cookie exists.)"
+    }
+   ]
+  },
+  {
+   "key": "R2ALL",
+   "name": "Whole site: addresses, privacy and phones",
+   "owner": "Everyone",
+   "after": "R2GEN",
+   "tests": [
+    {
+     "code": "R2-S1",
+     "title": "Short addresses",
+     "tags": [],
+     "steps": [
+      "Click through the menu.",
+      "Then type these addresses: https://jyothisgeorge.ralfiztechnologies.workers.dev/about.html, https://jyothisgeorge.ralfiztechnologies.workers.dev/media.html, https://jyothisgeorge.ralfiztechnologies.workers.dev/about/, https://jyothisgeorge.ralfiztechnologies.workers.dev/nope."
+     ],
+     "expected": "Menu goes to /about, /publications, /thought-leadership, /board, /contact. The first three forward to /about, /thought-leadership and /about. /nope shows the site's own \"page not found\" page.\n(Why: Plan: /about instead of about.html.)"
+    },
+    {
+     "code": "R2-S2",
+     "title": "No tracking scripts",
+     "tags": [],
+     "steps": [
+      "Open the browser developer tools → Network, reload a few pages, filter for \"google\" and \"cloudflareinsights\"."
+     ],
+     "expected": "No requests to Google Analytics, Tag Manager or Cloudflare Insights.\n(Why: Review: security settings still allowed Google and Cloudflare tracking.)"
+    },
+    {
+     "code": "R2-S3",
+     "title": "Test site hidden from Google",
+     "tags": [],
+     "steps": [
+      "Open https://jyothisgeorge.ralfiztechnologies.workers.dev/robots.txt."
+     ],
+     "expected": "\"Disallow: /\".\n(Why: Plan: the test copy must never be listed.)"
+    },
+    {
+     "code": "R2-S4",
+     "title": "Phones: nothing runs off the side",
+     "tags": [],
+     "steps": [
+      "On a phone, open every page and try to scroll sideways."
+     ],
+     "expected": "No page scrolls sideways; text links are easy to tap.\n(Why: Phase 6 check.)"
+    }
+   ]
+  },
+  {
+   "key": "R2CM",
+   "name": "Content manager checks (one person, put everything back)",
+   "owner": "Sana",
+   "after": "R2GEN",
+   "tests": [
+    {
+     "code": "R2-H5",
+     "title": "Home sections switch in the content manager",
+     "tags": [],
+     "steps": [
+      "Content manager (https://jyothisgeorge.ralfiztechnologies.workers.dev/admin/) → Home → Sections.",
+      "Switch the new option off, save, reload Home.",
+      "Switch it back on."
+     ],
+     "expected": "Name and roles disappear when off and come back when on. Home → Top of page has editable \"Name\" and \"Roles\" fields.\n(Why: Plan: new \"Name and roles under the headline\" switch.)"
+    },
+    {
+     "code": "R2-P4",
+     "title": "Citation badge",
+     "tags": [
+      "Waiting on Dr George"
+     ],
+     "steps": [
+      "Content manager (https://jyothisgeorge.ralfiztechnologies.workers.dev/admin/) → Publications → Most cited → open CARMELINA, type \"1,100+\" in \"Times cited\", save, reload Publications.",
+      "Then clear the field again."
+     ],
+     "expected": "A small gold \"1,100+ CITATIONS\" badge appears on that card only, and goes when the field is cleared.\n(Why: Review: show citation counts on Most cited.)"
+    },
+    {
+     "code": "R2-S5",
+     "title": "PNG photo saved as JPEG",
+     "tags": [],
+     "steps": [
+      "Content manager (https://jyothisgeorge.ralfiztechnologies.workers.dev/admin/): upload a photo saved as .png into any picture field (then put the old picture back)."
+     ],
+     "expected": "The new picture address ends in .jpg. A logo with a transparent background stays .png.\n(Why: Plan (images): stop heavy PNG photos in future.)"
+    },
+    {
+     "code": "R2-S6",
+     "title": "Content manager changes show on the site",
+     "tags": [],
+     "steps": [
+      "Content manager (https://jyothisgeorge.ralfiztechnologies.workers.dev/admin/): change one word in Home → Top of page → Roles, save, reload Home.",
+      "Change it back."
+     ],
+     "expected": "The change shows on the next reload.\n(Why: Plan: everything editable still comes from the content manager.)"
+    }
+   ]
+  }
+ ]
+}
