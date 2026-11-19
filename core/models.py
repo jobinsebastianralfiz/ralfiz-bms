@@ -149,6 +149,15 @@ class Project(models.Model):
     live_url = models.URLField(blank=True)
     notes = models.TextField(blank=True)
     team_members = models.ManyToManyField('TeamMember', blank=True, related_name='assigned_projects')
+    # Task board planning: one lead per project, task codes, and who may finish cards.
+    team_lead = models.ForeignKey('TeamMember', on_delete=models.SET_NULL, null=True, blank=True,
+                                  related_name='led_projects',
+                                  help_text='Plans weeks, sees the backlog and moves any card on this board.')
+    task_prefix = models.CharField(max_length=6, blank=True, default='',
+                                   help_text='Short code for task numbers, e.g. ALW gives ALW-017.')
+    next_task_number = models.PositiveIntegerField(default=1)
+    members_can_complete = models.BooleanField(
+        default=False, help_text='Members may move their own cards to Completed (otherwise only the lead).')
     # Completion & AMC fields
     warranty_period = models.IntegerField(null=True, blank=True, help_text='Warranty period in months')
     completion_notes = models.TextField(blank=True)
@@ -1602,6 +1611,7 @@ class ProjectFile(models.Model):
 class Task(models.Model):
     """Task management model"""
     STATUS_CHOICES = [
+        ('backlog', 'Backlog'),
         ('todo', 'To Do'),
         ('in_progress', 'In Progress'),
         ('review', 'In Review'),
@@ -1626,15 +1636,36 @@ class Task(models.Model):
     completed_date = models.DateField(null=True, blank=True)
     category = models.CharField(max_length=60, blank=True, help_text='Board label, e.g. "Website Design" or "Mobile App".')
     progress = models.PositiveSmallIntegerField(default=0, help_text='Percent done, 0-100.')
+    # Planning and code links (backlog & weekly planning).
+    sprint = models.ForeignKey('ProjectSprint', on_delete=models.SET_NULL, null=True, blank=True,
+                               related_name='tasks')
+    code = models.CharField(max_length=16, blank=True, db_index=True, help_text='e.g. ALW-017')
+    branch_name = models.CharField(max_length=120, blank=True)
+    pr_url = models.URLField(max_length=500, blank=True, verbose_name='Pull request link')
+    status_changed_at = models.DateTimeField(null=True, blank=True)
     notes = models.TextField(blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
         ordering = ['-priority', 'due_date', '-created_at']
+        constraints = [
+            models.UniqueConstraint(fields=['project', 'code'], condition=~models.Q(code=''),
+                                    name='task_code_unique_per_project'),
+        ]
 
     def __str__(self):
-        return self.title
+        return f'{self.code} {self.title}' if self.code else self.title
+
+    @property
+    def is_backlog(self):
+        return self.status == 'backlog'
+
+    @property
+    def checklist_progress(self):
+        """(done, total) for the Done-when checklist."""
+        items = list(self.checklist.all())
+        return sum(1 for c in items if c.is_done), len(items)
 
     @property
     def progress_percent(self):
@@ -1645,7 +1676,7 @@ class Task(models.Model):
 
     @property
     def is_overdue(self):
-        if self.due_date and self.status not in ['completed']:
+        if self.due_date and self.status not in ['completed', 'backlog']:
             return timezone.now().date() > self.due_date
         return False
 
@@ -1660,6 +1691,58 @@ class Task(models.Model):
     @property
     def client_visible_issue_count(self):
         return self.issues.filter(is_visible_to_client=True).count()
+
+
+class ProjectSprint(models.Model):
+    """A week (sprint) of a project's plan. Its backlog cards go live when the lead starts it."""
+    STATUS_CHOICES = [('planned', 'Planned'), ('active', 'Active'), ('done', 'Done')]
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    project = models.ForeignKey(Project, on_delete=models.CASCADE, related_name='sprints')
+    name = models.CharField(max_length=60)
+    goal = models.CharField(max_length=255, blank=True)
+    order = models.PositiveSmallIntegerField()
+    start_date = models.DateField()
+    end_date = models.DateField()
+    status = models.CharField(max_length=10, choices=STATUS_CHOICES, default='planned')
+    started_at = models.DateTimeField(null=True, blank=True)
+    started_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='+')
+    closed_at = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['project', 'order']
+        constraints = [
+            models.UniqueConstraint(fields=['project', 'order'], name='sprint_order_unique'),
+            models.UniqueConstraint(fields=['project'], condition=models.Q(status='active'),
+                                    name='one_active_sprint_per_project'),
+            models.CheckConstraint(condition=models.Q(end_date__gte=models.F('start_date')),
+                                   name='sprint_dates_valid'),
+        ]
+
+    def __str__(self):
+        return f'{self.project.name} · {self.name}'
+
+    @property
+    def label(self):
+        return f'{self.name} · {self.start_date:%d %b} – {self.end_date:%d %b}'
+
+
+class TaskChecklistItem(models.Model):
+    """One "Done when" line on a task."""
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    task = models.ForeignKey('Task', on_delete=models.CASCADE, related_name='checklist')
+    text = models.CharField(max_length=255)
+    is_done = models.BooleanField(default=False)
+    done_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='+')
+    done_at = models.DateTimeField(null=True, blank=True)
+    order = models.PositiveSmallIntegerField(default=0)
+
+    class Meta:
+        ordering = ['task', 'order']
+
+    def __str__(self):
+        return self.text
 
 
 class TaskAttachment(models.Model):
@@ -1758,6 +1841,11 @@ class TaskActivity(models.Model):
         ('issue_status_changed', 'Issue Status Changed'),
         ('issue_resolved', 'Issue Resolved'),
         ('attachment_added', 'Attachment Added'),
+        ('sprint_started', 'Week Started'),
+        ('sprint_changed', 'Week Changed'),
+        ('pr_linked', 'Pull Request Linked'),
+        ('checklist', 'Checklist Ticked'),
+        ('edited', 'Edited'),
     ]
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)

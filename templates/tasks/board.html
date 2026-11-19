@@ -70,6 +70,43 @@
       </div>
     </div>
 
+    {% if project %}
+    <div class="vk-weeks">
+      <form method="get" class="vk-week-pick">
+        <input type="hidden" name="project" value="{{ project.pk }}">
+        <i class="far fa-calendar"></i>
+        <select name="week" aria-label="Week" onchange="this.form.submit()">
+          <option value="all" {% if week == 'all' %}selected{% endif %}>All weeks</option>
+          {% for sp in sprints %}<option value="{{ sp.pk }}" {% if sprint and sprint.pk == sp.pk %}selected{% endif %}>{{ sp.label }}{% if sp.status == 'active' %} (active){% elif sp.status == 'done' %} (done){% endif %}</option>{% endfor %}
+        </select>
+      </form>
+      {% if project.team_lead %}<span class="vk-lead"><i class="fas fa-user-tie"></i> Lead: {{ project.team_lead.name }}</span>{% endif %}
+      {% if not is_team_member %}
+        {% if active_sprint %}
+        <form method="post" action="{% url 'project_sprint_action' project.pk active_sprint.pk 'close' %}" class="vk-week-act" onsubmit="return confirm('Close {{ active_sprint.name|escapejs }}? Open cards move to the next week.');">
+          {% csrf_token %}<input type="hidden" name="carry_over" value="next">
+          <button class="vk-btn" type="submit"><i class="fas fa-flag-checkered"></i> Close {{ active_sprint.name }}</button>
+        </form>
+        {% elif next_sprint %}
+        <form method="post" action="{% url 'project_sprint_action' project.pk next_sprint.pk 'start' %}" class="vk-week-act" onsubmit="return confirm('Start {{ next_sprint.name|escapejs }}? Its backlog cards move to To Do and the team is notified.');">
+          {% csrf_token %}<button class="vk-btn dark" type="submit"><i class="fas fa-play"></i> Start {{ next_sprint.name }}</button>
+        </form>
+        {% endif %}
+        <details class="vk-addweek">
+          <summary class="vk-btn"><i class="fas fa-plus"></i> Add week</summary>
+          <form method="post" action="{% url 'project_sprint_create' project.pk %}">
+            {% csrf_token %}
+            <input name="name" placeholder="Week {{ sprints|length|add:1 }}" value="Week {{ sprints|length|add:1 }}" required maxlength="60">
+            <input name="goal" placeholder="Goal (optional)" maxlength="255">
+            <label>From <input type="date" name="start_date" required></label>
+            <label>To <input type="date" name="end_date" required></label>
+            <button class="vk-btn dark" type="submit">Add</button>
+          </form>
+        </details>
+      {% endif %}
+    </div>
+    {% endif %}
+
     <form method="get" class="vk-filters{% if filters_on %} open{% endif %}" id="vk-filters">
       {% if project %}<input type="hidden" name="project" value="{{ project.pk }}">{% endif %}
       <input type="search" name="q" value="{{ search }}" placeholder="Search tasks…" aria-label="Search tasks">
@@ -94,9 +131,10 @@
       {% if filters_on %}<a class="vk-clear" href="?{% if project %}project={{ project.pk }}{% endif %}">Clear filters</a>{% endif %}
     </form>
 
-    <div class="vk-board">
+    <div class="vk-board{% if has_backlog %} has-backlog{% endif %}">
       {% for col in columns %}
-      <div class="vk-col" data-status="{{ col.key }}">
+      <div class="vk-col{% if col.key == 'backlog' %} vk-col--backlog collapsed{% endif %}" data-status="{{ col.key }}">
+        {% if col.key == 'backlog' %}<button type="button" class="vk-backlog-toggle" aria-expanded="false" title="Show or hide the backlog"><i class="fas fa-box-archive"></i> <span>Backlog · {{ col.tasks|length }}</span></button>{% endif %}
         <div class="vk-col-head">
           {% if col.key == 'completed' %}<span class="vk-pie completed"><i class="fas fa-check"></i></span>{% else %}<span class="vk-pie {{ col.key }}"></span>{% endif %}
           {{ col.label }} <span class="vk-count">{{ col.tasks|length }}</span>
@@ -117,6 +155,35 @@
 {% endblock %}
 
 {% block extra_js %}
+<style>
+.vk-weeks { display:flex; align-items:center; gap:10px; flex-wrap:wrap; padding:10px 0 4px; }
+.vk-week-pick { display:inline-flex; align-items:center; gap:8px; height:38px; padding:0 12px; border:1px solid var(--vk-line); border-radius:999px; background:var(--vk-card, #fff); }
+.vk-week-pick select { border:0; background:transparent; font:inherit; font-weight:600; outline:none; max-width:300px; }
+.vk-lead { font-size:13px; color:var(--text-muted, #64748b); }
+.vk-week-act { margin:0; }
+.vk-addweek { position:relative; }
+.vk-addweek summary { list-style:none; cursor:pointer; }
+.vk-addweek summary::-webkit-details-marker { display:none; }
+.vk-addweek form { position:absolute; z-index:20; top:44px; left:0; display:grid; gap:8px; width:280px; padding:14px; border:1px solid var(--vk-line); border-radius:14px; background:var(--vk-card, #fff); box-shadow:0 16px 40px rgba(15,23,42,.14); }
+.vk-addweek input { height:36px; padding:0 10px; border:1px solid var(--vk-line); border-radius:9px; font:inherit; width:100%; }
+.vk-addweek label { display:grid; gap:4px; font-size:12px; color:var(--text-muted, #64748b); }
+.vk-board.has-backlog { grid-template-columns: 56px repeat(4, minmax(230px, 1fr)); }
+.vk-board.has-backlog.backlog-open { grid-template-columns: repeat(5, minmax(205px, 1fr)); }
+.vk-board.has-backlog .vk-stats { gap: 8px; }
+.vk-board.has-backlog .vk-stats span { white-space: nowrap; }
+.vk-col--backlog:not(.collapsed) .vk-backlog-toggle { display: none; }
+.vk-col--backlog .vk-col-head, .vk-col--backlog > :first-child + * { cursor: pointer; }
+.vk-col--backlog { background: repeating-linear-gradient(135deg, rgba(148,163,184,.08) 0 10px, rgba(148,163,184,.14) 10px 20px); }
+.vk-col--backlog.collapsed { padding:12px 6px; align-items:center; }
+.vk-col--backlog.collapsed > :not(.vk-backlog-toggle) { display:none; }
+.vk-backlog-toggle { display:flex; align-items:center; gap:8px; border:0; background:none; cursor:pointer; font:inherit; font-weight:700; color:var(--text-muted, #64748b); padding:2px 4px; }
+.vk-col--backlog.collapsed .vk-backlog-toggle { writing-mode:vertical-rl; transform:rotate(180deg); }
+.vk-code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size:11px; font-weight:700; padding:2px 7px; border-radius:6px; background:rgba(100,116,139,.12); color:#334155; }
+.vk-sprint-tag { font-size:11px; color:var(--text-muted, #64748b); }
+@media (max-width: 760px) {
+  .vk-board.has-backlog, .vk-board.has-backlog.backlog-open { grid-template-columns: 56px repeat(4, 82vw); }
+}
+</style>
 <script>
 (function () {
   // Compact / detailed cards. Starts compact on big boards; remembers the choice.
@@ -140,6 +207,29 @@
     btn.setAttribute('aria-expanded', open ? 'true' : 'false');
     if (open) { var q = panel.querySelector('input[type=search]'); if (q) q.focus(); }
   });
+
+  // Backlog column: collapsed to a strip until opened; remembers the choice.
+  var bl = document.querySelector('.vk-col--backlog');
+  if (bl) {
+    var openBl = false;
+    try { openBl = localStorage.getItem('bms.board.backlog') === 'open'; } catch (e) {}
+    var setBl = function (open) {
+      bl.classList.toggle('collapsed', !open);
+      bl.parentNode.classList.toggle('backlog-open', open);
+      bl.querySelector('.vk-backlog-toggle').setAttribute('aria-expanded', open ? 'true' : 'false');
+    };
+    setBl(openBl);
+    var head = bl.querySelector('.vk-backlog-toggle').nextElementSibling;
+    if (head) head.addEventListener('click', function (e) {
+      if (e.target.closest('a,button')) return;
+      setBl(false); try { localStorage.setItem('bms.board.backlog', 'closed'); } catch (err) {}
+    });
+    bl.querySelector('.vk-backlog-toggle').addEventListener('click', function () {
+      var open = bl.classList.contains('collapsed');
+      setBl(open);
+      try { localStorage.setItem('bms.board.backlog', open ? 'open' : 'closed'); } catch (e) {}
+    });
+  }
 
   // Drag a card to another column to change its status.
   var csrf = (document.cookie.match(/(?:^|; )csrftoken=([^;]+)/) || [])[1] || '';

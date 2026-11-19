@@ -4,13 +4,32 @@
 {% block heading %}Task{% endblock %}
 
 {% block content %}
+<style>
+.sv-code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-weight:700; }
+.sv-edit { text-decoration:none; background:var(--sf-primary-dim); color:var(--sf-primary-text); }
+.sv-code-links { display:flex; gap:14px; flex-wrap:wrap; align-items:center; margin-top:10px; font-size:13px; }
+.sv-code-links a { color:var(--sf-primary-text); font-weight:600; text-decoration:none; }
+.sv-branch code { background:var(--sf-muted-dim); padding:2px 6px; border-radius:6px; }
+.sv-branch button { border:0; background:none; cursor:pointer; color:var(--sf-text-3); }
+.sv-pr { flex-basis:100%; height:38px; padding:0 10px; border:1px solid var(--sf-line); border-radius:10px; background:var(--sf-card); color:var(--sf-text); font:inherit; }
+.sv-move { flex-wrap:wrap; }
+.sv-hint { margin:8px 0 0; font-size:12.5px; color:var(--sf-text-3); }
+.sv-checklist { list-style:none; margin:0; padding:4px 16px 14px; display:grid; gap:6px; }
+.sv-checklist li { display:flex; gap:10px; align-items:center; font-size:14px; color:var(--sf-text); }
+.sv-checklist li.done span { color:var(--sf-text-3); text-decoration:line-through; }
+.sv-checklist form { margin:0; }
+.sv-checklist button { border:0; background:none; cursor:pointer; font-size:17px; color:var(--sf-primary); padding:0; }
+.sv-history { list-style:none; margin:0; padding:4px 16px 14px; display:grid; gap:8px; font-size:13px; color:var(--sf-text-2); }
+.sv-history small { display:block; color:var(--sf-text-3); font-size:11.5px; }
+</style>
 <a href="{% url 'staff:project_board' task.project_id %}" class="sv-back"><i class="fas fa-arrow-left"></i> {{ task.project.name }} board</a>
 
 <div class="sv-cols">
 <div class="sv-col">
 <section class="sv-card">
   <div class="sv-row" style="border-bottom:0;">
-    <div class="sv-chips">{% if task.category %}<span class="sv-chip">{{ task.category }}</span>{% endif %}<span class="sv-chip pri-{{ task.priority }}">{{ task.get_priority_display }}</span></div>
+    <div class="sv-chips">{% if task.code %}<span class="sv-chip sv-code">{{ task.code }}</span>{% endif %}{% if task.category %}<span class="sv-chip">{{ task.category }}</span>{% endif %}<span class="sv-chip pri-{{ task.priority }}">{{ task.get_priority_display }}</span>{% if task.sprint %}<span class="sv-chip"><i class="far fa-calendar"></i> {{ task.sprint.name }}</span>{% endif %}
+      {% if is_lead %}<a class="sv-chip sv-edit" href="{% url 'staff:board_task_edit' task.pk %}"><i class="fas fa-pen"></i> Edit card</a>{% endif %}</div>
     <h1 class="sv-task-title">{{ task.title }}</h1>
     <div class="sv-meta">
       <span><i class="fas fa-folder"></i> {{ task.project.name }}</span>
@@ -21,7 +40,14 @@
     {% if task.notes %}<div class="sv-meta"><span><i class="far fa-note-sticky"></i> {{ task.notes }}</span></div>{% endif %}
     <div class="sv-bar"><i style="width: {{ task.progress_percent }}%"></i></div>
     <div class="sv-meta"><span><i class="far fa-user"></i> {% if is_mine %}Assigned to you{% elif task.assigned_to %}Assigned to {{ task.assigned_to.name }}{% else %}Not assigned yet{% endif %}</span></div>
-    {% if is_mine %}
+    {% if task.branch_name or task.pr_url %}
+    <div class="sv-code-links">
+      {% if task.branch_name %}<span class="sv-branch"><i class="fas fa-code-branch"></i> <code id="sv-branch">{{ task.branch_name }}</code>
+        <button type="button" onclick="navigator.clipboard.writeText(document.getElementById('sv-branch').innerText);this.innerHTML='<i class=&quot;fas fa-check&quot;></i>';" aria-label="Copy branch name"><i class="far fa-copy"></i></button></span>{% endif %}
+      {% if task.pr_url %}<a href="{{ task.pr_url }}" target="_blank" rel="noopener"><i class="fab fa-github"></i> Pull request</a>{% endif %}
+    </div>
+    {% endif %}
+    {% if can_move %}
     <form method="post" action="{% url 'staff:board_task_update' task.pk %}" class="sv-move">
       {% csrf_token %}
       <input type="hidden" name="back" value="{{ request.get_full_path }}">
@@ -30,10 +56,50 @@
       </select>
       <input type="number" name="progress" min="0" max="100" step="5" value="{{ task.progress }}" aria-label="Progress %" title="Progress %">
       <button type="submit">Save</button>
+      {% if needs_pr or task.pr_url %}<input class="sv-pr" type="url" name="pr_url" value="{{ task.pr_url }}" placeholder="Pull request link (needed for In Review)" aria-label="Pull request link">{% endif %}
     </form>
+    {% if not is_lead and not task.project.members_can_complete %}<p class="sv-hint">When your PR is merged, {% if task.project.team_lead %}{{ task.project.team_lead.name }}{% else %}an admin{% endif %} moves the card to Completed.</p>{% endif %}
     {% endif %}
   </div>
 </section>
+
+{% if checklist %}
+<section class="sv-card">
+  <header class="sv-card-head"><h2><span class="sv-head-ico"><i class="far fa-square-check"></i></span>Done when</h2><span class="sv-meta" style="margin:0;">{{ task.checklist_progress.0 }}/{{ task.checklist_progress.1 }}</span></header>
+  <ul class="sv-checklist">
+    {% for c in checklist %}
+    <li class="{% if c.is_done %}done{% endif %}">
+      {% if can_tick %}
+      <form method="post" action="{% url 'staff:checklist_toggle' task.pk c.pk %}">
+        {% csrf_token %}<input type="hidden" name="done" value="{% if c.is_done %}0{% else %}1{% endif %}">
+        <button type="submit" aria-label="{% if c.is_done %}Untick{% else %}Tick{% endif %} {{ c.text }}"><i class="{% if c.is_done %}fas fa-square-check{% else %}far fa-square{% endif %}"></i></button>
+      </form>
+      {% else %}<i class="{% if c.is_done %}fas fa-square-check{% else %}far fa-square{% endif %}"></i>{% endif %}
+      <span>{{ c.text }}</span>
+    </li>
+    {% endfor %}
+  </ul>
+</section>
+{% endif %}
+
+{% if history %}
+<section class="sv-card">
+  <header class="sv-card-head"><h2><span class="sv-head-ico"><i class="fas fa-clock-rotate-left"></i></span>History</h2></header>
+  <ul class="sv-history">
+    {% for a in history %}
+    <li><b>{{ a.actor.get_full_name|default:a.actor.username|default:"System" }}</b>
+      {% if a.verb == 'status_changed' %}moved it {{ a.from_value|default:"" }} → {{ a.to_value }}
+      {% elif a.verb == 'sprint_started' %}started {{ a.message }}
+      {% elif a.verb == 'assigned' %}assigned it to {{ a.to_value|default:"nobody" }}
+      {% elif a.verb == 'pr_linked' %}linked a pull request
+      {% elif a.verb == 'checklist' %}marked "{{ a.message }}" {{ a.to_value }}
+      {% elif a.verb == 'sprint_changed' %}moved it to {{ a.to_value|default:"no week" }}
+      {% else %}{{ a.get_verb_display|lower }}{% endif %}
+      <small>{{ a.created_at|date:"d M, h:i A" }}</small></li>
+    {% endfor %}
+  </ul>
+</section>
+{% endif %}
 
 <section class="sv-card">
   <header class="sv-card-head"><h2><span class="sv-head-ico"><i class="fas fa-paperclip"></i></span>Files</h2><span class="sv-meta" style="margin:0;">{{ attachments|length }}</span></header>

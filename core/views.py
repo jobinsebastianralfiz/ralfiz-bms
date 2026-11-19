@@ -1297,6 +1297,30 @@ def _selected_team_members(request):
     return ids
 
 
+def _save_board_settings(request, project):
+    """Team lead (must be on the team), task code prefix and next number, and
+    whether members may complete their own cards. Setting a prefix gives codes to
+    cards whose titles already start with it (ALW-004 ...)."""
+    import re as _re
+    from .task_rules import backfill_codes
+    if 'task_prefix' not in request.POST:
+        return
+    lead_id = request.POST.get('team_lead', '')
+    project.team_lead = (project.team_members.filter(pk=lead_id).first() if _is_uuid(lead_id) else None)
+    prefix = _re.sub(r'[^A-Za-z0-9]', '', request.POST.get('task_prefix', '')).upper()[:6]
+    project.task_prefix = prefix
+    try:
+        project.next_task_number = max(1, int(request.POST.get('next_task_number') or project.next_task_number))
+    except ValueError:
+        pass
+    project.members_can_complete = bool(request.POST.get('members_can_complete'))
+    project.save(update_fields=['team_lead', 'task_prefix', 'next_task_number', 'members_can_complete'])
+    if prefix:
+        n = backfill_codes(project)
+        if n:
+            messages.info(request, f'{n} existing card{"s" if n != 1 else ""} got a {prefix} code from their title.')
+
+
 @login_required
 def project_create(request):
     clients = Client.objects.filter(is_active=True)
@@ -1324,6 +1348,7 @@ def project_create(request):
         selected_members = _selected_team_members(request)
         if selected_members:
             project.team_members.set(selected_members)
+        _save_board_settings(request, project)
         messages.success(request, f'Project "{project.name}" created successfully.')
         return redirect('project_detail', pk=project.pk)
 
@@ -1582,6 +1607,7 @@ def project_update(request, pk):
 
         # Update team members (ticked interns/staff get a TeamMember made for them)
         project.team_members.set(_selected_team_members(request))
+        _save_board_settings(request, project)
 
         messages.success(request, f'Project "{project.name}" updated successfully.')
         return redirect('project_detail', pk=project.pk)
@@ -5831,7 +5857,7 @@ def team_dashboard(request):
     month_start = today.replace(day=1)
 
     # Get tasks assigned to this team member
-    my_tasks = Task.objects.filter(assigned_to=team_member).select_related('project')
+    my_tasks = Task.objects.filter(assigned_to=team_member).exclude(status='backlog').select_related('project')
     tasks_todo = my_tasks.filter(status='todo').count()
     tasks_in_progress = my_tasks.filter(status='in_progress').count()
     tasks_review = my_tasks.filter(status='review').count()
@@ -5881,7 +5907,7 @@ def my_tasks(request):
     if not team_member:
         return redirect('task_list')
 
-    tasks = Task.objects.filter(assigned_to=team_member).select_related('project')
+    tasks = Task.objects.filter(assigned_to=team_member).exclude(status='backlog').select_related('project')
 
     status = request.GET.get('status', '')
     priority = request.GET.get('priority', '')
@@ -6199,27 +6225,38 @@ def task_board(request):
     label = request.GET.get('label', '').strip()[:60]
 
     team_member = getattr(request.user, 'team_profile', None)
-    tasks = Task.objects.select_related('project', 'assigned_to').annotate(
+    tasks = Task.objects.select_related('project', 'assigned_to', 'sprint').prefetch_related('checklist').annotate(
         comment_total=Count('comments', filter=Q(comments__is_deleted=False), distinct=True),
         attachment_total=Count('attachments', distinct=True),
         open_issue_total=Count('issues', filter=Q(issues__status__in=['open', 'in_progress']), distinct=True),
     )
+    from .task_rules import visible_to
     if team_member:
-        tasks = tasks.filter(assigned_to=team_member)
+        tasks = visible_to(tasks.filter(assigned_to=team_member), member=team_member)
         projects = Project.objects.filter(tasks__assigned_to=team_member).distinct()
     else:
         projects = _task_form_projects(project_id)
     projects = projects.annotate(
-        open_task_total=Count('tasks', filter=~Q(tasks__status='completed'), distinct=True),
+        open_task_total=Count('tasks', filter=Q(tasks__status__in=['todo', 'in_progress', 'review']), distinct=True),
     ).order_by('name')
 
     project = None
+    sprints, sprint, week = [], None, request.GET.get('week', '')
     if project_id:
-        project = Project.objects.filter(pk=project_id).first() if _is_uuid(project_id) else None
+        project = Project.objects.select_related('team_lead').filter(pk=project_id).first() if _is_uuid(project_id) else None
         if project is None:
             project_id = ''
         else:
             tasks = tasks.filter(project=project)
+            # Weeks: default to the running week; "all" shows every card.
+            sprints = list(project.sprints.all())
+            if week != 'all':
+                sprint = next((sp for sp in sprints if str(sp.pk) == week), None) or \
+                    next((sp for sp in sprints if sp.status == 'active'), None)
+                week = str(sprint.pk) if sprint else 'all'
+            if sprint:
+                # The week's cards, cards nobody has put in a week, and the whole backlog.
+                tasks = tasks.filter(Q(sprint=sprint) | Q(sprint__isnull=True) | Q(status='backlog'))
 
     # Filter options come from the unfiltered set, so they never vanish.
     assignees = TeamMember.objects.filter(pk__in=tasks.values('assigned_to')).order_by('name')
@@ -6240,7 +6277,10 @@ def task_board(request):
     else:
         assignee = ''
 
-    tasks, columns = board_columns(tasks)
+    show_backlog = project is not None and team_member is None
+    tasks, columns = board_columns(tasks, include_backlog=show_backlog)
+    active_sprint = next((sp for sp in sprints if sp.status == 'active'), None)
+    next_sprint = None if active_sprint else next((sp for sp in sprints if sp.status == 'planned'), None)
 
     if project:
         team = list(project.team_members.all()[:6])
@@ -6268,6 +6308,12 @@ def task_board(request):
         'label': label,
         'filters_on': bool(search or priority or assignee or label),
         'is_team_member': team_member is not None,
+        'sprints': sprints,
+        'sprint': sprint,
+        'week': week,
+        'active_sprint': active_sprint,
+        'next_sprint': next_sprint,
+        'has_backlog': show_backlog,
     }
     return render(request, 'tasks/board.html', context)
 
@@ -6401,8 +6447,10 @@ def task_plan_create(request):
         except ValueError:
             due = None
         phase = request.POST.get(f'phase_{i}', '').strip()[:80]
+        from .task_rules import next_code
         task = Task.objects.create(
-            project=project, title=title, status='todo',
+            project=project, title=title, status='todo', code=next_code(project),
+            status_changed_at=timezone.now(),
             description=request.POST.get(f'description_{i}', '').strip()[:2000],
             category=request.POST.get(f'label_{i}', '').strip()[:60],
             priority=priority if priority in dict(Task.PRIORITY_CHOICES) else 'medium',
@@ -6571,12 +6619,37 @@ def _task_form_projects(*keep_ids):
 
 
 def _task_board_fields(task, post):
-    """Category label and progress % from the task form."""
+    """Label, progress %, week, branch and PR link from the task form."""
+    from .models import ProjectSprint
     task.category = post.get('category', '').strip()[:60]
     try:
         task.progress = max(0, min(100, int(post.get('progress') or 0)))
     except ValueError:
         task.progress = 0
+    sprint_id = post.get('sprint', '')
+    task.sprint = ProjectSprint.objects.filter(pk=sprint_id).first() if _is_uuid(sprint_id) else None
+    task.branch_name = post.get('branch_name', '').strip()[:120]
+    pr = post.get('pr_url', '').strip()[:500]
+    task.pr_url = pr if pr.startswith(('http://', 'https://')) else ''
+
+
+def _save_checklist(task, text):
+    """Replace the Done-when list from a textarea (one item per line), keeping ticks
+    on lines that did not change."""
+    from .models import TaskChecklistItem
+    lines = [l.strip()[:255] for l in (text or '').splitlines() if l.strip()]
+    done = {c.text: c for c in task.checklist.filter(is_done=True)}
+    task.checklist.all().delete()
+    for i, line in enumerate(lines):
+        old = done.get(line)
+        TaskChecklistItem.objects.create(task=task, text=line, order=i, is_done=bool(old),
+                                         done_by=old.done_by if old else None,
+                                         done_at=old.done_at if old else None)
+
+
+def _task_form_sprints():
+    from .models import ProjectSprint
+    return ProjectSprint.objects.exclude(status='done').select_related('project').order_by('project__name', 'order')
 
 
 @login_required
@@ -6604,7 +6677,13 @@ def task_create(request):
         if due_date:
             task.due_date = due_date
 
+        if task.sprint and task.sprint.project_id != task.project_id:
+            task.sprint = None
+        from .task_rules import next_code
+        task.code = next_code(task.project) if task.project_id else ''
+        task.status_changed_at = timezone.now()
         task.save()
+        _save_checklist(task, request.POST.get('checklist', ''))
 
         for f in request.FILES.getlist('attachments'):
             TaskAttachment.objects.create(task=task, file=f, name=f.name, uploaded_by=request.user)
@@ -6622,6 +6701,7 @@ def task_create(request):
         'status_choices': Task.STATUS_CHOICES,
         'priority_choices': Task.PRIORITY_CHOICES,
         'team_members': TeamMember.objects.filter(is_active=True),
+        'sprints': _task_form_sprints(),
         # The board's "+" buttons open this form for one project and column.
         'prefill_project': request.GET.get('project', ''),
         'prefill_status': request.GET.get('status', ''),
@@ -6635,9 +6715,12 @@ def task_update(request, pk):
     task = get_object_or_404(Task, pk=pk)
 
     if request.method == 'POST':
+        old_status = task.status
         task.title = request.POST.get('title')
         task.description = request.POST.get('description', '')
         task.status = request.POST.get('status', 'todo')
+        if task.status != old_status:
+            task.status_changed_at = timezone.now()
         task.priority = request.POST.get('priority', 'medium')
         task.notes = request.POST.get('notes', '')
         _task_board_fields(task, request.POST)
@@ -6657,7 +6740,14 @@ def task_update(request, pk):
         elif task.status != 'completed':
             task.completed_date = None
 
+        if task.sprint and task.sprint.project_id != task.project_id:
+            task.sprint = None
         task.save()
+        _save_checklist(task, request.POST.get('checklist', ''))
+        if task.status != old_status:
+            from .task_rules import log as log_task
+            log_task(task, request.user, 'status_changed', from_value=old_status, to_value=task.status,
+                     visible='backlog' not in (old_status, task.status))
 
         # Delete removed attachments
         delete_ids = request.POST.getlist('delete_attachment')
@@ -6679,6 +6769,8 @@ def task_update(request, pk):
         'status_choices': Task.STATUS_CHOICES,
         'priority_choices': Task.PRIORITY_CHOICES,
         'team_members': TeamMember.objects.filter(is_active=True),
+        'sprints': _task_form_sprints(),
+        'checklist_text': '\n'.join(task.checklist.values_list('text', flat=True)),
     }
     return render(request, 'tasks/form.html', context)
 
@@ -6697,42 +6789,86 @@ def task_delete(request, pk):
     return render(request, 'tasks/delete.html', {'task': task})
 
 
+def _board_url(project, sprint=None):
+    url = f"{reverse('task_board')}?project={project.pk}"
+    return url + (f'&week={sprint.pk}' if sprint else '')
+
+
+def _week_admin_only(request):
+    return getattr(request.user, 'team_profile', None) is None
+
+
+@login_required
+def project_sprint_create(request, pk):
+    """Admin: add a week to a project's plan."""
+    from datetime import date as _date
+    from .task_rules import TaskRuleError, create_sprint
+    project = get_object_or_404(Project, pk=pk)
+    if request.method == 'POST' and _week_admin_only(request):
+        try:
+            start = _date.fromisoformat(request.POST.get('start_date', ''))
+            end = _date.fromisoformat(request.POST.get('end_date', ''))
+            sprint = create_sprint(project, name=request.POST.get('name', ''), goal=request.POST.get('goal', ''),
+                                   start_date=start, end_date=end)
+            messages.success(request, f'{sprint.name} added.')
+        except ValueError:
+            messages.error(request, 'Give the week a start and end date.')
+        except TaskRuleError as e:
+            messages.error(request, str(e))
+    return redirect(_board_url(project))
+
+
+@login_required
+def project_sprint_action(request, pk, sprint_id, action):
+    """Admin: start or close a week (the staff portal has the same buttons for the lead)."""
+    from .task_rules import TaskRuleError, close_sprint, start_sprint
+    from .models import ProjectSprint
+    sprint = get_object_or_404(ProjectSprint.objects.select_related('project'), pk=sprint_id, project_id=pk)
+    if request.method == 'POST' and _week_admin_only(request):
+        try:
+            if action == 'start':
+                result = start_sprint(sprint, request.user)
+                msg = f'{sprint.name} started: {result["moved"]} card{"s" if result["moved"] != 1 else ""} moved to To Do.'
+                if result['unassigned']:
+                    msg += f' {len(result["unassigned"])} have no owner.'
+                messages.success(request, msg)
+            elif action == 'close':
+                result = close_sprint(sprint, request.user, request.POST.get('carry_over', 'next'))
+                msg = f'{sprint.name} closed: {result["completed"]} completed.'
+                if result['carried_over']:
+                    msg += f' {result["carried_over"]} open card{"s" if result["carried_over"] != 1 else ""} moved to {result["to"]}.'
+                messages.success(request, msg)
+        except TaskRuleError as e:
+            messages.error(request, str(e))
+    return redirect(_board_url(sprint.project))
+
+
 @login_required
 def task_status_update(request, pk):
-    """Update task status via AJAX or form submission"""
+    """Update task status via AJAX (board drag) or form submission, through the board rules."""
     from django.http import JsonResponse
+    from .task_rules import TaskRuleError, change_status
 
+    ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
     if request.method == 'POST':
-        task = get_object_or_404(Task, pk=pk)
-        new_status = request.POST.get('status')
-
-        if new_status in dict(Task.STATUS_CHOICES):
-            old_status = task.status
-            task.status = new_status
-            if new_status == 'completed':
-                task.completed_date = timezone.now().date()
-            else:
-                task.completed_date = None
-            task.save()
-
-            if old_status != new_status:
-                _log_task_activity(
-                    task, request.user, 'status_changed',
-                    from_value=old_status, to_value=new_status, is_visible_to_client=True,
-                )
-            log_activity(request, 'updated', task)
-
-            # Check if it's an AJAX request
-            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
-                return JsonResponse({'success': True})
-
-            # Regular form submission - redirect back
-            messages.success(request, f'Task status updated to "{task.get_status_display()}".')
+        task = get_object_or_404(Task.objects.select_related('project', 'project__team_lead'), pk=pk)
+        member = getattr(request.user, 'team_profile', None)
+        try:
+            change_status(task, request.POST.get('status', ''), request.user, member=member,
+                          is_admin=member is None, pr_url=request.POST.get('pr_url'))
+        except TaskRuleError as e:
+            messages.error(request, str(e))
+            if ajax:
+                return JsonResponse({'success': False, 'message': str(e)}, status=403)
             return redirect('task_detail', pk=task.pk)
+        log_activity(request, 'updated', task)
+        if ajax:
+            return JsonResponse({'success': True})
+        messages.success(request, f'Task status updated to "{task.get_status_display()}".')
+        return redirect('task_detail', pk=task.pk)
 
-    if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+    if ajax:
         return JsonResponse({'success': False})
-
     return redirect('task_detail', pk=pk)
 
 
@@ -7048,10 +7184,10 @@ def timeentry_create(request):
     team_member = getattr(request.user, 'team_profile', None)
     if team_member:
         projects = team_member.assigned_projects.filter(status__in=['in_progress', 'confirmed'])
-        tasks = Task.objects.filter(assigned_to=team_member).exclude(status='completed')
+        tasks = Task.objects.filter(assigned_to=team_member).exclude(status__in=['completed', 'backlog'])
     else:
         projects = Project.objects.filter(status__in=['in_progress', 'confirmed'])
-        tasks = Task.objects.exclude(status='completed')
+        tasks = Task.objects.exclude(status__in=['completed', 'backlog'])
 
     context = {
         'projects': projects,
@@ -7091,7 +7227,7 @@ def timeentry_update(request, pk):
     context = {
         'entry': entry,
         'projects': Project.objects.filter(status__in=['in_progress', 'confirmed']),
-        'tasks': Task.objects.exclude(status='completed'),
+        'tasks': Task.objects.exclude(status__in=['completed', 'backlog']),
     }
     return render(request, 'time/form.html', context)
 

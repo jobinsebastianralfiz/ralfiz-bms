@@ -50,8 +50,11 @@ class ProjectListSerializer(serializers.ModelSerializer):
             'is_overdue', 'task_stats', 'progress', 'created_at',
         ]
 
+    def get_tasks(self, obj):
+        return TaskSummarySerializer(obj.tasks.exclude(status='backlog'), many=True, context=self.context).data
+
     def get_task_stats(self, obj):
-        tasks = obj.tasks.all()
+        tasks = obj.tasks.exclude(status='backlog')
         total = tasks.count()
         completed = tasks.filter(status='completed').count()
         return {'total': total, 'completed': completed}
@@ -66,7 +69,7 @@ class ProjectDetailSerializer(serializers.ModelSerializer):
     status_display = serializers.CharField(source='get_status_display', read_only=True)
     type_display = serializers.CharField(source='get_project_type_display', read_only=True)
     is_overdue = serializers.BooleanField(read_only=True)
-    tasks = TaskSummarySerializer(many=True, read_only=True)
+    tasks = serializers.SerializerMethodField()
     task_stats = serializers.SerializerMethodField()
     progress = serializers.SerializerMethodField()
     team = serializers.SerializerMethodField()
@@ -83,10 +86,12 @@ class ProjectDetailSerializer(serializers.ModelSerializer):
         ]
 
     def get_task_stats(self, obj):
-        tasks = obj.tasks.all()
+        tasks = obj.tasks.exclude(status='backlog')
         total = tasks.count()
         by_status = {}
         for status, label in Task.STATUS_CHOICES:
+            if status == 'backlog':
+                continue   # planned work is never shown to clients
             by_status[status] = tasks.filter(status=status).count()
         return {'total': total, **by_status}
 
@@ -97,7 +102,7 @@ class ProjectDetailSerializer(serializers.ModelSerializer):
         ).first()
         if latest_update:
             return latest_update.progress_percentage
-        tasks = obj.tasks.all()
+        tasks = obj.tasks.exclude(status='backlog')
         total = tasks.count()
         if total == 0:
             return 0

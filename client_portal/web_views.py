@@ -128,7 +128,7 @@ def portal_dashboard(request):
 
     active_list = []
     for p in active_projects.order_by('-updated_at')[:5]:
-        tasks = p.tasks.all()
+        tasks = p.tasks.exclude(status='backlog')
         p.task_total = tasks.count()
         p.task_completed = tasks.filter(status='completed').count()
         p.progress = project_progress(p)
@@ -191,7 +191,7 @@ def portal_projects(request):
 
     project_list = []
     for p in qs:
-        tasks = p.tasks.all()
+        tasks = p.tasks.exclude(status='backlog')
         total = tasks.count()
         completed = tasks.filter(status='completed').count()
         p.progress = project_progress(p)
@@ -209,7 +209,7 @@ def portal_projects(request):
 
 def _portal_board_columns(project):
     """Task board columns for the client, counting only what the client may see."""
-    tasks = project.tasks.select_related('assigned_to').annotate(
+    tasks = project.tasks.exclude(status='backlog').select_related('assigned_to').annotate(
         comment_total=Count('comments', filter=Q(comments__is_deleted=False, comments__is_visible_to_client=True), distinct=True),
         attachment_total=Count('attachments', distinct=True),
         open_issue_total=Count('issues', filter=Q(issues__is_visible_to_client=True, issues__status__in=['open', 'in_progress']), distinct=True),
@@ -222,7 +222,7 @@ def portal_project_detail(request, project_id):
     client = request.client
     project = get_object_or_404(Project, id=project_id, client=client)
 
-    tasks = project.tasks.prefetch_related('attachments').all()
+    tasks = project.tasks.exclude(status='backlog').prefetch_related('attachments')
     task_stats = {
         'total': tasks.count(),
         'todo': tasks.filter(status='todo').count(),

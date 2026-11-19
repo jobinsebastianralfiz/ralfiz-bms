@@ -107,8 +107,11 @@ class StaffBoardTaskTests(TestCase):
         self.task.refresh_from_db()
         self.assertEqual((self.task.status, self.task.progress), ('in_progress', 40))
         other = Task.objects.get(title='Someone else')
-        r = self.client.post(reverse('staff:board_task_update', args=[other.pk]), {'status': 'completed'})
-        self.assertEqual(r.status_code, 404)
+        before = other.status
+        r = self.client.post(reverse('staff:board_task_update', args=[other.pk]), {'status': 'completed'}, follow=True)
+        other.refresh_from_db()
+        self.assertEqual(other.status, before)            # a teammate's card cannot be moved
+        self.assertContains(r, 'can move this card')
 
     def test_back_link_cannot_leave_the_site(self):
         r = self.client.post(reverse('staff:board_task_update', args=[self.task.pk]),

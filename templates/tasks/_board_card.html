@@ -1,7 +1,8 @@
 {% load humanize %}{% comment %}One task card. Set readonly for the client portal: no links, no drag, no edit.{% endcomment %}
 <article class="vk-card{% if readonly %} readonly{% endif %}"{% if not readonly %} draggable="true" data-id="{{ task.pk }}" data-url="{% url 'task_status_update' task.pk %}"{% endif %}>
-  {% if task.tag or task.priority %}
+  {% if task.tag or task.priority or task.code %}
   <div class="vk-chips">
+    {% if task.code %}<span class="vk-code">{{ task.code }}</span>{% endif %}
     {% if task.tag %}<span class="vk-chip tone-{{ task.tag_tone }}">{{ task.tag }}</span>{% endif %}
     <span class="vk-chip pri-{{ task.priority }}">{{ task.get_priority_display }}</span>
   </div>
@@ -42,6 +43,8 @@
     <div class="vk-who"><span class="vk-av unassigned"><i class="fas fa-user"></i></span><span>Unassigned</span></div>
     {% endif %}
     <div class="vk-stats">
+      {% if not readonly %}{% with cl=task.checklist_progress %}{% if cl.1 %}<span title="Done-when checklist"><i class="far fa-square-check"></i>{{ cl.0 }}/{{ cl.1 }}</span>{% endif %}{% endwith %}
+      {% if task.pr_url %}<a href="{{ task.pr_url }}" target="_blank" rel="noopener" title="Pull request"><i class="fab fa-github"></i></a>{% endif %}{% endif %}
       {% if task.open_issue_total and col.key != 'review' %}<span class="warn" title="Open issues"><i class="fas fa-circle-exclamation"></i>{{ task.open_issue_total }}</span>{% endif %}
       <span title="Attachments"><i class="fas fa-paperclip"></i>{{ task.attachment_total }}</span>
       <span title="Comments"><i class="far fa-message"></i>{{ task.comment_total }}</span>

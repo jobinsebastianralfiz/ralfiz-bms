@@ -35,7 +35,7 @@ class TaskToolTests(MCPClientMixin, TestCase):
     def test_list_groups_open_tasks_by_column(self):
         board = self.ok('list_project_tasks', {'project_id': str(self.project.id)})
         self.assertEqual(board['count'], 2)
-        self.assertEqual(board['per_status'], {'todo': 1, 'in_progress': 1, 'review': 0, 'completed': 0})
+        self.assertEqual(board['per_status'], {'backlog': 0, 'todo': 1, 'in_progress': 1, 'review': 0, 'completed': 0})
         self.assertEqual(board['columns']['in_progress'][0]['assigned_to'], 'Arun')
         self.assertTrue(board['columns']['in_progress'][0]['is_overdue'])
 
@@ -101,3 +101,62 @@ class TaskToolTests(MCPClientMixin, TestCase):
         self.assertEqual(detail['comments'][0]['body'], 'Waiting on client keys')
         self.assertEqual(detail['recent_activity'][0]['verb'], 'commented')
         self.assertEqual(detail['client'], 'Ajith Kumar')
+
+
+class WeekPlanningToolTests(MCPClientMixin, TestCase):
+    """Bulk-loading a week plan, weeks, and board settings from Claude."""
+
+    def setUp(self):
+        self.owner = make_employee('owner', 'owner', staff=True)
+        self.token = make_token(self.owner)
+        client = Client.objects.create(name='Alameriah')
+        self.project = Project.objects.create(client=client, name='Alameriah Website', status='in_progress')
+        self.sana = TeamMember.objects.create(name='Sana', role='developer')
+        self.outsider = TeamMember.objects.create(name='Not on team', role='developer')
+        self.project.team_members.add(self.sana)
+        Task.objects.create(project=self.project, title='ALW-016 Settings app', status='completed')
+
+    def test_configure_then_bulk_load_weeks(self):
+        err, msg = self.call('configure_project_board', {'project_id': str(self.project.pk),
+                                                          'team_lead': str(self.outsider.pk)})
+        self.assertTrue(err)
+        self.assertIn('must be on the project team', msg)
+        cfg = self.ok('configure_project_board', {'project_id': str(self.project.pk), 'team_lead': str(self.sana.pk),
+                                                  'task_prefix': 'alw'})
+        self.assertEqual((cfg['task_prefix'], cfg['next_code'], cfg['existing_cards_coded_from_title']),
+                         ('ALW', 'ALW-017', 1))
+        week = self.ok('create_sprint', {'project_id': str(self.project.pk), 'name': 'Week 2',
+                                         'start_date': '2026-11-23', 'end_date': '2026-11-28'})['week']
+        out = self.ok('create_tasks_bulk', {'project_id': str(self.project.pk), 'tasks': [
+            {'title': 'Page model', 'status': 'backlog', 'sprint_id': week['id'], 'assigned_to': str(self.sana.pk),
+             'checklist': ['Migrations run', 'Admin works']},
+            {'title': 'Menu', 'status': 'backlog', 'sprint_id': week['id']},
+        ]})
+        self.assertEqual((out['created'], out['codes']), (2, ['ALW-017', 'ALW-018']))
+        listed = self.ok('list_project_tasks', {'project_id': str(self.project.pk), 'status': 'backlog'})
+        self.assertEqual(listed['per_status']['backlog'], 2)
+        self.assertEqual(listed['columns']['backlog'][0]['sprint'], 'Week 2')
+        started = self.ok('start_sprint', {'sprint_id': week['id']})
+        self.assertEqual(started['moved_to_todo'], 2)
+        self.assertEqual(started['cards_without_owner'], ['ALW-018 Menu'])
+        weeks = self.ok('list_sprints', {'project_id': str(self.project.pk)})
+        self.assertEqual(weeks['weeks'][0]['status'], 'active')
+        self.assertEqual(weeks['team_lead'], 'Sana')
+
+    def test_bulk_is_all_or_nothing(self):
+        err, msg = self.call('create_tasks_bulk', {'project_id': str(self.project.pk), 'tasks': [
+            {'title': 'Fine'}, {'title': 'Bad', 'priority': 'extreme'}]})
+        self.assertTrue(err)
+        self.assertIn('Card 2', msg)
+        self.assertFalse(Task.objects.filter(title='Fine').exists())
+
+    def test_close_sprint_needs_a_next_week(self):
+        week = self.ok('create_sprint', {'project_id': str(self.project.pk), 'name': 'Week 2',
+                                         'start_date': '2026-11-23', 'end_date': '2026-11-28'})['week']
+        self.ok('create_task', {'project_id': str(self.project.pk), 'title': 'Open card', 'sprint_id': week['id']})
+        self.ok('start_sprint', {'sprint_id': week['id']})
+        err, msg = self.call('close_sprint', {'sprint_id': week['id']})
+        self.assertTrue(err)
+        self.assertIn('no next week', msg)
+        out = self.ok('close_sprint', {'sprint_id': week['id'], 'carry_over': 'backlog'})
+        self.assertEqual((out['carried_over'], out['to']), (1, 'backlog'))

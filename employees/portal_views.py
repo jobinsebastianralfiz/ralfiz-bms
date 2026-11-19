@@ -96,7 +96,8 @@ def board_tasks_for(employee, open_only=True):
     member = board_member_for(employee)
     if member is None:
         return Task.objects.none()
-    tasks = Task.objects.filter(assigned_to=member).select_related('project')
+    # Backlog cards are not the person's work yet: they appear when the lead starts the week.
+    tasks = Task.objects.filter(assigned_to=member).exclude(status='backlog').select_related('project')
     if open_only:
         tasks = tasks.exclude(status='completed')
     return tasks
@@ -115,19 +116,22 @@ def staff_projects(employee, member=None):
         return Project.objects.none(), None
     projects = (Project.objects.filter(
                     Q(team_members=member)
-                    | (Q(tasks__assigned_to=member) & ~Q(tasks__status='completed')))
+                    | (Q(tasks__assigned_to=member) & Q(tasks__status__in=('todo', 'in_progress', 'review'))))
                 .exclude(status='cancelled').distinct())
     return projects, member
 
 
 def visible_board_tasks(employee):
-    """Board tasks this person may open: everything on their projects' boards.
-    Only their own tasks can be moved (board_task_update uses board_tasks_for)."""
+    """Board tasks this person may open: everything on their projects' boards except
+    the backlog, which only the project's lead sees. Who may move what is decided
+    by core.task_rules."""
     from core.models import Task
+    from core.task_rules import visible_to
     projects, member = staff_projects(employee)
     if member is None:
         return Task.objects.none()
-    return Task.objects.filter(Q(project__in=projects) | Q(assigned_to=member)).distinct()
+    return visible_to(Task.objects.filter(Q(project__in=projects) | Q(assigned_to=member)),
+                      member=member).distinct()
 
 
 def _split_headline(text, limit=120):
@@ -685,43 +689,61 @@ def board_task_detail(request, pk):
             TaskComment.objects.create(task=task, author=request.user, body=body)
             messages.success(request, 'Comment added.')
         return redirect('staff:board_task_detail', pk=task.pk)
+    from core.task_rules import MEMBER_MOVES, is_lead
+    lead = is_lead(task.project, member)
+    mine = member is not None and task.assigned_to_id == member.pk
+    # The columns this person may move the card to.
+    if lead:
+        moves = Task.STATUS_CHOICES
+    elif mine and task.status != 'backlog':
+        allowed = MEMBER_MOVES + (('completed',) if task.project.members_can_complete else ())
+        moves = [(k, v) for k, v in Task.STATUS_CHOICES if k in allowed or k == task.status]
+    else:
+        moves = []
     ctx = _base_context(request, 'projects')
     ctx.update({
         'task': task,
-        'is_mine': member is not None and task.assigned_to_id == member.pk,
+        'is_mine': mine,
+        'is_lead': lead,
+        'can_move': bool(moves),
+        'can_tick': lead or mine,
+        'needs_pr': bool(task.project.github_repo),
+        'checklist': task.checklist.all(),
+        'history': task.activities.select_related('actor')[:30],
         'attachments': task.attachments.all(),
         'comments': task.comments.filter(is_deleted=False, parent__isnull=True)
                         .select_related('author').prefetch_related('replies__author'),
-        'task_status_choices': Task.STATUS_CHOICES,
+        'task_status_choices': moves,
     })
     return render(request, 'staff/board_task_detail.html', ctx)
 
 
 @staff_required
 def board_task_update(request, pk):
-    """Move one of your own project-board tasks along, or set its progress."""
-    from core.models import Task, TaskActivity
-    task = get_object_or_404(board_tasks_for(request.employee, open_only=False), pk=pk)
+    """Move a card or set its progress, through the board rules: a member moves their
+    own card (To Do, In Progress, In Review); the lead moves any card."""
+    from core.task_rules import TaskRuleError, change_status, is_lead
+    task = get_object_or_404(visible_board_tasks(request.employee).select_related('project', 'project__team_lead'), pk=pk)
+    member = board_member_for(request.employee)
     if request.method == 'POST':
-        old_status = task.status
         status = request.POST.get('status', task.status)
-        if status in dict(Task.STATUS_CHOICES):
-            task.status = status
-            task.completed_date = timezone.localdate() if status == 'completed' else None
         try:
-            task.progress = max(0, min(100, int(request.POST.get('progress', task.progress))))
-        except (TypeError, ValueError):
-            pass
-        task.save()
-        if old_status != task.status:
-            TaskActivity.objects.create(task=task, actor=request.user, verb='status_changed',
-                                        from_value=old_status, to_value=task.status, is_visible_to_client=True)
-        messages.success(request, f'"{task.title}" updated.')
+            change_status(task, status, request.user, member=member, pr_url=request.POST.get('pr_url'))
+            if is_lead(task.project, member) or task.assigned_to_id == (member.pk if member else None):
+                try:
+                    task.progress = max(0, min(100, int(request.POST.get('progress', task.progress))))
+                    task.save(update_fields=['progress', 'updated_at'])
+                except (TypeError, ValueError):
+                    pass
+            messages.success(request, f'"{task.title}" updated.')
+        except TaskRuleError as e:
+            messages.error(request, str(e))
     from core.security import safe_next
     return redirect(safe_next(request, request.POST.get('back'),
                               reverse('staff:project_board', args=[task.project_id])))
 
 
+BACKLOG_COLUMN = ('backlog', 'Backlog', 'backlog')
 BOARD_COLUMNS = (('todo', 'To Do', 'muted'), ('in_progress', 'In Progress', 'info'),
                  ('review', 'In Review', 'warn'), ('completed', 'Completed', 'ok'))
 
@@ -736,16 +758,19 @@ def project_cards(employee):
     # Count on a fresh queryset: annotating `projects` would reuse its filtered
     # tasks join and count only this person's tasks.
     rows = (Project.objects.filter(pk__in=projects.values('pk')).select_related('client')
-            .annotate(total=Count('tasks', distinct=True),
+            .annotate(total=Count('tasks', filter=~Q(tasks__status='backlog'), distinct=True),
                       done=Count('tasks', filter=Q(tasks__status='completed'), distinct=True),
-                      mine_open=Count('tasks', filter=Q(tasks__assigned_to=member) & ~Q(tasks__status='completed'),
-                                      distinct=True)))
+                      backlog=Count('tasks', filter=Q(tasks__status='backlog'), distinct=True),
+                      mine_open=Count('tasks', filter=Q(tasks__assigned_to=member)
+                                      & Q(tasks__status__in=('todo', 'in_progress', 'review')), distinct=True)))
     cards = []
     for p in rows:
         cards.append({
             'project': p, 'total': p.total, 'done': p.done, 'open': p.total - p.done,
             'mine_open': p.mine_open, 'pct': round(p.done * 100 / p.total) if p.total else 0,
             'on_team': p.team_members.filter(pk=member.pk).exists(),
+            'is_lead': p.team_lead_id == member.pk,
+            'backlog': p.backlog if p.team_lead_id == member.pk else 0,
         })
     cards.sort(key=lambda c: (c['project'].status == 'completed', -c['mine_open'], -c['open'],
                               c['project'].name.lower()))
@@ -762,35 +787,224 @@ def project_list(request):
 
 @staff_required
 def project_board(request, pk):
-    """One project's task board, in columns. Everyone on the project sees all of it;
-    only the tasks assigned to you can be moved."""
+    """One project's task board, in columns. Everyone on the project sees the live
+    cards; the team lead also sees the Backlog and plans the weeks."""
+    from core.task_rules import is_lead, visible_to
     projects, member = staff_projects(request.employee)
-    project = get_object_or_404(projects.select_related('client'), pk=pk)
-    tasks = project.tasks.select_related('assigned_to').prefetch_related('attachments')
+    project = get_object_or_404(projects.select_related('client', 'team_lead'), pk=pk)
+    lead = is_lead(project, member)
+    tasks = visible_to(project.tasks.all(), member=member).select_related('assigned_to', 'sprint') \
+        .prefetch_related('attachments', 'checklist')
+
+    # Weeks: default to the running week; "all" shows every card.
+    sprints = list(project.sprints.all())
+    week = request.GET.get('week', '')
+    sprint = None
+    if week != 'all':
+        sprint = next((sp for sp in sprints if str(sp.pk) == week), None) or \
+            next((sp for sp in sprints if sp.status == 'active'), None)
+        week = str(sprint.pk) if sprint else 'all'
+    if sprint:
+        tasks = tasks.filter(Q(sprint=sprint) | Q(sprint__isnull=True) | Q(status='backlog'))
+
     mine_only = request.GET.get('mine') == '1'
     if mine_only:
         tasks = tasks.filter(assigned_to=member)
     q = request.GET.get('q', '').strip()
     if q:
-        tasks = tasks.filter(Q(title__icontains=q) | Q(description__icontains=q) | Q(category__icontains=q))
+        tasks = tasks.filter(Q(title__icontains=q) | Q(description__icontains=q) | Q(category__icontains=q)
+                             | Q(code__icontains=q))
     by_status = {}
     for t in tasks.order_by('due_date', '-created_at'):
         t.is_mine = t.assigned_to_id == member.pk
         by_status.setdefault(t.status, []).append(t)
+    # The backlog reads as the plan: week by week, then in code order.
+    by_status.get('backlog', []).sort(key=lambda t: (t.sprint.order if t.sprint_id else 9999, t.code, t.title))
+    board = (BACKLOG_COLUMN,) + BOARD_COLUMNS if lead else BOARD_COLUMNS
     columns = [{'key': key, 'label': label, 'tone': tone, 'tasks': by_status.get(key, [])}
-               for key, label, tone in BOARD_COLUMNS]
+               for key, label, tone in board]
     team = [(m, m.staff_employee()) for m in project.team_members.filter(is_active=True)]
+    active = next((sp for sp in sprints if sp.status == 'active'), None)
     ctx = _base_context(request, 'projects')
     ctx.update({
         'project': project, 'columns': columns, 'team': team, 'mine_only': mine_only, 'q': q,
+        'is_lead': lead, 'sprints': sprints, 'sprint': sprint, 'week': week,
+        'active_sprint': active,
+        'next_sprint': None if active else next((sp for sp in sprints if sp.status == 'planned'), None),
         # Only what the team needs: internal notes, money and files stay staff-only.
         'shared_notes': project.note_entries.filter(share_with_team=True).order_by('-pinned', '-updated_at'),
         'links': project.links.all(),
         'needs_github': not request.employee.github_username,
         'total': sum(len(c['tasks']) for c in columns),
-        'mine_open': project.tasks.filter(assigned_to=member).exclude(status='completed').count(),
+        'mine_open': project.tasks.filter(assigned_to=member, status__in=('todo', 'in_progress', 'review')).count(),
     })
     return render(request, 'staff/project_board.html', ctx)
+
+
+def _lead_project(request, pk):
+    """The project, if the signed-in person is its team lead; else 404."""
+    from core.task_rules import is_lead
+    projects, member = staff_projects(request.employee)
+    project = get_object_or_404(projects.select_related('team_lead'), pk=pk)
+    if not is_lead(project, member):
+        raise Http404('Only the team lead can plan this board.')
+    return project, member
+
+
+def _task_form_values(request, project):
+    """Fields a lead sets on a card, read from the staff task form."""
+    from datetime import date as _date
+    from core.models import Task
+    post = request.POST
+    member_id = post.get('assigned_to', '')
+    sprint_id = post.get('sprint', '')
+    due = post.get('due_date', '').strip()
+    priority = post.get('priority', 'medium')
+    pr = post.get('pr_url', '').strip()[:500]
+    try:
+        due = _date.fromisoformat(due) if due else None
+    except ValueError:
+        due = None
+    return {
+        'description': post.get('description', '').strip()[:5000],
+        'assigned_to': project.team_members.filter(pk=member_id).first() if _uuid_ok(member_id) else None,
+        'sprint': project.sprints.filter(pk=sprint_id).first() if _uuid_ok(sprint_id) else None,
+        'due_date': due,
+        'priority': priority if priority in dict(Task.PRIORITY_CHOICES) else 'medium',
+        'category': post.get('label', '').strip()[:60],
+        'branch_name': post.get('branch_name', '').strip()[:120],
+        'pr_url': pr if pr.startswith(('http://', 'https://')) else '',
+    }
+
+
+def _uuid_ok(value):
+    import uuid as _uuid
+    try:
+        _uuid.UUID(str(value))
+        return True
+    except ValueError:
+        return False
+
+
+@staff_required
+def board_task_create(request, pk):
+    """Team lead: add a card (to the backlog of a week, or straight to To Do)."""
+    from core.task_rules import TaskRuleError, create_task
+    project, member = _lead_project(request, pk)
+    if request.method == 'POST':
+        status = request.POST.get('status', 'backlog')
+        try:
+            task = create_task(project, request.user, title=request.POST.get('title', ''),
+                               checklist=request.POST.get('checklist', '').splitlines(),
+                               status=status if status in ('backlog', 'todo') else 'backlog',
+                               **_task_form_values(request, project))
+        except TaskRuleError as e:
+            messages.error(request, str(e))
+            return redirect('staff:board_task_create', pk=project.pk)
+        messages.success(request, f'{task.code or "Card"} added{" to the backlog" if task.status == "backlog" else ""}.')
+        if request.POST.get('another'):
+            return redirect(f"{reverse('staff:board_task_create', args=[project.pk])}?week={task.sprint_id or ''}")
+        return redirect('staff:project_board', pk=project.pk)
+    from core.models import Task
+    ctx = _base_context(request, 'projects')
+    ctx.update({'project': project, 'task': None, 'team_options': project.team_members.filter(is_active=True),
+                'sprint_options': project.sprints.exclude(status='done'),
+                'priority_choices': Task.PRIORITY_CHOICES, 'preset_week': request.GET.get('week', '')})
+    return render(request, 'staff/board_task_form.html', ctx)
+
+
+@staff_required
+def board_task_edit(request, pk):
+    """Team lead: edit a card's details, owner, week, branch and checklist."""
+    from core.models import Task
+    from core.task_rules import is_lead, log
+    task = get_object_or_404(visible_board_tasks(request.employee).select_related('project', 'assigned_to'), pk=pk)
+    project, member = _lead_project(request, task.project_id)
+    if request.method == 'POST':
+        values = _task_form_values(request, project)
+        old_owner, old_sprint = task.assigned_to, task.sprint
+        title = request.POST.get('title', '').strip()[:255]
+        if title:
+            task.title = title
+        for field, value in values.items():
+            setattr(task, field, value)
+        task.save()
+        if old_owner != task.assigned_to:
+            log(task, request.user, 'assigned', from_value=old_owner.name if old_owner else '',
+                to_value=task.assigned_to.name if task.assigned_to else '')
+        if old_sprint != task.sprint:
+            log(task, request.user, 'sprint_changed', from_value=old_sprint.name if old_sprint else '',
+                to_value=task.sprint.name if task.sprint else '')
+        from core.views import _save_checklist
+        _save_checklist(task, request.POST.get('checklist', ''))
+        messages.success(request, f'{task.code or task.title} saved.')
+        return redirect('staff:board_task_detail', pk=task.pk)
+    ctx = _base_context(request, 'projects')
+    ctx.update({'project': project, 'task': task, 'team_options': project.team_members.filter(is_active=True),
+                'sprint_options': project.sprints.exclude(status='done'),
+                'priority_choices': Task.PRIORITY_CHOICES,
+                'checklist_text': '\n'.join(task.checklist.values_list('text', flat=True))})
+    return render(request, 'staff/board_task_form.html', ctx)
+
+
+@staff_required
+def checklist_toggle(request, pk, item_id):
+    """Tick or untick a Done-when line (card owner, lead)."""
+    from core.models import TaskChecklistItem
+    from core.task_rules import TaskRuleError, set_checklist_item
+    task = get_object_or_404(visible_board_tasks(request.employee), pk=pk)
+    item = get_object_or_404(TaskChecklistItem.objects.select_related('task__project'), pk=item_id, task=task)
+    if request.method == 'POST':
+        try:
+            set_checklist_item(item, request.POST.get('done') == '1', request.user,
+                               member=board_member_for(request.employee))
+        except TaskRuleError as e:
+            messages.error(request, str(e))
+    return redirect('staff:board_task_detail', pk=task.pk)
+
+
+@staff_required
+def sprint_create(request, pk):
+    """Team lead: add a week to the plan."""
+    from datetime import date as _date
+    from core.task_rules import TaskRuleError, create_sprint
+    project, member = _lead_project(request, pk)
+    if request.method == 'POST':
+        try:
+            sp = create_sprint(project, name=request.POST.get('name', ''), goal=request.POST.get('goal', ''),
+                               start_date=_date.fromisoformat(request.POST.get('start_date', '')),
+                               end_date=_date.fromisoformat(request.POST.get('end_date', '')))
+            messages.success(request, f'{sp.name} added.')
+        except ValueError:
+            messages.error(request, 'Give the week a start and end date.')
+        except TaskRuleError as e:
+            messages.error(request, str(e))
+    return redirect('staff:project_board', pk=project.pk)
+
+
+@staff_required
+def sprint_action(request, pk, sprint_id, action):
+    """Team lead: start or close a week."""
+    from core.task_rules import TaskRuleError, close_sprint, start_sprint
+    project, member = _lead_project(request, pk)
+    sprint = get_object_or_404(project.sprints, pk=sprint_id)
+    if request.method == 'POST':
+        try:
+            if action == 'start':
+                r = start_sprint(sprint, request.user)
+                msg = f'{sprint.name} started: {r["moved"]} card{"s" if r["moved"] != 1 else ""} moved to To Do and the team was notified.'
+                if r['unassigned']:
+                    msg += f' {len(r["unassigned"])} card{"s have" if len(r["unassigned"]) != 1 else " has"} no owner.'
+                messages.success(request, msg)
+            elif action == 'close':
+                r = close_sprint(sprint, request.user, request.POST.get('carry_over', 'next'))
+                msg = f'{sprint.name} closed: {r["completed"]} completed.'
+                if r['carried_over']:
+                    msg += f' {r["carried_over"]} open card{"s" if r["carried_over"] != 1 else ""} moved to {r["to"]}.'
+                messages.success(request, msg)
+        except TaskRuleError as e:
+            messages.error(request, str(e))
+    return redirect('staff:project_board', pk=project.pk)
 
 
 @staff_required

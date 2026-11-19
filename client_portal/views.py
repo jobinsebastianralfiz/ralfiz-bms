@@ -164,7 +164,7 @@ class ClientTaskBoardView(APIView):
         except Project.DoesNotExist:
             return Response({'detail': 'Project not found.'}, status=status.HTTP_404_NOT_FOUND)
 
-        tasks = project.tasks.all()
+        tasks = project.tasks.exclude(status='backlog')
         data = {
             'project': {'id': str(project.id), 'name': project.name},
             'board': {
@@ -433,7 +433,7 @@ class ClientAllTasksView(generics.ListAPIView):
 
     def get_queryset(self):
         client = get_client(self.request)
-        qs = Task.objects.filter(project__client=client)
+        qs = Task.objects.filter(project__client=client).exclude(status='backlog')
 
         status_filter = self.request.query_params.get('status')
         if status_filter:

@@ -32,6 +32,11 @@ urlpatterns = [
     # Project boards (kept apart from My Tasks)
     path('projects/', v.project_list, name='project_list'),
     path('projects/<uuid:pk>/', v.project_board, name='project_board'),
+    path('projects/<uuid:pk>/tasks/new/', v.board_task_create, name='board_task_create'),
+    path('projects/<uuid:pk>/weeks/add/', v.sprint_create, name='sprint_create'),
+    path('projects/<uuid:pk>/weeks/<uuid:sprint_id>/<str:action>/', v.sprint_action, name='sprint_action'),
+    path('tasks/<uuid:pk>/edit/', v.board_task_edit, name='board_task_edit'),
+    path('tasks/<uuid:pk>/checklist/<uuid:item_id>/', v.checklist_toggle, name='checklist_toggle'),
     path('tasks/<uuid:pk>/', v.board_task_detail, name='board_task_detail'),
     path('tasks/<uuid:pk>/update/', v.board_task_update, name='board_task_update'),
 

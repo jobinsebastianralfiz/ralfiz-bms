@@ -32,7 +32,9 @@ def _log(task, actor, verb, from_value='', to_value='', message='', is_visible_t
 def _tasks_for(user):
     tm = getattr(user, 'team_profile', None)
     if tm:
-        return Task.objects.filter(assigned_to=tm)
+        # Backlog cards are hidden until the lead starts their week (core.task_rules).
+        from core.task_rules import visible_to
+        return visible_to(Task.objects.filter(assigned_to=tm), member=tm)
     # Employees without team_profile see everything assigned to them by user linkage isn't
     # modeled directly; fall back to none unless admin.
     if user.is_superuser or user.is_staff:

@@ -64,7 +64,35 @@
   .pb-about-grid { grid-template-columns:1fr; gap:4px; }
   .pb-gh input { flex:1; }
 }
+.pb-weeks { display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin:0 0 14px; }
+.pb-week-pick { display:inline-flex; align-items:center; gap:8px; height:40px; padding:0 12px; border-radius:12px; background:var(--sf-card); box-shadow:inset 0 0 0 1px var(--sf-line); color:var(--sf-text-3); }
+.pb-week-pick select { border:0; background:transparent; font:inherit; font-weight:600; color:var(--sf-text); outline:none; max-width:280px; }
+.pb-goal, .pb-lead-tag { font-size:13px; color:var(--sf-text-2); }
+.pb-lead-tag { color:var(--sf-primary-text); font-weight:600; }
+.pb-spacer { flex:1; }
+.pb-btn { display:inline-flex; align-items:center; gap:7px; height:40px; padding:0 14px; border:1px solid var(--sf-line); border-radius:12px; background:var(--sf-card); color:var(--sf-text); font:inherit; font-weight:600; font-size:14px; cursor:pointer; text-decoration:none; }
+.pb-btn.dark { background:var(--sf-primary); border-color:var(--sf-primary); color:#fff; }
+.pb-addweek { position:relative; }
+.pb-addweek summary { list-style:none; }
+.pb-addweek summary::-webkit-details-marker { display:none; }
+.pb-addweek form { position:absolute; right:0; top:46px; z-index:20; display:grid; gap:8px; width:270px; padding:14px; border:1px solid var(--sf-line); border-radius:14px; background:var(--sf-card); box-shadow:0 16px 40px rgba(15,23,42,.16); }
+.pb-addweek input { height:38px; padding:0 10px; border:1px solid var(--sf-line); border-radius:10px; background:var(--sf-card); color:var(--sf-text); font:inherit; width:100%; }
+.pb-addweek label { display:grid; gap:4px; font-size:12px; color:var(--sf-text-3); }
+.pb-close-week { display:flex; gap:6px; align-items:center; }
+.pb-close-week select { height:40px; border:1px solid var(--sf-line); border-radius:12px; padding:0 10px; background:var(--sf-card); color:var(--sf-text); font:inherit; }
+.pb-board.has-backlog { grid-template-columns: 52px repeat(4, minmax(205px, 1fr)); }
+.pb-board.has-backlog.backlog-open { grid-template-columns: minmax(205px, 1fr) repeat(4, minmax(205px, 1fr)); }
+.pb-col.backlog { background: repeating-linear-gradient(135deg, rgba(148,163,184,.08) 0 10px, rgba(148,163,184,.15) 10px 20px); }
+.pb-col.backlog .dot { background:#64748B; }
+.pb-col.backlog.collapsed { padding:12px 4px; display:flex; justify-content:center; }
+.pb-col.backlog.collapsed > :not(.pb-bl-toggle) { display:none; }
+.pb-col.backlog:not(.collapsed) .pb-bl-toggle { display:none; }
+.pb-bl-toggle { border:0; background:none; cursor:pointer; font:inherit; font-weight:700; color:var(--sf-text-2); writing-mode:vertical-rl; transform:rotate(180deg); display:flex; gap:8px; align-items:center; }
+.pb-col.backlog .pb-col-head { cursor:pointer; }
+.pb-task-top { display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
+.pb-code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size:11px; font-weight:700; padding:2px 6px; border-radius:6px; background:var(--sf-muted-dim); color:var(--sf-text); border:1px solid var(--sf-line); }
 @media (max-width:760px) {
+  .pb-board.has-backlog, .pb-board.has-backlog.backlog-open { grid-template-columns: 52px repeat(4, 82%); }
   .pb-board { grid-template-columns:repeat(4, 82%); scroll-snap-type:x mandatory; }
   .pb-col { scroll-snap-align:start; }
   .pb-find input { width:120px; }
@@ -86,13 +114,60 @@
   </div>
   <form class="pb-tools" method="get">
     <div class="sf-chips" style="margin:0">
-      <a href="?{% if q %}q={{ q|urlencode }}{% endif %}" class="sf-chip {% if not mine_only %}active{% endif %}">All tasks</a>
-      <a href="?mine=1{% if q %}&q={{ q|urlencode }}{% endif %}" class="sf-chip {% if mine_only %}active{% endif %}">Mine</a>
+      <a href="?week={{ week }}{% if q %}&q={{ q|urlencode }}{% endif %}" class="sf-chip {% if not mine_only %}active{% endif %}">All tasks</a>
+      <a href="?week={{ week }}&mine=1{% if q %}&q={{ q|urlencode }}{% endif %}" class="sf-chip {% if mine_only %}active{% endif %}">Mine</a>
     </div>
     {% if mine_only %}<input type="hidden" name="mine" value="1">{% endif %}
+    <input type="hidden" name="week" value="{{ week }}">
     <label class="pb-find"><i class="fas fa-magnifying-glass" aria-hidden="true"></i><input type="search" name="q" value="{{ q }}" placeholder="Search this board" aria-label="Search this board"></label>
   </form>
 </header>
+
+{% if sprints or is_lead %}
+<div class="pb-weeks">
+  {% if sprints %}
+  <form method="get" class="pb-week-pick">
+    <i class="far fa-calendar"></i>
+    <select name="week" aria-label="Week" onchange="this.form.submit()">
+      <option value="all" {% if week == 'all' %}selected{% endif %}>All weeks</option>
+      {% for sp in sprints %}<option value="{{ sp.pk }}" {% if sprint and sprint.pk == sp.pk %}selected{% endif %}>{{ sp.label }}{% if sp.status == 'active' %} (active){% elif sp.status == 'done' %} (done){% endif %}</option>{% endfor %}
+    </select>
+    {% if mine_only %}<input type="hidden" name="mine" value="1">{% endif %}
+  </form>
+  {% if sprint and sprint.goal %}<span class="pb-goal"><i class="fas fa-bullseye"></i> {{ sprint.goal }}</span>{% endif %}
+  {% endif %}
+  {% if is_lead %}
+  <span class="pb-lead-tag"><i class="fas fa-user-tie"></i> You lead this project</span>
+  <span class="pb-spacer"></span>
+  <a class="pb-btn" href="{% url 'staff:board_task_create' project.pk %}{% if sprint %}?week={{ sprint.pk }}{% endif %}"><i class="fas fa-plus"></i> Add task</a>
+  <details class="pb-addweek">
+    <summary class="pb-btn"><i class="far fa-calendar-plus"></i> Add week</summary>
+    <form method="post" action="{% url 'staff:sprint_create' project.pk %}">
+      {% csrf_token %}
+      <input name="name" value="Week {{ sprints|length|add:1 }}" required maxlength="60" aria-label="Week name">
+      <input name="goal" placeholder="Goal (optional)" maxlength="255" aria-label="Goal">
+      <label>From <input type="date" name="start_date" required></label>
+      <label>To <input type="date" name="end_date" required></label>
+      <button class="pb-btn dark" type="submit">Add week</button>
+    </form>
+  </details>
+  {% if active_sprint %}
+  <form method="post" action="{% url 'staff:sprint_action' project.pk active_sprint.pk 'close' %}" class="pb-close-week" onsubmit="return confirm('Close {{ active_sprint.name|escapejs }}?');">
+    {% csrf_token %}
+    <select name="carry_over" aria-label="Open cards go to">
+      <option value="next">Open cards → next week</option>
+      <option value="backlog">Open cards → backlog</option>
+    </select>
+    <button class="pb-btn" type="submit"><i class="fas fa-flag-checkered"></i> Close {{ active_sprint.name }}</button>
+  </form>
+  {% elif next_sprint %}
+  <form method="post" action="{% url 'staff:sprint_action' project.pk next_sprint.pk 'start' %}" onsubmit="return confirm('Start {{ next_sprint.name|escapejs }}? Its backlog cards move to To Do and the team is notified.');">
+    {% csrf_token %}<button class="pb-btn dark" type="submit"><i class="fas fa-play"></i> Start {{ next_sprint.name }}</button>
+  </form>
+  {% endif %}
+  {% endif %}
+</div>
+{% endif %}
 
 {% if needs_github %}
 <form class="pb-gh" method="post" action="{% url 'staff:github_save' %}">
@@ -143,21 +218,25 @@
   </div>
 </details>
 
-<div class="pb-board">
+<div class="pb-board{% if is_lead %} has-backlog{% endif %}">
   {% for col in columns %}
-  <section class="pb-col {{ col.tone }}" aria-label="{{ col.label }}">
+  <section class="pb-col {{ col.tone }}{% if col.key == 'backlog' %} collapsed{% endif %}" aria-label="{{ col.label }}">
+    {% if col.key == 'backlog' %}<button type="button" class="pb-bl-toggle" aria-expanded="false"><i class="fas fa-box-archive"></i> <span>Backlog · {{ col.tasks|length }}</span></button>{% endif %}
     <div class="pb-col-head"><div><i class="dot"></i>{{ col.label }}</div><span>{{ col.tasks|length }}</span></div>
     {% for t in col.tasks %}
     <a class="pb-task{% if t.is_mine %} mine{% endif %}" href="{% url 'staff:board_task_detail' t.pk %}">
-      {% if t.category %}<div class="pb-task-label">{{ t.category }}</div>{% endif %}
+      <div class="pb-task-top">{% if t.code %}<span class="pb-code">{{ t.code }}</span>{% endif %}{% if t.category %}<span class="pb-task-label">{{ t.category }}</span>{% endif %}</div>
       <strong>{{ t.title }}</strong>
       <div class="pb-task-meta">
         <span class="pb-who{% if t.is_mine %} you{% endif %}"><i class="far fa-user"></i> {% if t.is_mine %}You{% elif t.assigned_to %}{{ t.assigned_to.name }}{% else %}Unassigned{% endif %}</span>
         {% if t.due_date %}<span class="{% if t.is_overdue %}late{% endif %}"><i class="far fa-calendar"></i> {{ t.due_date|date:"d M" }}</span>{% endif %}
         <span><i class="fas fa-flag"></i> {{ t.get_priority_display }}</span>
         {% with n=t.attachments.all|length %}{% if n %}<span><i class="fas fa-paperclip"></i> {{ n }}</span>{% endif %}{% endwith %}
+        {% with cl=t.checklist_progress %}{% if cl.1 %}<span><i class="far fa-square-check"></i> {{ cl.0 }}/{{ cl.1 }}</span>{% endif %}{% endwith %}
+        {% if t.pr_url %}<span title="Pull request linked"><i class="fab fa-github"></i></span>{% endif %}
+        {% if col.key == 'backlog' and t.sprint %}<span><i class="far fa-calendar"></i> {{ t.sprint.name }}</span>{% endif %}
       </div>
-      {% if t.status != 'todo' %}<div class="sv-bar"><i style="width:{{ t.progress_percent }}%"></i></div>{% endif %}
+      {% if t.status != 'todo' and t.status != 'backlog' %}<div class="sv-bar"><i style="width:{{ t.progress_percent }}%"></i></div>{% endif %}
     </a>
     {% empty %}
     <div class="pb-empty">Nothing here</div>
@@ -166,4 +245,25 @@
   {% endfor %}
 </div>
 {% if not total and q %}<p class="pb-empty">No tasks match "{{ q }}".</p>{% endif %}
+<script>
+(function () {
+  var bl = document.querySelector('.pb-col.backlog');
+  if (!bl) return;
+  var board = bl.parentNode, btn = bl.querySelector('.pb-bl-toggle');
+  function set(open) {
+    bl.classList.toggle('collapsed', !open); board.classList.toggle('backlog-open', open);
+    btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+  }
+  var saved = false;
+  try { saved = localStorage.getItem('staff.board.backlog') === 'open'; } catch (e) {}
+  set(saved);
+  bl.querySelector('.pb-col-head').addEventListener('click', function () {
+    set(false); try { localStorage.setItem('staff.board.backlog', 'closed'); } catch (e) {}
+  });
+  btn.addEventListener('click', function () {
+    var open = bl.classList.contains('collapsed'); set(open);
+    try { localStorage.setItem('staff.board.backlog', open ? 'open' : 'closed'); } catch (e) {}
+  });
+})();
+</script>
 {% endblock %}

@@ -88,12 +88,12 @@
     <div class="jira-crumb">
       <a href="{% url 'project_detail' task.project.pk %}"><i class="fas fa-folder-open"></i> {{ task.project.name }}</a>
       &nbsp;/&nbsp;
-      <span>TASK-{{ task.pk|stringformat:"s"|slice:":8"|upper }}</span>
+      <span>{% if task.code %}{{ task.code }}{% else %}TASK-{{ task.pk|stringformat:"s"|slice:":8"|upper }}{% endif %}</span>{% if task.sprint %} &nbsp;·&nbsp; <span>{{ task.sprint.label }}</span>{% endif %}
     </div>
     <h1 class="jira-title">{{ task.title }}</h1>
   </div>
   <div class="page-actions">
-    <a href="{% url 'task_board' %}" class="btn btn-outline-secondary"><i class="fas fa-columns"></i> Board</a>
+    <a href="{% url 'task_board' %}?project={{ task.project_id }}" class="btn btn-outline-secondary"><i class="fas fa-columns"></i> Board</a>
     <a href="{% url 'task_update' task.pk %}" class="btn btn-outline-secondary"><i class="fas fa-edit"></i> Edit</a>
     <a href="{% url 'task_delete' task.pk %}" class="btn btn-outline-danger"><i class="fas fa-trash"></i></a>
   </div>
@@ -116,6 +116,19 @@
         {% endif %}
       </div>
     </div>
+
+    {% if task.branch_name or task.pr_url or task.checklist.exists %}
+    <div class="jira-card">
+      <div class="jira-card-hd"><h3><i class="fas fa-code-branch"></i> Code &amp; Done when</h3></div>
+      <div class="jira-card-body">
+        {% if task.branch_name %}<div style="margin-bottom:.5rem;"><strong>Branch:</strong> <code>{{ task.branch_name }}</code></div>{% endif %}
+        {% if task.pr_url %}<div style="margin-bottom:.5rem;"><strong>Pull request:</strong> <a href="{{ task.pr_url }}" target="_blank" rel="noopener"><i class="fab fa-github"></i> {{ task.pr_url|truncatechars:70 }}</a></div>{% endif %}
+        {% for c in task.checklist.all %}
+        <div style="display:flex;gap:.5rem;align-items:center;padding:.2rem 0;color:{% if c.is_done %}#16a34a{% else %}#334155{% endif %};"><i class="{% if c.is_done %}fas fa-square-check{% else %}far fa-square{% endif %}"></i> {{ c.text }}</div>
+        {% endfor %}
+      </div>
+    </div>
+    {% endif %}
 
     {% if task.attachments.count > 0 %}
     <div class="jira-card">

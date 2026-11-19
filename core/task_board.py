@@ -9,10 +9,12 @@ def tone_for(text):
     return BOARD_TONES[sum(map(ord, text)) % len(BOARD_TONES)] if text else ''
 
 
-def board_columns(tasks):
+def board_columns(tasks, include_backlog=False):
     """Decorate tasks for the card template and split them into status columns.
 
     Expects comment_total, attachment_total and open_issue_total annotations.
+    The Backlog column is only for the admin board (include_backlog=True); the
+    client portal never gets one.
     """
     tasks = list(tasks)
     for t in tasks:
@@ -21,9 +23,13 @@ def board_columns(tasks):
         t.progress_left = 100 - t.progress_percent
         if t.assigned_to:
             t.avatar_tone = tone_for(t.assigned_to.name)
+    backlog = sorted((t for t in tasks if t.status == 'backlog'),
+                     key=lambda t: (t.sprint.order if t.sprint_id else 9999, t.code, t.title))
     return tasks, [
-        {'key': key, 'label': label, 'tasks': [t for t in tasks if t.status == key]}
+        {'key': key, 'label': label,
+         'tasks': backlog if key == 'backlog' else [t for t in tasks if t.status == key]}
         for key, label in Task.STATUS_CHOICES
+        if include_backlog or key != 'backlog'
     ]
 
 
@@ -50,7 +56,7 @@ def project_progress(project, from_tasks=False):
         return 100
     if not from_tasks:
         return None
-    tasks = list(project.tasks.all())
+    tasks = list(project.tasks.exclude(status='backlog'))
     if not tasks:
         return 0
     pct = round(sum(t.progress_percent for t in tasks) / len(tasks))

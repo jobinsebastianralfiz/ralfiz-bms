@@ -259,6 +259,38 @@
         </div>
       </div>
 
+      <!-- Task board planning (shown when editing) -->
+      {% if project %}
+      <div class="card mb-4">
+        <div class="card-header"><h3 class="card-title"><i class="fas fa-table-columns me-2" style="color: var(--primary);"></i>Task Board</h3></div>
+        <div class="card-body">
+          <div class="form-group">
+            <label class="form-label">Team lead</label>
+            <select class="form-control" name="team_lead">
+              <option value="">No lead (admins plan the board)</option>
+              {% for m in project.team_members.all %}<option value="{{ m.pk }}" {% if project.team_lead_id == m.pk %}selected{% endif %}>{{ m.name }}</option>{% endfor %}
+            </select>
+            <small class="text-muted">Sees the Backlog, plans and starts weeks, and moves any card. Must be on the team: save the team first.</small>
+          </div>
+          <div class="row">
+            <div class="col-6" style="padding: 0.25rem 0.5rem 0.25rem 0;">
+              <label class="form-label">Task code prefix</label>
+              <input class="form-control" name="task_prefix" maxlength="6" value="{{ project.task_prefix }}" placeholder="e.g. ALW" style="text-transform:uppercase;">
+            </div>
+            <div class="col-6" style="padding: 0.25rem 0 0.25rem 0.5rem;">
+              <label class="form-label">Next number</label>
+              <input class="form-control" type="number" min="1" name="next_task_number" value="{{ project.next_task_number }}">
+            </div>
+          </div>
+          <small class="text-muted">New cards get codes like {{ project.task_prefix|default:"ALW" }}-{{ project.next_task_number|stringformat:"03d" }}. Cards whose titles already start with the prefix get their code when you save.</small>
+          <label style="display:flex;gap:8px;align-items:center;margin-top:12px;font-size:.9rem;">
+            <input type="checkbox" name="members_can_complete" value="1" {% if project.members_can_complete %}checked{% endif %}>
+            Members can move their own cards to Completed
+          </label>
+        </div>
+      </div>
+      {% endif %}
+
       <!-- Completion & AMC (shown when editing) -->
       {% if project %}
       <div class="card mb-4" id="completion-card">
