@@ -71,6 +71,20 @@ class StaffBoardTaskTests(TestCase):
         other.team_members.add(self.member)
         self.assertEqual(self.client.get(reverse('staff:project_board', args=[other.pk])).status_code, 200)
 
+    def test_a_finished_task_alone_does_not_list_the_project(self):
+        old_project = Project.objects.create(client=self.project.client, name='Lecule Pharma',
+                                             status='in_progress')
+        done = Task.objects.create(project=old_project, title='Old copy', status='completed',
+                                   assigned_to=self.member)
+        names = [c['project'].name for c in self.client.get(reverse('staff:project_list')).context['cards']]
+        self.assertNotIn('Lecule Pharma', names)
+        self.assertEqual(self.client.get(reverse('staff:project_board', args=[old_project.pk])).status_code, 404)
+        # Reopened work brings it back; so does being put on the team.
+        done.status = 'todo'
+        done.save()
+        names = [c['project'].name for c in self.client.get(reverse('staff:project_list')).context['cards']]
+        self.assertIn('Lecule Pharma', names)
+
     def test_teammates_task_opens_read_only(self):
         other = Task.objects.get(title='Someone else')
         r = self.client.get(reverse('staff:board_task_detail', args=[other.pk]))

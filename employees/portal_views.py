@@ -103,7 +103,9 @@ def board_tasks_for(employee, open_only=True):
 
 
 def staff_projects(employee, member=None):
-    """Projects this person works on: on the project team, or holding a task on its board.
+    """Projects this person works on: on the project's team list, or holding an
+    unfinished task on its board (so work still to do never goes missing).
+    A finished task alone does not keep a project listed.
 
     Cancelled projects are left out. Returns (projects queryset, TeamMember or None).
     """
@@ -111,7 +113,9 @@ def staff_projects(employee, member=None):
     member = member or board_member_for(employee)
     if member is None:
         return Project.objects.none(), None
-    projects = (Project.objects.filter(Q(team_members=member) | Q(tasks__assigned_to=member))
+    projects = (Project.objects.filter(
+                    Q(team_members=member)
+                    | (Q(tasks__assigned_to=member) & ~Q(tasks__status='completed')))
                 .exclude(status='cancelled').distinct())
     return projects, member
 
