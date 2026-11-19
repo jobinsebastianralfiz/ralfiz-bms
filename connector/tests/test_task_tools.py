@@ -160,3 +160,41 @@ class WeekPlanningToolTests(MCPClientMixin, TestCase):
         self.assertIn('no next week', msg)
         out = self.ok('close_sprint', {'sprint_id': week['id'], 'carry_over': 'backlog'})
         self.assertEqual((out['carried_over'], out['to']), (1, 'backlog'))
+
+
+class Phase2ToolTests(MCPClientMixin, TestCase):
+    def setUp(self):
+        self.owner = make_employee('owner', 'owner', staff=True)
+        self.token = make_token(self.owner)
+        self.project = Project.objects.create(client=Client.objects.create(name='Alameriah'),
+                                              name='Alameriah Website', status='in_progress', task_prefix='ALW',
+                                              next_task_number=17)
+        self.ok('create_tasks_bulk', {'project_id': str(self.project.pk), 'tasks': [
+            {'title': 'Page model'}, {'title': 'Section registry'}, {'title': 'Hero'}]})
+
+    def test_epics_links_and_bugs(self):
+        made = self.ok('create_epic', {'project_id': str(self.project.pk), 'names': ['Foundation', 'Pages & Sections']})
+        epic = made['created'][1]['id']
+        self.assertEqual(self.ok('assign_epic', {'epic_id': epic, 'cards': ['alw-018', 'ALW-019']})['count'], 2)
+        err, msg = self.call('assign_epic', {'epic_id': epic, 'cards': ['ALW-017', 'ALW-999']})
+        self.assertTrue(err)
+        self.assertIn('ALW-999', msg)
+        self.assertEqual(self.ok('link_tasks', {'project_id': str(self.project.pk), 'links': [
+            {'from': 'ALW-017', 'to': 'ALW-018'}, {'from': 'ALW-018', 'to': 'ALW-019'}]})['linked'], 2)
+        err, msg = self.call('link_tasks', {'project_id': str(self.project.pk), 'links': [
+            {'from': 'ALW-019', 'to': 'ALW-017'}]})
+        self.assertTrue(err)
+        self.assertIn('loop', msg)
+        blocked = self.ok('list_project_tasks', {'project_id': str(self.project.pk), 'blocked_only': True})
+        self.assertEqual(blocked['count'], 2)
+        self.assertEqual(blocked['columns']['todo'][0]['epic'], 'Pages & Sections')
+        epics = self.ok('list_epics', {'project_id': str(self.project.pk)})['epics']
+        self.assertEqual([(e['name'], e['cards']) for e in epics], [('Foundation', 0), ('Pages & Sections', 2)])
+        bug = self.ok('create_task', {'project_id': str(self.project.pk), 'title': 'Slug 404', 'issue_type': 'bug',
+                                      'found_in': 'ALW-018', 'steps_to_reproduce': 'rename a page'})
+        self.assertEqual(bug['code'], 'ALW-020')
+        detail = self.ok('get_task', {'task_id': Task.objects.get(code='ALW-018').pk.__str__()})
+        self.assertEqual(detail['bugs'][0]['code'], 'ALW-020')
+        self.assertEqual({l['relation'] for l in detail['links']}, {'blocked_by', 'blocks'})
+        self.ok('unlink_tasks', {'project_id': str(self.project.pk), 'from': 'ALW-017', 'to': 'ALW-018'})
+        self.assertEqual(self.ok('list_project_tasks', {'project_id': str(self.project.pk), 'blocked_only': True})['count'], 1)

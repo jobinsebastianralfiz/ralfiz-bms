@@ -93,6 +93,30 @@
 .pb-col.backlog .pb-col-head { cursor:pointer; }
 .pb-task-top { display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
 .pb-code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size:11px; font-weight:700; padding:2px 6px; border-radius:6px; background:var(--sf-muted-dim); color:var(--sf-text); border:1px solid var(--sf-line); }
+.pb-filter { height:40px; border:0; border-radius:12px; padding:0 10px; background:var(--sf-card); box-shadow:inset 0 0 0 1px var(--sf-line); color:var(--sf-text); font:inherit; }
+.pb-bug-btn i { color:#DC2626; }
+.pb-type { display:inline-flex; width:18px; height:18px; border-radius:5px; align-items:center; justify-content:center; font-size:10px; color:#fff; flex:none; }
+.pb-type.task { background:#2563EB; } .pb-type.bug { background:#DC2626; } .pb-type.story { background:#16A34A; }
+.pb-epic-chip { font-size:11px; font-weight:700; padding:2px 7px; border-radius:6px; color:var(--ec); background:color-mix(in srgb, var(--ec) 14%, transparent); }
+.pb-flag { font-size:11px; font-weight:700; padding:2px 7px; border-radius:6px; }
+.pb-flag.blocked { color:#B91C1C; background:rgba(220,38,38,.1); }
+.pb-flag.stuck { color:#B45309; background:rgba(245,158,11,.14); }
+.pb-task.blocked { background: repeating-linear-gradient(135deg, var(--sf-card) 0 12px, rgba(148,163,184,.10) 12px 24px); border-left:3px solid #94A3B8; }
+.pb-epics summary { cursor:pointer; }
+.pb-epic-list { display:grid; gap:10px; padding:4px 18px 18px; }
+.pb-epic { display:grid; grid-template-columns: minmax(150px, 1.4fr) minmax(90px, 2fr) 50px minmax(90px, 1fr) auto; gap:12px; align-items:center; font-size:13.5px; }
+.pb-epic.closed { opacity:.55; }
+.pb-epic-name { color:var(--sf-text); font-weight:600; text-decoration:none; display:flex; gap:8px; align-items:center; }
+.pb-epic-dot { width:10px; height:10px; border-radius:3px; flex:none; }
+.pb-epic-bar { height:7px; border-radius:99px; background:var(--sf-track); overflow:hidden; }
+.pb-epic-bar i { display:block; height:100%; }
+.pb-epic-num, .pb-epic-weeks { color:var(--sf-text-3); font-size:12.5px; }
+.pb-epic form { margin:0; }
+.pb-link-btn { border:0; background:none; color:var(--sf-primary-text); font:inherit; font-size:12.5px; cursor:pointer; }
+.pb-epic-add { display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin-top:4px; }
+.pb-epic-add input[name=name] { height:40px; border:1px solid var(--sf-line); border-radius:12px; padding:0 12px; background:var(--sf-card); color:var(--sf-text); font:inherit; min-width:200px; }
+.pb-epic-add input[type=color] { width:40px; height:40px; border:1px solid var(--sf-line); border-radius:12px; padding:3px; background:var(--sf-card); }
+@media (max-width:760px) { .pb-epic { grid-template-columns: 1fr 60px; } .pb-epic-bar, .pb-epic-weeks { grid-column: 1 / -1; } }
 @media (max-width:760px) {
   .pb-board.has-backlog, .pb-board.has-backlog.backlog-open { grid-template-columns: 52px repeat(4, 82%); }
   .pb-board { grid-template-columns:repeat(4, 82%); scroll-snap-type:x mandatory; }
@@ -121,11 +145,22 @@
     </div>
     {% if mine_only %}<input type="hidden" name="mine" value="1">{% endif %}
     <input type="hidden" name="week" value="{{ week }}">
+    <select class="pb-filter" name="type" aria-label="Type" onchange="this.form.submit()">
+      <option value="">All types</option>
+      <option value="task" {% if issue_type == 'task' %}selected{% endif %}>Tasks</option>
+      <option value="bug" {% if issue_type == 'bug' %}selected{% endif %}>Bugs</option>
+      <option value="story" {% if issue_type == 'story' %}selected{% endif %}>Stories</option>
+    </select>
+    {% if epics %}
+    <select class="pb-filter" name="epic" aria-label="Epic" onchange="this.form.submit()">
+      <option value="">All epics</option>
+      {% for e in epics %}<option value="{{ e.pk }}" {% if epic_id == e.pk|stringformat:"s" %}selected{% endif %}>{{ e.name }}</option>{% endfor %}
+    </select>
+    {% endif %}
     <label class="pb-find"><i class="fas fa-magnifying-glass" aria-hidden="true"></i><input type="search" name="q" value="{{ q }}" placeholder="Search this board" aria-label="Search this board"></label>
   </form>
 </header>
 
-{% if sprints or is_lead %}
 <div class="pb-weeks">
   {% if sprints %}
   <form method="get" class="pb-week-pick">
@@ -138,6 +173,7 @@
   </form>
   {% if sprint and sprint.goal %}<span class="pb-goal"><i class="fas fa-bullseye"></i> {{ sprint.goal }}</span>{% endif %}
   {% endif %}
+  <a class="pb-btn pb-bug-btn" href="{% url 'staff:bug_report' project.pk %}"><i class="fas fa-bug"></i> Report a bug</a>
   {% if is_lead %}
   <span class="pb-lead-tag"><i class="fas fa-user-tie"></i> You lead this project</span>
   <span class="pb-spacer"></span>
@@ -169,7 +205,6 @@
   {% endif %}
   {% endif %}
 </div>
-{% endif %}
 
 {% if needs_github %}
 <form class="pb-gh" method="post" action="{% url 'staff:github_save' %}">
@@ -220,6 +255,27 @@
   </div>
 </details>
 
+{% if is_lead %}
+<details class="pb-about pb-epics" id="epics">
+  <summary><i class="fas fa-layer-group"></i> Epics{% if epic_rows %} · {{ epic_rows|length }}{% endif %} <i class="fas fa-chevron-down pb-caret"></i></summary>
+  <div class="pb-epic-list">
+    {% for r in epic_rows %}
+    <div class="pb-epic{% if r.epic.is_closed %} closed{% endif %}">
+      <a class="pb-epic-name" href="?week=all&epic={{ r.epic.pk }}"><i class="pb-epic-dot" style="background:{{ r.epic.color }}"></i>{{ r.epic.name }}</a>
+      <div class="pb-epic-bar" aria-label="{{ r.pct }}% done"><i style="width:{{ r.pct }}%;background:{{ r.epic.color }}"></i></div>
+      <span class="pb-epic-num">{{ r.done }}/{{ r.total }}</span>
+      <span class="pb-epic-weeks">{% if r.weeks %}{{ r.weeks|join:", " }}{% else %}No week{% endif %}</span>
+      <form method="post" action="{% url 'staff:epic_toggle' project.pk r.epic.pk %}">{% csrf_token %}<button type="submit" class="pb-link-btn">{% if r.epic.is_closed %}Reopen{% else %}Close{% endif %}</button></form>
+    </div>
+    {% empty %}<p class="pb-empty" style="text-align:left">No epics yet. Epics group cards by feature across weeks, e.g. "Pages &amp; Sections".</p>
+    {% endfor %}
+    <form method="post" action="{% url 'staff:epic_create' project.pk %}" class="pb-epic-add">
+      {% csrf_token %}<input name="name" maxlength="80" placeholder="New epic name" required aria-label="New epic name"><input type="color" name="color" value="#6366F1" aria-label="Colour"><button class="pb-btn" type="submit"><i class="fas fa-plus"></i> Add epic</button>
+    </form>
+  </div>
+</details>
+{% endif %}
+
 <div class="pb-board{% if is_lead %} has-backlog{% endif %}">
   {% for col in columns %}
   <section class="pb-col {{ col.tone }}{% if col.key == 'backlog' %} collapsed{% endif %}" aria-label="{{ col.label }}">
@@ -227,8 +283,9 @@
     <div class="pb-col-head"><div><i class="dot"></i>{{ col.label }}</div><span>{{ col.tasks|length }}</span></div>
     {% for t in col.tasks %}
     {% if col.key == 'backlog' and week == 'all' %}{% ifchanged t.sprint_id %}<div class="pb-week-group">{% if t.sprint %}{{ t.sprint.label }}{% else %}No week yet{% endif %}</div>{% endifchanged %}{% endif %}
-    <a class="pb-task{% if t.is_mine %} mine{% endif %}" href="{% url 'staff:board_task_detail' t.pk %}">
-      <div class="pb-task-top">{% if t.code %}<span class="pb-code">{{ t.code }}</span>{% endif %}{% if t.category %}<span class="pb-task-label">{{ t.category }}</span>{% endif %}</div>
+    <a class="pb-task{% if t.is_mine %} mine{% endif %}{% if t.is_blocked %} blocked{% endif %}" href="{% url 'staff:board_task_detail' t.pk %}"{% if t.is_blocked %} title="Blocked by {% for b in t.blocked_by_open %}{{ b.code|default:b.title }}{% if not forloop.last %}, {% endif %}{% endfor %}"{% endif %}>
+      <div class="pb-task-top">{% include 'staff/_issue_type.html' with type=t.issue_type %}{% if t.code %}<span class="pb-code">{{ t.code }}</span>{% endif %}{% if t.epic %}<span class="pb-epic-chip" style="--ec:{{ t.epic.color }}">{{ t.epic.name }}</span>{% endif %}{% if t.category %}<span class="pb-task-label">{{ t.category }}</span>{% endif %}
+        {% if t.is_blocked %}<span class="pb-flag blocked"><i class="fas fa-ban"></i> Blocked</span>{% endif %}{% if t.is_stuck %}<span class="pb-flag stuck"><i class="fas fa-hourglass-half"></i> Stuck {{ t.stuck_days }}d</span>{% endif %}</div>
       <strong>{{ t.title }}</strong>
       <div class="pb-task-meta">
         <span class="pb-who{% if t.is_mine %} you{% endif %}"><i class="far fa-user"></i> {% if t.is_mine %}You{% elif t.assigned_to %}{{ t.assigned_to.name }}{% else %}Unassigned{% endif %}</span>
@@ -249,6 +306,7 @@
 </div>
 {% if not total and q %}<p class="pb-empty">No tasks match "{{ q }}".</p>{% endif %}
 <script>
+if (location.hash === '#epics') { var ep = document.getElementById('epics'); if (ep) ep.open = true; }
 (function () {
   var bl = document.querySelector('.pb-col.backlog');
   if (!bl) return;
@@ -258,7 +316,8 @@
     btn.setAttribute('aria-expanded', open ? 'true' : 'false');
   }
   var saved = false;
-  try { saved = localStorage.getItem('staff.board.backlog') !== 'closed'; } catch (e) { saved = true; }
+  var empty = !bl.querySelector('.pb-task');
+  try { var v = localStorage.getItem('staff.board.backlog'); saved = v ? v === 'open' : !empty; } catch (e) { saved = !empty; }
   set(saved);
   bl.querySelector('.pb-col-head').addEventListener('click', function () {
     set(false); try { localStorage.setItem('staff.board.backlog', 'closed'); } catch (e) {}

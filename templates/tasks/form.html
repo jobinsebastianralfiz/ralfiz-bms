@@ -87,6 +87,21 @@
           </div>
           <div class="row">
             <div class="col-4" style="padding: 0.5rem;">
+              <label class="form-label">Type</label>
+              <select class="form-control" name="issue_type">
+                {% for k, v in type_choices %}<option value="{{ k }}" {% if task.issue_type == k %}selected{% endif %}>{{ v }}</option>{% endfor %}
+              </select>
+            </div>
+            <div class="col-8" style="padding: 0.5rem;">
+              <label class="form-label">Epic</label>
+              <select class="form-control" name="epic">
+                <option value="">No epic</option>
+                {% for e in epics %}<option value="{{ e.pk }}" {% if task.epic_id == e.pk %}selected{% endif %}>{{ e.project.name|truncatechars:24 }} · {{ e.name }}</option>{% endfor %}
+              </select>
+            </div>
+          </div>
+          <div class="row">
+            <div class="col-4" style="padding: 0.5rem;">
               <label class="form-label">Week</label>
               <select class="form-control" name="sprint">
                 <option value="">No week</option>
@@ -101,6 +116,12 @@
             <div class="col-4" style="padding: 0.5rem;">
               <label class="form-label">Pull request link</label>
               <input type="url" class="form-control" name="pr_url" value="{{ task.pr_url|default:'' }}" placeholder="https://github.com/...">
+            </div>
+          </div>
+          <div class="row">
+            <div class="col-12" style="padding: 0.5rem;">
+              <label class="form-label">Steps to reproduce <small class="text-muted">(bugs)</small></label>
+              <textarea class="form-control" name="steps_to_reproduce" rows="2">{{ task.steps_to_reproduce|default:'' }}</textarea>
             </div>
           </div>
           <div class="row">

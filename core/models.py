@@ -1643,6 +1643,14 @@ class Task(models.Model):
     branch_name = models.CharField(max_length=120, blank=True)
     pr_url = models.URLField(max_length=500, blank=True, verbose_name='Pull request link')
     status_changed_at = models.DateTimeField(null=True, blank=True)
+    # Jira-style: type, epic, and (for bugs) how to reproduce and which card it broke.
+    ISSUE_TYPES = [('task', 'Task'), ('bug', 'Bug'), ('story', 'Story')]
+    issue_type = models.CharField(max_length=10, choices=ISSUE_TYPES, default='task')
+    steps_to_reproduce = models.TextField(blank=True)
+    found_in = models.ForeignKey('self', on_delete=models.SET_NULL, null=True, blank=True,
+                                 related_name='bugs', help_text='The card this bug was found in.')
+    epic = models.ForeignKey('ProjectEpic', on_delete=models.SET_NULL, null=True, blank=True,
+                             related_name='tasks')
     notes = models.TextField(blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -1673,6 +1681,30 @@ class Task(models.Model):
         if self.status == 'completed':
             return 100
         return max(0, min(100, self.progress or 0))
+
+    @property
+    def blocked_by_open(self):
+        """Cards that block this one and are not Completed yet."""
+        if not hasattr(self, '_blockers'):
+            self._blockers = [l.from_task for l in self.links_in.all()
+                              if l.kind == 'blocks' and l.from_task.status != 'completed']
+        return self._blockers
+
+    @property
+    def is_blocked(self):
+        return bool(self.blocked_by_open)
+
+    @property
+    def stuck_days(self):
+        """Working days (Sundays skipped) in In Progress; 0 for other columns."""
+        if self.status != 'in_progress' or not self.status_changed_at:
+            return 0
+        from .task_rules import working_days_between
+        return working_days_between(timezone.localdate(self.status_changed_at), timezone.localdate())
+
+    @property
+    def is_stuck(self):
+        return self.stuck_days >= 2
 
     @property
     def is_overdue(self):
@@ -1726,6 +1758,46 @@ class ProjectSprint(models.Model):
     @property
     def label(self):
         return f'{self.name} · {self.start_date:%d %b} – {self.end_date:%d %b}'
+
+
+class ProjectEpic(models.Model):
+    """A feature that groups cards across weeks ("Pages & Sections"), with its own progress."""
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    project = models.ForeignKey(Project, on_delete=models.CASCADE, related_name='epics')
+    name = models.CharField(max_length=80)
+    color = models.CharField(max_length=7, default='#6366F1')
+    description = models.TextField(blank=True)
+    order = models.PositiveSmallIntegerField(default=0)
+    is_closed = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['project', 'order', 'name']
+        constraints = [models.UniqueConstraint(fields=['project', 'name'], name='epic_name_unique_per_project')]
+
+    def __str__(self):
+        return self.name
+
+
+class TaskLink(models.Model):
+    """from_task BLOCKS to_task (to_task waits until from_task is Completed), or the two relate."""
+    KIND_CHOICES = [('blocks', 'Blocks'), ('relates', 'Relates to')]
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    from_task = models.ForeignKey('Task', on_delete=models.CASCADE, related_name='links_out')
+    to_task = models.ForeignKey('Task', on_delete=models.CASCADE, related_name='links_in')
+    kind = models.CharField(max_length=10, choices=KIND_CHOICES, default='blocks')
+    created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='+')
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=['from_task', 'to_task', 'kind'], name='task_link_unique'),
+            models.CheckConstraint(condition=~models.Q(from_task=models.F('to_task')), name='task_link_not_self'),
+        ]
+
+    def __str__(self):
+        return f'{self.from_task} {self.kind} {self.to_task}'
 
 
 class TaskChecklistItem(models.Model):
@@ -1846,6 +1918,10 @@ class TaskActivity(models.Model):
         ('pr_linked', 'Pull Request Linked'),
         ('checklist', 'Checklist Ticked'),
         ('edited', 'Edited'),
+        ('linked', 'Linked'),
+        ('unlinked', 'Unlinked'),
+        ('epic_changed', 'Epic Changed'),
+        ('unblocked', 'Unblocked'),
     ]
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)

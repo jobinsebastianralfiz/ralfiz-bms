@@ -5,6 +5,8 @@
 
 {% block content %}
 <style>
+.pb-type { display:inline-flex; width:20px; height:20px; border-radius:6px; align-items:center; justify-content:center; font-size:10.5px; color:#fff; }
+.pb-type.task { background:#2563EB; } .pb-type.bug { background:#DC2626; } .pb-type.story { background:#16A34A; }
 .sv-code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-weight:700; }
 .sv-edit { text-decoration:none; background:var(--sf-primary-dim); color:var(--sf-primary-text); }
 .sv-code-links { display:flex; gap:14px; flex-wrap:wrap; align-items:center; margin-top:10px; font-size:13px; }
@@ -19,6 +21,20 @@
 .sv-checklist li.done span { color:var(--sf-text-3); text-decoration:line-through; }
 .sv-checklist form { margin:0; }
 .sv-checklist button { border:0; background:none; cursor:pointer; font-size:17px; color:var(--sf-primary); padding:0; }
+.sv-blocked { margin-top:10px; padding:10px 12px; border-radius:10px; background:rgba(220,38,38,.08); color:#B91C1C; font-size:13.5px; }
+.sv-blocked a { color:inherit; font-weight:700; }
+.sv-links { list-style:none; margin:0; padding:4px 16px 12px; display:grid; gap:8px; font-size:14px; }
+.sv-links li { display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
+.sv-links a { color:var(--sf-text); font-weight:600; text-decoration:none; }
+.sv-links small { color:var(--sf-text-3); }
+.sv-links form { margin:0 0 0 auto; } .sv-links form button { border:0; background:none; cursor:pointer; color:var(--sf-text-3); }
+.sv-rel { font-size:11.5px; font-weight:700; text-transform:uppercase; letter-spacing:.04em; color:var(--sf-text-3); min-width:82px; }
+.sv-none { color:var(--sf-text-3); font-size:13.5px; }
+.sv-link-add { display:flex; gap:8px; padding:0 16px 16px; flex-wrap:wrap; }
+.sv-link-add select, .sv-link-add input { height:38px; border:1px solid var(--sf-line); border-radius:10px; padding:0 10px; background:var(--sf-card); color:var(--sf-text); font:inherit; }
+.sv-link-add input { width:130px; text-transform:uppercase; }
+.sv-link-add button { height:38px; padding:0 14px; border:0; border-radius:10px; background:var(--sf-primary); color:#fff; font:inherit; font-weight:600; cursor:pointer; }
+.sv-report { margin-left:auto; font-size:13px; font-weight:600; color:var(--sf-primary-text); text-decoration:none; }
 .sv-history { list-style:none; margin:0; padding:4px 16px 14px; display:grid; gap:8px; font-size:13px; color:var(--sf-text-2); }
 .sv-history small { display:block; color:var(--sf-text-3); font-size:11.5px; }
 </style>
@@ -28,7 +44,7 @@
 <div class="sv-col">
 <section class="sv-card">
   <div class="sv-row" style="border-bottom:0;">
-    <div class="sv-chips">{% if task.code %}<span class="sv-chip sv-code">{{ task.code }}</span>{% endif %}{% if task.category %}<span class="sv-chip">{{ task.category }}</span>{% endif %}<span class="sv-chip pri-{{ task.priority }}">{{ task.get_priority_display }}</span>{% if task.sprint %}<span class="sv-chip"><i class="far fa-calendar"></i> {{ task.sprint.name }}</span>{% endif %}
+    <div class="sv-chips">{% include 'staff/_issue_type.html' with type=task.issue_type %}{% if task.epic %}<span class="sv-chip" style="color:{{ task.epic.color }}">{{ task.epic.name }}</span>{% endif %}{% if task.code %}<span class="sv-chip sv-code">{{ task.code }}</span>{% endif %}{% if task.category %}<span class="sv-chip">{{ task.category }}</span>{% endif %}<span class="sv-chip pri-{{ task.priority }}">{{ task.get_priority_display }}</span>{% if task.sprint %}<span class="sv-chip"><i class="far fa-calendar"></i> {{ task.sprint.name }}</span>{% endif %}
       {% if is_lead %}<a class="sv-chip sv-edit" href="{% url 'staff:board_task_edit' task.pk %}"><i class="fas fa-pen"></i> Edit card</a>{% endif %}</div>
     <h1 class="sv-task-title">{{ task.title }}</h1>
     <div class="sv-meta">
@@ -37,6 +53,9 @@
       <span class="sf-badge {% if task.status == 'completed' %}sf-badge-ok{% elif task.status == 'in_progress' %}sf-badge-info{% elif task.status == 'review' %}sf-badge-warn{% else %}sf-badge-muted{% endif %}">{{ task.get_status_display }}</span>
     </div>
     {% if task.description %}<div class="sv-desc">{{ task.description|linebreaksbr }}</div>{% endif %}
+    {% if task.steps_to_reproduce %}<div class="sv-desc"><b>Steps to reproduce</b><br>{{ task.steps_to_reproduce|linebreaksbr }}</div>{% endif %}
+    {% if task.found_in %}<div class="sv-meta"><span><i class="fas fa-bug"></i> Found in <a href="{% url 'staff:board_task_detail' task.found_in.pk %}">{{ task.found_in.code|default:"" }} {{ task.found_in.title }}</a></span></div>{% endif %}
+    {% if task.is_blocked %}<div class="sv-blocked"><i class="fas fa-ban"></i> Blocked by {% for b in task.blocked_by_open %}<a href="{% url 'staff:board_task_detail' b.pk %}">{{ b.code|default:b.title }}</a> ({{ b.get_status_display }}){% if not forloop.last %}, {% endif %}{% endfor %}. Start it when that is Completed.</div>{% endif %}
     {% if task.notes %}<div class="sv-meta"><span><i class="far fa-note-sticky"></i> {{ task.notes }}</span></div>{% endif %}
     <div class="sv-bar"><i style="width: {{ task.progress_percent }}%"></i></div>
     <div class="sv-meta"><span><i class="far fa-user"></i> {% if is_mine %}Assigned to you{% elif task.assigned_to %}Assigned to {{ task.assigned_to.name }}{% else %}Not assigned yet{% endif %}</span></div>
@@ -61,6 +80,33 @@
     {% if not is_lead and not task.project.members_can_complete %}<p class="sv-hint">When your PR is merged, {% if task.project.team_lead %}{{ task.project.team_lead.name }}{% else %}an admin{% endif %} moves the card to Completed.</p>{% endif %}
     {% endif %}
   </div>
+</section>
+
+{% if blocked_by or blocks or relates or is_lead %}
+<section class="sv-card">
+  <header class="sv-card-head"><h2><span class="sv-head-ico"><i class="fas fa-link"></i></span>Links</h2></header>
+  <ul class="sv-links">
+    {% for l in blocked_by %}<li><span class="sv-rel">Blocked by</span> <a href="{% url 'staff:board_task_detail' l.from_task.pk %}">{{ l.from_task.code|default:"" }} {{ l.from_task.title }}</a> <small>{{ l.from_task.get_status_display }}</small>{% if is_lead %}<form method="post" action="{% url 'staff:link_remove' task.pk l.pk %}">{% csrf_token %}<button aria-label="Remove link"><i class="fas fa-xmark"></i></button></form>{% endif %}</li>{% endfor %}
+    {% for l in blocks %}<li><span class="sv-rel">Blocks</span> <a href="{% url 'staff:board_task_detail' l.to_task.pk %}">{{ l.to_task.code|default:"" }} {{ l.to_task.title }}</a> <small>{{ l.to_task.get_status_display }}</small>{% if is_lead %}<form method="post" action="{% url 'staff:link_remove' task.pk l.pk %}">{% csrf_token %}<button aria-label="Remove link"><i class="fas fa-xmark"></i></button></form>{% endif %}</li>{% endfor %}
+    {% for l in relates %}{% if l.from_task_id == task.pk %}{% with o=l.to_task %}<li><span class="sv-rel">Relates to</span> <a href="{% url 'staff:board_task_detail' o.pk %}">{{ o.code|default:"" }} {{ o.title }}</a>{% if is_lead %}<form method="post" action="{% url 'staff:link_remove' task.pk l.pk %}">{% csrf_token %}<button aria-label="Remove link"><i class="fas fa-xmark"></i></button></form>{% endif %}</li>{% endwith %}{% else %}{% with o=l.from_task %}<li><span class="sv-rel">Relates to</span> <a href="{% url 'staff:board_task_detail' o.pk %}">{{ o.code|default:"" }} {{ o.title }}</a>{% if is_lead %}<form method="post" action="{% url 'staff:link_remove' task.pk l.pk %}">{% csrf_token %}<button aria-label="Remove link"><i class="fas fa-xmark"></i></button></form>{% endif %}</li>{% endwith %}{% endif %}{% endfor %}
+    {% if not blocked_by and not blocks and not relates %}<li class="sv-none">No links yet.</li>{% endif %}
+  </ul>
+  {% if is_lead %}
+  <form method="post" action="{% url 'staff:link_add' task.pk %}" class="sv-link-add">
+    {% csrf_token %}
+    <select name="relation" aria-label="Link type"><option value="blocked_by">Blocked by</option><option value="blocks">Blocks</option><option value="relates">Relates to</option></select>
+    <input name="code" required placeholder="{{ task.project.task_prefix|default:'ALW' }}-019" aria-label="Card code">
+    <button type="submit">Add link</button>
+  </form>
+  {% endif %}
+</section>
+{% endif %}
+
+<section class="sv-card sv-bugbox">
+  <header class="sv-card-head"><h2><span class="sv-head-ico"><i class="fas fa-bug"></i></span>Bugs</h2>
+    <a class="sv-report" href="{% url 'staff:bug_report' task.project_id %}?found_in={{ task.pk }}"><i class="fas fa-plus"></i> Report a bug</a></header>
+  {% if bugs %}<ul class="sv-links">{% for b in bugs %}<li><a href="{% url 'staff:board_task_detail' b.pk %}">{{ b.code|default:"" }} {{ b.title }}</a> <small>{{ b.get_status_display }}</small></li>{% endfor %}</ul>
+  {% else %}<p class="sv-none" style="padding:4px 16px 14px;margin:0">No bugs reported on this card.</p>{% endif %}
 </section>
 
 {% if checklist %}
@@ -94,6 +140,9 @@
       {% elif a.verb == 'pr_linked' %}linked a pull request
       {% elif a.verb == 'checklist' %}marked "{{ a.message }}" {{ a.to_value }}
       {% elif a.verb == 'sprint_changed' %}moved it to {{ a.to_value|default:"no week" }}
+      {% elif a.verb == 'linked' or a.verb == 'unlinked' %}{{ a.get_verb_display|lower }}: {{ a.message }}
+      {% elif a.verb == 'epic_changed' %}set the epic to {{ a.to_value|default:"none" }}
+      {% elif a.verb == 'unblocked' %}— unblocked ({{ a.from_value }} completed)
       {% else %}{{ a.get_verb_display|lower }}{% endif %}
       <small>{{ a.created_at|date:"d M, h:i A" }}</small></li>
     {% endfor %}

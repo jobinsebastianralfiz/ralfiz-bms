@@ -117,6 +117,25 @@
       </div>
     </div>
 
+    <div class="jira-card">
+      <div class="jira-card-hd"><h3><i class="fas fa-link"></i> Links{% if task.issue_type != 'task' %} · {{ task.get_issue_type_display }}{% endif %}{% if task.epic %} · <span style="color:{{ task.epic.color }}">{{ task.epic.name }}</span>{% endif %}</h3></div>
+      <div class="jira-card-body">
+        {% if task.steps_to_reproduce %}<div style="margin-bottom:.6rem;"><strong>Steps to reproduce</strong><div style="white-space:pre-wrap;color:#334155;">{{ task.steps_to_reproduce }}</div></div>{% endif %}
+        {% if task.found_in %}<div style="margin-bottom:.6rem;"><strong>Found in:</strong> <a href="{% url 'task_detail' task.found_in.pk %}">{{ task.found_in }}</a></div>{% endif %}
+        {% for l in blocked_by %}<div class="d-flex" style="gap:.5rem;align-items:center;padding:.2rem 0;"><span class="text-muted" style="min-width:90px;">Blocked by</span><a href="{% url 'task_detail' l.from_task.pk %}">{{ l.from_task }}</a> <small class="text-muted">{{ l.from_task.get_status_display }}</small><form method="post" action="{% url 'task_link_remove' task.pk l.pk %}" style="margin-left:auto;">{% csrf_token %}<button class="btn btn-sm btn-link text-muted" aria-label="Remove link"><i class="fas fa-xmark"></i></button></form></div>{% endfor %}
+        {% for l in blocks %}<div class="d-flex" style="gap:.5rem;align-items:center;padding:.2rem 0;"><span class="text-muted" style="min-width:90px;">Blocks</span><a href="{% url 'task_detail' l.to_task.pk %}">{{ l.to_task }}</a> <small class="text-muted">{{ l.to_task.get_status_display }}</small><form method="post" action="{% url 'task_link_remove' task.pk l.pk %}" style="margin-left:auto;">{% csrf_token %}<button class="btn btn-sm btn-link text-muted" aria-label="Remove link"><i class="fas fa-xmark"></i></button></form></div>{% endfor %}
+        {% for l in relates_out %}<div class="d-flex" style="gap:.5rem;align-items:center;padding:.2rem 0;"><span class="text-muted" style="min-width:90px;">Relates to</span><a href="{% url 'task_detail' l.to_task.pk %}">{{ l.to_task }}</a><form method="post" action="{% url 'task_link_remove' task.pk l.pk %}" style="margin-left:auto;">{% csrf_token %}<button class="btn btn-sm btn-link text-muted" aria-label="Remove link"><i class="fas fa-xmark"></i></button></form></div>{% endfor %}
+        {% for l in relates_in %}<div class="d-flex" style="gap:.5rem;align-items:center;padding:.2rem 0;"><span class="text-muted" style="min-width:90px;">Relates to</span><a href="{% url 'task_detail' l.from_task.pk %}">{{ l.from_task }}</a><form method="post" action="{% url 'task_link_remove' task.pk l.pk %}" style="margin-left:auto;">{% csrf_token %}<button class="btn btn-sm btn-link text-muted" aria-label="Remove link"><i class="fas fa-xmark"></i></button></form></div>{% endfor %}
+        {% for b in bugs %}<div class="d-flex" style="gap:.5rem;align-items:center;padding:.2rem 0;"><span class="text-muted" style="min-width:90px;"><i class="fas fa-bug" style="color:#dc2626"></i> Bug</span><a href="{% url 'task_detail' b.pk %}">{{ b }}</a> <small class="text-muted">{{ b.get_status_display }}</small></div>{% endfor %}
+        <form method="post" action="{% url 'task_link_add' task.pk %}" class="d-flex" style="gap:.5rem;margin-top:.6rem;flex-wrap:wrap;">
+          {% csrf_token %}
+          <select name="relation" class="form-control" style="width:auto;"><option value="blocked_by">Blocked by</option><option value="blocks">Blocks</option><option value="relates">Relates to</option></select>
+          <input name="code" class="form-control" style="width:140px;" required placeholder="{{ task.project.task_prefix|default:'ALW' }}-019" aria-label="Card code">
+          <button class="btn btn-outline-secondary" type="submit">Add link</button>
+        </form>
+      </div>
+    </div>
+
     {% if task.branch_name or task.pr_url or task.checklist.exists %}
     <div class="jira-card">
       <div class="jira-card-hd"><h3><i class="fas fa-code-branch"></i> Code &amp; Done when</h3></div>

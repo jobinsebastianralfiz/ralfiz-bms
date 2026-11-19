@@ -1,0 +1,35 @@
+{% extends 'staff/base.html' %}
+
+{% block title %}Report a bug{% endblock %}
+{% block heading %}Report a bug{% endblock %}
+
+{% block content %}
+<style>
+.tf { max-width:720px; display:grid; gap:14px; padding:20px; border:1px solid var(--sf-line); border-radius:16px; background:var(--sf-card); }
+.tf h1 { margin:0; font-size:20px; display:flex; gap:10px; align-items:center; }
+.tf h1 i { color:#DC2626; }
+.tf p.sub { margin:-6px 0 0; font-size:13px; color:var(--sf-text-3); }
+.tf label { display:grid; gap:6px; font-size:13px; font-weight:600; color:var(--sf-text-2); }
+.tf input, .tf select, .tf textarea { width:100%; min-height:42px; padding:9px 12px; border:1px solid var(--sf-line); border-radius:11px; background:var(--sf-card); color:var(--sf-text); font:inherit; font-weight:400; }
+.tf textarea { min-height:100px; resize:vertical; }
+.tf .acts { display:flex; gap:10px; }
+.tf .acts button, .tf .acts a { height:42px; padding:0 18px; border-radius:11px; border:1px solid var(--sf-line); background:var(--sf-card); color:var(--sf-text); font:inherit; font-weight:600; cursor:pointer; text-decoration:none; display:inline-flex; align-items:center; }
+.tf .acts .primary { background:#DC2626; border-color:#DC2626; color:#fff; }
+</style>
+
+<a href="{% if found_in %}{% url 'staff:board_task_detail' found_in.pk %}{% else %}{% url 'staff:project_board' project.pk %}{% endif %}" class="sv-back"><i class="fas fa-arrow-left"></i> {% if found_in %}Back to {{ found_in.code|default:found_in.title }}{% else %}{{ project.name }} board{% endif %}</a>
+
+<form method="post" class="tf">
+  {% csrf_token %}
+  {% if found_in %}<input type="hidden" name="found_in" value="{{ found_in.pk }}">{% endif %}
+  <h1><i class="fas fa-bug"></i> Report a bug on {{ project.name }}</h1>
+  <p class="sub">It goes to To Do{% if project.sprints.all %} in the running week{% endif %}, unassigned. {% if project.team_lead %}{{ project.team_lead.name }}{% else %}An admin{% endif %} will pick an owner.{% if found_in %} Linked to {{ found_in.code|default:"" }} {{ found_in.title }}.{% endif %}</p>
+  <label>What is wrong? <input name="title" required maxlength="255" placeholder="e.g. Page slug gives 404 after rename" autofocus></label>
+  <label>Steps to reproduce <textarea name="steps_to_reproduce" placeholder="1. Open Admin → Pages&#10;2. Rename a page&#10;3. Open its old link"></textarea></label>
+  <label>What should happen instead? <textarea name="description"></textarea></label>
+  <label>Priority
+    <select name="priority">{% for k, v in priority_choices %}<option value="{{ k }}" {% if k == 'medium' %}selected{% endif %}>{{ v }}</option>{% endfor %}</select>
+  </label>
+  <div class="acts"><button class="primary" type="submit">Report bug</button><a href="{% url 'staff:project_board' project.pk %}">Cancel</a></div>
+</form>
+{% endblock %}

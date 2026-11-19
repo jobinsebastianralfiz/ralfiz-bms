@@ -9,6 +9,8 @@ admin board, the staff portal, the client portal and the Claude connector:
   (and to Completed if the project allows it). The lead and admins move anything.
 * Projects with a code repository need a pull request link before In Review.
 * Cards get codes like ALW-017 from the project's prefix, never reused.
+* Phase 2: issue types (members may report Bugs), epics, and "blocks" links. A
+  member cannot start a blocked card; the lead can, with a warning.
 """
 from django.db import transaction
 from django.db.models import Q
@@ -161,6 +163,14 @@ def change_status(task, new_status, actor, *, member=None, is_admin=False, pr_ur
         if pr_url and pr_url != task.pr_url:
             task.pr_url = pr_url
             log(task, actor, 'pr_linked', to_value=pr_url)
+    if new_status == 'in_progress' and task.status != 'in_progress':
+        blockers = open_blockers(task)
+        if blockers:
+            msg = 'Blocked by ' + ', '.join(
+                (f'{b.code} · {b.title}' if b.code else b.title) + f', {b.get_status_display()}' for b in blockers)
+            if not planner:
+                raise TaskRuleError(msg + '. It can start when that is Completed, or the team lead can override.')
+            task.override_warning = msg + ' — started anyway.'
     if (new_status == 'review' and task.status != 'review' and project.github_repo
             and not task.pr_url and not is_admin):
         raise TaskRuleError('Paste the pull request link before moving this card to In Review.')
@@ -172,6 +182,8 @@ def change_status(task, new_status, actor, *, member=None, is_admin=False, pr_ur
         log(task, actor, 'status_changed', from_value=old, to_value=new_status,
             visible='backlog' not in (old, new_status))
     task.save()
+    if new_status == 'completed' and old != 'completed':
+        notify_unblocked(task, actor)
     return task
 
 
@@ -278,3 +290,159 @@ def create_sprint(project, *, name, start_date, end_date, goal=''):
     return ProjectSprint.objects.create(project=project, name=name.strip()[:60] or 'Week',
                                         goal=goal.strip()[:255], start_date=start_date,
                                         end_date=end_date, order=(last.order + 1) if last else 1)
+
+
+# ---------------------------------------------------------------- working days
+
+def working_days_between(start, end):
+    """Days after `start` up to and including `end`, skipping Sundays (the office's day off)."""
+    from datetime import timedelta
+    if end <= start:
+        return 0
+    days, d = 0, start
+    while d < end:
+        d += timedelta(days=1)
+        if d.weekday() != 6:
+            days += 1
+    return days
+
+
+# ---------------------------------------------------------------- links
+
+def open_blockers(task):
+    """Cards that block `task` and are not Completed (fresh from the database)."""
+    from .models import TaskLink
+    return [l.from_task for l in TaskLink.objects.filter(to_task=task, kind='blocks')
+            .exclude(from_task__status='completed').select_related('from_task')]
+
+
+def _reachable(start_id, target_id):
+    """True when target can be reached from start along "blocks" links."""
+    from .models import TaskLink
+    seen, frontier = {start_id}, {start_id}
+    while frontier:
+        nxt = set(TaskLink.objects.filter(kind='blocks', from_task_id__in=frontier)
+                  .values_list('to_task_id', flat=True)) - seen
+        if target_id in nxt:
+            return True
+        seen |= nxt
+        frontier = nxt
+    return False
+
+
+def link_tasks(from_task, to_task, kind, actor):
+    """from_task blocks (or relates to) to_task. Same project only; no self-links or loops."""
+    from .models import TaskLink
+    if kind not in ('blocks', 'relates'):
+        raise TaskRuleError('kind must be "blocks" or "relates".')
+    if from_task.pk == to_task.pk:
+        raise TaskRuleError('A card cannot be linked to itself.')
+    if from_task.project_id != to_task.project_id:
+        raise TaskRuleError('Both cards must be on the same project.')
+    if kind == 'blocks' and _reachable(to_task.pk, from_task.pk):
+        raise TaskRuleError(f'{_label(to_task)} already blocks {_label(from_task)} (directly or through '
+                            'other cards), so this would make a loop.')
+    link, made = TaskLink.objects.get_or_create(from_task=from_task, to_task=to_task, kind=kind,
+                                                defaults={'created_by': actor})
+    if made:
+        verb = 'blocks' if kind == 'blocks' else 'relates to'
+        log(to_task, actor, 'linked', from_value=_label(from_task), to_value=kind,
+            message=f'{_label(from_task)} {verb} {_label(to_task)}')
+    return link, made
+
+
+def unlink_tasks(link, actor):
+    log(link.to_task, actor, 'unlinked', from_value=_label(link.from_task), to_value=link.kind,
+        message=f'{_label(link.from_task)} no longer {"blocks" if link.kind == "blocks" else "relates to"} '
+                f'{_label(link.to_task)}')
+    link.delete()
+
+
+def _label(task):
+    return task.code or task.title[:40]
+
+
+def notify_unblocked(task, actor):
+    """`task` was just completed: tell the owner of each card it was the last blocker of."""
+    from .models import TaskLink
+    for link in TaskLink.objects.filter(from_task=task, kind='blocks').select_related('to_task__assigned_to',
+                                                                                     'to_task__project'):
+        waiting = link.to_task
+        if waiting.status == 'completed' or open_blockers(waiting):
+            continue
+        log(waiting, actor, 'unblocked', from_value=_label(task))
+        if waiting.assigned_to_id and waiting.status != 'backlog':
+            _notify_member(waiting.assigned_to, f'{_label(waiting)} is unblocked',
+                           f'{_label(task)} is completed, so "{waiting.title}" can start.', waiting.project)
+
+
+def _notify_member(member, title, body, project):
+    from django.urls import reverse
+    from employees.models import Notification
+    from employees.utils import send_push_notification
+    emp = member.staff_employee()
+    if emp is None:
+        return
+    Notification.objects.create(employee=emp, title=title[:200], body=body, notification_type='work',
+                                data={'url': reverse('staff:project_board', args=[project.pk])})
+    try:
+        send_push_notification(emp, title, body)
+    except Exception:
+        pass
+
+
+# ---------------------------------------------------------------- bugs and epics
+
+def report_bug(project, actor, *, title, description='', steps='', found_in=None, priority='medium'):
+    """Anyone on the team may report a bug: it lands unassigned in To Do of the running
+    week (or with no week), for the lead to triage."""
+    if found_in is not None and found_in.project_id != project.pk:
+        raise TaskRuleError('That card is on another project.')
+    active = project.sprints.filter(status='active').first()
+    return create_task(project, actor, title=title, description=description, status='todo',
+                       issue_type='bug', steps_to_reproduce=steps, found_in=found_in, sprint=active,
+                       priority=priority)
+
+
+EPIC_COLORS = ('#6366F1', '#0EA5E9', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899', '#14B8A6', '#84CC16')
+
+
+def create_epic(project, *, name, color='', description=''):
+    import re
+    from .models import ProjectEpic
+    name = (name or '').strip()[:80]
+    if not name:
+        raise TaskRuleError('An epic needs a name.')
+    if project.epics.filter(name__iexact=name).exists():
+        raise TaskRuleError(f'There is already an epic called "{name}".')
+    n = project.epics.count()
+    if not re.fullmatch(r'#[0-9A-Fa-f]{6}', color or ''):
+        color = EPIC_COLORS[n % len(EPIC_COLORS)]
+    return ProjectEpic.objects.create(project=project, name=name, color=color,
+                                      description=(description or '').strip(), order=n + 1)
+
+
+def epic_rows(project, include_closed=True):
+    """Epics with progress (completed / total live+backlog cards) and the weeks they span."""
+    from django.db.models import Count, Q
+    epics = project.epics.annotate(
+        total=Count('tasks', distinct=True),
+        done=Count('tasks', filter=Q(tasks__status='completed'), distinct=True))
+    if not include_closed:
+        epics = epics.filter(is_closed=False)
+    rows = []
+    for e in epics:
+        weeks = list(project.sprints.filter(tasks__epic=e).distinct().order_by('order').values_list('name', flat=True))
+        rows.append({'epic': e, 'total': e.total, 'done': e.done,
+                     'pct': round(e.done * 100 / e.total) if e.total else 0, 'weeks': weeks})
+    return rows
+
+
+def set_epic(task, epic, actor):
+    if epic is not None and epic.project_id != task.project_id:
+        raise TaskRuleError('That epic belongs to another project.')
+    if task.epic_id != (epic.pk if epic else None):
+        log(task, actor, 'epic_changed', from_value=task.epic.name if task.epic_id else '',
+            to_value=epic.name if epic else '')
+        task.epic = epic
+        task.save(update_fields=['epic', 'updated_at'])

@@ -25,6 +25,19 @@
   <h1>{% if task %}{{ task.code }} {{ task.title }}{% else %}New card on {{ project.name }}{% endif %}</h1>
   {% if not task %}<p class="sub">{% if project.task_prefix %}It gets the next code ({{ project.task_prefix }}-{{ project.next_task_number|stringformat:"03d" }}).{% endif %} Backlog cards stay hidden from the team until you start their week.</p>{% endif %}
 
+  <div class="row2">
+    <label>Type
+      <select name="issue_type">
+        {% for k, v in type_choices %}<option value="{{ k }}" {% if task.issue_type == k %}selected{% endif %}>{{ v }}</option>{% endfor %}
+      </select>
+    </label>
+    <label>Epic
+      <select name="epic">
+        <option value="">No epic</option>
+        {% for e in epic_options %}<option value="{{ e.pk }}" {% if task.epic_id == e.pk %}selected{% endif %}>{{ e.name }}</option>{% endfor %}
+      </select>
+    </label>
+  </div>
   <label>Title <input name="title" required maxlength="255" value="{{ task.title|default:'' }}" autofocus></label>
   <label>Description <textarea name="description" maxlength="5000">{{ task.description|default:'' }}</textarea></label>
 
@@ -65,6 +78,8 @@
     <label>Branch <input name="branch_name" maxlength="120" value="{{ task.branch_name|default:'' }}" placeholder="feature/alw-017-page-model"></label>
     <label>Pull request link <input type="url" name="pr_url" value="{{ task.pr_url|default:'' }}" placeholder="https://github.com/..."></label>
   </div>
+
+  <label>Steps to reproduce <small>Bugs only.</small> <textarea name="steps_to_reproduce" maxlength="5000">{{ task.steps_to_reproduce|default:'' }}</textarea></label>
 
   <label>Done when <small>One item per line. The owner ticks them off on the card.</small>
     <textarea name="checklist" placeholder="Migrations run cleanly&#10;Admin can add a page">{{ checklist_text|default:'' }}</textarea>

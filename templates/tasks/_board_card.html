@@ -1,8 +1,11 @@
 {% load humanize %}{% comment %}One task card. Set readonly for the client portal: no links, no drag, no edit.{% endcomment %}
-<article class="vk-card{% if readonly %} readonly{% endif %}"{% if not readonly %} draggable="true" data-id="{{ task.pk }}" data-url="{% url 'task_status_update' task.pk %}"{% endif %}>
+<article class="vk-card{% if readonly %} readonly{% elif task.is_blocked %} is-blocked{% endif %}"{% if not readonly %} draggable="true" data-id="{{ task.pk }}" data-url="{% url 'task_status_update' task.pk %}"{% endif %}>
   {% if task.tag or task.priority or task.code %}
   <div class="vk-chips">
+    {% if not readonly %}{% if task.issue_type == 'bug' %}<span class="vk-type bug" title="Bug"><i class="fas fa-bug"></i></span>{% elif task.issue_type == 'story' %}<span class="vk-type story" title="Story"><i class="fas fa-book"></i></span>{% endif %}{% endif %}
     {% if task.code %}<span class="vk-code">{{ task.code }}</span>{% endif %}
+    {% if not readonly and task.epic %}<span class="vk-epic" style="--ec:{{ task.epic.color }}">{{ task.epic.name }}</span>{% endif %}
+    {% if not readonly %}{% if task.is_blocked %}<span class="vk-flag blocked" title="Blocked by {% for b in task.blocked_by_open %}{{ b.code|default:b.title }}{% if not forloop.last %}, {% endif %}{% endfor %}"><i class="fas fa-ban"></i> Blocked</span>{% endif %}{% if task.is_stuck %}<span class="vk-flag stuck"><i class="fas fa-hourglass-half"></i> Stuck {{ task.stuck_days }}d</span>{% endif %}{% endif %}
     {% if task.tag %}<span class="vk-chip tone-{{ task.tag_tone }}">{{ task.tag }}</span>{% endif %}
     <span class="vk-chip pri-{{ task.priority }}">{{ task.get_priority_display }}</span>
   </div>

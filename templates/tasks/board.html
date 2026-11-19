@@ -92,6 +92,22 @@
           {% csrf_token %}<button class="vk-btn dark" type="submit"><i class="fas fa-play"></i> Start {{ next_sprint.name }} <span class="vk-dates">· {{ next_sprint.start_date|date:"j M" }} – {{ next_sprint.end_date|date:"j M" }}</span></button>
         </form>
         {% endif %}
+        <details class="vk-addweek vk-epics">
+          <summary class="vk-btn"><i class="fas fa-layer-group"></i> Epics{% if epic_rows %} · {{ epic_rows|length }}{% endif %}</summary>
+          <div class="vk-epic-pop">
+            {% for r in epic_rows %}
+            <div class="vk-epic-row{% if r.epic.is_closed %} closed{% endif %}">
+              <a href="?project={{ project.pk }}&week=all&epic={{ r.epic.pk }}"><i style="background:{{ r.epic.color }}"></i>{{ r.epic.name }}</a>
+              <span class="vk-epic-bar"><i style="width:{{ r.pct }}%;background:{{ r.epic.color }}"></i></span>
+              <small>{{ r.done }}/{{ r.total }}{% if r.weeks %} · {{ r.weeks|join:", " }}{% endif %}</small>
+              <form method="post" action="{% url 'project_epic_toggle' project.pk r.epic.pk %}">{% csrf_token %}<button type="submit">{% if r.epic.is_closed %}Reopen{% else %}Close{% endif %}</button></form>
+            </div>
+            {% empty %}<p class="vk-lead">No epics yet.</p>{% endfor %}
+            <form method="post" action="{% url 'project_epic_create' project.pk %}" class="vk-epic-new">
+              {% csrf_token %}<input name="name" required maxlength="80" placeholder="New epic"><input type="color" name="color" value="#6366F1" aria-label="Colour"><button class="vk-btn dark" type="submit">Add</button>
+            </form>
+          </div>
+        </details>
         <details class="vk-addweek">
           <summary class="vk-btn"><i class="fas fa-plus"></i> Add week</summary>
           <form method="post" action="{% url 'project_sprint_create' project.pk %}">
@@ -127,6 +143,19 @@
         {% for l in labels %}<option value="{{ l }}" {% if label|lower == l|lower %}selected{% endif %}>{{ l }}</option>{% endfor %}
       </select>
       {% endif %}
+      <select name="type" aria-label="Type">
+        <option value="">Any type</option>
+        <option value="task" {% if issue_type == 'task' %}selected{% endif %}>Tasks</option>
+        <option value="bug" {% if issue_type == 'bug' %}selected{% endif %}>Bugs</option>
+        <option value="story" {% if issue_type == 'story' %}selected{% endif %}>Stories</option>
+      </select>
+      {% if epics %}
+      <select name="epic" aria-label="Epic">
+        <option value="">Any epic</option>
+        {% for e in epics %}<option value="{{ e.pk }}" {% if epic_id == e.pk|stringformat:"s" %}selected{% endif %}>{{ e.name }}</option>{% endfor %}
+      </select>
+      {% endif %}
+      {% if week %}<input type="hidden" name="week" value="{{ week }}">{% endif %}
       <button type="submit" class="vk-btn dark">Apply</button>
       {% if filters_on %}<a class="vk-clear" href="?{% if project %}project={{ project.pk }}{% endif %}">Clear filters</a>{% endif %}
     </form>
@@ -166,9 +195,9 @@
 .vk-addweek { position:relative; }
 .vk-addweek summary { list-style:none; cursor:pointer; }
 .vk-addweek summary::-webkit-details-marker { display:none; }
-.vk-addweek form { position:absolute; z-index:20; top:44px; left:0; display:grid; gap:8px; width:280px; padding:14px; border:1px solid var(--vk-line); border-radius:14px; background:var(--vk-card, #fff); box-shadow:0 16px 40px rgba(15,23,42,.14); }
-.vk-addweek input { height:36px; padding:0 10px; border:1px solid var(--vk-line); border-radius:9px; font:inherit; width:100%; }
-.vk-addweek label { display:grid; gap:4px; font-size:12px; color:var(--text-muted, #64748b); }
+.vk-addweek > form { position:absolute; z-index:20; top:44px; left:0; display:grid; gap:8px; width:280px; padding:14px; border:1px solid var(--vk-line); border-radius:14px; background:var(--vk-card, #fff); box-shadow:0 16px 40px rgba(15,23,42,.14); }
+.vk-addweek > form input { height:36px; padding:0 10px; border:1px solid var(--vk-line); border-radius:9px; font:inherit; width:100%; }
+.vk-addweek > form label { display:grid; gap:4px; font-size:12px; color:var(--text-muted, #64748b); }
 .vk-board.has-backlog { grid-template-columns: 56px repeat(4, minmax(230px, 1fr)); }
 .vk-board.has-backlog.backlog-open { grid-template-columns: repeat(5, minmax(205px, 1fr)); }
 .vk-board.has-backlog .vk-stats { gap: 8px; }
@@ -186,6 +215,24 @@
 .vk-backlog-toggle { display:flex; align-items:center; gap:8px; border:0; background:none; cursor:pointer; font:inherit; font-weight:700; color:var(--text-muted, #64748b); padding:2px 4px; }
 .vk-col--backlog.collapsed .vk-backlog-toggle { writing-mode:vertical-rl; transform:rotate(180deg); }
 .vk-code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size:11px; font-weight:700; padding:2px 7px; border-radius:6px; background:rgba(100,116,139,.12); color:#334155; }
+.vk-type { display:inline-flex; width:18px; height:18px; border-radius:5px; align-items:center; justify-content:center; font-size:10px; color:#fff; }
+.vk-type.bug { background:#DC2626; } .vk-type.story { background:#16A34A; }
+.vk-epic { font-size:11px; font-weight:700; padding:2px 7px; border-radius:6px; color:var(--ec); background:color-mix(in srgb, var(--ec) 14%, transparent); }
+.vk-flag { font-size:11px; font-weight:700; padding:2px 7px; border-radius:6px; }
+.vk-flag.blocked { color:#B91C1C; background:rgba(220,38,38,.1); }
+.vk-flag.stuck { color:#B45309; background:rgba(245,158,11,.14); }
+.vk-card.is-blocked { border-left:3px solid #94A3B8; background-image: repeating-linear-gradient(135deg, transparent 0 12px, rgba(148,163,184,.08) 12px 24px); }
+.vk-epic-pop form { position:static; box-shadow:none; border:0; padding:0; width:auto; background:none; }
+.vk-epic-pop { position:absolute; z-index:20; top:44px; left:0; width:min(460px, 90vw); display:grid; gap:10px; padding:14px; border:1px solid var(--vk-line); border-radius:14px; background:var(--vk-card, #fff); box-shadow:0 16px 40px rgba(15,23,42,.14); }
+.vk-epic-row { display:grid; grid-template-columns: 1fr 90px auto auto; gap:10px; align-items:center; font-size:13px; }
+.vk-epic-row.closed { opacity:.55; }
+.vk-epic-row a { display:flex; gap:7px; align-items:center; color:inherit; font-weight:600; text-decoration:none; }
+.vk-epic-row a i { width:10px; height:10px; border-radius:3px; }
+.vk-epic-bar { height:6px; border-radius:99px; background:rgba(148,163,184,.25); overflow:hidden; } .vk-epic-bar i { display:block; height:100%; }
+.vk-epic-row small { color:var(--text-muted, #64748b); }
+.vk-epic-row form { margin:0; } .vk-epic-row button { border:0; background:none; color:#2563eb; cursor:pointer; font-size:12px; }
+.vk-epic-new { display:flex !important; gap:8px; margin-top:4px; } .vk-epic-new input[name=name] { flex:1; height:36px; padding:0 10px; border:1px solid var(--vk-line); border-radius:9px; font:inherit; }
+.vk-epic-new input[type=color] { width:38px; height:36px; padding:2px; border:1px solid var(--vk-line); border-radius:9px; }
 .vk-sprint-tag { font-size:11px; color:var(--text-muted, #64748b); }
 @media (max-width: 760px) {
   .vk-board.has-backlog, .vk-board.has-backlog.backlog-open { grid-template-columns: 56px repeat(4, 82vw); }
@@ -219,7 +266,8 @@
   var bl = document.querySelector('.vk-col--backlog');
   if (bl) {
     var openBl = false;
-    try { openBl = localStorage.getItem('bms.board.backlog') !== 'closed'; } catch (e) { openBl = true; }
+    var blEmpty = !bl.querySelector('.vk-card');
+    try { var v = localStorage.getItem('bms.board.backlog'); openBl = v ? v === 'open' : !blEmpty; } catch (e) { openBl = !blEmpty; }
     var setBl = function (open) {
       bl.classList.toggle('collapsed', !open);
       bl.parentNode.classList.toggle('backlog-open', open);

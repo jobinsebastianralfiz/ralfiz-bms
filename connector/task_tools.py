@@ -10,12 +10,12 @@ The connector itself is owner-only (connector.auth.can_use_connector).
 """
 from datetime import date
 
-from django.db.models import Count, Q
+from django.db.models import Count, Exists, OuterRef, Q
 from django.urls import reverse
 from django.utils import timezone
 
 from core import task_rules
-from core.models import Project, ProjectSprint, Task, TaskActivity, TaskComment, TeamMember
+from core.models import Project, ProjectEpic, ProjectSprint, Task, TaskActivity, TaskComment, TaskLink, TeamMember
 
 from .dispatch import ToolError
 from .tools import Tool, register, s_bool, s_date, s_int, s_str, s_uuid
@@ -34,7 +34,8 @@ def _log(task, user, verb, from_value='', to_value='', message='', visible=False
 
 
 def _task(task_id):
-    task = Task.objects.select_related('project__client', 'assigned_to', 'sprint').filter(pk=task_id).first()
+    task = Task.objects.select_related('project__client', 'assigned_to', 'sprint', 'epic', 'found_in') \
+        .filter(pk=task_id).first()
     if task is None:
         raise ToolError('No task with that id. Use list_project_tasks to find it.')
     return task
@@ -72,6 +73,10 @@ def _summary(task):
         'pr_url': task.pr_url or None,
         'checklist': '{}/{}'.format(*task.checklist_progress) if task.checklist_progress[1] else None,
         'in_column_since': task.status_changed_at.isoformat() if task.status_changed_at else None,
+        'issue_type': task.issue_type,
+        'epic': task.epic.name if task.epic_id else None,
+        'blocked_by': [b.code or b.title for b in task.blocked_by_open] or None,
+        'stuck_working_days': task.stuck_days or None,
     }
 
 
@@ -83,6 +88,15 @@ def _detail(ctx, task):
         client=task.project.client.name if task.project.client_id else '',
         completed_date=str(task.completed_date) if task.completed_date else None,
         branch_name=task.branch_name,
+        steps_to_reproduce=task.steps_to_reproduce or None,
+        found_in=(task.found_in.code or task.found_in.title) if task.found_in_id else None,
+        bugs=[{'code': b.code, 'title': b.title, 'status': b.status} for b in task.bugs.all()],
+        links=[{'id': str(l.id), 'relation': 'blocked_by' if l.kind == 'blocks' else 'relates',
+                'card': l.from_task.code or l.from_task.title, 'status': l.from_task.status}
+               for l in task.links_in.select_related('from_task')]
+              + [{'id': str(l.id), 'relation': 'blocks' if l.kind == 'blocks' else 'relates',
+                  'card': l.to_task.code or l.to_task.title, 'status': l.to_task.status}
+                 for l in task.links_out.select_related('to_task')],
         done_when=[{'id': str(c.id), 'text': c.text, 'done': c.is_done} for c in task.checklist.all()],
         created_at=task.created_at.isoformat(),
         url=_url(ctx, task),
@@ -109,7 +123,15 @@ def _detail(ctx, task):
 # ---------------------------------------------------------------- read
 
 def _list_project_tasks(ctx, args):
-    qs = Task.objects.select_related('project', 'assigned_to', 'sprint').prefetch_related('checklist')
+    qs = Task.objects.select_related('project', 'assigned_to', 'sprint', 'epic') \
+        .prefetch_related('checklist', 'links_in__from_task')
+    if args.get('issue_type'):
+        qs = qs.filter(issue_type=args['issue_type'])
+    if args.get('epic_id'):
+        qs = qs.filter(epic_id=args['epic_id'])
+    if args.get('blocked_only'):
+        qs = qs.filter(Exists(TaskLink.objects.filter(to_task=OuterRef('pk'), kind='blocks')
+                              .exclude(from_task__status='completed')))
     if args.get('project_id'):
         if not Project.objects.filter(pk=args['project_id']).exists():
             raise ToolError('No project with that id. Use search to find it.')
@@ -154,7 +176,9 @@ register(Tool(
     'week (sprint_id or current_week), team member, status, text, overdue, or stuck (in a column '
     'longer than stuck_days). Each card has its code (ALW-017), week, PR link and Done-when '
     'progress. Call for "what is pending on <project>", "what is <person> working on", "what is '
-    'stuck" or "plan for week 3". These are board tasks, not daily tasks or work assignments.',
+    'stuck" or "plan for week 3". Cards also show their type (task/bug/story), epic, what blocks '
+    'them, and working days stuck in In Progress. These are board tasks, not daily tasks or work '
+    'assignments.',
     _list_project_tasks,
     {
         'project_id': s_uuid('project'),
@@ -165,6 +189,9 @@ register(Tool(
         'sprint_id': s_uuid('week (from list_sprints)'),
         'current_week': s_bool('Only cards in each project\'s running week.'),
         'stuck_days': s_int('Only In Progress / In Review cards that have not moved for this many days.', 1, 365),
+        'issue_type': s_str('Only this type.', ['task', 'bug', 'story']),
+        'epic_id': s_uuid('epic (from list_epics)'),
+        'blocked_only': s_bool('Only cards waiting on a card that is not Completed yet.'),
         'search': s_str('Filter by task title, description or label.'),
         'limit': s_int('Maximum tasks to return (default 100).', 1, 500),
     },
@@ -219,7 +246,20 @@ def _card_fields(project, args):
     checklist = args.get('checklist') or []
     if not isinstance(checklist, list) or not all(isinstance(c, str) for c in checklist):
         raise ToolError('checklist must be a list of strings')
+    issue_type = args.get('issue_type') or 'task'
+    if issue_type not in ('task', 'bug', 'story'):
+        raise ToolError('issue_type must be task, bug or story')
+    epic = None
+    if args.get('epic_id'):
+        epic = ProjectEpic.objects.filter(pk=args['epic_id'], project=project).first()
+        if epic is None:
+            raise ToolError('No epic with that id on this project. Use list_epics.')
+    found_in = None
+    if args.get('found_in'):
+        found_in = _card(project, args['found_in'])
     return dict(
+        issue_type=issue_type, epic=epic, found_in=found_in,
+        steps_to_reproduce=str(args.get('steps_to_reproduce') or ''),
         description=str(args.get('description') or ''),
         status=status, priority=priority,
         category=str(args.get('label') or '')[:60],
@@ -228,6 +268,20 @@ def _card_fields(project, args):
         branch_name=str(args.get('branch_name') or '')[:120],
         pr_url=_clean_pr(args.get('pr_url')),
     ), checklist
+
+
+def _card(project, ref):
+    """A card on the project by code (ALW-019, any case) or id."""
+    import uuid
+    ref = str(ref or '').strip()
+    try:
+        uuid.UUID(ref)
+        task = project.tasks.filter(pk=ref).first()
+    except ValueError:
+        task = project.tasks.filter(code__iexact=ref).first() if ref else None
+    if task is None:
+        raise ToolError(f'No card "{ref}" on {project.name}. Give its code (ALW-019) or id.')
+    return task
 
 
 def _project(project_id):
@@ -261,6 +315,10 @@ CARD_PARAMS = {
     'pr_url': s_str('Pull request link.'),
     'checklist': {'type': 'array', 'items': {'type': 'string'}, 'maxItems': 30,
                   'description': '"Done when" checklist, one line per item.'},
+    'issue_type': s_str('task (default), bug or story.', ['task', 'bug', 'story']),
+    'epic_id': s_uuid('epic (from list_epics or create_epic)'),
+    'steps_to_reproduce': s_str('For bugs: how to make it happen.'),
+    'found_in': s_str('For bugs: the code (ALW-017) or id of the card the bug was found in.'),
 }
 
 
@@ -344,6 +402,23 @@ def _update_task(ctx, args):
         task.progress = args['progress_percent']
         changed.append('progress_percent')
 
+    if 'issue_type' in args and args['issue_type'] != task.issue_type:
+        task.issue_type = args['issue_type']
+        changed.append('issue_type')
+    if 'steps_to_reproduce' in args:
+        task.steps_to_reproduce = args['steps_to_reproduce']
+        changed.append('steps_to_reproduce')
+    if args.get('clear_epic') or args.get('epic_id'):
+        epic = None
+        if not args.get('clear_epic'):
+            epic = ProjectEpic.objects.filter(pk=args['epic_id'], project=task.project).first()
+            if epic is None:
+                raise ToolError('No epic with that id on this project. Use list_epics.')
+        if task.epic_id != (epic.pk if epic else None):
+            _log(task, ctx.user, 'epic_changed', from_value=task.epic.name if task.epic_id else '',
+                 to_value=epic.name if epic else '')
+            task.epic = epic
+            changed.append('epic')
     if 'checklist' in args:
         from core.views import _save_checklist
         changed.append('checklist')
@@ -351,6 +426,8 @@ def _update_task(ctx, args):
     if not changed:
         raise ToolError('Nothing to change: give at least one field to update.')
     task.save()
+    if 'status' in changed and task.status == 'completed':
+        task_rules.notify_unblocked(task, ctx.user)
     if 'checklist' in args:
         _save_checklist(task, '\n'.join(str(c) for c in args['checklist']))
     return {'updated': changed, 'task': _detail(ctx, task)}
@@ -381,6 +458,10 @@ register(Tool(
         'pr_url': s_str('Pull request link ("" removes it).'),
         'checklist': {'type': 'array', 'items': {'type': 'string'}, 'maxItems': 30,
                       'description': 'Replace the Done-when checklist (ticks kept on unchanged lines).'},
+        'issue_type': s_str('New type.', ['task', 'bug', 'story']),
+        'epic_id': s_uuid('epic to put the card in'),
+        'clear_epic': s_bool('Take the card out of its epic.'),
+        'steps_to_reproduce': s_str('Steps to reproduce (bugs).'),
     },
     required=('task_id',), write=True,
 ))
@@ -617,4 +698,181 @@ register(Tool(
      'next_task_number': s_int('Number the next card gets.', 1, 99999),
      'members_can_complete': s_bool('Members may move their own cards to Completed.')},
     required=('project_id',), write=True,
+))
+
+
+# ---------------------------------------------------------------- epics + links (Phase 2)
+
+def _epic(epic_id):
+    e = ProjectEpic.objects.select_related('project').filter(pk=epic_id).first()
+    if e is None:
+        raise ToolError('No epic with that id. Use list_epics.')
+    return e
+
+
+def _epic_out(row):
+    e = row['epic']
+    return {'id': str(e.id), 'name': e.name, 'color': e.color, 'closed': e.is_closed,
+            'cards': row['total'], 'completed': row['done'], 'percent': row['pct'], 'weeks': row['weeks']}
+
+
+def _list_epics(ctx, args):
+    project = _project(args['project_id'])
+    return {'project': project.name,
+            'epics': [_epic_out(r) for r in task_rules.epic_rows(project, include_closed=args.get('include_closed', True))]}
+
+
+register(Tool(
+    'list_epics', 'Project epics',
+    'The epics (features that group cards across weeks, e.g. "Pages & Sections") of a project, '
+    'each with its progress (completed / total cards) and the weeks its cards are in.',
+    _list_epics,
+    {'project_id': s_uuid('project'), 'include_closed': s_bool('Also list closed epics (default true).')},
+    required=('project_id',),
+))
+
+
+def _create_epic(ctx, args):
+    project = _project(args['project_id'])
+    names = args.get('names') or ([args['name']] if args.get('name') else [])
+    if not names:
+        raise ToolError('Give name, or names for several epics at once.')
+    made = []
+    from django.db import transaction
+    try:
+        with transaction.atomic():
+            for n in names:
+                made.append(task_rules.create_epic(project, name=n, color=args.get('color', '') if len(names) == 1 else '',
+                                                   description=args.get('description', '')))
+    except task_rules.TaskRuleError as e:
+        raise ToolError(str(e))
+    return {'created': [{'id': str(e.id), 'name': e.name, 'color': e.color} for e in made]}
+
+
+register(Tool(
+    'create_epic', 'Add epics',
+    'Add one epic (name) or several in order (names) to a project. Colours are picked automatically '
+    'unless one colour (#RRGGBB) is given for a single epic. All or nothing.',
+    _create_epic,
+    {'project_id': s_uuid('project'), 'name': s_str('Epic name.'),
+     'names': {'type': 'array', 'items': {'type': 'string'}, 'maxItems': 30, 'description': 'Several epic names.'},
+     'color': s_str('Colour as #RRGGBB.'), 'description': s_str('What the epic covers.')},
+    required=('project_id',), write=True,
+))
+
+
+def _update_epic(ctx, args):
+    e = _epic(args['epic_id'])
+    fields = []
+    if args.get('name'):
+        if e.project.epics.filter(name__iexact=args['name']).exclude(pk=e.pk).exists():
+            raise ToolError('Another epic already has that name.')
+        e.name = args['name'][:80]
+        fields.append('name')
+    if args.get('color'):
+        import re
+        if not re.fullmatch(r'#[0-9A-Fa-f]{6}', args['color']):
+            raise ToolError('color must be #RRGGBB')
+        e.color = args['color']
+        fields.append('color')
+    if 'closed' in args:
+        e.is_closed = args['closed']
+        fields.append('is_closed')
+    if not fields:
+        raise ToolError('Nothing to change.')
+    e.save(update_fields=fields)
+    return {'updated': fields, 'epic': {'id': str(e.id), 'name': e.name, 'color': e.color, 'closed': e.is_closed}}
+
+
+register(Tool(
+    'update_epic', 'Edit epic',
+    'Rename an epic, change its colour, or close / reopen it.',
+    _update_epic,
+    {'epic_id': s_uuid('epic'), 'name': s_str('New name.'), 'color': s_str('#RRGGBB'),
+     'closed': s_bool('true closes the epic, false reopens it.')},
+    required=('epic_id',), write=True,
+))
+
+
+def _assign_epic(ctx, args):
+    e = _epic(args['epic_id'])
+    refs = args.get('cards') or []
+    if not refs:
+        raise ToolError('cards must list card codes (ALW-017) or ids.')
+    cards = [_card(e.project, r) for r in refs]   # all checked before any change
+    from django.db import transaction
+    with transaction.atomic():
+        for t in cards:
+            task_rules.set_epic(t, e, ctx.user)
+    return {'epic': e.name, 'cards': [t.code or t.title for t in cards], 'count': len(cards)}
+
+
+register(Tool(
+    'assign_epic', 'Put cards in an epic',
+    'Put up to 200 cards (by code, e.g. ALW-017, or id) into one epic. All codes are checked first; '
+    'nothing changes if one is unknown.',
+    _assign_epic,
+    {'epic_id': s_uuid('epic'),
+     'cards': {'type': 'array', 'items': {'type': 'string'}, 'maxItems': 200,
+               'description': 'Card codes or ids.'}},
+    required=('epic_id', 'cards'), write=True,
+))
+
+
+def _link_tasks(ctx, args):
+    project = _project(args['project_id'])
+    links = args.get('links') or []
+    if not links:
+        raise ToolError('links must list {from, to, kind} items.')
+    plan = []
+    for n, l in enumerate(links, 1):
+        if not isinstance(l, dict) or set(l) - {'from', 'to', 'kind'} or not l.get('from') or not l.get('to'):
+            raise ToolError(f'Link {n} must be {{"from": "ALW-019", "to": "ALW-026", "kind": "blocks"}}.')
+        plan.append((_card(project, l['from']), _card(project, l['to']), l.get('kind') or 'blocks'))
+    from django.db import transaction
+    made = existed = 0
+    try:
+        with transaction.atomic():
+            for a, b, kind in plan:
+                _, created = task_rules.link_tasks(a, b, kind, ctx.user)
+                made += created
+                existed += not created
+    except task_rules.TaskRuleError as e:
+        raise ToolError(f'Nothing was linked: {e}')
+    return {'linked': made, 'already_linked': existed, 'project': project.name}
+
+
+register(Tool(
+    'link_tasks', 'Link cards',
+    'Add dependency links between cards on one project, by code. "ALW-019 blocks ALW-026" means '
+    'ALW-026 cannot start until ALW-019 is Completed; kind "relates" just connects them. Up to 200 '
+    'links per call, all or nothing; a link that would make a loop is refused.',
+    _link_tasks,
+    {'project_id': s_uuid('project'),
+     'links': {'type': 'array', 'maxItems': 200, 'description': 'Links to add.',
+               'items': {'type': 'object', 'additionalProperties': False, 'required': ['from', 'to'],
+                         'properties': {'from': s_str('Blocking card code, e.g. ALW-019.'),
+                                        'to': s_str('Blocked card code, e.g. ALW-026.'),
+                                        'kind': s_str('blocks (default) or relates.', ['blocks', 'relates'])}}}},
+    required=('project_id', 'links'), write=True,
+))
+
+
+def _unlink_tasks(ctx, args):
+    project = _project(args['project_id'])
+    a, b = _card(project, args['from']), _card(project, args['to'])
+    link = TaskLink.objects.filter(from_task=a, to_task=b, kind=args.get('kind') or 'blocks').first()
+    if link is None:
+        raise ToolError('Those cards are not linked that way.')
+    task_rules.unlink_tasks(link, ctx.user)
+    return {'unlinked': True}
+
+
+register(Tool(
+    'unlink_tasks', 'Remove a link',
+    'Remove one link between two cards (from, to and kind as given to link_tasks).',
+    _unlink_tasks,
+    {'project_id': s_uuid('project'), 'from': s_str('Card code.'), 'to': s_str('Card code.'),
+     'kind': s_str('blocks (default) or relates.', ['blocks', 'relates'])},
+    required=('project_id', 'from', 'to'), write=True,
 ))

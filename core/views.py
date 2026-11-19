@@ -6223,14 +6223,18 @@ def task_board(request):
     priority = request.GET.get('priority', '')
     assignee = request.GET.get('assignee', '')
     label = request.GET.get('label', '').strip()[:60]
+    issue_type = request.GET.get('type', '')
+    issue_type = issue_type if issue_type in ('task', 'bug', 'story') else ''
+    epic_id = request.GET.get('epic', '')
 
     team_member = getattr(request.user, 'team_profile', None)
-    tasks = Task.objects.select_related('project', 'assigned_to', 'sprint').prefetch_related('checklist').annotate(
+    tasks = Task.objects.select_related('project', 'assigned_to', 'sprint', 'epic') \
+        .prefetch_related('checklist', 'links_in__from_task').annotate(
         comment_total=Count('comments', filter=Q(comments__is_deleted=False), distinct=True),
         attachment_total=Count('attachments', distinct=True),
         open_issue_total=Count('issues', filter=Q(issues__status__in=['open', 'in_progress']), distinct=True),
     )
-    from .task_rules import visible_to
+    from .task_rules import epic_rows, visible_to
     base_tasks = tasks
     if team_member:
         tasks = visible_to(tasks.filter(assigned_to=team_member), member=team_member)
@@ -6283,6 +6287,13 @@ def task_board(request):
         assignee = ''
 
     is_board_lead = bool(project and team_member and project.team_lead_id == team_member.pk)
+    epics = list(project.epics.all()) if project else []
+    if issue_type:
+        tasks = tasks.filter(issue_type=issue_type)
+    if epic_id and any(str(e.pk) == epic_id for e in epics):
+        tasks = tasks.filter(epic_id=epic_id)
+    else:
+        epic_id = ''
     show_backlog = project is not None and (team_member is None or is_board_lead)
     tasks, columns = board_columns(tasks, include_backlog=show_backlog)
     active_sprint = next((sp for sp in sprints if sp.status == 'active'), None)
@@ -6315,7 +6326,9 @@ def task_board(request):
         'assignee': assignee,
         'labels': labels,
         'label': label,
-        'filters_on': bool(search or priority or assignee or label),
+        'filters_on': bool(search or priority or assignee or label or issue_type or epic_id),
+        'issue_type': issue_type, 'epic_id': epic_id, 'epics': epics,
+        'epic_rows': epic_rows(project) if project and (team_member is None or is_board_lead) else [],
         'is_team_member': team_member is not None,
         'sprints': sprints,
         'sprint': sprint,
@@ -6490,6 +6503,11 @@ def task_detail(request, pk):
 
     context = {
         'task': task,
+        'blocked_by': task.links_in.filter(kind='blocks').select_related('from_task'),
+        'blocks': task.links_out.filter(kind='blocks').select_related('to_task'),
+        'relates_out': task.links_out.filter(kind='relates').select_related('to_task'),
+        'relates_in': task.links_in.filter(kind='relates').select_related('from_task'),
+        'bugs': task.bugs.all(),
         'time_entries': time_entries,
         'total_hours': time_entries.aggregate(total=Sum('hours'))['total'] or 0,
         'comments': comments,
@@ -6639,6 +6657,11 @@ def _task_board_fields(task, post):
     sprint_id = post.get('sprint', '')
     task.sprint = ProjectSprint.objects.filter(pk=sprint_id).first() if _is_uuid(sprint_id) else None
     task.branch_name = post.get('branch_name', '').strip()[:120]
+    from .models import ProjectEpic
+    task.issue_type = post.get('issue_type') if post.get('issue_type') in ('task', 'bug', 'story') else 'task'
+    epic_id = post.get('epic', '')
+    task.epic = ProjectEpic.objects.filter(pk=epic_id).first() if _is_uuid(epic_id) else None
+    task.steps_to_reproduce = post.get('steps_to_reproduce', '').strip()[:5000]
     pr = post.get('pr_url', '').strip()[:500]
     task.pr_url = pr if pr.startswith(('http://', 'https://')) else ''
 
@@ -6655,6 +6678,11 @@ def _save_checklist(task, text):
         TaskChecklistItem.objects.create(task=task, text=line, order=i, is_done=bool(old),
                                          done_by=old.done_by if old else None,
                                          done_at=old.done_at if old else None)
+
+
+def _task_form_epics():
+    from .models import ProjectEpic
+    return ProjectEpic.objects.filter(is_closed=False).select_related('project').order_by('project__name', 'order')
 
 
 def _task_form_sprints():
@@ -6689,6 +6717,8 @@ def task_create(request):
 
         if task.sprint and task.sprint.project_id != task.project_id:
             task.sprint = None
+        if task.epic and task.epic.project_id != task.project_id:
+            task.epic = None
         from .task_rules import next_code
         task.code = next_code(task.project) if task.project_id else ''
         task.status_changed_at = timezone.now()
@@ -6712,6 +6742,8 @@ def task_create(request):
         'priority_choices': Task.PRIORITY_CHOICES,
         'team_members': TeamMember.objects.filter(is_active=True),
         'sprints': _task_form_sprints(),
+        'epics': _task_form_epics(),
+        'type_choices': Task.ISSUE_TYPES,
         # The board's "+" buttons open this form for one project and column.
         'prefill_project': request.GET.get('project', ''),
         'prefill_status': request.GET.get('status', ''),
@@ -6752,12 +6784,17 @@ def task_update(request, pk):
 
         if task.sprint and task.sprint.project_id != task.project_id:
             task.sprint = None
+        if task.epic and task.epic.project_id != task.project_id:
+            task.epic = None
         task.save()
         _save_checklist(task, request.POST.get('checklist', ''))
         if task.status != old_status:
             from .task_rules import log as log_task
             log_task(task, request.user, 'status_changed', from_value=old_status, to_value=task.status,
                      visible='backlog' not in (old_status, task.status))
+            if task.status == 'completed':
+                from .task_rules import notify_unblocked
+                notify_unblocked(task, request.user)
 
         # Delete removed attachments
         delete_ids = request.POST.getlist('delete_attachment')
@@ -6780,6 +6817,8 @@ def task_update(request, pk):
         'priority_choices': Task.PRIORITY_CHOICES,
         'team_members': TeamMember.objects.filter(is_active=True),
         'sprints': _task_form_sprints(),
+        'epics': _task_form_epics(),
+        'type_choices': Task.ISSUE_TYPES,
         'checklist_text': '\n'.join(task.checklist.values_list('text', flat=True)),
     }
     return render(request, 'tasks/form.html', context)
@@ -6856,6 +6895,67 @@ def project_sprint_action(request, pk, sprint_id, action):
 
 
 @login_required
+def project_epic_create(request, pk):
+    from .task_rules import TaskRuleError, create_epic
+    project = get_object_or_404(Project, pk=pk)
+    if request.method == 'POST' and _week_admin_only(request, project):
+        try:
+            e = create_epic(project, name=request.POST.get('name', ''), color=request.POST.get('color', ''))
+            messages.success(request, f'Epic "{e.name}" added.')
+        except TaskRuleError as e:
+            messages.error(request, str(e))
+    return redirect(_board_url(project))
+
+
+@login_required
+def project_epic_toggle(request, pk, epic_id):
+    project = get_object_or_404(Project, pk=pk)
+    epic = get_object_or_404(project.epics, pk=epic_id)
+    if request.method == 'POST' and _week_admin_only(request, project):
+        epic.is_closed = not epic.is_closed
+        epic.save(update_fields=['is_closed'])
+    return redirect(_board_url(project))
+
+
+@login_required
+def task_link_add(request, pk):
+    """Admin/lead: link this card to another by code (blocked by / blocks / relates to)."""
+    from .task_rules import TaskRuleError, link_tasks
+    task = get_object_or_404(Task.objects.select_related('project'), pk=pk)
+    if request.method == 'POST' and _week_admin_only(request, task.project):
+        ref = request.POST.get('code', '').strip()
+        other = (task.project.tasks.filter(pk=ref).first() if _is_uuid(ref)
+                 else task.project.tasks.filter(code__iexact=ref).first() if ref else None)
+        relation = request.POST.get('relation', 'blocked_by')
+        if other is None:
+            messages.error(request, f'No card "{ref}" on {task.project.name}.')
+        else:
+            try:
+                if relation == 'blocked_by':
+                    link_tasks(other, task, 'blocks', request.user)
+                elif relation == 'blocks':
+                    link_tasks(task, other, 'blocks', request.user)
+                else:
+                    link_tasks(task, other, 'relates', request.user)
+                messages.success(request, 'Link added.')
+            except TaskRuleError as e:
+                messages.error(request, str(e))
+    return redirect('task_detail', pk=task.pk)
+
+
+@login_required
+def task_link_remove(request, pk, link_id):
+    from .models import TaskLink
+    from .task_rules import unlink_tasks
+    task = get_object_or_404(Task.objects.select_related('project'), pk=pk)
+    link = get_object_or_404(TaskLink.objects.filter(Q(from_task=task) | Q(to_task=task)), pk=link_id)
+    if request.method == 'POST' and _week_admin_only(request, task.project):
+        unlink_tasks(link, request.user)
+        messages.success(request, 'Link removed.')
+    return redirect('task_detail', pk=task.pk)
+
+
+@login_required
 def task_status_update(request, pk):
     """Update task status via AJAX (board drag) or form submission, through the board rules."""
     from django.http import JsonResponse
@@ -6874,6 +6974,8 @@ def task_status_update(request, pk):
                 return JsonResponse({'success': False, 'message': str(e)}, status=403)
             return redirect('task_detail', pk=task.pk)
         log_activity(request, 'updated', task)
+        if getattr(task, 'override_warning', ''):
+            messages.warning(request, task.override_warning)
         if ajax:
             return JsonResponse({'success': True})
         messages.success(request, f'Task status updated to "{task.get_status_display()}".')
