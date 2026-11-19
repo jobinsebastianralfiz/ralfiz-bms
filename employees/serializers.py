@@ -31,7 +31,7 @@ class EmployeeProfileSerializer(serializers.ModelSerializer):
             'date_of_birth', 'joining_date', 'status', 'profile_photo',
             'face_photo', 'office_latitude', 'office_longitude',
             'allowed_radius_meters', 'work_mode', 'full_name', 'created_at',
-            'face_check_required',
+            'face_check_required', 'github_username',
         ]
         read_only_fields = [
             'face_check_required',
@@ -39,6 +39,13 @@ class EmployeeProfileSerializer(serializers.ModelSerializer):
             'designation', 'joining_date', 'status', 'office_latitude',
             'office_longitude', 'allowed_radius_meters', 'created_at',
         ]
+
+    def validate_github_username(self, value):
+        import re
+        value = (value or '').strip().lstrip('@')
+        if value and not re.match(r'^[A-Za-z0-9](?:[A-Za-z0-9]|-(?=[A-Za-z0-9])){0,38}$', value):
+            raise serializers.ValidationError('Letters, numbers and single hyphens only, up to 39 characters.')
+        return value
 
     def get_profile_photo(self, obj):
         photo = obj.profile_photo or obj.face_photo
@@ -57,7 +64,7 @@ class EmployeeListSerializer(serializers.ModelSerializer):
     class Meta:
         model = Employee
         fields = ['id', 'employee_id', 'full_name', 'employment_type', 'role',
-                  'department', 'designation', 'status', 'profile_photo']
+                  'department', 'designation', 'status', 'profile_photo', 'github_username']
 
     def get_profile_photo(self, obj):
         photo = obj.profile_photo or obj.face_photo

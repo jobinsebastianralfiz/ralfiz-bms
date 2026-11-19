@@ -67,6 +67,9 @@ class Employee(models.Model):
     department = models.CharField(max_length=20, choices=DEPARTMENT_CHOICES, default='engineering')
     designation = models.CharField(max_length=100, blank=True)
     phone = models.CharField(max_length=20, blank=True)
+    github_username = models.CharField(
+        max_length=39, blank=True,
+        help_text='GitHub login, so the person can be invited to project repositories.')
     emergency_contact = models.CharField(max_length=20, blank=True)
     address = models.TextField(blank=True)
     date_of_birth = models.DateField(null=True, blank=True)

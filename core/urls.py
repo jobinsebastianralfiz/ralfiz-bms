@@ -73,6 +73,7 @@ urlpatterns = [
     path('projects/<uuid:pk>/edit/', views.project_update, name='project_update'),
     path('projects/<uuid:pk>/logo/', views.project_logo_upload, name='project_logo_upload'),
     path('projects/<uuid:pk>/notes/save/', views.project_note_save, name='project_note_save'),
+    path('projects/<uuid:pk>/ask-github/', views.project_ask_github, name='project_ask_github'),
     path('projects/<uuid:pk>/notes/<uuid:note_id>/delete/', views.project_note_delete, name='project_note_delete'),
     path('projects/<uuid:pk>/files/upload/', views.project_file_upload, name='project_file_upload'),
     path('projects/<uuid:pk>/files/<uuid:file_id>/download/', views.project_file_download, name='project_file_download'),

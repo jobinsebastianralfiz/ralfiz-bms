@@ -252,14 +252,16 @@
     </ul>
   </section>
 
-  <section class="stage-panel sp-team" data-open>
+  <section class="stage-panel sp-team" id="team" data-open>
     <h2 class="stage-panel__kicker"><span class="sp-ico sp-ico--violet"><i class="fas fa-users"></i></span>Team Members</h2>
-    {% for member in project.team_members.all %}
+    {% for member, emp in team_rows %}
     <div class="pj-row">
       <span class="pj-avatar">{{ member.name|slice:":2"|upper }}</span>
       <div class="pj-row__main">
         <a href="{% url 'team_detail' member.pk %}" class="pj-row__title">{{ member.name }}</a>
-        <span class="pj-row__sub">{{ member.get_role_display }}</span>
+        <span class="pj-row__sub">{{ member.get_role_display }}
+          {% if emp.github_username %} &middot; <a href="https://github.com/{{ emp.github_username|urlencode }}" target="_blank" rel="noopener"><i class="fab fa-github"></i> {{ emp.github_username }}</a>
+          {% elif emp %} &middot; <span class="text-muted"><i class="fab fa-github"></i> not shared yet</span>{% endif %}</span>
       </div>
       <span class="badge {% if member.is_freelancer %}badge-warning{% else %}badge-primary{% endif %}">{{ member.get_employment_type_display }}</span>
     </div>
@@ -267,6 +269,11 @@
     <p class="pj-empty"><i class="fas fa-user-plus"></i> No team members assigned</p>
     {% endfor %}
     <a href="{% url 'project_update' project.pk %}" class="pj-add"><i class="fas fa-plus"></i> Add Member</a>
+    {% if team_rows %}
+    <form method="post" action="{% url 'project_ask_github' project.pk %}" style="margin-top:6px;">
+      {% csrf_token %}<button type="submit" class="pj-add" style="background:none;border:0;padding:0;cursor:pointer;"><i class="fab fa-github"></i> Ask team for GitHub usernames</button>
+    </form>
+    {% endif %}
   </section>
 
   {% if project.notes %}
@@ -313,13 +320,13 @@
 
   <section class="stage-panel sp-pnotes" id="notes" data-open>
     <h2 class="stage-panel__kicker"><span class="sp-ico sp-ico--slate"><i class="fas fa-note-sticky"></i></span>Project Notes</h2>
-    <div class="pj-bar"><span><i class="fas fa-lock"></i> Staff only &middot; stored encrypted</span></div>
+    <div class="pj-bar"><span><i class="fas fa-lock"></i> Stored encrypted &middot; staff only unless a note is shared with the project team</span></div>
     {% for note in project.note_entries.all %}
     <details class="pj-note">
       <summary>
         <span class="pj-row__icon"><i class="fas {% if note.pinned %}fa-thumbtack{% else %}fa-note-sticky{% endif %}"></i></span>
         <span class="pj-row__main"><span class="pj-row__title">{{ note.title }}</span>
-          <span class="pj-row__sub">{% if note.updated_by %}{{ note.updated_by.get_full_name|default:note.updated_by.username }} &middot; {% endif %}{{ note.updated_at|date:"d M Y, H:i" }}</span></span>
+          <span class="pj-row__sub">{% if note.share_with_team %}<b style="color:var(--success)"><i class="fas fa-users"></i> Shared with team</b> &middot; {% endif %}{% if note.updated_by %}{{ note.updated_by.get_full_name|default:note.updated_by.username }} &middot; {% endif %}{{ note.updated_at|date:"d M Y, H:i" }}</span></span>
         <i class="fas fa-chevron-down pj-note__caret"></i>
       </summary>
       <div class="pj-note__body">
@@ -332,6 +339,7 @@
               <input class="form-control" name="title" value="{{ note.title }}" maxlength="150" required>
               <textarea class="form-control" name="body" rows="6">{{ note.body }}</textarea>
               <label style="font-size:.875rem;margin:0;"><input type="checkbox" name="pinned" value="1" {% if note.pinned %}checked{% endif %}> Pin to top</label>
+              <label style="font-size:.875rem;margin:0;"><input type="checkbox" name="share_with_team" value="1" {% if note.share_with_team %}checked{% endif %}> Share with project team (staff portal). Never share logins or passwords.</label>
               <button type="submit" class="btn btn-sm btn-primary">Save note</button>
             </form>
           </details>
@@ -351,6 +359,7 @@
         <input class="form-control" name="title" maxlength="150" placeholder="Title, e.g. Staging admin login" required>
         <textarea class="form-control" name="body" rows="5" placeholder="URL: https://staging.example.com/admin&#10;User: admin@example.com&#10;Password: ..."></textarea>
         <label style="font-size:.875rem;margin:0;"><input type="checkbox" name="pinned" value="1"> Pin to top</label>
+        <label style="font-size:.875rem;margin:0;"><input type="checkbox" name="share_with_team" value="1"> Share with project team (staff portal). Never share logins or passwords.</label>
         <button type="submit" class="btn btn-sm btn-primary" style="justify-self:start;"><i class="fas fa-plus"></i> Save note</button>
       </form>
     </details>

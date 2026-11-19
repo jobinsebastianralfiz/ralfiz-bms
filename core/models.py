@@ -1454,6 +1454,23 @@ class TeamMember(models.Model):
                 member = by_name[0]
         return member
 
+    def staff_employee(self):
+        """The active staff Employee this team member stands for (the reverse of
+        match_employee): same login, else same email, else the one with the same name."""
+        from employees.models import Employee
+        staff = Employee.objects.filter(status='active').select_related('user')
+        if self.user_id:
+            found = staff.filter(user_id=self.user_id).first()
+            if found:
+                return found
+        if (self.email or '').strip():
+            found = staff.filter(user__email__iexact=self.email.strip()).first()
+            if found:
+                return found
+        name = self.name.strip().lower()
+        same = [e for e in staff if e.full_name.strip().lower() == name]
+        return same[0] if len(same) == 1 else None
+
     @classmethod
     def for_employee(cls, employee):
         """Find or create the TeamMember for a staff Employee (never sets user)."""
@@ -1518,6 +1535,8 @@ class ProjectNote(models.Model):
     title = models.CharField(max_length=150)
     body = EncryptedTextField(blank=True)
     pinned = models.BooleanField(default=False)
+    share_with_team = models.BooleanField(
+        default=False, help_text='Show this note to the project team in the staff portal.')
     created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='+')
     updated_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='+')
     created_at = models.DateTimeField(auto_now_add=True)

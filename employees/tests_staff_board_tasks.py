@@ -259,3 +259,79 @@ class StaffProfilePageTests(StaffBoardTaskTests):
         self.assertEqual((self.employee.phone, self.employee.address, self.employee.employee_id),
                          ('9000011111', 'Kochi', 'EMP006'))
         self.assertContains(self.client.get(reverse('staff:profile')), 'Kochi')
+
+
+class StaffProjectInfoTests(StaffBoardTaskTests):
+    def setUp(self):
+        super().setUp()
+        from core.models import ProjectLink, ProjectNote
+        self.project.description = 'Corporate website and CMS.'
+        self.project.github_repo = 'https://github.com/Ralfiz-Technologies/agc-website'
+        self.project.notes = 'Client pays 2 lakh'          # internal: never shown
+        self.project.save()
+        self.project.team_members.add(self.member)
+        ProjectNote.objects.create(project=self.project, title='Branch rules', body='PRs go to develop',
+                                   share_with_team=True)
+        ProjectNote.objects.create(project=self.project, title='Staging login', body='admin / secret-pass')
+        ProjectLink.objects.create(project=self.project, title='Figma', url='https://figma.com/x')
+
+    def board(self):
+        return self.client.get(reverse('staff:project_board', args=[self.project.pk]))
+
+    def test_board_shows_project_info_but_not_private_notes(self):
+        r = self.board()
+        for text in ('Corporate website and CMS.', 'Branch rules', 'PRs go to develop', 'Figma',
+                     'agc-website', 'Code repository'):
+            self.assertContains(r, text)
+        for secret in ('Staging login', 'secret-pass', 'Client pays 2 lakh'):
+            self.assertNotContains(r, secret)
+
+    def test_github_prompt_until_shared(self):
+        self.assertContains(self.board(), 'Share your GitHub username')
+        back = reverse('staff:project_board', args=[self.project.pk])
+        r = self.client.post(reverse('staff:github_save'),
+                             {'github_username': 'https://github.com/sana-parvin/', 'back': back})
+        self.assertEqual(r['Location'], back)
+        self.employee.refresh_from_db()
+        self.assertEqual(self.employee.github_username, 'sana-parvin')
+        r = self.board()
+        self.assertNotContains(r, 'Share your GitHub username')
+        self.assertContains(r, 'https://github.com/sana-parvin')
+
+    def test_bad_github_username_is_refused(self):
+        self.client.post(reverse('staff:github_save'), {'github_username': 'bad name!'})
+        self.employee.refresh_from_db()
+        self.assertEqual(self.employee.github_username, '')
+
+    def test_admin_asks_team_and_sees_usernames(self):
+        from employees.models import Notification
+        admin = User.objects.create_superuser('boss', 'boss@example.com', 'pw-12345')
+        self.client.force_login(admin)
+        self.client.post(reverse('project_ask_github', args=[self.project.pk]))
+        note = Notification.objects.get(employee=self.employee)
+        self.assertIn('GitHub', note.title)
+        self.employee.github_username = 'sana-parvin'
+        self.employee.save()
+        r = self.client.get(reverse('project_detail', args=[self.project.pk]))
+        self.assertContains(r, 'sana-parvin')
+        # Already shared: not asked again.
+        self.client.post(reverse('project_ask_github', args=[self.project.pk]))
+        self.assertEqual(Notification.objects.filter(employee=self.employee).count(), 1)
+
+    def test_admin_note_share_switch(self):
+        from core.models import ProjectNote
+        admin = User.objects.create_superuser('boss', 'boss@example.com', 'pw-12345')
+        self.client.force_login(admin)
+        note = ProjectNote.objects.get(title='Staging login')
+        self.client.post(reverse('project_note_save', args=[self.project.pk]),
+                         {'note_id': str(note.pk), 'title': 'Staging login', 'body': 'x', 'share_with_team': '1'})
+        note.refresh_from_db()
+        self.assertTrue(note.share_with_team)
+        self.client.post(reverse('project_note_save', args=[self.project.pk]),
+                         {'note_id': str(note.pk), 'title': 'Staging login', 'body': 'x'})
+        note.refresh_from_db()
+        self.assertFalse(note.share_with_team)
+
+    def test_no_projects_no_sidebar_entry(self):
+        self.project.team_members.clear()      # this class puts Sana on the team
+        super().test_no_projects_no_sidebar_entry()

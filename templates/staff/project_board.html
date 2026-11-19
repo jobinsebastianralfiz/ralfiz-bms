@@ -30,6 +30,40 @@
 .pb-who.you { color:var(--sf-primary-text); font-weight:700; }
 .pb-task .sv-bar { margin-top:8px; }
 .pb-empty { padding:16px 6px; text-align:center; font-size:13px; color:var(--sf-text-3); }
+.pb-gh { display:flex; align-items:center; gap:12px; flex-wrap:wrap; padding:14px 16px; margin:0 0 14px; border-radius:14px; background:var(--sf-primary-dim); border:1px solid var(--sf-primary-line); }
+.pb-gh-ico { width:40px; height:40px; border-radius:12px; display:inline-flex; align-items:center; justify-content:center; background:var(--sf-card); color:var(--sf-text); font-size:20px; }
+.pb-gh-text { flex:1; min-width:180px; display:flex; flex-direction:column; font-size:13px; color:var(--sf-text-2); }
+.pb-gh-text strong { font-size:15px; color:var(--sf-text); }
+.pb-gh input { height:40px; padding:0 12px; border:1px solid var(--sf-line); border-radius:10px; background:var(--sf-card); color:var(--sf-text); font:inherit; width:200px; max-width:100%; }
+.pb-gh button { height:40px; padding:0 16px; border:0; border-radius:10px; background:var(--sf-primary); color:#fff; font-weight:700; cursor:pointer; }
+.pb-about { margin:0 0 16px; border:1px solid var(--sf-line); border-radius:16px; background:var(--sf-card); }
+.pb-about > summary { list-style:none; cursor:pointer; display:flex; align-items:center; gap:10px; padding:14px 18px; font-weight:700; color:var(--sf-text); }
+.pb-about > summary::-webkit-details-marker { display:none; }
+.pb-caret { margin-left:auto; transition:transform .15s; color:var(--sf-text-3); }
+.pb-about[open] .pb-caret { transform:rotate(180deg); }
+.pb-about-grid { display:grid; grid-template-columns:minmax(0,1.4fr) minmax(0,1fr); gap:24px; padding:0 18px 18px; }
+.pb-desc { font-size:14px; line-height:1.6; color:var(--sf-text-2); }
+.pb-muted { color:var(--sf-text-3); font-size:13px; margin:0; }
+.pb-facts { display:flex; flex-wrap:wrap; gap:8px 24px; margin:14px 0 0; }
+.pb-facts dt { font-size:11px; text-transform:uppercase; letter-spacing:.05em; color:var(--sf-text-3); font-weight:700; }
+.pb-facts dd { margin:2px 0 0; font-size:14px; color:var(--sf-text); font-weight:600; }
+.pb-h3 { font-size:13px; font-weight:700; text-transform:uppercase; letter-spacing:.05em; color:var(--sf-text-3); margin:18px 0 8px; }
+.pb-about-grid > div > .pb-h3:first-child { margin-top:0; }
+.pb-links { list-style:none; padding:0; margin:0; display:grid; gap:8px; }
+.pb-links li { display:flex; flex-direction:column; font-size:14px; }
+.pb-links a { color:var(--sf-primary-text); font-weight:600; text-decoration:none; }
+.pb-links a i { width:18px; }
+.pb-links small { color:var(--sf-text-3); font-size:12px; }
+.pb-teamlist li { flex-direction:row; align-items:center; gap:10px; }
+.pb-teamlist li > span:last-child { display:flex; flex-direction:column; }
+.pb-note { border:1px solid var(--sf-line); border-radius:10px; margin-bottom:8px; }
+.pb-note summary { cursor:pointer; padding:9px 12px; font-weight:600; font-size:14px; display:flex; gap:8px; align-items:center; color:var(--sf-text); }
+.pb-note summary span { margin-left:auto; font-weight:500; font-size:12px; color:var(--sf-text-3); }
+.pb-note-body { padding:0 12px 12px; font-size:13.5px; line-height:1.6; color:var(--sf-text-2); white-space:normal; word-break:break-word; }
+@media (max-width:760px) {
+  .pb-about-grid { grid-template-columns:1fr; gap:4px; }
+  .pb-gh input { flex:1; }
+}
 @media (max-width:760px) {
   .pb-board { grid-template-columns:repeat(4, 82%); scroll-snap-type:x mandatory; }
   .pb-col { scroll-snap-align:start; }
@@ -45,7 +79,7 @@
     <p>{% if project.client %}{{ project.client.name }} · {% endif %}{{ project.get_status_display }}{% if project.deadline %} · due {{ project.deadline|date:"d M Y" }}{% endif %} · {{ mine_open }} open task{{ mine_open|pluralize }} for you</p>
     {% if team %}
     <div class="pb-team" aria-label="Project team">
-      {% for m in team %}<span class="pb-av" title="{{ m.name }}">{{ m.name|slice:":1"|upper }}</span>{% endfor %}
+      {% for m, e in team %}<span class="pb-av" title="{{ m.name }}">{{ m.name|slice:":1"|upper }}</span>{% endfor %}
       <span style="font-size:13px;color:var(--sf-text-3);margin-left:4px">{{ team|length }} on the team</span>
     </div>
     {% endif %}
@@ -59,6 +93,55 @@
     <label class="pb-find"><i class="fas fa-magnifying-glass" aria-hidden="true"></i><input type="search" name="q" value="{{ q }}" placeholder="Search this board" aria-label="Search this board"></label>
   </form>
 </header>
+
+{% if needs_github %}
+<form class="pb-gh" method="post" action="{% url 'staff:github_save' %}">
+  {% csrf_token %}<input type="hidden" name="back" value="{{ request.get_full_path }}">
+  <span class="pb-gh-ico"><i class="fab fa-github"></i></span>
+  <div class="pb-gh-text"><strong>Share your GitHub username</strong><span>You need it to be invited to this project's code repository.</span></div>
+  <input name="github_username" placeholder="your-github-username" maxlength="60" required autocomplete="off" aria-label="GitHub username">
+  <button type="submit">Save</button>
+</form>
+{% endif %}
+
+<details class="pb-about" open>
+  <summary><i class="fas fa-circle-info"></i> About this project <i class="fas fa-chevron-down pb-caret"></i></summary>
+  <div class="pb-about-grid">
+    <div>
+      {% if project.description %}<div class="pb-desc">{{ project.description|linebreaksbr }}</div>{% else %}<p class="pb-muted">No description yet.</p>{% endif %}
+      <dl class="pb-facts">
+        {% if project.tech_stack %}<div><dt>Tech stack</dt><dd>{{ project.tech_stack }}</dd></div>{% endif %}
+        {% if project.start_date %}<div><dt>Started</dt><dd>{{ project.start_date|date:"d M Y" }}</dd></div>{% endif %}
+        {% if project.deadline %}<div><dt>Deadline</dt><dd>{{ project.deadline|date:"d M Y" }}</dd></div>{% endif %}
+        <div><dt>Status</dt><dd>{{ project.get_status_display }}</dd></div>
+      </dl>
+      {% if shared_notes %}
+      <h3 class="pb-h3"><i class="fas fa-note-sticky"></i> Notes</h3>
+      {% for n in shared_notes %}
+      <details class="pb-note"{% if n.pinned %} open{% endif %}>
+        <summary>{% if n.pinned %}<i class="fas fa-thumbtack"></i> {% endif %}{{ n.title }}<span>{{ n.updated_at|date:"d M" }}</span></summary>
+        <div class="pb-note-body">{{ n.body|urlize|linebreaksbr }}</div>
+      </details>
+      {% endfor %}
+      {% endif %}
+    </div>
+    <div>
+      <h3 class="pb-h3"><i class="fas fa-link"></i> Links</h3>
+      <ul class="pb-links">
+        {% if project.github_repo %}<li><a href="{{ project.github_repo }}" target="_blank" rel="noopener"><i class="fab fa-github"></i> Code repository</a></li>{% endif %}
+        {% if project.live_url %}<li><a href="{{ project.live_url }}" target="_blank" rel="noopener"><i class="fas fa-globe"></i> Live site</a></li>{% endif %}
+        {% for l in links %}<li><a href="{{ l.url }}" target="_blank" rel="noopener"><i class="fas {% if l.link_type == 'design' %}fa-pen-ruler{% elif l.link_type == 'preview' %}fa-eye{% elif l.link_type == 'live' %}fa-globe{% elif l.link_type == 'document' %}fa-file-lines{% else %}fa-link{% endif %}"></i> {{ l.title }}</a>{% if l.note %}<small>{{ l.note }}</small>{% endif %}</li>{% endfor %}
+        {% if not project.github_repo and not project.live_url and not links %}<li class="pb-muted">No links yet.</li>{% endif %}
+      </ul>
+      {% if team %}
+      <h3 class="pb-h3"><i class="fas fa-users"></i> Team</h3>
+      <ul class="pb-links pb-teamlist">
+        {% for m, e in team %}<li><span class="pb-av">{{ m.name|slice:":1"|upper }}</span><span>{{ m.name }}<small>{{ m.get_role_display }}{% if e.github_username %} · <a href="https://github.com/{{ e.github_username|urlencode }}" target="_blank" rel="noopener"><i class="fab fa-github"></i> {{ e.github_username }}</a>{% endif %}</small></span></li>{% endfor %}
+      </ul>
+      {% endif %}
+    </div>
+  </div>
+</details>
 
 <div class="pb-board">
   {% for col in columns %}

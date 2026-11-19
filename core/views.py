@@ -1235,6 +1235,8 @@ def project_detail(request, pk):
         'client_comments': client_comments,
         'amc_contracts': amc_contracts,
         'amc_payments': amc_payments,
+        # Team with the staff login behind each member, for GitHub usernames.
+        'team_rows': [(m, m.staff_employee()) for m in project.team_members.all()],
     }
     return render(request, 'projects/detail.html', context)
 
@@ -1363,11 +1365,38 @@ def project_note_save(request, pk):
         note.title = title
         note.body = request.POST.get('body', '')[:20000]
         note.pinned = bool(request.POST.get('pinned'))
+        note.share_with_team = bool(request.POST.get('share_with_team'))
         note.updated_by = request.user
         note.save()
         log_activity(request, 'updated' if note_id else 'created', note)
         messages.success(request, f'Note "{note.title}" saved.')
     return redirect(f"{reverse('project_detail', args=[pk])}#notes")
+
+
+@login_required
+def project_ask_github(request, pk):
+    """Ask everyone on the project team who has not given a GitHub username for it."""
+    from employees.models import Notification
+    from employees.utils import send_push_notification
+    project = get_object_or_404(Project, pk=pk)
+    if request.method == 'POST':
+        asked = []
+        for member in project.team_members.filter(is_active=True):
+            emp = member.staff_employee()
+            if emp is None or emp.github_username:
+                continue
+            title = 'Share your GitHub username'
+            body = (f'You are on the {project.name} team. Add your GitHub username in the staff '
+                    f'portal (Profile) so you can be invited to the code repository.')
+            Notification.objects.create(employee=emp, title=title, body=body, notification_type='work',
+                                        data={'url': reverse('staff:project_board', args=[project.pk])})
+            send_push_notification(emp, title, body)
+            asked.append(emp.full_name)
+        if asked:
+            messages.success(request, f'Asked {", ".join(asked)} for their GitHub username.')
+        else:
+            messages.info(request, 'Everyone on the team with a staff login has already shared a GitHub username.')
+    return redirect(f"{reverse('project_detail', args=[pk])}#team")
 
 
 @login_required

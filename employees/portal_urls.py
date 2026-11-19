@@ -64,6 +64,7 @@ urlpatterns = [
 
     # Profile
     path('profile/', v.profile, name='profile'),
+    path('profile/github/', v.github_save, name='github_save'),
     path('search/', v.staff_search, name='search'),
 
     # CRM leads (marketing interns)

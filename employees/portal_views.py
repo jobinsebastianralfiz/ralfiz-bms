@@ -779,10 +779,14 @@ def project_board(request, pk):
         by_status.setdefault(t.status, []).append(t)
     columns = [{'key': key, 'label': label, 'tone': tone, 'tasks': by_status.get(key, [])}
                for key, label, tone in BOARD_COLUMNS]
-    team = list(project.team_members.filter(is_active=True))
+    team = [(m, m.staff_employee()) for m in project.team_members.filter(is_active=True)]
     ctx = _base_context(request, 'projects')
     ctx.update({
         'project': project, 'columns': columns, 'team': team, 'mine_only': mine_only, 'q': q,
+        # Only what the team needs: internal notes, money and files stay staff-only.
+        'shared_notes': project.note_entries.filter(share_with_team=True).order_by('-pinned', '-updated_at'),
+        'links': project.links.all(),
+        'needs_github': not request.employee.github_username,
         'total': sum(len(c['tasks']) for c in columns),
         'mine_open': project.tasks.filter(assigned_to=member).exclude(status='completed').count(),
     })
@@ -1016,6 +1020,26 @@ def profile(request):
         'work_mode_display': employee.get_work_mode_display(),
     })
     return render(request, 'staff/profile.html', ctx)
+
+
+GITHUB_RE = re.compile(r'^[A-Za-z0-9](?:[A-Za-z0-9]|-(?=[A-Za-z0-9])){0,38}$')
+
+
+@staff_required
+def github_save(request):
+    """Save the person's GitHub username (from Profile or a project board)."""
+    from core.security import safe_next
+    if request.method == 'POST':
+        name = request.POST.get('github_username', '').strip().lstrip('@')
+        name = re.sub(r'^(https?://)?(www\.)?github\.com/', '', name).strip('/')
+        if name and not GITHUB_RE.match(name):
+            messages.error(request, 'That does not look like a GitHub username: letters, numbers and '
+                                    'single hyphens only, up to 39 characters.')
+        else:
+            request.employee.github_username = name
+            request.employee.save(update_fields=['github_username'])
+            messages.success(request, f'GitHub username saved: {name}.' if name else 'GitHub username removed.')
+    return redirect(safe_next(request, request.POST.get('back'), 'staff:profile'))
 
 
 # --- CRM leads (marketing interns) ----------------------------------------
