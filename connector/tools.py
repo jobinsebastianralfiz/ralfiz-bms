@@ -338,16 +338,25 @@ def _search(ctx, args):
                 | Q(partner__name__icontains=term) | Q(partner__company_name__icontains=term)
             ).order_by('-created_at')[:SEARCH_PER_TYPE]
         ]
+    if 'tasks' in kinds:
+        from core.models import Task
+        out['tasks'] = [
+            {'id': str(t.id), 'title': t.title, 'project': t.project.name, 'status': t.status,
+             'assigned_to': t.assigned_to.name if t.assigned_to_id else None}
+            for t in Task.objects.select_related('project', 'assigned_to').filter(
+                Q(title__icontains=term) | Q(project__name__icontains=term)
+            ).order_by('-created_at')[:SEARCH_PER_TYPE]
+        ]
     return out
 
 
 SEARCH_TYPES = ('clients', 'projects', 'leads', 'employees', 'team_members', 'invoices', 'quotes',
-                'business_partners', 'joint_projects')
+                'business_partners', 'joint_projects', 'tasks')
 
 register(Tool(
     'search', 'Search the BMS',
-    'Find clients, projects, leads, employees, team members, invoices, quotes, business partners '
-    'and their joint projects by name, '
+    'Find clients, projects, board tasks, leads, employees, team members, invoices, quotes, '
+    'business partners and their joint projects by name, '
     'company, phone, email or number. Call this FIRST whenever the user names something '
     'instead of giving an ID, then pass the returned id to the detail tool. Leads have '
     'integer ids; everything else uses UUIDs.',
@@ -417,8 +426,8 @@ view_tool(
 
 view_tool(
     'get_project', 'Project details',
-    'One project in full: client, status, team, tasks, invoices, payments, renewals and AMC. '
-    'Stored passwords and keys are never returned.',
+    'One project in full: client, status, team, invoices, payments, renewals and AMC. '
+    'Stored passwords and keys are never returned. For its task board use list_project_tasks.',
     'get', 'employees:owner_project_detail', path={'pk': 'project_id'},
     params={'project_id': s_uuid('project')}, required=('project_id',),
 )
@@ -1521,6 +1530,7 @@ register(Tool(
 ))
 
 
-# Social Hub and Business Partner tools register themselves into TOOLS.
+# Task board, Social Hub and Business Partner tools register themselves into TOOLS.
+import connector.task_tools  # noqa: E402,F401
 import social.mcp_tools  # noqa: E402,F401
 import bizpartners.mcp_tools  # noqa: E402,F401
