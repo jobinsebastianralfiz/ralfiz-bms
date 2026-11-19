@@ -1224,6 +1224,33 @@ view_tool(
     required=('employee_ids', 'title'), write=True,
 )
 
+def _delete_work_assignment(ctx, args):
+    assignment = (WorkAssignment.objects.prefetch_related('assigned_to__user')
+                  .select_related('project').filter(pk=args['assignment_id']).first())
+    if assignment is None:
+        raise ToolError('No work assignment with that id. Use list_work_assignments to find it.')
+    removed = {
+        'id': str(assignment.id),
+        'title': assignment.title,
+        'status': assignment.status,
+        'assigned_to': [e.full_name for e in assignment.assigned_to.all()],
+        'project': assignment.project.name if assignment.project_id else None,
+        'progress_updates_removed': assignment.updates.count(),
+    }
+    assignment.delete()
+    return {'deleted': True, 'assignment': removed}
+
+
+register(Tool(
+    'delete_work_assignment', 'Delete work assignment',
+    'Permanently delete a work assignment and the progress updates staff posted on it. This '
+    'cannot be undone: read back the title and who it is assigned to and get a yes first. To '
+    'stop work without losing its history, use the web app to set it to cancelled instead.',
+    _delete_work_assignment,
+    {'assignment_id': s_uuid('work assignment (from list_work_assignments)')},
+    required=('assignment_id',), write=True, destructive=True,
+))
+
 view_tool(
     'list_team_members', 'Team members',
     'Delivery team members (developers, designers...). Daily tasks are assigned to these ids, '

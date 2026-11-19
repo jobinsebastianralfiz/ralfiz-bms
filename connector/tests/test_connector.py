@@ -435,10 +435,12 @@ class ToolCatalogueTests(TestCase):
                 self.assertIn(req, d['inputSchema']['properties'], tool.name)
             self.assertEqual(d['annotations']['readOnlyHint'], not tool.write)
 
-    def test_nothing_deletes(self):
+    def test_only_work_assignments_can_be_deleted(self):
+        destructive = {name for name, tool in TOOLS.items() if tool.destructive}
+        self.assertEqual(destructive, {'delete_work_assignment'})
         for tool in TOOLS.values():
             self.assertNotEqual(tool.endpoint[:1], ('delete',), tool.name)
-            self.assertFalse(tool.destructive, tool.name)
+            self.assertEqual(tool.definition()['annotations']['destructiveHint'], tool.destructive)
 
 
 class ToolBehaviourTests(MCPClientMixin, TestCase):
@@ -533,6 +535,25 @@ class ToolBehaviourTests(MCPClientMixin, TestCase):
         work = self.ok('list_work_assignments', {'employee_id': intern_id})
         self.assertEqual(work['items'][0]['title'], 'Landing page copy')
         self.assertEqual(WorkAssignment.objects.get().assigned_by, self.owner)
+
+        assignment = WorkAssignment.objects.get()
+        gone = self.ok('delete_work_assignment', {'assignment_id': str(assignment.id)})
+        self.assertEqual(gone['assignment']['title'], 'Landing page copy')
+        self.assertEqual(gone['assignment']['assigned_to'], ['Meera'])
+        self.assertFalse(WorkAssignment.objects.exists())
+        is_error, message = self.call('delete_work_assignment', {'assignment_id': str(assignment.id)})
+        self.assertTrue(is_error)
+        self.assertIn('No work assignment', message)
+
+    def test_read_only_token_cannot_delete_work(self):
+        intern = Employee.objects.get(user=self.intern)
+        assignment = WorkAssignment.objects.create(title='Keep me', assigned_by=self.owner)
+        assignment.assigned_to.add(intern)
+        read_only = make_token(self.owner, scope='bms:read')
+        is_error, _ = self.call('delete_work_assignment', {'assignment_id': str(assignment.id)},
+                                token=read_only.token)
+        self.assertTrue(is_error)
+        self.assertTrue(WorkAssignment.objects.filter(pk=assignment.pk).exists())
 
     def test_daily_tasks(self):
         task = self.ok('add_daily_task', {'title': 'Call GST consultant', 'priority': 'high',

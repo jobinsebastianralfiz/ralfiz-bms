@@ -54,7 +54,9 @@ INSTRUCTIONS = (
     "read back the client or partner, "
     "line items or amount and get a yes: invoice numbers go on the GST return and cannot be "
     "taken back.\n"
-    "- Nothing can be deleted from here; mistakes are fixed in the BMS web app."
+    "- The only thing that can be deleted from here is a work assignment "
+    "(delete_work_assignment): read back its title and assignees and get a yes first. "
+    "Every other mistake is fixed in the BMS web app."
 )
 
 MAX_RESULT_CHARS = 150_000
