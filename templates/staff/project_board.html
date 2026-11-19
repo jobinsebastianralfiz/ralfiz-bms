@@ -1,0 +1,86 @@
+{% extends 'staff/base.html' %}
+
+{% block title %}{{ project.name|truncatechars:40 }}{% endblock %}
+{% block heading %}{{ project.name|truncatechars:28 }}{% endblock %}
+
+{% block content %}
+<style>
+.pb-head { display:flex; justify-content:space-between; align-items:flex-end; gap:16px; flex-wrap:wrap; margin:6px 0 18px; }
+.pb-head h1 { margin:0; font-size:26px; font-weight:800; letter-spacing:-.02em; color:var(--sf-text); }
+.pb-head p { margin:4px 0 0; color:var(--sf-text-3); font-size:14px; }
+.pb-team { display:flex; align-items:center; gap:6px; flex-wrap:wrap; margin-top:10px; }
+.pb-av { width:30px; height:30px; border-radius:50%; display:inline-flex; align-items:center; justify-content:center; background:var(--sf-primary-dim); color:var(--sf-primary-text); font-weight:700; font-size:12px; border:2px solid var(--sf-card); }
+.pb-tools { display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
+.pb-find { display:flex; align-items:center; gap:8px; height:40px; padding:0 14px; border-radius:12px; background:var(--sf-card); box-shadow:inset 0 0 0 1px var(--sf-line); color:var(--sf-text-3); }
+.pb-find input { border:0; background:transparent; outline:none; font:inherit; color:var(--sf-text); width:170px; }
+.pb-board { display:grid; grid-template-columns:repeat(4, minmax(205px, 1fr)); gap:12px; overflow-x:auto; padding-bottom:8px; }
+.pb-col { background:var(--sf-muted-dim); border-radius:16px; padding:12px; min-height:140px; }
+.pb-col-head { display:flex; justify-content:space-between; align-items:center; margin:2px 4px 12px; font-weight:700; font-size:14px; color:var(--sf-text); }
+.pb-col-head span { min-width:24px; height:24px; padding:0 8px; border-radius:99px; display:inline-flex; align-items:center; justify-content:center; background:var(--sf-card); font-size:12px; color:var(--sf-text-2); }
+.pb-col-head i.dot { display:inline-block; width:8px; height:8px; border-radius:50%; margin-right:8px; }
+.pb-col.muted .dot { background:#94A3B8; } .pb-col.info .dot { background:#3B82F6; } .pb-col.warn .dot { background:#F59E0B; } .pb-col.ok .dot { background:#16A34A; }
+.pb-task { display:block; padding:12px 13px; margin-bottom:10px; border-radius:12px; background:var(--sf-card); border:1px solid var(--sf-line); color:var(--sf-text); text-decoration:none; }
+.pb-task:hover { border-color:var(--sf-primary-line); }
+.pb-task.mine { border-left:3px solid var(--sf-primary); }
+.pb-task-label { font-size:11px; font-weight:700; letter-spacing:.04em; text-transform:uppercase; color:var(--sf-primary-text); }
+.pb-task strong { display:block; margin:3px 0 6px; font-size:14px; line-height:1.35; }
+.pb-task-meta { display:flex; gap:8px; flex-wrap:wrap; font-size:12px; color:var(--sf-text-3); }
+.pb-task-meta .late { color:var(--sf-danger, #C02626); font-weight:600; }
+.pb-who { display:inline-flex; align-items:center; gap:5px; }
+.pb-who.you { color:var(--sf-primary-text); font-weight:700; }
+.pb-task .sv-bar { margin-top:8px; }
+.pb-empty { padding:16px 6px; text-align:center; font-size:13px; color:var(--sf-text-3); }
+@media (max-width:760px) {
+  .pb-board { grid-template-columns:repeat(4, 82%); scroll-snap-type:x mandatory; }
+  .pb-col { scroll-snap-align:start; }
+  .pb-find input { width:120px; }
+}
+</style>
+
+<a href="{% url 'staff:project_list' %}" class="sv-back"><i class="fas fa-arrow-left"></i> Projects</a>
+
+<header class="pb-head">
+  <div>
+    <h1>{{ project.name }}</h1>
+    <p>{% if project.client %}{{ project.client.name }} · {% endif %}{{ project.get_status_display }}{% if project.deadline %} · due {{ project.deadline|date:"d M Y" }}{% endif %} · {{ mine_open }} open task{{ mine_open|pluralize }} for you</p>
+    {% if team %}
+    <div class="pb-team" aria-label="Project team">
+      {% for m in team %}<span class="pb-av" title="{{ m.name }}">{{ m.name|slice:":1"|upper }}</span>{% endfor %}
+      <span style="font-size:13px;color:var(--sf-text-3);margin-left:4px">{{ team|length }} on the team</span>
+    </div>
+    {% endif %}
+  </div>
+  <form class="pb-tools" method="get">
+    <div class="sf-chips" style="margin:0">
+      <a href="?{% if q %}q={{ q|urlencode }}{% endif %}" class="sf-chip {% if not mine_only %}active{% endif %}">All tasks</a>
+      <a href="?mine=1{% if q %}&q={{ q|urlencode }}{% endif %}" class="sf-chip {% if mine_only %}active{% endif %}">Mine</a>
+    </div>
+    {% if mine_only %}<input type="hidden" name="mine" value="1">{% endif %}
+    <label class="pb-find"><i class="fas fa-magnifying-glass" aria-hidden="true"></i><input type="search" name="q" value="{{ q }}" placeholder="Search this board" aria-label="Search this board"></label>
+  </form>
+</header>
+
+<div class="pb-board">
+  {% for col in columns %}
+  <section class="pb-col {{ col.tone }}" aria-label="{{ col.label }}">
+    <div class="pb-col-head"><div><i class="dot"></i>{{ col.label }}</div><span>{{ col.tasks|length }}</span></div>
+    {% for t in col.tasks %}
+    <a class="pb-task{% if t.is_mine %} mine{% endif %}" href="{% url 'staff:board_task_detail' t.pk %}">
+      {% if t.category %}<div class="pb-task-label">{{ t.category }}</div>{% endif %}
+      <strong>{{ t.title }}</strong>
+      <div class="pb-task-meta">
+        <span class="pb-who{% if t.is_mine %} you{% endif %}"><i class="far fa-user"></i> {% if t.is_mine %}You{% elif t.assigned_to %}{{ t.assigned_to.name }}{% else %}Unassigned{% endif %}</span>
+        {% if t.due_date %}<span class="{% if t.is_overdue %}late{% endif %}"><i class="far fa-calendar"></i> {{ t.due_date|date:"d M" }}</span>{% endif %}
+        <span><i class="fas fa-flag"></i> {{ t.get_priority_display }}</span>
+        {% with n=t.attachments.all|length %}{% if n %}<span><i class="fas fa-paperclip"></i> {{ n }}</span>{% endif %}{% endwith %}
+      </div>
+      {% if t.status != 'todo' %}<div class="sv-bar"><i style="width:{{ t.progress_percent }}%"></i></div>{% endif %}
+    </a>
+    {% empty %}
+    <div class="pb-empty">Nothing here</div>
+    {% endfor %}
+  </section>
+  {% endfor %}
+</div>
+{% if not total and q %}<p class="pb-empty">No tasks match "{{ q }}".</p>{% endif %}
+{% endblock %}

@@ -4,7 +4,7 @@
 {% block heading %}Task{% endblock %}
 
 {% block content %}
-<a href="{% url 'staff:work_list' %}" class="sv-back"><i class="fas fa-arrow-left"></i> My Tasks</a>
+<a href="{% url 'staff:project_board' task.project_id %}" class="sv-back"><i class="fas fa-arrow-left"></i> {{ task.project.name }} board</a>
 
 <div class="sv-cols">
 <div class="sv-col">
@@ -20,6 +20,8 @@
     {% if task.description %}<div class="sv-desc">{{ task.description|linebreaksbr }}</div>{% endif %}
     {% if task.notes %}<div class="sv-meta"><span><i class="far fa-note-sticky"></i> {{ task.notes }}</span></div>{% endif %}
     <div class="sv-bar"><i style="width: {{ task.progress_percent }}%"></i></div>
+    <div class="sv-meta"><span><i class="far fa-user"></i> {% if is_mine %}Assigned to you{% elif task.assigned_to %}Assigned to {{ task.assigned_to.name }}{% else %}Not assigned yet{% endif %}</span></div>
+    {% if is_mine %}
     <form method="post" action="{% url 'staff:board_task_update' task.pk %}" class="sv-move">
       {% csrf_token %}
       <input type="hidden" name="back" value="{{ request.get_full_path }}">
@@ -29,6 +31,7 @@
       <input type="number" name="progress" min="0" max="100" step="5" value="{{ task.progress }}" aria-label="Progress %" title="Progress %">
       <button type="submit">Save</button>
     </form>
+    {% endif %}
   </div>
 </section>
 

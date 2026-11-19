@@ -102,6 +102,30 @@ def board_tasks_for(employee, open_only=True):
     return tasks
 
 
+def staff_projects(employee, member=None):
+    """Projects this person works on: on the project team, or holding a task on its board.
+
+    Cancelled projects are left out. Returns (projects queryset, TeamMember or None).
+    """
+    from core.models import Project
+    member = member or board_member_for(employee)
+    if member is None:
+        return Project.objects.none(), None
+    projects = (Project.objects.filter(Q(team_members=member) | Q(tasks__assigned_to=member))
+                .exclude(status='cancelled').distinct())
+    return projects, member
+
+
+def visible_board_tasks(employee):
+    """Board tasks this person may open: everything on their projects' boards.
+    Only their own tasks can be moved (board_task_update uses board_tasks_for)."""
+    from core.models import Task
+    projects, member = staff_projects(employee)
+    if member is None:
+        return Task.objects.none()
+    return Task.objects.filter(Q(project__in=projects) | Q(assigned_to=member)).distinct()
+
+
 def _split_headline(text, limit=120):
     """Bold first line for a daily update card, plus everything after it.
 
@@ -140,7 +164,7 @@ def _summary(employee):
         'record': Attendance.objects.filter(employee=employee, date=today).first(),
         'days_present': Attendance.objects.filter(
             employee=employee, date__year=today.year, date__month=today.month).exclude(status='absent').count(),
-        'open_task_total': open_work + board_tasks_for(employee).count(),
+        'open_task_total': open_work,
         'todays_report': DailyReport.objects.filter(employee=employee, date=today).first(),
         'pending_leave': LeaveRequest.objects.filter(employee=employee, status='pending').count(),
     }
@@ -166,6 +190,7 @@ def _base_context(request, active_nav=''):
         'unread_count': _unread_count(employee),
         'photo_url': photo_url(employee),
         'asset_v': ASSET_V,
+        'has_projects': staff_projects(employee)[0].exists(),
     }
 
 
@@ -216,8 +241,6 @@ def dashboard(request):
                  .exclude(status__in=['completed', 'cancelled'])
                  .order_by('due_date', '-created_at')[:5])
     pending_leave = LeaveRequest.objects.filter(employee=employee, status='pending').count()
-    board_tasks = list(board_tasks_for(employee).order_by('due_date', '-created_at')[:6])
-    open_board_count = board_tasks_for(employee).count()
     open_work_count = (WorkAssignment.objects.filter(assigned_to=employee)
                        .exclude(status__in=['completed', 'cancelled']).count())
 
@@ -242,8 +265,9 @@ def dashboard(request):
         'today': today,
         'record': record,
         'open_work': open_work,
-        'board_tasks': board_tasks,
-        'open_task_total': open_work_count + open_board_count,
+        # Project boards are their own section, never mixed into My Tasks.
+        'my_projects': project_cards(employee)[:4],
+        'open_task_total': open_work_count,
         'greeting': ('Good morning' if timezone.localtime().hour < 12
                      else 'Good afternoon' if timezone.localtime().hour < 17 else 'Good evening'),
         'pending_leave': pending_leave,
@@ -255,7 +279,7 @@ def dashboard(request):
         'recent_notifications': Notification.objects.filter(
             Q(employee=employee) | Q(employee__isnull=True))[:5],
     })
-    ctx.update(_board_dashboard(employee, today, record, board_tasks, list(open_work),
+    ctx.update(_board_dashboard(employee, today, record, [], list(open_work),
                                 ctx['upcoming_leave'], upcoming_classes, ctx['recent_notifications']))
     return render(request, 'staff/dashboard.html', ctx)
 
@@ -594,22 +618,14 @@ def _plan_status(p):
 
 @staff_required
 def work_list(request):
-    """My Tasks: project-board tasks, work assignments and UAT plans as one card grid."""
+    """My Tasks: the person's own work assignments and UAT plans. Project board
+    tasks are kept apart, under Projects."""
     from uat.staff_views import _my_plans, _summary as uat_summary
     employee = request.employee
     assignments = WorkAssignment.objects.filter(assigned_to=employee).select_related('project', 'assigned_by')
     status_filter = request.GET.get('status', '')
     if status_filter:
         assignments = assignments.filter(status=status_filter)
-
-    board_tasks = board_tasks_for(employee, open_only=False)
-    board_filter = {'assigned': 'todo', 'in_progress': 'in_progress', 'completed': 'completed'}.get(status_filter)
-    if status_filter and board_filter:
-        board_tasks = board_tasks.filter(status=board_filter)
-    elif status_filter:
-        board_tasks = board_tasks.none()
-    else:
-        board_tasks = board_tasks.exclude(status='completed')
 
     all_plans = [uat_summary(plan, employee) for plan in _my_plans(employee).order_by('due_date', 'name')]
     for p in all_plans:
@@ -619,25 +635,21 @@ def work_list(request):
 
     from wallet.models import XPSettings
     xp_settings = XPSettings.current()
-    cards = ([_task_card(t, 'board') for t in board_tasks.prefetch_related('attachments')]
-             + [_task_card(w, 'work', xp_settings) for w in assignments])
+    # Only the person's own work: project board tasks live under Projects.
+    cards = [_task_card(w, 'work', xp_settings) for w in assignments]
     far = date.max
     cards.sort(key=lambda c: (c['done'], c['due'] or far, _PRIORITY_RANK.get(c['priority'], 9), c['title'].lower()))
 
-    all_tasks = board_tasks_for(employee, open_only=False)
     all_work = WorkAssignment.objects.filter(assigned_to=employee)
     week_ago = timezone.now() - timedelta(days=7)
     plan_keys = [p['status_key'] for p in all_plans]
     counts = {
-        'total': all_tasks.count() + all_work.count() + len(all_plans),
-        'new_week': (all_tasks.filter(created_at__gte=week_ago).count()
-                     + all_work.filter(created_at__gte=week_ago).count()
+        'total': all_work.count() + len(all_plans),
+        'new_week': (all_work.filter(created_at__gte=week_ago).count()
                      + sum(1 for p in all_plans if p['plan'].created_at >= week_ago)),
-        'in_progress': (all_tasks.filter(status__in=['in_progress', 'review']).count()
-                        + all_work.filter(status='in_progress').count() + plan_keys.count('in_progress')),
+        'in_progress': all_work.filter(status='in_progress').count() + plan_keys.count('in_progress'),
         'on_hold': all_work.filter(status='on_hold').count(),
-        'completed': (all_tasks.filter(status='completed').count()
-                      + all_work.filter(status='completed').count() + plan_keys.count('completed')),
+        'completed': all_work.filter(status='completed').count() + plan_keys.count('completed'),
         'cancelled': all_work.filter(status='cancelled').count(),
     }
     total = counts['total'] or 1
@@ -661,16 +673,18 @@ def work_list(request):
 def board_task_detail(request, pk):
     """One of your project-board tasks: details, attached files and comments."""
     from core.models import Task, TaskComment
-    task = get_object_or_404(board_tasks_for(request.employee, open_only=False), pk=pk)
+    task = get_object_or_404(visible_board_tasks(request.employee).select_related('project', 'assigned_to'), pk=pk)
+    member = board_member_for(request.employee)
     if request.method == 'POST':
         body = request.POST.get('body', '').strip()[:4000]
         if body:
             TaskComment.objects.create(task=task, author=request.user, body=body)
             messages.success(request, 'Comment added.')
         return redirect('staff:board_task_detail', pk=task.pk)
-    ctx = _base_context(request, 'work')
+    ctx = _base_context(request, 'projects')
     ctx.update({
         'task': task,
+        'is_mine': member is not None and task.assigned_to_id == member.pk,
         'attachments': task.attachments.all(),
         'comments': task.comments.filter(is_deleted=False, parent__isnull=True)
                         .select_related('author').prefetch_related('replies__author'),
@@ -700,7 +714,75 @@ def board_task_update(request, pk):
                                         from_value=old_status, to_value=task.status, is_visible_to_client=True)
         messages.success(request, f'"{task.title}" updated.')
     from core.security import safe_next
-    return redirect(safe_next(request, request.POST.get('back'), 'staff:work_list'))
+    return redirect(safe_next(request, request.POST.get('back'),
+                              reverse('staff:project_board', args=[task.project_id])))
+
+
+BOARD_COLUMNS = (('todo', 'To Do', 'muted'), ('in_progress', 'In Progress', 'info'),
+                 ('review', 'In Review', 'warn'), ('completed', 'Completed', 'ok'))
+
+
+def project_cards(employee):
+    """The person's projects with their board totals, open work first."""
+    from django.db.models import Count
+    projects, member = staff_projects(employee)
+    if member is None:
+        return []
+    from core.models import Project
+    # Count on a fresh queryset: annotating `projects` would reuse its filtered
+    # tasks join and count only this person's tasks.
+    rows = (Project.objects.filter(pk__in=projects.values('pk')).select_related('client')
+            .annotate(total=Count('tasks', distinct=True),
+                      done=Count('tasks', filter=Q(tasks__status='completed'), distinct=True),
+                      mine_open=Count('tasks', filter=Q(tasks__assigned_to=member) & ~Q(tasks__status='completed'),
+                                      distinct=True)))
+    cards = []
+    for p in rows:
+        cards.append({
+            'project': p, 'total': p.total, 'done': p.done, 'open': p.total - p.done,
+            'mine_open': p.mine_open, 'pct': round(p.done * 100 / p.total) if p.total else 0,
+            'on_team': p.team_members.filter(pk=member.pk).exists(),
+        })
+    cards.sort(key=lambda c: (c['project'].status == 'completed', -c['mine_open'], -c['open'],
+                              c['project'].name.lower()))
+    return cards
+
+
+@staff_required
+def project_list(request):
+    """Projects: every project this person is on, each opening its own task board."""
+    ctx = _base_context(request, 'projects')
+    ctx['cards'] = project_cards(request.employee)
+    return render(request, 'staff/project_list.html', ctx)
+
+
+@staff_required
+def project_board(request, pk):
+    """One project's task board, in columns. Everyone on the project sees all of it;
+    only the tasks assigned to you can be moved."""
+    projects, member = staff_projects(request.employee)
+    project = get_object_or_404(projects.select_related('client'), pk=pk)
+    tasks = project.tasks.select_related('assigned_to').prefetch_related('attachments')
+    mine_only = request.GET.get('mine') == '1'
+    if mine_only:
+        tasks = tasks.filter(assigned_to=member)
+    q = request.GET.get('q', '').strip()
+    if q:
+        tasks = tasks.filter(Q(title__icontains=q) | Q(description__icontains=q) | Q(category__icontains=q))
+    by_status = {}
+    for t in tasks.order_by('due_date', '-created_at'):
+        t.is_mine = t.assigned_to_id == member.pk
+        by_status.setdefault(t.status, []).append(t)
+    columns = [{'key': key, 'label': label, 'tone': tone, 'tasks': by_status.get(key, [])}
+               for key, label, tone in BOARD_COLUMNS]
+    team = list(project.team_members.filter(is_active=True))
+    ctx = _base_context(request, 'projects')
+    ctx.update({
+        'project': project, 'columns': columns, 'team': team, 'mine_only': mine_only, 'q': q,
+        'total': sum(len(c['tasks']) for c in columns),
+        'mine_open': project.tasks.filter(assigned_to=member).exclude(status='completed').count(),
+    })
+    return render(request, 'staff/project_board.html', ctx)
 
 
 @staff_required

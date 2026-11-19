@@ -33,7 +33,7 @@
     <div class="sd-card-top"><span class="sd-card-ico"><i class="fas fa-list-check"></i></span>
       <span class="sd-card-status">{% if open_task_total %}To work on{% else %}All clear{% endif %}</span></div>
     <h3>{{ open_task_total }} open task{{ open_task_total|pluralize }}</h3>
-    <div class="sd-card-meta"><span>Project tasks and work</span><span>{% if task_pct %}{{ task_pct }}%{% endif %}</span></div>
+    <div class="sd-card-meta"><span>Work assigned to you</span><span>{% if task_pct %}{{ task_pct }}%{% endif %}</span></div>
     <div class="sd-card-bar"><i style="width: {{ task_pct }}%"></i></div>
   </a>
 
@@ -71,6 +71,20 @@
       </div>
       {% endfor %}
     </div>
+  {% if my_projects %}
+    <h2 class="sd-h2" style="margin-top:26px">My projects <a href="{% url 'staff:project_list' %}">All projects</a></h2>
+    <div class="sd-tasks">
+      {% for c in my_projects %}
+      <a class="sd-task {% cycle 'plum' 'teal' %}" href="{% url 'staff:project_board' c.project.pk %}">
+        <span class="sd-task-body">
+          <strong>{{ c.project.name }}</strong>
+          <span>{{ c.open }} open on the board{% if c.mine_open %} · <b>{{ c.mine_open }} yours</b>{% endif %} · {{ c.pct }}% done</span>
+        </span>
+        <span class="sd-check"><i class="fas fa-table-columns"></i></span>
+      </a>
+      {% endfor %}
+    </div>
+  {% endif %}
   </section>
 
   <section>

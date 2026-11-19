@@ -36,13 +36,56 @@ class StaffBoardTaskTests(TestCase):
         other.save()
         self.assertEqual(board_member_for(self.employee), other)
 
-    def test_dashboard_and_work_list_show_the_task(self):
-        r = self.client.get(reverse('staff:dashboard'))
-        self.assertContains(r, 'Write the homepage copy')
-        self.assertNotContains(r, 'Someone else')
-        self.assertEqual(r.context['open_task_total'], 1)
+    def test_board_tasks_are_kept_out_of_my_tasks(self):
         r = self.client.get(reverse('staff:work_list'))
-        self.assertContains(r, 'Write the homepage copy')
+        self.assertNotContains(r, 'Write the homepage copy')
+        self.assertEqual(r.context['counts']['total'], 0)
+        r = self.client.get(reverse('staff:dashboard'))
+        self.assertEqual(r.context['open_task_total'], 0)          # My Tasks count: own work only
+        self.assertEqual([t['title'] for t in r.context['tasks']], [])
+        # ...the project shows in its own Home section instead.
+        self.assertEqual([c['project'] for c in r.context['my_projects']], [self.project])
+        self.assertContains(r, 'My projects')
+
+    def test_projects_page_and_board(self):
+        r = self.client.get(reverse('staff:project_list'))
+        self.assertContains(r, 'AGC Website')
+        self.assertContains(r, reverse('staff:project_list'))     # sidebar entry
+        card = r.context['cards'][0]
+        self.assertEqual((card['open'], card['mine_open'], card['done']), (2, 1, 0))
+        r = self.client.get(reverse('staff:project_board', args=[self.project.pk]))
+        cols = {c['key']: [t.title for t in c['tasks']] for c in r.context['columns']}
+        self.assertEqual(sorted(cols['todo']), ['Someone else', 'Write the homepage copy'])
+        mine = self.client.get(reverse('staff:project_board', args=[self.project.pk]), {'mine': '1'})
+        self.assertEqual([t.title for c in mine.context['columns'] for t in c['tasks']],
+                         ['Write the homepage copy'])
+
+    def test_board_is_only_for_the_projects_team(self):
+        other = Project.objects.create(client=self.project.client, name='Secret', status='in_progress')
+        Task.objects.create(project=other, title='Hidden', status='todo')
+        self.assertEqual(self.client.get(reverse('staff:project_board', args=[other.pk])).status_code, 404)
+        hidden = Task.objects.get(title='Hidden')
+        self.assertEqual(self.client.get(reverse('staff:board_task_detail', args=[hidden.pk])).status_code, 404)
+        self.assertNotContains(self.client.get(reverse('staff:project_list')), 'Secret')
+        # Being put on the team opens the board, even with no task of your own.
+        other.team_members.add(self.member)
+        self.assertEqual(self.client.get(reverse('staff:project_board', args=[other.pk])).status_code, 200)
+
+    def test_teammates_task_opens_read_only(self):
+        other = Task.objects.get(title='Someone else')
+        r = self.client.get(reverse('staff:board_task_detail', args=[other.pk]))
+        self.assertEqual(r.status_code, 200)
+        self.assertFalse(r.context['is_mine'])
+        self.assertNotContains(r, reverse('staff:board_task_update', args=[other.pk]))
+        r = self.client.get(reverse('staff:board_task_detail', args=[self.task.pk]))
+        self.assertTrue(r.context['is_mine'])
+        self.assertContains(r, reverse('staff:board_task_update', args=[self.task.pk]))
+
+    def test_no_projects_no_sidebar_entry(self):
+        self.task.delete()
+        r = self.client.get(reverse('staff:dashboard'))
+        self.assertFalse(r.context['has_projects'])
+        self.assertNotContains(r, reverse('staff:project_list'))
 
     def test_can_move_own_task_but_not_others(self):
         self.client.post(reverse('staff:board_task_update', args=[self.task.pk]),
@@ -56,7 +99,7 @@ class StaffBoardTaskTests(TestCase):
     def test_back_link_cannot_leave_the_site(self):
         r = self.client.post(reverse('staff:board_task_update', args=[self.task.pk]),
                              {'status': 'review', 'back': 'https://evil.example/'})
-        self.assertEqual(r['Location'], reverse('staff:work_list'))
+        self.assertEqual(r['Location'], reverse('staff:project_board', args=[self.project.pk]))
 
     def test_login_stays_confined(self):
         self.assertIsNone(TeamMember.objects.get(pk=self.member.pk).user)
@@ -78,11 +121,12 @@ class StaffTaskPageTests(StaffBoardTaskTests):
             self.assertContains(r, 'brief.pdf')
             self.client.post(reverse('staff:board_task_detail', args=[self.task.pk]), {'body': 'Which font?'})
             self.assertTrue(self.task.comments.filter(body='Which font?', author=self.user).exists())
-            r = self.client.get(reverse('staff:dashboard'))
-            self.assertContains(r, '1 file')
+            r = self.client.get(reverse('staff:project_board', args=[self.project.pk]))
+            self.assertContains(r, '<i class="fas fa-paperclip"></i> 1')
 
-    def test_cannot_open_someone_elses_task(self):
-        other = Task.objects.get(title='Someone else')
+    def test_cannot_open_a_task_on_another_projects_board(self):
+        elsewhere = Project.objects.create(client=self.project.client, name='Elsewhere', status='in_progress')
+        other = Task.objects.create(project=elsewhere, title='Not mine', status='todo')
         self.assertEqual(self.client.get(reverse('staff:board_task_detail', args=[other.pk])).status_code, 404)
 
 
@@ -95,8 +139,8 @@ class StaffPagesTests(StaffBoardTaskTests):
 
     def test_work_counts_and_pages_render(self):
         r = self.client.get(reverse('staff:work_list'))
-        self.assertEqual(r.context['counts']['total'], 1)
-        self.assertEqual(r.context['work_total'], 1)
+        self.assertEqual(r.context['counts']['total'], 0)    # board tasks are under Projects
+        self.assertEqual(r.context['work_total'], 0)
         for name in ['staff:dashboard', 'staff:attendance', 'staff:leave', 'staff:daily_report',
                      'staff:payslip_list', 'staff:notification_list', 'staff:attendance_history']:
             self.assertEqual(self.client.get(reverse(name)).status_code, 200, name)
