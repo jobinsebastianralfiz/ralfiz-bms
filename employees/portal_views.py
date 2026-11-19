@@ -86,24 +86,9 @@ def _unread_count(employee):
 
 
 def board_member_for(employee):
-    """The delivery TeamMember that project-board tasks are assigned to.
-
-    Staff logins are Employees; board tasks point at TeamMembers, and the two
-    are separate records. Linking the login to the TeamMember would let it out
-    of the staff portal, so match instead: same login, else same email, else
-    the one TeamMember with exactly the same name.
-    """
+    """The delivery TeamMember that project-board tasks are assigned to."""
     from core.models import TeamMember
-    active = TeamMember.objects.filter(is_active=True)
-    member = active.filter(user=employee.user).first()
-    email = (employee.user.email or '').strip()
-    if member is None and email:
-        member = active.filter(email__iexact=email).first()
-    if member is None:
-        by_name = list(active.filter(name__iexact=employee.full_name.strip())[:2])
-        if len(by_name) == 1:
-            member = by_name[0]
-    return member
+    return TeamMember.match_employee(employee)
 
 
 def board_tasks_for(employee, open_only=True):

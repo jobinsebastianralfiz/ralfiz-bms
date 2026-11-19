@@ -1394,7 +1394,12 @@ class TeamMember(models.Model):
         ('permanent', 'Permanent'),
         ('contract', 'Contract'),
         ('freelancer', 'Freelancer'),
+        ('intern', 'Intern'),
     ]
+
+    # Staff department -> board role, for team members made from a staff record.
+    DEPARTMENT_ROLES = {'engineering': 'developer', 'software': 'developer', 'design': 'designer',
+                        'marketing': 'digital_marketing', 'sales': 'growth_outreach'}
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     user = models.OneToOneField(User, on_delete=models.CASCADE, null=True, blank=True, related_name='team_profile')
@@ -1424,6 +1429,49 @@ class TeamMember(models.Model):
     def is_team_member(self):
         """Check if this user is a team member (not admin)"""
         return self.user is not None and not self.user.is_superuser
+
+    @property
+    def is_intern(self):
+        return self.employment_type == 'intern'
+
+    @classmethod
+    def match_employee(cls, employee, active_only=True):
+        """The TeamMember that stands for a staff Employee on project boards.
+
+        Staff logins are Employees; boards and project teams use TeamMembers.
+        Linking the login itself would let it out of the staff portal
+        (StaffConfinementMiddleware), so match instead: same login, else same
+        email, else the one TeamMember with exactly the same name.
+        """
+        qs = cls.objects.filter(is_active=True) if active_only else cls.objects.all()
+        member = qs.filter(user=employee.user).first()
+        email = (employee.user.email or '').strip()
+        if member is None and email:
+            member = qs.filter(email__iexact=email).first()
+        if member is None:
+            by_name = list(qs.filter(name__iexact=employee.full_name.strip())[:2])
+            if len(by_name) == 1:
+                member = by_name[0]
+        return member
+
+    @classmethod
+    def for_employee(cls, employee):
+        """Find or create the TeamMember for a staff Employee (never sets user)."""
+        member = cls.match_employee(employee, active_only=False)
+        if member is not None:
+            if not member.is_active:
+                member.is_active = True
+                member.save(update_fields=['is_active', 'updated_at'])
+            return member
+        is_intern = employee.role == 'intern' or employee.employment_type == 'intern'
+        return cls.objects.create(
+            name=employee.full_name.strip(),
+            email=(employee.user.email or '').strip(),
+            phone=employee.phone or '',
+            role=cls.DEPARTMENT_ROLES.get(employee.department, 'other'),
+            employment_type='intern' if is_intern else 'contract' if employee.employment_type == 'contract' else 'permanent',
+            notes=f'Added from staff record {employee.employee_id} for project teams.',
+        )
 
 
 class ProjectLink(models.Model):

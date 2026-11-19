@@ -216,11 +216,14 @@
                 </div>
                 {% if member.is_freelancer %}
                 <span class="badge" style="background: var(--warning-bg); color: var(--warning);">Freelancer</span>
+                {% elif member.is_intern %}
+                <span class="badge" style="background: var(--success-bg); color: var(--success);">Intern</span>
                 {% else %}
                 <span class="badge" style="background: var(--primary-bg); color: var(--primary);">Permanent</span>
                 {% endif %}
               </label>
               {% empty %}
+              {% if not staff_choices %}
               <div class="text-center text-muted py-3">
                 <i class="fas fa-user-plus mb-2" style="font-size: 1.5rem; display: block;"></i>
                 <p class="mb-2">No team members available</p>
@@ -228,7 +231,29 @@
                   <i class="fas fa-plus me-1"></i>Add Team Member
                 </a>
               </div>
+              {% endif %}
               {% endfor %}
+              {% if staff_choices %}
+              <div class="text-sm text-muted mt-3 mb-2">Interns &amp; staff <span style="opacity:.75">(added to the team list when ticked)</span></div>
+              {% for emp in staff_choices %}
+              <label class="d-flex align-items-center gap-3 p-2 rounded mb-2" style="background: var(--bg-hover); cursor: pointer;" for="emp_{{ emp.pk }}">
+                <input type="checkbox" name="team_members" value="emp:{{ emp.pk }}" id="emp_{{ emp.pk }}"
+                  style="width: 18px; height: 18px; accent-color: var(--primary);">
+                <div class="avatar avatar-sm" style="background: var(--primary); color: white;">
+                  {{ emp.full_name|slice:":1"|upper }}
+                </div>
+                <div class="flex-1">
+                  <div class="fw-medium">{{ emp.full_name }}</div>
+                  <div class="text-sm text-muted">{% firstof emp.designation emp.get_department_display %}</div>
+                </div>
+                {% if emp.role == 'intern' or emp.employment_type == 'intern' %}
+                <span class="badge" style="background: var(--success-bg); color: var(--success);">Intern</span>
+                {% else %}
+                <span class="badge" style="background: var(--primary-bg); color: var(--primary);">Staff</span>
+                {% endif %}
+              </label>
+              {% endfor %}
+              {% endif %}
             </div>
           </div>
         </div>

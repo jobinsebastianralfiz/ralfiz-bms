@@ -1264,6 +1264,37 @@ def _save_project_logo(request, project):
     return ''
 
 
+def _staff_without_team_member():
+    """Active interns and staff who have no TeamMember yet, for the project team picker."""
+    from employees.models import Employee
+    members = list(TeamMember.objects.filter(is_active=True).values_list('user_id', 'email', 'name'))
+    user_ids = {u for u, _, _ in members if u}
+    emails = {e.strip().lower() for _, e, _ in members if e}
+    names = {n.strip().lower() for _, _, n in members}
+    out = []
+    for emp in (Employee.objects.filter(status='active').exclude(role__in=('owner', 'partner'))
+                .select_related('user').order_by('user__first_name', 'user__username')):
+        email = (emp.user.email or '').strip().lower()
+        if emp.user_id in user_ids or (email and email in emails) or emp.full_name.strip().lower() in names:
+            continue
+        out.append(emp)
+    return out
+
+
+def _selected_team_members(request):
+    """Ticked team members; ticked staff ('emp:<id>') get a TeamMember made for them."""
+    from employees.models import Employee
+    ids = []
+    for value in request.POST.getlist('team_members'):
+        if value.startswith('emp:'):
+            emp = Employee.objects.select_related('user').filter(pk=value[4:]).first() if _is_uuid(value[4:]) else None
+            if emp is not None:
+                ids.append(TeamMember.for_employee(emp).pk)
+        elif _is_uuid(value):
+            ids.append(value)
+    return ids
+
+
 @login_required
 def project_create(request):
     clients = Client.objects.filter(is_active=True)
@@ -1287,8 +1318,8 @@ def project_create(request):
             messages.warning(request, logo_error)
         else:
             project.save()
-        # Assign team members
-        selected_members = request.POST.getlist('team_members')
+        # Assign team members (ticked interns/staff get a TeamMember made for them)
+        selected_members = _selected_team_members(request)
         if selected_members:
             project.team_members.set(selected_members)
         messages.success(request, f'Project "{project.name}" created successfully.')
@@ -1297,6 +1328,7 @@ def project_create(request):
     return render(request, 'projects/form.html', {
         'clients': clients,
         'team_members': team_members,
+        'staff_choices': _staff_without_team_member(),
         'form_title': 'Add New Project',
         'status_choices': Project.STATUS_CHOICES,
         'type_choices': Project.TYPE_CHOICES,
@@ -1519,9 +1551,8 @@ def project_update(request, pk):
             )
             messages.info(request, 'AMC contract created automatically.')
 
-        # Update team members
-        selected_members = request.POST.getlist('team_members')
-        project.team_members.set(selected_members)
+        # Update team members (ticked interns/staff get a TeamMember made for them)
+        project.team_members.set(_selected_team_members(request))
 
         messages.success(request, f'Project "{project.name}" updated successfully.')
         return redirect('project_detail', pk=project.pk)
@@ -1530,6 +1561,7 @@ def project_update(request, pk):
         'project': project,
         'clients': clients,
         'team_members': team_members,
+        'staff_choices': _staff_without_team_member(),
         'form_title': 'Edit Project',
         'status_choices': Project.STATUS_CHOICES,
         'type_choices': Project.TYPE_CHOICES,
