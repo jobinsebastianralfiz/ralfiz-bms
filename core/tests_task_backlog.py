@@ -246,3 +246,72 @@ class ProjectFormBoardSettingsTests(BoardSetup):
                          (self.dev, 'ALW', True))
         self.assertTrue(Task.objects.filter(code='ALW-050', title='Old card').exists())
         self.assertEqual(self.project.next_task_number, 51)
+
+
+class WeekFilteredBacklogTests(BoardSetup):
+    """Backlog counts and cards follow the week picker; members never get backlog cards."""
+
+    def setUp(self):
+        super().setUp()
+        for w in (self.week2, self.week3):
+            for n in range(16 if w == self.week2 else 5):
+                task_rules.create_task(self.project, self.admin, title=f'{w.name} #{n}', status='backlog',
+                                       sprint=w, assigned_to=self.dev)
+        # a lead whose login is linked to the TeamMember (uses /tasks/board/)
+        self.linked_lead_user = User.objects.create_user('lead2', password='pw-123456')
+        self.lead.user = self.linked_lead_user
+        self.lead.save()
+
+    def backlog(self, response):
+        col = next(c for c in response.context['columns'] if c['key'] == 'backlog')
+        return col['tasks']
+
+    def board(self, week):
+        return self.client.get(reverse('task_board') + f'?project={self.project.pk}&week={week}')
+
+    def test_admin_sees_week2_backlog_only(self):
+        self.client.force_login(self.admin)
+        cards = self.backlog(self.board(self.week2.pk))
+        self.assertEqual(len(cards), 17)                    # 16 + the Contact form card from setUp
+        self.assertTrue(all(t.sprint_id == self.week2.pk for t in cards))
+        r = self.board(self.week2.pk)
+        self.assertContains(r, f'Backlog · {len(cards)}')
+        self.assertContains(r, 'class="vk-card', count=sum(len(c['tasks']) for c in r.context['columns']))
+        self.assertEqual(len(self.backlog(self.board('all'))), 23)
+
+    def test_linked_lead_gets_backlog_on_admin_board(self):
+        self.client.force_login(self.linked_lead_user)
+        r = self.board(self.week2.pk)
+        self.assertEqual(len(self.backlog(r)), 17)
+        self.assertContains(r, 'Start Week 2')
+
+    def test_staff_lead_and_member(self):
+        url = reverse('staff:project_board', args=[self.project.pk]) + f'?week={self.week2.pk}'
+        self.client.force_login(self.lead_user)
+        r = self.client.get(url)
+        cards = next(c for c in r.context['columns'] if c['key'] == 'backlog')['tasks']
+        self.assertEqual(len(cards), 17)
+        self.assertContains(r, 'Backlog · 17')
+        self.client.force_login(self.dev_user)
+        r = self.client.get(url)
+        self.assertNotIn('backlog', [c['key'] for c in r.context['columns']])
+        self.assertNotContains(r, 'Week 2 #')
+
+    def test_start_button_only_on_its_week_or_all(self):
+        self.client.force_login(self.admin)
+        self.assertContains(self.board('all'), 'Start Week 2')
+        self.assertContains(self.board(self.week2.pk), 'Start Week 2')
+        self.assertNotContains(self.board(self.week3.pk), 'Start Week')
+
+    def test_admin_drags_backlog_to_todo_member_cannot(self):
+        url = reverse('task_status_update', args=[self.planned.pk])
+        self.client.force_login(self.dev_user)
+        self.client.post(url, {'status': 'todo'}, HTTP_X_REQUESTED_WITH='XMLHttpRequest')
+        self.planned.refresh_from_db()
+        self.assertEqual(self.planned.status, 'backlog')
+        self.client.force_login(self.admin)
+        r = self.client.post(url, {'status': 'todo'}, HTTP_X_REQUESTED_WITH='XMLHttpRequest')
+        self.assertEqual(r.json(), {'success': True})
+        self.client.post(url, {'status': 'backlog'}, HTTP_X_REQUESTED_WITH='XMLHttpRequest')
+        self.planned.refresh_from_db()
+        self.assertEqual(self.planned.status, 'backlog')

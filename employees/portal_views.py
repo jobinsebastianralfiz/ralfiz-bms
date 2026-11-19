@@ -805,7 +805,7 @@ def project_board(request, pk):
             next((sp for sp in sprints if sp.status == 'active'), None)
         week = str(sprint.pk) if sprint else 'all'
     if sprint:
-        tasks = tasks.filter(Q(sprint=sprint) | Q(sprint__isnull=True) | Q(status='backlog'))
+        tasks = tasks.filter(Q(sprint=sprint) | Q(sprint__isnull=True))
 
     mine_only = request.GET.get('mine') == '1'
     if mine_only:
@@ -830,7 +830,7 @@ def project_board(request, pk):
         'project': project, 'columns': columns, 'team': team, 'mine_only': mine_only, 'q': q,
         'is_lead': lead, 'sprints': sprints, 'sprint': sprint, 'week': week,
         'active_sprint': active,
-        'next_sprint': None if active else next((sp for sp in sprints if sp.status == 'planned'), None),
+        'next_sprint': _startable(sprints, active, sprint),
         # Only what the team needs: internal notes, money and files stay staff-only.
         'shared_notes': project.note_entries.filter(share_with_team=True).order_by('-pinned', '-updated_at'),
         'links': project.links.all(),
@@ -839,6 +839,13 @@ def project_board(request, pk):
         'mine_open': project.tasks.filter(assigned_to=member, status__in=('todo', 'in_progress', 'review')).count(),
     })
     return render(request, 'staff/project_board.html', ctx)
+
+
+def _startable(sprints, active, selected):
+    """The week a Start button is for: the next planned one, shown only when the
+    picker is on that week or on All weeks, and never while a week is running."""
+    nxt = None if active else next((sp for sp in sprints if sp.status == 'planned'), None)
+    return nxt if nxt and (selected is None or selected.pk == nxt.pk) else None
 
 
 def _lead_project(request, pk):

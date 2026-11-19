@@ -81,7 +81,7 @@
         </select>
       </form>
       {% if project.team_lead %}<span class="vk-lead"><i class="fas fa-user-tie"></i> Lead: {{ project.team_lead.name }}</span>{% endif %}
-      {% if not is_team_member %}
+      {% if can_plan %}
         {% if active_sprint %}
         <form method="post" action="{% url 'project_sprint_action' project.pk active_sprint.pk 'close' %}" class="vk-week-act" onsubmit="return confirm('Close {{ active_sprint.name|escapejs }}? Open cards move to the next week.');">
           {% csrf_token %}<input type="hidden" name="carry_over" value="next">
@@ -89,7 +89,7 @@
         </form>
         {% elif next_sprint %}
         <form method="post" action="{% url 'project_sprint_action' project.pk next_sprint.pk 'start' %}" class="vk-week-act" onsubmit="return confirm('Start {{ next_sprint.name|escapejs }}? Its backlog cards move to To Do and the team is notified.');">
-          {% csrf_token %}<button class="vk-btn dark" type="submit"><i class="fas fa-play"></i> Start {{ next_sprint.name }}</button>
+          {% csrf_token %}<button class="vk-btn dark" type="submit"><i class="fas fa-play"></i> Start {{ next_sprint.name }} <span class="vk-dates">· {{ next_sprint.start_date|date:"j M" }} – {{ next_sprint.end_date|date:"j M" }}</span></button>
         </form>
         {% endif %}
         <details class="vk-addweek">
@@ -134,16 +134,18 @@
     <div class="vk-board{% if has_backlog %} has-backlog{% endif %}">
       {% for col in columns %}
       <div class="vk-col{% if col.key == 'backlog' %} vk-col--backlog collapsed{% endif %}" data-status="{{ col.key }}">
-        {% if col.key == 'backlog' %}<button type="button" class="vk-backlog-toggle" aria-expanded="false" title="Show or hide the backlog"><i class="fas fa-box-archive"></i> <span>Backlog · {{ col.tasks|length }}</span></button>{% endif %}
+        {% if col.key == 'backlog' %}<button type="button" class="vk-backlog-toggle" aria-expanded="false" title="Show the backlog"><i class="fas fa-angles-right"></i> <span>Backlog · {{ col.tasks|length }}</span></button>{% endif %}
         <div class="vk-col-head">
           {% if col.key == 'completed' %}<span class="vk-pie completed"><i class="fas fa-check"></i></span>{% else %}<span class="vk-pie {{ col.key }}"></span>{% endif %}
           {{ col.label }} <span class="vk-count">{{ col.tasks|length }}</span>
+          {% if col.key == 'backlog' %}<button type="button" class="vk-backlog-hide" title="Collapse the backlog" aria-label="Collapse the backlog"><i class="fas fa-angles-left"></i></button>{% endif %}
           {% if not is_team_member %}
           <a class="vk-add" href="{% url 'task_create' %}?next=board&status={{ col.key }}{% if project %}&project={{ project.pk }}{% endif %}" aria-label="Add a task to {{ col.label }}"><i class="fas fa-plus"></i></a>
           {% endif %}
         </div>
 
         {% for task in col.tasks %}
+        {% if col.key == 'backlog' and week == 'all' %}{% ifchanged task.sprint_id %}<div class="vk-week-group">{% if task.sprint %}{{ task.sprint.label }}{% else %}No week yet{% endif %}</div>{% endifchanged %}{% endif %}
         {% include "tasks/_board_card.html" %}
         {% endfor %}
         <div class="vk-empty">{% if filters_on %}No matching tasks{% else %}Drop a task here{% endif %}</div>
@@ -172,9 +174,14 @@
 .vk-board.has-backlog .vk-stats { gap: 8px; }
 .vk-board.has-backlog .vk-stats span { white-space: nowrap; }
 .vk-col--backlog:not(.collapsed) .vk-backlog-toggle { display: none; }
-.vk-col--backlog .vk-col-head, .vk-col--backlog > :first-child + * { cursor: pointer; }
+.vk-backlog-hide { margin-left:auto; border:0; background:none; cursor:pointer; color:var(--text-muted, #64748b); padding:4px 6px; border-radius:6px; }
+.vk-backlog-hide:hover { background:rgba(100,116,139,.12); }
+.vk-week-group { font-size:11.5px; font-weight:700; letter-spacing:.04em; text-transform:uppercase; color:var(--text-muted, #64748b); padding:6px 2px 0; }
+.vk-dates { font-weight:500; opacity:.8; }
 .vk-col--backlog { background: repeating-linear-gradient(135deg, rgba(148,163,184,.08) 0 10px, rgba(148,163,184,.14) 10px 20px); }
-.vk-col--backlog.collapsed { padding:12px 6px; align-items:center; }
+.vk-col--backlog.collapsed { padding:0; align-items:stretch; }
+.vk-col--backlog.collapsed .vk-backlog-toggle { flex:1; width:100%; justify-content:flex-end; padding:14px 0; }
+.vk-col--backlog.collapsed:hover { background-color: rgba(59,130,246,.06); }
 .vk-col--backlog.collapsed > :not(.vk-backlog-toggle) { display:none; }
 .vk-backlog-toggle { display:flex; align-items:center; gap:8px; border:0; background:none; cursor:pointer; font:inherit; font-weight:700; color:var(--text-muted, #64748b); padding:2px 4px; }
 .vk-col--backlog.collapsed .vk-backlog-toggle { writing-mode:vertical-rl; transform:rotate(180deg); }
@@ -212,16 +219,14 @@
   var bl = document.querySelector('.vk-col--backlog');
   if (bl) {
     var openBl = false;
-    try { openBl = localStorage.getItem('bms.board.backlog') === 'open'; } catch (e) {}
+    try { openBl = localStorage.getItem('bms.board.backlog') !== 'closed'; } catch (e) { openBl = true; }
     var setBl = function (open) {
       bl.classList.toggle('collapsed', !open);
       bl.parentNode.classList.toggle('backlog-open', open);
       bl.querySelector('.vk-backlog-toggle').setAttribute('aria-expanded', open ? 'true' : 'false');
     };
     setBl(openBl);
-    var head = bl.querySelector('.vk-backlog-toggle').nextElementSibling;
-    if (head) head.addEventListener('click', function (e) {
-      if (e.target.closest('a,button')) return;
+    bl.querySelector('.vk-backlog-hide').addEventListener('click', function () {
       setBl(false); try { localStorage.setItem('bms.board.backlog', 'closed'); } catch (err) {}
     });
     bl.querySelector('.vk-backlog-toggle').addEventListener('click', function () {
@@ -244,7 +249,7 @@
   });
   function recount() {
     document.querySelectorAll('.vk-col').forEach(function (col) {
-      col.querySelector('.vk-count').textContent = col.querySelectorAll('.vk-card').length;
+      var c = col.querySelector('.vk-count'); if (c) c.textContent = col.querySelectorAll('.vk-card').length;
     });
   }
   document.querySelectorAll('.vk-col').forEach(function (col) {

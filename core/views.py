@@ -6231,9 +6231,10 @@ def task_board(request):
         open_issue_total=Count('issues', filter=Q(issues__status__in=['open', 'in_progress']), distinct=True),
     )
     from .task_rules import visible_to
+    base_tasks = tasks
     if team_member:
         tasks = visible_to(tasks.filter(assigned_to=team_member), member=team_member)
-        projects = Project.objects.filter(tasks__assigned_to=team_member).distinct()
+        projects = Project.objects.filter(Q(tasks__assigned_to=team_member) | Q(team_lead=team_member)).distinct()
     else:
         projects = _task_form_projects(project_id)
     projects = projects.annotate(
@@ -6247,6 +6248,9 @@ def task_board(request):
         if project is None:
             project_id = ''
         else:
+            if team_member and project.team_lead_id == team_member.pk:
+                # The lead plans the whole board: every card, backlog included.
+                tasks = visible_to(base_tasks, member=team_member)
             tasks = tasks.filter(project=project)
             # Weeks: default to the running week; "all" shows every card.
             sprints = list(project.sprints.all())
@@ -6255,8 +6259,9 @@ def task_board(request):
                     next((sp for sp in sprints if sp.status == 'active'), None)
                 week = str(sprint.pk) if sprint else 'all'
             if sprint:
-                # The week's cards, cards nobody has put in a week, and the whole backlog.
-                tasks = tasks.filter(Q(sprint=sprint) | Q(sprint__isnull=True) | Q(status='backlog'))
+                # The week's cards plus cards nobody has put in a week. Counts and
+                # lists come from this one queryset, so they always match.
+                tasks = tasks.filter(Q(sprint=sprint) | Q(sprint__isnull=True))
 
     # Filter options come from the unfiltered set, so they never vanish.
     assignees = TeamMember.objects.filter(pk__in=tasks.values('assigned_to')).order_by('name')
@@ -6277,10 +6282,14 @@ def task_board(request):
     else:
         assignee = ''
 
-    show_backlog = project is not None and team_member is None
+    is_board_lead = bool(project and team_member and project.team_lead_id == team_member.pk)
+    show_backlog = project is not None and (team_member is None or is_board_lead)
     tasks, columns = board_columns(tasks, include_backlog=show_backlog)
     active_sprint = next((sp for sp in sprints if sp.status == 'active'), None)
     next_sprint = None if active_sprint else next((sp for sp in sprints if sp.status == 'planned'), None)
+    # Start Week N only on that week or on All weeks.
+    if next_sprint and sprint and sprint.pk != next_sprint.pk:
+        next_sprint = None
 
     if project:
         team = list(project.team_members.all()[:6])
@@ -6314,6 +6323,7 @@ def task_board(request):
         'active_sprint': active_sprint,
         'next_sprint': next_sprint,
         'has_backlog': show_backlog,
+        'can_plan': show_backlog,
     }
     return render(request, 'tasks/board.html', context)
 
@@ -6794,8 +6804,10 @@ def _board_url(project, sprint=None):
     return url + (f'&week={sprint.pk}' if sprint else '')
 
 
-def _week_admin_only(request):
-    return getattr(request.user, 'team_profile', None) is None
+def _week_admin_only(request, project=None):
+    """Admins, or the project's team lead, may plan weeks from the board."""
+    member = getattr(request.user, 'team_profile', None)
+    return member is None or (project is not None and project.team_lead_id == member.pk)
 
 
 @login_required
@@ -6804,7 +6816,7 @@ def project_sprint_create(request, pk):
     from datetime import date as _date
     from .task_rules import TaskRuleError, create_sprint
     project = get_object_or_404(Project, pk=pk)
-    if request.method == 'POST' and _week_admin_only(request):
+    if request.method == 'POST' and _week_admin_only(request, project):
         try:
             start = _date.fromisoformat(request.POST.get('start_date', ''))
             end = _date.fromisoformat(request.POST.get('end_date', ''))
@@ -6824,7 +6836,7 @@ def project_sprint_action(request, pk, sprint_id, action):
     from .task_rules import TaskRuleError, close_sprint, start_sprint
     from .models import ProjectSprint
     sprint = get_object_or_404(ProjectSprint.objects.select_related('project'), pk=sprint_id, project_id=pk)
-    if request.method == 'POST' and _week_admin_only(request):
+    if request.method == 'POST' and _week_admin_only(request, sprint.project):
         try:
             if action == 'start':
                 result = start_sprint(sprint, request.user)
