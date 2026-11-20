@@ -14,8 +14,5 @@
   {% if project.description %}<p style="margin:.8rem 0 0; white-space:pre-line">{{ project.description }}</p>{% endif %}
   {% if project.notes %}<p class="bp-muted" style="margin:.6rem 0 0; white-space:pre-line">{{ project.notes }}</p>{% endif %}
 </section>
-{% include 'bizpartners/_issues.html' with staff=False %}
-{% include 'bizpartners/_ledgers.html' with staff=False %}
-{% include 'bizpartners/_access.html' with staff=False %}
-{% include 'bizpartners/_updates.html' with staff=False %}
+{% include 'bizpartners/_project_tabs.html' with staff=False %}
 {% endblock %}

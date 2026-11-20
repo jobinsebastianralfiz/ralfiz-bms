@@ -1,7 +1,7 @@
 {% extends 'base.html' %}
 {% load static %}
 {% block title %}{{ project.title }} - Business Partners{% endblock %}
-{% block extra_css %}<link rel="stylesheet" href="{% static 'css/bizpartners.css' %}?v=6">{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'css/bizpartners.css' %}?v=7">{% endblock %}
 {% block content %}
 <div class="page-header">
   <div>
@@ -20,8 +20,5 @@
   {% if project.notes %}<p class="text-muted" style="margin:.5rem 0 0; white-space:pre-line"><strong>For the partner:</strong> {{ project.notes }}</p>{% endif %}
   {% if project.internal_notes %}<p class="text-muted" style="margin:.5rem 0 0; white-space:pre-line"><strong>Internal:</strong> {{ project.internal_notes }}</p>{% endif %}
 </div></div>
-{% include 'bizpartners/_issues.html' with staff=True %}
-{% include 'bizpartners/_ledgers.html' with staff=True %}
-{% include 'bizpartners/_access.html' with staff=True %}
-{% include 'bizpartners/_updates.html' with staff=True %}
+{% include 'bizpartners/_project_tabs.html' with staff=True %}
 {% endblock %}

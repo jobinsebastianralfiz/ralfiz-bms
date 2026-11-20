@@ -127,11 +127,12 @@
 .ji-sheet .n { width: 2.6rem; text-align: right; font-variant-numeric: tabular-nums; color: var(--text-muted, #6b7280); }
 .ji-sheet .w { min-width: 140px; }
 .ji-sheet .w2 { min-width: 110px; }
-.ji-sheet .src { color: var(--text-muted, #6b7280); min-width: 70px; }
+.ji-sheet .src { color: #4b5563; min-width: 70px; font-size: .78rem; }
 .ji-sheet .st { white-space: nowrap; }
 .ji-sheet .ji-tick { width: 2rem; text-align: center; }
 .ji-pre { white-space: pre-line; }
-.ji-sheet tr.is-done td:not(.st) { opacity: .55; }
+.ji-sheet tr.is-done td:not(.st):not(.ji-tick):not(.ji-acts) { color: #6b7280; }
+.ji-sheet tr.is-done td strong { font-weight: 600; }
 .ji-badge { display: inline-block; padding: .15rem .55rem; border-radius: 6px; font-size: .74rem; font-weight: 700; }
 .ji-badge.done { background: #dcfce7; color: #166534; }
 .ji-badge.open { background: #fee2e2; color: #991b1b; }
@@ -156,9 +157,6 @@
 .ji-acts form { display: inline; }
 .ji-icon { background: none; border: 0; padding: .2rem .35rem; color: var(--text-muted, #6b7280); cursor: pointer; }
 .ji-icon:hover { color: #1f3a5f; } .ji-icon.danger:hover { color: #dc2626; }
-.ji-edit-row td { background: #f8fafc !important; }
-.ji-edit-row form { display: grid; gap: .6rem; max-width: 900px; }
-.ji-edit-row form > button { justify-self: start; }
 
 .ji-notice { background: #fffbeb; border: 1px solid #fde68a; color: #92400e; border-radius: 10px; padding: .6rem .8rem; font-size: .85rem; margin-bottom: .8rem; }
 .ji-review-table { min-width: 900px; }
@@ -176,7 +174,6 @@
 .ji select.form-select, .ji input.form-control, .ji textarea.form-control { padding: .45rem .7rem; border: 1px solid var(--border-color, #e5e7eb); border-radius: 10px; background-color: #fff; color: inherit; }
 
 /* Issue sheet scrolling (see .ji-sheet-wrap above). */
-.pp-main .ji { --ji-sticky-top: 0px; }
 .ji-sheet th:first-child { border-top-left-radius: inherit; }
 .ji-sheet .w { overflow-wrap: anywhere; }
 /* Set by _issues.html when the table is wider than its box: scroll sideways there instead of
@@ -209,9 +206,46 @@
   .ji-sheet tr.ji-row-i > .src { grid-area: src; margin-top: .4rem; font-size: .72rem; }
   .ji-sheet tr.ji-row-i > .st { grid-area: st; text-align: right; }
   .ji-sheet tr.ji-row-i > .ji-acts { grid-area: acts; margin-top: .3rem; text-align: right; }
-  .ji-sheet tr.ji-row-i.is-done > td:not(.st) { opacity: .6; }
-  .ji-sheet:not(.ji-review-table) tr.ji-edit-row, .ji-sheet:not(.ji-review-table) tr.ji-edit-row > td { display: block; }
-  .ji-sheet:not(.ji-review-table) tr.ji-edit-row[hidden] { display: none; }
-  .ji-sheet:not(.ji-review-table) tr.ji-edit-row > td { padding: .8rem .9rem; border-bottom: 1px solid #e5e7eb; }
-  .ji-sheet:not(.ji-review-table) tbody > tr:not(.ji-row-i):not(.ji-edit-row) > td { display: block; padding: .8rem .9rem; }
+  .ji-sheet:not(.ji-review-table) tbody > tr:not(.ji-row-i) > td { display: block; padding: .8rem .9rem; }
+}
+
+/* Edit an issue in a modal (native <dialog>: Esc closes it, focus stays inside). */
+.ji-modal { position: fixed; inset: 0; margin: auto; border: 0; padding: 0; border-radius: 16px; width: min(720px, calc(100vw - 2rem)); max-height: calc(100vh - 2rem);
+  box-shadow: 0 24px 60px -20px rgba(15, 23, 42, .45); color: inherit; background: #fff; overflow: hidden; }
+.ji-modal::backdrop { background: rgba(15, 23, 42, .45); }
+.ji-modal form { display: flex; flex-direction: column; max-height: calc(100vh - 2rem); }
+.ji-modal-head { display: flex; justify-content: space-between; align-items: center; gap: .5rem; padding: .85rem 1.1rem; border-bottom: 1px solid #e5e7eb; }
+.ji-modal-head h3 { font-size: 1rem; font-weight: 700; margin: 0; }
+.ji-modal-body { display: grid; gap: .6rem; padding: 1rem 1.1rem; overflow-y: auto; overscroll-behavior: contain; }
+.ji-modal-foot { display: flex; justify-content: flex-end; gap: .5rem; padding: .75rem 1.1rem; border-top: 1px solid #e5e7eb; background: #f8fafc; }
+html:has(dialog.ji-modal[open]) { overflow: hidden; }
+@media (max-width: 600px) {
+  .ji-modal { width: 100vw; max-width: 100vw; height: 100dvh; max-height: 100dvh; margin: 0; border-radius: 0; }
+  .ji-modal form { height: 100%; max-height: 100dvh; }
+  .ji-modal-body { flex: 1; }
+}
+
+/* Joint-project page: Issues / Money / Access / Updates tabs (_project_tabs.html). */
+.bp-tabs { display: flex; gap: .25rem; overflow-x: auto; scrollbar-width: none; border-bottom: 1px solid var(--border-color, #e5e7eb); margin: .25rem 0 1.1rem; }
+.bp-tabs::-webkit-scrollbar { display: none; }
+.bp-tabs[hidden] { display: none; }
+.bp-tabs button { display: inline-flex; align-items: center; gap: .45rem; flex: none; background: none; border: 0; border-bottom: 2px solid transparent; margin-bottom: -1px;
+  padding: .65rem .9rem; font: inherit; font-weight: 600; font-size: .9rem; color: var(--text-muted, #6b7280); cursor: pointer; white-space: nowrap; }
+.bp-tabs button:hover { color: inherit; }
+.bp-tabs button.active { color: #1f3a5f; border-bottom-color: #1f3a5f; }
+.bp-tabs button:focus-visible { outline: 2px solid #1f3a5f; outline-offset: -2px; border-radius: 6px; }
+.pp-main .bp-tabs button.active { color: var(--pp-ink, #1e1b2e); border-bottom-color: var(--pp-ink, #1e1b2e); }
+.bp-tab-count { font-size: .72rem; font-weight: 700; padding: .05rem .45rem; border-radius: 999px; background: #eef2f7; color: #475569; }
+.bp-tab-count.open { background: #fee2e2; color: #991b1b; }
+.bp-tabs-wrap.is-tabbed .bp-tabpanel[hidden] { display: none; }
+.bp-tabs-wrap.is-tabbed .bp-tabpanel > .bp-section:first-child, .bp-tabs-wrap.is-tabbed .bp-tabpanel > .ji:first-child { margin-top: 0; }
+.bp-tabpanel + .bp-tabpanel { margin-top: 1.5rem; }
+.bp-tabs-wrap.is-tabbed .bp-tabpanel + .bp-tabpanel { margin-top: 0; }
+/* The sheet's header row sticks a little below the top edge in the partner portal. */
+.pp-main .ji { --ji-sticky-top: 8px; }
+.ji-sheet th { box-shadow: 0 1px 0 #2d4d78; }
+@media (max-width: 640px) {
+  .ji-chips { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; padding-bottom: .1rem; margin-right: -1rem; padding-right: 1rem; }
+  .ji-chips::-webkit-scrollbar { display: none; }
+  .ji-chip { flex: none; }
 }

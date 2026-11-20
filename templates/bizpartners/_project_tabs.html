@@ -1,0 +1,89 @@
+{% comment %}The body of a joint-project page as tabs: Issues, Money, Access, Updates.
+Used by the staff page and the partner portal. Needs: staff (bool), plus what each section needs.
+Without JavaScript every panel shows, one under the other. Links to #quotes, #payments, #expenses,
+#access, #updates or #issues open the tab that holds them.{% endcomment %}
+<div class="bp-tabs-wrap" data-bp-tabs data-default="{% if issue_summary.open %}issues{% else %}money{% endif %}">
+  <nav class="bp-tabs" role="tablist" aria-label="Project sections" hidden>
+    <button type="button" role="tab" id="bpTab-issues" aria-controls="bpPanel-issues" data-bp-tab="issues">
+      <i class="fas fa-list-check"></i> Issues
+      {% if issue_summary.open %}<span class="bp-tab-count open">{{ issue_summary.open }} open</span>{% elif issue_summary.total %}<span class="bp-tab-count">{{ issue_summary.total }}</span>{% endif %}
+    </button>
+    <button type="button" role="tab" id="bpTab-money" aria-controls="bpPanel-money" data-bp-tab="money">
+      <i class="fas fa-coins"></i> Money
+    </button>
+    <button type="button" role="tab" id="bpTab-access" aria-controls="bpPanel-access" data-bp-tab="access">
+      <i class="fas fa-key"></i> Access{% if credentials %} <span class="bp-tab-count">{{ credentials|length }}</span>{% endif %}
+    </button>
+    <button type="button" role="tab" id="bpTab-updates" aria-controls="bpPanel-updates" data-bp-tab="updates">
+      <i class="far fa-comments"></i> Updates{% if updates %} <span class="bp-tab-count">{{ updates|length }}</span>{% endif %}
+    </button>
+  </nav>
+
+  <div class="bp-tabpanel" role="tabpanel" id="bpPanel-issues" aria-labelledby="bpTab-issues" data-bp-panel="issues">
+    {% include 'bizpartners/_issues.html' %}
+  </div>
+  <div class="bp-tabpanel" role="tabpanel" id="bpPanel-money" aria-labelledby="bpTab-money" data-bp-panel="money">
+    {% include 'bizpartners/_ledgers.html' %}
+  </div>
+  <div class="bp-tabpanel" role="tabpanel" id="bpPanel-access" aria-labelledby="bpTab-access" data-bp-panel="access">
+    {% include 'bizpartners/_access.html' %}
+  </div>
+  <div class="bp-tabpanel" role="tabpanel" id="bpPanel-updates" aria-labelledby="bpTab-updates" data-bp-panel="updates">
+    {% include 'bizpartners/_updates.html' %}
+  </div>
+</div>
+<script>
+(function () {
+  var wrap = document.querySelector('[data-bp-tabs]');
+  if (!wrap || wrap.dataset.ready) return;
+  wrap.dataset.ready = '1';
+  var nav = wrap.querySelector('.bp-tabs'), tabs = wrap.querySelectorAll('[data-bp-tab]'),
+      panels = wrap.querySelectorAll('[data-bp-panel]');
+  nav.hidden = false;
+  wrap.classList.add('is-tabbed');
+
+  function show(name, focus) {
+    tabs.forEach(function (t) {
+      var on = t.dataset.bpTab === name;
+      t.classList.toggle('active', on);
+      t.setAttribute('aria-selected', String(on));
+      t.tabIndex = on ? 0 : -1;
+      if (on && focus) t.focus();
+    });
+    panels.forEach(function (p) { p.hidden = p.dataset.bpPanel !== name; });
+    window.dispatchEvent(new Event('resize'));  // let the issue sheet re-measure its width
+  }
+  // Which tab a #hash belongs to: a tab name, or any element inside a panel (#quotes, #updates...).
+  function tabFor(hash) {
+    var id = (hash || '').replace(/^#/, '');
+    if (!id) return null;
+    if (wrap.querySelector('[data-bp-panel="' + id + '"]')) return id;
+    var el = document.getElementById(id), panel = el && el.closest('[data-bp-panel]');
+    return panel ? panel.dataset.bpPanel : null;
+  }
+
+  var start = tabFor(location.hash);
+  show(start || wrap.dataset.default);
+  if (start && location.hash.slice(1) !== start) {
+    var target = document.getElementById(location.hash.slice(1));
+    if (target) setTimeout(function () { target.scrollIntoView(); }, 0);
+  }
+
+  nav.addEventListener('click', function (e) {
+    var t = e.target.closest('[data-bp-tab]');
+    if (!t) return;
+    show(t.dataset.bpTab);
+    history.replaceState(null, '', location.pathname + location.search + '#' + t.dataset.bpTab);
+  });
+  nav.addEventListener('keydown', function (e) {
+    if (e.key !== 'ArrowRight' && e.key !== 'ArrowLeft') return;
+    var list = Array.prototype.slice.call(tabs), i = list.indexOf(document.activeElement);
+    if (i < 0) return;
+    var next = list[(i + (e.key === 'ArrowRight' ? 1 : list.length - 1)) % list.length];
+    show(next.dataset.bpTab, true);
+    history.replaceState(null, '', location.pathname + location.search + '#' + next.dataset.bpTab);
+    e.preventDefault();
+  });
+  window.addEventListener('hashchange', function () { var n = tabFor(location.hash); if (n) show(n); });
+})();
+</script>

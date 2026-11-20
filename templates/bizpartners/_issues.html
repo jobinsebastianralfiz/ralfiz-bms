@@ -158,16 +158,6 @@ issues, issue_summary, issue_pages, issue_filters, issue_filtered, issue_preview
         </td>
         {% endif %}
       </tr>
-      {% if staff %}
-      <tr class="ji-edit-row" id="jiEdit{{ i.pk }}" hidden><td colspan="10">
-        <form method="post" enctype="multipart/form-data" action="{% url 'bizpartners:issue_save' project.pk i.pk %}">
-          {% csrf_token %}<input type="hidden" name="next" value="{{ request.get_full_path }}#issues">
-          {% include 'bizpartners/_issue_fields.html' with issue=i %}
-          <button type="submit" class="btn btn-sm btn-primary">Save #{{ i.number }}</button>
-          <button type="button" class="btn btn-sm btn-outline-secondary" data-ji-edit="{{ i.pk }}">Cancel</button>
-        </form>
-      </td></tr>
-      {% endif %}
       {% empty %}
       <tr><td colspan="10" class="bp-muted">No issues match. <a href="?#issues">Show all</a></td></tr>
       {% endfor %}
@@ -177,6 +167,26 @@ issues, issue_summary, issue_pages, issue_filters, issue_filtered, issue_preview
     <button type="button" class="ji-showall" data-ji-more>Show all {{ issues|length }} issues</button>
     {% endif %}
   </div>
+
+  {% if staff %}
+  {# Edit form for each issue, opened as a modal by the pencil button. #}
+  {% for i in issues %}
+  <dialog class="ji-modal" id="jiEdit{{ i.pk }}" aria-labelledby="jiEditTitle{{ i.pk }}">
+    <form method="post" enctype="multipart/form-data" action="{% url 'bizpartners:issue_save' project.pk i.pk %}">
+      {% csrf_token %}<input type="hidden" name="next" value="{{ request.get_full_path }}#issues">
+      <div class="ji-modal-head">
+        <h3 id="jiEditTitle{{ i.pk }}">Edit issue #{{ i.number }}</h3>
+        <button type="button" class="ji-icon" data-ji-close aria-label="Close"><i class="fas fa-times"></i></button>
+      </div>
+      <div class="ji-modal-body">{% include 'bizpartners/_issue_fields.html' with issue=i %}</div>
+      <div class="ji-modal-foot">
+        <button type="button" class="btn btn-outline-secondary" data-ji-close>Cancel</button>
+        <button type="submit" class="btn btn-primary"><i class="fas fa-check"></i> Save #{{ i.number }}</button>
+      </div>
+    </form>
+  </dialog>
+  {% endfor %}
+  {% endif %}
   {% endif %}
 </div>
 {% endwith %}
@@ -201,10 +211,21 @@ issues, issue_summary, issue_pages, issue_filters, issue_filtered, issue_preview
       box.querySelectorAll('.ji-more').forEach(function (r) { r.hidden = false; });
       t.remove();
     } else if ((t = e.target.closest('[data-ji-edit]'))) {
-      var row = document.getElementById('jiEdit' + t.dataset.jiEdit);
-      if (row) row.hidden = !row.hidden;
+      var dlg = document.getElementById('jiEdit' + t.dataset.jiEdit);
+      if (dlg && dlg.showModal) { dlg.showModal(); var f = dlg.querySelector('textarea[name=title]'); if (f) f.focus(); }
+    } else if ((t = e.target.closest('[data-ji-close]'))) {
+      t.closest('dialog').close();
+    } else if (e.target.matches && e.target.matches('dialog.ji-modal')) {
+      e.target.close();  // a click on the dark backdrop
     }
   });
+  // Cancel or Esc throws the unsaved changes away, so the next open starts from the saved issue.
+  box.addEventListener('close', function (e) {
+    if (!e.target.matches || !e.target.matches('dialog.ji-modal')) return;
+    var form = e.target.querySelector('form');
+    if (form) form.reset();
+    e.target.querySelectorAll('[data-ji-paste-list]').forEach(function (l) { l.innerHTML = ''; l.hidden = true; });
+  }, true);
 
   // Pictures: pasted screenshots join the files already chosen in that form.
   function addFiles(input, files) {
@@ -305,7 +326,7 @@ issues, issue_summary, issue_pages, issue_filters, issue_filtered, issue_preview
   if (window.ResizeObserver) new ResizeObserver(fit).observe(wrap.parentNode);
   else window.addEventListener('resize', fit);
   document.getElementById('issues').addEventListener('click', function (e) {
-    if (e.target.closest('[data-ji-more],[data-ji-edit]')) setTimeout(fit, 0);
+    if (e.target.closest('[data-ji-more]')) setTimeout(fit, 0);
   });
 })();
 </script>

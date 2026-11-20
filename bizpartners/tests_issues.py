@@ -361,3 +361,31 @@ class ProgressAndPictureTests(Base):
         self.assertContains(r, 'notes.png (not a picture)')
         r = self.client.get(reverse('bizpartners_portal:project', args=[self.project.pk]))
         self.assertContains(r, issue.images.first().image.url)
+
+
+class LayoutTests(Base):
+    """The project page is tabbed, and staff edit an issue in a modal."""
+
+    def test_partner_page_has_tabs_with_open_count(self):
+        self.issue('Open one')
+        self.client.force_login(self.user)
+        r = self.client.get(reverse('bizpartners_portal:project', args=[self.project.pk]))
+        for name in ('issues', 'money', 'access', 'updates'):
+            self.assertContains(r, f'data-bp-panel="{name}"')
+        self.assertContains(r, 'data-default="issues"')
+        self.assertContains(r, '1 open</span>')
+        self.assertContains(r, 'id="quotes"')  # old #quotes links still find their section
+
+    def test_money_tab_first_when_nothing_open(self):
+        self.client.force_login(self.user)
+        r = self.client.get(reverse('bizpartners_portal:project', args=[self.project.pk]))
+        self.assertContains(r, 'data-default="money"')
+
+    def test_staff_edit_is_a_modal(self):
+        issue = self.issue('Fix logo')
+        self.client.force_login(User.objects.create_superuser('boss2', 'b2@x.in', 'pass12345'))
+        r = self.client.get(reverse('bizpartners:project', args=[self.project.pk]))
+        self.assertContains(r, f'<dialog class="ji-modal" id="jiEdit{issue.pk}"')
+        self.assertContains(r, 'enctype="multipart/form-data" action="%s"'
+                            % reverse('bizpartners:issue_save', args=[self.project.pk, issue.pk]))
+        self.assertNotContains(r, 'ji-edit-row')
