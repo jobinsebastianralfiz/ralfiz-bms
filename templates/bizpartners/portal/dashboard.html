@@ -132,7 +132,9 @@
 {% block aside %}
 {% with cur=partner.currency %}
 <aside class="pp-cal" aria-label="Calendar">
-  <div class="pp-cal-head"><h2>Calendar</h2><span><i class="far fa-bell"></i></span></div>
+  <div class="pp-cal-head"><h2>Calendar</h2>
+    <button type="button" class="pp-bell" id="ppBell" aria-haspopup="true" aria-expanded="false" title="Updates from Ralfiz"><i class="far fa-bell"></i></button>
+  </div>
 
   <div class="pp-cal-group">Coming up</div>
   {% for day in upcoming %}
@@ -168,4 +170,5 @@
   <p class="pp-cal-empty" style="font-size:11px">Amounts in {{ cur }}.</p>
 </aside>
 {% endwith %}
+{% include 'bizpartners/portal/_bell.html' %}
 {% endblock %}

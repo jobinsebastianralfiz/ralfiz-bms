@@ -5,14 +5,15 @@ from django.contrib import messages
 from django.contrib.auth import authenticate, login, logout, update_session_auth_hash
 from django.contrib.auth.forms import PasswordChangeForm
 from django.db.models import Count, Q
-from django.http import Http404
+from django.http import Http404, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils import timezone
+from django.utils.dateparse import parse_datetime
 from django.views.decorators.cache import never_cache
 
 from .forms import JointUpdateForm
-from .models import BusinessPartner, JointPayment, JointProject, JointQuote
+from .models import BusinessPartner, JointIssue, JointPayment, JointProject, JointQuote, JointUpdate
 from .views import ITEMS, send_item_file
 
 
@@ -233,3 +234,52 @@ def change_password(request):
         messages.success(request, 'Password changed.')
         return redirect('bizpartners_portal:dashboard')
     return render(request, 'bizpartners/portal/password.html', _ctx(request, 'password', form=form))
+
+
+# Payment kinds as the partner reads them.
+YOUR_KIND = {'partner_to_ralfiz': 'You paid Ralfiz', 'ralfiz_to_partner': 'Ralfiz paid you',
+             'client_to_ralfiz': 'Client paid Ralfiz', 'client_to_partner': 'Client paid you'}
+
+
+@partner_required
+def alerts(request):
+    """What Ralfiz did since the partner last opened the bell: issues done, messages, payments.
+
+    `seen` comes from the browser; a first visit looks back a week so the bell isn't empty
+    on day one. Things the partner did themselves never count.
+    """
+    from .templatetags.sar import sar
+    now = timezone.now()
+    seen = parse_datetime(request.GET.get('seen') or '') or now - timezone.timedelta(days=7)
+    seen = max(seen, now - timezone.timedelta(days=60))
+    me, items = request.user, []
+
+    def url(project_id, anchor):
+        return reverse('bizpartners_portal:project', args=[project_id]) + '#' + anchor
+
+    done = (JointIssue.objects.filter(project__partner=request.partner, is_done=True, done_at__gt=seen)
+            .exclude(done_by=me).select_related('project').order_by('-done_at'))
+    groups = {}
+    for i in done[:300]:
+        g = groups.setdefault(i.project_id, {'kind': 'done', 'at': i.done_at.isoformat(), 'count': 0,
+                                             'project': i.project.title, 'url': url(i.project_id, 'issues'),
+                                             'detail': i.title[:140]})
+        g['count'] += 1
+    for g in groups.values():
+        g['title'] = f"Ralfiz marked {g['count']} issue{'s' if g['count'] != 1 else ''} done"
+        items.append(g)
+
+    for u in (JointUpdate.objects.filter(project__partner=request.partner, from_partner=False, created_at__gt=seen)
+              .exclude(author=me).select_related('project').order_by('-created_at')[:20]):
+        items.append({'kind': 'message', 'at': u.created_at.isoformat(), 'count': 1, 'title': 'New message from Ralfiz',
+                      'project': u.project.title, 'url': url(u.project_id, 'updates'), 'detail': u.message[:140]})
+
+    for p in (JointPayment.objects.filter(project__partner=request.partner, created_at__gt=seen)
+              .select_related('project').order_by('-created_at')[:20]):
+        items.append({'kind': 'payment', 'at': p.created_at.isoformat(), 'count': 1,
+                      'title': f'{YOUR_KIND.get(p.kind, p.get_kind_display())}: {request.partner.currency} {sar(p.amount)}',
+                      'project': p.project.title, 'url': url(p.project_id, 'payments'),
+                      'detail': p.payment_date.strftime('%d %b %Y')})
+
+    items.sort(key=lambda r: r['at'], reverse=True)
+    return JsonResponse({'now': now.isoformat(), 'count': sum(i['count'] for i in items), 'items': items[:12]})

@@ -1,4 +1,5 @@
-{% comment %}Chime + note on every staff page when a business partner adds issues on any joint project.
+{% comment %}Chime + note on every staff page when a business partner adds issues on any joint project,
+and a count on the navbar bell (#navBell) of partner issues not yet looked at; clicking it lists them.
 Checks bizpartners:issue_alerts every 30 seconds. One open tab chimes; the others stay quiet.
 Browsers only play sound after the person has clicked or typed on the page once.{% endcomment %}
 <div id="jiAlerts" class="ji-alerts" aria-live="polite"></div>
@@ -13,13 +14,22 @@ Browsers only play sound after the person has clicked or typed on the page once.
 .ji-alert-acts { display: flex; gap: .8rem; align-items: center; margin-top: .55rem; font-size: .82rem; }
 .ji-alert-acts a { font-weight: 600; }
 .ji-alert-acts button { background: none; border: 0; color: #6b7280; cursor: pointer; padding: 0; font: inherit; }
+.ji-bell-panel { position: fixed; z-index: 2001; width: min(340px, calc(100vw - 1.5rem)); background: #fff; border: 1px solid #e5e7eb; border-radius: 12px; box-shadow: 0 12px 32px rgba(15,23,42,.18); overflow: hidden; font-size: .88rem; }
+.ji-bell-panel h4 { font-size: .85rem; font-weight: 700; margin: 0; padding: .7rem .9rem; border-bottom: 1px solid #eef2f7; }
+.ji-bell-panel a.ji-bell-row { display: block; padding: .6rem .9rem; border-bottom: 1px solid #f1f5f9; color: inherit; text-decoration: none; }
+.ji-bell-panel a.ji-bell-row:hover { background: #f8fafc; }
+.ji-bell-panel .ji-bell-row strong { display: block; }
+.ji-bell-panel .ji-bell-row span { display: block; color: #6b7280; font-size: .8rem; }
+.ji-bell-panel .ji-bell-empty { padding: .9rem; color: #6b7280; }
+#navBell .badge { min-width: 18px; width: auto; padding: 0 4px; border-radius: 999px; font-weight: 700; }
 @keyframes jiAlertIn { from { transform: translateY(12px); opacity: 0; } }
 </style>
 <script>
 (function () {
   if (window.jiAlertsOn) return;
   window.jiAlertsOn = true;
-  var URL_ = "{% url 'bizpartners:issue_alerts' %}", KEY = 'jiAlertAfter', MUTE = 'jiAlertMute';
+  var URL_ = "{% url 'bizpartners:issue_alerts' %}", KEY = 'jiAlertAfter', MUTE = 'jiAlertMute', SEEN = 'jiBellSeen';
+  var bell = document.getElementById('navBell'), bellItems = [], lastNow = null, panel = null;
   var box = document.getElementById('jiAlerts'), ctx = null, unread = 0, baseTitle = document.title;
 
   // Sound needs one click or key press on the page first (browser rule).
@@ -66,12 +76,53 @@ Browsers only play sound after the person has clicked or typed on the page once.
   }
   function seen() { if (!box.children.length) { unread = 0; document.title = baseTitle; } }
 
+  // ---- Bell: count of partner issues since the list was last opened ----
+  function setBadge(n) {
+    if (!bell) return;
+    var b = bell.querySelector('.badge');
+    if (!n) { if (b) b.remove(); bell.title = 'Notifications'; return; }
+    if (!b) { b = el('span', 'badge'); bell.appendChild(b); }
+    b.textContent = n > 99 ? '99+' : String(n);
+    bell.title = n + ' new partner issue' + (n === 1 ? '' : 's');
+  }
+  function closePanel() { if (panel) { panel.remove(); panel = null; bell.setAttribute('aria-expanded', 'false'); } }
+  function openPanel() {
+    panel = el('div', 'ji-bell-panel');
+    panel.appendChild(el('h4', '', 'New issues from partners'));
+    if (!bellItems.length) panel.appendChild(el('div', 'ji-bell-empty', 'Nothing new. You will hear a chime when a partner adds issues.'));
+    bellItems.forEach(function (i) {
+      var a = el('a', 'ji-bell-row'); a.href = i.url;
+      a.appendChild(el('strong', '', i.partner + ': ' + i.count + ' new issue' + (i.count === 1 ? '' : 's')));
+      a.appendChild(el('span', '', i.project));
+      a.appendChild(el('span', '', '“' + i.title + '”'));
+      panel.appendChild(a);
+    });
+    var r = bell.getBoundingClientRect();
+    panel.style.top = (r.bottom + 6) + 'px';
+    panel.style.right = Math.max(8, window.innerWidth - r.right) + 'px';
+    document.body.appendChild(panel);
+    bell.setAttribute('aria-expanded', 'true');
+    // Opening the list counts as having seen them.
+    if (lastNow) localStorage.setItem(SEEN, lastNow);
+    setBadge(0);
+  }
+  if (bell) {
+    bell.addEventListener('click', function (e) { e.stopPropagation(); panel ? closePanel() : openPanel(); });
+    document.addEventListener('click', function (e) { if (panel && !panel.contains(e.target)) closePanel(); });
+    document.addEventListener('keydown', function (e) { if (e.key === 'Escape') closePanel(); });
+  }
+
   function check() {
-    var after = localStorage.getItem(KEY);
-    fetch(URL_ + (after ? '?after=' + encodeURIComponent(after) : ''), { credentials: 'same-origin', headers: { 'Accept': 'application/json' } })
+    var after = localStorage.getItem(KEY), seenAt = localStorage.getItem(SEEN), q = [];
+    if (after) q.push('after=' + encodeURIComponent(after));
+    if (seenAt) q.push('seen=' + encodeURIComponent(seenAt));
+    fetch(URL_ + (q.length ? '?' + q.join('&') : ''), { credentials: 'same-origin', headers: { 'Accept': 'application/json' } })
       .then(function (r) { return r.ok ? r.json() : null; })
       .then(function (d) {
         if (!d || !d.now) return;
+        lastNow = d.now;
+        if (!seenAt) localStorage.setItem(SEEN, d.now);
+        else if (localStorage.getItem(SEEN) === seenAt && !panel) { bellItems = d.bell.items; setBadge(d.bell.count); }
         if (localStorage.getItem(KEY) !== after) return;  // another tab already took this round
         localStorage.setItem(KEY, d.now);
         if (!after || !d.items.length) return;

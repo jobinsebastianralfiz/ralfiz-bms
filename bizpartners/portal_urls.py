@@ -15,6 +15,7 @@ urlpatterns = [
     path('projects/<uuid:pk>/issues/read/', iv.portal_issue_draft, name='issue_draft'),
     path('projects/<uuid:pk>/issues/add/', iv.portal_issue_add, name='issue_add'),
     path('projects/<uuid:project_pk>/<str:kind>/<uuid:pk>/file/', v.item_file, name='item_file'),
+    path('alerts/', v.alerts, name='alerts'),
     path('payments/', v.payments, name='payments'),
     path('quotes/', v.quotes, name='quotes'),
     path('password/', v.change_password, name='password'),

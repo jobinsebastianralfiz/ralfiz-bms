@@ -1,0 +1,72 @@
+{% comment %}The bell on the partner dashboard: a count of what Ralfiz did since the partner last
+opened it (issues marked done, messages, payments), and a list when clicked. Checks every minute.{% endcomment %}
+<style>
+.pp-bell { position: relative; width: 36px; height: 36px; border-radius: 12px; background: #fff; border: 0; display: inline-flex; align-items: center; justify-content: center; font-size: 14px; color: var(--pp-ink, #1e1b2e); cursor: pointer; }
+.pp-bell:hover { background: #f6efe8; }
+.pp-bell:focus-visible { outline: 2px solid var(--pp-ink, #1e1b2e); outline-offset: 2px; }
+.pp-bell .pp-bell-n { position: absolute; top: -5px; right: -5px; min-width: 18px; height: 18px; padding: 0 5px; border-radius: 999px; background: #dc2626; color: #fff; font-size: 10.5px; font-weight: 800; display: flex; align-items: center; justify-content: center; border: 2px solid #fbf6f1; }
+.pp-bell-panel { position: fixed; z-index: 50; width: min(330px, calc(100vw - 1.5rem)); max-height: min(70vh, 480px); overflow-y: auto; background: #fff; border-radius: 16px; box-shadow: 0 16px 40px rgba(30,27,46,.18); font-size: 13px; }
+.pp-bell-panel h4 { font-size: 13px; font-weight: 800; margin: 0; padding: 12px 14px; border-bottom: 1px solid #f1e8df; }
+.pp-bell-panel a { display: flex; gap: 10px; padding: 11px 14px; border-bottom: 1px solid #f6efe8; color: inherit; text-decoration: none; }
+.pp-bell-panel a:hover { background: #fbf6f1; }
+.pp-bell-panel a i { width: 28px; height: 28px; flex: none; border-radius: 9px; display: inline-flex; align-items: center; justify-content: center; font-size: 12px; }
+.pp-bell-panel a i.done { background: #dcfce7; color: #166534; } .pp-bell-panel a i.message { background: #ede9fe; color: #5b21b6; } .pp-bell-panel a i.payment { background: #e0f2fe; color: #075985; }
+.pp-bell-panel strong { display: block; font-size: 13px; }
+.pp-bell-panel span { display: block; color: var(--pp-muted, #8a8199); font-size: 12px; overflow-wrap: anywhere; }
+.pp-bell-panel .pp-bell-empty { padding: 16px 14px; color: var(--pp-muted, #8a8199); }
+</style>
+<script>
+(function () {
+  var bell = document.getElementById('ppBell');
+  if (!bell || bell.dataset.ready) return;
+  bell.dataset.ready = '1';
+  var URL_ = "{% url 'bizpartners_portal:alerts' %}", SEEN = 'ppBellSeen', items = [], lastNow = null, panel = null;
+  var ICON = { done: 'fas fa-check', message: 'far fa-comment', payment: 'fas fa-money-bill-transfer' };
+  function el(tag, cls, text) { var e = document.createElement(tag); if (cls) e.className = cls; if (text) e.textContent = text; return e; }
+  function badge(n) {
+    var b = bell.querySelector('.pp-bell-n');
+    if (!n) { if (b) b.remove(); bell.title = 'Updates from Ralfiz'; return; }
+    if (!b) { b = el('span', 'pp-bell-n'); bell.appendChild(b); }
+    b.textContent = n > 99 ? '99+' : String(n);
+    bell.title = n + ' new update' + (n === 1 ? '' : 's') + ' from Ralfiz';
+  }
+  function close() { if (panel) { panel.remove(); panel = null; bell.setAttribute('aria-expanded', 'false'); } }
+  function open() {
+    panel = el('div', 'pp-bell-panel');
+    panel.appendChild(el('h4', '', 'Updates from Ralfiz'));
+    if (!items.length) panel.appendChild(el('div', 'pp-bell-empty', 'Nothing new. Issues Ralfiz fixes, messages and payments will show here.'));
+    items.forEach(function (i) {
+      var a = el('a'), txt = el('div'); a.href = i.url;
+      a.appendChild(el('i', (ICON[i.kind] || 'far fa-bell') + ' ' + i.kind));
+      txt.appendChild(el('strong', '', i.title));
+      txt.appendChild(el('span', '', i.project));
+      if (i.detail) txt.appendChild(el('span', '', i.detail));
+      a.appendChild(txt); panel.appendChild(a);
+    });
+    var r = bell.getBoundingClientRect();
+    panel.style.top = (r.bottom + 8) + 'px';
+    panel.style.right = Math.max(8, window.innerWidth - r.right) + 'px';
+    document.body.appendChild(panel);
+    bell.setAttribute('aria-expanded', 'true');
+    if (lastNow) localStorage.setItem(SEEN, lastNow);  // opening the list counts as seen
+    badge(0);
+  }
+  bell.addEventListener('click', function (e) { e.stopPropagation(); panel ? close() : open(); });
+  document.addEventListener('click', function (e) { if (panel && !panel.contains(e.target)) close(); });
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape') close(); });
+  window.addEventListener('scroll', close, { passive: true });
+
+  function check() {
+    var seen = localStorage.getItem(SEEN);
+    fetch(URL_ + (seen ? '?seen=' + encodeURIComponent(seen) : ''), { credentials: 'same-origin', headers: { 'Accept': 'application/json' } })
+      .then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (d) {
+        if (!d || !d.now || panel) return;
+        lastNow = d.now; items = d.items; badge(d.count);
+      })
+      .catch(function () {});
+  }
+  check();
+  setInterval(check, 60000);
+})();
+</script>

@@ -13,7 +13,7 @@
 
   <div class="navbar-right">
     <div class="navbar-actions">
-      <button class="navbar-action-btn" title="Notifications">
+      <button type="button" class="navbar-action-btn" id="navBell" title="Notifications" aria-haspopup="true" aria-expanded="false">
         <i class="fas fa-bell"></i>
         {% if notifications_count %}
         <span class="badge">{{ notifications_count }}</span>

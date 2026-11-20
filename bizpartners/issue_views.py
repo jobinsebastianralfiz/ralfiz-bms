@@ -510,28 +510,40 @@ def issue_import(request, pk):
     return redirect(_staff_back(project))
 
 
+def _partner_issue_groups(since, until, limit=5):
+    """Issues partners added in (since, until], grouped by project, newest project first."""
+    new = (JointIssue.objects
+           .filter(created_at__gt=since, created_at__lte=until, created_by__isnull=False,
+                   created_by=F('project__partner__user'))
+           .select_related('project__partner').order_by('created_at'))
+    groups, total = {}, 0
+    for issue in new[:500]:
+        total += 1
+        row = groups.setdefault(issue.project_id, {
+            'partner': issue.project.partner.display_name, 'project': issue.project.title,
+            'url': reverse('bizpartners:project', args=[issue.project_id]) + '#issues',
+            'count': 0, 'title': issue.title[:140]})
+        row['count'] += 1
+        row['at'] = issue.created_at.isoformat()
+    items = sorted(groups.values(), key=lambda r: r['at'], reverse=True)[:limit]
+    return items, total
+
+
 @login_required
 def issue_alerts(request):
-    """New issues partners added since `after`, for the chime on staff pages (_issue_alerts.html).
+    """Partner-added issues for staff pages (_issue_alerts.html).
 
-    Without `after` it only returns the server time, so a fresh browser starts from now and
-    never chimes for old issues. Issues staff added themselves never chime.
+    `after`: the browser's last check; new ones chime. `seen`: when the bell list was last
+    opened; everything since is the bell count. Without a value the browser starts from now,
+    so old issues never chime or count. Issues staff added themselves never count.
     """
     now = timezone.now()
+    out = {'now': now.isoformat(), 'items': [], 'bell': {'count': 0, 'items': []}}
     after = parse_datetime(request.GET.get('after') or '')
-    items = []
     if after:
-        after = max(after, now - timezone.timedelta(days=1))
-        new = (JointIssue.objects
-               .filter(created_at__gt=after, created_at__lte=now, created_by__isnull=False,
-                       created_by=F('project__partner__user'))
-               .select_related('project__partner').order_by('created_at'))
-        by_project = {}
-        for issue in new[:200]:
-            row = by_project.setdefault(issue.project_id, {
-                'partner': issue.project.partner.display_name, 'project': issue.project.title,
-                'url': reverse('bizpartners:project', args=[issue.project_id]) + '#issues',
-                'count': 0, 'title': issue.title[:140]})
-            row['count'] += 1
-        items = list(by_project.values())[:5]
-    return JsonResponse({'now': now.isoformat(), 'items': items})
+        out['items'], _ = _partner_issue_groups(max(after, now - timezone.timedelta(days=1)), now)
+    seen = parse_datetime(request.GET.get('seen') or '')
+    if seen:
+        items, total = _partner_issue_groups(max(seen, now - timezone.timedelta(days=60)), now, limit=8)
+        out['bell'] = {'count': total, 'items': items}
+    return JsonResponse(out)

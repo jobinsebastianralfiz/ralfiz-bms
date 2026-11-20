@@ -446,3 +446,48 @@ class IssueAlertTests(Base):
         self.client.force_login(self.staff)
         r = self.client.get(reverse('bizpartners:list'))
         self.assertContains(r, 'id="jiAlerts"')
+
+
+class BellCountTests(IssueAlertTests):
+    def test_bell_counts_partner_issues_since_seen(self):
+        self.client.force_login(self.staff)
+        seen = self.client.get(self.url).json()['now']
+        JointIssue.add_many(self.project, [{'title': 'A'}, {'title': 'B'}, {'title': 'C'}], user=self.user)
+        JointIssue.add_many(self.project, [{'title': 'Ours'}], user=self.staff)
+        d = self.client.get(self.url, {'seen': seen}).json()
+        self.assertEqual(d['bell']['count'], 3)
+        self.assertEqual(d['bell']['items'][0]['count'], 3)
+        self.assertEqual(d['items'], [])  # no `after`: the bell counts but nothing chimes
+        self.assertEqual(self.client.get(self.url, {'seen': d['now']}).json()['bell']['count'], 0)
+
+    def test_navbar_bell_has_id(self):
+        self.client.force_login(self.staff)
+        self.assertContains(self.client.get(reverse('bizpartners:list')), 'id="navBell"')
+
+
+class PartnerBellTests(Base):
+    def test_bell_counts_what_ralfiz_did(self):
+        from bizpartners.models import JointUpdate
+        staff = User.objects.create_superuser('boss5', 'b5@x.in', 'pass12345')
+        a, b = self.issue('Fix logo'), self.issue('Fix footer')
+        self.client.force_login(self.user)
+        url = reverse('bizpartners_portal:alerts')
+        seen = self.client.get(url).json()['now']
+        a.set_done(True, staff); a.save()
+        b.set_done(True, staff); b.save()
+        JointUpdate.objects.create(project=self.project, author=staff, message='Footer fixed, please check')
+        JointUpdate.objects.create(project=self.project, author=self.user, message='Mine', from_partner=True)
+        d = self.client.get(url, {'seen': seen}).json()
+        self.assertEqual(d['count'], 3)
+        kinds = {i['kind']: i for i in d['items']}
+        self.assertEqual(kinds['done']['count'], 2)
+        self.assertIn('Footer fixed', kinds['message']['detail'])
+        self.assertEqual(self.client.get(url, {'seen': d['now']}).json()['count'], 0)
+
+    def test_dashboard_bell_is_a_button(self):
+        self.client.force_login(self.user)
+        self.assertContains(self.client.get(reverse('bizpartners_portal:dashboard')), 'id="ppBell"')
+
+    def test_staff_cannot_use_partner_alerts(self):
+        self.client.force_login(User.objects.create_superuser('boss6', 'b6@x.in', 'pass12345'))
+        self.assertNotEqual(self.client.get(reverse('bizpartners_portal:alerts')).status_code, 200)
