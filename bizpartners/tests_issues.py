@@ -389,3 +389,28 @@ class LayoutTests(Base):
         self.assertContains(r, 'enctype="multipart/form-data" action="%s"'
                             % reverse('bizpartners:issue_save', args=[self.project.pk, issue.pk]))
         self.assertNotContains(r, 'ji-edit-row')
+
+
+class OrderAndAddModalTests(Base):
+    def test_newest_issue_first_and_add_is_a_modal(self):
+        self.issue('Old one'); self.issue('New one')
+        self.client.force_login(self.user)
+        html = self.client.get(reverse('bizpartners_portal:project', args=[self.project.pk])).content.decode()
+        self.assertLess(html.index('New one'), html.index('Old one'))
+        self.assertIn('<dialog class="ji-modal ji-add-modal" id="jiAdd"', html)
+
+    def test_empty_list_offers_add_button(self):
+        self.client.force_login(self.user)
+        r = self.client.get(reverse('bizpartners_portal:project', args=[self.project.pk]))
+        self.assertContains(r, 'No issues yet.')
+
+
+class StaffAddModalTests(Base):
+    def test_staff_add_modal_has_import_and_edit_modals_stay(self):
+        issue = self.issue('One')
+        self.client.force_login(User.objects.create_superuser('boss3', 'b3@x.in', 'pass12345'))
+        html = self.client.get(reverse('bizpartners:project', args=[self.project.pk])).content.decode()
+        add = html[html.index('id="jiAdd"'):html.index('</dialog>', html.index('id="jiAdd"'))]
+        self.assertIn('data-ji-pane="import"', add)
+        self.assertIn('data-ji-pane="one"', add)
+        self.assertIn(f'id="jiEdit{issue.pk}"', html)

@@ -74,7 +74,7 @@ def _pages(project):
 
 def issue_context(project, GET):
     """What `_issues.html` needs. Added to both project detail pages."""
-    issues = list(_filtered(project, GET))
+    issues = list(_filtered(project, GET).order_by('-number'))  # newest first on the page; Excel keeps 1, 2, 3
     filters = {k: GET.get(k, '') for k in ('status', 'page', 'q')}
     return {
         'issues': issues, 'issue_summary': _summary(project), 'issue_pages': _pages(project),

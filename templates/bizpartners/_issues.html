@@ -6,7 +6,7 @@ issues, issue_summary, issue_pages, issue_filters, issue_filtered, issue_preview
   <h2>Issue list
     <span class="ji-head-actions">
       <a class="{% if staff %}btn btn-sm btn-outline-secondary{% else %}pv-btn ji-btn-ghost{% endif %}" href="{% if staff %}{% url 'bizpartners:issue_export' project.pk %}{% else %}{% url 'bizpartners_portal:issue_export' project.pk %}{% endif %}{% if issue_export_qs %}?{{ issue_export_qs }}{% endif %}"><i class="fas fa-file-excel"></i> Download Excel</a>
-      <button type="button" class="{% if staff %}btn btn-sm btn-primary{% else %}pv-btn{% endif %}" data-ji-open aria-expanded="{% if not s.total %}true{% else %}false{% endif %}" aria-controls="jiAdd"><i class="fas fa-plus"></i> Add issues</button>
+      <button type="button" class="{% if staff %}btn btn-sm btn-primary{% else %}pv-btn{% endif %}" data-ji-open aria-haspopup="dialog" aria-controls="jiAdd"><i class="fas fa-plus"></i> Add issues</button>
     </span>
   </h2>
 
@@ -16,8 +16,21 @@ issues, issue_summary, issue_pages, issue_filters, issue_filtered, issue_preview
     <div class="ji-stat open"><small>Not Done</small><strong>{{ s.open }}</strong></div>
   </div>
 
-  {# ---------- Add issues ---------- #}
-  <div class="{% if staff %}card{% else %}pv-card{% endif %} ji-add" id="jiAdd" {% if s.total %}hidden{% endif %}>
+  {% if not s.total %}
+  <div class="bp-empty ji-empty {% if staff %}card{% else %}pv-card{% endif %}">
+    <span>No issues yet. Add the client's feedback to start the list.</span>
+    <button type="button" class="{% if staff %}btn btn-sm btn-primary{% else %}pv-btn{% endif %}" data-ji-open aria-haspopup="dialog" aria-controls="jiAdd"><i class="fas fa-plus"></i> Add issues</button>
+  </div>
+  {% endif %}
+
+  {# ---------- Add issues: a modal opened by the Add issues button ---------- #}
+  <dialog class="ji-modal ji-add-modal" id="jiAdd" aria-labelledby="jiAddTitle">
+   <div class="ji-modal-shell">
+    <div class="ji-modal-head">
+      <h3 id="jiAddTitle">Add issues</h3>
+      <button type="button" class="ji-icon" data-ji-close aria-label="Close"><i class="fas fa-times"></i></button>
+    </div>
+    <div class="ji-modal-body ji-add">
     <div class="ji-tabs" role="tablist">
       <button type="button" role="tab" class="active" data-ji-tab="paste">Paste or upload feedback</button>
       <button type="button" role="tab" data-ji-tab="one">Write one issue</button>
@@ -75,7 +88,9 @@ issues, issue_summary, issue_pages, issue_filters, issue_filtered, issue_preview
     </form>
     {% endif %}
     <datalist id="jiPages">{% for p in issue_pages %}<option value="{{ p }}">{% endfor %}</datalist>
-  </div>
+    </div>
+   </div>
+  </dialog>
 
   {% if s.total %}
   {# ---------- By page ---------- #}
@@ -195,15 +210,17 @@ issues, issue_summary, issue_pages, issue_filters, issue_filtered, issue_preview
   var box = document.getElementById('issues');
   if (!box || box.dataset.ready) return;
   box.dataset.ready = '1';
-  var add = document.getElementById('jiAdd');
   function csrf() { var el = box.querySelector('[name=csrfmiddlewaretoken]'); return el ? el.value : ''; }
 
   box.addEventListener('click', function (e) {
     var t;
     if ((t = e.target.closest('[data-ji-open]'))) {
-      add.hidden = !add.hidden;
-      t.setAttribute('aria-expanded', String(!add.hidden));
-      if (!add.hidden) add.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      var addDlg = document.getElementById('jiAdd');
+      if (addDlg && addDlg.showModal) {
+        addDlg.showModal();
+        var pane = addDlg.querySelector('.ji-pane:not([hidden])'), first = pane && pane.querySelector('textarea, input:not([type=hidden]):not([type=file])');
+        if (first) first.focus();
+      }
     } else if ((t = e.target.closest('[data-ji-tab]'))) {
       box.querySelectorAll('[data-ji-tab]').forEach(function (b) { b.classList.toggle('active', b === t); });
       box.querySelectorAll('[data-ji-pane]').forEach(function (p) { p.hidden = p.dataset.jiPane !== t.dataset.jiTab; });
@@ -221,7 +238,7 @@ issues, issue_summary, issue_pages, issue_filters, issue_filtered, issue_preview
   });
   // Cancel or Esc throws the unsaved changes away, so the next open starts from the saved issue.
   box.addEventListener('close', function (e) {
-    if (!e.target.matches || !e.target.matches('dialog.ji-modal')) return;
+    if (!e.target.matches || !e.target.matches('dialog.ji-modal') || e.target.id === 'jiAdd') return;
     var form = e.target.querySelector('form');
     if (form) form.reset();
     e.target.querySelectorAll('[data-ji-paste-list]').forEach(function (l) { l.innerHTML = ''; l.hidden = true; });
