@@ -2,14 +2,38 @@
 Needs: project, m, quotes, payments, expenses, staff (bool).{% endcomment %}
 {% with cur=project.currency %}
 {% if m.is_fixed %}
-<div class="bp-money">
-  <div><small>Agreed amount for Ralfiz</small><strong><span class="bp-cur">{{ cur }}</span>{{ m.fixed_agreed|sar }}</strong><span>Fixed, whatever the client is charged</span></div>
-  {% if m.recurring %}<div><small>AMC &amp; server due so far</small><strong><span class="bp-cur">{{ cur }}</span>{{ m.recurring_due|sar }}</strong><span>{% for l in m.recurring %}{{ l.label }} {{ l.periods }}×{% if not forloop.last %} · {% endif %}{% endfor %}</span></div>{% endif %}
-  <div><small>Total due so far</small><strong><span class="bp-cur">{{ cur }}</span>{{ m.fixed_due|sar }}</strong><span>{{ m.collected_percent }}% paid</span></div>
-  <div class="pos"><small>Paid to Ralfiz</small><strong><span class="bp-cur">{{ cur }}</span>{{ m.fixed_paid|sar }}</strong></div>
-  <div class="{% if m.fixed_balance > 0 %}neg{% else %}pos{% endif %}"><small>Balance</small><strong><span class="bp-cur">{{ cur }}</span>{{ m.fixed_balance|sar }}</strong><span>{% if m.fixed_balance > 0 %}Still to pay{% elif m.fixed_balance < 0 %}Paid in advance{% else %}Fully paid{% endif %}</span></div>
-</div>
+{% comment %}Fixed deal: the partner pays Ralfiz an agreed amount (plus AMC / server charges if any).
+Told in plain words from the reader's side: "you" for the partner, the partner's name for staff.{% endcomment %}
+<section class="bp-deal {% if staff %}card mb-3{% else %}pv-card{% endif %}">
+  <div class="bp-deal-head">
+    <div>
+      <div class="bp-deal-label">{% if staff %}What {{ project.partner.display_name }} pays Ralfiz{% else %}What you pay Ralfiz{% endif %}</div>
+      {% if m.fixed_agreed or m.recurring %}
+      <div class="bp-deal-price">{{ cur }} {{ m.fixed_agreed|sar }} <small>for the project</small></div>
+      {% for l in m.recurring %}<div class="bp-deal-extra">+ {{ l.label }} {{ cur }} {{ l.amount|sar }} {{ l.cycle_label|lower }}{% if l.start %}, from {{ l.start|date:"j M Y" }}{% endif %}</div>{% endfor %}
+      {% else %}
+      <div class="bp-deal-price muted">Price not set yet</div>
+      <div class="bp-deal-extra">{% if staff %}Add the agreed amount with Edit.{% else %}Ralfiz will add the agreed price here. Nothing is due until then.{% endif %}</div>
+      {% endif %}
+    </div>
+    {% if m.fixed_due > 0 %}
+      {% if m.fixed_balance > 0 %}<span class="bp-deal-state due">{% if staff %}{{ cur }} {{ m.fixed_balance|sar }} to collect{% else %}{{ cur }} {{ m.fixed_balance|sar }} left to pay{% endif %}</span>
+      {% elif m.fixed_balance < 0 %}<span class="bp-deal-state ahead">Paid {{ cur }} {{ m.fixed_balance|absval|sar }} in advance</span>
+      {% else %}<span class="bp-deal-state ok"><i class="fas fa-circle-check"></i> Fully paid</span>{% endif %}
+    {% elif m.fixed_paid > 0 %}<span class="bp-deal-state ahead">Paid {{ cur }} {{ m.fixed_paid|sar }} in advance</span>
+    {% endif %}
+  </div>
+  {% if m.fixed_due > 0 %}
+  <div class="bp-deal-bar" role="img" aria-label="{{ m.collected_percent }}% paid"><span style="width: {{ m.collected_percent }}%"></span></div>
+  <dl class="bp-deal-facts">
+    <div><dt>Due so far</dt><dd>{{ cur }} {{ m.fixed_due|sar }}</dd>{% if m.recurring_due %}<span>includes {{ cur }} {{ m.recurring_due|sar }} AMC &amp; server</span>{% endif %}</div>
+    <div><dt>Paid to Ralfiz</dt><dd class="pos">{{ cur }} {{ m.fixed_paid|sar }}</dd><span>{{ m.collected_percent }}% of what is due</span></div>
+    <div><dt>{% if m.fixed_balance < 0 %}Paid ahead{% else %}Left to pay{% endif %}</dt><dd class="{% if m.fixed_balance > 0 %}neg{% endif %}">{{ cur }} {{ m.fixed_balance|absval|sar }}</dd></div>
+  </dl>
+  {% endif %}
+</section>
 
+{% if m.recurring %}
 <section class="{% if staff %}card mb-3{% else %}pv-card{% endif %}" style="margin-bottom: 1.25rem;">
   <div style="font-weight:700; padding: .9rem 1.1rem .3rem">What is charged</div>
   <div class="bp-table-wrap"><table class="bp-table">
@@ -21,12 +45,12 @@ Needs: project, m, quotes, payments, expenses, staff (bool).{% endcomment %}
         <td>{{ cur }} {{ l.amount|sar }} {{ l.cycle_label|lower }}{% if l.start %}, from {{ l.start|date:"d M Y" }}{% endif %}
           <div class="bp-muted" style="font-size:.78rem">{% if l.periods %}{{ l.periods }} period{{ l.periods|pluralize }} due so far{% else %}Not started yet{% endif %}{% if project.recurring_end_date %} · ends {{ project.recurring_end_date|date:"d M Y" }}{% endif %}</div></td>
         <td class="num">{{ cur }} {{ l.due|sar }}</td><td class="num">{{ cur }} {{ l.paid|sar }}</td></tr>
-      {% empty %}
-      <tr><td colspan="4" class="bp-muted">No AMC or server charges on this project.{% if staff %} Add them with Edit.{% endif %}</td></tr>
       {% endfor %}
     </tbody>
   </table></div>
 </section>
+{% elif staff %}<p class="bp-muted" style="font-size:.82rem; margin:-.5rem 0 1.25rem">No AMC or server charges on this project. Add them with Edit.</p>
+{% endif %}
 {% else %}
 <div class="bp-money">
   <div><small>Contract value</small><strong><span class="bp-cur">{{ cur }}</span>{{ m.contract_value|sar }}</strong><span>{{ m.collected_percent }}% collected</span></div>
@@ -47,10 +71,11 @@ Needs: project, m, quotes, payments, expenses, staff (bool).{% endcomment %}
 
 {% endif %}
 
-{% include 'bizpartners/_balance.html' with due=m.due_to_partner viewer=staff|yesno:'staff,partner' fixed=m.is_fixed %}
+{% if not m.is_fixed %}{% include 'bizpartners/_balance.html' with due=m.due_to_partner viewer=staff|yesno:'staff,partner' fixed=m.is_fixed %}{% endif %}
 
 <div class="bp-section" id="quotes">
   <h2>Quotes {% if staff %}<a class="btn btn-sm btn-outline-primary" href="{% url 'bizpartners:item_create' project.pk 'quote' %}"><i class="fas fa-plus"></i> Add quote</a>{% endif %}</h2>
+  {% if not quotes %}<div class="bp-empty {% if staff %}card{% else %}pv-card{% endif %}">No quotes yet.{% if not staff %} Quotes from Ralfiz will show here.{% endif %}</div>{% else %}
   <div class="{% if staff %}card{% else %}pv-card{% endif %}"><div class="bp-table-wrap"><table class="bp-table">
     <thead><tr><th>Number</th><th>Title</th><th>Date</th><th>Status</th><th class="num">Amount</th><th></th></tr></thead>
     <tbody>
@@ -65,12 +90,13 @@ Needs: project, m, quotes, payments, expenses, staff (bool).{% endcomment %}
         {% if staff %}<a href="{% url 'bizpartners:item_edit' project.pk 'quote' q.pk %}" title="Edit" style="margin-left:.5rem"><i class="fas fa-pen"></i></a>
         <a href="{% url 'bizpartners:item_delete' project.pk 'quote' q.pk %}" title="Delete" style="margin-left:.5rem; color:var(--danger,#dc2626)"><i class="fas fa-trash"></i></a>{% endif %}
       </td></tr>
-    {% empty %}<tr><td colspan="6" class="bp-muted">No quotes yet.</td></tr>{% endfor %}
-    </tbody></table></div></div>
+    {% endfor %}
+    </tbody></table></div></div>{% endif %}
 </div>
 
 <div class="bp-section" id="payments">
   <h2>Payments {% if staff %}<a class="btn btn-sm btn-outline-primary" href="{% url 'bizpartners:item_create' project.pk 'payment' %}"><i class="fas fa-plus"></i> Record payment</a>{% endif %}</h2>
+  {% if not payments %}<div class="bp-empty {% if staff %}card{% else %}pv-card{% endif %}">No payments recorded yet.{% if not staff %} Each payment you make will show here with its receipt.{% endif %}</div>{% else %}
   <div class="{% if staff %}card{% else %}pv-card{% endif %}"><div class="bp-table-wrap"><table class="bp-table">
     <thead><tr><th>Date</th><th>Who paid whom</th><th>For</th><th>Method</th><th>Reference</th><th class="num">Amount</th><th></th></tr></thead>
     <tbody>
@@ -85,8 +111,8 @@ Needs: project, m, quotes, payments, expenses, staff (bool).{% endcomment %}
         {% if staff %}<a href="{% url 'bizpartners:item_edit' project.pk 'payment' pay.pk %}" title="Edit" style="margin-left:.5rem"><i class="fas fa-pen"></i></a>
         <a href="{% url 'bizpartners:item_delete' project.pk 'payment' pay.pk %}" title="Delete" style="margin-left:.5rem; color:var(--danger,#dc2626)"><i class="fas fa-trash"></i></a>{% endif %}
       </td></tr>
-    {% empty %}<tr><td colspan="7" class="bp-muted">No payments recorded yet.</td></tr>{% endfor %}
-    </tbody></table></div></div>
+    {% endfor %}
+    </tbody></table></div></div>{% endif %}
 </div>
 
 {% if not m.is_fixed or expenses %}

@@ -249,3 +249,26 @@ html:has(dialog.ji-modal[open]) { overflow: hidden; }
   .ji-chips::-webkit-scrollbar { display: none; }
   .ji-chip { flex: none; }
 }
+
+/* Fixed deal money summary (_ledgers.html). */
+.bp-money strong .bp-cur { display: inline; margin-top: 0; }
+.bp-deal { padding: 1.1rem 1.25rem; margin-bottom: 1.25rem; }
+.bp-deal-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 1rem; flex-wrap: wrap; }
+.bp-deal-label { font-size: .85rem; font-weight: 600; color: var(--text-muted, #6b7280); }
+.bp-deal-price { font-size: 1.6rem; font-weight: 700; margin-top: .15rem; font-variant-numeric: tabular-nums; }
+.bp-deal-price small { font-size: .85rem; font-weight: 500; color: var(--text-muted, #6b7280); }
+.bp-deal-price.muted { font-size: 1.25rem; color: #6b7280; }
+.bp-deal-extra { font-size: .85rem; color: var(--text-muted, #6b7280); margin-top: .2rem; }
+.bp-deal-state { flex: none; font-size: .85rem; font-weight: 700; padding: .35rem .75rem; border-radius: 999px; white-space: nowrap; }
+.bp-deal-state.ok { background: #dcfce7; color: #166534; }
+.bp-deal-state.due { background: #fee2e2; color: #991b1b; }
+.bp-deal-state.ahead { background: #e0f2fe; color: #075985; }
+.bp-deal-bar { height: 8px; border-radius: 999px; background: #eef2f7; overflow: hidden; margin: 1rem 0 .9rem; }
+.bp-deal-bar span { display: block; height: 100%; background: #16a34a; border-radius: inherit; }
+.bp-deal-facts { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .75rem; margin: 0; }
+.bp-deal-facts dt { font-size: .75rem; font-weight: 600; color: var(--text-muted, #6b7280); }
+.bp-deal-facts dd { margin: .1rem 0 0; font-size: 1.05rem; font-weight: 700; font-variant-numeric: tabular-nums; }
+.bp-deal-facts dd.pos { color: #16a34a; } .bp-deal-facts dd.neg { color: #dc2626; }
+.bp-deal-facts span { display: block; font-size: .75rem; color: var(--text-muted, #6b7280); }
+@media (max-width: 560px) { .bp-deal-facts { grid-template-columns: 1fr 1fr; } }
+.bp-empty { padding: .9rem 1.1rem; color: var(--text-muted, #6b7280); font-size: .9rem; }

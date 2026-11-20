@@ -193,8 +193,10 @@ class FixedDealTests(TestCase):
         self.assertContains(r, 'Due to Ralfiz so far')
         self.assertNotContains(r, 'profit share')
         r = self.client.get(reverse('bizpartners_portal:project', args=[self.project.pk]))
-        self.assertContains(r, 'Agreed amount for Ralfiz')
+        self.assertContains(r, 'What you pay Ralfiz')
+        self.assertContains(r, 'Fully paid')
         self.assertNotContains(r, 'Profit split')
+        self.assertNotContains(r, 'What is charged')  # no AMC/server: the summary says it all
 
 
 class StaffTests(TestCase):
