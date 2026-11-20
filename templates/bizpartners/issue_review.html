@@ -1,0 +1,12 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}Check the issues · {{ project.title }} - Business Partners{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'css/bizpartners.css' %}?v=4">{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div><h1 class="page-title">Check the issues</h1>
+    <p class="page-subtitle mb-0">{{ project.title }} · with {{ partner.display_name }}</p></div>
+  <div class="page-actions"><a href="{{ back }}" class="btn btn-outline-secondary"><i class="fas fa-arrow-left"></i> Back</a></div>
+</div>
+{% include 'bizpartners/_issue_review_body.html' with staff=True %}
+{% endblock %}

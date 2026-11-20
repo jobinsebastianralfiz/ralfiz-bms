@@ -133,6 +133,7 @@ def project_form(request, partner_pk=None, pk=None):
 
 @login_required
 def project_detail(request, pk):
+    from .issue_views import issue_context
     project = get_object_or_404(JointProject.objects.select_related('partner', 'linked_project'), pk=pk)
     if request.method == 'POST':
         form = JointUpdateForm(request.POST)
@@ -147,6 +148,7 @@ def project_detail(request, pk):
         'quotes': project.quotes.all(), 'payments': project.payments.all(), 'expenses': project.expenses.all(),
         'credentials': project.credentials.all(),
         'updates': project.updates.select_related('author'), 'update_form': JointUpdateForm(),
+        **issue_context(project, request.GET),
     })
 
 

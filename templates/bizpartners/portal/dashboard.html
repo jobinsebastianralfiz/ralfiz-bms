@@ -22,6 +22,7 @@
       <span class="pp-card-status">{{ p.get_status_display }}</span>
     </div>
     <h3>{{ p.title }}</h3>
+    {% if p.open_issues %}<div class="pp-card-issues"><i class="fas fa-list-check"></i> {{ p.open_issues }} open issue{{ p.open_issues|pluralize }}</div>{% endif %}
     <div class="pp-card-meta">
       <span>{% if p.client_name %}{{ p.client_name }}{% elif p.is_fixed %}Fixed deal{% else %}Split {{ p.ratio_label }}{% endif %}</span>
       <span>{{ p.progress }}%</span>

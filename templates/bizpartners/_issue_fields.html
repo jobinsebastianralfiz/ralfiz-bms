@@ -1,0 +1,14 @@
+{% comment %}Staff form fields for one issue. Needs: issue (or None for a new one).{% endcomment %}
+<div class="ji-grid">
+  <label class="ji-label">Page<input name="page" class="form-control" list="jiPages" value="{{ issue.page|default:'' }}" placeholder="Home, About…"></label>
+  <label class="ji-label">Section<input name="section" class="form-control" value="{{ issue.section|default:'' }}" placeholder="Hero, Footer…"></label>
+  <label class="ji-label">Source<select name="source" class="form-select">
+    {% for v, l in source_choices %}<option value="{{ v }}" {% if issue and issue.source == v %}selected{% endif %}>{{ l }}</option>{% endfor %}
+  </select></label>
+  <label class="ji-label">Status<select name="done" class="form-select">
+    <option value="0">Not Done</option><option value="1" {% if issue.is_done %}selected{% endif %}>Done</option>
+  </select></label>
+</div>
+<label class="ji-label">Issue<textarea name="title" rows="2" class="form-control" required maxlength="500">{{ issue.title|default:'' }}</textarea></label>
+<label class="ji-label">Action required<textarea name="action" rows="3" class="form-control">{{ issue.action|default:'' }}</textarea></label>
+<label class="ji-label">Note for the partner<textarea name="notes" rows="2" class="form-control">{{ issue.notes|default:'' }}</textarea></label>

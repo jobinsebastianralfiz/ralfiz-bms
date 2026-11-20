@@ -15,7 +15,7 @@
     <tbody>
     {% for p in projects %}
     <tr>
-      <td><a href="{% url 'bizpartners_portal:project' p.pk %}"><strong>{{ p.title }}</strong></a>{% if p.client_name %}<div class="bp-muted" style="font-size:.78rem">{{ p.client_name }}</div>{% endif %}</td>
+      <td><a href="{% url 'bizpartners_portal:project' p.pk %}"><strong>{{ p.title }}</strong></a>{% if p.client_name %}<div class="bp-muted" style="font-size:.78rem">{{ p.client_name }}</div>{% endif %}{% if p.open_issues %}<div class="ji-open-issues"><a href="{% url 'bizpartners_portal:project' p.pk %}?status=open#issues">{{ p.open_issues }} open issue{{ p.open_issues|pluralize }}</a></div>{% endif %}</td>
       <td><span class="bp-tag {{ p.status }}">{{ p.get_status_display }}</span><div class="bp-muted" style="font-size:.78rem">{{ p.progress }}% done</div></td>
       {% if p.is_fixed %}
       <td>Fixed {{ p.currency }} {{ p.contract_value|sar:0 }}{% if p.amc_amount or p.server_amount %}<div class="bp-muted" style="font-size:.78rem">{% if p.amc_amount %}AMC{% endif %}{% if p.amc_amount and p.server_amount %} + {% endif %}{% if p.server_amount %}server{% endif %}</div>{% endif %}</td>

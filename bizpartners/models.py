@@ -190,6 +190,10 @@ class JointProject(models.Model):
         return self.partner.currency
 
     @property
+    def open_issue_count(self):
+        return self.issues.filter(is_done=False).count()
+
+    @property
     def ralfiz_share_percent(self):
         return HUNDRED - self.partner_share_percent
 
@@ -520,3 +524,84 @@ class JointCredential(models.Model):
 
     def __str__(self):
         return f'{self.name} ({self.get_kind_display()})'
+
+
+class JointIssue(models.Model):
+    """One row of a joint project's issue list: feedback the partner follows,
+    laid out like the Excel tracker. Done / Not Done only. Not the task board."""
+    SOURCE_CHOICES = [
+        ('client', 'Client feedback'),
+        ('partner', 'Partner'),
+        ('ralfiz', 'Ralfiz'),
+        ('review', 'Review'),
+    ]
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    project = models.ForeignKey(JointProject, on_delete=models.CASCADE, related_name='issues')
+    number = models.PositiveIntegerField(help_text='Running number per project, shown as #12.')
+    page = models.CharField(max_length=80, blank=True)
+    section = models.CharField(max_length=120, blank=True)
+    title = models.CharField(max_length=500, verbose_name='Issue')
+    action = models.TextField(blank=True, verbose_name='Action required')
+    source = models.CharField(max_length=10, choices=SOURCE_CHOICES, default='client')
+    notes = models.TextField(blank=True, help_text='Decision or note. The partner sees it.')
+    is_done = models.BooleanField(default=False)
+    done_at = models.DateTimeField(null=True, blank=True)
+    done_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='+')
+    created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='+')
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['number']
+        constraints = [models.UniqueConstraint(fields=['project', 'number'], name='joint_issue_unique_number')]
+
+    def __str__(self):
+        return f'#{self.number} {self.title[:60]}'
+
+    @property
+    def status_label(self):
+        return 'Done' if self.is_done else 'Not Done'
+
+    def set_done(self, done, user=None):
+        self.is_done = bool(done)
+        if self.is_done:
+            if not self.done_at:
+                self.done_at, self.done_by = timezone.now(), user
+        else:
+            self.done_at = self.done_by = None
+
+    @classmethod
+    def next_number(cls, project):
+        top = cls.objects.filter(project=project).aggregate(m=models.Max('number'))['m']
+        return (top or 0) + 1
+
+    @classmethod
+    def add_many(cls, project, items, source='client', user=None):
+        """Create issues from dicts (page, section, title, action, notes, is_done, source, undated).
+        Rows without a title are skipped. Locks the project row so two saves at once
+        never take the same numbers."""
+        from django.db import transaction
+        sources = dict(cls.SOURCE_CHOICES)
+        created = []
+        with transaction.atomic():
+            JointProject.objects.select_for_update().filter(pk=project.pk).first()
+            n = cls.next_number(project)
+            for it in items:
+                title = (it.get('title') or '').strip()[:500]
+                if not title:
+                    continue
+                issue = cls(project=project, number=n, title=title, created_by=user,
+                            page=(it.get('page') or '').strip()[:80],
+                            section=(it.get('section') or '').strip()[:120],
+                            action=(it.get('action') or '').strip(),
+                            notes=(it.get('notes') or '').strip(),
+                            source=it.get('source') if it.get('source') in sources else
+                            (source if source in sources else 'client'))
+                issue.set_done(it.get('is_done'), user)
+                if it.get('undated'):  # imported as Done: we don't know when or by whom
+                    issue.done_at = issue.done_by = None
+                issue.save()
+                created.append(issue)
+                n += 1
+        return created

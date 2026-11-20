@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from .models import BusinessPartner, JointExpense, JointPayment, JointProject, JointQuote, JointUpdate
+from .models import BusinessPartner, JointExpense, JointIssue, JointPayment, JointProject, JointQuote, JointUpdate
 
 
 class _Inline(admin.TabularInline):
@@ -19,6 +19,11 @@ class ExpenseInline(_Inline):
     model = JointExpense
 
 
+class IssueInline(_Inline):
+    model = JointIssue
+    fields = ('number', 'page', 'section', 'title', 'source', 'is_done')
+
+
 @admin.register(BusinessPartner)
 class BusinessPartnerAdmin(admin.ModelAdmin):
     list_display = ('display_name', 'name', 'country', 'currency', 'default_partner_share', 'is_active')
@@ -30,7 +35,7 @@ class JointProjectAdmin(admin.ModelAdmin):
     list_display = ('title', 'partner', 'status', 'contract_value', 'partner_share_percent')
     list_filter = ('status', 'partner')
     search_fields = ('title', 'client_name')
-    inlines = [QuoteInline, PaymentInline, ExpenseInline]
+    inlines = [QuoteInline, PaymentInline, ExpenseInline, IssueInline]
 
 
 admin.site.register(JointUpdate)

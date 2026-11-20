@@ -1,0 +1,7 @@
+{% extends 'bizpartners/portal/base.html' %}
+{% block title %}Check the issues · {{ project.title }}{% endblock %}
+{% block content %}
+<p style="margin:0 0 .5rem"><a href="{{ back }}"><i class="fas fa-arrow-left"></i> {{ project.title }}</a></p>
+<h1 style="font-size:1.4rem; margin:0 0 .8rem">Check the issues</h1>
+{% include 'bizpartners/_issue_review_body.html' with staff=False %}
+{% endblock %}

@@ -1,0 +1,47 @@
+{% comment %}Review screen for drafted issues. Needs: project, drafts, notice, back, save_url, sources, source, staff (bool).{% endcomment %}
+<div class="ji ji-review">
+  <p style="margin:0 0 .6rem">We found <strong>{{ drafts|length }} issue{{ drafts|length|pluralize }}</strong> for {{ project.title }}. Untick anything that is not an issue, fix the wording, then add them. Nothing has been saved yet.</p>
+  {% if notice %}<div class="ji-notice"><i class="fas fa-circle-info"></i> {{ notice }}</div>{% endif %}
+  <form method="post" action="{{ save_url }}">
+    {% csrf_token %}
+    <input type="hidden" name="count" value="{{ drafts|length }}">
+    <div class="ji-row" style="margin-bottom:.6rem">
+      <label class="ji-label" style="max-width:260px">Source for all
+        <select name="source" class="form-select">{% for v, l in sources %}<option value="{{ v }}" {% if v == source %}selected{% endif %}>{{ l }}</option>{% endfor %}</select>
+      </label>
+    </div>
+    <div class="{% if staff %}card{% else %}pv-card{% endif %} ji-sheet-card"><div class="ji-sheet-wrap"><table class="ji-sheet ji-review-table">
+      <thead><tr>
+        <th class="ji-tick"><input type="checkbox" checked data-ji-review-all aria-label="Tick all"></th>
+        <th>Page</th><th>Section</th><th class="w">Issue</th><th class="w">What should be done</th>
+        {% if staff %}<th>Source</th>{% endif %}
+      </tr></thead>
+      <tbody>
+      {% for d in drafts %}
+      <tr>
+        <td class="ji-tick"><input type="checkbox" name="include_{{ forloop.counter0 }}" value="1" checked aria-label="Add issue {{ forloop.counter }}"></td>
+        <td><input name="page_{{ forloop.counter0 }}" value="{{ d.page }}" class="form-control" list="jiPagesReview" maxlength="80"></td>
+        <td><input name="section_{{ forloop.counter0 }}" value="{{ d.section }}" class="form-control" maxlength="120"></td>
+        <td class="w"><textarea name="title_{{ forloop.counter0 }}" rows="2" class="form-control" maxlength="500">{{ d.title }}</textarea></td>
+        <td class="w"><textarea name="action_{{ forloop.counter0 }}" rows="2" class="form-control">{{ d.action }}</textarea></td>
+        {% if staff %}<td><select name="source_{{ forloop.counter0 }}" class="form-select">{% for v, l in sources %}<option value="{{ v }}" {% if v == source %}selected{% endif %}>{{ l }}</option>{% endfor %}</select></td>{% endif %}
+      </tr>
+      {% empty %}<tr><td colspan="6" class="bp-muted">No issues were found in that text.</td></tr>
+      {% endfor %}
+      </tbody>
+    </table></div></div>
+    <datalist id="jiPagesReview">{% for p in issue_pages %}<option value="{{ p }}">{% endfor %}</datalist>
+    <div class="ji-row ji-submit" style="margin-top:.8rem">
+      {% if drafts %}<button type="submit" class="{% if staff %}btn btn-primary{% else %}pv-btn{% endif %}"><i class="fas fa-check"></i> Add the ticked issues</button>{% endif %}
+      <a href="{{ back }}" class="{% if staff %}btn btn-outline-secondary{% else %}pv-btn ji-btn-ghost{% endif %}">Cancel</a>
+    </div>
+  </form>
+</div>
+<script>
+(function () {
+  var all = document.querySelector('[data-ji-review-all]');
+  if (all) all.addEventListener('change', function () {
+    document.querySelectorAll('.ji-review-table input[name^=include_]').forEach(function (c) { c.checked = all.checked; });
+  });
+})();
+</script>

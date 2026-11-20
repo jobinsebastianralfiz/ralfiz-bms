@@ -1,0 +1,250 @@
+{% comment %}Issue list on a joint project, laid out like the Excel tracker.
+Needs: project, staff (bool), and issue_context() from bizpartners/issue_views.py:
+issues, issue_summary, issue_pages, issue_filters, issue_filtered, issue_preview, issue_export_qs.{% endcomment %}
+{% with s=issue_summary f=issue_filters %}
+<div class="bp-section ji" id="issues">
+  <h2>Issue list
+    <span class="ji-head-actions">
+      <a class="{% if staff %}btn btn-sm btn-outline-secondary{% else %}pv-btn ji-btn-ghost{% endif %}" href="{% if staff %}{% url 'bizpartners:issue_export' project.pk %}{% else %}{% url 'bizpartners_portal:issue_export' project.pk %}{% endif %}{% if issue_export_qs %}?{{ issue_export_qs }}{% endif %}"><i class="fas fa-file-excel"></i> Download Excel</a>
+      <button type="button" class="{% if staff %}btn btn-sm btn-primary{% else %}pv-btn{% endif %}" data-ji-open aria-expanded="{% if not s.total %}true{% else %}false{% endif %}" aria-controls="jiAdd"><i class="fas fa-plus"></i> Add issues</button>
+    </span>
+  </h2>
+
+  <div class="ji-stats">
+    <div class="ji-stat"><small>Total</small><strong>{{ s.total }}</strong></div>
+    <div class="ji-stat done"><small>Done</small><strong>{{ s.done }}</strong></div>
+    <div class="ji-stat open"><small>Not Done</small><strong>{{ s.open }}</strong></div>
+  </div>
+
+  {# ---------- Add issues ---------- #}
+  <div class="{% if staff %}card{% else %}pv-card{% endif %} ji-add" id="jiAdd" {% if s.total %}hidden{% endif %}>
+    <div class="ji-tabs" role="tablist">
+      <button type="button" role="tab" class="active" data-ji-tab="paste">Paste or upload feedback</button>
+      <button type="button" role="tab" data-ji-tab="one">Write one issue</button>
+      {% if staff %}<button type="button" role="tab" data-ji-tab="import">Import Excel list</button>{% endif %}
+    </div>
+
+    <form method="post" enctype="multipart/form-data" data-ji-pane="paste" class="ji-pane ji-ai-form"
+          action="{% if staff %}{% url 'bizpartners:issue_draft' project.pk %}{% else %}{% url 'bizpartners_portal:issue_draft' project.pk %}{% endif %}">
+      {% csrf_token %}
+      <label class="ji-label" for="jiText">Paste the feedback (an email, notes, a list)</label>
+      <textarea id="jiText" name="text" rows="6" class="form-control" placeholder="e.g. Home page: the banner photo is blurry. Change the phone number in the footer to +91 98…"></textarea>
+      <div class="ji-row">
+        <label class="ji-label">…or upload a Word file (.docx) or text file (.txt)
+          <input type="file" name="file" accept=".docx,.txt,.md">
+        </label>
+        <label class="ji-label">Source
+          <select name="source" class="form-select">
+            {% if staff %}<option value="client">Client feedback</option><option value="partner">Partner</option><option value="ralfiz">Ralfiz</option><option value="review">Review</option>
+            {% else %}<option value="client">Client feedback</option><option value="partner">From me (partner)</option>{% endif %}
+          </select>
+        </label>
+      </div>
+      <div class="ji-row ji-submit">
+        <button type="submit" class="{% if staff %}btn btn-primary{% else %}pv-btn{% endif %}"><i class="fas fa-wand-magic-sparkles"></i> Read and list the issues</button>
+        <span class="ji-working" hidden><i class="fas fa-spinner fa-spin"></i> Reading… this can take up to a minute.</span>
+      </div>
+      <p class="bp-muted ji-hint">Nothing is added until you check the list on the next screen. Pictures in Word files are not read.</p>
+    </form>
+
+    <form method="post" data-ji-pane="one" class="ji-pane" hidden
+          action="{% if staff %}{% url 'bizpartners:issue_add' project.pk %}{% else %}{% url 'bizpartners_portal:issue_add' project.pk %}{% endif %}">
+      {% csrf_token %}
+      {% if staff %}{% include 'bizpartners/_issue_fields.html' with issue=None %}
+      {% else %}
+      <div class="ji-grid">
+        <label class="ji-label">Page<input name="page" class="form-control" list="jiPages" placeholder="Home, About…"></label>
+        <label class="ji-label">Section<input name="section" class="form-control" placeholder="Hero, Footer…"></label>
+        <label class="ji-label">Source<select name="source" class="form-select"><option value="client">Client feedback</option><option value="partner">From me (partner)</option></select></label>
+      </div>
+      <label class="ji-label">Issue<textarea name="title" rows="2" class="form-control" required maxlength="500"></textarea></label>
+      <label class="ji-label">What should be done<textarea name="action" rows="3" class="form-control"></textarea></label>
+      {% endif %}
+      <button type="submit" class="{% if staff %}btn btn-primary{% else %}pv-btn{% endif %}"><i class="fas fa-plus"></i> Add issue</button>
+    </form>
+
+    {% if staff %}
+    <form method="post" enctype="multipart/form-data" data-ji-pane="import" class="ji-pane" hidden action="{% url 'bizpartners:issue_import' project.pk %}">
+      {% csrf_token %}
+      <label class="ji-label">Excel issue list (.xlsx)
+        <input type="file" name="file" accept=".xlsx" required>
+      </label>
+      <p class="bp-muted ji-hint">Reads the first sheet with an <strong>Issue</strong> column: Page, Section, Issue, Action Required, Source, Status, Notes. Status "Done" is kept; issues get new numbers after the ones already here.</p>
+      <button type="submit" class="btn btn-primary"><i class="fas fa-file-import"></i> Import</button>
+    </form>
+    {% endif %}
+    <datalist id="jiPages">{% for p in issue_pages %}<option value="{{ p }}">{% endfor %}</datalist>
+  </div>
+
+  {% if s.total %}
+  {# ---------- By page ---------- #}
+  {% if s.pages|length > 1 %}
+  <div class="ji-chips">
+    {% for r in s.pages %}
+    <a class="ji-chip{% if f.page == r.page %} active{% endif %}" href="?{% if f.status %}status={{ f.status }}&amp;{% endif %}page={{ r.page|urlencode }}#issues">
+      <strong>{{ r.page }}</strong> <span class="d">{{ r.done }} done</span> · <span class="o">{{ r.open }} not done</span>
+    </a>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  {# ---------- Filters ---------- #}
+  <form method="get" class="ji-filters" action="#issues">
+    <div class="ji-pills">
+      <a href="?{% if f.page %}page={{ f.page|urlencode }}&amp;{% endif %}{% if f.q %}q={{ f.q|urlencode }}{% endif %}#issues" class="{% if not f.status %}active{% endif %}">All</a>
+      <a href="?status=open{% if f.page %}&amp;page={{ f.page|urlencode }}{% endif %}{% if f.q %}&amp;q={{ f.q|urlencode }}{% endif %}#issues" class="{% if f.status == 'open' %}active{% endif %}">Not Done</a>
+      <a href="?status=done{% if f.page %}&amp;page={{ f.page|urlencode }}{% endif %}{% if f.q %}&amp;q={{ f.q|urlencode }}{% endif %}#issues" class="{% if f.status == 'done' %}active{% endif %}">Done</a>
+    </div>
+    {% if f.status %}<input type="hidden" name="status" value="{{ f.status }}">{% endif %}
+    <select name="page" class="form-select" onchange="this.form.submit()" aria-label="Page">
+      <option value="">All pages</option>
+      {% for r in s.pages %}<option value="{{ r.page }}" {% if f.page == r.page %}selected{% endif %}>{{ r.page }}</option>{% endfor %}
+    </select>
+    <input type="search" name="q" value="{{ f.q }}" class="form-control" placeholder="Search issues" aria-label="Search issues">
+    {% if issue_filtered %}<a class="bp-muted ji-clear" href="?#issues">Clear</a>{% endif %}
+  </form>
+
+  {# ---------- Bulk bar (staff) ---------- #}
+  {% if staff %}
+  <form method="post" action="{% url 'bizpartners:issue_bulk' project.pk %}" id="jiBulk" class="ji-bulk" hidden>
+    {% csrf_token %}
+    <input type="hidden" name="next" value="{{ request.get_full_path }}#issues">
+    <span><strong data-ji-count>0</strong> ticked</span>
+    <button type="submit" name="done" value="1" class="btn btn-sm btn-success"><i class="fas fa-check"></i> Mark Done</button>
+    <button type="submit" name="done" value="0" class="btn btn-sm btn-outline-danger">Mark Not Done</button>
+  </form>
+  {% endif %}
+
+  {# ---------- The sheet ---------- #}
+  <div class="{% if staff %}card{% else %}pv-card{% endif %} ji-sheet-card">
+    <div class="ji-sheet-wrap"><table class="ji-sheet">
+      <thead><tr>
+        {% if staff %}<th class="ji-tick"><input type="checkbox" data-ji-all aria-label="Tick all"></th>{% endif %}
+        <th class="n">#</th><th>Page</th><th>Section</th><th class="w">Issue</th><th class="w">Action Required</th><th>Source</th><th>Status</th><th class="w2">Notes</th>
+        {% if staff %}<th></th>{% endif %}
+      </tr></thead>
+      <tbody>
+      {% for i in issues %}
+      <tr class="ji-row-i{% if i.is_done %} is-done{% endif %}{% if forloop.counter > issue_preview %} ji-more{% endif %}" {% if forloop.counter > issue_preview %}hidden{% endif %}>
+        {% if staff %}<td class="ji-tick"><input type="checkbox" name="ids" value="{{ i.pk }}" form="jiBulk" aria-label="Tick #{{ i.number }}"></td>{% endif %}
+        <td class="n">{{ i.number }}</td>
+        <td>{{ i.page|default:"—" }}</td>
+        <td>{{ i.section }}</td>
+        <td class="w"><strong>{{ i.title }}</strong></td>
+        <td class="w ji-pre">{{ i.action }}</td>
+        <td class="src">{{ i.get_source_display }}</td>
+        <td class="st">
+          {% if staff %}
+          <label class="ji-switch" data-ji-toggle="{% url 'bizpartners:issue_toggle' project.pk i.pk %}">
+            <input type="checkbox" {% if i.is_done %}checked{% endif %}>
+            <span class="ji-badge {% if i.is_done %}done{% else %}open{% endif %}">{{ i.status_label }}</span>
+          </label>
+          {% if i.done_at %}<div class="ji-stamp">{{ i.done_at|date:"d M Y" }}{% if i.done_by %} · {{ i.done_by.get_full_name|default:i.done_by.username }}{% endif %}</div>{% endif %}
+          {% else %}
+          <span class="ji-badge {% if i.is_done %}done{% else %}open{% endif %}">{{ i.status_label }}</span>
+          {% if i.done_at %}<div class="ji-stamp">{{ i.done_at|date:"d M Y" }}</div>{% endif %}
+          {% endif %}
+        </td>
+        <td class="w2">{% if i.notes %}<div class="ji-note">{{ i.notes|linebreaksbr }}</div>{% endif %}</td>
+        {% if staff %}
+        <td class="ji-acts">
+          <button type="button" class="ji-icon" data-ji-edit="{{ i.pk }}" title="Edit #{{ i.number }}" aria-label="Edit #{{ i.number }}"><i class="fas fa-pen"></i></button>
+          <form method="post" action="{% url 'bizpartners:issue_delete' project.pk i.pk %}" onsubmit="return confirm('Delete issue #{{ i.number }}?')">
+            {% csrf_token %}<input type="hidden" name="next" value="{{ request.get_full_path }}#issues">
+            <button type="submit" class="ji-icon danger" title="Delete #{{ i.number }}" aria-label="Delete #{{ i.number }}"><i class="fas fa-trash"></i></button>
+          </form>
+        </td>
+        {% endif %}
+      </tr>
+      {% if staff %}
+      <tr class="ji-edit-row" id="jiEdit{{ i.pk }}" hidden><td colspan="10">
+        <form method="post" action="{% url 'bizpartners:issue_save' project.pk i.pk %}">
+          {% csrf_token %}<input type="hidden" name="next" value="{{ request.get_full_path }}#issues">
+          {% include 'bizpartners/_issue_fields.html' with issue=i %}
+          <button type="submit" class="btn btn-sm btn-primary">Save #{{ i.number }}</button>
+          <button type="button" class="btn btn-sm btn-outline-secondary" data-ji-edit="{{ i.pk }}">Cancel</button>
+        </form>
+      </td></tr>
+      {% endif %}
+      {% empty %}
+      <tr><td colspan="10" class="bp-muted">No issues match. <a href="?#issues">Show all</a></td></tr>
+      {% endfor %}
+      </tbody>
+    </table></div>
+    {% if issues|length > issue_preview %}
+    <button type="button" class="ji-showall" data-ji-more>Show all {{ issues|length }} issues</button>
+    {% endif %}
+  </div>
+  {% endif %}
+</div>
+{% endwith %}
+<script>
+(function () {
+  var box = document.getElementById('issues');
+  if (!box || box.dataset.ready) return;
+  box.dataset.ready = '1';
+  var add = document.getElementById('jiAdd');
+  function csrf() { var el = box.querySelector('[name=csrfmiddlewaretoken]'); return el ? el.value : ''; }
+
+  box.addEventListener('click', function (e) {
+    var t;
+    if ((t = e.target.closest('[data-ji-open]'))) {
+      add.hidden = !add.hidden;
+      t.setAttribute('aria-expanded', String(!add.hidden));
+      if (!add.hidden) add.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    } else if ((t = e.target.closest('[data-ji-tab]'))) {
+      box.querySelectorAll('[data-ji-tab]').forEach(function (b) { b.classList.toggle('active', b === t); });
+      box.querySelectorAll('[data-ji-pane]').forEach(function (p) { p.hidden = p.dataset.jiPane !== t.dataset.jiTab; });
+    } else if ((t = e.target.closest('[data-ji-more]'))) {
+      box.querySelectorAll('.ji-more').forEach(function (r) { r.hidden = false; });
+      t.remove();
+    } else if ((t = e.target.closest('[data-ji-edit]'))) {
+      var row = document.getElementById('jiEdit' + t.dataset.jiEdit);
+      if (row) row.hidden = !row.hidden;
+    }
+  });
+
+  var aiForm = box.querySelector('.ji-ai-form');
+  if (aiForm) aiForm.addEventListener('submit', function (e) {
+    var text = aiForm.querySelector('[name=text]').value.trim();
+    var file = aiForm.querySelector('[name=file]').files.length;
+    if (!text && !file) { e.preventDefault(); alert('Paste the feedback or choose a file first.'); return; }
+    aiForm.querySelector('.ji-working').hidden = false;
+    aiForm.querySelector('[type=submit]').disabled = true;
+  });
+
+  // Staff: status switch saves at once, rolls back if the save fails.
+  box.addEventListener('change', function (e) {
+    var sw = e.target.closest('[data-ji-toggle]');
+    if (sw && e.target.type === 'checkbox') {
+      var input = e.target, on = input.checked, badge = sw.querySelector('.ji-badge'), row = sw.closest('tr');
+      function paint(done) {
+        badge.textContent = done ? 'Done' : 'Not Done';
+        badge.className = 'ji-badge ' + (done ? 'done' : 'open');
+        row.classList.toggle('is-done', done);
+      }
+      paint(on);
+      var body = new FormData(); body.append('done', on ? '1' : '0');
+      fetch(sw.dataset.jiToggle, { method: 'POST', body: body, credentials: 'same-origin',
+        headers: { 'X-CSRFToken': csrf(), 'X-Requested-With': 'XMLHttpRequest' } })
+        .then(function (r) { if (!r.ok) throw new Error(r.status); return r.text(); })
+        .then(function (label) {
+          paint(label === 'Done');
+          var stamp = sw.parentNode.querySelector('.ji-stamp');
+          if (label === 'Done' && !stamp) {
+            stamp = document.createElement('div'); stamp.className = 'ji-stamp'; stamp.textContent = 'Today';
+            sw.parentNode.appendChild(stamp);
+          } else if (label !== 'Done' && stamp) { stamp.remove(); }
+        })
+        .catch(function () { input.checked = !on; paint(!on); alert('Could not save. Check your connection and try again.'); });
+      return;
+    }
+    var all = e.target.closest('[data-ji-all]');
+    if (all) box.querySelectorAll('input[name=ids]').forEach(function (c) { if (!c.closest('tr').hidden) c.checked = all.checked; });
+    if (e.target.name === 'ids' || all) {
+      var n = box.querySelectorAll('input[name=ids]:checked').length, bar = document.getElementById('jiBulk');
+      if (bar) { bar.hidden = !n; bar.querySelector('[data-ji-count]').textContent = n; }
+    }
+  });
+})();
+</script>
