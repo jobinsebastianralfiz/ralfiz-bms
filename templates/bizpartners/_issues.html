@@ -248,3 +248,22 @@ issues, issue_summary, issue_pages, issue_filters, issue_filtered, issue_preview
   });
 })();
 </script>
+<script>
+(function () {
+  // Sideways scroll only when the sheet really is wider than its box (see .is-wide in bizpartners.css).
+  var wrap = document.querySelector('#issues .ji-sheet-wrap');
+  if (!wrap || wrap.dataset.fit) return;
+  wrap.dataset.fit = '1';
+  var table = wrap.querySelector('table');
+  function fit() {
+    wrap.classList.remove('is-wide');
+    wrap.classList.toggle('is-wide', table.scrollWidth > wrap.clientWidth + 1);
+  }
+  fit();
+  if (window.ResizeObserver) new ResizeObserver(fit).observe(wrap.parentNode);
+  else window.addEventListener('resize', fit);
+  document.getElementById('issues').addEventListener('click', function (e) {
+    if (e.target.closest('[data-ji-more],[data-ji-edit]')) setTimeout(fit, 0);
+  });
+})();
+</script>

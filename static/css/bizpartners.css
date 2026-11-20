@@ -115,15 +115,18 @@
 .ji-bulk[hidden] { display: none; }
 
 /* The sheet: grid lines and a sticky header, like the spreadsheet. */
-.ji-sheet-card { padding: 0; overflow: hidden; }
-.ji-sheet-wrap { overflow: auto; max-height: 75vh; -webkit-overflow-scrolling: touch; }
-.ji-sheet { width: 100%; border-collapse: separate; border-spacing: 0; font-size: .82rem; min-width: 900px; }
-.ji-sheet th { position: sticky; top: 0; z-index: 1; background: #1f3a5f; color: #fff; text-align: left; font-weight: 600; font-size: .75rem; padding: .5rem .6rem; white-space: nowrap; border-right: 1px solid #2d4d78; }
+.ji-sheet-card { padding: 0; overflow: clip; container-type: inline-size; }
+/* One scroll only: the page scrolls, never a box inside it. The header row sticks under the
+   staff navbar (64px) or the top of the partner portal. overflow: clip (not hidden/auto) on the
+   wrappers keeps that sticky header working. Narrow screens scroll the sheet sideways instead. */
+.ji-sheet-wrap { overflow: clip; }
+.ji-sheet { width: 100%; border-collapse: separate; border-spacing: 0; font-size: .82rem; }
+.ji-sheet th { position: sticky; top: var(--ji-sticky-top, 64px); z-index: 2; background: #1f3a5f; color: #fff; text-align: left; font-weight: 600; font-size: .75rem; padding: .5rem .6rem; white-space: nowrap; border-right: 1px solid #2d4d78; }
 .ji-sheet td { padding: .45rem .6rem; border-bottom: 1px solid #e5e7eb; border-right: 1px solid #eef0f3; vertical-align: top; }
 .ji-sheet tbody tr:nth-child(even of .ji-row-i) td { background: #fafbfc; }
 .ji-sheet .n { width: 2.6rem; text-align: right; font-variant-numeric: tabular-nums; color: var(--text-muted, #6b7280); }
-.ji-sheet .w { min-width: 180px; }
-.ji-sheet .w2 { min-width: 140px; }
+.ji-sheet .w { min-width: 140px; }
+.ji-sheet .w2 { min-width: 110px; }
 .ji-sheet .src { color: var(--text-muted, #6b7280); min-width: 70px; }
 .ji-sheet .st { white-space: nowrap; }
 .ji-sheet .ji-tick { width: 2rem; text-align: center; }
@@ -165,3 +168,44 @@
 .pp-card-issues { font-size: .78rem; font-weight: 600; margin: -.2rem 0 .4rem; opacity: .9; }
 .ji textarea, .ji input, .ji select { font-family: inherit; }
 .ji select.form-select, .ji input.form-control, .ji textarea.form-control { padding: .45rem .7rem; border: 1px solid var(--border-color, #e5e7eb); border-radius: 10px; background-color: #fff; color: inherit; }
+
+/* Issue sheet scrolling (see .ji-sheet-wrap above). */
+.pp-main .ji { --ji-sticky-top: 0px; }
+.ji-sheet th:first-child { border-top-left-radius: inherit; }
+.ji-sheet .w { overflow-wrap: anywhere; }
+/* Set by _issues.html when the table is wider than its box: scroll sideways there instead of
+   cutting columns off. The header can't stick to the page inside a sideways scroller. */
+.ji-sheet-wrap.is-wide { overflow-x: auto; -webkit-overflow-scrolling: touch; overscroll-behavior-x: contain; }
+.ji-sheet-wrap.is-wide th { top: 0; }
+/* The review screen has no sticky header: just let it scroll sideways. */
+.ji-review .ji-sheet-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+
+/* Narrow box (phones, small tablets): one card per issue instead of a sideways-scrolling sheet. */
+@container (max-width: 760px) {
+  .ji-sheet:not(.ji-review-table) thead { display: none; }
+  .ji-sheet:not(.ji-review-table), .ji-sheet:not(.ji-review-table) tbody { display: block; min-width: 0; }
+  .ji-sheet:not(.ji-review-table) tr.ji-row-i { display: grid; grid-template-columns: auto auto minmax(0, 1fr) auto;
+    grid-template-areas: "tick n pg st" "tick n sec st" "tick issue issue issue" "tick act act act" "tick note note note" "tick src src acts";
+    column-gap: .55rem; padding: .75rem .9rem; border-bottom: 1px solid #e5e7eb; }
+  .ji-sheet:not(.ji-review-table) tr.ji-row-i:nth-child(even of .ji-row-i) { background: #fafbfc; }
+  .ji-sheet:not(.ji-review-table) tr.ji-row-i[hidden] { display: none; }
+  .ji-sheet:not(.ji-review-table) tr.ji-row-i > td { display: block; padding: 0; border: 0; min-width: 0; background: none !important; }
+  .ji-sheet:not(.ji-review-table) tr.ji-row-i > td:empty { display: none; }
+  .ji-sheet tr.ji-row-i > .ji-tick { grid-area: tick; padding-top: .1rem; }
+  .ji-sheet tr.ji-row-i > .n { grid-area: n; text-align: left; font-weight: 700; color: #1f3a5f; width: auto; }
+  .ji-sheet tr.ji-row-i > .n::before { content: '#'; }
+  .ji-sheet tr.ji-row-i > .n + td { grid-area: pg; font-weight: 600; font-size: .78rem; }
+  .ji-sheet tr.ji-row-i > .n + td + td { grid-area: sec; font-size: .75rem; color: var(--text-muted, #6b7280); }
+  .ji-sheet tr.ji-row-i > .w:not(.ji-pre) { grid-area: issue; margin-top: .45rem; font-size: .9rem; }
+  .ji-sheet tr.ji-row-i > .ji-pre { grid-area: act; margin-top: .25rem; font-size: .83rem; }
+  .ji-sheet tr.ji-row-i > .ji-pre::before { content: 'Action: '; font-weight: 600; color: var(--text-muted, #6b7280); }
+  .ji-sheet tr.ji-row-i > .w2 { grid-area: note; margin-top: .4rem; }
+  .ji-sheet tr.ji-row-i > .src { grid-area: src; margin-top: .4rem; font-size: .72rem; }
+  .ji-sheet tr.ji-row-i > .st { grid-area: st; text-align: right; }
+  .ji-sheet tr.ji-row-i > .ji-acts { grid-area: acts; margin-top: .3rem; text-align: right; }
+  .ji-sheet tr.ji-row-i.is-done > td:not(.st) { opacity: .6; }
+  .ji-sheet:not(.ji-review-table) tr.ji-edit-row, .ji-sheet:not(.ji-review-table) tr.ji-edit-row > td { display: block; }
+  .ji-sheet:not(.ji-review-table) tr.ji-edit-row[hidden] { display: none; }
+  .ji-sheet:not(.ji-review-table) tr.ji-edit-row > td { padding: .8rem .9rem; border-bottom: 1px solid #e5e7eb; }
+  .ji-sheet:not(.ji-review-table) tbody > tr:not(.ji-row-i):not(.ji-edit-row) > td { display: block; padding: .8rem .9rem; }
+}

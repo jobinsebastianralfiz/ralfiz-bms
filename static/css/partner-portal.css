@@ -25,7 +25,7 @@ body { color: var(--pp-ink); font-family: 'Inter', system-ui, sans-serif; }
 
 .pp-shell { min-height: 100vh; padding: 32px; box-sizing: border-box; }
 .pp-board { display: flex; max-width: 1360px; margin: 0 auto; min-height: calc(100vh - 64px); background: var(--pp-board);
-  border-radius: 28px; box-shadow: 0 30px 60px -30px rgba(70, 45, 20, .25); overflow: hidden; }
+  border-radius: 28px; box-shadow: 0 30px 60px -30px rgba(70, 45, 20, .25); overflow: hidden; overflow: clip; }
 
 /* Sidebar */
 .pp-side { width: 232px; flex: none; padding: 30px 22px; display: flex; flex-direction: column; position: relative; overflow: hidden;
