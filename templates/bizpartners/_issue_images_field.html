@@ -1,0 +1,14 @@
+{% comment %}Picture picker for an issue form (form needs enctype multipart). Needs: issue (or None).{% endcomment %}
+<div class="ji-label ji-pics">
+  <span>Screenshots or photos <small class="bp-muted">optional · up to 6 · paste with Ctrl/⌘+V</small></span>
+  {% if issue and issue.images.all %}
+  <div class="ji-thumbs">
+    {% for im in issue.images.all %}
+    <label class="ji-thumb-edit"><a href="{{ im.image.url }}" target="_blank" rel="noopener"><img src="{{ im.image.url }}" alt="Picture {{ forloop.counter }} for #{{ issue.number }}" loading="lazy"></a>
+      <span><input type="checkbox" name="remove_image" value="{{ im.pk }}"> Remove</span></label>
+    {% endfor %}
+  </div>
+  {% endif %}
+  <input type="file" name="images" accept="image/png,image/jpeg,image/webp,image/gif" multiple class="form-control" data-ji-images>
+  <div class="ji-paste-list" data-ji-paste-list hidden></div>
+</div>

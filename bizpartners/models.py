@@ -21,6 +21,8 @@ from decimal import Decimal
 from django.contrib.auth.models import User
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
+from django.db.models.signals import post_delete
+from django.dispatch import receiver
 from django.utils import timezone
 
 from core.fields import EncryptedTextField
@@ -571,6 +573,20 @@ class JointIssue(models.Model):
         else:
             self.done_at = self.done_by = None
 
+    @staticmethod
+    def sync_progress(project):
+        """With an issue list, the project's "% done" is the share of issues Done.
+        Without one, the progress typed on the project form stays."""
+        qs = JointIssue.objects.filter(project_id=project.pk)
+        total = qs.count()
+        if not total:
+            return project.progress
+        pct = round(qs.filter(is_done=True).count() * 100 / total)
+        if pct != project.progress:
+            JointProject.objects.filter(pk=project.pk).update(progress=pct)
+            project.progress = pct
+        return pct
+
     @classmethod
     def next_number(cls, project):
         top = cls.objects.filter(project=project).aggregate(m=models.Max('number'))['m']
@@ -604,4 +620,36 @@ class JointIssue(models.Model):
                 issue.save()
                 created.append(issue)
                 n += 1
+            if created:
+                cls.sync_progress(project)
         return created
+
+
+def joint_issue_image_path(instance, filename):
+    ext = os.path.splitext(filename)[1].lower()
+    if ext not in ('.png', '.jpg', '.jpeg', '.webp', '.gif'):
+        ext = '.png'
+    return f'joint_issues/{timezone.now():%Y/%m}/{uuid.uuid4().hex}{ext}'
+
+
+class JointIssueImage(models.Model):
+    """A screenshot or photo attached to an issue. Both the partner and staff see it."""
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    issue = models.ForeignKey(JointIssue, on_delete=models.CASCADE, related_name='images')
+    image = models.ImageField(upload_to=joint_issue_image_path, max_length=200)
+    uploaded_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='+')
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['created_at']
+
+    def __str__(self):
+        return f'Picture for #{self.issue.number}'
+
+
+
+@receiver(post_delete, sender=JointIssueImage)
+def _drop_issue_image_file(sender, instance, **kwargs):
+    """Remove the file too, also when the issue or project is deleted."""
+    if instance.image.name:
+        instance.image.storage.delete(instance.image.name)

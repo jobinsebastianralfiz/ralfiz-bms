@@ -284,3 +284,80 @@ class StaffTests(Base):
         self.project.save()
         r = self.client.get(reverse('project_detail', args=[p.pk]))
         self.assertContains(r, 'Partner issues (2 open)')
+
+
+class ProgressAndPictureTests(Base):
+    """'% done' follows the issue list; issues can carry screenshots."""
+
+    def setUp(self):
+        super().setUp()
+        import shutil
+        import tempfile
+        from django.test import override_settings
+        media = tempfile.mkdtemp()
+        self.addCleanup(shutil.rmtree, media, True)
+        self._media = override_settings(MEDIA_ROOT=media)
+        self._media.enable()
+        self.addCleanup(self._media.disable)
+        self.staff = User.objects.create_superuser('boss', 'b@x.in', 'pass12345')
+
+    def pic(self, name='shot.png'):
+        return SimpleUploadedFile(name, png().getvalue(), 'image/png')
+
+    def pct(self):
+        self.project.refresh_from_db()
+        return self.project.progress
+
+    def test_progress_follows_done_share(self):
+        self.project.progress = 0
+        self.project.save()
+        a = self.issue('A', is_done=True)
+        self.issue('B')
+        self.issue('C')
+        self.assertEqual(self.pct(), 33)
+        self.client.force_login(self.staff)
+        r = self.client.post(reverse('bizpartners:issue_toggle', args=[self.project.pk, a.pk]), {'done': '0'},
+                             HTTP_X_REQUESTED_WITH='XMLHttpRequest')
+        self.assertEqual(r['X-Progress'], '0')
+        self.client.post(reverse('bizpartners:issue_bulk', args=[self.project.pk]),
+                         {'ids': list(self.project.issues.values_list('pk', flat=True)), 'done': '1'})
+        self.assertEqual(self.pct(), 100)
+        self.client.post(reverse('bizpartners:issue_save', args=[self.project.pk, a.pk]),
+                         {'title': 'A', 'done': '0'})
+        self.assertEqual(self.pct(), 67)
+        self.client.post(reverse('bizpartners:issue_delete', args=[self.project.pk, a.pk]))
+        self.assertEqual(self.pct(), 100)
+
+    def test_no_issues_keeps_typed_progress(self):
+        self.project.progress = 40
+        self.project.save()
+        JointIssue.sync_progress(self.project)
+        self.assertEqual(self.pct(), 40)
+
+    def test_staff_add_with_pictures_then_remove_one(self):
+        self.client.force_login(self.staff)
+        self.client.post(reverse('bizpartners:issue_add', args=[self.project.pk]),
+                         {'title': 'Logo blurry', 'images': [self.pic('a.png'), self.pic('b.png')]})
+        issue = self.project.issues.get(title='Logo blurry')
+        self.assertEqual(issue.images.count(), 2)
+        first = issue.images.first()
+        path = first.image.path
+        r = self.client.get(reverse('bizpartners:project', args=[self.project.pk]))
+        self.assertContains(r, first.image.url)
+        self.client.post(reverse('bizpartners:issue_save', args=[self.project.pk, issue.pk]),
+                         {'title': 'Logo blurry', 'remove_image': [first.pk]})
+        self.assertEqual(issue.images.count(), 1)
+        import os
+        self.assertFalse(os.path.exists(path))
+
+    def test_partner_add_with_picture_and_bad_file_skipped(self):
+        self.client.force_login(self.user)
+        bad = SimpleUploadedFile('notes.png', b'not a picture', 'image/png')
+        r = self.client.post(reverse('bizpartners_portal:issue_add', args=[self.project.pk]),
+                             {'title': 'Menu overlaps', 'images': [self.pic(), bad]}, follow=True)
+        issue = self.project.issues.get(title='Menu overlaps')
+        self.assertEqual(issue.images.count(), 1)
+        self.assertTrue(issue.images.first().image.name.startswith('joint_issues/'))
+        self.assertContains(r, 'notes.png (not a picture)')
+        r = self.client.get(reverse('bizpartners_portal:project', args=[self.project.pk]))
+        self.assertContains(r, issue.images.first().image.url)

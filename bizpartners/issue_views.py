@@ -5,6 +5,7 @@ change status, edit or delete."""
 import logging
 from io import BytesIO
 
+from django import forms
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.db.models import Q
@@ -15,13 +16,15 @@ from django.utils import timezone
 from django.views.decorators.http import require_POST
 
 from .issue_ai import MAX_ISSUES, Feedback, IssueAIError, draft_issues, read_upload
-from .models import JointIssue, JointProject, JointUpdate
+from .models import JointIssue, JointIssueImage, JointProject, JointUpdate
 from .portal_views import _ctx, partner_required
 
 logger = logging.getLogger(__name__)
 
 PARTNER_SOURCES = [('client', 'Client feedback'), ('partner', 'Partner')]
 PREVIEW_ROWS = 25
+MAX_IMAGES = 6                    # per issue
+MAX_IMAGE_BYTES = 8 * 1024 * 1024
 
 
 # ---------------------------------------------------------------------------
@@ -29,7 +32,7 @@ PREVIEW_ROWS = 25
 # ---------------------------------------------------------------------------
 
 def _filtered(project, GET):
-    qs = project.issues.select_related('done_by')
+    qs = project.issues.select_related('done_by').prefetch_related('images')
     status = GET.get('status', '')
     if status == 'open':
         qs = qs.filter(is_done=False)
@@ -79,6 +82,33 @@ def issue_context(project, GET):
         'issue_preview': PREVIEW_ROWS, 'issue_export_qs': GET.urlencode(),
         'source_choices': JointIssue.SOURCE_CHOICES,
     }
+
+
+def save_images(request, issue):
+    """Attach the pictures sent as `images` (file input or pasted screenshots).
+    Returns a message for the ones that were skipped, or ''."""
+    files = request.FILES.getlist('images')
+    if not files:
+        return ''
+    room = MAX_IMAGES - issue.images.count()
+    checker = forms.ImageField()
+    skipped = []
+    for f in files:
+        if room <= 0:
+            skipped.append(f'{f.name} (an issue holds {MAX_IMAGES} pictures)')
+            continue
+        if f.size > MAX_IMAGE_BYTES:
+            skipped.append(f'{f.name} (over 8 MB)')
+            continue
+        try:
+            checker.clean(f)  # Pillow opens it: rejects files that are not pictures
+        except forms.ValidationError:
+            skipped.append(f'{f.name} (not a picture)')
+            continue
+        f.seek(0)
+        JointIssueImage.objects.create(issue=issue, image=f, uploaded_by=request.user)
+        room -= 1
+    return ('Not attached: ' + ', '.join(skipped) + '.') if skipped else ''
 
 
 def _feedback_from_request(request):
@@ -314,6 +344,10 @@ def portal_issue_add(request, pk):
     else:
         rows = [{k: request.POST.get(k, '') for k in ('page', 'section', 'title', 'action')}]
     created = JointIssue.add_many(project, rows, source=source, user=request.user)
+    if created and 'count' not in request.POST:
+        skipped = save_images(request, created[0])
+        if skipped:
+            messages.warning(request, skipped)
     if created:
         _notify_owners(project, created, request.user)
         n = len(created)
@@ -347,8 +381,11 @@ def issue_toggle(request, pk, issue_id):
     issue = get_object_or_404(JointIssue, pk=issue_id, project_id=pk)
     issue.set_done(request.POST.get('done') == '1', request.user)
     issue.save()
+    pct = JointIssue.sync_progress(issue.project)
     if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
-        return HttpResponse(issue.status_label, content_type='text/plain')
+        resp = HttpResponse(issue.status_label, content_type='text/plain')
+        resp['X-Progress'] = str(pct)
+        return resp
     return redirect(_safe_next(request, _staff_back(issue.project)))
 
 
@@ -362,6 +399,8 @@ def issue_bulk(request, pk):
         issue.set_done(done, request.user)
         issue.save()
         changed.append(issue)
+    if changed:
+        JointIssue.sync_progress(project)
     if changed and done:
         nums = ', '.join(f'#{i.number}' for i in changed[:15]) + (' …' if len(changed) > 15 else '')
         n = len(changed)
@@ -385,8 +424,8 @@ def issue_save(request, pk, issue_id=None):
               'action': post.get('action', ''), 'notes': post.get('notes', ''),
               'source': _source(post.get('source')), 'is_done': post.get('done') == '1'}
     if issue_id is None:
-        JointIssue.add_many(project, [fields], user=request.user)
-        messages.success(request, 'Issue added.')
+        issue = JointIssue.add_many(project, [fields], user=request.user)[0]
+        messages.success(request, f'Issue #{issue.number} added.')
     else:
         issue = get_object_or_404(JointIssue, pk=issue_id, project=project)
         issue.page, issue.section = fields['page'].strip()[:80], fields['section'].strip()[:120]
@@ -394,7 +433,13 @@ def issue_save(request, pk, issue_id=None):
         issue.notes, issue.source = fields['notes'].strip(), fields['source']
         issue.set_done(fields['is_done'], request.user)
         issue.save()
+        JointIssue.sync_progress(project)
+        for img in issue.images.filter(pk__in=post.getlist('remove_image')):
+            img.delete()
         messages.success(request, f'Issue #{issue.number} saved.')
+    skipped = save_images(request, issue)
+    if skipped:
+        messages.warning(request, skipped)
     return redirect(_safe_next(request, _staff_back(project)))
 
 
@@ -404,6 +449,7 @@ def issue_delete(request, pk, issue_id):
     issue = get_object_or_404(JointIssue, pk=issue_id, project_id=pk)
     project = issue.project
     issue.delete()
+    JointIssue.sync_progress(project)
     messages.success(request, f'Issue #{issue.number} deleted.')
     return redirect(_safe_next(request, _staff_back(project)))
 

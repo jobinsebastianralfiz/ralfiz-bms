@@ -47,7 +47,7 @@ issues, issue_summary, issue_pages, issue_filters, issue_filtered, issue_preview
       <p class="bp-muted ji-hint">Nothing is added until you check the list on the next screen. Pictures in Word files are not read.</p>
     </form>
 
-    <form method="post" data-ji-pane="one" class="ji-pane" hidden
+    <form method="post" enctype="multipart/form-data" data-ji-pane="one" class="ji-pane" hidden
           action="{% if staff %}{% url 'bizpartners:issue_add' project.pk %}{% else %}{% url 'bizpartners_portal:issue_add' project.pk %}{% endif %}">
       {% csrf_token %}
       {% if staff %}{% include 'bizpartners/_issue_fields.html' with issue=None %}
@@ -59,6 +59,7 @@ issues, issue_summary, issue_pages, issue_filters, issue_filtered, issue_preview
       </div>
       <label class="ji-label">Issue<textarea name="title" rows="2" class="form-control" required maxlength="500"></textarea></label>
       <label class="ji-label">What should be done<textarea name="action" rows="3" class="form-control"></textarea></label>
+      {% include 'bizpartners/_issue_images_field.html' with issue=None %}
       {% endif %}
       <button type="submit" class="{% if staff %}btn btn-primary{% else %}pv-btn{% endif %}"><i class="fas fa-plus"></i> Add issue</button>
     </form>
@@ -130,7 +131,8 @@ issues, issue_summary, issue_pages, issue_filters, issue_filtered, issue_preview
         <td class="n">{{ i.number }}</td>
         <td>{{ i.page|default:"—" }}</td>
         <td>{{ i.section }}</td>
-        <td class="w"><strong>{{ i.title }}</strong></td>
+        <td class="w"><strong>{{ i.title }}</strong>
+          {% if i.images.all %}<div class="ji-thumbs">{% for im in i.images.all %}<a href="{{ im.image.url }}" target="_blank" rel="noopener" title="Open picture {{ forloop.counter }}"><img src="{{ im.image.url }}" alt="Picture {{ forloop.counter }} for #{{ i.number }}" loading="lazy"></a>{% endfor %}</div>{% endif %}</td>
         <td class="w ji-pre">{{ i.action }}</td>
         <td class="src">{{ i.get_source_display }}</td>
         <td class="st">
@@ -158,7 +160,7 @@ issues, issue_summary, issue_pages, issue_filters, issue_filtered, issue_preview
       </tr>
       {% if staff %}
       <tr class="ji-edit-row" id="jiEdit{{ i.pk }}" hidden><td colspan="10">
-        <form method="post" action="{% url 'bizpartners:issue_save' project.pk i.pk %}">
+        <form method="post" enctype="multipart/form-data" action="{% url 'bizpartners:issue_save' project.pk i.pk %}">
           {% csrf_token %}<input type="hidden" name="next" value="{{ request.get_full_path }}#issues">
           {% include 'bizpartners/_issue_fields.html' with issue=i %}
           <button type="submit" class="btn btn-sm btn-primary">Save #{{ i.number }}</button>
@@ -204,6 +206,38 @@ issues, issue_summary, issue_pages, issue_filters, issue_filtered, issue_preview
     }
   });
 
+  // Pictures: pasted screenshots join the files already chosen in that form.
+  function addFiles(input, files) {
+    var dt = new DataTransfer();
+    Array.prototype.forEach.call(input.files, function (f) { dt.items.add(f); });
+    files.forEach(function (f, n) {
+      var ext = (f.type.split('/')[1] || 'png').replace('jpeg', 'jpg');
+      dt.items.add(new File([f], 'screenshot-' + Date.now() + '-' + n + '.' + ext, { type: f.type }));
+    });
+    input.files = dt.files;
+    showFiles(input);
+  }
+  function showFiles(input) {
+    var list = input.parentNode.querySelector('[data-ji-paste-list]');
+    if (!list) return;
+    list.innerHTML = '';
+    Array.prototype.forEach.call(input.files, function (f) {
+      var img = document.createElement('img');
+      img.src = URL.createObjectURL(f); img.alt = f.name; img.title = f.name;
+      list.appendChild(img);
+    });
+    list.hidden = !input.files.length;
+  }
+  box.addEventListener('paste', function (e) {
+    var form = e.target.closest('form'), input = form && form.querySelector('[data-ji-images]');
+    if (!input || !e.clipboardData) return;
+    var files = Array.prototype.filter.call(e.clipboardData.files || [], function (f) { return /^image\//.test(f.type); });
+    if (!files.length) return;
+    e.preventDefault();
+    addFiles(input, files);
+  });
+  box.addEventListener('change', function (e) { if (e.target.matches('[data-ji-images]')) showFiles(e.target); });
+
   var aiForm = box.querySelector('.ji-ai-form');
   if (aiForm) aiForm.addEventListener('submit', function (e) {
     var text = aiForm.querySelector('[name=text]').value.trim();
@@ -227,7 +261,15 @@ issues, issue_summary, issue_pages, issue_filters, issue_filtered, issue_preview
       var body = new FormData(); body.append('done', on ? '1' : '0');
       fetch(sw.dataset.jiToggle, { method: 'POST', body: body, credentials: 'same-origin',
         headers: { 'X-CSRFToken': csrf(), 'X-Requested-With': 'XMLHttpRequest' } })
-        .then(function (r) { if (!r.ok) throw new Error(r.status); return r.text(); })
+        .then(function (r) {
+          if (!r.ok) throw new Error(r.status);
+          var pct = r.headers.get('X-Progress'), bar = document.querySelector('[data-ji-progress]');
+          if (pct !== null && bar) {
+            bar.querySelector('i').style.width = pct + '%';
+            bar.querySelector('[data-ji-pct]').textContent = pct + '% done';
+          }
+          return r.text();
+        })
         .then(function (label) {
           paint(label === 'Done');
           var stamp = sw.parentNode.querySelector('.ji-stamp');

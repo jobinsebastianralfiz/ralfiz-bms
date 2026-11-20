@@ -12,3 +12,4 @@
 <label class="ji-label">Issue<textarea name="title" rows="2" class="form-control" required maxlength="500">{{ issue.title|default:'' }}</textarea></label>
 <label class="ji-label">Action required<textarea name="action" rows="3" class="form-control">{{ issue.action|default:'' }}</textarea></label>
 <label class="ji-label">Note for the partner<textarea name="notes" rows="2" class="form-control">{{ issue.notes|default:'' }}</textarea></label>
+{% include 'bizpartners/_issue_images_field.html' %}

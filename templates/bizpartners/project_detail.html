@@ -1,7 +1,7 @@
 {% extends 'base.html' %}
 {% load static %}
 {% block title %}{{ project.title }} - Business Partners{% endblock %}
-{% block extra_css %}<link rel="stylesheet" href="{% static 'css/bizpartners.css' %}?v=5">{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'css/bizpartners.css' %}?v=6">{% endblock %}
 {% block content %}
 <div class="page-header">
   <div>
@@ -14,7 +14,8 @@
   </div>
 </div>
 <div class="card mb-3"><div class="card-body">
-  <div class="pv-bar-row" style="display:flex; align-items:center; gap:.6rem"><div class="bp-split" style="flex:1"><i class="r" style="width: {{ project.progress }}%"></i></div><strong>{{ project.progress }}% done</strong></div>
+  <div class="pv-bar-row" style="display:flex; align-items:center; gap:.6rem" data-ji-progress><div class="bp-split" style="flex:1"><i class="r" style="width: {{ project.progress }}%"></i></div><strong data-ji-pct>{{ project.progress }}% done</strong></div>
+  {% if issue_summary.total %}<div class="text-muted" style="font-size:.8rem; margin-top:.3rem">Follows the issue list: {{ issue_summary.done }} of {{ issue_summary.total }} Done.</div>{% endif %}
   {% if project.description %}<p style="margin:.7rem 0 0; white-space:pre-line">{{ project.description }}</p>{% endif %}
   {% if project.notes %}<p class="text-muted" style="margin:.5rem 0 0; white-space:pre-line"><strong>For the partner:</strong> {{ project.notes }}</p>{% endif %}
   {% if project.internal_notes %}<p class="text-muted" style="margin:.5rem 0 0; white-space:pre-line"><strong>Internal:</strong> {{ project.internal_notes }}</p>{% endif %}
