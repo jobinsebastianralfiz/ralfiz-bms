@@ -8,11 +8,12 @@ from io import BytesIO
 from django import forms
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
-from django.db.models import Q
-from django.http import HttpResponse
+from django.db.models import F, Q
+from django.http import HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils import timezone
+from django.utils.dateparse import parse_datetime
 from django.views.decorators.http import require_POST
 
 from .issue_ai import MAX_ISSUES, Feedback, IssueAIError, draft_issues, read_upload
@@ -507,3 +508,30 @@ def issue_import(request, pk):
     done = sum(1 for i in created if i.is_done)
     messages.success(request, f'Imported {len(created)} issues: {done} Done, {len(created) - done} Not Done.')
     return redirect(_staff_back(project))
+
+
+@login_required
+def issue_alerts(request):
+    """New issues partners added since `after`, for the chime on staff pages (_issue_alerts.html).
+
+    Without `after` it only returns the server time, so a fresh browser starts from now and
+    never chimes for old issues. Issues staff added themselves never chime.
+    """
+    now = timezone.now()
+    after = parse_datetime(request.GET.get('after') or '')
+    items = []
+    if after:
+        after = max(after, now - timezone.timedelta(days=1))
+        new = (JointIssue.objects
+               .filter(created_at__gt=after, created_at__lte=now, created_by__isnull=False,
+                       created_by=F('project__partner__user'))
+               .select_related('project__partner').order_by('created_at'))
+        by_project = {}
+        for issue in new[:200]:
+            row = by_project.setdefault(issue.project_id, {
+                'partner': issue.project.partner.display_name, 'project': issue.project.title,
+                'url': reverse('bizpartners:project', args=[issue.project_id]) + '#issues',
+                'count': 0, 'title': issue.title[:140]})
+            row['count'] += 1
+        items = list(by_project.values())[:5]
+    return JsonResponse({'now': now.isoformat(), 'items': items})

@@ -414,3 +414,35 @@ class StaffAddModalTests(Base):
         self.assertIn('data-ji-pane="import"', add)
         self.assertIn('data-ji-pane="one"', add)
         self.assertIn(f'id="jiEdit{issue.pk}"', html)
+
+
+class IssueAlertTests(Base):
+    """The chime on staff pages: only issues a partner added, only after the browser's last check."""
+
+    def setUp(self):
+        super().setUp()
+        self.staff = User.objects.create_superuser('boss4', 'b4@x.in', 'pass12345')
+        self.url = reverse('bizpartners:issue_alerts')
+
+    def test_first_call_only_returns_time(self):
+        self.client.force_login(self.staff)
+        d = self.client.get(self.url).json()
+        self.assertTrue(d['now'])
+        self.assertEqual(d['items'], [])
+
+    def test_partner_issues_after_time_chime_staff_ones_do_not(self):
+        self.client.force_login(self.staff)
+        after = self.client.get(self.url).json()['now']
+        JointIssue.add_many(self.project, [{'title': 'Partner one'}, {'title': 'Partner two'}], user=self.user)
+        JointIssue.add_many(self.project, [{'title': 'Staff one'}], user=self.staff)
+        d = self.client.get(self.url, {'after': after}).json()
+        self.assertEqual(len(d['items']), 1)
+        self.assertEqual(d['items'][0]['count'], 2)
+        self.assertEqual(d['items'][0]['title'], 'Partner one')
+        self.assertTrue(d['items'][0]['url'].endswith('#issues'))
+        self.assertEqual(self.client.get(self.url, {'after': d['now']}).json()['items'], [])
+
+    def test_staff_layout_includes_the_alert_script(self):
+        self.client.force_login(self.staff)
+        r = self.client.get(reverse('bizpartners:list'))
+        self.assertContains(r, 'id="jiAlerts"')

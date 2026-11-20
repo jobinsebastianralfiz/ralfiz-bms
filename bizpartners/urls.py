@@ -16,6 +16,7 @@ urlpatterns = [
     path('projects/<uuid:pk>/', views.project_detail, name='project'),
     path('projects/<uuid:pk>/edit/', views.project_form, name='project_edit'),
     path('projects/<uuid:pk>/delete/', views.project_delete, name='project_delete'),
+    path('issues/alerts/', iv.issue_alerts, name='issue_alerts'),
     # Issue list. Before the <str:kind> routes, so "issues" is never read as a kind.
     path('projects/<uuid:pk>/issues/export/', iv.issue_export, name='issue_export'),
     path('projects/<uuid:pk>/issues/add/', iv.issue_save, name='issue_add'),
