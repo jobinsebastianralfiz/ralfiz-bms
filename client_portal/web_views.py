@@ -327,9 +327,17 @@ def portal_project_detail(request, project_id):
         project=project, client_visible=True, is_active=True
     ).order_by('credential_type', 'name')
 
+    from core.signoff_models import ProjectSignoff
+    amc_contracts = project.amc_contracts.exclude(status='cancelled').prefetch_related('payments')
+    signoffs = project.signoffs.exclude(
+        status__in=[ProjectSignoff.STATUS_CANCELLED, ProjectSignoff.STATUS_SUPERSEDED]).order_by('-sent_at')
+
     ctx = _base_context(request, 'projects')
     ctx.update({
         'project': project,
+        'project_invoices': invoices.order_by('-issue_date'),
+        'amc_contracts': amc_contracts,
+        'signoffs': signoffs,
         'project_links': project.links.filter(visible_to_client=True),
         'task_stats': task_stats,
         'board_columns': _portal_board_columns(project),
@@ -582,3 +590,31 @@ def portal_search(request):
     ctx.update({'q': q, 'results': results,
                 'result_count': sum(len(v) for v in results.values())})
     return render(request, 'client_portal/search.html', ctx)
+
+
+@client_required
+def portal_amc_agreement(request, amc_id):
+    """The client's own AMC agreement, as a printable page or PDF."""
+    from core.models import AMCContract
+    from core.views import _amc_agreement_context
+    amc = get_object_or_404(AMCContract.objects.select_related('project__client'),
+                            pk=amc_id, project__client=request.client)
+    if not amc.agreement_no:
+        amc.save(update_fields=['agreement_no'])
+    if request.GET.get('download') == '1':
+        from django.http import HttpResponse
+        from django.template.loader import render_to_string
+        try:
+            from weasyprint import HTML
+            html = render_to_string('amc/agreement.html', _amc_agreement_context(amc, for_pdf=True))
+            pdf = HTML(string=html, base_url=request.build_absolute_uri('/')).write_pdf()
+        except Exception:
+            import logging
+            logging.getLogger(__name__).exception('Portal AMC agreement PDF failed for %s', amc.pk)
+        else:
+            response = HttpResponse(pdf, content_type='application/pdf')
+            response['Content-Disposition'] = f'attachment; filename="{amc.reference.replace("/", "-")}.pdf"'
+            return response
+    ctx = _amc_agreement_context(amc)
+    ctx['portal_view'] = True
+    return render(request, 'amc/agreement.html', ctx)

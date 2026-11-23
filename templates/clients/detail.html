@@ -179,7 +179,11 @@
     <div class="d-flex gap-2 flex-wrap mt-2">
       <form method="post" action="{% url 'client_portal_reset_password' client.pk %}">
         {% csrf_token %}
-        <button type="submit" class="btn btn-sm btn-outline-primary" onclick="return confirm('This will generate a new password. Continue?')"><i class="fas fa-key"></i> Reset Password</button>
+        <div class="d-flex gap-2">
+          <input type="text" name="password" class="form-control form-control-sm" minlength="8" autocomplete="off"
+                 placeholder="New password (blank = random)" style="max-width: 220px;">
+          <button type="submit" class="btn btn-sm btn-outline-primary" onclick="return confirm('Change this client\'s portal password?')"><i class="fas fa-key"></i> Set Password</button>
+        </div>
       </form>
       <form method="post" action="{% url 'client_portal_toggle' client.pk %}">
         {% csrf_token %}

@@ -1,4 +1,5 @@
 {% extends 'client_portal/base.html' %}
+{% load money %}
 {% load static %}
 
 {% block title %}{{ project.name }}{% endblock %}
@@ -40,6 +41,9 @@
   <a href="#timeline" class="portal-tab" onclick="switchTab(event, 'timeline')">Timeline</a>
   <a href="#comments" class="portal-tab" onclick="switchTab(event, 'comments')">Discussion</a>
   <a href="#links" class="portal-tab" onclick="switchTab(event, 'links')">Links{% if project_links %} <span class="portal-badge todo" style="margin-left: 0.25rem;">{{ project_links|length }}</span>{% endif %}</a>
+  <a href="#invoices" class="portal-tab" onclick="switchTab(event, 'invoices')">Invoices{% if project_invoices %} <span class="portal-badge todo" style="margin-left: 0.25rem;">{{ project_invoices|length }}</span>{% endif %}</a>
+  <a href="#amc" class="portal-tab" onclick="switchTab(event, 'amc')">AMC{% if amc_contracts %} <span class="portal-badge todo" style="margin-left: 0.25rem;">{{ amc_contracts|length }}</span>{% endif %}</a>
+  <a href="#signoffs" class="portal-tab" onclick="switchTab(event, 'signoffs')">Sign-offs{% if signoffs %} <span class="portal-badge todo" style="margin-left: 0.25rem;">{{ signoffs|length }}</span>{% endif %}</a>
   <a href="#documents" class="portal-tab" onclick="switchTab(event, 'documents')">Documents</a>
   {% if credentials %}<a href="#credentials" class="portal-tab" onclick="switchTab(event, 'credentials')">Credentials</a>{% endif %}
 </div>
@@ -327,6 +331,100 @@
 </div>
 
 <!-- Documents Tab -->
+<div id="tab-invoices" class="tab-content" style="display: none;">
+  <div class="portal-card">
+    <div class="portal-card-header"><h2>Invoices for this project</h2></div>
+    <div class="portal-card-body" style="padding: 0;">
+      <div class="portal-table-wrapper">
+        <table class="portal-table">
+          <thead><tr><th>Invoice</th><th>Date</th><th>Due</th><th>Amount</th><th>Paid</th><th>Balance</th><th>Status</th></tr></thead>
+          <tbody>
+            {% for invoice in project_invoices %}
+            <tr onclick="window.location='{% url 'client_portal:portal_invoice_detail' invoice.id %}'" style="cursor: pointer;">
+              <td><a href="{% url 'client_portal:portal_invoice_detail' invoice.id %}">{{ invoice.invoice_number }}</a><div style="font-size: .8125rem; color: var(--text-muted);">{{ invoice.title|truncatewords:6 }}</div></td>
+              <td>{{ invoice.issue_date|date:"M d, Y" }}</td>
+              <td>{{ invoice.due_date|date:"M d, Y"|default:"-" }}</td>
+              <td class="amount">&#8377;{{ invoice.total_amount|floatformat:2 }}</td>
+              <td class="amount" style="color: var(--success);">&#8377;{{ invoice.amount_paid|floatformat:2 }}</td>
+              <td class="amount">&#8377;{{ invoice.balance_due|floatformat:2 }}</td>
+              <td><span class="portal-badge {{ invoice.status }}">{{ invoice.get_status_display }}</span></td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="7"><div class="portal-empty"><i class="fas fa-file-invoice-dollar"></i><h3>No invoices yet</h3><p>Invoices for this project will appear here</p></div></td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="tab-amc" class="tab-content" style="display: none;">
+  {% for amc in amc_contracts %}
+  <div class="portal-card">
+    <div class="portal-card-header" style="display: flex; justify-content: space-between; align-items: center; gap: .75rem; flex-wrap: wrap;">
+      <h2>{{ amc.get_contract_type_display }} &middot; {{ amc.reference }}</h2>
+      <a href="{% url 'client_portal:portal_amc_agreement' amc.pk %}?download=1" class="portal-btn portal-btn-outline portal-btn-sm"><i class="fas fa-download"></i> Agreement PDF</a>
+    </div>
+    <div class="portal-card-body">
+      <div class="financial-summary">
+        <div class="financial-item">
+          <div class="amount neutral" style="font-size: 1rem;">{{ amc.start_date|date:"M d, Y" }} &ndash; {{ amc.end_date|date:"M d, Y" }}</div>
+          <div class="label">Period &middot; {{ amc.get_status_display }}</div>
+        </div>
+        <div class="financial-item">
+          {% if amc.included_in_project %}
+          <div class="amount positive" style="font-size: 1rem;">Included in project</div>
+          <div class="label">{% if amc.annual_amount %}Renewal &#8377;{{ amc.annual_amount|inr }} / year{% else %}No separate fee this period{% endif %}</div>
+          {% else %}
+          <div class="amount neutral">&#8377;{{ amc.annual_amount|inr }}</div>
+          <div class="label">Per year &middot; {{ amc.get_billing_cycle_display }}</div>
+          {% endif %}
+        </div>
+        <div class="financial-item">
+          <div class="amount neutral" style="font-size: 1rem;">{{ amc.get_plan_display }}</div>
+          <div class="label">{% if amc.included_in_project %}Renews{% else %}Next due{% endif %} {{ amc.next_due_date|date:"M d, Y" }}</div>
+        </div>
+      </div>
+      {% if amc.payments.all %}
+      <div class="portal-table-wrapper" style="margin-top: 1rem;">
+        <table class="portal-table">
+          <thead><tr><th>Paid on</th><th>Period</th><th>Amount</th></tr></thead>
+          <tbody>
+            {% for pay in amc.payments.all %}
+            <tr><td>{{ pay.payment_date|date:"M d, Y" }}</td><td>{{ pay.period_start|date:"M d, Y" }} &ndash; {{ pay.period_end|date:"M d, Y" }}</td><td class="amount">&#8377;{{ pay.amount|inr }}</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+  {% empty %}
+  <div class="portal-card"><div class="portal-empty"><i class="fas fa-shield-alt"></i><h3>No maintenance contract</h3><p>Your AMC for this project will appear here</p></div></div>
+  {% endfor %}
+</div>
+
+<div id="tab-signoffs" class="tab-content" style="display: none;">
+  <div class="portal-card">
+    <div class="portal-card-header"><h2>Sign-offs</h2></div>
+    <div class="portal-card-body" style="padding: 0;">
+      {% for so in signoffs %}
+      <div style="display: flex; align-items: center; gap: .875rem; padding: .875rem 1.25rem; border-bottom: 1px solid var(--border-color);">
+        <div style="flex: 1;">
+          <div style="font-weight: 500; color: var(--text-primary);">{{ so.title }}</div>
+          <div style="font-size: .8125rem; color: var(--text-muted);">{{ so.reference }} &middot; sent {{ so.sent_at|date:"M d, Y" }}{% if so.responded_at %} &middot; answered {{ so.responded_at|date:"M d, Y" }}{% endif %}</div>
+        </div>
+        <span class="portal-badge {% if so.status == 'approved' %}paid{% elif so.status == 'issues' %}overdue{% else %}sent{% endif %}">{{ so.get_status_display }}</span>
+        <a href="{% url 'signoff_sign' so.token %}" target="_blank" class="portal-btn portal-btn-outline portal-btn-sm">{% if so.status in so.OPEN_STATUSES %}<i class="fas fa-signature"></i> Review &amp; sign{% else %}<i class="fas fa-eye"></i> View{% endif %}</a>
+      </div>
+      {% empty %}
+      <div class="portal-empty"><i class="fas fa-signature"></i><h3>No sign-offs</h3><p>Go-live and acceptance sign-offs will appear here</p></div>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+
 <div id="tab-documents" class="tab-content" style="display: none;">
   <div class="portal-card">
     <div class="portal-card-header"><h2>Project Documents</h2></div>

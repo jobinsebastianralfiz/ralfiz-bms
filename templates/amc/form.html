@@ -59,6 +59,13 @@
               </div>
             </div>
             <div class="col-12" style="padding: 0.5rem;">
+              <label class="amc-included">
+                <input type="checkbox" name="included_in_project" id="included_in_project" {% if amc.included_in_project %}checked{% endif %}>
+                <span><strong>AMC included in the project cost</strong>
+                  <small class="text-muted d-block">The client already paid for this AMC period inside the project price. Nothing is billed for it; the contract is tracked and the agreement says it is included.</small></span>
+              </label>
+            </div>
+            <div class="col-12" style="padding: 0.5rem;">
               <div class="form-group mb-0">
                 <label class="form-label">Amount basis</label>
                 <div class="amc-mode" role="radiogroup">
@@ -83,7 +90,7 @@
             </div>
             <div class="col-6 col-sm-12" style="padding: 0.5rem;">
               <div class="form-group">
-                <label class="form-label" for="annual_amount">Annual Amount (&#8377;) <span class="required">*</span></label>
+                <label class="form-label" for="annual_amount"><span id="annualLabel">Annual Amount (&#8377;)</span> <span class="required" id="annualRequired">*</span></label>
                 <input type="number" class="form-control" id="annual_amount" name="annual_amount" step="0.01" value="{{ amc.annual_amount|default:'' }}" required>
                 <small class="text-muted" id="annualHint">Total annual value; payments will be spread per billing cycle.</small>
               </div>
@@ -167,10 +174,32 @@
             </div>
             <div class="col-12" style="padding: 0.5rem;">
               <div class="form-group">
-                <label class="form-label" for="covered_system">Covered system <small class="text-muted">(Schedule A &mdash; one per line: Component | Technology | URL / ID)</small></label>
-                <textarea class="form-control" id="covered_system" name="covered_system" rows="4"
-                          placeholder="Web Application | Django | https://example.com&#10;Android App | Flutter | com.example.app&#10;Server / Hosting | Railway | Managed by Ralfiz">{{ amc.covered_system|default:'' }}</textarea>
-                <small class="text-muted">Leave blank to use the project's type, tech stack and live URL.</small>
+                <label class="form-label">Covered system <small class="text-muted">(Schedule A &mdash; tick what this AMC covers)</small></label>
+                <div class="amc-cover">
+                  {% for row in covered_components %}
+                  <div class="amc-cover-row{% if row.checked %} on{% endif %}">
+                    <label><input type="checkbox" name="covered_{{ row.i }}" {% if row.checked %}checked{% endif %}> {{ row.name }}</label>
+                    <input type="text" class="form-control form-control-sm" name="covered_tech_{{ row.i }}" value="{{ row.tech }}" placeholder="Technology (e.g. Django, Flutter)">
+                    <input type="text" class="form-control form-control-sm" name="covered_url_{{ row.i }}" value="{{ row.url }}" placeholder="URL / package ID / details">
+                  </div>
+                  {% endfor %}
+                </div>
+                <label class="form-label mt-2" for="covered_system">Other components <small class="text-muted">(one per line: Component | Technology | URL / ID)</small></label>
+                <textarea class="form-control" id="covered_system" name="covered_system" rows="2"
+                          placeholder="Payment Gateway Integration | Razorpay | Live keys">{{ covered_other }}</textarea>
+                <small class="text-muted">Nothing ticked and no other lines = the project's type, tech stack and live URL.</small>
+              </div>
+            </div>
+            <div class="col-12" style="padding: 0.5rem;">
+              <div class="form-group">
+                <label class="form-label">Not included in the AMC <small class="text-muted">(clause 5 &mdash; ticked items are quoted and billed separately)</small></label>
+                <div class="amc-excl">
+                  {% for item in exclusion_choices %}
+                  <label title="{{ item.text }}"><input type="checkbox" name="exclusions" value="{{ item.key }}" {% if item.checked %}checked{% endif %}> {{ item.label }}</label>
+                  {% endfor %}
+                </div>
+                <textarea class="form-control mt-2" name="extra_exclusions" rows="2"
+                          placeholder="More exclusions, one per line">{{ amc.extra_exclusions|default:'' }}</textarea>
               </div>
             </div>
             <div class="col-12" style="padding: 0.5rem;">
@@ -220,6 +249,20 @@
   .amc-mode label { display: flex; align-items: center; gap: 6px; cursor: pointer; font-weight: 500; }
   .amc-pct { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
   .amc-pct input { max-width: 110px; }
+  .amc-included { display: flex; gap: 10px; align-items: flex-start; padding: 12px 14px; border: 1px solid var(--primary-lighter, #bfdbfe);
+                  border-radius: 10px; background: var(--primary-bg, #eff6ff); cursor: pointer; margin: 0; }
+  .amc-included input { width: 18px; height: 18px; margin-top: 2px; flex: none; }
+  .amc-cover { border: 1px solid var(--border-color, #e2e8f0); border-radius: 10px; overflow: hidden; }
+  .amc-cover-row { display: grid; grid-template-columns: 190px 1fr 1.3fr; gap: 8px; align-items: center; padding: 6px 10px; }
+  .amc-cover-row + .amc-cover-row { border-top: 1px solid var(--border-color, #e2e8f0); }
+  .amc-cover-row label { display: flex; gap: 8px; align-items: center; margin: 0; cursor: pointer; font-weight: 500; }
+  .amc-cover-row label input { width: 16px; height: 16px; }
+  .amc-cover-row:not(.on) .form-control { opacity: .45; }
+  .amc-cover-row.on { background: var(--primary-bg, #eff6ff); }
+  .amc-excl { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px 16px; }
+  .amc-excl label { display: flex; gap: 8px; align-items: center; margin: 0; cursor: pointer; }
+  .amc-excl label input { width: 16px; height: 16px; flex: none; }
+  @media (max-width: 700px) { .amc-cover-row { grid-template-columns: 1fr; } .amc-excl { grid-template-columns: 1fr; } }
 </style>
 <script>
 (function () {
@@ -236,12 +279,21 @@
     const opt = project.options[project.selectedIndex];
     return parseFloat(opt && opt.dataset.value) || 0;
   }
+  const included = document.getElementById('included_in_project');
   function recalc() {
+    const inc = included.checked;
+    amount.required = !inc;
+    document.getElementById('annualRequired').style.display = inc ? 'none' : '';
+    document.getElementById('annualLabel').textContent = inc ? 'Renewal fee per year (\u20b9, optional)' : 'Annual Amount (\u20b9)';
     const percent = mode() === 'percent';
     pctField.style.display = percent ? '' : 'none';
     const value = projectValue();
     amount.readOnly = percent && value > 0;
-    if (!percent) { annualHint.textContent = 'Total annual value; payments will be spread per billing cycle.'; return; }
+    if (!percent) {
+      annualHint.textContent = inc ? 'Shown in the agreement as the fee to renew after this period. Leave blank to quote it later.'
+                                   : 'Total annual value; payments will be spread per billing cycle.';
+      return;
+    }
     if (!value) {
       hint.textContent = 'This project has no budget or final amount set, so enter the annual amount yourself.';
       return;
@@ -255,6 +307,14 @@
   document.querySelectorAll('[data-pct]').forEach(b => b.addEventListener('click', () => { pct.value = b.dataset.pct; recalc(); }));
   pct.addEventListener('input', recalc);
   project.addEventListener('change', recalc);
+  included.addEventListener('change', recalc);
+  document.querySelectorAll('.amc-cover-row input[type=checkbox]').forEach(cb => cb.addEventListener('change', () => {
+    cb.closest('.amc-cover-row').classList.toggle('on', cb.checked);
+  }));
+  document.querySelectorAll('.amc-cover-row .form-control').forEach(f => f.addEventListener('input', () => {
+    const cb = f.closest('.amc-cover-row').querySelector('input[type=checkbox]');
+    if (f.value.trim() && !cb.checked) { cb.checked = true; cb.dispatchEvent(new Event('change')); }
+  }));
 
   recalc();
 })();

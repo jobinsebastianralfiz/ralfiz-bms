@@ -292,6 +292,11 @@ class AMCContract(models.Model):
         help_text='Rate for work outside the AMC; blank means it is quoted per job')
     covered_system = models.TextField(
         blank=True, help_text='Schedule A, one component per line: Component | Technology | URL / ID')
+    included_in_project = models.BooleanField(
+        default=False, help_text='This AMC period is already paid for inside the project cost; tracked only')
+    exclusions = models.JSONField(
+        null=True, blank=True, help_text='Ticked EXCLUSION_CHOICES keys; null means all of them')
+    extra_exclusions = models.TextField(blank=True, help_text='More exclusions, one per line')
     agreement_no = models.CharField(max_length=30, blank=True, editable=False)
     start_date = models.DateField()
     end_date = models.DateField()
@@ -357,6 +362,61 @@ class AMCContract(models.Model):
         return [{'feature': row[0],
                  'cells': [{'value': value, 'selected': key == self.plan} for key, value in zip(keys, row[1:])]}
                 for row in self.PLAN_FEATURES]
+
+    # Schedule A components the form offers as ticks; anything else goes in the free text.
+    COVERED_COMPONENTS = [
+        'Website', 'Web Application', 'Admin Dashboard', 'Android App', 'iOS App',
+        'Backend API', 'Database', 'Server / Hosting', 'Domain & SSL', 'Business Email',
+    ]
+
+    # Clause 5 "not covered" items: (key, form label, agreement wording).
+    EXCLUSION_CHOICES = [
+        ('new_features', 'Extra features',
+         'Extra features: new features, modules, screens, reports, integrations, redesigns or other Enhancements.'),
+        ('content_updates', 'Additional content updating',
+         'Additional content updating: new pages, product or catalogue uploads, and regular text, image, '
+         'banner or blog updates.'),
+        ('client_changes', 'Client / third-party code changes',
+         'Issues caused by changes, modifications or access to the code/server by the Client or any third party.'),
+        ('third_party', 'Third-party service issues',
+         'Issues arising from Third-Party Services, including outages, pricing changes, policy changes or '
+         'discontinuation.'),
+        ('third_party_costs', 'Hosting, domain & third-party costs',
+         'Costs of hosting, servers, domains, SSL certificates, SMS/WhatsApp/email credits, payment gateway fees, '
+         'app store developer accounts, paid APIs or licenses.'),
+        ('data_work', 'Data entry / migration / recovery',
+         'Data entry, data migration, bulk data correction or data recovery beyond available backups.'),
+        ('hardware', 'Hardware & client devices',
+         'Hardware, networking, printers, POS devices, or client-side device/OS issues.'),
+        ('negligence', 'Hacking due to client negligence',
+         'Damage due to virus attacks, hacking or misuse resulting from the Client\u2019s negligence '
+         '(e.g., shared passwords, compromised admin accounts).'),
+        ('onsite', 'On-site visits',
+         'On-site visits, unless specified in Schedule B (on-site visits outside Perinthalmanna are chargeable '
+         'with travel costs).'),
+        ('training', 'Extra staff training',
+         'Training for new staff beyond {training} session{plural} per year.'),
+        ('major_upgrades', 'Major version upgrades',
+         'Major version upgrades (e.g., framework migration, full platform rebuild).'),
+    ]
+
+    @property
+    def excluded_keys(self):
+        keys = [key for key, _, _ in self.EXCLUSION_CHOICES]
+        return keys if self.exclusions is None else [key for key in keys if key in self.exclusions]
+
+    @property
+    def exclusion_lines(self):
+        """Clause 5 wording for the ticked exclusions plus any typed ones."""
+        training = self.plan_terms['training']
+        ticked = set(self.excluded_keys)
+        lines = [text.format(training=training, plural='' if training == 1 else 's')
+                 for key, _, text in self.EXCLUSION_CHOICES if key in ticked]
+        return lines + [line.strip() for line in self.extra_exclusions.splitlines() if line.strip()]
+
+    @property
+    def excludes_content_updates(self):
+        return 'content_updates' in self.excluded_keys
 
     @property
     def covered_rows(self):

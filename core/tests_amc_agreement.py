@@ -58,3 +58,47 @@ class AMCPercentageAndAgreementTests(TestCase):
         amc = AMCContract.objects.get()
         html = self.client.get(reverse('amc_agreement', args=[amc.pk])).content.decode()
         self.assertIn('No GST is charged', html)
+
+
+class AMCIncludedTicksTests(AMCPercentageAndAgreementTests):
+    def test_included_in_project_needs_no_amount_and_bills_nothing(self):
+        self._post(annual_amount='', included_in_project='on', billing_cycle='monthly', include_gst='on')
+        amc = AMCContract.objects.get()
+        self.assertTrue(amc.included_in_project)
+        self.assertEqual(amc.annual_amount, 0)
+        self.assertEqual(str(amc.next_due_date), '2027-09-30')  # nothing due until renewal
+        html = self.client.get(reverse('amc_agreement', args=[amc.pk])).content.decode()
+        self.assertIn('included in the project fee', html)
+        self.assertIn('quoted before expiry', html)
+        self.assertNotIn('Instalment', html)
+
+    def test_included_with_renewal_fee(self):
+        self._post(annual_amount='15000', included_in_project='on', include_gst='on')
+        amc = AMCContract.objects.get()
+        html = self.client.get(reverse('amc_agreement', args=[amc.pk])).content.decode()
+        self.assertIn('Renewal after the AMC Period', html)
+        self.assertIn('17,700', html)  # renewal + 18% GST
+
+    def test_ticked_covered_components_and_exclusions(self):
+        self._post(covered_3='on', covered_tech_3='Flutter', covered_url_3='com.example.app',
+                   covered_0='on', covered_system='Payments | Razorpay',
+                   exclusions=['new_features', 'content_updates'], extra_exclusions='Logo design')
+        amc = AMCContract.objects.get()
+        self.assertEqual(amc.covered_rows, [['Website', '', ''], ['Android App', 'Flutter', 'com.example.app'],
+                                            ['Payments', 'Razorpay', '']])
+        html = self.client.get(reverse('amc_agreement', args=[amc.pk])).content.decode()
+        self.assertIn('Extra features:', html)
+        self.assertIn('Additional content updating:', html)
+        self.assertIn('Logo design', html)
+        self.assertNotIn('Major version upgrades', html)
+        self.assertNotIn('Minor content updates (text', html)
+        form = self.client.get(reverse('amc_update', args=[amc.pk])).content.decode()
+        self.assertIn('value="com.example.app"', form)
+        self.assertIn('Payments | Razorpay</textarea>', form)
+
+    def test_old_contracts_keep_every_exclusion(self):
+        self._post()
+        amc = AMCContract.objects.get()
+        AMCContract.objects.filter(pk=amc.pk).update(exclusions=None)
+        amc.refresh_from_db()
+        self.assertEqual(len(amc.exclusion_lines), len(AMCContract.EXCLUSION_CHOICES))

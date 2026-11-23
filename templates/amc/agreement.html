@@ -109,7 +109,7 @@
       <span class="text-sm">{{ amc.reference }} &middot; {% firstof client.company_name client.name %}</span>
     </div>
     <div class="copy-toolbar-actions">
-      <a href="{% url 'amc_detail' amc.pk %}" class="copy-btn">Back</a>
+      {% if portal_view %}<a href="{% url 'client_portal:portal_project_detail' project.pk %}#amc" class="copy-btn">Back</a>{% else %}<a href="{% url 'amc_detail' amc.pk %}" class="copy-btn">Back</a>{% endif %}
       <button type="button" class="copy-btn" onclick="window.print()">Print</button>
       <a href="?download=1" class="copy-btn primary">Download PDF</a>
     </div>
@@ -208,7 +208,7 @@
     <ul class="agr-list">
       <li>Support via {{ amc.plan_terms.channels }} during Support Hours.</li>
       <li>Remote assistance for usage-related queries.</li>
-      <li>Minor content updates (text, images, banners) within the allowance in clause 4.6.</li>
+      {% if not amc.excludes_content_updates %}<li>Minor content updates (text, images, banners) within the allowance in clause 4.6.</li>{% endif %}
     </ul>
     <h3>4.6 Minor Changes Allowance</h3>
     <ul class="agr-list">
@@ -220,16 +220,7 @@
     <div class="agr-section-head"><span class="agr-no">5</span><h2>Exclusions</h2></div>
     <p>The following are <strong>not</strong> covered under this AMC and shall be quoted and billed separately:</p>
     <ol class="amc-ol">
-      <li>New features, modules, integrations, redesigns or Enhancements.</li>
-      <li>Issues caused by changes, modifications or access to the code/server by the Client or any third party.</li>
-      <li>Issues arising from Third-Party Services, including outages, pricing changes, policy changes or discontinuation.</li>
-      <li>Costs of hosting, servers, domains, SSL certificates, SMS/WhatsApp/email credits, payment gateway fees, app store developer accounts, paid APIs or licenses.</li>
-      <li>Data entry, data migration, bulk data correction or data recovery beyond available backups.</li>
-      <li>Hardware, networking, printers, POS devices, or client-side device/OS issues.</li>
-      <li>Damage due to virus attacks, hacking or misuse resulting from the Client&rsquo;s negligence (e.g., shared passwords, compromised admin accounts).</li>
-      <li>On-site visits, unless specified in Schedule B (on-site visits outside Perinthalmanna are chargeable with travel costs).</li>
-      <li>Training for new staff beyond {{ amc.plan_terms.training }} session{{ amc.plan_terms.training|pluralize }} per year.</li>
-      <li>Major version upgrades (e.g., framework migration, full platform rebuild).</li>
+      {% for line in amc.exclusion_lines %}<li>{{ line }}</li>{% endfor %}
     </ol>
   </section>
 
@@ -265,6 +256,14 @@
 
   <section class="agr-section">
     <div class="agr-section-head"><span class="agr-no">8</span><h2>Fees &amp; Payment Terms</h2></div>
+    {% if amc.included_in_project %}
+    <p class="clause"><b>8.1</b><span>The AMC for the AMC Period is <strong>included in the project fee</strong> for {{ project.name }}. No separate AMC fee is payable for this period.</span></p>
+    <p class="clause"><b>8.2</b><span>{% if amc.annual_amount %}Renewal after the AMC Period shall be charged at <strong>&#8377;{{ amc.annual_amount|inr }}/-</strong> per year{% if fee_words %} ({{ fee_words }}){% endif %}{% if amc.include_gst %} plus GST at the applicable rate{% endif %}, subject to Clause 3.3.{% else %}The renewal fee for any further period will be quoted before expiry, as per Clause 3.2.{% endif %}</span></p>
+    <p class="clause"><b>8.3</b><span><strong>Payment Terms:</strong></span></p>
+    <ul class="ticks">
+      <li><span class="box">&#10003;</span>Included in the project cost (no separate payment for the AMC Period)</li>
+    </ul>
+    {% else %}
     <p class="clause"><b>8.1</b><span>The AMC fee for the AMC Period is <strong>&#8377;{{ amc.annual_amount|inr }}/-</strong>{% if fee_words %} ({{ fee_words }}){% endif %}{% if amc.include_gst %}, exclusive of GST{% endif %}, as detailed in <strong>Schedule C</strong>.</span></p>
     {% if amc.include_gst %}
     <p class="clause"><b>8.2</b><span>GST at the applicable rate (currently <strong>{{ tax_rate|floatformat:"-2" }}%</strong>) will be charged additionally.</span></p>
@@ -279,6 +278,7 @@
       {% endif %}
       {% endfor %}
     </ul>
+    {% endif %}
     <p class="clause"><b>8.4</b><span>Payments are due within <strong>7 days</strong> of invoice date via bank transfer / UPI to the account details provided on the invoice.</span></p>
     <p class="clause"><b>8.5</b><span>Work outside the scope of this AMC will be billed {% if amc.extra_hourly_rate %}at <strong>&#8377;{{ amc.extra_hourly_rate|inr }}/hour</strong> or {% endif %}on a fixed quotation approved by the Client.</span></p>
     <p class="clause"><b>8.6</b><span>If payment is delayed by more than <strong>15 days</strong>, Ralfiz may suspend support services until dues are cleared. The SLA timelines shall not apply during the suspension period.</span></p>
@@ -422,6 +422,22 @@
       <table class="amc-table">
         <thead><tr><th>Description</th><th class="num">Amount (&#8377;)</th></tr></thead>
         <tbody>
+          {% if amc.included_in_project %}
+          <tr><td>AMC &ndash; {{ amc.get_plan_display }} Plan ({{ months }} months)<br><small>Included in the project fee for {{ project.name }}</small></td><td class="num">Included</td></tr>
+          <tr class="total"><td>Payable for this AMC Period</td><td class="num">0.00</td></tr>
+        </tbody>
+      </table>
+      {% if amc.annual_amount %}
+      <p class="schedule-note"><strong>Renewal Fee</strong> (per year, after {{ amc.end_date|date:"d/m/Y" }}):</p>
+      <table class="amc-table">
+        <tbody>
+          <tr><td>AMC renewal &ndash; {{ amc.get_plan_display }} Plan</td><td class="num">{{ amc.annual_amount|inr }}</td></tr>
+          {% if amc.include_gst %}<tr><td>GST @ {{ tax_rate|floatformat:"-2" }}%</td><td class="num">{{ renewal_gst|inr }}</td></tr>{% endif %}
+          <tr class="total"><td>Renewal Total</td><td class="num">{{ renewal_total|inr }}</td></tr>
+        </tbody>
+      </table>
+      {% endif %}
+      {% else %}
           <tr><td>AMC Fee &ndash; {{ amc.get_plan_display }} Plan ({{ months }} months){% if amc.percentage and amc.project_value %}<br><small>{{ amc.percentage|floatformat:"-2" }}% of project value &#8377;{{ amc.project_value|inr }}</small>{% endif %}</td><td class="num">{{ amc.annual_amount|inr }}</td></tr>
           <tr><td><strong>Sub-total</strong></td><td class="num"><strong>{{ amc.annual_amount|inr }}</strong></td></tr>
           {% if amc.include_gst %}<tr><td>GST @ {{ tax_rate|floatformat:"-2" }}%</td><td class="num">{{ gst_amount|inr }}</td></tr>{% endif %}
@@ -435,6 +451,7 @@
           {% for row in schedule %}<tr><td>{{ row.no }}</td><td>{{ row.due|date:"d/m/Y" }}</td><td class="num">{{ row.amount|inr }}</td></tr>{% endfor %}
         </tbody>
       </table>
+      {% endif %}
       <p class="schedule-note"><strong>Additional Work Rate:</strong> {% if amc.extra_hourly_rate %}&#8377;{{ amc.extra_hourly_rate|inr }} per hour{% if amc.include_gst %} (excluding GST){% endif %}{% else %}Quoted per job{% endif %}</p>
       <p class="schedule-note"><strong>Bank Details:</strong> As mentioned on the tax invoice issued by {{ legal_name }}.</p>
     </div>

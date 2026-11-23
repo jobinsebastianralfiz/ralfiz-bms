@@ -977,7 +977,10 @@ def client_portal_reset_password(request, pk):
         return redirect('client_detail', pk=pk)
 
     if request.method == 'POST':
-        new_password = get_random_string(12)
+        new_password = request.POST.get('password', '').strip() or get_random_string(12)
+        if len(new_password) < 8:
+            messages.error(request, 'Portal passwords need at least 8 characters.')
+            return redirect('client_detail', pk=pk)
         client.user.set_password(new_password)
         client.user.save()
         messages.success(
@@ -1912,11 +1915,51 @@ def _amc_agreement_fields(request):
     """The AMC form fields that only feed the agreement document."""
     rate = (request.POST.get('extra_hourly_rate') or '').strip()
     plan = request.POST.get('plan')
+    # Schedule A: ticked standard components first, then the free-text lines.
+    covered = []
+    for i, name in enumerate(AMCContract.COVERED_COMPONENTS):
+        if request.POST.get(f'covered_{i}') == 'on':
+            tech = request.POST.get(f'covered_tech_{i}', '').replace('|', '/').strip()
+            detail = request.POST.get(f'covered_url_{i}', '').replace('|', '/').strip()
+            covered.append(' | '.join([name, tech, detail]).rstrip(' |'))
+    other = request.POST.get('covered_system', '').strip()
+    if other:
+        covered.append(other)
+    keys = {key for key, _, _ in AMCContract.EXCLUSION_CHOICES}
     return {
         'plan': plan if plan in dict(AMCContract.PLAN_CHOICES) else 'standard',
         'include_gst': request.POST.get('include_gst') == 'on',
         'extra_hourly_rate': rate or None,
-        'covered_system': request.POST.get('covered_system', '').strip(),
+        'covered_system': '\n'.join(covered),
+        'exclusions': [key for key in request.POST.getlist('exclusions') if key in keys],
+        'extra_exclusions': request.POST.get('extra_exclusions', '').strip(),
+        'included_in_project': request.POST.get('included_in_project') == 'on',
+    }
+
+
+def _amc_form_context(amc=None):
+    """Tick lists for the AMC form: Schedule A components and clause 5 exclusions."""
+    lines = (amc.covered_system if amc else '').splitlines()
+    known = {name: i for i, name in enumerate(AMCContract.COVERED_COMPONENTS)}
+    rows = [{'i': i, 'name': name, 'checked': False, 'tech': '', 'url': ''}
+            for i, name in enumerate(AMCContract.COVERED_COMPONENTS)]
+    other = []
+    for line in lines:
+        parts = [part.strip() for part in line.split('|')] + ['', '']
+        if parts[0] in known and not rows[known[parts[0]]]['checked']:
+            rows[known[parts[0]]].update(checked=True, tech=parts[1], url=' | '.join(p for p in parts[2:] if p))
+        elif line.strip():
+            other.append(line.strip())
+    ticked = set(amc.excluded_keys) if amc else {key for key, _, _ in AMCContract.EXCLUSION_CHOICES}
+    return {
+        'covered_components': rows,
+        'covered_other': '\n'.join(other),
+        'exclusion_choices': [{'key': key, 'label': label, 'text': text.format(training='N', plural='s'),
+                               'checked': key in ticked}
+                              for key, label, text in AMCContract.EXCLUSION_CHOICES],
+        'plan_choices': AMCContract.PLAN_CHOICES,
+        'billing_choices': AMCContract.BILLING_CYCLE_CHOICES,
+        'type_choices': AMCContract.CONTRACT_TYPE_CHOICES,
     }
 
 
@@ -1945,14 +1988,18 @@ def amc_create(request):
             'yearly': relativedelta(years=1),
         }
         next_due = start + cycle_map.get(billing_cycle, relativedelta(years=1))
+        agreement = _amc_agreement_fields(request)
+        if agreement['included_in_project']:
+            # Already paid inside the project cost: nothing falls due until renewal.
+            next_due = end
 
         amc = AMCContract.objects.create(
             project=project,
             contract_type=contract_type,
-            annual_amount=annual_amount,
+            annual_amount=annual_amount or 0,
             percentage=percentage,
             billing_cycle=billing_cycle,
-            **_amc_agreement_fields(request),
+            **agreement,
             start_date=start,
             end_date=end,
             next_due_date=next_due,
@@ -1969,9 +2016,7 @@ def amc_create(request):
         'projects': projects,
         'preselected_project': preselected_project,
         'form_title': 'Create Recurring Contract',
-        'plan_choices': AMCContract.PLAN_CHOICES,
-        'billing_choices': AMCContract.BILLING_CYCLE_CHOICES,
-        'type_choices': AMCContract.CONTRACT_TYPE_CHOICES,
+        **_amc_form_context(),
     })
 
 
@@ -1981,6 +2026,7 @@ def amc_update(request, pk):
     if request.method == 'POST':
         amc.contract_type = request.POST.get('contract_type', 'amc')
         amc.annual_amount, amc.percentage = _amc_amount_from_post(request, amc.project)
+        amc.annual_amount = amc.annual_amount or 0
         for field, value in _amc_agreement_fields(request).items():
             setattr(amc, field, value)
         amc.billing_cycle = request.POST.get('billing_cycle', 'yearly')
@@ -2000,10 +2046,8 @@ def amc_update(request, pk):
         'projects': projects,
         'preselected_project': str(amc.project_id),
         'form_title': 'Edit Contract',
-        'plan_choices': AMCContract.PLAN_CHOICES,
-        'billing_choices': AMCContract.BILLING_CYCLE_CHOICES,
         'status_choices': AMCContract.STATUS_CHOICES,
-        'type_choices': AMCContract.CONTRACT_TYPE_CHOICES,
+        **_amc_form_context(amc),
     })
 
 
@@ -2018,13 +2062,16 @@ def _amc_agreement_context(amc, for_pdf=False):
     tax_rate = (company.default_tax_rate or Decimal('0')) if amc.include_gst else Decimal('0')
     gst = (amc.annual_amount * tax_rate / 100).quantize(Decimal('0.01'))
     total = amc.annual_amount + gst
+    renewal_gst, renewal_total = gst, total
+    if amc.included_in_project:  # paid inside the project cost; annual_amount is the renewal fee
+        gst = total = Decimal('0')
 
     span = relativedelta(amc.end_date + timedelta(days=1), amc.start_date)
     months = span.years * 12 + span.months
     step = relativedelta(months=12 // amc.cycles_per_year)
     per_instalment = (total / amc.cycles_per_year).quantize(Decimal('0.01'))
     schedule = [{'no': i + 1, 'due': amc.start_date + step * i, 'amount': per_instalment}
-                for i in range(amc.cycles_per_year)]
+                for i in range(amc.cycles_per_year)] if not amc.included_in_project else []
 
     signer = company_countersignature(for_pdf=for_pdf)
     signer['signatory_name'] = signer['signatory_name'] or 'Jobin Sebastian'
@@ -2045,6 +2092,8 @@ def _amc_agreement_context(amc, for_pdf=False):
         'tax_rate': tax_rate,
         'gst_amount': gst,
         'total_payable': total,
+        'renewal_gst': renewal_gst,
+        'renewal_total': renewal_total,
         'fee_words': rupees_in_words(amc.annual_amount),
         'schedule': schedule,
         'payment_options': [('yearly', '100% advance at the start of the AMC Period'),

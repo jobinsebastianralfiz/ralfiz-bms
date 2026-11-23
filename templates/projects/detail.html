@@ -294,7 +294,7 @@
     <div class="pj-row">
       <span class="pj-row__icon"><i class="fas fa-rotate"></i></span>
       <div class="pj-row__main">
-        <a href="{% url 'amc_detail' amc.pk %}" class="pj-row__title">&#8377;{{ amc.annual_amount|inr }} / {{ amc.get_billing_cycle_display }}</a>
+        <a href="{% url 'amc_detail' amc.pk %}" class="pj-row__title">{% if amc.included_in_project %}AMC included in project cost{% else %}&#8377;{{ amc.annual_amount|inr }} / {{ amc.get_billing_cycle_display }}{% endif %}</a>
         <span class="pj-row__sub">Next due {{ amc.next_due_date|date:"d M Y" }} &middot; paid &#8377;{{ amc.total_paid|inr }}</span>
       </div>
       {% if amc.is_overdue %}<span class="status-badge overdue">Overdue</span>

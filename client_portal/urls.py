@@ -14,6 +14,7 @@ urlpatterns = [
     # Projects
     path('projects/', web_views.portal_projects, name='portal_projects'),
     path('projects/<uuid:project_id>/', web_views.portal_project_detail, name='portal_project_detail'),
+    path('amc/<uuid:amc_id>/agreement/', web_views.portal_amc_agreement, name='portal_amc_agreement'),
     path('projects/<uuid:project_id>/comment/', web_views.portal_add_comment, name='portal_add_comment'),
 
     # Invoices
