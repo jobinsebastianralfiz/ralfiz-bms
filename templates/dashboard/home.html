@@ -24,6 +24,7 @@
     <a href="{% url 'invoice_list' %}">Invoices</a>
     <a href="{% url 'project_list' %}">Projects</a>
     <a href="{% url 'client_list' %}">Clients</a>
+    <a href="{% url 'support_chat:inbox' %}">Client Chat <span class="nav-badge" data-sc-count hidden></span></a>
     <a href="{% url 'portfolio' %}">Portfolio</a>
   </nav>
   <div class="dash-head__actions">
@@ -193,6 +194,46 @@
       if (window.ResizeObserver) new ResizeObserver(fit).observe(doc.body);
     });
   })();
+</script>
+
+<div class="card mb-4 home-chats" id="homeChats">
+  <div class="card-header inv-list-head">
+    <div>
+      <h2 class="card-title mb-0">Client Chats <span class="nav-badge" data-sc-count{% if not chat_unread_total %} hidden{% endif %}>{{ chat_unread_total }}</span></h2>
+      <p class="inv-list-head__sub"><i class="fas fa-circle" style="color:#16a34a;font-size:.55rem;vertical-align:middle;"></i> Live from the client portal · updates by itself</p>
+    </div>
+    <a href="{% url 'support_chat:inbox' %}" class="btn btn-sm btn-primary"><i class="fas fa-comments"></i> Open chat</a>
+  </div>
+  <ul class="home-list">
+    {% for c in chat_convos %}
+    <li class="home-list__row{% if c.unread %} is-unread{% endif %}">
+      <a href="{% url 'support_chat:thread' c.pk %}" class="home-list__main">
+        <span class="home-list__title">{{ c.name }}{% if c.unread %} <span class="nav-badge">{{ c.unread }} new</span>{% endif %}</span>
+        <span class="home-list__sub">{% if c.last_message and not c.last_message.from_client %}You: {% endif %}{{ c.last_message.body|truncatechars:90 }}</span>
+      </a>
+      <div class="home-list__side"><span class="home-list__when">{{ c.last_at|naturaltime }}</span></div>
+    </li>
+    {% empty %}
+    <li class="home-list__empty">No client chats yet. When a client writes from their portal it shows here, with a chime.</li>
+    {% endfor %}
+  </ul>
+</div>
+<style>
+.home-chats .nav-badge[hidden], .dash-tabs .nav-badge[hidden] { display: none; }
+.home-chats .nav-badge, .dash-tabs .nav-badge { display: inline-flex; min-width: 18px; height: 18px; padding: 0 6px; border-radius: 99px; background: #dc2626; color: #fff;
+  font-size: 11px; font-weight: 700; align-items: center; justify-content: center; vertical-align: middle; margin-left: 4px; position: static; }
+.home-chats .is-unread .home-list__sub { color: #111827; font-weight: 600; }
+</style>
+<script>
+  // Refresh the chat card every 15 seconds so new messages show without reloading the page.
+  setInterval(function () {
+    if (document.hidden) return;
+    fetch(location.href, { credentials: 'same-origin' }).then(function (r) { return r.ok ? r.text() : null; }).then(function (html) {
+      if (!html) return;
+      var fresh = new DOMParser().parseFromString(html, 'text/html').getElementById('homeChats'), box = document.getElementById('homeChats');
+      if (fresh && box) box.innerHTML = fresh.innerHTML;
+    }).catch(function () {});
+  }, 15000);
 </script>
 
 <div class="card mb-4 home-notes">

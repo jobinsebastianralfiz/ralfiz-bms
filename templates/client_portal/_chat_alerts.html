@@ -40,8 +40,9 @@ one open tab per browser announces each message. Sound needs one click on the pa
     setTimeout(function () { card.remove(); }, 60000);
   }
   function badge(n) {
-    var b = document.getElementById('scStaffCount'); if (!b) return;
-    b.textContent = n > 99 ? '99+' : String(n); b.hidden = !n;
+    document.querySelectorAll('#scStaffCount, [data-sc-count]').forEach(function (b) {
+      b.textContent = n > 99 ? '99+' : String(n); b.hidden = !n;
+    });
   }
   function check() {
     var after = localStorage.getItem(KEY);

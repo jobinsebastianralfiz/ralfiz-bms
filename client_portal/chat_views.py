@@ -92,11 +92,18 @@ def _conversations():
             .order_by('-last_at'))
 
 
-@staff_required
-def inbox(request, client_id=None):
-    convos = list(_conversations())
+def recent_conversations(limit=None):
+    """Conversations newest first, each with `.last_message` and `.unread` (client messages not yet read)."""
+    convos = _conversations()
+    convos = list(convos[:limit] if limit else convos)
     for c in convos:
         c.last_message = SupportMessage.objects.filter(client=c).order_by('-created_at').first()
+    return convos
+
+
+@staff_required
+def inbox(request, client_id=None):
+    convos = recent_conversations()
     current = None
     if client_id:
         current = get_object_or_404(Client, pk=client_id)

@@ -57,3 +57,11 @@ class SupportChatTests(TestCase):
         SupportMessage.objects.create(client=self.cl, body='old one')
         self.client.force_login(self.staff)
         self.assertEqual(self.client.get(reverse('support_chat:alerts')).json()['items'], [])
+
+    def test_home_dashboard_shows_client_chats(self):
+        SupportMessage.objects.create(client=self.cl, body='Need the invoice copy please')
+        self.client.force_login(self.staff)
+        page = self.client.get('/')
+        self.assertContains(page, 'Client Chats')
+        self.assertContains(page, 'Need the invoice copy please')
+        self.assertContains(page, '1 new')

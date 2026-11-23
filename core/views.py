@@ -126,7 +126,12 @@ def home_dashboard(request):
                 .only('id', 'kind', 'title', 'preview', 'pinned', 'updated_at',
                       'project__name', 'client__name', 'lead__company_name', 'lead__contact_person')[:5])
 
+    from client_portal.chat_views import recent_conversations
+    chat_convos = recent_conversations(limit=5)
+
     return render(request, 'dashboard/home.html', {
+        'chat_convos': chat_convos,
+        'chat_unread_total': sum(c.unread for c in chat_convos),
         'my_notes': my_notes,
         'fx': currency_rates(),
         'fx_currencies': CONVERTER_CURRENCIES,
