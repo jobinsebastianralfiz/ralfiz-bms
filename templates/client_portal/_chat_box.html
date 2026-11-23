@@ -1,0 +1,11 @@
+{# The chat itself; the caller sets the size. #}
+<div class="sc-chat" id="{{ chat_id }}" data-me="client" data-poll="{% url 'client_portal:portal_chat_poll' %}" data-send="{% url 'client_portal:portal_chat_send' %}"
+     data-csrf="{{ csrf_token }}" data-open="{{ chat_open|yesno:'1,0' }}" data-fast="3000" data-slow="15000"
+     data-empty="Say hello! Ask us anything about your projects, invoices or support. Our team replies here.">
+  <div class="sc-log" role="log" aria-live="polite" aria-label="Chat messages"></div>
+  <form class="sc-form" autocomplete="off">
+    <textarea class="sc-input" rows="1" maxlength="4000" placeholder="Write a message…" aria-label="Message"></textarea>
+    <button class="sc-send" type="submit" aria-label="Send"><i class="fas fa-paper-plane"></i></button>
+  </form>
+  <div class="sc-hint">Enter to send · Shift+Enter for a new line</div>
+</div>

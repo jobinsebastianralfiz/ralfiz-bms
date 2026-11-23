@@ -91,6 +91,6 @@
     })();
   </script>
   {% block extra_js %}{% endblock %}
-  {% if user.is_authenticated %}{% include 'bizpartners/_issue_alerts.html' %}{% endif %}
+  {% if user.is_authenticated %}{% include 'bizpartners/_issue_alerts.html' %}{% include 'client_portal/_chat_alerts.html' %}{% endif %}
 </body>
 </html>

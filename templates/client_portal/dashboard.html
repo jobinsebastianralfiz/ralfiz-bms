@@ -120,13 +120,11 @@
       </svg>
     </div>
 
-    {% if company_email %}
-    <a class="pp-help" href="mailto:{{ company_email }}?subject={{ 'Client portal support'|urlencode }}">
+    <a class="pp-help" href="{% url 'client_portal:portal_chat' %}" onclick="var f=document.getElementById('scFab'); if (f) { event.preventDefault(); if (document.getElementById('scPanel').hidden) f.click(); }">
       <span class="pp-help-ico" aria-hidden="true"><i class="fas fa-comment-dots"></i></span>
-      <span><strong>Need help?</strong><span>Write to our team about anything on your projects.</span></span>
+      <span><strong>Chat with our team</strong><span>{% if chat_unread %}{{ chat_unread }} new repl{{ chat_unread|pluralize:"y,ies" }} waiting{% else %}Ask anything about your projects. We reply right here.{% endif %}</span></span>
       <i class="fas fa-chevron-right" aria-hidden="true"></i>
     </a>
-    {% endif %}
   </section>
 </div>
 {% endblock %}

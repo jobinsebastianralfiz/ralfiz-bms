@@ -117,6 +117,11 @@
         <i class="fas fa-users"></i>
         <span>Clients</span>
       </a>
+      <a href="{% url 'support_chat:inbox' %}" class="nav-item {% if request.resolver_match.app_name == 'support_chat' %}active{% endif %}">
+        <i class="fas fa-comments"></i>
+        <span>Client Chat</span>
+        <span class="nav-badge" id="scStaffCount" hidden></span>
+      </a>
       <a href="{% url 'project_list' %}" class="nav-item {% if 'project' in n and n != 'projects_dashboard' and n != 'project_status_update' and 'project_type' not in n and 'project_feature' not in n and request.resolver_match.app_name != 'bizpartners' %}active{% endif %}">
         <i class="fas fa-folder-open"></i>
         <span>Projects</span>

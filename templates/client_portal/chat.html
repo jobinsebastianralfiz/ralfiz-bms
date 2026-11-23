@@ -1,0 +1,19 @@
+{% extends 'client_portal/base.html' %}
+
+{% block title %}Support chat{% endblock %}
+
+{% block content %}
+<header class="pp-head">
+  <div>
+    <h1>Support chat</h1>
+    <p>Chat with the {{ company_name|default:"Ralfiz" }} team. Every message is kept here.</p>
+  </div>
+</header>
+<div class="sc-page">
+  {% include 'client_portal/_chat_box.html' with chat_id='scPage' chat_open=True %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>scChat(document.getElementById('scPage'));</script>
+{% endblock %}

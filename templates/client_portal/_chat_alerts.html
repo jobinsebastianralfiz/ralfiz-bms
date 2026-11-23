@@ -1,0 +1,66 @@
+{% comment %}On every staff page: chime + note when a client writes in the portal chat, and the unread
+count on the sidebar "Client Chat" link (#scStaffCount). Checks support_chat:alerts every 10 seconds;
+one open tab per browser announces each message. Sound needs one click on the page first (browser rule).{% endcomment %}
+<style>#scStaffCount[hidden]{display:none}</style>
+<div id="scAlerts" class="ji-alerts" style="bottom:auto;top:4.5rem;" aria-live="polite"></div>
+<script>
+(function () {
+  if (window.scAlertsOn) return;
+  window.scAlertsOn = true;
+  var URL_ = "{% url 'support_chat:alerts' %}", KEY = 'scAlertAfter', MUTE = 'jiAlertMute';
+  var box = document.getElementById('scAlerts'), ctx = null, onInbox = location.pathname.indexOf('/support-chat/') === 0;
+  function unlock() { try { ctx = ctx || new (window.AudioContext || window.webkitAudioContext)(); if (ctx.state === 'suspended') ctx.resume(); } catch (e) {} }
+  ['pointerdown', 'keydown'].forEach(function (ev) { document.addEventListener(ev, unlock, { once: true, capture: true }); });
+  function chime() {
+    if (localStorage.getItem(MUTE) === '1') return;
+    unlock(); if (!ctx) return;
+    var t = ctx.currentTime;
+    [[660, 0], [990, 0.13], [1320, 0.26]].forEach(function (n) {
+      var o = ctx.createOscillator(), g = ctx.createGain();
+      o.type = 'sine'; o.frequency.value = n[0];
+      g.gain.setValueAtTime(0.0001, t + n[1]); g.gain.exponentialRampToValueAtTime(0.25, t + n[1] + 0.02);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + n[1] + 0.4);
+      o.connect(g); g.connect(ctx.destination); o.start(t + n[1]); o.stop(t + n[1] + 0.45);
+    });
+  }
+  function el(tag, cls, text) { var e = document.createElement(tag); if (cls) e.className = cls; if (text) e.textContent = text; return e; }
+  function show(i) {
+    var card = el('div', 'ji-alert'), top = el('div', 'ji-alert-top'), txt = el('div');
+    card.style.borderLeftColor = '#2563eb';
+    var ic = el('i', 'fas fa-comment-dots'); ic.style.color = '#2563eb'; ic.style.marginTop = '.15rem'; top.appendChild(ic);
+    txt.appendChild(el('strong', '', 'New chat from ' + i.client + (i.count > 1 ? ' (' + i.count + ')' : '')));
+    txt.appendChild(el('div', 'ji-alert-sub', '“' + i.text + '”'));
+    top.appendChild(txt);
+    var x = el('button', 'ji-alert-x'); x.type = 'button'; x.setAttribute('aria-label', 'Close'); x.innerHTML = '<i class="fas fa-times"></i>';
+    x.onclick = function () { card.remove(); };
+    top.appendChild(x); card.appendChild(top);
+    var acts = el('div', 'ji-alert-acts'), open = el('a', '', 'Reply'); open.href = i.url; acts.appendChild(open); card.appendChild(acts);
+    box.prepend(card);
+    while (box.children.length > 3) box.lastChild.remove();
+    setTimeout(function () { card.remove(); }, 60000);
+  }
+  function badge(n) {
+    var b = document.getElementById('scStaffCount'); if (!b) return;
+    b.textContent = n > 99 ? '99+' : String(n); b.hidden = !n;
+  }
+  function check() {
+    var after = localStorage.getItem(KEY);
+    fetch(URL_ + (after ? '?after=' + encodeURIComponent(after) : ''), { credentials: 'same-origin', headers: { 'Accept': 'application/json' } })
+      .then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (d) {
+        if (!d || !d.latest) return;
+        badge(d.unread);
+        if (localStorage.getItem(KEY) !== after) return;  // another tab already announced this round
+        localStorage.setItem(KEY, d.latest);
+        if (!after || !d.items.length) return;
+        // The open conversation on the inbox page chimes by itself; don't double up.
+        var here = d.items.filter(function (i) { return !(onInbox && location.pathname === i.url); });
+        here.forEach(show);
+        if (here.length || !onInbox) chime();
+      })
+      .catch(function () {});
+  }
+  check();
+  setInterval(check, 10000);
+})();
+</script>

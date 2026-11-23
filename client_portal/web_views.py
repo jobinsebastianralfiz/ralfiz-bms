@@ -10,7 +10,7 @@ from django.http import Http404
 
 from core.models import Client, Project, ProjectLink, Task, Invoice, Quote, Document, Credential
 from core.task_board import board_columns, project_progress
-from .models import ProjectComment, ProjectUpdate, ClientNotification
+from .models import ProjectComment, ProjectUpdate, ClientNotification, SupportMessage
 
 
 STAFF_PORTAL_MESSAGE = ('That is a staff account. The client portal only opens with the client\'s own '
@@ -57,6 +57,7 @@ def _base_context(request, active_nav=''):
         'client': client,
         'active_nav': active_nav,
         'unread_count': _get_unread_count(client),
+        'chat_unread': SupportMessage.objects.filter(client=client, from_client=False, read_at__isnull=True).count(),
         'company_name': company.company_name,
         'company_email': company.email,
     }

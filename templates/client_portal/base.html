@@ -13,6 +13,7 @@
   <link rel="stylesheet" href="{% static 'css/client_portal.css' %}">
   <link rel="stylesheet" href="{% static 'css/portal-velora.css' %}?v=3">
   <link rel="stylesheet" href="{% static 'css/partner-portal.css' %}?v=6">
+  <link rel="stylesheet" href="{% static 'css/support-chat.css' %}?v=1">
   {% block extra_css %}{% endblock %}
 </head>
 <body class="cp-warm">
@@ -45,6 +46,7 @@
           <a href="{% url 'client_portal:portal_invoices' %}" class="{% if active_nav == 'invoices' %}active{% endif %}"><i class="fas fa-file-invoice"></i> Invoices</a>
           <a href="{% url 'client_portal:portal_quotes' %}" class="{% if active_nav == 'quotes' %}active{% endif %}"><i class="far fa-file-lines"></i> Quotes</a>
           <a href="{% url 'client_portal:portal_files' %}" class="{% if active_nav == 'files' %}active{% endif %}"><i class="far fa-folder"></i> Files</a>
+          <a href="{% url 'client_portal:portal_chat' %}" class="{% if active_nav == 'chat' %}active{% endif %}"><i class="far fa-comments"></i> Support chat<span class="pp-count" id="scNavCount"{% if not chat_unread %} hidden{% endif %}>{{ chat_unread }}</span></a>
           <a href="{% url 'client_portal:portal_messages' %}" class="{% if active_nav == 'messages' %}active{% endif %}"><i class="far fa-message"></i> Messages</a>
           <a href="{% url 'client_portal:portal_notifications' %}" class="{% if active_nav == 'notifications' %}active{% endif %}"><i class="far fa-bell"></i> Notifications{% if unread_count %}<span class="pp-count">{{ unread_count }}</span>{% endif %}</a>
           <hr>
@@ -79,6 +81,55 @@
       {% block aside %}{% endblock %}
     </div>
   </div>
+  <script src="{% static 'js/support-chat.js' %}?v=1"></script>
+  {% if active_nav != 'chat' %}
+  {# Floating chat on every other page: badge + chime when the team replies. #}
+  <button class="sc-fab" type="button" id="scFab" aria-label="Chat with us" aria-controls="scPanel" aria-expanded="false">
+    <i class="fas fa-comment-dots"></i><span class="sc-badge" id="scFabCount"{% if not chat_unread %} hidden{% endif %}>{{ chat_unread }}</span>
+  </button>
+  <section class="sc-panel" id="scPanel" hidden aria-label="Support chat">
+    <div class="sc-panel-head">
+      <span class="sc-av" aria-hidden="true"><i class="fas fa-headset"></i></span>
+      <div><strong>{{ company_name|default:"Ralfiz" }} support</strong><span>We reply here, usually within working hours</span></div>
+      <a href="{% url 'client_portal:portal_chat' %}" title="Open full chat" aria-label="Open full chat"><i class="fas fa-up-right-and-down-left-from-center"></i></a>
+      <button type="button" id="scClose" aria-label="Close chat"><i class="fas fa-times"></i></button>
+    </div>
+    {% include 'client_portal/_chat_box.html' with chat_id='scBox' chat_open=False %}
+  </section>
+  <script>
+  (function () {
+    var fab = document.getElementById('scFab'), panel = document.getElementById('scPanel'), toast = null;
+    var chat = scChat(document.getElementById('scBox'));
+    function setOpen(v) {
+      panel.hidden = !v; fab.setAttribute('aria-expanded', v ? 'true' : 'false');
+      fab.innerHTML = v ? '<i class="fas fa-chevron-down"></i>' : '<i class="fas fa-comment-dots"></i>';
+      fab.appendChild(badge);
+      if (toast) { toast.remove(); toast = null; }
+      chat.setOpen(v);
+      try { sessionStorage.setItem('scOpen', v ? '1' : '0'); } catch (e) {}
+    }
+    var badge = document.getElementById('scFabCount');
+    fab.addEventListener('click', function () { setOpen(panel.hidden); });
+    document.getElementById('scClose').addEventListener('click', function () { setOpen(false); });
+    document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && !panel.hidden) setOpen(false); });
+    chat.onUnread(function (n, incoming, msgs) {
+      [badge, document.getElementById('scNavCount')].forEach(function (b) { if (b) { b.textContent = n; b.hidden = !n; } });
+      if (incoming && panel.hidden) {
+        var last = msgs.filter(function (m) { return !m.from_client; }).pop();
+        if (!last) return;
+        if (toast) toast.remove();
+        toast = document.createElement('div'); toast.className = 'sc-toast'; toast.setAttribute('role', 'status');
+        var s = document.createElement('strong'); s.textContent = last.sender + ' replied';
+        var t = document.createElement('span'); t.textContent = last.body;
+        toast.appendChild(s); toast.appendChild(t);
+        toast.onclick = function () { setOpen(true); };
+        document.body.appendChild(toast);
+      }
+    });
+    try { if (sessionStorage.getItem('scOpen') === '1') setOpen(true); } catch (e) {}
+  })();
+  </script>
+  {% endif %}
   <script>
     // The warm board is light-only; forget a dark choice saved by the old portal look.
     try { localStorage.removeItem('portal-theme'); } catch (e) {}

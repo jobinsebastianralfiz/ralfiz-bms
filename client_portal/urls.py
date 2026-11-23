@@ -1,5 +1,5 @@
 from django.urls import path
-from . import web_views
+from . import web_views, chat_views
 
 app_name = 'client_portal'
 
@@ -34,6 +34,9 @@ urlpatterns = [
     # Files, messages, search
     path('files/', web_views.portal_files, name='portal_files'),
     path('messages/', web_views.portal_messages, name='portal_messages'),
+    path('chat/', chat_views.portal_chat, name='portal_chat'),
+    path('chat/poll/', chat_views.portal_chat_poll, name='portal_chat_poll'),
+    path('chat/send/', chat_views.portal_chat_send, name='portal_chat_send'),
     path('search/', web_views.portal_search, name='portal_search'),
 
     # Profile

@@ -1,0 +1,83 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Client Chat{% endblock %}
+
+{% block extra_css %}<link rel="stylesheet" href="{% static 'css/support-chat.css' %}?v=1">{% endblock %}
+
+{% block content %}
+<div class="page-header" style="display:flex;align-items:center;gap:1rem;flex-wrap:wrap;margin-bottom:1rem;">
+  <div>
+    <h1 class="page-title" style="margin:0;">Client Chat</h1>
+    <p class="text-muted" style="margin:.2rem 0 0;">Live chat from the client portal. Every conversation is saved.</p>
+  </div>
+</div>
+
+<div class="sc-inbox">
+  <aside class="sc-list" id="scList">
+    <div class="sc-list-head">Conversations</div>
+    {% for c in convos %}
+    <a class="sc-convo{% if current and c.pk == current.pk %} active{% endif %}{% if c.unread %} unread{% endif %}" href="{% url 'support_chat:thread' c.pk %}">
+      <span class="sc-av" aria-hidden="true">{{ c.name|make_list|first|upper }}</span>
+      <span class="sc-convo-body">
+        <strong>{{ c.name }}<small>{{ c.last_at|date:"j M, g:i A" }}</small></strong>
+        <span>{% if c.last_message and not c.last_message.from_client %}You: {% endif %}{{ c.last_message.body|truncatechars:70 }}</span>
+      </span>
+      {% if c.unread %}<span class="sc-unread">{{ c.unread }}</span>{% endif %}
+    </a>
+    {% empty %}
+    <p class="sc-none">No chats yet. When a client writes from their portal, it shows here with a chime.</p>
+    {% endfor %}
+    {% if startable %}
+    <form class="sc-start" method="get" onsubmit="if(this.c.value){location.href='{% url 'support_chat:inbox' %}'+this.c.value+'/';} return false;">
+      <label class="text-muted" style="font-size:12px;display:block;margin-bottom:4px;" for="scStart">Start a chat with a client</label>
+      <select class="form-control" id="scStart" name="c" onchange="this.form.onsubmit()">
+        <option value="">Choose a client with a portal login…</option>
+        {% for c in startable %}<option value="{{ c.pk }}">{{ c.name }}</option>{% endfor %}
+      </select>
+    </form>
+    {% endif %}
+  </aside>
+
+  <section class="sc-thread">
+    {% if current %}
+    <div class="sc-thread-head">
+      <div><strong>{{ current.name }}</strong><br><span>{% if current.company_name and current.company_name != current.name %}{{ current.company_name }} · {% endif %}{{ current.email|default:"" }}{% if not current.user_id %} · <b style="color:#b45309">no portal login yet, they can't read this</b>{% endif %}</span></div>
+      <a href="{% url 'client_detail' current.pk %}">Client page</a>
+    </div>
+    <div class="sc-chat" id="scThread" data-me="staff" data-open="1" data-fast="3000" data-slow="15000"
+         data-poll="{% url 'support_chat:poll' current.pk %}" data-send="{% url 'support_chat:send' current.pk %}" data-csrf="{{ csrf_token }}"
+         data-empty="No messages yet. Write the first one; {{ current.name }} sees it in their portal.">
+      <div class="sc-log" role="log" aria-live="polite" aria-label="Chat with {{ current.name }}"></div>
+      <div class="sc-seen" hidden>Seen</div>
+      <form class="sc-form" autocomplete="off">
+        <textarea class="sc-input" rows="1" maxlength="4000" placeholder="Reply to {{ current.name }}…" aria-label="Reply"></textarea>
+        <button class="sc-send" type="submit" aria-label="Send"><i class="fas fa-paper-plane"></i></button>
+      </form>
+      <div class="sc-hint">Enter to send · Shift+Enter for a new line</div>
+    </div>
+    {% else %}
+    <p class="sc-none">Pick a conversation.</p>
+    {% endif %}
+  </section>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/support-chat.js' %}?v=1"></script>
+<script>
+(function () {
+  var t = document.getElementById('scThread');
+  if (t) scChat(t);
+  // Keep the conversation list fresh (new chats, unread counts) without reloading the page.
+  setInterval(function () {
+    if (document.hidden) return;
+    fetch(location.href, { credentials: 'same-origin' }).then(function (r) { return r.ok ? r.text() : null; }).then(function (html) {
+      if (!html) return;
+      var doc = new DOMParser().parseFromString(html, 'text/html'), fresh = doc.getElementById('scList'), list = document.getElementById('scList');
+      if (fresh && list && !list.contains(document.activeElement)) list.innerHTML = fresh.innerHTML;
+    }).catch(function () {});
+  }, 10000);
+})();
+</script>
+{% endblock %}

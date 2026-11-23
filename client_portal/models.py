@@ -76,3 +76,39 @@ class ClientNotification(models.Model):
 
     def __str__(self):
         return f"{self.title} - {self.client}"
+
+
+class SupportMessage(models.Model):
+    """One line of the live support chat between a client and the Ralfiz team.
+
+    One conversation per client. `read_at` is when the other side saw it:
+    staff for a client's message, the client for a staff reply.
+    """
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    client = models.ForeignKey('core.Client', on_delete=models.CASCADE, related_name='support_messages')
+    sender = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='support_messages')
+    from_client = models.BooleanField(default=True)
+    body = models.TextField(max_length=4000)
+    created_at = models.DateTimeField(default=timezone.now, db_index=True)
+    read_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        ordering = ['created_at']
+        indexes = [models.Index(fields=['client', 'created_at'])]
+
+    def __str__(self):
+        return f"{'Client' if self.from_client else 'Team'} · {self.client} · {self.body[:40]}"
+
+    @property
+    def sender_name(self):
+        if self.from_client:
+            return self.client.name
+        u = self.sender
+        return (u.get_full_name() or u.username) if u else 'Ralfiz team'
+
+    def as_dict(self):
+        return {
+            'id': str(self.id), 'from_client': self.from_client, 'body': self.body,
+            'sender': self.sender_name, 'at': self.created_at.isoformat(),
+            'read': self.read_at is not None,
+        }
