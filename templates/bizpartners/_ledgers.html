@@ -16,7 +16,8 @@ Told in plain words from the reader's side: "you" for the partner, the partner's
       <div class="bp-deal-extra">{% if staff %}Add the agreed amount with Edit.{% else %}Ralfiz will add the agreed price here. Nothing is due until then.{% endif %}</div>
       {% endif %}
     </div>
-    {% if m.fixed_due > 0 %}
+    {% if not m.is_confirmed and m.fixed_agreed > 0 %}<span class="bp-deal-state">Not confirmed yet · nothing due</span>
+    {% elif m.fixed_due > 0 %}
       {% if m.fixed_balance > 0 %}<span class="bp-deal-state due">{% if staff %}{{ cur }} {{ m.fixed_balance|sar }} to collect{% else %}{{ cur }} {{ m.fixed_balance|sar }} left to pay{% endif %}</span>
       {% elif m.fixed_balance < 0 %}<span class="bp-deal-state ahead">Paid {{ cur }} {{ m.fixed_balance|absval|sar }} in advance</span>
       {% else %}<span class="bp-deal-state ok"><i class="fas fa-circle-check"></i> Fully paid</span>{% endif %}

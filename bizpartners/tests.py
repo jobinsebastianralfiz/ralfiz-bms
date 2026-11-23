@@ -15,7 +15,7 @@ def pay(project, kind, amount):
 class MoneyTests(TestCase):
     def setUp(self):
         self.partner = BusinessPartner.objects.create(name='Ahmed', company_name='Riyadh Tech')
-        self.project = JointProject.objects.create(partner=self.partner, title='ERP', contract_value=D('10000'),
+        self.project = JointProject.objects.create(partner=self.partner, title='ERP', status='in_progress', contract_value=D('10000'),
                                                    partner_share_percent=D('50'))
 
     def m(self):
@@ -126,7 +126,7 @@ class FixedDealTests(TestCase):
     def setUp(self):
         self.partner = BusinessPartner.objects.create(name='Arfad')
         self.project = JointProject.objects.create(
-            partner=self.partner, title='Nous', deal_type='fixed', contract_value=D('2900'),
+            partner=self.partner, title='Nous', status='in_progress', deal_type='fixed', contract_value=D('2900'),
             amc_amount=D('500'), amc_cycle='yearly', amc_start_date=date(2026, 1, 1),
             server_amount=D('50'), server_cycle='monthly', server_start_date=date(2026, 10, 15))
 
@@ -373,3 +373,38 @@ class CredentialTests(TestCase):
         self.assertEqual(r.status_code, 200)
         self.client.post(reverse('bizpartners:item_delete', args=[self.project.pk, 'credential', c.pk]))
         self.assertFalse(JointCredential.objects.exists())
+
+
+class UnconfirmedProjectTests(TestCase):
+    """A Lead or Quoted project is not agreed yet: its amount must not show as owed."""
+
+    def test_quoted_fixed_project_owes_nothing_until_confirmed(self):
+        partner = BusinessPartner.objects.create(name='Vistgrow', currency='INR')
+        p = JointProject.objects.create(partner=partner, title='Puffy Foods', deal_type='fixed',
+                                        contract_value=D('10000'), status='quoted')
+        m = p.money()
+        self.assertEqual(m['fixed_due'], 0)
+        self.assertEqual(m['due_to_partner'], 0)
+        self.assertEqual(partner.totals()['due_to_partner'], 0)
+        p.status = 'confirmed'
+        p.save()
+        self.assertEqual(p.money()['fixed_due'], D('10000'))
+        self.assertEqual(partner.totals()['due_to_partner'], D('-10000'))
+
+    def test_quoted_split_project_has_nothing_pending(self):
+        partner = BusinessPartner.objects.create(name='Arfad')
+        p = JointProject.objects.create(partner=partner, title='X', deal_type='split',
+                                        contract_value=D('5000'), status='lead')
+        self.assertEqual(p.money()['pending_from_client'], 0)
+
+    def test_quote_moves_project_status_forward_only(self):
+        from .models import JointQuote
+        partner = BusinessPartner.objects.create(name='Vistgrow')
+        p = JointProject.objects.create(partner=partner, title='Puffy', deal_type='fixed', contract_value=D('10000'))
+        q = JointQuote.objects.create(project=p, title='Website', amount=D('10000'), status='sent')
+        p.refresh_from_db(); self.assertEqual(p.status, 'quoted')
+        q.status = 'accepted'; q.save()
+        p.refresh_from_db(); self.assertEqual(p.status, 'confirmed')
+        running = JointProject.objects.create(partner=partner, title='R', status='in_progress')
+        JointQuote.objects.create(project=running, title='Extra', amount=D('1'), status='sent')
+        running.refresh_from_db(); self.assertEqual(running.status, 'in_progress')

@@ -214,6 +214,11 @@ class JointProject(models.Model):
     def is_fixed(self):
         return self.deal_type == 'fixed'
 
+    @property
+    def is_confirmed(self):
+        """Lead and Quoted projects are not agreed yet, so nothing is owed on them."""
+        return self.status not in ('lead', 'quoted')
+
     def periods_due(self, start, cycle, today=None):
         """How many billing periods have started by today (each is due when it starts)."""
         today = today or timezone.localdate()
@@ -261,7 +266,11 @@ class JointProject(models.Model):
         server_due = sum((l['due'] for l in lines if l['key'] == 'server'), ZERO)
         # Money that reached Ralfiz, from the partner or straight from the client.
         paid = pays['partner_to_ralfiz'] + pays['client_to_ralfiz'] - pays['ralfiz_to_partner']
-        due = self.contract_value + amc_due + server_due
+        if not self.is_confirmed:
+            amc_due = server_due = ZERO
+            for l in lines:
+                l['due'] = ZERO
+        due = (self.contract_value if self.is_confirmed else ZERO) + amc_due + server_due
         for l in lines:
             l['paid'] = pays_by_purpose.get(l['key'], ZERO)
         out = {k: ZERO for k in (
@@ -271,6 +280,7 @@ class JointProject(models.Model):
             'projected_ralfiz_share')}
         out.update({
             'is_fixed': True,
+            'is_confirmed': self.is_confirmed,
             'contract_value': self.contract_value,
             'split_contract_value': ZERO,
             'fixed_agreed': self.contract_value,
@@ -322,13 +332,14 @@ class JointProject(models.Model):
         projected_profit = self.contract_value - expenses
         return {
             'is_fixed': False,
+            'is_confirmed': self.is_confirmed,
             'fixed_agreed': ZERO, 'fixed_due': ZERO, 'fixed_paid': ZERO, 'fixed_balance': ZERO,
             'amc_due': ZERO, 'server_due': ZERO, 'recurring': [], 'split_contract_value': self.contract_value,
             'contract_value': self.contract_value,
             'received': received,
             'received_by_ralfiz': pays['client_to_ralfiz'],
             'received_by_partner': pays['client_to_partner'],
-            'pending_from_client': max(self.contract_value - received, ZERO),
+            'pending_from_client': max(self.contract_value - received, ZERO) if self.is_confirmed else ZERO,
             'expenses': expenses,
             'expenses_ralfiz': exp_ralfiz,
             'expenses_partner': exp_partner,
@@ -381,6 +392,21 @@ class JointQuote(models.Model):
                 n += 1
             self.quote_number = f'JQ-{n:04d}'
         super().save(*args, **kwargs)
+        self._move_project_status()
+
+    def _move_project_status(self):
+        """Sending a quote marks a Lead project Quoted; an accepted quote confirms it.
+
+        Only moves forward from Lead/Quoted, so a project already running is never pulled back.
+        """
+        project = self.project
+        target = {'sent': 'quoted', 'accepted': 'confirmed'}.get(self.status)
+        if not target or project.status not in ('lead', 'quoted') or project.status == target:
+            return
+        if target == 'quoted' and project.status != 'lead':
+            return
+        project.status = target
+        project.save(update_fields=['status', 'updated_at'])
 
 
 class ConvertedAmount(models.Model):
