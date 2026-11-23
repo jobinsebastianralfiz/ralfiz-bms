@@ -111,6 +111,18 @@ class BusinessPartner(models.Model):
         return out
 
 
+class LinkedLogin:
+    """A login from the linked BMS project, shaped like a JointCredential for _access.html."""
+    linked = True
+
+    def __init__(self, kind, name, url, username, password, notes, shared_with_partner):
+        self.kind_label, self.name, self.url, self.username = kind, name, url, username
+        self.password, self.notes, self.shared_with_partner = password, notes, shared_with_partner
+
+    def get_kind_display(self):
+        return self.kind_label
+
+
 class JointProject(models.Model):
     STATUS_CHOICES = [
         ('lead', 'Lead'),
@@ -213,6 +225,35 @@ class JointProject(models.Model):
     @property
     def is_fixed(self):
         return self.deal_type == 'fixed'
+
+    @property
+    def code_repo_url(self):
+        """Own GitHub link, else the linked BMS project's."""
+        return self.repo_url or (self.linked_project.github_repo if self.linked_project_id else '')
+
+    @property
+    def site_url(self):
+        """Own live link, else the linked BMS project's."""
+        return self.live_url or (self.linked_project.live_url if self.linked_project_id else '')
+
+    def access_list(self, for_partner):
+        """Logins for the Access tab: this project's own, then the active logins saved on the
+        linked BMS project (read-only here, edited on that project). Dev/test logins
+        (is_temporary) stay with the team and never reach the partner."""
+        own = list(self.credentials.filter(shared_with_partner=True) if for_partner else self.credentials.all())
+        if not self.linked_project_id:
+            return own
+        linked = self.linked_project.credentials.filter(is_active=True)
+        if for_partner:
+            linked = linked.filter(is_temporary=False)
+        for c in linked.order_by('credential_type', 'name'):
+            host = c.url or c.ip_address or ''
+            if c.ip_address and c.port:
+                host = f'{c.ip_address}:{c.port}'
+            notes = '\n'.join(x for x in [c.provider and f'Provider: {c.provider}', c.notes] if x)
+            own.append(LinkedLogin(c.get_credential_type_display(), c.name, host, c.username, c.password,
+                                   notes, not c.is_temporary))
+        return own
 
     @property
     def is_confirmed(self):

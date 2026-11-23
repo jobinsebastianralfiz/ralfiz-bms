@@ -2,10 +2,10 @@
 Needs: project, credentials (shared ones only for the partner), staff (bool).{% endcomment %}
 <div class="bp-section" id="access">
   <h2>Access &amp; credentials {% if staff %}<a class="btn btn-sm btn-outline-primary" href="{% url 'bizpartners:item_create' project.pk 'credential' %}"><i class="fas fa-plus"></i> Add credential</a>{% endif %}</h2>
-  {% if project.repo_url or project.live_url %}
+  {% if project.code_repo_url or project.site_url %}
   <div class="bp-links">
-    {% if project.repo_url %}<a class="bp-link" href="{{ project.repo_url }}" target="_blank" rel="noopener"><i class="fab fa-github"></i><span><small>Code repository</small>{{ project.repo_url|cut:"https://"|cut:"http://" }}</span><i class="fas fa-arrow-up-right-from-square bp-link-go"></i></a>{% endif %}
-    {% if project.live_url %}<a class="bp-link" href="{{ project.live_url }}" target="_blank" rel="noopener"><i class="fas fa-globe"></i><span><small>Live site / app</small>{{ project.live_url|cut:"https://"|cut:"http://" }}</span><i class="fas fa-arrow-up-right-from-square bp-link-go"></i></a>{% endif %}
+    {% if project.code_repo_url %}<a class="bp-link" href="{{ project.code_repo_url }}" target="_blank" rel="noopener"><i class="fab fa-github"></i><span><small>Code repository</small>{{ project.code_repo_url|cut:"https://"|cut:"http://" }}</span><i class="fas fa-arrow-up-right-from-square bp-link-go"></i></a>{% endif %}
+    {% if project.site_url %}<a class="bp-link" href="{{ project.site_url }}" target="_blank" rel="noopener"><i class="fas fa-globe"></i><span><small>Live site / app</small>{{ project.site_url|cut:"https://"|cut:"http://" }}</span><i class="fas fa-arrow-up-right-from-square bp-link-go"></i></a>{% endif %}
   </div>
   {% elif staff %}<p class="bp-muted" style="font-size:.85rem; margin:0 0 .6rem">Add the GitHub link and live site with <a href="{% url 'bizpartners:project_edit' project.pk %}">Edit</a>.</p>{% endif %}
   <div class="{% if staff %}card{% else %}pv-card{% endif %}"><div class="bp-table-wrap"><table class="bp-table bp-creds">
@@ -20,7 +20,7 @@ Needs: project, credentials (shared ones only for the partner), staff (bool).{% 
       <td data-l="Password">{% if c.password %}<span class="bp-copy-wrap"><code class="bp-pw" data-pw="{{ c.password }}">••••••••</code>
         <button type="button" class="bp-copy bp-reveal" title="Show password" aria-label="Show password"><i class="far fa-eye"></i></button>
         <button type="button" class="bp-copy" data-copy="{{ c.password }}" title="Copy password" aria-label="Copy password"><i class="far fa-copy"></i></button></span>{% else %}—{% endif %}</td>
-      <td class="num">{% if staff %}<a href="{% url 'bizpartners:item_edit' project.pk 'credential' c.pk %}" title="Edit"><i class="fas fa-pen"></i></a>
+      <td class="num">{% if staff and c.linked %}<a href="{% url 'project_detail' project.linked_project_id %}#credentials" class="bp-muted" style="font-size:.75rem" title="Saved on the linked BMS project. Edit it there.">BMS project</a>{% elif staff %}<a href="{% url 'bizpartners:item_edit' project.pk 'credential' c.pk %}" title="Edit"><i class="fas fa-pen"></i></a>
         <a href="{% url 'bizpartners:item_delete' project.pk 'credential' c.pk %}" title="Delete" style="margin-left:.5rem; color:var(--danger,#dc2626)"><i class="fas fa-trash"></i></a>{% endif %}</td></tr>
     {% empty %}<tr><td colspan="6" class="bp-muted">{% if staff %}No logins saved yet. Add the server, domain, hosting or admin logins here.{% else %}No logins shared yet.{% endif %}</td></tr>{% endfor %}
     </tbody></table></div></div>

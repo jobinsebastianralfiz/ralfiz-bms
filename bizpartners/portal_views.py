@@ -183,7 +183,7 @@ def projects(request):
 @never_cache  # it shows server and domain passwords: never keep a copy in a browser or proxy cache
 def project_detail(request, pk):
     from .issue_views import issue_context
-    project = get_object_or_404(JointProject, pk=pk, partner=request.partner)
+    project = get_object_or_404(JointProject.objects.select_related('linked_project'), pk=pk, partner=request.partner)
     if request.method == 'POST':
         form = JointUpdateForm(request.POST)
         if form.is_valid():
@@ -195,7 +195,7 @@ def project_detail(request, pk):
     return render(request, 'bizpartners/portal/project_detail.html', _ctx(
         request, 'projects', project=project, m=project.money(),
         quotes=project.quotes.exclude(status='draft'), payments=project.payments.all(),
-        expenses=project.expenses.all(), credentials=project.credentials.filter(shared_with_partner=True),
+        expenses=project.expenses.all(), credentials=project.access_list(for_partner=True),
         updates=project.updates.select_related('author'), update_form=JointUpdateForm(),
         **issue_context(project, request.GET)))
 

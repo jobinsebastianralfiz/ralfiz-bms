@@ -352,6 +352,30 @@ class CredentialTests(TestCase):
         self.assertNotContains(r, 'only-us')
         self.assertIn('no-cache', r['Cache-Control'])
 
+    def test_linked_bms_project_logins_and_links_show(self):
+        from core.models import Client, Credential, Project
+        bms = Project.objects.create(client=Client.objects.create(name='Gateway'), name='Gateway Tour',
+                                     live_url='https://gatewaytour.ae')
+        Credential.objects.create(project=bms, credential_type='hosting', name='Namecheap', username='gw',
+                                  password='nc-pass-1', provider='Namecheap')
+        Credential.objects.create(project=bms, credential_type='dev', name='Test login', password='dev-only',
+                                  is_temporary=True)
+        Credential.objects.create(project=bms, credential_type='email', name='Old mail', password='gone',
+                                  is_active=False)
+        self.project.linked_project = bms
+        self.project.save()
+        self.client.login(username='p@rt.sa', password='partner-pass-1')
+        r = self.client.get(reverse('bizpartners_portal:project', args=[self.project.pk]))
+        self.assertContains(r, 'Namecheap')
+        self.assertContains(r, 'nc-pass-1')
+        self.assertContains(r, 'gatewaytour.ae')
+        self.assertNotContains(r, 'dev-only')
+        self.assertNotContains(r, 'Old mail')
+        self.client.force_login(self.staff)
+        r = self.client.get(reverse('bizpartners:project', args=[self.project.pk]))
+        self.assertContains(r, 'dev-only')
+        self.assertContains(r, 'Not shown to the partner')
+
     def test_another_partner_cannot_open_the_project(self):
         self.add()
         other = User.objects.create_user('o@x.sa', 'o@x.sa', 'other-pass-1')

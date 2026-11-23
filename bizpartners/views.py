@@ -146,7 +146,7 @@ def project_detail(request, pk):
     return render(request, 'bizpartners/project_detail.html', {
         'project': project, 'partner': project.partner, 'm': project.money(),
         'quotes': project.quotes.all(), 'payments': project.payments.all(), 'expenses': project.expenses.all(),
-        'credentials': project.credentials.all(),
+        'credentials': project.access_list(for_partner=False),
         'updates': project.updates.select_related('author'), 'update_form': JointUpdateForm(),
         **issue_context(project, request.GET),
     })
