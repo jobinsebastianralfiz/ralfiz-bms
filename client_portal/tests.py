@@ -95,5 +95,6 @@ class PortalPagesTests(TestCase):
 
     def test_dashboard_greets_and_lists_project(self):
         r = self.client.get('/portal/')
-        self.assertContains(r, 'Welcome back')
+        self.assertContains(r, 'Hello, Acme')
+        self.assertContains(r, 'pp-board')  # partner-portal look
         self.assertContains(r, 'Acme Website')

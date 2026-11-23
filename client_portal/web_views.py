@@ -115,65 +115,122 @@ def portal_logout(request):
 
 # ─── Dashboard ───────────────────────────────────────────────────
 
+CARD_TONES = ('plum', 'teal', 'coral')
+TITLES = {'dr', 'mr', 'mrs', 'ms', 'miss', 'prof', 'er', 'adv', 'sri', 'smt', 'shri'}
+
+
+def _first_name(name):
+    """'Dr. Priya Menon' -> 'Priya': the first word that is not a title."""
+    words = (name or '').split()
+    for w in words:
+        if w.rstrip('.').lower() not in TITLES:
+            return w
+    return words[0] if words else 'there'
+
+
+def _calendar_days(events, reverse=False, limit=6):
+    """Group {'date', ...} events into [{'date', 'events'}] days, soonest (or newest) first."""
+    days = {}
+    for e in events:
+        days.setdefault(e['date'], []).append(e)
+    ordered = sorted(days.items(), key=lambda kv: kv[0], reverse=reverse)[:limit]
+    return [{'date': d, 'events': evs} for d, evs in ordered]
+
+
 @client_required
 def portal_dashboard(request):
     from datetime import timedelta
     from django.utils import timezone
+    from core.models import AMCContract, Payment
+    from core.signoff_models import ProjectSignoff
     client = request.client
     projects = Project.objects.filter(client=client)
     today = timezone.localdate()
 
     active_statuses = ['confirmed', 'in_progress', 'review']
-    active_projects = projects.filter(status__in=active_statuses)
-
-    active_list = []
-    for p in active_projects.order_by('-updated_at')[:5]:
+    live = list(projects.exclude(status='cancelled').order_by('-updated_at'))
+    # Running projects first, then the rest, newest first within each.
+    live.sort(key=lambda p: (p.status not in active_statuses, p.status == 'completed'))
+    for i, p in enumerate(live):
         tasks = p.tasks.exclude(status='backlog')
         p.task_total = tasks.count()
         p.task_completed = tasks.filter(status='completed').count()
         p.progress = project_progress(p)
-        p.overdue = bool(p.deadline and p.deadline < today)
-        active_list.append(p)
-    overdue_count = sum(1 for p in active_list if p.overdue)
+        p.overdue = bool(p.deadline and p.deadline < today and p.status in active_statuses)
+        p.tone = CARD_TONES[i % len(CARD_TONES)]
+    cards = live[:3]
 
-    all_invoices = Invoice.all_objects.filter(client=client).exclude(status='cancelled')
-    pending_qs = all_invoices.exclude(status='paid')
-    pending_invoices = list(pending_qs[:5])
+    all_invoices = Invoice.all_objects.filter(client=client).exclude(status__in=['cancelled', 'draft'])
+    pending_invoices = list(all_invoices.exclude(status='paid').order_by('due_date', 'issue_date'))
     total_invoiced = all_invoices.aggregate(t=Sum('total_amount'))['t'] or 0
     total_paid = all_invoices.aggregate(t=Sum('amount_paid'))['t'] or 0
-    for inv in pending_invoices:
+    for i, inv in enumerate(pending_invoices):
         inv.is_late = bool(inv.due_date and inv.due_date < today)
+        inv.tone = CARD_TONES[i % len(CARD_TONES)]
+    paid_invoices = list(all_invoices.filter(status='paid').order_by('-issue_date')[:3])
+    for i, inv in enumerate(paid_invoices):
+        inv.tone = CARD_TONES[(i + len(pending_invoices)) % len(CARD_TONES)]
+    balance = total_invoiced - total_paid
 
-    # Recent activity: posted updates and sent invoices, newest first.
-    activity = []
-    for u in ProjectUpdate.objects.filter(project__client=client, is_visible_to_client=True).select_related('project')[:6]:
-        activity.append({'kind': 'update', 'icon': 'fa-folder', 'tone': 'violet', 'title': u.title,
-                         'sub': u.project.name, 'when': u.created_at})
-    for inv in all_invoices.exclude(status='draft').order_by('-created_at')[:4]:
-        activity.append({'kind': 'invoice', 'icon': 'fa-file-invoice', 'tone': 'orange',
-                         'title': f'Invoice {inv.invoice_number}', 'sub': inv.title, 'when': inv.created_at})
-    activity.sort(key=lambda e: e['when'], reverse=True)
+    # Calendar: what is coming up, and what was paid lately.
+    tone_of = {p.pk: p.tone for p in live}
+    upcoming = []
+    for p in live:
+        if p.deadline and p.status in active_statuses and p.deadline >= today:
+            upcoming.append({'date': p.deadline, 'when': 'Due', 'what': 'Project deadline', 'title': p.name, 'tone': p.tone})
+    for inv in pending_invoices:
+        if inv.due_date:
+            upcoming.append({'date': inv.due_date, 'amount': inv.balance_due,
+                             'what': f'Invoice {inv.invoice_number}' + (' (overdue)' if inv.is_late else ''),
+                             'title': inv.title, 'tone': 'coral'})
+    for amc in AMCContract.objects.filter(project__client=client, status='active').select_related('project'):
+        upcoming.append({'date': amc.next_due_date, 'when': 'AMC',
+                         'what': 'AMC renewal' if amc.included_in_project else f'{amc.get_contract_type_display()} payment',
+                         'title': amc.project.name, 'tone': tone_of.get(amc.project_id, 'plum')})
+    for s in ProjectSignoff.objects.filter(project__client=client, status__in=ProjectSignoff.OPEN_STATUSES).select_related('project'):
+        if not s.is_expired:
+            upcoming.append({'date': timezone.localtime(s.expires_at).date(), 'when': 'Sign',
+                             'what': 'Sign-off waiting for you', 'title': s.title, 'tone': tone_of.get(s.project_id, 'teal')})
+    upcoming = _calendar_days(upcoming)
 
-    hour = timezone.localtime().hour
-    greeting = 'Good morning' if hour < 12 else ('Good afternoon' if hour < 17 else 'Good evening')
-    new_projects = projects.filter(created_at__date__gte=today - timedelta(days=30)).count()
-    pending_count = pending_qs.count()
+    recent_pays = [
+        {'date': pay.payment_date, 'amount': pay.amount, 'what': f'Paid · {pay.invoice.invoice_number}',
+         'title': pay.invoice.title, 'tone': CARD_TONES[i % len(CARD_TONES)]}
+        for i, pay in enumerate(Payment.all_objects.filter(invoice__client=client)
+                                .exclude(invoice__status='cancelled')
+                                .select_related('invoice').order_by('-payment_date', '-created_at')[:6])
+    ]
+    recent = _calendar_days(recent_pays, reverse=True, limit=4)
+
+    # Free card slots: money at a glance, then an invitation to start something new.
+    fillers = []
+    if len(cards) < 3 and total_invoiced:
+        pct = int(total_paid * 100 / total_invoiced) if total_invoiced else 0
+        fillers.append({'kind': 'paid', 'tone': CARD_TONES[len(cards) % 3], 'amount': total_paid,
+                        'of': total_invoiced, 'pct': min(pct, 100)})
+    if len(cards) + len(fillers) < 3:
+        fillers.append({'kind': 'new'})
 
     ctx = _base_context(request, 'dashboard')
     ctx.update({
-        'greeting': greeting,
+        'today': today,
+        'first_name': _first_name(client.name),
+        'cards': cards,
+        'fillers': fillers,
+        'projects': live,
         'stats': {
-            'total_projects': projects.count(),
-            'new_projects': new_projects,
-            'active_projects': active_projects.count(),
-            'overdue_projects': overdue_count,
-            'pending_invoices': pending_count,
-            'balance_due': total_invoiced - total_paid,
+            'total_projects': len(live),
+            'active_projects': sum(1 for p in live if p.status in active_statuses),
+            'overdue_projects': sum(1 for p in live if p.overdue),
+            'pending_invoices': len(pending_invoices),
         },
-        'active_projects': active_list,
-        'focus_project': active_list[0] if active_list else None,
-        'pending_invoices': pending_invoices,
-        'activity': activity[:5],
+        'balance': balance,
+        'total_paid': total_paid,
+        'pending_invoices': pending_invoices[:5],
+        'paid_invoices': paid_invoices,
+        'upcoming': upcoming,
+        'recent': recent,
+        'open_signoffs': sum(len([e for e in d['events'] if e.get('when') == 'Sign']) for d in upcoming),
     })
     return render(request, 'client_portal/dashboard.html', ctx)
 

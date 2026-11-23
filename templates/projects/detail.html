@@ -475,6 +475,12 @@
       {% elif cred.is_expiring_soon %}
       <button type="button" class="btn btn-sm btn-ghost btn-icon" title="Renew credential" onclick="openRenewModal('{{ cred.pk }}', '{{ cred.name|escapejs }}')"><i class="fas fa-redo text-warning"></i></button>
       {% endif %}
+      <form method="post" action="{% url 'credential_toggle_client' cred.pk %}" style="display:inline">{% csrf_token %}
+        <input type="hidden" name="next" value="{{ request.get_full_path }}#credentials">
+        <button type="submit" class="btn btn-sm btn-ghost btn-icon" title="{% if cred.client_visible %}Shared with the client in their portal. Click to hide{% else %}Not shown to the client. Click to share in their portal{% endif %}" aria-pressed="{% if cred.client_visible %}true{% else %}false{% endif %}">
+          <i class="fas {% if cred.client_visible %}fa-eye text-success{% else %}fa-eye-slash{% endif %}"></i>
+        </button>
+      </form>
       <a href="{% url 'credential_detail' cred.pk %}" class="btn btn-sm btn-ghost btn-icon" title="Open"><i class="fas fa-ellipsis-vertical"></i></a>
     </div>
     {% endfor %}

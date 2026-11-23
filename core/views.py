@@ -1735,6 +1735,22 @@ def credential_create(request):
 
 
 @login_required
+def credential_toggle_client(request, pk):
+    """Share a credential with the client in their portal, or stop sharing it (project page eye button)."""
+    credential = get_object_or_404(Credential, pk=pk)
+    if request.method == 'POST':
+        credential.client_visible = not credential.client_visible
+        credential.save(update_fields=['client_visible'])
+        if credential.client_visible:
+            messages.success(request, f'"{credential.name}" is now visible to the client in their portal.')
+        else:
+            messages.info(request, f'"{credential.name}" is hidden from the client portal.')
+    from core.security import safe_next
+    fallback = reverse('project_detail', args=[credential.project_id]) if credential.project_id else reverse('credential_detail', args=[pk])
+    return redirect(safe_next(request, request.POST.get('next'), fallback))
+
+
+@login_required
 def credential_update(request, pk):
     credential = get_object_or_404(Credential, pk=pk)
     projects = Project.objects.select_related('client').all()

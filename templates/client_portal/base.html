@@ -1,6 +1,5 @@
-{% load static %}
-<!DOCTYPE html>
-<html lang="en">
+{% load static %}<!DOCTYPE html>
+<html lang="en" data-theme="light">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -13,93 +12,77 @@
   <link rel="stylesheet" href="{% static 'css/styles.css' %}">
   <link rel="stylesheet" href="{% static 'css/client_portal.css' %}">
   <link rel="stylesheet" href="{% static 'css/portal-velora.css' %}?v=3">
+  <link rel="stylesheet" href="{% static 'css/partner-portal.css' %}?v=6">
   {% block extra_css %}{% endblock %}
 </head>
-<body>
-  <div class="pv-app">
-    <aside class="pv-side" id="pvSide">
-      <a href="{% url 'client_portal:portal_dashboard' %}" class="pv-brand">
-        <span class="pv-brand-mark" aria-hidden="true">R</span>
-        <span class="pv-brand-name">{{ company_name|default:"Ralfiz Technologies" }}<small>Client Portal</small></span>
-      </a>
-
-      <nav class="pv-menu" aria-label="Portal">
-        <a href="{% url 'client_portal:portal_dashboard' %}" class="{% if active_nav == 'dashboard' %}active{% endif %}"><i class="fas fa-house"></i> Dashboard</a>
-        <a href="{% url 'client_portal:portal_projects' %}" class="{% if active_nav == 'projects' %}active{% endif %}"><i class="fas fa-folder-open"></i> Projects</a>
-        <a href="{% url 'client_portal:portal_invoices' %}" class="{% if active_nav == 'invoices' %}active{% endif %}"><i class="fas fa-file-invoice"></i> Invoices</a>
-        <a href="{% url 'client_portal:portal_quotes' %}" class="{% if active_nav == 'quotes' %}active{% endif %}"><i class="far fa-file-lines"></i> Quotes</a>
-        <a href="{% url 'client_portal:portal_files' %}" class="{% if active_nav == 'files' %}active{% endif %}"><i class="far fa-folder"></i> Files</a>
-        <a href="{% url 'client_portal:portal_messages' %}" class="{% if active_nav == 'messages' %}active{% endif %}"><i class="far fa-message"></i> Messages</a>
-        <a href="{% url 'client_portal:portal_notifications' %}" class="{% if active_nav == 'notifications' %}active{% endif %}"><i class="far fa-bell"></i> Notifications{% if unread_count %}<span class="pv-count">{{ unread_count }}</span>{% endif %}</a>
-        <hr>
-        <a href="{% url 'client_portal:portal_profile' %}" class="{% if active_nav == 'profile' %}active{% endif %}"><i class="far fa-user"></i> Profile</a>
-        <a href="{% url 'client_portal:portal_change_password' %}" class="{% if active_nav == 'password' %}active{% endif %}"><i class="fas fa-gear"></i> Settings</a>
-        {% if company_email %}<a href="mailto:{{ company_email }}?subject={{ 'Client portal support'|urlencode }}"><i class="far fa-circle-question"></i> Help &amp; Support</a>{% endif %}
-      </nav>
-
-      {% if company_email %}
-      <div class="pv-help">
-        <span class="pv-help-ico" aria-hidden="true"><i class="fas fa-headset"></i></span>
-        <strong>Need help?</strong>
-        <span>Write to our team about anything on your projects.</span>
-        <a href="mailto:{{ company_email }}?subject={{ 'Client portal support'|urlencode }}">Contact us <i class="fas fa-arrow-right"></i></a>
-      </div>
-      {% endif %}
-    </aside>
-    <div class="pv-scrim" id="pvScrim" onclick="togglePortalNav()"></div>
-
-    <div class="pv-main">
-      <header class="pv-top">
-        <button class="pv-icon-btn pv-burger" onclick="togglePortalNav()" aria-label="Open menu"><i class="fas fa-bars"></i></button>
-        <form class="pv-search" method="get" action="{% url 'client_portal:portal_search' %}" role="search">
-          <i class="fas fa-magnifying-glass" aria-hidden="true"></i>
-          <input type="search" name="q" value="{{ q|default:'' }}" placeholder="Search projects, invoices or quotes…" aria-label="Search">
-        </form>
-        <div class="pv-top-right">
-          <a class="pv-icon-btn" href="{% url 'client_portal:portal_notifications' %}" aria-label="Notifications{% if unread_count %}, {{ unread_count }} unread{% endif %}">
-            <i class="far fa-bell"></i>{% if unread_count %}<span class="pv-dot"></span>{% endif %}
+<body class="cp-warm">
+  {# Same warm board as the partner portal: profile sidebar, white board, optional calendar column. #}
+  <div class="pp-shell">
+    <div class="pp-board">
+      <aside class="pp-side" id="ppSide">
+        <div class="pp-side-top">
+          <a href="{% url 'client_portal:portal_dashboard' %}" class="pp-logo">
+            <span class="pp-logo-bars" aria-hidden="true"><i></i><i></i><i></i></span>
+            <span>{{ company_name|default:"Ralfiz Technologies" }}<small>Client Portal</small></span>
           </a>
-          <button class="pv-icon-btn" onclick="toggleTheme()" aria-label="Switch light or dark"><i class="fas fa-moon" id="themeIcon"></i></button>
-          <div class="portal-user-menu">
-            <button class="pv-user" onclick="toggleUserDropdown()" aria-haspopup="true">
-              <span class="pv-avatar">{{ client.name|make_list|first|upper }}</span>
-              <span class="pv-user-name">{{ client.name|truncatewords:2 }}<small>Client</small></span>
-              <i class="fas fa-chevron-down" style="font-size: .65rem;"></i>
-            </button>
-            <div class="portal-user-dropdown" id="userDropdown">
-              <div style="padding: .75rem 1rem; border-bottom: 1px solid var(--border-color);">
-                <div style="font-weight: 600; color: var(--text-primary); font-size: .875rem;">{{ client.name }}</div>
-                <div style="font-size: .75rem; color: var(--text-muted);">{{ client.company_name }}</div>
-              </div>
-              <a href="{% url 'client_portal:portal_profile' %}"><i class="fas fa-user"></i> Profile</a>
-              <a href="{% url 'client_portal:portal_change_password' %}"><i class="fas fa-lock"></i> Change Password</a>
-              <div class="dropdown-divider"></div>
-              <form method="post" action="{% url 'client_portal:portal_logout' %}">
-                {% csrf_token %}
-                <button type="submit"><i class="fas fa-sign-out-alt"></i> Sign Out</button>
-              </form>
-            </div>
-          </div>
+          <button class="pp-icon-btn pp-burger" type="button" aria-label="Menu" aria-controls="ppSide" onclick="document.getElementById('ppSide').classList.toggle('open')"><i class="fas fa-bars"></i></button>
         </div>
-      </header>
 
-      <main class="portal-content">
+        <div class="pp-profile">
+          <div class="pp-avatar" aria-hidden="true">{{ client.name|make_list|first|upper }}</div>
+          <strong>{{ client.name }}</strong>
+          {% if client.company_name and client.company_name != client.name %}<span>{{ client.company_name }}</span>{% endif %}
+          {% if client.email %}<span>{{ client.email }}</span>{% endif %}
+        </div>
+
+        <nav class="pp-nav" aria-label="Client portal">
+          <form class="pp-search" method="get" action="{% url 'client_portal:portal_search' %}" role="search">
+            <i class="fas fa-magnifying-glass" aria-hidden="true"></i>
+            <input type="search" name="q" value="{{ q|default:'' }}" placeholder="Search…" aria-label="Search projects, invoices or quotes">
+          </form>
+          <a href="{% url 'client_portal:portal_dashboard' %}" class="{% if active_nav == 'dashboard' %}active{% endif %}"><i class="fas fa-house"></i> Dashboard</a>
+          <a href="{% url 'client_portal:portal_projects' %}" class="{% if active_nav == 'projects' %}active{% endif %}"><i class="far fa-folder-open"></i> Projects</a>
+          <a href="{% url 'client_portal:portal_invoices' %}" class="{% if active_nav == 'invoices' %}active{% endif %}"><i class="fas fa-file-invoice"></i> Invoices</a>
+          <a href="{% url 'client_portal:portal_quotes' %}" class="{% if active_nav == 'quotes' %}active{% endif %}"><i class="far fa-file-lines"></i> Quotes</a>
+          <a href="{% url 'client_portal:portal_files' %}" class="{% if active_nav == 'files' %}active{% endif %}"><i class="far fa-folder"></i> Files</a>
+          <a href="{% url 'client_portal:portal_messages' %}" class="{% if active_nav == 'messages' %}active{% endif %}"><i class="far fa-message"></i> Messages</a>
+          <a href="{% url 'client_portal:portal_notifications' %}" class="{% if active_nav == 'notifications' %}active{% endif %}"><i class="far fa-bell"></i> Notifications{% if unread_count %}<span class="pp-count">{{ unread_count }}</span>{% endif %}</a>
+          <hr>
+          <a href="{% url 'client_portal:portal_profile' %}" class="{% if active_nav == 'profile' %}active{% endif %}"><i class="far fa-user"></i> Profile</a>
+          <a href="{% url 'client_portal:portal_change_password' %}" class="{% if active_nav == 'password' %}active{% endif %}"><i class="fas fa-gear"></i> Password</a>
+          {% if company_email %}<a href="mailto:{{ company_email }}?subject={{ 'Client portal support'|urlencode }}"><i class="far fa-circle-question"></i> Help</a>{% endif %}
+          <form method="post" action="{% url 'client_portal:portal_logout' %}">{% csrf_token %}
+            <button type="submit"><i class="fas fa-arrow-right-from-bracket"></i> Sign out</button>
+          </form>
+        </nav>
+
+        <svg class="pp-blob" viewBox="0 0 200 170" aria-hidden="true">
+          <path d="M0 40C40 30 70 70 110 80s70 10 90 60v30H0z" fill="#8FCFD1" opacity=".55"/>
+          <circle cx="120" cy="120" r="34" fill="#F6E7C8" opacity=".9"/>
+        </svg>
+      </aside>
+
+      <main class="pp-main">
         {% if messages %}
         <div style="margin-bottom: 1rem;">
           {% for message in messages %}
           <div class="alert alert-{{ message.tags }} alert-dismissible">
             <span>{{ message }}</span>
-            <button type="button" class="alert-close" onclick="this.parentElement.remove()"><i class="fas fa-times"></i></button>
+            <button type="button" class="alert-close" onclick="this.parentElement.remove()" aria-label="Dismiss"><i class="fas fa-times"></i></button>
           </div>
           {% endfor %}
         </div>
         {% endif %}
         {% block content %}{% endblock %}
       </main>
+
+      {% block aside %}{% endblock %}
     </div>
   </div>
-
-  <script src="{% static 'js/client_portal.js' %}?v=2"></script>
+  <script>
+    // The warm board is light-only; forget a dark choice saved by the old portal look.
+    try { localStorage.removeItem('portal-theme'); } catch (e) {}
+  </script>
   {% block extra_js %}{% endblock %}
 </body>
 </html>

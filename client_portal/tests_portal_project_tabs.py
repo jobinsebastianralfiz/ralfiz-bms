@@ -40,3 +40,23 @@ class PortalProjectTabsTests(TestCase):
         self.client.post(reverse('client_portal_reset_password', args=[self.client_obj.pk]), {'password': 'Agc@123!#x'})
         self.user.refresh_from_db()
         self.assertTrue(self.user.check_password('Agc@123!#x'))
+
+    def test_staff_shares_credential_from_project_page(self):
+        from core.models import Credential
+        cred = Credential.objects.create(name='Hosting panel', project=self.project,
+                                         credential_type='hosting', username='agc', password='s3cret')
+        self.client.force_login(self.user)
+        page = self.client.get(reverse('client_portal:portal_project_detail', args=[self.project.pk]))
+        self.assertNotContains(page, 'Hosting panel')
+
+        staff = User.objects.create_superuser('boss2', 'b2@example.com', 'pw')
+        self.client.force_login(staff)
+        self.assertContains(self.client.get(reverse('project_detail', args=[self.project.pk])), 'Click to share in their portal')
+        self.client.post(reverse('credential_toggle_client', args=[cred.pk]))
+        cred.refresh_from_db()
+        self.assertTrue(cred.client_visible)
+
+        self.client.force_login(self.user)
+        page = self.client.get(reverse('client_portal:portal_project_detail', args=[self.project.pk]))
+        self.assertContains(page, 'Hosting panel')
+        self.assertContains(page, 's3cret')

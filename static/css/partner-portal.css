@@ -140,9 +140,9 @@ body { color: var(--pp-ink); font-family: 'Inter', system-ui, sans-serif; }
 .pp-cal-day { border-bottom: 1px solid #EFE2D6; padding: 14px 0; }
 .pp-cal-day:last-child { border-bottom: 0; }
 .pp-cal-date { font-size: 11px; color: var(--pp-muted); margin-bottom: 12px; display: flex; justify-content: space-between; }
-.pp-ev { display: grid; grid-template-columns: 58px 3px 1fr; gap: 10px; align-items: start; margin-bottom: 12px; }
+.pp-ev { display: grid; grid-template-columns: minmax(58px, max-content) 3px 1fr; gap: 10px; align-items: start; margin-bottom: 12px; }
 .pp-ev:last-child { margin-bottom: 0; }
-.pp-ev-when { font-size: 12.5px; font-weight: 800; padding-top: 1px; overflow-wrap: anywhere; }
+.pp-ev-when { font-size: 12.5px; font-weight: 800; padding-top: 1px; white-space: nowrap; }
 .pp-ev-bar { width: 3px; border-radius: 2px; align-self: stretch; min-height: 30px; }
 .pp-ev-bar.plum { background: var(--pp-plum); } .pp-ev-bar.teal { background: var(--pp-teal); } .pp-ev-bar.coral { background: var(--pp-coral); }
 .pp-ev-body { min-width: 0; }
@@ -157,6 +157,28 @@ body { color: var(--pp-ink); font-family: 'Inter', system-ui, sans-serif; }
 .pp-main .pp-card, .pp-main .pp-due, .pp-main .pp-stat.link, .pp-main .pp-dark-btn, .pp-main .pp-icon-btn { color: inherit; }
 .pp-main .pp-card { color: #fff; }
 .pp-main .pp-dark-btn { color: #fff; }
+
+/* Client portal extras on the same board: sidebar search, unread count, help card, late dates. */
+.pp-search { position: relative; margin-bottom: 8px; }
+.pp-search i { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); font-size: 12px; color: var(--pp-muted); }
+.pp-search input { width: 100%; height: 38px; border: 1px solid var(--pp-line); border-radius: 12px; padding: 0 12px 0 34px; font: inherit; font-size: 13px;
+  background: #FAF8FC; color: var(--pp-ink); outline: none; box-sizing: border-box; }
+.pp-search input:focus { border-color: var(--pp-plum); background: #fff; }
+.pp-count { margin-left: auto; min-width: 20px; height: 20px; padding: 0 6px; border-radius: 99px; background: var(--pp-coral); color: #fff;
+  font-size: 11px; font-weight: 700; display: inline-flex; align-items: center; justify-content: center; }
+.pp-icon-btn { position: relative; }
+.pp-dot { position: absolute; top: 9px; right: 10px; width: 8px; height: 8px; border-radius: 50%; background: var(--pp-coral); border: 2px solid #F4F2F7; }
+.pp-late { color: #C0392B; font-weight: 700; }
+.pp-help { margin-top: 18px; display: flex; align-items: center; gap: 14px; padding: 14px 16px; border-radius: 14px; background: var(--pp-cal);
+  color: var(--pp-ink); text-decoration: none; }
+.pp-help:hover { background: #F6EADF; color: var(--pp-ink); }
+.pp-main .pp-help { color: var(--pp-ink); }
+.pp-help-ico { width: 40px; height: 40px; flex: none; border-radius: 50%; background: var(--pp-coral); color: #fff; display: inline-flex; align-items: center; justify-content: center; }
+.pp-help strong { display: block; font-size: 13.5px; }
+.pp-help span span { display: block; font-size: 12px; color: var(--pp-muted); margin-top: 2px; }
+.pp-help > i { margin-left: auto; color: var(--pp-muted); }
+/* Client inner pages were built for the old top bar: let them use the board's width. */
+.pp-main .portal-content { padding: 0; max-width: none; }
 
 .pp-burger { display: none; }
 

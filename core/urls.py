@@ -108,6 +108,7 @@ urlpatterns = [
     path('credentials/<uuid:pk>/edit/', views.credential_update, name='credential_update'),
     path('credentials/<uuid:pk>/delete/', views.credential_delete, name='credential_delete'),
     path('credentials/<uuid:pk>/renew/', views.credential_renew, name='credential_renew'),
+    path('credentials/<uuid:pk>/share-client/', views.credential_toggle_client, name='credential_toggle_client'),
     path('credentials/expiring/', views.credential_expiry, name='credential_expiry'),
 
     # AMC Contracts

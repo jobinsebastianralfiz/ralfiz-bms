@@ -116,11 +116,20 @@
   <div class="col-8 col-md-12" style="padding: 0.75rem;">
     <!-- Record Payment -->
     {% if amc.status == 'active' %}
+    {% with first_year_free=amc.included_in_project %}
     <div class="card mb-4">
       <div class="card-header">
-        <h3 class="card-title"><i class="fas fa-plus-circle me-2 text-success"></i>Record Payment</h3>
+        <h3 class="card-title">{% if first_year_free %}<i class="fas fa-check-circle me-2 text-success"></i>Nothing to collect this year{% else %}<i class="fas fa-plus-circle me-2 text-success"></i>Record Payment{% endif %}</h3>
       </div>
       <div class="card-body">
+        {% if first_year_free %}
+        {# Included AMC: year one is paid inside the project price, so the payment form waits behind a link for the renewal. #}
+        <p class="mb-2">This AMC period ({{ amc.start_date|date:"d M Y" }} to {{ amc.end_date|date:"d M Y" }}) is <strong>included in the project cost</strong>. The client pays nothing extra for it, and no payment needs recording.</p>
+        <p class="text-sm text-muted mb-3">Renewal from {{ amc.next_due_date|date:"d M Y" }}: {% if amc.annual_amount %}&#8377;{{ amc.annual_amount|floatformat:2 }} / year{% else %}fee to be quoted{% endif %}.</p>
+        <details>
+          <summary class="text-sm" style="cursor: pointer; color: var(--primary);"><i class="fas fa-plus me-1"></i>Record a renewal payment</summary>
+          <div class="mt-3">
+        {% endif %}
         <form method="post" action="{% url 'amc_record_payment' amc.pk %}">
           {% csrf_token %}
           <div class="row">
@@ -174,8 +183,13 @@
             </div>
           </div>
         </form>
+        {% if first_year_free %}
+          </div>
+        </details>
+        {% endif %}
       </div>
     </div>
+    {% endwith %}
     {% endif %}
 
     <!-- Payment History -->
