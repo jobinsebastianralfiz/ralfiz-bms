@@ -88,6 +88,8 @@ class SupportMessage(models.Model):
     client = models.ForeignKey('core.Client', on_delete=models.CASCADE, related_name='support_messages')
     sender = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='support_messages')
     from_client = models.BooleanField(default=True)
+    via = models.CharField(max_length=120, blank=True, default='',
+                           help_text="Where a client's message came from when not the portal, e.g. 'Shop Manager · Anjali'.")
     body = models.TextField(max_length=4000)
     created_at = models.DateTimeField(default=timezone.now, db_index=True)
     read_at = models.DateTimeField(null=True, blank=True)
@@ -102,7 +104,7 @@ class SupportMessage(models.Model):
     @property
     def sender_name(self):
         if self.from_client:
-            return self.client.name
+            return f'{self.client.name} ({self.via})' if self.via else self.client.name
         u = self.sender
         return (u.get_full_name() or u.username) if u else 'Ralfiz team'
 

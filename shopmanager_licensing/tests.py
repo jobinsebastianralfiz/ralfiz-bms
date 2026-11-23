@@ -128,3 +128,45 @@ class ShopLicenceDashboardTests(TestCase):
     def test_login_required(self):
         self.client.logout()
         self.assertEqual(self.client.get(reverse('shop_license_list')).status_code, 302)
+
+
+class ShopManagerChatTests(TestCase):
+    """Support chat from inside Shop Manager lands in the client's Client Chat conversation."""
+
+    def setUp(self):
+        from core.models import Client
+        cache.clear()
+        self.cl = Client.objects.create(name='RIO Mobiles', email='rio@example.com')
+        self.lic = ShopLicense.objects.create(shop_name='RIO Mobiles', plan='software', yearly_fee=7500,
+                                              client=self.cl, api_domain='rio.ralfiz.com')
+
+    def call(self, name, **data):
+        body = {'license_key': self.lic.license_key, 'domain': 'rio.ralfiz.com', **data}
+        return self.client.post(reverse(f'shopmanager_licensing:chat_{name}'), json.dumps(body),
+                                content_type='application/json')
+
+    def test_send_and_poll(self):
+        from client_portal.models import SupportMessage
+        r = self.call('send', body='Printer not working', sender='Anjali')
+        self.assertEqual(r.status_code, 200)
+        m = SupportMessage.objects.get()
+        self.assertEqual((m.client, m.from_client, m.via, m.sender_name),
+                         (self.cl, True, 'Shop Manager · Anjali', 'RIO Mobiles (Shop Manager · Anjali)'))
+        staff = User.objects.create_user('team', password='x')
+        SupportMessage.objects.create(client=self.cl, sender=staff, from_client=False, body='Checking now')
+        d = self.call('poll').json()
+        self.assertEqual([x['body'] for x in d['messages']], ['Printer not working', 'Checking now'])
+        self.assertEqual(d['unread'], 1)
+        self.assertEqual(self.call('poll', open=True).json()['unread'], 0)  # shop opened the chat: reply read
+        after = d['messages'][-1]['at']
+        self.assertEqual(self.call('poll', after=after).json()['messages'], [])
+
+    def test_wrong_installation_or_unlinked_licence_refused(self):
+        self.assertEqual(self.call('send', body='hi', domain='evil.example.com').status_code, 403)
+        r = self.client.post(reverse('shopmanager_licensing:chat_poll'),
+                             json.dumps({'license_key': 'RS-0000-0000-0000', 'domain': 'rio.ralfiz.com'}),
+                             content_type='application/json')
+        self.assertEqual(r.status_code, 403)
+        ShopLicense.objects.filter(pk=self.lic.pk).update(client=None)
+        self.assertEqual(self.call('poll').status_code, 409)
+        self.assertEqual(self.call('send', body='  ').status_code, 409)

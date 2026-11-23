@@ -136,3 +136,67 @@ def activate_license(request):
 def check_license(request):
     """Periodic check (every few hours, and when the shop clicks "Check now")."""
     return _answer(request, 'check')
+
+
+# ─── Support chat from inside Shop Manager ─────────────────────
+# The shop's server (not the browser) calls these with its licence key, so the key never reaches a web page.
+# Messages land in the client's conversation in the staff Client Chat inbox (client_portal.SupportMessage).
+CHAT_RATE = (900, 600)  # per licence per 10 minutes: an open chat polls every 4 s; closed ones peek twice a minute
+
+
+def _chat_licence(request):
+    try:
+        data = json.loads(request.body)
+    except (json.JSONDecodeError, UnicodeDecodeError):
+        return None, None, JsonResponse({'error': 'Invalid JSON'}, status=400)
+    if not isinstance(data, dict):
+        return None, None, JsonResponse({'error': 'Invalid JSON'}, status=400)
+    key = str(data.get('license_key', '')).strip().upper()
+    lic = ShopLicense.objects.filter(license_key=key).select_related('client').first() if key else None
+    if not lic or not lic.api_domain or not lic.validate_domain(str(data.get('domain', ''))):
+        return None, None, JsonResponse({'error': 'Unknown licence or installation.'}, status=403)
+    if lic.status == 'revoked':
+        return None, None, JsonResponse({'error': 'This licence has been revoked.'}, status=403)
+    if not lic.client_id:
+        return None, None, JsonResponse({'error': 'Chat is not set up for this shop yet. Call Ralfiz.'}, status=409)
+    rate_key = f'shopmgr-chat:{lic.pk}'
+    hits = cache.get_or_set(rate_key, 0, CHAT_RATE[1])
+    if hits >= CHAT_RATE[0]:
+        return None, None, JsonResponse({'error': 'Too many requests. Try again in a few minutes.'}, status=429)
+    try:
+        cache.incr(rate_key)
+    except ValueError:
+        pass
+    return lic, data, None
+
+
+@csrf_exempt
+@require_POST
+def chat_poll(request):
+    """{license_key, domain, after?, open?} -> the conversation (or what is new since `after`) and unread count."""
+    from django.utils.dateparse import parse_datetime
+    from client_portal.chat_views import _client_feed
+
+    lic, data, error = _chat_licence(request)
+    if error:
+        return error
+    after = parse_datetime(str(data.get('after') or ''))
+    return JsonResponse(_client_feed(lic.client, after, bool(data.get('open'))))
+
+
+@csrf_exempt
+@require_POST
+def chat_send(request):
+    """{license_key, domain, body, sender} -> the saved message. `sender` is the shop user's name."""
+    from client_portal.models import SupportMessage
+
+    lic, data, error = _chat_licence(request)
+    if error:
+        return error
+    body = str(data.get('body') or '').strip()[:4000]
+    if not body:
+        return JsonResponse({'error': 'Write a message first.'}, status=400)
+    who = str(data.get('sender') or '').strip()[:60]
+    m = SupportMessage.objects.create(client=lic.client, from_client=True, body=body,
+                                      via=f'Shop Manager · {who}' if who else 'Shop Manager')
+    return JsonResponse({'message': m.as_dict()})
