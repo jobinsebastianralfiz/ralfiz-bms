@@ -168,19 +168,92 @@
   })();
 </script>
 
-<div class="inv-page">
-<div class="inv-main">
+<div class="bento-wrap"><div class="bento">
 
-<div class="home-split home-pair mb-4">
-
-<div class="card home-dues" id="homeDues">
-  <div class="card-header inv-list-head">
-    <div>
-      <h2 class="card-title mb-0">Expiring soon</h2>
-      <p class="inv-list-head__sub">Domains, hosting, logins and AMC in the next {{ dues.horizon_days }} days{% if dues.overdue_count %} · <span class="text-danger">{{ dues.overdue_count }} overdue</span>{% endif %}</p>
+{# ---- Row 1: money (wide) + world clock (accent) ---- #}
+<section class="bx bx--hero" aria-label="Money">
+  <div class="bx__head">
+    <div class="seg" role="group" aria-label="Show amounts in">
+      <button type="button" class="seg__b is-on" data-cur="INR">&#8377; INR</button>
+      <button type="button" class="seg__b" data-cur="USD">USD</button>
+      <button type="button" class="seg__b" data-cur="SAR">SAR</button>
+      <button type="button" class="seg__b" data-cur="AED">AED</button>
     </div>
-    <a href="{% url 'credential_list' %}" class="btn btn-sm btn-outline-secondary">Credentials</a>
+    <div class="hero__side">
+      <span>Pending to collect</span>
+      <b class="js-money" data-inr="{{ hero.pending|floatformat:2 }}">&#8377;{{ hero.pending|inr }}</b>
+    </div>
   </div>
+  <p class="bx__label">Received in {{ revenue_year }}</p>
+  <div class="hero__amt">
+    <span class="js-money hero__big" data-inr="{{ hero.year_received|floatformat:2 }}">&#8377;{{ hero.year_received|inr }}</span>
+    <button type="button" class="bx-round bx-round--soft" id="heroEye" aria-pressed="false" title="Hide amounts"><i class="far fa-eye"></i></button>
+  </div>
+  <p class="hero__sub">This month <b class="js-money" data-inr="{{ hero.month_received|floatformat:2 }}">&#8377;{{ hero.month_received|inr }}</b>{% if hero.month_trend is not None %} <span class="trend {% if hero.month_trend < 0 %}is-down{% endif %}">{% if hero.month_trend >= 0 %}+{% endif %}{{ hero.month_trend }}% vs last month</span>{% endif %}</p>
+  <div class="hero__acts">
+    <a href="{% url 'invoice_create' %}" class="pill-btn pill-btn--dark"><i class="far fa-file-lines"></i> Create Invoice</a>
+    <a href="{% url 'client_create' %}" class="pill-btn"><i class="fas fa-user-plus"></i> Add Client</a>
+    <a href="{% url 'project_create' %}" class="pill-btn"><i class="far fa-folder-open"></i> New Project</a>
+    <button type="button" class="bx-dots" title="All modules" onclick="document.getElementById('modulesBtn').click()"><i class="fas fa-ellipsis"></i></button>
+    <a href="{% url 'reports' %}" class="hero__go" title="View reports" aria-label="View reports"><i class="fas fa-arrow-right" aria-hidden="true"></i></a>
+  </div>
+</section>
+
+{% include 'dashboard/_single_clock.html' %}
+
+{# ---- Row 2: invoices donut, money by month, client chats ---- #}
+<section class="bx">
+  <div class="bx__head"><h2 class="bx__title"><span class="bx-ico"><i class="far fa-file-lines"></i></span>Invoices</h2>
+    <a href="{% url 'invoice_list' %}" class="bx-chip">View all</a></div>
+  <div class="donut">
+    <div class="donut__ring" style="background: {{ status_donut }};"><div class="donut__hole"><strong>{{ status_total }}</strong><span>invoices</span></div></div>
+  </div>
+  {% for s in status_mix %}{% if s.label == 'Pending' and s.count %}<p class="bx-note"><i class="fas fa-hourglass-half"></i> {{ s.count }} waiting for payment</p>{% endif %}{% endfor %}
+  <ul class="legend">
+    {% for s in status_mix %}<li><i style="background: {{ s.colour }}"></i>{{ s.label }}<b>{{ s.count }}</b><span>{{ s.pct }}%</span></li>{% endfor %}
+  </ul>
+</section>
+
+<section class="bx">
+  <div class="bx__head"><h2 class="bx__title"><span class="bx-ico"><i class="fas fa-indian-rupee-sign"></i></span>Money received</h2>
+    <span class="bx-chip">{{ revenue_year }}</span></div>
+  <div class="bx-figure js-money" data-inr="{{ hero.month_received|floatformat:2 }}">&#8377;{{ hero.month_received|inr }}</div>
+  <p class="bx-figure__sub">this month{% if hero.month_trend is not None %} · <span class="trend {% if hero.month_trend < 0 %}is-down{% endif %}">{% if hero.month_trend >= 0 %}+{% endif %}{{ hero.month_trend }}%</span> vs last month{% endif %}</p>
+  <div class="bars">
+    {% for m in revenue %}
+    <div class="bars__col{% if forloop.last %} is-now{% endif %}" title="{{ m.label }}: &#8377;{{ m.amount|floatformat:0 }}">
+      <div class="bars__bar" style="height: {{ m.height|default:0 }}%"></div><span>{{ m.label }}</span>
+    </div>
+    {% endfor %}
+  </div>
+</section>
+
+<section class="bx home-chats" id="homeChats">
+  <div class="bx__head"><h2 class="bx__title"><span class="bx-ico"><i class="far fa-comments"></i></span>Client Chats <span class="nav-badge" data-sc-count{% if not chat_unread_total %} hidden{% endif %}>{{ chat_unread_total }}</span></h2>
+    <a href="{% url 'support_chat:inbox' %}" class="bx-chip">Open</a></div>
+  <div class="bx-scroll">
+  <ul class="home-list">
+    {% for c in chat_convos %}
+    <li class="home-list__row{% if c.unread %} is-unread{% endif %}">
+      <a href="{% url 'support_chat:thread' c.pk %}" class="home-list__main">
+        <span class="home-list__title">{{ c.name }}{% if c.unread %} <span class="nav-badge">{{ c.unread }} new</span>{% endif %}</span>
+        <span class="home-list__sub">{% if c.last_message and not c.last_message.from_client %}You: {% endif %}{{ c.last_message.body|truncatechars:90 }}</span>
+      </a>
+      <div class="home-list__side"><span class="home-list__when">{{ c.last_at|naturaltime }}</span></div>
+    </li>
+    {% empty %}
+    <li class="home-list__empty">No client chats yet. When a client writes from their portal it shows here, with a chime.</li>
+    {% endfor %}
+  </ul>
+  </div>
+</section>
+
+{# ---- Row 3: expiries, currency, notes ---- #}
+<section class="bx home-dues" id="homeDues">
+  <div class="bx__head"><h2 class="bx__title"><span class="bx-ico"><i class="far fa-calendar-xmark"></i></span>Expiring soon{% if dues.overdue_count %} <span class="nav-badge">{{ dues.overdue_count }} overdue</span>{% endif %}</h2>
+    <a href="{% url 'credential_list' %}" class="bx-chip">All</a></div>
+  <p class="bx-sub">Domains, hosting, logins and AMC · next {{ dues.horizon_days }} days</p>
+  <div class="bx-scroll">
   <ul class="home-list">
     {% for d in dues.items %}
     <li class="{% if d.overdue %}is-overdue{% elif d.days <= 7 %}is-soon{% endif %}">
@@ -197,56 +270,71 @@
     <li class="home-list__empty">Nothing expiring in the next {{ dues.horizon_days }} days.</li>
     {% endfor %}
   </ul>
-</div>
-<div class="card home-chats" id="homeChats">
-  <div class="card-header inv-list-head">
-    <div>
-      <h2 class="card-title mb-0">Client Chats <span class="nav-badge" data-sc-count{% if not chat_unread_total %} hidden{% endif %}>{{ chat_unread_total }}</span></h2>
-      <p class="inv-list-head__sub"><i class="fas fa-circle" style="color:#16a34a;font-size:.55rem;vertical-align:middle;"></i> Live from the client portal · updates by itself</p>
-    </div>
-    <a href="{% url 'support_chat:inbox' %}" class="btn btn-sm btn-primary"><i class="fas fa-comments"></i> Open chat</a>
   </div>
+</section>
+
+<div class="bento__fx">{% if fx %}{% include 'components/fx_converter.html' %}{% endif %}</div>
+
+<section class="bx home-notes">
+  <div class="bx__head"><h2 class="bx__title"><span class="bx-ico"><i class="far fa-note-sticky"></i></span>My Notes</h2>
+    <div class="bx__acts">
+      <form method="post" action="{% url 'notes_new_linked' %}">{% csrf_token %}<button type="submit" class="bx-round bx-round--soft" title="New note"><i class="fas fa-plus"></i></button></form>
+      <form method="post" action="{% url 'notes_new_linked' %}">{% csrf_token %}<input type="hidden" name="note_kind" value="board"><button type="submit" class="bx-round bx-round--soft" title="New board"><i class="fas fa-shapes"></i></button></form>
+      <a href="{% url 'notes_home' %}" class="bx-chip">Open</a>
+    </div></div>
+  <p class="bx-sub"><i class="fas fa-lock"></i> Private to you · last edited first</p>
+  <div class="bx-scroll">
   <ul class="home-list">
-    {% for c in chat_convos %}
-    <li class="home-list__row{% if c.unread %} is-unread{% endif %}">
-      <a href="{% url 'support_chat:thread' c.pk %}" class="home-list__main">
-        <span class="home-list__title">{{ c.name }}{% if c.unread %} <span class="nav-badge">{{ c.unread }} new</span>{% endif %}</span>
-        <span class="home-list__sub">{% if c.last_message and not c.last_message.from_client %}You: {% endif %}{{ c.last_message.body|truncatechars:90 }}</span>
+    {% for n in my_notes %}
+    <li>
+      <a href="/notes/n/{{ n.pk }}" class="home-list__main">
+        <span class="home-list__title"><i class="fas {% if n.kind == 'board' %}fa-shapes{% else %}fa-file-lines{% endif %} home-notes__ico"></i>{{ n.title|default:"Untitled" }}{% if n.pinned %} <i class="fas fa-thumbtack home-notes__pin" title="Pinned"></i>{% endif %}</span>
+        <span class="home-list__sub">{% if n.project %}<i class="far fa-folder-open"></i> {{ n.project.name }}{% elif n.client %}<i class="fas fa-user-tie"></i> {{ n.client.name }}{% elif n.lead %}<i class="fas fa-bullseye"></i> {% firstof n.lead.company_name n.lead.contact_person %}{% elif n.preview %}{{ n.preview|truncatechars:90 }}{% else %}{% if n.kind == 'board' %}Board{% else %}Empty note{% endif %}{% endif %}</span>
       </a>
-      <div class="home-list__side"><span class="home-list__when">{{ c.last_at|naturaltime }}</span></div>
+      <div class="home-list__side"><span class="home-list__when">{{ n.updated_at|naturaltime }}</span></div>
     </li>
     {% empty %}
-    <li class="home-list__empty">No client chats yet. When a client writes from their portal it shows here, with a chime.</li>
+    <li class="home-list__empty">No notes yet. Start one here, or from a project, client or lead page.</li>
     {% endfor %}
   </ul>
-</div>
-</div>
-<style>
-.home-dues__date { font-size: 0.8125rem; font-weight: 600; color: var(--text-primary); white-space: nowrap; }
-.home-dues .is-overdue { background: #fef2f2; }
-.home-dues .is-overdue .home-dues__date { color: var(--danger-strong); }
-.home-pair { align-items: start; }
-</style>
+  </div>
+</section>
 
-<style>
-.home-chats .nav-badge[hidden], .dash-tabs .nav-badge[hidden] { display: none; }
-.home-chats .nav-badge, .dash-tabs .nav-badge { display: inline-flex; min-width: 18px; height: 18px; padding: 0 6px; border-radius: 99px; background: #dc2626; color: #fff;
-  font-size: 11px; font-weight: 700; align-items: center; justify-content: center; vertical-align: middle; margin-left: 4px; position: static; }
-.home-chats .is-unread .home-list__sub { color: #111827; font-weight: 600; }
-</style>
-<script>
-  // Refresh the chat card every 15 seconds so new messages show without reloading the page.
-  setInterval(function () {
-    if (document.hidden) return;
-    fetch(location.href, { credentials: 'same-origin' }).then(function (r) { return r.ok ? r.text() : null; }).then(function (html) {
-      if (!html) return;
-      var fresh = new DOMParser().parseFromString(html, 'text/html').getElementById('homeChats'), box = document.getElementById('homeChats');
-      if (fresh && box) box.innerHTML = fresh.innerHTML;
-    }).catch(function () {});
-  }, 15000);
-</script>
+{# ---- Row 4: projects (wide) + activity ---- #}
+<section class="bx bx--two home-projects">
+  <div class="bx__head"><h2 class="bx__title"><span class="bx-ico"><i class="far fa-folder-open"></i></span>Active Projects</h2>
+    <a href="{% url 'project_list' %}" class="bx-chip">All projects</a></div>
+    <ul class="home-list">
+      {% for p in active_projects %}
+      <li>
+        <a href="{% url 'project_detail' p.pk %}" class="home-list__main">
+          <span class="home-list__title">{{ p.name }}</span>
+          <span class="home-list__sub">{{ p.client.name }}</span>
+        </a>
+        <div class="home-list__side">
+          <span class="status-badge {{ p.status|cut:'_' }} {{ p.status }}">{{ p.get_status_display }}</span>
+          {% if p.deadline %}<span class="home-list__when{% if p.deadline < today %} is-late{% endif %}">{% if p.deadline < today %}{{ p.deadline|timesince:today }} late{% else %}due {{ p.deadline|date:"d M" }}{% endif %}</span>{% endif %}
+        </div>
+      </li>
+      {% empty %}
+      <li class="home-list__empty">No active projects.</li>
+      {% endfor %}
+    </ul>
+</section>
 
-<details class="card mb-4 home-fold" data-fold="invoices">
+<section class="bx">
+  <div class="bx__head"><h2 class="bx__title"><span class="bx-ico"><i class="fas fa-clock-rotate-left"></i></span>Recent activity</h2></div>
+  <ul class="activity">
+    {% for a in recent_activity %}
+    <li><span class="activity__ico is-{{ a.action }}"><i class="fas {% if a.action == 'created' %}fa-plus{% elif a.action == 'deleted' %}fa-trash{% elif a.action == 'sent' %}fa-paper-plane{% else %}fa-pen{% endif %}"></i></span>
+      <div><div class="activity__text">{{ a.model_name }} {{ a.object_repr }} {{ a.get_action_display|lower }}</div><div class="activity__when">{{ a.timestamp|timesince }} ago</div></div></li>
+    {% empty %}
+    <li class="home-list__empty">Nothing yet.</li>
+    {% endfor %}
+  </ul>
+</section>
+
+<details class="card home-fold bx--wide" data-fold="invoices">
   <summary class="card-header inv-list-head">
     <div>
       <h2 class="card-title mb-0">Recent Invoices</h2>
@@ -293,64 +381,18 @@
   </div>
 </details>
 
-<div class="home-split home-pair">
-<div class="card home-notes">
-  <div class="card-header inv-list-head">
-    <div>
-      <h2 class="card-title mb-0">My Notes</h2>
-      <p class="inv-list-head__sub"><i class="fas fa-lock"></i> Private to you · last edited first</p>
-    </div>
-    <div class="home-notes__acts">
-      <form method="post" action="{% url 'notes_new_linked' %}">{% csrf_token %}
-        <button type="submit" class="btn btn-sm btn-primary"><i class="fas fa-plus"></i> New note</button>
-      </form>
-      <form method="post" action="{% url 'notes_new_linked' %}">{% csrf_token %}
-        <input type="hidden" name="note_kind" value="board">
-        <button type="submit" class="btn btn-sm btn-outline-secondary"><i class="fas fa-shapes"></i> Board</button>
-      </form>
-      <a href="{% url 'notes_home' %}" class="btn btn-sm btn-outline-secondary">Open Notes</a>
-    </div>
-  </div>
-  <ul class="home-list">
-    {% for n in my_notes %}
-    <li>
-      <a href="/notes/n/{{ n.pk }}" class="home-list__main">
-        <span class="home-list__title"><i class="fas {% if n.kind == 'board' %}fa-shapes{% else %}fa-file-lines{% endif %} home-notes__ico"></i>{{ n.title|default:"Untitled" }}{% if n.pinned %} <i class="fas fa-thumbtack home-notes__pin" title="Pinned"></i>{% endif %}</span>
-        <span class="home-list__sub">{% if n.project %}<i class="far fa-folder-open"></i> {{ n.project.name }}{% elif n.client %}<i class="fas fa-user-tie"></i> {{ n.client.name }}{% elif n.lead %}<i class="fas fa-bullseye"></i> {% firstof n.lead.company_name n.lead.contact_person %}{% elif n.preview %}{{ n.preview|truncatechars:90 }}{% else %}{% if n.kind == 'board' %}Board{% else %}Empty note{% endif %}{% endif %}</span>
-      </a>
-      <div class="home-list__side"><span class="home-list__when">{{ n.updated_at|naturaltime }}</span></div>
-    </li>
-    {% empty %}
-    <li class="home-list__empty">No notes yet. Start one here, or from a project, client or lead page.</li>
-    {% endfor %}
-  </ul>
-</div>
-  <div class="card home-projects">
-    <div class="card-header inv-list-head">
-      <div>
-        <h2 class="card-title mb-0">Active Projects</h2>
-        <p class="inv-list-head__sub">Confirmed, in progress or in review</p>
-      </div>
-      <a href="{% url 'project_list' %}" class="btn btn-sm btn-outline-secondary">All projects</a>
-    </div>
-    <ul class="home-list">
-      {% for p in active_projects %}
-      <li>
-        <a href="{% url 'project_detail' p.pk %}" class="home-list__main">
-          <span class="home-list__title">{{ p.name }}</span>
-          <span class="home-list__sub">{{ p.client.name }}</span>
-        </a>
-        <div class="home-list__side">
-          <span class="status-badge {{ p.status|cut:'_' }} {{ p.status }}">{{ p.get_status_display }}</span>
-          {% if p.deadline %}<span class="home-list__when{% if p.deadline < today %} is-late{% endif %}">{% if p.deadline < today %}{{ p.deadline|timesince:today }} late{% else %}due {{ p.deadline|date:"d M" }}{% endif %}</span>{% endif %}
-        </div>
-      </li>
-      {% empty %}
-      <li class="home-list__empty">No active projects.</li>
-      {% endfor %}
-    </ul>
-  </div>
-</div>
+</div></div>{# /bento #}
+<script>
+  // Refresh the chat card every 15 seconds so new messages show without reloading the page.
+  setInterval(function () {
+    if (document.hidden) return;
+    fetch(location.href, { credentials: 'same-origin' }).then(function (r) { return r.ok ? r.text() : null; }).then(function (html) {
+      if (!html) return;
+      var fresh = new DOMParser().parseFromString(html, 'text/html').getElementById('homeChats'), box = document.getElementById('homeChats');
+      if (fresh && box) box.innerHTML = fresh.innerHTML;
+    }).catch(function () {});
+  }, 15000);
+</script>
 <script>
   {# Folded sections remember being opened, per browser. #}
   document.querySelectorAll('details.home-fold').forEach(function (d) {
@@ -361,10 +403,135 @@
     });
   });
 </script>
-
-
-</div>{# /inv-main #}
-
-{% include 'components/business_rail.html' %}
-</div>{# /inv-page #}
+{{ fx.rates|json_script:"heroRates" }}
+<script>
+(function () {
+  // Money card: show figures in INR / USD / SAR / AED, and hide them on request (remembered per browser).
+  var rates = JSON.parse(document.getElementById('heroRates').textContent || '{}') || {};
+  var cur = localStorage.getItem('hero-cur') || 'INR', hidden = localStorage.getItem('hero-hide') === '1';
+  var btns = document.querySelectorAll('.seg__b'), eye = document.getElementById('heroEye');
+  function fmt(inr) {
+    if (hidden) return '•••••';
+    if (cur === 'INR' || !rates[cur]) return '\u20B9' + Number(inr).toLocaleString('en-IN', { maximumFractionDigits: 0 });
+    return new Intl.NumberFormat('en-US', { style: 'currency', currency: cur, maximumFractionDigits: 0 }).format(inr * rates[cur]);
+  }
+  function paint() {
+    if (!rates[cur]) cur = 'INR';
+    document.querySelectorAll('.js-money').forEach(function (el) { el.textContent = fmt(parseFloat(el.dataset.inr) || 0); });
+    btns.forEach(function (b) { b.classList.toggle('is-on', b.dataset.cur === cur); b.hidden = b.dataset.cur !== 'INR' && !rates[b.dataset.cur]; });
+    eye.setAttribute('aria-pressed', String(hidden)); eye.title = hidden ? 'Show amounts' : 'Hide amounts';
+    eye.innerHTML = hidden ? '<i class="far fa-eye-slash"></i>' : '<i class="far fa-eye"></i>';
+  }
+  btns.forEach(function (b) { b.addEventListener('click', function () { cur = b.dataset.cur; localStorage.setItem('hero-cur', cur); paint(); }); });
+  eye.addEventListener('click', function () { hidden = !hidden; localStorage.setItem('hero-hide', hidden ? '1' : '0'); paint(); });
+  paint();
+})();
+</script>
+<style>
+/* Bento dashboard: white rounded cards on the grey page, one accent card. */
+.bento-wrap { container-type: inline-size; }
+.bento { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px; align-items: stretch; }
+.bx { background: #fff; border-radius: 24px; padding: 20px 22px; min-width: 0; display: flex; flex-direction: column; box-shadow: 0 1px 2px rgba(15, 23, 42, .04); }
+.bx--hero { grid-column: span 2; }
+.bx--two { grid-column: span 2; }
+.bx--wide { grid-column: 1 / -1; border-radius: 24px; border: 0; margin: 0; }
+.bx--accent { background: linear-gradient(135deg, #bae6fd 0%, #e0f2fe 100%); }
+.bx__head { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 14px; }
+.bx__acts { display: flex; align-items: center; gap: 6px; }
+.bx__acts form { margin: 0; }
+.bx__title { display: flex; align-items: center; gap: 10px; margin: 0; font-size: 17px; font-weight: 600; color: var(--text-primary); }
+.bx-ico { width: 36px; height: 36px; border-radius: 50%; border: 1px solid #e5e9f0; display: inline-flex; align-items: center; justify-content: center; font-size: 14px; color: #334155; flex: none; }
+.bx-chip { display: inline-flex; align-items: center; height: 32px; padding: 0 14px; border-radius: 99px; border: 1px solid #e5e9f0; background: #fff; font-size: 13px; font-weight: 500; color: #334155; text-decoration: none; cursor: pointer; white-space: nowrap; }
+a.bx-chip:hover { border-color: var(--primary); color: var(--primary); }
+.bx-round { width: 34px; height: 34px; border-radius: 50%; border: 1px solid #e5e9f0; background: #fff; display: inline-flex; align-items: center; justify-content: center; color: #334155; cursor: pointer; }
+.bx-round--soft { background: #f1f5f9; border-color: transparent; }
+.bx-round:hover { color: var(--primary); }
+.bx__label { margin: 0 0 6px; font-size: 13px; color: #475569; }
+.bx-sub { margin: -6px 0 8px; font-size: 12.5px; color: var(--text-secondary); }
+.bx-scroll { flex: 1; min-height: 0; max-height: 400px; overflow-y: auto; margin: 0 -8px; padding: 0 8px; }
+.bx .home-list { padding: 0; }
+.bx .home-list li { padding: 11px 0; }
+.bx-minis { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin-top: auto; }
+.bx-mini { background: rgba(255,255,255,.55); border-radius: 16px; padding: 12px 14px; display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.bx-mini span { font-size: 12px; color: #475569; }
+.bx-mini b { font-size: 18px; font-weight: 600; color: #0b2537; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.bx-mini small { font-size: 12px; color: #475569; }
+.bx-mini small:empty { display: none; }
+.bx-note { align-self: center; margin: 4px 0 12px; padding: 5px 12px; border: 1px solid #e5e9f0; border-radius: 99px; font-size: 12.5px; color: #334155; }
+.bx-note i { color: #f59e0b; margin-right: 4px; }
+/* hero */
+.seg { display: inline-flex; padding: 4px; border-radius: 99px; background: #f1f5f9; gap: 2px; }
+.seg__b { white-space: nowrap; border: 0; background: transparent; padding: 6px 14px; border-radius: 99px; font-size: 13px; font-weight: 500; color: #475569; cursor: pointer; }
+.seg__b.is-on { background: #fff; color: #0f172a; box-shadow: 0 1px 3px rgba(15,23,42,.12); }
+.hero__side { text-align: right; display: flex; flex-direction: column; }
+.hero__side span { font-size: 12px; color: var(--text-secondary); }
+.hero__side b { font-size: 18px; font-weight: 600; color: var(--text-primary); font-variant-numeric: tabular-nums; }
+.hero__amt { display: flex; align-items: center; gap: 14px; margin: 2px 0 6px; }
+.hero__big { font-size: 56px; font-weight: 500; letter-spacing: -.03em; line-height: 1.05; color: #0f172a; font-variant-numeric: tabular-nums; }
+.hero__sub { margin: 0 0 22px; font-size: 14px; color: #475569; }
+.hero__sub b { color: var(--text-primary); font-weight: 600; }
+.trend { display: inline-block; font-size: 12px; font-weight: 600; color: #15803d; background: #dcfce7; border-radius: 99px; padding: 1px 8px; }
+.trend.is-down { color: #b91c1c; background: #fee2e2; }
+.hero__acts { margin-top: auto; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.pill-btn { display: inline-flex; align-items: center; gap: 8px; height: 40px; padding: 0 18px; border-radius: 99px; border: 1px solid #cbd5e1; color: #0f172a; font-size: 14px; font-weight: 500; text-decoration: none; background: #fff; }
+.pill-btn:hover { border-color: var(--primary); color: var(--primary); }
+.pill-btn--dark { background: #0c4a6e; border-color: #0c4a6e; color: #fff; }
+.pill-btn--dark:hover { background: #075985; color: #fff; }
+.bx-dots { border: 0; background: transparent; font-size: 18px; color: #334155; cursor: pointer; padding: 6px 8px; }
+.hero__go { margin-left: auto; width: 60px; height: 60px; border-radius: 50%; background: #bae6fd; color: #0c4a6e; display: inline-flex; align-items: center; justify-content: center; font-size: 22px; text-decoration: none; transition: transform .15s; }
+.hero__go i { transform: rotate(-45deg); transition: transform .15s; }
+.hero__go:hover i { transform: rotate(0); }
+.hero__go:hover { color: #0c4a6e; }
+/* invoices donut */
+.donut { display: flex; justify-content: center; margin: 4px 0 12px; }
+.donut__ring { width: 168px; height: 168px; border-radius: 50%; display: flex; align-items: center; justify-content: center; }
+.donut__hole { width: 128px; height: 128px; border-radius: 50%; background: #fff; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+.donut__hole strong { font-size: 30px; font-weight: 600; line-height: 1; color: #0f172a; }
+.donut__hole span { font-size: 12px; color: var(--text-secondary); margin-top: 4px; }
+.legend { list-style: none; padding: 0; margin: auto 0 0; display: grid; gap: 6px; }
+.legend li { display: grid; grid-template-columns: 10px 1fr auto 44px; align-items: center; gap: 8px; font-size: 13px; color: #334155; }
+.legend i { width: 10px; height: 10px; border-radius: 50%; }
+.legend b { font-weight: 600; }
+.legend span { text-align: right; color: var(--text-secondary); }
+/* money by month */
+.bx-figure { font-size: 38px; font-weight: 500; letter-spacing: -.02em; color: #0f172a; line-height: 1.1; font-variant-numeric: tabular-nums; }
+.bx-figure__sub { margin: 4px 0 16px; font-size: 12.5px; color: var(--text-secondary); }
+.bars { margin-top: auto; height: 150px; display: flex; align-items: flex-end; gap: 6px; }
+.bars__col { flex: 1; height: 100%; display: flex; flex-direction: column; justify-content: flex-end; align-items: center; gap: 6px; min-width: 0; }
+.bars__bar { width: 100%; max-width: 22px; min-height: 4px; border-radius: 8px; background: #e2e8f0; }
+.bars__col.is-now .bars__bar { background: #0ea5e9; }
+.bars__col:hover .bars__bar { background: #7dd3fc; }
+.bars__col span { font-size: 10.5px; color: var(--text-secondary); }
+/* currency card fills its cell */
+.bento__fx { min-width: 0; display: flex; }
+.bento__fx > .fxc { flex: 1; border-radius: 24px; margin: 0; }
+/* activity */
+.activity { list-style: none; margin: 0; padding: 0; display: grid; gap: 12px; }
+.activity li { display: flex; gap: 10px; align-items: flex-start; }
+.activity__ico { width: 30px; height: 30px; border-radius: 50%; background: #f1f5f9; display: inline-flex; align-items: center; justify-content: center; font-size: 12px; color: #475569; flex: none; }
+.activity__ico.is-created { background: #dcfce7; color: #15803d; }
+.activity__ico.is-deleted { background: #fee2e2; color: #b91c1c; }
+.activity__text { font-size: 13px; color: var(--text-primary); }
+.activity__when { font-size: 12px; color: var(--text-secondary); }
+/* lists */
+.home-dues__date { font-size: 0.8125rem; font-weight: 600; color: var(--text-primary); white-space: nowrap; }
+.home-dues .is-overdue .home-dues__date, .home-dues .is-overdue .home-list__title { color: var(--danger-strong); }
+.home-chats .nav-badge[hidden], .dash-tabs .nav-badge[hidden] { display: none; }
+.bx .nav-badge, .dash-tabs .nav-badge { display: inline-flex; min-width: 18px; height: 18px; padding: 0 7px; border-radius: 99px; background: #dc2626; color: #fff;
+  font-size: 11px; font-weight: 700; align-items: center; justify-content: center; vertical-align: middle; margin-left: 4px; position: static; }
+.home-chats .is-unread .home-list__sub { color: #111827; font-weight: 600; }
+.bx--wide > summary { border-radius: 24px; }
+@container (max-width: 1100px) {
+  .bento { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .bx--hero, .bx--two { grid-column: 1 / -1; }
+}
+@container (max-width: 680px) {
+  .bento { grid-template-columns: minmax(0, 1fr); }
+  .bx--hero, .bx--two { grid-column: auto; }
+  .hero__big { font-size: 40px; }
+  .hero__go { display: none; }
+  .bx--hero .bx__head { flex-wrap: wrap; }
+  .hero__side { text-align: left; }
+}
+</style>
 {% endblock %}

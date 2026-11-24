@@ -1,52 +1,47 @@
 {% load static %}
 {% comment %}One large clock on the dashboard. Pick any time zone; the choice is remembered per browser.
 Client-market cities come first (they also have live weather); every other IANA zone follows.{% endcomment %}
-<div class="card inv-panel home-clock" id="homeClock">
-  <h2 class="inv-panel__title">World Clock
-    <span class="home-clock__acts">
-      <button type="button" class="inv-panel__meta" id="hcFmt" aria-pressed="false" title="Switch between 12-hour and 24-hour time">24h</button>
-      <a href="{% url 'world_clock' %}" class="inv-panel__meta" target="_blank" title="All six markets with working-hours overlap">All</a>
-    </span>
-  </h2>
-  <select id="hcZone" class="form-control home-clock__zone" aria-label="Time zone"></select>
-  <div class="home-clock__face">
-    <canvas id="hcFace" role="img" aria-label="Analog clock"></canvas>
-    <div class="home-clock__main">
-      <span class="home-clock__pill" id="hcPill">—</span>
-      <div class="home-clock__time" id="hcTime">--:--</div>
-      <div class="home-clock__date" id="hcDate">—</div>
+<section class="bx bx--accent home-clock" id="homeClock" aria-label="World clock">
+  <canvas id="hcFace" role="img" aria-label="Analog clock"></canvas>
+  <div class="bx__head">
+    <label class="hc-zone"><i class="fas fa-earth-asia" aria-hidden="true"></i>
+      <select id="hcZone" aria-label="Time zone"></select>
+    </label>
+    <div class="bx__acts">
+      <button type="button" class="bx-chip" id="hcFmt" aria-pressed="false" title="Switch between 12-hour and 24-hour time">24h</button>
     </div>
   </div>
-  <p class="home-clock__sub" id="hcVsIndia">—</p>
-  <dl class="home-clock__meta">
-    <dt>Offset</dt><dd id="hcOff">—</dd>
-    <dt>vs India</dt><dd id="hcDiff">—</dd>
-    <dt>Weather</dt><dd><span id="hcWx">—</span><small id="hcWxSub"></small></dd>
-  </dl>
-</div>
+  <p class="bx__label"><span id="hcVsIndia">—</span> <span class="home-clock__pill" id="hcPill">—</span></p>
+  <div class="hc-time" id="hcTime">--:--</div>
+  <p class="hc-date" id="hcDate">—</p>
+  <div class="bx-minis">
+    <div class="bx-mini"><span>vs India</span><b id="hcDiff">—</b><small id="hcOff"></small></div>
+    <div class="bx-mini"><span>Weather</span><b id="hcWx">—</b><small id="hcWxSub"></small></div>
+  </div>
+  <a href="{% url 'world_clock' %}" class="hc-all" target="_blank">All markets <i class="fas fa-arrow-right"></i></a>
+</section>
 <style>
-.home-clock .inv-panel__title { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
-.home-clock__acts { display: flex; gap: 6px; }
-.home-clock__acts .inv-panel__meta { background: #fff; cursor: pointer; line-height: 1.4; color: var(--text-secondary); text-decoration: none; }
-#hcFmt[aria-pressed="true"] { background: var(--primary); border-color: var(--primary); color: #fff; }
-.home-clock__zone { width: 100%; height: 34px; padding: 4px 10px; font-size: 13px; margin: 2px 0 12px; }
-.home-clock__face { display: flex; align-items: center; gap: 10px; }
-.home-clock__main { overflow: hidden; }
-.home-clock__time .s { opacity: .4; font-size: .8em; }
-#hcFace { width: 88px; height: 88px; flex: none; }
-.home-clock__main { display: flex; flex-direction: column; align-items: flex-start; gap: 3px; min-width: 0; }
-.home-clock__pill { font-size: 10.5px; font-weight: 600; padding: 2px 8px; border-radius: 99px; background: #f1f5f9; color: #475569; }
+.home-clock { position: relative; overflow: hidden; }
+#hcFace { position: absolute; right: -22px; top: -22px; width: 150px; height: 150px; opacity: .9; pointer-events: none; }
+.home-clock .bx__head { padding-right: 112px; justify-content: flex-start; }
+.hc-zone { min-width: 0; flex: 0 1 auto; }
+.hc-zone select { min-width: 0; width: 100%; }
+.home-clock > *:not(canvas) { position: relative; }
+.hc-zone { display: inline-flex; align-items: center; gap: 8px; height: 38px; padding: 0 6px 0 14px; border-radius: 99px; background: #0c4a6e; color: #fff; margin: 0; }
+.hc-zone select { background: transparent; border: 0; color: #fff; font-weight: 600; font-size: 13px; letter-spacing: .02em; max-width: 190px; cursor: pointer; outline: none; }
+.hc-zone select option, .hc-zone select optgroup { color: #0f172a; }
+#hcFmt[aria-pressed="true"] { background: #0c4a6e; color: #fff; border-color: #0c4a6e; }
+
+.home-clock__pill { display: inline-block; vertical-align: middle; margin-left: 6px; font-size: 11px; font-weight: 600; padding: 2px 9px; border-radius: 99px; background: rgba(255,255,255,.7); color: #475569; }
 .home-clock__pill.ok { background: #dcfce7; color: #166534; }
 .home-clock__pill.warn { background: #ffedd5; color: #9a3412; }
-.home-clock__time { font-size: 25px; font-weight: 700; line-height: 1.05; letter-spacing: -.02em; color: var(--text-primary); font-variant-numeric: tabular-nums; white-space: nowrap; }
-.home-clock__time small { font-size: 11px; font-weight: 600; margin-left: 2px; letter-spacing: 0; color: var(--text-secondary); }
-.home-clock__date { color: var(--text-secondary); font-size: 12px; }
-.home-clock__sub { margin: 10px 0 6px; font-size: 12px; color: var(--text-secondary); }
-.home-clock__meta { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 5px 12px; margin: 0; padding-top: 8px; border-top: 1px solid #eef2f7; font-size: 12.5px; }
-.home-clock__meta dt { color: var(--text-muted); font-weight: 400; }
-.home-clock__meta dd { margin: 0; color: var(--text-primary); font-weight: 500; text-align: right; }
-.home-clock__meta small { display: block; font-size: 11.5px; font-weight: 400; color: var(--text-secondary); }
-.home-clock__meta small:empty { display: none; }
+.hc-time { font-size: 52px; font-weight: 600; line-height: 1; letter-spacing: -.03em; color: #0b2537; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.hc-time small { font-size: 16px; font-weight: 600; margin-left: 6px; letter-spacing: 0; color: #334155; }
+.hc-time .s { opacity: .4; font-size: .7em; }
+.hc-date { margin: 6px 0 16px; color: #334155; font-size: 14px; }
+.hc-all { position: absolute !important; right: 20px; bottom: 16px; font-size: 12px; font-weight: 600; color: #0c4a6e; text-decoration: none; }
+.home-clock .bx-minis { margin-bottom: 18px; }
+.home-clock .bx-mini b { font-size: 16px; white-space: normal; }
 </style>
 <script src="{% static 'js/watch-face.js' %}?v=1"></script>
 <script>

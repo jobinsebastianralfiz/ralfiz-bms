@@ -1,7 +1,5 @@
 {# Side panels shared by the dashboard and the invoice list. Needs the context from core.views._invoice_page_panels. #}
 <aside class="inv-rail">
-  {# Dashboard only: the clock, then the currency converter, then Quick Actions. #}
-  {% if rail_clock %}{% include 'dashboard/_single_clock.html' %}{% endif %}
   {% if fx %}{% include 'components/fx_converter.html' %}{% endif %}
 
   {% include 'components/quick_actions.html' %}

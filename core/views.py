@@ -124,7 +124,7 @@ def home_dashboard(request):
     my_notes = (Note.objects.filter(owner=request.user, deleted_at__isnull=True)
                 .select_related('project', 'client', 'lead')
                 .only('id', 'kind', 'title', 'preview', 'pinned', 'updated_at',
-                      'project__name', 'client__name', 'lead__company_name', 'lead__contact_person')[:5])
+                      'project__name', 'client__name', 'lead__company_name', 'lead__contact_person')[:8])
 
     from client_portal.chat_views import recent_conversations
     chat_convos = recent_conversations(limit=8)
@@ -133,8 +133,19 @@ def home_dashboard(request):
     for item in dues.get('items', []):   # ISO strings (the connector shares this helper) -> dates for |date
         item['due_on'] = date.fromisoformat(item['due_date']) if item.get('due_date') else None
 
+    panels = _invoice_page_panels(Invoice.objects.all())
+    months = panels['revenue']
+    this_m = months[-1]['amount'] if months else 0
+    last_m = months[-2]['amount'] if len(months) > 1 else 0
+    hero = {
+        'year_received': sum(m['amount'] or 0 for m in months),
+        'month_received': this_m,
+        'month_trend': round((this_m - last_m) * 100 / last_m) if last_m else None,
+        'pending': panels['stats']['pending'],
+    }
+
     return render(request, 'dashboard/home.html', {
-        'rail_clock': True,
+        'hero': hero,
         'chat_convos': chat_convos,
         'chat_unread_total': sum(c.unread for c in chat_convos),
         'my_notes': my_notes,
@@ -144,7 +155,7 @@ def home_dashboard(request):
         'active_projects': projects,
         'dues': dues,
         'today': timezone.localdate(),
-        **_invoice_page_panels(Invoice.objects.all()),
+        **panels,
     })
 
 

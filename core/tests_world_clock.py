@@ -78,9 +78,11 @@ class WorldClockPageTests(TestCase):
         # Expiries sit open next to the clock; the chat icon is in the top bar.
         self.assertContains(resp, 'Expiring soon')
         self.assertContains(resp, 'title="Client chat"')
-        # The clock replaced the headline figures; Quick Actions links to it.
+        # Bento layout: money card + clock card, the clock links to all markets.
         self.assertNotContains(resp, 'home-stat')
-        self.assertContains(resp, 'World Clock</a>')
+        self.assertContains(resp, 'class="bx bx--hero"')
+        self.assertContains(resp, 'Pending to collect')
+        self.assertContains(resp, 'All markets')
         # No sidebar here: its links open from "All modules"
         self.assertContains(resp, '<body class="layout-top">')
         self.assertContains(resp, 'id="modulesBtn"')
