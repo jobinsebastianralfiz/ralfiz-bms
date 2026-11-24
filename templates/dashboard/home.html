@@ -171,8 +171,9 @@
 <div class="inv-page">
 <div class="inv-main">
 
-<div class="home-split mb-4">
-{% include 'dashboard/_single_clock.html' %}
+<div class="mb-4">{% include 'dashboard/_single_clock.html' %}</div>
+
+<div class="home-split home-pair mb-4">
 
 <div class="card home-dues" id="homeDues">
   <div class="card-header inv-list-head">
@@ -199,15 +200,7 @@
     {% endfor %}
   </ul>
 </div>
-</div>
-<style>
-.home-dues__date { font-size: 0.8125rem; font-weight: 600; color: var(--text-primary); white-space: nowrap; }
-.home-dues .is-overdue { background: #fef2f2; }
-.home-dues .is-overdue .home-dues__date { color: var(--danger-strong); }
-.home-split > .card { height: 100%; }
-</style>
-
-<div class="card mb-4 home-chats" id="homeChats">
+<div class="card home-chats" id="homeChats">
   <div class="card-header inv-list-head">
     <div>
       <h2 class="card-title mb-0">Client Chats <span class="nav-badge" data-sc-count{% if not chat_unread_total %} hidden{% endif %}>{{ chat_unread_total }}</span></h2>
@@ -229,6 +222,14 @@
     {% endfor %}
   </ul>
 </div>
+</div>
+<style>
+.home-dues__date { font-size: 0.8125rem; font-weight: 600; color: var(--text-primary); white-space: nowrap; }
+.home-dues .is-overdue { background: #fef2f2; }
+.home-dues .is-overdue .home-dues__date { color: var(--danger-strong); }
+.home-pair { align-items: start; }
+</style>
+
 <style>
 .home-chats .nav-badge[hidden], .dash-tabs .nav-badge[hidden] { display: none; }
 .home-chats .nav-badge, .dash-tabs .nav-badge { display: inline-flex; min-width: 18px; height: 18px; padding: 0 6px; border-radius: 99px; background: #dc2626; color: #fff;

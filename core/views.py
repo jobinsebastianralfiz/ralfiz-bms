@@ -127,7 +127,7 @@ def home_dashboard(request):
                       'project__name', 'client__name', 'lead__company_name', 'lead__contact_person')[:5])
 
     from client_portal.chat_views import recent_conversations
-    chat_convos = recent_conversations(limit=5)
+    chat_convos = recent_conversations(limit=8)
 
     dues = get_dues_and_renewals(scope, limit=8)
     for item in dues.get('items', []):   # ISO strings (the connector shares this helper) -> dates for |date
