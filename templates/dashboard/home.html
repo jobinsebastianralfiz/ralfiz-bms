@@ -168,9 +168,8 @@
   })();
 </script>
 
-<div class="bento-wrap"><div class="bento">
-
-{# ---- Row 1: money (wide) + world clock (accent) ---- #}
+<div class="bento-wrap">
+<div class="bento-top">
 <section class="bx bx--hero" aria-label="Money">
   <div class="bx__head">
     <div class="seg" role="group" aria-label="Show amounts in">
@@ -184,12 +183,26 @@
       <b class="js-money" data-inr="{{ hero.pending|floatformat:2 }}">&#8377;{{ hero.pending|inr }}</b>
     </div>
   </div>
-  <p class="bx__label">Received in {{ revenue_year }}</p>
-  <div class="hero__amt">
-    <span class="js-money hero__big" data-inr="{{ hero.year_received|floatformat:2 }}">&#8377;{{ hero.year_received|inr }}</span>
-    <button type="button" class="bx-round bx-round--soft" id="heroEye" aria-pressed="false" title="Hide amounts"><i class="far fa-eye"></i></button>
+  <div class="hero__body">
+    <div>
+      <p class="bx__label">Received in {{ revenue_year }}</p>
+      <div class="hero__amt">
+        <span class="js-money hero__big" data-inr="{{ hero.year_received|floatformat:2 }}">&#8377;{{ hero.year_received|inr }}</span>
+        <button type="button" class="bx-round bx-round--soft" id="heroEye" aria-pressed="false" title="Hide amounts"><i class="far fa-eye"></i></button>
+      </div>
+      <p class="hero__sub">This month <b class="js-money" data-inr="{{ hero.month_received|floatformat:2 }}">&#8377;{{ hero.month_received|inr }}</b>{% if hero.month_trend is not None %} <span class="trend {% if hero.month_trend < 0 %}is-down{% endif %}">{% if hero.month_trend >= 0 %}+{% endif %}{{ hero.month_trend }}%</span>{% endif %}{% if hero.best_label %}<br>Best month {{ hero.best_label }} <b class="js-money" data-inr="{{ hero.best_amount|floatformat:2 }}">&#8377;{{ hero.best_amount|inr }}</b>{% endif %}</p>
+    </div>
+    {% if hero.spark_line %}
+    <figure class="spark" aria-label="Money received per month in {{ revenue_year }}">
+      <svg viewBox="0 0 100 40" preserveAspectRatio="none" aria-hidden="true">
+        <defs><linearGradient id="sparkFill" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#0ea5e9" stop-opacity=".28"/><stop offset="1" stop-color="#0ea5e9" stop-opacity="0"/></linearGradient></defs>
+        <path d="{{ hero.spark_area }}" fill="url(#sparkFill)"/>
+        <path d="{{ hero.spark_line }}" fill="none" stroke="#0ea5e9" stroke-width="2" vector-effect="non-scaling-stroke" stroke-linejoin="round"/>
+      </svg>
+      <figcaption class="spark__months">{% for m in revenue %}<span title="{{ m.label }}: &#8377;{{ m.amount|floatformat:0 }}"{% if forloop.last %} class="is-now"{% endif %}>{{ m.label|slice:":1" }}</span>{% endfor %}</figcaption>
+    </figure>
+    {% endif %}
   </div>
-  <p class="hero__sub">This month <b class="js-money" data-inr="{{ hero.month_received|floatformat:2 }}">&#8377;{{ hero.month_received|inr }}</b>{% if hero.month_trend is not None %} <span class="trend {% if hero.month_trend < 0 %}is-down{% endif %}">{% if hero.month_trend >= 0 %}+{% endif %}{{ hero.month_trend }}% vs last month</span>{% endif %}</p>
   <div class="hero__acts">
     <a href="{% url 'invoice_create' %}" class="pill-btn pill-btn--dark"><i class="far fa-file-lines"></i> Create Invoice</a>
     <a href="{% url 'client_create' %}" class="pill-btn"><i class="fas fa-user-plus"></i> Add Client</a>
@@ -200,55 +213,20 @@
 </section>
 
 {% include 'dashboard/_single_clock.html' %}
+</div>
 
-{# ---- Row 2: invoices donut, money by month, client chats ---- #}
+<div class="bento-cols">
+  <div class="bento-col">
 <section class="bx">
   <div class="bx__head"><h2 class="bx__title"><span class="bx-ico"><i class="far fa-file-lines"></i></span>Invoices</h2>
     <a href="{% url 'invoice_list' %}" class="bx-chip">View all</a></div>
-  <div class="donut">
+  <div class="inv-mini">
     <div class="donut__ring" style="background: {{ status_donut }};"><div class="donut__hole"><strong>{{ status_total }}</strong><span>invoices</span></div></div>
-  </div>
-  {% for s in status_mix %}{% if s.label == 'Pending' and s.count %}<p class="bx-note"><i class="fas fa-hourglass-half"></i> {{ s.count }} waiting for payment</p>{% endif %}{% endfor %}
-  <ul class="legend">
-    {% for s in status_mix %}<li><i style="background: {{ s.colour }}"></i>{{ s.label }}<b>{{ s.count }}</b><span>{{ s.pct }}%</span></li>{% endfor %}
-  </ul>
-</section>
-
-<section class="bx">
-  <div class="bx__head"><h2 class="bx__title"><span class="bx-ico"><i class="fas fa-indian-rupee-sign"></i></span>Money received</h2>
-    <span class="bx-chip">{{ revenue_year }}</span></div>
-  <div class="bx-figure js-money" data-inr="{{ hero.month_received|floatformat:2 }}">&#8377;{{ hero.month_received|inr }}</div>
-  <p class="bx-figure__sub">this month{% if hero.month_trend is not None %} · <span class="trend {% if hero.month_trend < 0 %}is-down{% endif %}">{% if hero.month_trend >= 0 %}+{% endif %}{{ hero.month_trend }}%</span> vs last month{% endif %}</p>
-  <div class="bars">
-    {% for m in revenue %}
-    <div class="bars__col{% if forloop.last %} is-now{% endif %}" title="{{ m.label }}: &#8377;{{ m.amount|floatformat:0 }}">
-      <div class="bars__bar" style="height: {{ m.height|default:0 }}%"></div><span>{{ m.label }}</span>
-    </div>
-    {% endfor %}
+    <ul class="legend">
+      {% for s in status_mix %}<li><i style="background: {{ s.colour }}"></i>{{ s.label }}<b>{{ s.count }}</b><span>{{ s.pct }}%</span></li>{% endfor %}
+    </ul>
   </div>
 </section>
-
-<section class="bx home-chats" id="homeChats">
-  <div class="bx__head"><h2 class="bx__title"><span class="bx-ico"><i class="far fa-comments"></i></span>Client Chats <span class="nav-badge" data-sc-count{% if not chat_unread_total %} hidden{% endif %}>{{ chat_unread_total }}</span></h2>
-    <a href="{% url 'support_chat:inbox' %}" class="bx-chip">Open</a></div>
-  <div class="bx-scroll">
-  <ul class="home-list">
-    {% for c in chat_convos %}
-    <li class="home-list__row{% if c.unread %} is-unread{% endif %}">
-      <a href="{% url 'support_chat:thread' c.pk %}" class="home-list__main">
-        <span class="home-list__title">{{ c.name }}{% if c.unread %} <span class="nav-badge">{{ c.unread }} new</span>{% endif %}</span>
-        <span class="home-list__sub">{% if c.last_message and not c.last_message.from_client %}You: {% endif %}{{ c.last_message.body|truncatechars:90 }}</span>
-      </a>
-      <div class="home-list__side"><span class="home-list__when">{{ c.last_at|naturaltime }}</span></div>
-    </li>
-    {% empty %}
-    <li class="home-list__empty">No client chats yet. When a client writes from their portal it shows here, with a chime.</li>
-    {% endfor %}
-  </ul>
-  </div>
-</section>
-
-{# ---- Row 3: expiries, currency, notes ---- #}
 <section class="bx home-dues" id="homeDues">
   <div class="bx__head"><h2 class="bx__title"><span class="bx-ico"><i class="far fa-calendar-xmark"></i></span>Expiring soon{% if dues.overdue_count %} <span class="nav-badge">{{ dues.overdue_count }} overdue</span>{% endif %}</h2>
     <a href="{% url 'credential_list' %}" class="bx-chip">All</a></div>
@@ -272,9 +250,38 @@
   </ul>
   </div>
 </section>
-
-<div class="bento__fx">{% if fx %}{% include 'components/fx_converter.html' %}{% endif %}</div>
-
+<section class="bx">
+  <div class="bx__head"><h2 class="bx__title"><span class="bx-ico"><i class="fas fa-clock-rotate-left"></i></span>Recent activity</h2></div>
+  <ul class="activity">
+    {% for a in recent_activity %}
+    <li><span class="activity__ico is-{{ a.action }}"><i class="fas {% if a.action == 'created' %}fa-plus{% elif a.action == 'deleted' %}fa-trash{% elif a.action == 'sent' %}fa-paper-plane{% else %}fa-pen{% endif %}"></i></span>
+      <div><div class="activity__text">{{ a.model_name }} {{ a.object_repr }} {{ a.get_action_display|lower }}</div><div class="activity__when">{{ a.timestamp|timesince }} ago</div></div></li>
+    {% empty %}
+    <li class="home-list__empty">Nothing yet.</li>
+    {% endfor %}
+  </ul>
+</section>
+  </div>
+  <div class="bento-col">
+<section class="bx home-chats" id="homeChats">
+  <div class="bx__head"><h2 class="bx__title"><span class="bx-ico"><i class="far fa-comments"></i></span>Client Chats <span class="nav-badge" data-sc-count{% if not chat_unread_total %} hidden{% endif %}>{{ chat_unread_total }}</span></h2>
+    <a href="{% url 'support_chat:inbox' %}" class="bx-chip">Open</a></div>
+  <div class="bx-scroll">
+  <ul class="home-list">
+    {% for c in chat_convos %}
+    <li class="home-list__row{% if c.unread %} is-unread{% endif %}">
+      <a href="{% url 'support_chat:thread' c.pk %}" class="home-list__main">
+        <span class="home-list__title">{{ c.name }}{% if c.unread %} <span class="nav-badge">{{ c.unread }} new</span>{% endif %}</span>
+        <span class="home-list__sub">{% if c.last_message and not c.last_message.from_client %}You: {% endif %}{{ c.last_message.body|truncatechars:90 }}</span>
+      </a>
+      <div class="home-list__side"><span class="home-list__when">{{ c.last_at|naturaltime }}</span></div>
+    </li>
+    {% empty %}
+    <li class="home-list__empty">No client chats yet. When a client writes from their portal it shows here, with a chime.</li>
+    {% endfor %}
+  </ul>
+  </div>
+</section>
 <section class="bx home-notes">
   <div class="bx__head"><h2 class="bx__title"><span class="bx-ico"><i class="far fa-note-sticky"></i></span>My Notes</h2>
     <div class="bx__acts">
@@ -299,9 +306,10 @@
   </ul>
   </div>
 </section>
-
-{# ---- Row 4: projects (wide) + activity ---- #}
-<section class="bx bx--two home-projects">
+  </div>
+  <div class="bento-col">
+<div class="bento__fx">{% if fx %}{% include 'components/fx_converter.html' %}{% endif %}</div>
+<section class="bx home-projects">
   <div class="bx__head"><h2 class="bx__title"><span class="bx-ico"><i class="far fa-folder-open"></i></span>Active Projects</h2>
     <a href="{% url 'project_list' %}" class="bx-chip">All projects</a></div>
     <ul class="home-list">
@@ -321,18 +329,8 @@
       {% endfor %}
     </ul>
 </section>
-
-<section class="bx">
-  <div class="bx__head"><h2 class="bx__title"><span class="bx-ico"><i class="fas fa-clock-rotate-left"></i></span>Recent activity</h2></div>
-  <ul class="activity">
-    {% for a in recent_activity %}
-    <li><span class="activity__ico is-{{ a.action }}"><i class="fas {% if a.action == 'created' %}fa-plus{% elif a.action == 'deleted' %}fa-trash{% elif a.action == 'sent' %}fa-paper-plane{% else %}fa-pen{% endif %}"></i></span>
-      <div><div class="activity__text">{{ a.model_name }} {{ a.object_repr }} {{ a.get_action_display|lower }}</div><div class="activity__when">{{ a.timestamp|timesince }} ago</div></div></li>
-    {% empty %}
-    <li class="home-list__empty">Nothing yet.</li>
-    {% endfor %}
-  </ul>
-</section>
+  </div>
+</div>
 
 <details class="card home-fold bx--wide" data-fold="invoices">
   <summary class="card-header inv-list-head">
@@ -380,8 +378,7 @@
     </table>
   </div>
 </details>
-
-</div></div>{# /bento #}
+</div>{# /bento #}
 <script>
   // Refresh the chat card every 15 seconds so new messages show without reloading the page.
   setInterval(function () {
@@ -429,12 +426,12 @@
 </script>
 <style>
 /* Bento dashboard: white rounded cards on the grey page, one accent card. */
-.bento-wrap { container-type: inline-size; }
-.bento { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px; align-items: stretch; }
+.bento-wrap { container-type: inline-size; display: flex; flex-direction: column; gap: 18px; }
+.bento-top { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); gap: 18px; align-items: stretch; }
+.bento-cols { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px; align-items: start; }
+.bento-col { display: flex; flex-direction: column; gap: 18px; min-width: 0; }
 .bx { background: #fff; border-radius: 24px; padding: 20px 22px; min-width: 0; display: flex; flex-direction: column; box-shadow: 0 1px 2px rgba(15, 23, 42, .04); }
-.bx--hero { grid-column: span 2; }
-.bx--two { grid-column: span 2; }
-.bx--wide { grid-column: 1 / -1; border-radius: 24px; border: 0; margin: 0; }
+.bx--wide { border-radius: 24px; border: 0; margin: 0; }
 .bx--accent { background: linear-gradient(135deg, #bae6fd 0%, #e0f2fe 100%); }
 .bx__head { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 14px; }
 .bx__acts { display: flex; align-items: center; gap: 6px; }
@@ -448,7 +445,8 @@ a.bx-chip:hover { border-color: var(--primary); color: var(--primary); }
 .bx-round:hover { color: var(--primary); }
 .bx__label { margin: 0 0 6px; font-size: 13px; color: #475569; }
 .bx-sub { margin: -6px 0 8px; font-size: 12.5px; color: var(--text-secondary); }
-.bx-scroll { flex: 1; min-height: 0; max-height: 400px; overflow-y: auto; margin: 0 -8px; padding: 0 8px; }
+.home-dues .bx-scroll { max-height: none; }
+.bx-scroll { max-height: 420px; overflow-y: auto; margin: 0 -8px; padding: 0 8px; }
 .bx .home-list { padding: 0; }
 .bx .home-list li { padding: 11px 0; }
 .bx-minis { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin-top: auto; }
@@ -468,10 +466,20 @@ a.bx-chip:hover { border-color: var(--primary); color: var(--primary); }
 .hero__side b { font-size: 18px; font-weight: 600; color: var(--text-primary); font-variant-numeric: tabular-nums; }
 .hero__amt { display: flex; align-items: center; gap: 14px; margin: 2px 0 6px; }
 .hero__big { font-size: 56px; font-weight: 500; letter-spacing: -.03em; line-height: 1.05; color: #0f172a; font-variant-numeric: tabular-nums; }
-.hero__sub { margin: 0 0 22px; font-size: 14px; color: #475569; }
+.hero__sub { line-height: 1.8; margin: 0 0 18px; font-size: 14px; color: #475569; }
 .hero__sub b { color: var(--text-primary); font-weight: 600; }
 .trend { display: inline-block; font-size: 12px; font-weight: 600; color: #15803d; background: #dcfce7; border-radius: 99px; padding: 1px 8px; }
 .trend.is-down { color: #b91c1c; background: #fee2e2; }
+.hero__body { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 28px; align-items: end; flex: 1; }
+.spark { margin: 0; min-width: 0; align-self: stretch; display: flex; flex-direction: column; justify-content: flex-end; padding-bottom: 14px; }
+.spark svg { width: 100%; height: 120px; display: block; }
+.spark__months { display: flex; justify-content: space-between; margin-top: 6px; font-size: 11px; color: var(--text-muted); }
+.spark__months .is-now { color: #0ea5e9; font-weight: 700; }
+.inv-mini { display: flex; align-items: center; gap: 22px; }
+.inv-mini .donut__ring { width: 120px; height: 120px; flex: none; }
+.inv-mini .donut__hole { width: 88px; height: 88px; }
+.inv-mini .donut__hole strong { font-size: 24px; }
+.inv-mini .legend { flex: 1; margin: 0; }
 .hero__acts { margin-top: auto; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
 .pill-btn { display: inline-flex; align-items: center; gap: 8px; height: 40px; padding: 0 18px; border-radius: 99px; border: 1px solid #cbd5e1; color: #0f172a; font-size: 14px; font-weight: 500; text-decoration: none; background: #fff; }
 .pill-btn:hover { border-color: var(--primary); color: var(--primary); }
@@ -522,12 +530,13 @@ a.bx-chip:hover { border-color: var(--primary); color: var(--primary); }
 .home-chats .is-unread .home-list__sub { color: #111827; font-weight: 600; }
 .bx--wide > summary { border-radius: 24px; }
 @container (max-width: 1100px) {
-  .bento { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .bx--hero, .bx--two { grid-column: 1 / -1; }
+  .bento-top { grid-template-columns: minmax(0, 1fr); }
+  .bento-cols { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .bento-col:nth-child(3) { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: start; }
 }
 @container (max-width: 680px) {
-  .bento { grid-template-columns: minmax(0, 1fr); }
-  .bx--hero, .bx--two { grid-column: auto; }
+  .bento-cols, .bento-col:nth-child(3) { grid-template-columns: minmax(0, 1fr); }
+  .hero__body { grid-template-columns: minmax(0, 1fr); }
   .hero__big { font-size: 40px; }
   .hero__go { display: none; }
   .bx--hero .bx__head { flex-wrap: wrap; }

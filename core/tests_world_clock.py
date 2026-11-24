@@ -82,7 +82,7 @@ class WorldClockPageTests(TestCase):
         self.assertNotContains(resp, 'home-stat')
         self.assertContains(resp, 'class="bx bx--hero"')
         self.assertContains(resp, 'Pending to collect')
-        self.assertContains(resp, 'All markets')
+        self.assertContains(resp, 'href="%s" class="bx-chip" target="_blank"' % reverse('world_clock'))
         # No sidebar here: its links open from "All modules"
         self.assertContains(resp, '<body class="layout-top">')
         self.assertContains(resp, 'id="modulesBtn"')

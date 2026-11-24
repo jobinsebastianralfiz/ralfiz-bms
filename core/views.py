@@ -143,6 +143,16 @@ def home_dashboard(request):
         'month_trend': round((this_m - last_m) * 100 / last_m) if last_m else None,
         'pending': panels['stats']['pending'],
     }
+    # Area chart of money received per month for the money card (SVG, viewBox 0 0 100 40).
+    amounts = [float(m['amount'] or 0) for m in months]
+    peak = max(amounts, default=0) or 1
+    if len(amounts) > 1:
+        pts = [(round(i * 100 / (len(amounts) - 1), 2), round(37 - a * 33 / peak, 2)) for i, a in enumerate(amounts)]
+        line = 'M' + ' L'.join(f'{x},{y}' for x, y in pts)
+        hero['spark_line'] = line
+        hero['spark_area'] = f'{line} L100,40 L0,40 Z'
+        best = max(months, key=lambda m: m['amount'] or 0)
+        hero['best_label'], hero['best_amount'] = best['label'], best['amount'] or 0
 
     return render(request, 'dashboard/home.html', {
         'hero': hero,

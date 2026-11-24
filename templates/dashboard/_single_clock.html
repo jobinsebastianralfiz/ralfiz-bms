@@ -2,46 +2,48 @@
 {% comment %}One large clock on the dashboard. Pick any time zone; the choice is remembered per browser.
 Client-market cities come first (they also have live weather); every other IANA zone follows.{% endcomment %}
 <section class="bx bx--accent home-clock" id="homeClock" aria-label="World clock">
-  <canvas id="hcFace" role="img" aria-label="Analog clock"></canvas>
   <div class="bx__head">
     <label class="hc-zone"><i class="fas fa-earth-asia" aria-hidden="true"></i>
       <select id="hcZone" aria-label="Time zone"></select>
     </label>
     <div class="bx__acts">
       <button type="button" class="bx-chip" id="hcFmt" aria-pressed="false" title="Switch between 12-hour and 24-hour time">24h</button>
+      <a href="{% url 'world_clock' %}" class="bx-chip" target="_blank" title="All six markets with working-hours overlap">All</a>
     </div>
   </div>
-  <p class="bx__label"><span id="hcVsIndia">—</span> <span class="home-clock__pill" id="hcPill">—</span></p>
-  <div class="hc-time" id="hcTime">--:--</div>
-  <p class="hc-date" id="hcDate">—</p>
+  <div class="hc-mid">
+    <div class="hc-read">
+      <p class="bx__label"><span id="hcVsIndia">—</span></p>
+      <span class="home-clock__pill" id="hcPill">—</span>
+      <div class="hc-time" id="hcTime">--:--</div>
+      <p class="hc-date" id="hcDate">—</p>
+    </div>
+    <canvas id="hcFace" role="img" aria-label="Analog clock"></canvas>
+  </div>
   <div class="bx-minis">
     <div class="bx-mini"><span>vs India</span><b id="hcDiff">—</b><small id="hcOff"></small></div>
     <div class="bx-mini"><span>Weather</span><b id="hcWx">—</b><small id="hcWxSub"></small></div>
   </div>
-  <a href="{% url 'world_clock' %}" class="hc-all" target="_blank">All markets <i class="fas fa-arrow-right"></i></a>
 </section>
 <style>
-.home-clock { position: relative; overflow: hidden; }
-#hcFace { position: absolute; right: -22px; top: -22px; width: 150px; height: 150px; opacity: .9; pointer-events: none; }
-.home-clock .bx__head { padding-right: 112px; justify-content: flex-start; }
-.hc-zone { min-width: 0; flex: 0 1 auto; }
-.hc-zone select { min-width: 0; width: 100%; }
-.home-clock > *:not(canvas) { position: relative; }
-.hc-zone { display: inline-flex; align-items: center; gap: 8px; height: 38px; padding: 0 6px 0 14px; border-radius: 99px; background: #0c4a6e; color: #fff; margin: 0; }
-.hc-zone select { background: transparent; border: 0; color: #fff; font-weight: 600; font-size: 13px; letter-spacing: .02em; max-width: 190px; cursor: pointer; outline: none; }
+.hc-zone { display: inline-flex; align-items: center; gap: 8px; height: 38px; padding: 0 6px 0 14px; border-radius: 99px; background: #0c4a6e; color: #fff; margin: 0; min-width: 0; }
+.hc-zone select { background: transparent; border: 0; color: #fff; font-weight: 600; font-size: 13px; letter-spacing: .02em; max-width: 200px; min-width: 0; cursor: pointer; outline: none; }
 .hc-zone select option, .hc-zone select optgroup { color: #0f172a; }
-#hcFmt[aria-pressed="true"] { background: #0c4a6e; color: #fff; border-color: #0c4a6e; }
-
-.home-clock__pill { display: inline-block; vertical-align: middle; margin-left: 6px; font-size: 11px; font-weight: 600; padding: 2px 9px; border-radius: 99px; background: rgba(255,255,255,.7); color: #475569; }
+.home-clock .bx-chip { background: rgba(255,255,255,.75); border-color: transparent; }
+#hcFmt[aria-pressed="true"] { background: #0c4a6e; color: #fff; }
+.hc-mid { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 14px; }
+.hc-read { min-width: 0; }
+.hc-read .bx__label { margin: 0 0 4px; }
+#hcFace { width: 132px; height: 132px; flex: none; }
+.home-clock__pill { display: inline-block; font-size: 11px; font-weight: 600; padding: 2px 9px; border-radius: 99px; background: rgba(255,255,255,.75); color: #475569; }
 .home-clock__pill.ok { background: #dcfce7; color: #166534; }
 .home-clock__pill.warn { background: #ffedd5; color: #9a3412; }
-.hc-time { font-size: 52px; font-weight: 600; line-height: 1; letter-spacing: -.03em; color: #0b2537; font-variant-numeric: tabular-nums; white-space: nowrap; }
-.hc-time small { font-size: 16px; font-weight: 600; margin-left: 6px; letter-spacing: 0; color: #334155; }
-.hc-time .s { opacity: .4; font-size: .7em; }
-.hc-date { margin: 6px 0 16px; color: #334155; font-size: 14px; }
-.hc-all { position: absolute !important; right: 20px; bottom: 16px; font-size: 12px; font-weight: 600; color: #0c4a6e; text-decoration: none; }
-.home-clock .bx-minis { margin-bottom: 18px; }
+.hc-time { margin-top: 6px; font-size: 46px; font-weight: 600; line-height: 1; letter-spacing: -.03em; color: #0b2537; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.hc-time small { font-size: 15px; font-weight: 600; margin-left: 5px; letter-spacing: 0; color: #334155; }
+.hc-time .s { opacity: .4; font-size: .65em; }
+.hc-date { margin: 6px 0 0; color: #334155; font-size: 13.5px; }
 .home-clock .bx-mini b { font-size: 16px; white-space: normal; }
+@container (max-width: 680px) { #hcFace { width: 104px; height: 104px; } .hc-time { font-size: 38px; } }
 </style>
 <script src="{% static 'js/watch-face.js' %}?v=1"></script>
 <script>
