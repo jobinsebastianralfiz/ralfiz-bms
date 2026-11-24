@@ -134,6 +134,7 @@ def home_dashboard(request):
         item['due_on'] = date.fromisoformat(item['due_date']) if item.get('due_date') else None
 
     return render(request, 'dashboard/home.html', {
+        'rail_clock': True,
         'chat_convos': chat_convos,
         'chat_unread_total': sum(c.unread for c in chat_convos),
         'my_notes': my_notes,

@@ -1,70 +1,52 @@
 {% load static %}
 {% comment %}One large clock on the dashboard. Pick any time zone; the choice is remembered per browser.
 Client-market cities come first (they also have live weather); every other IANA zone follows.{% endcomment %}
-<div class="card home-clock" id="homeClock">
-  <div class="card-header inv-list-head">
-    <div>
-      <h2 class="card-title mb-0">World Clock</h2>
-      <p class="inv-list-head__sub" id="hcVsIndia">Pick a time zone</p>
-    </div>
-    <div class="home-clock__acts">
-      <select id="hcZone" class="form-control form-control-sm home-clock__zone" aria-label="Time zone"></select>
-      <button type="button" class="btn btn-sm btn-outline-secondary" id="hcFmt" aria-pressed="false" title="Switch between 12-hour and 24-hour time">24h</button>
-      <a href="{% url 'world_clock' %}" class="btn btn-sm btn-outline-secondary" target="_blank" title="All six markets with working-hours overlap">All markets</a>
-    </div>
-  </div>
-  <div class="home-clock__body">
+<div class="card inv-panel home-clock" id="homeClock">
+  <h2 class="inv-panel__title">World Clock
+    <span class="home-clock__acts">
+      <button type="button" class="inv-panel__meta" id="hcFmt" aria-pressed="false" title="Switch between 12-hour and 24-hour time">24h</button>
+      <a href="{% url 'world_clock' %}" class="inv-panel__meta" target="_blank" title="All six markets with working-hours overlap">All</a>
+    </span>
+  </h2>
+  <select id="hcZone" class="form-control home-clock__zone" aria-label="Time zone"></select>
+  <div class="home-clock__face">
     <canvas id="hcFace" role="img" aria-label="Analog clock"></canvas>
     <div class="home-clock__main">
       <span class="home-clock__pill" id="hcPill">—</span>
       <div class="home-clock__time" id="hcTime">--:--</div>
       <div class="home-clock__date" id="hcDate">—</div>
     </div>
-    <div class="home-clock__tiles">
-      <div class="home-clock__tile"><span>Offset</span><b id="hcOff">—</b></div>
-      <div class="home-clock__tile"><span>vs India</span><b id="hcDiff">—</b></div>
-      <div class="home-clock__tile"><span>Weather</span><b id="hcWx">—</b><small id="hcWxSub"></small></div>
-    </div>
   </div>
+  <p class="home-clock__sub" id="hcVsIndia">—</p>
+  <dl class="home-clock__meta">
+    <dt>Offset</dt><dd id="hcOff">—</dd>
+    <dt>vs India</dt><dd id="hcDiff">—</dd>
+    <dt>Weather</dt><dd><span id="hcWx">—</span><small id="hcWxSub"></small></dd>
+  </dl>
 </div>
 <style>
-.home-clock__acts { display: flex; align-items: center; gap: 8px; flex: none; }
-.home-clock__zone { width: 210px; height: 32px; padding: 4px 10px; font-size: 13px; }
+.home-clock .inv-panel__title { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.home-clock__acts { display: flex; gap: 6px; }
+.home-clock__acts .inv-panel__meta { background: #fff; cursor: pointer; line-height: 1.4; color: var(--text-secondary); text-decoration: none; }
 #hcFmt[aria-pressed="true"] { background: var(--primary); border-color: var(--primary); color: #fff; }
-.home-clock__body { display: grid; grid-template-columns: 190px minmax(0, 1fr) 310px; align-items: center; gap: 28px; padding: 4px 22px 20px; }
-#hcFace { width: 190px; height: 190px; }
-.home-clock__main { display: flex; flex-direction: column; align-items: flex-start; gap: 6px; min-width: 0; }
-.home-clock__pill { font-size: 11px; font-weight: 600; padding: 3px 10px; border-radius: 99px; background: #f1f5f9; color: #475569; }
+.home-clock__zone { width: 100%; height: 34px; padding: 4px 10px; font-size: 13px; margin: 2px 0 12px; }
+.home-clock__face { display: flex; align-items: center; gap: 10px; }
+.home-clock__main { overflow: hidden; }
+.home-clock__time .s { opacity: .4; font-size: .8em; }
+#hcFace { width: 88px; height: 88px; flex: none; }
+.home-clock__main { display: flex; flex-direction: column; align-items: flex-start; gap: 3px; min-width: 0; }
+.home-clock__pill { font-size: 10.5px; font-weight: 600; padding: 2px 8px; border-radius: 99px; background: #f1f5f9; color: #475569; }
 .home-clock__pill.ok { background: #dcfce7; color: #166534; }
 .home-clock__pill.warn { background: #ffedd5; color: #9a3412; }
-.home-clock__time { font-size: 60px; font-weight: 700; line-height: 1; letter-spacing: -.03em; color: var(--text-primary); font-variant-numeric: tabular-nums; white-space: nowrap; }
-.home-clock__time small { font-size: 18px; font-weight: 600; margin-left: 6px; letter-spacing: 0; color: var(--text-secondary); }
-.home-clock__date { color: var(--text-secondary); font-size: 15px; }
-.home-clock__tiles { display: grid; gap: 8px; }
-.home-clock__tile { display: grid; grid-template-columns: 74px minmax(0, 1fr); align-items: baseline; column-gap: 10px; padding: 9px 12px; border: 1px solid #e8eef5; border-radius: 10px; background: #f8fafc; }
-.home-clock__tile span { font-size: 12px; color: var(--text-muted); }
-.home-clock__tile b { font-size: 14px; font-weight: 600; color: var(--text-primary); font-variant-numeric: tabular-nums; }
-.home-clock__tile small { grid-column: 2; font-size: 12px; color: var(--text-secondary); }
-.home-clock__tile small:empty { display: none; }
-@container (max-width: 900px) {
-  .home-clock__body { grid-template-columns: 160px minmax(0, 1fr); }
-  #hcFace { width: 160px; height: 160px; }
-  .home-clock__time { font-size: 48px; }
-  .home-clock__tiles { grid-column: 1 / -1; grid-template-columns: repeat(3, minmax(0, 1fr)); }
-  .home-clock__tile { grid-template-columns: minmax(0, 1fr); row-gap: 2px; }
-  .home-clock__tile small { grid-column: 1; }
-}
-@container (max-width: 560px) {
-  .home-clock .card-header { flex-wrap: wrap; }
-  .home-clock__acts { width: 100%; flex-wrap: wrap; }
-  .home-clock__zone { flex: 1 1 100%; width: 100%; }
-  .home-clock__body { grid-template-columns: minmax(0, 1fr); justify-items: center; text-align: center; gap: 14px; }
-  .home-clock__main { align-items: center; }
-  .home-clock__time { font-size: 42px; }
-  .home-clock__tiles { grid-template-columns: minmax(0, 1fr); width: 100%; text-align: left; }
-  .home-clock__tile { grid-template-columns: 74px minmax(0, 1fr); }
-  .home-clock__tile small { grid-column: 2; }
-}
+.home-clock__time { font-size: 25px; font-weight: 700; line-height: 1.05; letter-spacing: -.02em; color: var(--text-primary); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.home-clock__time small { font-size: 11px; font-weight: 600; margin-left: 2px; letter-spacing: 0; color: var(--text-secondary); }
+.home-clock__date { color: var(--text-secondary); font-size: 12px; }
+.home-clock__sub { margin: 10px 0 6px; font-size: 12px; color: var(--text-secondary); }
+.home-clock__meta { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 5px 12px; margin: 0; padding-top: 8px; border-top: 1px solid #eef2f7; font-size: 12.5px; }
+.home-clock__meta dt { color: var(--text-muted); font-weight: 400; }
+.home-clock__meta dd { margin: 0; color: var(--text-primary); font-weight: 500; text-align: right; }
+.home-clock__meta small { display: block; font-size: 11.5px; font-weight: 400; color: var(--text-secondary); }
+.home-clock__meta small:empty { display: none; }
 </style>
 <script src="{% static 'js/watch-face.js' %}?v=1"></script>
 <script>
@@ -137,10 +119,10 @@ Client-market cities come first (they also have live weather); every other IANA 
     var now = new Date(), l = parts(tz, now), home = parts(HOME, now);
     off = l.offset; night = l.h < 6 || l.h >= 18; day = l.d;
     var t = use24 ? [pad(l.h) + ':' + pad(l.mi), ''] : [(l.h % 12 || 12) + ':' + pad(l.mi), l.h < 12 ? 'AM' : 'PM'];
-    $('hcTime').innerHTML = t[0] + ':' + '<span style="opacity:.45">' + pad(l.s) + '</span>' + (t[1] ? '<small>' + t[1] + '</small>' : '');
-    $('hcDate').textContent = new Intl.DateTimeFormat('en-GB', { timeZone: tz, weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }).format(now);
+    $('hcTime').innerHTML = t[0] + '<span class="s">:' + pad(l.s) + '</span>' + (t[1] ? '<small>' + t[1] + '</small>' : '');
+    $('hcDate').textContent = new Intl.DateTimeFormat('en-GB', { timeZone: tz, weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' }).format(now);
     $('hcOff').textContent = offStr(l.offset);
-    $('hcVsIndia').textContent = label(tz) + ' · ' + new Intl.DateTimeFormat('en-GB', { timeZone: tz, timeZoneName: 'long' }).formatToParts(now).filter(function (p) { return p.type === 'timeZoneName'; }).map(function (p) { return p.value; }).join('');
+    $('hcVsIndia').textContent = new Intl.DateTimeFormat('en-GB', { timeZone: tz, timeZoneName: 'long' }).formatToParts(now).filter(function (p) { return p.type === 'timeZoneName'; }).map(function (p) { return p.value; }).join('');
     $('hcDiff').textContent = diffStr(l.offset - home.offset).replace(' India', '').replace('Same time as', 'Same time');
     var mins = l.h * 60 + l.mi, pill = $('hcPill');
     if (weekend(tz).indexOf(l.dow) >= 0) { pill.className = 'home-clock__pill'; pill.textContent = 'Weekend'; }
@@ -148,8 +130,8 @@ Client-market cities come first (they also have live weather); every other IANA 
     else if (mins >= 420 && mins < 1320) { pill.className = 'home-clock__pill warn'; pill.textContent = 'After hours'; }
     else { pill.className = 'home-clock__pill'; pill.textContent = 'Night'; }
     var w = WX.cities && WX.cities[tz];
-    $('hcWx').textContent = w ? Math.round(w.t) + '°C · ' + w.x : '—';
-    $('hcWxSub').textContent = w ? 'High ' + Math.round(w.hi) + '° · Low ' + Math.round(w.lo) + '° · Rain ' + w.p + '%' : 'Only for client cities';
+    $('hcWx').textContent = w ? Math.round(w.t) + '°C · ' + w.x : 'Client cities only';
+    $('hcWxSub').textContent = w ? 'H ' + Math.round(w.hi) + '° · L ' + Math.round(w.lo) + '° · Rain ' + w.p + '%' : '';
     if (reduce) frame();
   }
   var reduce = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
