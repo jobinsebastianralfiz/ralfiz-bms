@@ -1714,6 +1714,14 @@ def credential_detail(request, pk):
 @login_required
 def credential_create(request):
     projects = Project.objects.select_related('client').all()
+    # Opened from a project page (?project=<id>): that project is fixed, don't ask again.
+    fixed_project = None
+    fixed_id = request.GET.get('project') or request.POST.get('fixed_project')
+    if fixed_id:
+        try:
+            fixed_project = projects.filter(pk=fixed_id).first()
+        except (ValueError, ValidationError):
+            fixed_project = None
 
     if request.method == 'POST':
         credential = Credential.objects.create(
@@ -1730,10 +1738,13 @@ def credential_create(request):
             is_temporary=request.POST.get('is_temporary') == 'on',
         )
         messages.success(request, f'Credential "{credential.name}" created successfully.')
+        if fixed_project:
+            return redirect('project_detail', pk=fixed_project.pk)
         return redirect('credential_detail', pk=credential.pk)
 
     return render(request, 'credentials/form.html', {
         'projects': projects,
+        'fixed_project': fixed_project,
         'form_title': 'Add New Credential',
         'type_choices': Credential.TYPE_CHOICES,
     })
