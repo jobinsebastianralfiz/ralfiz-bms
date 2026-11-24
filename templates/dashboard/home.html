@@ -248,38 +248,6 @@
   }, 15000);
 </script>
 
-<div class="card mb-4 home-notes">
-  <div class="card-header inv-list-head">
-    <div>
-      <h2 class="card-title mb-0">My Notes</h2>
-      <p class="inv-list-head__sub"><i class="fas fa-lock"></i> Private to you · last edited first</p>
-    </div>
-    <div class="home-notes__acts">
-      <form method="post" action="{% url 'notes_new_linked' %}">{% csrf_token %}
-        <button type="submit" class="btn btn-sm btn-primary"><i class="fas fa-plus"></i> New note</button>
-      </form>
-      <form method="post" action="{% url 'notes_new_linked' %}">{% csrf_token %}
-        <input type="hidden" name="note_kind" value="board">
-        <button type="submit" class="btn btn-sm btn-outline-secondary"><i class="fas fa-shapes"></i> Board</button>
-      </form>
-      <a href="{% url 'notes_home' %}" class="btn btn-sm btn-outline-secondary">Open Notes</a>
-    </div>
-  </div>
-  <ul class="home-list">
-    {% for n in my_notes %}
-    <li>
-      <a href="/notes/n/{{ n.pk }}" class="home-list__main">
-        <span class="home-list__title"><i class="fas {% if n.kind == 'board' %}fa-shapes{% else %}fa-file-lines{% endif %} home-notes__ico"></i>{{ n.title|default:"Untitled" }}{% if n.pinned %} <i class="fas fa-thumbtack home-notes__pin" title="Pinned"></i>{% endif %}</span>
-        <span class="home-list__sub">{% if n.project %}<i class="far fa-folder-open"></i> {{ n.project.name }}{% elif n.client %}<i class="fas fa-user-tie"></i> {{ n.client.name }}{% elif n.lead %}<i class="fas fa-bullseye"></i> {% firstof n.lead.company_name n.lead.contact_person %}{% elif n.preview %}{{ n.preview|truncatechars:90 }}{% else %}{% if n.kind == 'board' %}Board{% else %}Empty note{% endif %}{% endif %}</span>
-      </a>
-      <div class="home-list__side"><span class="home-list__when">{{ n.updated_at|naturaltime }}</span></div>
-    </li>
-    {% empty %}
-    <li class="home-list__empty">No notes yet. Start one here, or from a project, client or lead page.</li>
-    {% endfor %}
-  </ul>
-</div>
-
 <details class="card mb-4 home-fold" data-fold="invoices">
   <summary class="card-header inv-list-head">
     <div>
@@ -327,15 +295,46 @@
   </div>
 </details>
 
-<div>
-  <details class="card home-fold" data-fold="projects">
-    <summary class="card-header inv-list-head">
+<div class="home-split home-pair">
+<div class="card home-notes">
+  <div class="card-header inv-list-head">
+    <div>
+      <h2 class="card-title mb-0">My Notes</h2>
+      <p class="inv-list-head__sub"><i class="fas fa-lock"></i> Private to you · last edited first</p>
+    </div>
+    <div class="home-notes__acts">
+      <form method="post" action="{% url 'notes_new_linked' %}">{% csrf_token %}
+        <button type="submit" class="btn btn-sm btn-primary"><i class="fas fa-plus"></i> New note</button>
+      </form>
+      <form method="post" action="{% url 'notes_new_linked' %}">{% csrf_token %}
+        <input type="hidden" name="note_kind" value="board">
+        <button type="submit" class="btn btn-sm btn-outline-secondary"><i class="fas fa-shapes"></i> Board</button>
+      </form>
+      <a href="{% url 'notes_home' %}" class="btn btn-sm btn-outline-secondary">Open Notes</a>
+    </div>
+  </div>
+  <ul class="home-list">
+    {% for n in my_notes %}
+    <li>
+      <a href="/notes/n/{{ n.pk }}" class="home-list__main">
+        <span class="home-list__title"><i class="fas {% if n.kind == 'board' %}fa-shapes{% else %}fa-file-lines{% endif %} home-notes__ico"></i>{{ n.title|default:"Untitled" }}{% if n.pinned %} <i class="fas fa-thumbtack home-notes__pin" title="Pinned"></i>{% endif %}</span>
+        <span class="home-list__sub">{% if n.project %}<i class="far fa-folder-open"></i> {{ n.project.name }}{% elif n.client %}<i class="fas fa-user-tie"></i> {{ n.client.name }}{% elif n.lead %}<i class="fas fa-bullseye"></i> {% firstof n.lead.company_name n.lead.contact_person %}{% elif n.preview %}{{ n.preview|truncatechars:90 }}{% else %}{% if n.kind == 'board' %}Board{% else %}Empty note{% endif %}{% endif %}</span>
+      </a>
+      <div class="home-list__side"><span class="home-list__when">{{ n.updated_at|naturaltime }}</span></div>
+    </li>
+    {% empty %}
+    <li class="home-list__empty">No notes yet. Start one here, or from a project, client or lead page.</li>
+    {% endfor %}
+  </ul>
+</div>
+  <div class="card home-projects">
+    <div class="card-header inv-list-head">
       <div>
         <h2 class="card-title mb-0">Active Projects</h2>
         <p class="inv-list-head__sub">Confirmed, in progress or in review</p>
       </div>
       <a href="{% url 'project_list' %}" class="btn btn-sm btn-outline-secondary">All projects</a>
-    </summary>
+    </div>
     <ul class="home-list">
       {% for p in active_projects %}
       <li>
@@ -352,7 +351,7 @@
       <li class="home-list__empty">No active projects.</li>
       {% endfor %}
     </ul>
-  </details>
+  </div>
 </div>
 <script>
   {# Folded sections remember being opened, per browser. #}
