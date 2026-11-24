@@ -11,7 +11,7 @@ from django.contrib import messages
 from django.db.models import Sum, Count, Q
 from django.utils import timezone
 from django.conf import settings
-from datetime import timedelta, datetime
+from datetime import date, timedelta, datetime
 
 from .task_board import board_columns, decorate_team
 from .models import (
@@ -129,6 +129,10 @@ def home_dashboard(request):
     from client_portal.chat_views import recent_conversations
     chat_convos = recent_conversations(limit=5)
 
+    dues = get_dues_and_renewals(scope, limit=8)
+    for item in dues.get('items', []):   # ISO strings (the connector shares this helper) -> dates for |date
+        item['due_on'] = date.fromisoformat(item['due_date']) if item.get('due_date') else None
+
     return render(request, 'dashboard/home.html', {
         'chat_convos': chat_convos,
         'chat_unread_total': sum(c.unread for c in chat_convos),
@@ -137,7 +141,7 @@ def home_dashboard(request):
         'fx_currencies': CONVERTER_CURRENCIES,
         'recent_invoices': _latest_number_first(Invoice.objects.select_related('client'))[:6],
         'active_projects': projects,
-        'dues': get_dues_and_renewals(scope, limit=6),
+        'dues': dues,
         'today': timezone.localdate(),
         **_invoice_page_panels(Invoice.objects.all()),
     })
@@ -264,7 +268,11 @@ def currency_rates():
 @login_required
 @xframe_options_sameorigin
 def world_clock(request):
-    """Six-market clock + live weather. Full page, or framed on the dashboard with ?embed=1."""
+    """Six-market clock + live weather. Full page, framed with ?embed=1, or just the
+    weather as JSON (?format=json) for the single clock on the dashboard."""
+    if request.GET.get('format') == 'json':
+        from django.http import JsonResponse
+        return JsonResponse(world_clock_weather())
     return render(request, 'dashboard/world_clock.html', {
         'weather': world_clock_weather(),
         'embed': request.GET.get('embed') == '1',
@@ -1770,9 +1778,12 @@ def credential_toggle_client(request, pk):
 def credential_update(request, pk):
     credential = get_object_or_404(Credential, pk=pk)
     projects = Project.objects.select_related('client').all()
+    # Opened from the project page (?from=project): keep the project, don't ask again.
+    from_project = request.GET.get('from') == 'project' or bool(request.POST.get('fixed_project'))
+    fixed_project = credential.project if (from_project and credential.project_id) else None
 
     if request.method == 'POST':
-        credential.project_id = request.POST.get('project')
+        credential.project_id = fixed_project.pk if fixed_project else request.POST.get('project')
         credential.name = request.POST.get('name')
         credential.credential_type = request.POST.get('credential_type', 'hosting')
         credential.provider = request.POST.get('provider', '')
@@ -1787,11 +1798,14 @@ def credential_update(request, pk):
         credential.save()
 
         messages.success(request, f'Credential "{credential.name}" updated successfully.')
+        if fixed_project:
+            return redirect(reverse('project_detail', args=[fixed_project.pk]) + '#credentials')
         return redirect('credential_detail', pk=credential.pk)
 
     return render(request, 'credentials/form.html', {
         'credential': credential,
         'projects': projects,
+        'fixed_project': fixed_project,
         'form_title': 'Edit Credential',
         'type_choices': Credential.TYPE_CHOICES,
     })

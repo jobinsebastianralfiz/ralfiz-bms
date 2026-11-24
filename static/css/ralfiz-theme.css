@@ -215,6 +215,7 @@ a:hover { color: var(--primary-hover); }
   font-size: 1.125rem;
 }
 .navbar-action-btn:hover { background: var(--bg-subtle); color: var(--text-primary); }
+.navbar-action-btn .badge[hidden] { display: none; }
 .navbar-action-btn .badge {
   background: var(--danger);
   color: #fff;

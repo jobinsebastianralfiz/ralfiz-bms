@@ -1,0 +1,156 @@
+{% load static %}
+{% comment %}One large clock on the dashboard. Pick any time zone; the choice is remembered per browser.
+Client-market cities come first (they also have live weather); every other IANA zone follows.{% endcomment %}
+<div class="card home-clock" id="homeClock">
+  <div class="card-header inv-list-head">
+    <div>
+      <h2 class="card-title mb-0">World Clock</h2>
+      <p class="inv-list-head__sub" id="hcVsIndia">Pick a time zone</p>
+    </div>
+    <div class="home-clock__acts">
+      <button type="button" class="btn btn-sm btn-outline-secondary" id="hcFmt" aria-pressed="false" title="Switch between 12-hour and 24-hour time">24h</button>
+      <a href="{% url 'world_clock' %}" class="btn btn-sm btn-outline-secondary" target="_blank" title="All six markets with working-hours overlap">All markets</a>
+    </div>
+  </div>
+  <div class="home-clock__body">
+    <canvas id="hcFace" role="img" aria-label="Analog clock"></canvas>
+    <div class="home-clock__info">
+      <label class="home-clock__pick">
+        <span class="home-clock__lbl">Time zone</span>
+        <select id="hcZone" class="form-control" aria-label="Time zone"></select>
+      </label>
+      <span class="home-clock__pill" id="hcPill">—</span>
+      <div class="home-clock__time" id="hcTime">--:--</div>
+      <div class="home-clock__date" id="hcDate">—</div>
+      <dl class="home-clock__meta">
+        <dt>Offset</dt><dd id="hcOff">—</dd>
+        <dt>Weather</dt><dd id="hcWx">—</dd>
+      </dl>
+    </div>
+  </div>
+</div>
+<style>
+.home-clock { display: flex; flex-direction: column; }
+.home-clock__acts { display: flex; gap: 8px; flex: none; }
+#hcFmt[aria-pressed="true"] { background: var(--primary); border-color: var(--primary); color: #fff; }
+.home-clock__body { flex: 1; display: flex; align-items: center; justify-content: center; gap: 28px; padding: 6px 20px 20px; flex-wrap: wrap; }
+#hcFace { width: 260px; height: 260px; flex: none; }
+.home-clock__info { flex: 0 1 300px; min-width: 200px; display: flex; flex-direction: column; align-items: flex-start; gap: 6px; }
+.home-clock__pick { width: 100%; max-width: 300px; margin: 0 0 4px; }
+.home-clock__pick select { width: 100%; }
+.home-clock__lbl { display: block; font-size: 12px; color: var(--text-muted); margin-bottom: 4px; }
+.home-clock__pill { font-size: 11px; font-weight: 600; padding: 3px 9px; border-radius: 99px; background: #f1f5f9; color: #475569; }
+.home-clock__pill.ok { background: #dcfce7; color: #166534; }
+.home-clock__pill.warn { background: #ffedd5; color: #9a3412; }
+.home-clock__time { font-size: 44px; font-weight: 700; line-height: 1.05; letter-spacing: -.02em; color: var(--text-primary); font-variant-numeric: tabular-nums; }
+.home-clock__time small { font-size: 16px; font-weight: 600; margin-left: 4px; color: var(--text-secondary); }
+.home-clock__date { color: var(--text-secondary); font-size: 14px; }
+.home-clock__meta { display: grid; grid-template-columns: auto 1fr; gap: 3px 12px; margin: 6px 0 0; font-size: 13px; }
+.home-clock__meta dt { color: var(--text-muted); font-weight: 400; }
+.home-clock__meta dd { margin: 0; color: var(--text-primary); }
+@media (max-width: 560px) { #hcFace { width: 180px; height: 180px; margin: 0 auto; } }
+</style>
+<script src="{% static 'js/watch-face.js' %}?v=1"></script>
+<script>
+(function () {
+  var HOME = 'Asia/Kolkata', KEY = 'dash-clock-tz', FMT = 'wc-24h';
+  // Client markets first: [time zone, label, weekend days (0 = Sunday)]
+  var MARKETS = [
+    ['Asia/Kolkata', 'India · Kerala', [0]],
+    ['Asia/Riyadh', 'Saudi Arabia · Riyadh', [5, 6]],
+    ['Asia/Qatar', 'Qatar · Doha', [5, 6]],
+    ['Asia/Dubai', 'UAE · Dubai', [6, 0]],
+    ['America/Toronto', 'Canada · Toronto', [6, 0]],
+    ['America/Winnipeg', 'Canada · Winnipeg', [6, 0]],
+    ['America/Edmonton', 'Canada · Calgary', [6, 0]],
+    ['America/Vancouver', 'Canada · Vancouver', [6, 0]],
+    ['America/Halifax', 'Canada · Halifax', [6, 0]],
+    ['America/New_York', 'USA · New York', [6, 0]],
+    ['America/Chicago', 'USA · Chicago', [6, 0]],
+    ['America/Denver', 'USA · Denver', [6, 0]],
+    ['America/Los_Angeles', 'USA · Los Angeles', [6, 0]]
+  ];
+  var GULF = /^Asia\/(Riyadh|Qatar|Kuwait|Bahrain|Aden|Baghdad)$/;
+  var $ = function (id) { return document.getElementById(id); };
+  var store = {
+    get: function (k, d) { try { var v = localStorage.getItem(k); return v === null ? d : JSON.parse(v); } catch (e) { return d; } },
+    set: function (k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} }
+  };
+  var all = [];
+  try { all = Intl.supportedValuesOf('timeZone'); } catch (e) {}
+  var known = {}; MARKETS.forEach(function (m) { known[m[0]] = m; });
+  var tz = store.get(KEY, HOME);
+  if (!known[tz] && all.indexOf(tz) < 0) tz = HOME;
+  var use24 = store.get(FMT, false);
+  var WX = { cities: {} };
+
+  // ---- picker ----
+  var sel = $('hcZone'), html = '<optgroup label="Client markets">';
+  MARKETS.forEach(function (m) { html += '<option value="' + m[0] + '">' + m[1] + '</option>'; });
+  html += '</optgroup><optgroup label="All time zones">';
+  all.forEach(function (z) { if (!known[z]) html += '<option value="' + z + '">' + z.replace(/_/g, ' ').replace(/\//g, ' / ') + '</option>'; });
+  sel.innerHTML = html + '</optgroup>';
+  sel.value = tz;
+  sel.addEventListener('change', function () { tz = sel.value; store.set(KEY, tz); tick(); });
+  var fmtBtn = $('hcFmt');
+  fmtBtn.setAttribute('aria-pressed', String(use24));
+  fmtBtn.addEventListener('click', function () { use24 = !use24; store.set(FMT, use24); fmtBtn.setAttribute('aria-pressed', String(use24)); tick(); });
+
+  // ---- time helpers ----
+  var cache = {};
+  function parts(zone, date) {
+    var f = cache[zone] || (cache[zone] = new Intl.DateTimeFormat('en-US', { timeZone: zone, hourCycle: 'h23',
+      year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit' }));
+    var p = {}; f.formatToParts(date).forEach(function (x) { p[x.type] = x.value; });
+    var y = +p.year, mo = +p.month, d = +p.day, h = +p.hour, mi = +p.minute, s = +p.second;
+    var offset = Math.round((Date.UTC(y, mo - 1, d, h, mi, s) - Math.floor(date.getTime() / 1000) * 1000) / 60000);
+    return { d: d, h: h, mi: mi, s: s, offset: offset, dow: new Date(Date.UTC(y, mo - 1, d)).getUTCDay() };
+  }
+  var pad = function (n) { return String(n).padStart(2, '0'); };
+  function offStr(min) { var a = Math.abs(min); return 'UTC' + (min >= 0 ? '+' : '−') + pad(Math.floor(a / 60)) + ':' + pad(a % 60); }
+  function diffStr(min) {
+    if (min === 0) return 'Same time as India';
+    var a = Math.abs(min), h = Math.floor(a / 60), m = a % 60;
+    return h + 'h' + (m ? ' ' + m + 'm' : '') + (min > 0 ? ' ahead of' : ' behind') + ' India';
+  }
+  function weekend(zone) { return known[zone] ? known[zone][2] : GULF.test(zone) ? [5, 6] : [6, 0]; }
+  function label(zone) { return known[zone] ? known[zone][1] : zone.split('/').pop().replace(/_/g, ' '); }
+
+  var off = 0, night = false, day = 1;
+  function tick() {
+    var now = new Date(), l = parts(tz, now), home = parts(HOME, now);
+    off = l.offset; night = l.h < 6 || l.h >= 18; day = l.d;
+    var t = use24 ? [pad(l.h) + ':' + pad(l.mi), ''] : [(l.h % 12 || 12) + ':' + pad(l.mi), l.h < 12 ? 'AM' : 'PM'];
+    $('hcTime').innerHTML = t[0] + ':' + '<span style="opacity:.45">' + pad(l.s) + '</span>' + (t[1] ? '<small>' + t[1] + '</small>' : '');
+    $('hcDate').textContent = new Intl.DateTimeFormat('en-GB', { timeZone: tz, weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }).format(now);
+    $('hcOff').textContent = offStr(l.offset);
+    $('hcVsIndia').textContent = label(tz) + ' · ' + diffStr(l.offset - home.offset);
+    var mins = l.h * 60 + l.mi, pill = $('hcPill');
+    if (weekend(tz).indexOf(l.dow) >= 0) { pill.className = 'home-clock__pill'; pill.textContent = 'Weekend'; }
+    else if (mins >= 540 && mins < 1080) { pill.className = 'home-clock__pill ok'; pill.textContent = 'Office hours'; }
+    else if (mins >= 420 && mins < 1320) { pill.className = 'home-clock__pill warn'; pill.textContent = 'After hours'; }
+    else { pill.className = 'home-clock__pill'; pill.textContent = 'Night'; }
+    var w = WX.cities && WX.cities[tz];
+    $('hcWx').textContent = w ? Math.round(w.t) + '°C · ' + w.x + ' · H ' + Math.round(w.hi) + '° L ' + Math.round(w.lo) + '°' : 'Not available for this zone';
+    if (reduce) frame();
+  }
+  var reduce = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var face = $('hcFace');
+  function frame() {
+    if (!window.drawWatch) return;
+    var t = new Date(Date.now() + off * 60000);
+    drawWatch(face, t.getUTCHours(), t.getUTCMinutes(), t.getUTCSeconds() + (reduce ? 0 : t.getUTCMilliseconds() / 1000),
+      { night: night, day: day, accent: '#D2621F', label: offStr(off).replace('UTC', ''), sub: label(tz).split(' · ').pop() });
+  }
+  function loop() { if (!document.hidden) frame(); requestAnimationFrame(loop); }
+
+  tick();
+  setInterval(tick, 1000);
+  if (reduce) frame(); else requestAnimationFrame(loop);
+  // Weather comes from the clock page's cached Open-Meteo lookup, fetched after the dashboard has drawn.
+  fetch("{% url 'world_clock' %}?format=json", { credentials: 'same-origin' })
+    .then(function (r) { return r.ok ? r.json() : null; })
+    .then(function (d) { if (d) { WX = d; tick(); } })
+    .catch(function () {});
+})();
+</script>

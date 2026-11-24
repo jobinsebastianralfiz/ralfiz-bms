@@ -67,16 +67,42 @@ class WorldClockPageTests(TestCase):
         self.assertContains(resp, 'body{background:transparent}')
         self.assertNotContains(resp, 'Plan a call time')
 
-    def test_dashboard_embeds_the_clock(self):
-        with mock.patch('requests.get', side_effect=requests.ConnectionError):
+    def test_dashboard_shows_one_clock_with_zone_picker(self):
+        with mock.patch('requests.get', side_effect=requests.ConnectionError) as get:
             resp = self.client.get(reverse('dashboard'))
-        self.assertContains(resp, reverse('world_clock') + '?embed=1')
+        # Weather loads afterwards, so Open-Meteo never blocks the dashboard.
+        self.assertFalse([c for c in get.call_args_list if 'open-meteo' in str(c)])
+        self.assertNotContains(resp, '?embed=1')
+        self.assertContains(resp, 'id="hcZone"')
+        self.assertContains(resp, 'js/watch-face.js')
+        # Expiries sit open next to the clock; the chat icon is in the top bar.
+        self.assertContains(resp, 'Expiring soon')
+        self.assertContains(resp, 'title="Client chat"')
         # The clock replaced the headline figures; Quick Actions links to it.
         self.assertNotContains(resp, 'home-stat')
         self.assertContains(resp, 'World Clock</a>')
         # No sidebar here: its links open from "All modules"
         self.assertContains(resp, '<body class="layout-top">')
         self.assertContains(resp, 'id="modulesBtn"')
+
+    def test_weather_as_json(self):
+        rows = [_row(code=0) for _ in WORLD_CLOCK_CITIES]
+        with mock.patch('requests.get', return_value=_response(rows)):
+            data = self.client.get(reverse('world_clock') + '?format=json').json()
+        self.assertEqual(data['cities']['Asia/Dubai']['x'], 'Clear')
+
+    def test_dashboard_lists_expiring_credential_with_date(self):
+        from datetime import timedelta
+        from django.utils import timezone
+        from core.models import Client, Credential, Project
+        p = Project.objects.create(name='Shop', client=Client.objects.create(name='Acme'))
+        due = timezone.localdate() + timedelta(days=5)
+        cred = Credential.objects.create(project=p, name='acme.com domain', password='x', expiry_date=due)
+        with mock.patch('requests.get', side_effect=requests.ConnectionError):
+            resp = self.client.get(reverse('dashboard'))
+        self.assertContains(resp, 'acme.com domain')
+        self.assertContains(resp, due.strftime('%d %b %Y'))
+        self.assertContains(resp, reverse('credential_detail', args=[cred.pk]))
 
     def test_needs_login(self):
         self.client.logout()

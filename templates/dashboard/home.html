@@ -171,30 +171,41 @@
 <div class="inv-page">
 <div class="inv-main">
 
-<div class="card mb-4">
+<div class="home-split mb-4">
+{% include 'dashboard/_single_clock.html' %}
+
+<div class="card home-dues" id="homeDues">
   <div class="card-header inv-list-head">
     <div>
-      <h2 class="card-title mb-0">World Clock</h2>
-      <p class="inv-list-head__sub">Client markets, live weather and working-hours overlap</p>
+      <h2 class="card-title mb-0">Expiring soon</h2>
+      <p class="inv-list-head__sub">Domains, hosting, logins and AMC in the next {{ dues.horizon_days }} days{% if dues.overdue_count %} · <span class="text-danger">{{ dues.overdue_count }} overdue</span>{% endif %}</p>
     </div>
-    <a href="{% url 'world_clock' %}" class="btn btn-sm btn-outline-secondary" target="_blank">Full screen</a>
+    <a href="{% url 'credential_list' %}" class="btn btn-sm btn-outline-secondary">Credentials</a>
   </div>
-  <iframe id="world-clock" src="{% url 'world_clock' %}?embed=1" title="World clock"
-          style="display:block;width:100%;height:1400px;border:0;background:transparent"></iframe>
+  <ul class="home-list">
+    {% for d in dues.items %}
+    <li class="{% if d.overdue %}is-overdue{% elif d.days <= 7 %}is-soon{% endif %}">
+      <a href="{% if d.kind == 'amc' %}{% url 'amc_detail' d.id %}{% else %}{% url 'credential_detail' d.id %}{% endif %}" class="home-list__main">
+        <span class="home-list__title">{{ d.label }}</span>
+        <span class="home-list__sub">{{ d.kind_label }}{% if d.client %} · {{ d.client }}{% elif d.project %} · {{ d.project }}{% endif %}</span>
+      </a>
+      <div class="home-list__side">
+        <span class="home-dues__date">{{ d.due_on|date:"d M Y" }}</span>
+        <span class="home-list__when{% if d.overdue or d.days <= 7 %} is-late{% endif %}">{% if d.overdue %}{{ d.days_abs }}d overdue{% elif d.days == 0 %}due today{% else %}in {{ d.days_abs }}d{% endif %}{% if d.auto_renew %} · auto{% endif %}</span>
+      </div>
+    </li>
+    {% empty %}
+    <li class="home-list__empty">Nothing expiring in the next {{ dues.horizon_days }} days.</li>
+    {% endfor %}
+  </ul>
 </div>
-<script>
-  {# Grow the frame to its content so the dashboard has one scrollbar. #}
-  (function () {
-    var f = document.getElementById('world-clock');
-    f.addEventListener('load', function () {
-      var doc = f.contentDocument;
-      if (!doc) return;
-      var fit = function () { f.style.height = doc.body.offsetHeight + 'px'; };  // body, so it can shrink too
-      fit();
-      if (window.ResizeObserver) new ResizeObserver(fit).observe(doc.body);
-    });
-  })();
-</script>
+</div>
+<style>
+.home-dues__date { font-size: 0.8125rem; font-weight: 600; color: var(--text-primary); white-space: nowrap; }
+.home-dues .is-overdue { background: #fef2f2; }
+.home-dues .is-overdue .home-dues__date { color: var(--danger-strong); }
+.home-split > .card { height: 100%; }
+</style>
 
 <div class="card mb-4 home-chats" id="homeChats">
   <div class="card-header inv-list-head">
@@ -315,7 +326,7 @@
   </div>
 </details>
 
-<div class="home-split">
+<div>
   <details class="card home-fold" data-fold="projects">
     <summary class="card-header inv-list-head">
       <div>
@@ -338,32 +349,6 @@
       </li>
       {% empty %}
       <li class="home-list__empty">No active projects.</li>
-      {% endfor %}
-    </ul>
-  </details>
-
-  <details class="card home-fold" data-fold="dues">
-    <summary class="card-header inv-list-head">
-      <div>
-        <h2 class="card-title mb-0">Dues &amp; Renewals</h2>
-        <p class="inv-list-head__sub">Next {{ dues.horizon_days }} days{% if dues.overdue_count %} · <span class="text-danger">{{ dues.overdue_count }} overdue</span>{% endif %}</p>
-      </div>
-      <a href="{% url 'credential_list' %}" class="btn btn-sm btn-outline-secondary">Credentials</a>
-    </summary>
-    <ul class="home-list">
-      {% for d in dues.items %}
-      <li>
-        <div class="home-list__main">
-          <span class="home-list__title">{{ d.label }}</span>
-          <span class="home-list__sub">{{ d.kind_label }}{% if d.client %} · {{ d.client }}{% endif %}</span>
-        </div>
-        <div class="home-list__side">
-          <span class="home-list__when{% if d.overdue %} is-late{% endif %}">{% if d.overdue %}{{ d.days_abs }}d overdue{% elif d.days == 0 %}due today{% else %}in {{ d.days_abs }}d{% endif %}</span>
-          {% if d.auto_renew %}<span class="badge badge-secondary">auto</span>{% endif %}
-        </div>
-      </li>
-      {% empty %}
-      <li class="home-list__empty">Nothing expiring in the next {{ dues.horizon_days }} days.</li>
       {% endfor %}
     </ul>
   </details>

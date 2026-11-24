@@ -481,6 +481,7 @@
           <i class="fas {% if cred.client_visible %}fa-eye text-success{% else %}fa-eye-slash{% endif %}"></i>
         </button>
       </form>
+      <a href="{% url 'credential_update' cred.pk %}?from=project" class="btn btn-sm btn-ghost btn-icon" title="Edit"><i class="fas fa-pen"></i></a>
       <a href="{% url 'credential_detail' cred.pk %}" class="btn btn-sm btn-ghost btn-icon" title="Open"><i class="fas fa-ellipsis-vertical"></i></a>
     </div>
     {% endfor %}

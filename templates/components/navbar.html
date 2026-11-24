@@ -19,6 +19,10 @@
         <span class="badge">{{ notifications_count }}</span>
         {% endif %}
       </button>
+      <a class="navbar-action-btn" href="{% url 'support_chat:inbox' %}" title="Client chat" aria-label="Client chat">
+        <i class="fas fa-comment-dots"></i>
+        <span class="badge" data-sc-count hidden></span>
+      </a>
       <a class="navbar-action-btn" href="{% url 'settings' %}" title="Settings">
         <i class="fas fa-gear"></i>
       </a>
