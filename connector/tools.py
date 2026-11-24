@@ -1557,7 +1557,8 @@ register(Tool(
 ))
 
 
-# Task board, Social Hub and Business Partner tools register themselves into TOOLS.
+# Task board, Social Hub, Business Partner and UAT tools register themselves into TOOLS.
 import connector.task_tools  # noqa: E402,F401
 import social.mcp_tools  # noqa: E402,F401
 import bizpartners.mcp_tools  # noqa: E402,F401
+import uat.mcp_tools  # noqa: E402,F401
