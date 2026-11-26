@@ -147,8 +147,11 @@ def shop_license_update(request, pk):
             lic.client = Client.objects.filter(id=p.get('client')).first() if p.get('client') else None
         lic.plan = _choice(p.get('plan'), ShopLicense.PLAN_CHOICES, lic.plan)
         lic.yearly_fee = _money(p.get('yearly_fee'), lic.yearly_fee)
-        old_branches, old_type = lic.max_branches, lic.business_type
-        lic.business_type = _choice(p.get('business_type'), ShopLicense.BUSINESS_TYPE_CHOICES, lic.business_type)
+        old_branches = lic.max_branches
+        # the business type is chosen once, when the licence is made: it decides the shop's features and data
+        if p.get('business_type') and p.get('business_type') != lic.business_type:
+            messages.error(request, 'The business type is fixed once the licence is made. For a different type, make a new licence.')
+            return redirect('shop_license_detail', pk=pk)
         lic.max_branches = max(_int(p.get('max_branches'), lic.max_branches), 1)
         lic.branch_fee = _money(p.get('branch_fee'), lic.branch_fee)
         lic.on_expiry = _choice(p.get('on_expiry'), ShopLicense.ON_EXPIRY_CHOICES, lic.on_expiry)
@@ -167,8 +170,6 @@ def shop_license_update(request, pk):
             lic.status = 'active'
         lic.save()
         extra = {'max_branches': f'{old_branches} -> {lic.max_branches}'} if old_branches != lic.max_branches else {}
-        if old_type != lic.business_type:
-            extra['business_type'] = f'{old_type} -> {lic.business_type}'
         _log(lic, 'update', who, details_updated=True, valid_until=lic.valid_until.isoformat(), **extra)
         messages.success(request, 'Licence updated. The shop picks this up within 15 minutes, or at once with "Check now" on its licence page.')
 

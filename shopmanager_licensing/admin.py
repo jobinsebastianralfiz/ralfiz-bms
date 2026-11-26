@@ -24,3 +24,7 @@ class ShopLicenseAdmin(admin.ModelAdmin):
     readonly_fields = ('license_key', 'created_at', 'updated_at', 'total_checks', 'last_check_at',
                        'last_check_ip', 'app_version')
     inlines = [ShopLicenseLogInline]
+
+    def get_readonly_fields(self, request, obj=None):
+        # the business type is chosen once, when the licence is made
+        return self.readonly_fields + (('business_type',) if obj else ())

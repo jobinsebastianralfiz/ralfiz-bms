@@ -154,19 +154,20 @@ class ShopLicenceDashboardTests(TestCase):
         lic.refresh_from_db()
         self.assertEqual(lic.max_branches, 1)  # never below one
 
-    def test_set_business_type(self):
-        lic = ShopLicense.objects.create(shop_name='Fresh Mart')
-        self.assertEqual(lic.business_type, 'electronics')
+    def test_business_type_is_set_once(self):
+        lic = ShopLicense.objects.create(shop_name='Fresh Mart', business_type='fresh')
+        r = self.client.get(reverse('shop_license_detail', args=[lic.pk]))
+        self.assertContains(r, 'Fruits &amp; vegetables')
+        self.assertContains(r, 'Fixed when the licence was made')
+        self.assertNotContains(r, 'name="business_type"')
         self.client.post(reverse('shop_license_update', args=[lic.pk]), {
-            'action': 'update_details', 'shop_name': lic.shop_name, 'plan': lic.plan, 'business_type': 'fresh'})
+            'action': 'update_details', 'shop_name': 'Fresh Mart Calicut', 'plan': lic.plan, 'business_type': 'mobile'})
         lic.refresh_from_db()
-        self.assertEqual(lic.business_type, 'fresh')
-        self.assertEqual(lic.logs.get(event='update').details['business_type'], 'electronics -> fresh')
-        self.assertContains(self.client.get(reverse('shop_license_detail', args=[lic.pk])), 'Fruits &amp; vegetables')
+        self.assertEqual((lic.business_type, lic.shop_name), ('fresh', 'Fresh Mart'))   # refused, nothing saved
         self.client.post(reverse('shop_license_update', args=[lic.pk]), {
-            'action': 'update_details', 'shop_name': lic.shop_name, 'plan': lic.plan, 'business_type': 'casino'})
+            'action': 'update_details', 'shop_name': 'Fresh Mart Calicut', 'plan': lic.plan})
         lic.refresh_from_db()
-        self.assertEqual(lic.business_type, 'fresh')  # unknown values are ignored
+        self.assertEqual((lic.business_type, lic.shop_name), ('fresh', 'Fresh Mart Calicut'))   # other details still change
 
     def test_login_required(self):
         self.client.logout()
