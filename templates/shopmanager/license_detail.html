@@ -34,6 +34,7 @@
           <div><p class="sm-k">Shop Manager address</p><p class="sm-v">{{ license.api_domain|default:"Not activated yet" }}</p></div>
           <div><p class="sm-k">Plan · fee</p><p class="sm-v">{{ license.get_plan_display }} · ₹{{ license.yearly_fee|floatformat:0 }}</p></div>
           <div><p class="sm-k">Yearly total</p><p class="sm-v">₹{{ license.total_yearly_fee|floatformat:0 }}{% if license.extra_branches %} <span class="sm-help">(₹{{ license.yearly_fee|floatformat:0 }} + {{ license.extra_branches }} × ₹{{ license.branch_fee|floatformat:0 }} per extra branch)</span>{% endif %}</p></div>
+          <div><p class="sm-k">Business type</p><p class="sm-v">{{ license.get_business_type_display }}</p></div>
           <div><p class="sm-k">Branches allowed</p><p class="sm-v">{{ license.max_branches }}</p></div>
           <div><p class="sm-k">Valid from</p><p class="sm-v">{{ license.valid_from|date:"d M Y" }}</p></div>
           <div><p class="sm-k">Valid until</p><p class="sm-v">{{ license.valid_until|date:"d M Y" }} ({{ license.days_remaining }} days)</p></div>
@@ -67,6 +68,7 @@
             <select name="plan" class="sm-input">{% for v, l in plans %}<option value="{{ v }}" {% if license.plan == v %}selected{% endif %}>{{ l }}</option>{% endfor %}</select>
           </div>
           <div><label class="sm-label">Yearly fee (₹)</label><input type="number" step="0.01" min="0" name="yearly_fee" value="{{ license.yearly_fee|stringformat:'s' }}" class="sm-input"></div>
+          <div><label class="sm-label">Business type</label><select name="business_type" class="sm-input">{% for v, l in business_type_choices %}<option value="{{ v }}" {% if license.business_type == v %}selected{% endif %}>{{ l }}</option>{% endfor %}</select></div>
           <div><label class="sm-label">Branches allowed</label><input type="number" name="max_branches" value="{{ license.max_branches }}" min="1" max="99" class="sm-input"></div>
           <div><label class="sm-label">Fee per extra branch (₹ / year)</label><input type="number" step="0.01" min="0" name="branch_fee" value="{{ license.branch_fee|stringformat:'s' }}" class="sm-input"></div>
           <div>

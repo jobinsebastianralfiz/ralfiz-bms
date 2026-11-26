@@ -54,6 +54,8 @@ def signed_answer(lic, domain):
         'plan': lic.plan,
         'plan_label': lic.get_plan_display(),
         'yearly_fee': str(lic.yearly_fee),
+        'business_type': lic.business_type,
+        'business_type_label': lic.get_business_type_display(),
         'max_branches': lic.max_branches,
         'branch_fee': str(lic.branch_fee),
         'total_fee': str(lic.total_yearly_fee),

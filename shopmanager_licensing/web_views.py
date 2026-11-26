@@ -87,6 +87,7 @@ def shop_license_create(request):
             api_domain=ShopLicense.normalize_domain(p.get('api_domain', '')),
             plan=plan,
             yearly_fee=_money(p.get('yearly_fee'), Decimal(ShopLicense.PLAN_FEES.get(plan, 5500))),
+            business_type=_choice(p.get('business_type'), ShopLicense.BUSINESS_TYPE_CHOICES, 'electronics'),
             max_branches=max(_int(p.get('max_branches'), 1), 1),
             branch_fee=_money(p.get('branch_fee'), Decimal('0')),
             valid_from=_date(p.get('valid_from'), timezone.localdate()),
@@ -103,7 +104,7 @@ def shop_license_create(request):
         else:
             lic.save()
             _log(lic, 'create', request.user.username, plan=lic.plan, valid_until=lic.valid_until.isoformat(),
-                 max_branches=lic.max_branches)
+                 max_branches=lic.max_branches, business_type=lic.business_type)
             messages.success(request, f'Licence created for {lic.shop_name}: {lic.license_key}')
             return redirect('shop_license_detail', pk=lic.pk)
     return render(request, 'shopmanager/license_form.html', {
@@ -111,6 +112,7 @@ def shop_license_create(request):
         'plans': ShopLicense.PLAN_CHOICES,
         'plan_fees': ShopLicense.PLAN_FEES,
         'on_expiry_choices': ShopLicense.ON_EXPIRY_CHOICES,
+        'business_type_choices': ShopLicense.BUSINESS_TYPE_CHOICES,
         'today': timezone.localdate(),
     })
 
@@ -125,6 +127,7 @@ def shop_license_detail(request, pk):
         'clients': Client.objects.filter(is_active=True).order_by('name'),
         'plans': ShopLicense.PLAN_CHOICES,
         'on_expiry_choices': ShopLicense.ON_EXPIRY_CHOICES,
+        'business_type_choices': ShopLicense.BUSINESS_TYPE_CHOICES,
     })
 
 
@@ -144,7 +147,8 @@ def shop_license_update(request, pk):
             lic.client = Client.objects.filter(id=p.get('client')).first() if p.get('client') else None
         lic.plan = _choice(p.get('plan'), ShopLicense.PLAN_CHOICES, lic.plan)
         lic.yearly_fee = _money(p.get('yearly_fee'), lic.yearly_fee)
-        old_branches = lic.max_branches
+        old_branches, old_type = lic.max_branches, lic.business_type
+        lic.business_type = _choice(p.get('business_type'), ShopLicense.BUSINESS_TYPE_CHOICES, lic.business_type)
         lic.max_branches = max(_int(p.get('max_branches'), lic.max_branches), 1)
         lic.branch_fee = _money(p.get('branch_fee'), lic.branch_fee)
         lic.on_expiry = _choice(p.get('on_expiry'), ShopLicense.ON_EXPIRY_CHOICES, lic.on_expiry)
@@ -163,6 +167,8 @@ def shop_license_update(request, pk):
             lic.status = 'active'
         lic.save()
         extra = {'max_branches': f'{old_branches} -> {lic.max_branches}'} if old_branches != lic.max_branches else {}
+        if old_type != lic.business_type:
+            extra['business_type'] = f'{old_type} -> {lic.business_type}'
         _log(lic, 'update', who, details_updated=True, valid_until=lic.valid_until.isoformat(), **extra)
         messages.success(request, 'Licence updated. The shop picks this up within 15 minutes, or at once with "Check now" on its licence page.')
 

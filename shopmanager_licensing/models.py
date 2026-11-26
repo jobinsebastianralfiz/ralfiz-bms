@@ -41,6 +41,16 @@ class ShopLicense(models.Model):
         ('revoked', 'Revoked'),
     ]
 
+    # Must match core/business.py in Shop Manager. Decides the shop's features (scale, expiry, warranty).
+    BUSINESS_TYPE_CHOICES = [
+        ('electronics', 'Watches & electronics'),
+        ('mobile', 'Mobile shop'),
+        ('general', 'General retail'),
+        ('fresh', 'Fruits & vegetables'),
+        ('fmcg', 'Supermarket / FMCG'),
+        ('pharmacy', 'Pharmacy'),
+    ]
+
     ON_EXPIRY_CHOICES = [
         ('warn', 'Keep working, show a warning'),
         ('read_only', 'Read-only (can view, cannot bill)'),
@@ -67,6 +77,11 @@ class ShopLicense(models.Model):
     # Plan & validity
     plan = models.CharField(max_length=20, choices=PLAN_CHOICES, default='software')
     yearly_fee = models.DecimalField(max_digits=10, decimal_places=2, default=5500)
+    business_type = models.CharField(
+        'Business type', max_length=20, choices=BUSINESS_TYPE_CHOICES, default='electronics',
+        help_text='Switches features in the shop: weighing scale and daily prices for fruits & vegetables and '
+                  'supermarkets, batches & expiry for supermarkets and pharmacies, warranty for electronics, '
+                  'mobiles and general retail. The shop cannot change it.')
     max_branches = models.PositiveIntegerField(
         'Branches allowed', default=1,
         help_text='How many active branches the shop may run (multi-branch Shop Manager). Single-branch '

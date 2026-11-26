@@ -58,6 +58,12 @@ class ShopLicenceApiTests(TestCase):
         self.assertEqual((p['max_branches'], p['yearly_fee'], p['branch_fee'], p['total_fee']),
                          (3, '7500.00', '2000.00', '11500.00'))  # 7,500 + 2 extra branches x 2,000
 
+    def test_business_type_is_signed(self):
+        p = verify(self.call().json()['token'])
+        self.assertEqual((p['business_type'], p['business_type_label']), ('electronics', 'Watches & electronics'))
+        ShopLicense.objects.filter(pk=self.lic.pk).update(business_type='fmcg')
+        self.assertEqual(verify(self.call('check').json()['token'])['business_type'], 'fmcg')
+
     def test_other_server_rejected(self):
         self.call()
         r = self.call('check', domain='shop.someone-else.com')
@@ -147,6 +153,20 @@ class ShopLicenceDashboardTests(TestCase):
             'action': 'update_details', 'shop_name': lic.shop_name, 'plan': lic.plan, 'max_branches': '0'})
         lic.refresh_from_db()
         self.assertEqual(lic.max_branches, 1)  # never below one
+
+    def test_set_business_type(self):
+        lic = ShopLicense.objects.create(shop_name='Fresh Mart')
+        self.assertEqual(lic.business_type, 'electronics')
+        self.client.post(reverse('shop_license_update', args=[lic.pk]), {
+            'action': 'update_details', 'shop_name': lic.shop_name, 'plan': lic.plan, 'business_type': 'fresh'})
+        lic.refresh_from_db()
+        self.assertEqual(lic.business_type, 'fresh')
+        self.assertEqual(lic.logs.get(event='update').details['business_type'], 'electronics -> fresh')
+        self.assertContains(self.client.get(reverse('shop_license_detail', args=[lic.pk])), 'Fruits &amp; vegetables')
+        self.client.post(reverse('shop_license_update', args=[lic.pk]), {
+            'action': 'update_details', 'shop_name': lic.shop_name, 'plan': lic.plan, 'business_type': 'casino'})
+        lic.refresh_from_db()
+        self.assertEqual(lic.business_type, 'fresh')  # unknown values are ignored
 
     def test_login_required(self):
         self.client.logout()
