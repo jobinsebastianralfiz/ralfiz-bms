@@ -1,0 +1,1564 @@
+{
+ "name": "Shop Manager (branches) UAT",
+ "product": "Shop Manager — multi-branch",
+ "site_url": "https://multishop.ralfiz.com",
+ "instructions": "Shop Manager with branches: Ralfiz Fresh Mart, a supermarket with 3 branches (Calicut, Kochi, Coimbatore). It sells loose fruit & vegetables by weight, packed groceries with expiry dates, and small appliances with warranty.\nSite: https://multishop.ralfiz.com — this is also a customer's demo, so be careful.\n\nLogins\n• Sana: uat_admin (Admin, every branch)\n• Fathima: uat_calicut (Staff at Calicut), uat_cbe (Staff at Coimbatore) and uat_admin2 (Admin, for Offers)\n• Mithra: uat_kochi (Branch Manager at Kochi), and uat_admin2 for steps that say so\nEveryone gets every password, because some tests sign in as another login. Never use the 'owner' login: it's the customer's.\n\nOrder\n1. Getting started: everyone.\n2. Shop setup check: Sana on uat_admin. Everything else stays locked until it's done.\n3. Then everyone tests their own sections.\n4. Last day: reports, day close and the full shop day together.\n\nRules (the customer uses this site too)\n• Start anything you create with your initial: S - , F - , M - .\n• Don't edit or delete the shop's own items, customers or suppliers. Bill and transfer them, that's fine.\n• Put back any price you change, and switch off your offers when done.\n• Don't change Shop settings or branches except where a test says, and put them back.\n\nScale stickers (no scale needed: type the number in the scan box and press Enter)\n• Apple Shimla 1.250 kg: 2100101012501\n• Onion 2 kg: 2100202020009\n• Tomato 750 g: 2100201007506\n• Orange Nagpur 1.5 kg: 2100104015004\n\nHow to mark\n• Pass: it did what 'Should happen' says.\n• Fail: write what you did and saw, add a screenshot.\n• Blocked: you couldn't test it (error page, missing data, no printer).",
+ "sections": [
+  {
+   "key": "GS",
+   "name": "Getting started",
+   "owner": "Everyone",
+   "tests": [
+    {
+     "code": "GS-01",
+     "title": "Site opens securely",
+     "steps": [
+      "Open https://multishop.ralfiz.com in Chrome on the laptop and on your phone."
+     ],
+     "expected": "The sign-in page opens with a padlock (https). The shop name is Ralfiz Fresh Mart.",
+     "tags": []
+    },
+    {
+     "code": "GS-02",
+     "title": "Sign in and the welcome tour",
+     "steps": [
+      "Sign in with your UAT login (see the top of this plan).",
+      "The first time, a tour starts. Press Next through every step, then Done."
+     ],
+     "expected": "The tour points at each part of the screen and says what it is. It doesn't show again on your next sign-in.",
+     "tags": []
+    },
+    {
+     "code": "GS-03",
+     "title": "Take the tour again, and skip it",
+     "steps": [
+      "Click your name at the top right → Take the tour.",
+      "Press Skip tour on the second step."
+     ],
+     "expected": "The tour starts again from the user menu, and Skip closes it at once. Arrow keys and Esc also work.",
+     "tags": []
+    },
+    {
+     "code": "GS-04",
+     "title": "Wrong password",
+     "steps": [
+      "Sign out. Sign in with your username and a wrong password."
+     ],
+     "expected": "A clear 'wrong username or password' message. You are not signed in.",
+     "tags": []
+    },
+    {
+     "code": "GS-05",
+     "title": "Your branch at the top",
+     "steps": [
+      "After signing in, look at the branch button at the top."
+     ],
+     "expected": "It shows the branch your login works in (Calicut, Kochi or Coimbatore). uat_admin can also pick 'All branches'; the others see only their own branch.",
+     "tags": []
+    }
+   ]
+  },
+  {
+   "key": "SETUP",
+   "name": "Shop setup check (Sana, on uat_admin)",
+   "owner": "Admin",
+   "tests": [
+    {
+     "code": "SET-01",
+     "title": "Licence and business type",
+     "steps": [
+      "Click your name → Licence details (or the licence card in the sidebar)."
+     ],
+     "expected": "Business type: Supermarket / FMCG. Branches allowed: 3. Valid till date and days left are shown.",
+     "tags": [
+      "Admin"
+     ]
+    },
+    {
+     "code": "SET-02",
+     "title": "Shop settings follow the business type",
+     "steps": [
+      "Settings → Shop settings. Scroll the whole page. Don't change anything."
+     ],
+     "expected": "A blue note says the business type comes with the licence. There is a Weighing scale section (prefix 21, 5-digit codes, weight in grams) and a Batches & expiry section (warn 30 days before expiry), but no switch to turn the scale or batches off.",
+     "tags": [
+      "Admin"
+     ]
+    },
+    {
+     "code": "SET-03",
+     "title": "Three branches, plan limit reached",
+     "steps": [
+      "Settings → Branches."
+     ],
+     "expected": "Calicut, Kochi and Coimbatore are listed, all Active. Coimbatore has its own GSTIN (33...). There is no Add branch button: it says the plan limit is reached.",
+     "tags": [
+      "Admin"
+     ]
+    },
+    {
+     "code": "SET-04",
+     "title": "Supermarket screens",
+     "steps": [
+      "Open each menu in the sidebar."
+     ],
+     "expected": "There is a Warranty menu (Check warranty, Claims & repairs). The Stock menu starts with Today's prices and has Expiry dates. The home screen has a Today's prices card (rate board) and an F8 Today's prices tile.",
+     "tags": [
+      "Admin"
+     ]
+    },
+    {
+     "code": "SET-05",
+     "title": "Stock for testing at every branch",
+     "steps": [
+      "Pick Calicut at the top. Purchases → New purchase (F3). Supplier: Wayanad Farmers Co-op, bill no. UAT-CLT.",
+      "Add Tomato 40, Onion 40, Potato 40, Banana Robusta 30. Rates as shown. Paid now 0. Save.",
+      "Pick Kochi at the top and do the same with bill no. UAT-KCH. Then Coimbatore with UAT-CBE."
+     ],
+     "expected": "Three purchases are saved, numbered per branch (Kochi's has KCH in the number, Coimbatore's CBE). Each branch's stock of those items goes up only at that branch (check on the item's page: stock per branch).",
+     "tags": [
+      "Admin"
+     ]
+    },
+    {
+     "code": "SET-06",
+     "title": "Tell the team setup is done",
+     "steps": [
+      "Mark every test above, then message Fathima and Mithra."
+     ],
+     "expected": "Their sections unlock.",
+     "tags": [
+      "Admin"
+     ]
+    }
+   ]
+  },
+  {
+   "key": "BR",
+   "name": "Branches & switching",
+   "owner": "Sana",
+   "after": "SETUP",
+   "tests": [
+    {
+     "code": "BR-01",
+     "title": "Switch branch",
+     "steps": [
+      "On uat_admin, click the branch button at the top. Pick Kochi, then Coimbatore, then All branches."
+     ],
+     "expected": "The home screen figures (sales, cash, dues) change with the branch. 'All branches' adds them up. The page you were on stays open.",
+     "tags": [
+      "Admin"
+     ]
+    },
+    {
+     "code": "BR-02",
+     "title": "Some work needs one branch",
+     "steps": [
+      "Pick All branches. Click Billing. Then try Purchases → New purchase, and Stock → Wastage → Record wastage."
+     ],
+     "expected": "Each one says to pick a branch first ('This can't be done for all branches at once'). Nothing is saved for 'all'.",
+     "tags": [
+      "Admin"
+     ]
+    },
+    {
+     "code": "BR-03",
+     "title": "Bill numbers per branch",
+     "steps": [
+      "Look at Sales → Bills with All branches picked."
+     ],
+     "expected": "Calicut bills are INV/26-27/0001 style. Kochi bills are INV-KCH/26-27/... and Coimbatore INV-CBE/26-27/... Each branch counts from its own 0001.",
+     "tags": [
+      "Admin"
+     ]
+    },
+    {
+     "code": "BR-04",
+     "title": "Edit a branch and put it back",
+     "steps": [
+      "Settings → Branches → Kochi → Edit. Change the phone, save. Then put the old phone back."
+     ],
+     "expected": "Saved both times. The code (KCH) is used in Kochi's numbers. Opening cash and bank for the branch are on this form.",
+     "tags": [
+      "Admin"
+     ]
+    },
+    {
+     "code": "BR-05",
+     "title": "Branch comparison only when there are branches",
+     "steps": [
+      "Reports → Branch comparison."
+     ],
+     "expected": "Sales, margin, expenses and profit for each branch side by side, with a total row and the top seller.",
+     "tags": [
+      "Admin"
+     ]
+    }
+   ]
+  },
+  {
+   "key": "USR",
+   "name": "Users & access",
+   "owner": "Sana",
+   "after": "SETUP",
+   "tests": [
+    {
+     "code": "USR-01",
+     "title": "Staff for one branch",
+     "steps": [
+      "Settings → Users → Add user. Name 'S - Coimbatore staff', username s_cbe, role Staff, tick only Billing & bills.",
+      "Branches: tick Coimbatore only, default branch Coimbatore. Save. Sign in as s_cbe in another browser (or incognito)."
+     ],
+     "expected": "s_cbe sees only Coimbatore, can't switch branch, and sees only Billing and Sales pages. Other pages say they're not allowed.",
+     "tags": [
+      "Admin"
+     ]
+    },
+    {
+     "code": "USR-02",
+     "title": "Branch Manager runs only their branch",
+     "steps": [
+      "Sign in as uat_kochi (Branch Manager, Kochi). Open Settings → Users → Add user."
+     ],
+     "expected": "Role can only be Staff and branch only Kochi. The manager sees every page for Kochi, but not Shop settings, Branches, or other branches' figures.",
+     "tags": [
+      "Admin"
+     ]
+    },
+    {
+     "code": "USR-03",
+     "title": "Price and discount locked",
+     "steps": [
+      "Edit s_cbe: untick 'Change price & give discount'. Sign in as s_cbe and start a bill."
+     ],
+     "expected": "The price, discount and bill discount boxes can't be changed. Offers still apply by themselves (see OFF-10).",
+     "tags": [
+      "Admin"
+     ]
+    },
+    {
+     "code": "USR-04",
+     "title": "See only their own bills",
+     "steps": [
+      "Leave 'See everyone's bills' off for s_cbe. Make one bill as s_cbe. Then open Sales → Bills."
+     ],
+     "expected": "s_cbe sees only the bills s_cbe made, not other Coimbatore bills.",
+     "tags": [
+      "Admin"
+     ]
+    },
+    {
+     "code": "USR-05",
+     "title": "Cost and profit hidden",
+     "steps": [
+      "Give s_cbe Reports but not 'See cost & profit'. Open Reports and an item."
+     ],
+     "expected": "Reports open, but cost, margin and profit are hidden everywhere (also in Branch comparison).",
+     "tags": [
+      "Admin"
+     ]
+    },
+    {
+     "code": "USR-06",
+     "title": "Login with no branch",
+     "steps": [
+      "Edit s_cbe: untick every branch, save. Sign in as s_cbe."
+     ],
+     "expected": "'You are not in any branch' page with a Sign out button. Tick Coimbatore again afterwards.",
+     "tags": [
+      "Admin"
+     ]
+    },
+    {
+     "code": "USR-07",
+     "title": "Deactivate a user",
+     "steps": [
+      "Edit s_cbe: untick Active. Try to sign in as s_cbe."
+     ],
+     "expected": "Sign-in is refused. Their old bills still show their name.",
+     "tags": [
+      "Admin"
+     ]
+    },
+    {
+     "code": "USR-08",
+     "title": "Activity log",
+     "steps": [
+      "Settings → Activity log."
+     ],
+     "expected": "Your changes today (users, settings, prices) are listed with who and when.",
+     "tags": [
+      "Admin"
+     ]
+    }
+   ]
+  },
+  {
+   "key": "PRC",
+   "name": "Today's prices",
+   "owner": "Sana",
+   "after": "SETUP",
+   "tests": [
+    {
+     "code": "PRC-01",
+     "title": "Find Today's prices",
+     "steps": [
+      "On uat_admin, pick Calicut. Look at the home screen and the Stock menu."
+     ],
+     "expected": "Today's prices is the first item in the Stock menu, an F8 tile on the home screen, and a rate board card shows today's rates. Pressing F8 opens it.",
+     "tags": [
+      "Admin"
+     ]
+    },
+    {
+     "code": "PRC-02",
+     "title": "Type rates and move with Enter",
+     "steps": [
+      "Open Today's prices. Change Tomato to 2 rupees more, press Enter, change Onion, press Enter."
+     ],
+     "expected": "Enter moves to the next item's box. Changed boxes turn yellow, and a count of changed items shows before saving.",
+     "tags": [
+      "Admin"
+     ]
+    },
+    {
+     "code": "PRC-03",
+     "title": "This branch only",
+     "steps": [
+      "With Calicut picked, choose 'Only Calicut' and Save. Pick Kochi and open Today's prices."
+     ],
+     "expected": "Calicut has the new Tomato and Onion rates. Kochi still has the old ones.",
+     "tags": [
+      "Admin"
+     ]
+    },
+    {
+     "code": "PRC-04",
+     "title": "All branches",
+     "steps": [
+      "Change Potato by 1 rupee, choose 'All branches', Save. Check Kochi and Coimbatore."
+     ],
+     "expected": "Potato's new rate is the same at all three branches.",
+     "tags": [
+      "Admin"
+     ]
+    },
+    {
+     "code": "PRC-05",
+     "title": "Branch manager's limits",
+     "steps": [
+      "Sign in as uat_kochi. Open Today's prices and change one rate."
+     ],
+     "expected": "The manager can change Kochi's rates only. There is no 'All branches' choice.",
+     "tags": [
+      "Admin"
+     ]
+    },
+    {
+     "code": "PRC-06",
+     "title": "Price changes and rate list",
+     "steps": [
+      "Open Price changes. Then Print rate list."
+     ],
+     "expected": "Every change today with old and new price, branch and who changed it. The rate list PDF has today's rates for the branch.",
+     "tags": [
+      "Admin",
+      "Printer"
+     ]
+    },
+    {
+     "code": "PRC-07",
+     "title": "Branch price on the item page",
+     "steps": [
+      "Open the item Tomato. In the Branches card, type a price for Coimbatore. Save. Then clear the box and save again."
+     ],
+     "expected": "Coimbatore bills at its own price while set; a blank box goes back to the normal price.",
+     "tags": [
+      "Admin"
+     ]
+    },
+    {
+     "code": "PRC-08",
+     "title": "Put prices back",
+     "steps": [
+      "Set Tomato, Onion and Potato back to their morning prices (Price changes shows them)."
+     ],
+     "expected": "Prices are back as they were, so the customer's demo isn't changed.",
+     "tags": [
+      "Admin"
+     ]
+    }
+   ]
+  },
+  {
+   "key": "OFF",
+   "name": "Offers (Fathima, on uat_admin2)",
+   "owner": "Fathima",
+   "after": "SETUP",
+   "tests": [
+    {
+     "code": "OFF-00",
+     "title": "Where offers live",
+     "steps": [
+      "On uat_admin2, open Sales → Offers."
+     ],
+     "expected": "The Offers list opens (empty, or with offers already there). Only Admins see New offer; staff can see the list but not change it.",
+     "tags": [
+      "Admin"
+     ]
+    },
+    {
+     "code": "OFF-01",
+     "title": "Sale price for dates",
+     "steps": [
+      "Sales → Offers → New offer. Name 'F - Apple sale', type Sale price. Add Apple Shimla with a sale price ₹20 below normal. From today. Save."
+     ],
+     "expected": "Listed as On now. At billing (Calicut) Apple shows a green 'F - Apple sale' tag and the lower amount.",
+     "tags": [
+      "Admin"
+     ]
+    },
+    {
+     "code": "OFF-02",
+     "title": "% off with hours (evening clearance)",
+     "steps": [
+      "New offer 'F - Greens clearance', type % off, 20%, category Leafy greens. From time: now minus 1 hour, Till time: now plus 1 hour. Save. Bill Spinach.",
+      "Edit it: move the hours to tomorrow evening. Bill Spinach again."
+     ],
+     "expected": "First bill: 20% off Spinach. After moving the hours: no offer, and the list shows 'Not at this hour/day'.",
+     "tags": [
+      "Admin"
+     ]
+    },
+    {
+     "code": "OFF-03",
+     "title": "Buy more, pay less",
+     "steps": [
+      "New offer 'F - Onion 3 kg', Buy more pay less, item Onion, buy at least 3, price per unit ₹5 below normal. Bill 2 kg Onion, then 3.5 kg."
+     ],
+     "expected": "2 kg: normal price, and a yellow hint 'take 1 kg more Onion and pay ₹… each'. 3.5 kg: the whole 3.5 kg at the lower price.",
+     "tags": [
+      "Admin"
+     ]
+    },
+    {
+     "code": "OFF-04",
+     "title": "Buy 2 get 1 free",
+     "steps": [
+      "New offer 'F - Milk 2+1', Buy X get Y free, buy Milma Milk 500ml × 2, free item Milma Milk × 1. Bill 2 milk, then 3."
+     ],
+     "expected": "With 2: a hint 'add 1 more Milma Milk, it is free'. With 3: one is free (₹28 off).",
+     "tags": [
+      "Admin"
+     ]
+    },
+    {
+     "code": "OFF-05",
+     "title": "Combo and its barcode",
+     "steps": [
+      "New offer 'F - Sambar kit', Combo at one price. Add Tomato 0.5, Onion 0.5, Potato 0.5, Curry leaves 1. Combo price ₹10 below the normal total shown. Leave Barcode empty. Save.",
+      "Copy the barcode shown on the Offers list. At billing, type that barcode in the scan box and press Enter."
+     ],
+     "expected": "Saving makes a barcode. Scanning it adds all four items with their quantities, and the combo tag shows on each line. The bill total for those items is the combo price.",
+     "tags": [
+      "Admin"
+     ]
+    },
+    {
+     "code": "OFF-06",
+     "title": "Offer on the bill total",
+     "steps": [
+      "New offer 'F - 5% over 500', Offer on the bill total, bill of at least ₹500, 5, 'Off is a %' on. Bill items for about ₹450, then add more to go over ₹500."
+     ],
+     "expected": "At ₹450: hint 'add ₹50 more to get 5% off'. Over ₹500: a '5% over 500' row takes 5% off the total.",
+     "tags": [
+      "Admin"
+     ]
+    },
+    {
+     "code": "OFF-07",
+     "title": "Only one branch",
+     "steps": [
+      "Edit 'F - Apple sale': tick only Kochi under Branches. Bill Apple at Calicut, then at Kochi."
+     ],
+     "expected": "Calicut: normal price. Kochi: the sale price.",
+     "tags": [
+      "Admin"
+     ]
+    },
+    {
+     "code": "OFF-08",
+     "title": "Days of the week",
+     "steps": [
+      "Edit 'F - Milk 2+1': tick only a day that isn't today. Bill 3 milk."
+     ],
+     "expected": "No milk offer today. The list shows the days.",
+     "tags": [
+      "Admin"
+     ]
+    },
+    {
+     "code": "OFF-09",
+     "title": "Mistakes are explained",
+     "steps": [
+      "Try a Sale price above the item's normal price. Try a combo price above the items' total. Try % off without items or category."
+     ],
+     "expected": "Each is refused with a clear message, and nothing is saved.",
+     "tags": [
+      "Admin"
+     ]
+    },
+    {
+     "code": "OFF-10",
+     "title": "Staff without discount rights still get offers",
+     "steps": [
+      "Sign in as uat_calicut (no price/discount rights). Bill Apple at Calicut while an Apple offer runs there."
+     ],
+     "expected": "The offer applies by itself, though the staff can't type a discount.",
+     "tags": [
+      "Admin"
+     ]
+    },
+    {
+     "code": "OFF-11",
+     "title": "Offers on the receipt and invoice",
+     "steps": [
+      "Save a bill with two offers. Print the receipt and open the A4 invoice."
+     ],
+     "expected": "Each offer is printed under its item ('Offer: … -₹…'), the bill offer above the total, and 'You saved Rs…' at the bottom.",
+     "tags": [
+      "Admin",
+      "Printer"
+     ]
+    },
+    {
+     "code": "OFF-12",
+     "title": "Return on an offer bill",
+     "steps": [
+      "Return 1 milk from the 3-milk (2+1) bill."
+     ],
+     "expected": "The refund is what the customer actually paid for one (a third of ₹56), not the shelf price.",
+     "tags": [
+      "Admin"
+     ]
+    },
+    {
+     "code": "OFF-13",
+     "title": "Given away, and switch off",
+     "steps": [
+      "Sales → Offers. Look at Given away. Switch off every 'F - ' offer."
+     ],
+     "expected": "Given away shows the money and number of bills per offer. Switched-off offers say Off and no longer apply at billing.",
+     "tags": [
+      "Admin"
+     ]
+    }
+   ]
+  },
+  {
+   "key": "BIL",
+   "name": "Billing counter",
+   "owner": "Fathima",
+   "after": "SETUP",
+   "tests": [
+    {
+     "code": "BIL-01",
+     "title": "Weighing scale sticker",
+     "steps": [
+      "On uat_calicut open Billing (F1). Type this scale sticker number in the scan box and press Enter: 2100101012501"
+     ],
+     "expected": "Apple Shimla is added with 1.250 kg and amount = 1.250 × today's rate. The line says 'weighed 1.250 kg'.",
+     "tags": [
+      "Scanner"
+     ]
+    },
+    {
+     "code": "BIL-02",
+     "title": "More stickers, each its own line",
+     "steps": [
+      "Scan 2100202020009 (Onion 2 kg) and 2100201007506 (Tomato 750 g). Scan 2100202020009 again."
+     ],
+     "expected": "Each sticker is its own line with its weight, even the same item twice.",
+     "tags": [
+      "Scanner"
+     ]
+    },
+    {
+     "code": "BIL-03",
+     "title": "Unknown scale code",
+     "steps": [
+      "Scan 2100199010007."
+     ],
+     "expected": "A clear 'no item' message. Nothing is added.",
+     "tags": [
+      "Scanner"
+     ]
+    },
+    {
+     "code": "BIL-04",
+     "title": "Packed items by barcode and name",
+     "steps": [
+      "Scan Milma Milk 500ml's barcode (2000000000510). Then type 'curd' and pick Curd 400g."
+     ],
+     "expected": "Both added at today's price. Scanning the same packed item again adds 1 to its quantity.",
+     "tags": []
+    },
+    {
+     "code": "BIL-05",
+     "title": "Cash and change",
+     "steps": [
+      "Enter cash received more than the total. Save & print (F9)."
+     ],
+     "expected": "'Change to give' shows the right amount. The bill saves and the 'Bill saved' box opens.",
+     "tags": []
+    },
+    {
+     "code": "BIL-06",
+     "title": "Split payment",
+     "steps": [
+      "New bill. Pay part cash, press Split, rest UPI. Save."
+     ],
+     "expected": "Saved with both payments. The receipt shows both.",
+     "tags": []
+    },
+    {
+     "code": "BIL-07",
+     "title": "Walk-in can't take credit",
+     "steps": [
+      "New bill. Leave the customer empty. Enter less cash than the total. Save."
+     ],
+     "expected": "Refused: 'Select a customer to give credit'.",
+     "tags": []
+    },
+    {
+     "code": "BIL-08",
+     "title": "Credit bill for a customer",
+     "steps": [
+      "Type the phone of 'F - Customer' (make one: name and 10-digit phone, Save as customer ticked). Pay less than the total. Save."
+     ],
+     "expected": "Saved as partly paid. The customer's page shows what they owe.",
+     "tags": []
+    },
+    {
+     "code": "BIL-09",
+     "title": "Returning customer found by phone",
+     "steps": [
+      "New bill. Type F - Customer's phone in the Phone box (not the search)."
+     ],
+     "expected": "A green box says they're already a customer, with their bills and dues, and a Use button.",
+     "tags": []
+    },
+    {
+     "code": "BIL-10",
+     "title": "Pause a bill, serve the next customer",
+     "steps": [
+      "Add 2 items. Press Pause (F8). Make a quick second bill. Then tap the paused bill."
+     ],
+     "expected": "The paused bill comes back with its items. Another counter at Calicut sees it; Kochi doesn't.",
+     "tags": []
+    },
+    {
+     "code": "BIL-11",
+     "title": "Not enough stock at this branch",
+     "steps": [
+      "At Calicut, type a quantity bigger than Calicut's stock of an item. Save."
+     ],
+     "expected": "Refused: 'Only … of … in stock at Calicut.'",
+     "tags": []
+    },
+    {
+     "code": "BIL-12",
+     "title": "Thermal receipt",
+     "steps": [
+      "Save a bill. Print the receipt."
+     ],
+     "expected": "Shop name, bill number, items with weights, totals, payment, and a barcode at the bottom.",
+     "tags": [
+      "Printer"
+     ]
+    },
+    {
+     "code": "BIL-13",
+     "title": "A4 invoice",
+     "steps": [
+      "From the Bill saved box, open A4 invoice."
+     ],
+     "expected": "A proper tax invoice with GSTIN, HSN, and totals.",
+     "tags": [
+      "Printer"
+     ]
+    },
+    {
+     "code": "BIL-14",
+     "title": "Coimbatore bill (other state)",
+     "steps": [
+      "Sign in as uat_cbe. Make a bill. Open its A4 invoice."
+     ],
+     "expected": "Number INV-CBE/26-27/…, and the invoice shows Coimbatore's own GSTIN (33…), not the Kerala one.",
+     "tags": []
+    },
+    {
+     "code": "BIL-15",
+     "title": "Share on WhatsApp",
+     "steps": [
+      "Save a bill with a customer phone. Press Send bill on WhatsApp."
+     ],
+     "expected": "WhatsApp opens with a message and a link. The link opens the bill on a phone without signing in.",
+     "tags": [
+      "Phone"
+     ]
+    },
+    {
+     "code": "BIL-16",
+     "title": "Find a bill",
+     "steps": [
+      "Search a bill number in the top search box. Scan a printed receipt's barcode into the search box."
+     ],
+     "expected": "Both open the bill.",
+     "tags": [
+      "Scanner",
+      "Printer"
+     ]
+    },
+    {
+     "code": "BIL-17",
+     "title": "Cancel a bill (admin)",
+     "steps": [
+      "On uat_admin2, open a Calicut bill → Cancel."
+     ],
+     "expected": "Status Cancelled. Its stock goes back to Calicut (not another branch).",
+     "tags": [
+      "Admin"
+     ]
+    },
+    {
+     "code": "BIL-18",
+     "title": "Bill on a phone",
+     "steps": [
+      "Open Billing on your phone and make a bill using the camera to scan."
+     ],
+     "expected": "The screen fits the phone, camera scanning adds the item, and the bill saves.",
+     "tags": [
+      "Phone"
+     ]
+    }
+   ]
+  },
+  {
+   "key": "RET",
+   "name": "Returns & customers",
+   "owner": "Fathima",
+   "after": "SETUP",
+   "tests": [
+    {
+     "code": "RET-01",
+     "title": "Return with cash refund",
+     "steps": [
+      "Open a Calicut bill → Return. Return one item, refund Cash."
+     ],
+     "expected": "A credit note is made. The item goes back into Calicut's stock. Calicut's cash goes down by the refund.",
+     "tags": []
+    },
+    {
+     "code": "RET-02",
+     "title": "Return to the customer's account",
+     "steps": [
+      "Return an item from F - Customer's credit bill, refund 'Adjust in customer account'."
+     ],
+     "expected": "What they owe goes down by the return.",
+     "tags": []
+    },
+    {
+     "code": "RET-03",
+     "title": "Credit note PDF",
+     "steps": [
+      "Open the return → PDF."
+     ],
+     "expected": "A credit note with the bill number and items.",
+     "tags": [
+      "Printer"
+     ]
+    },
+    {
+     "code": "RET-04",
+     "title": "Bill with a return can't be cancelled",
+     "steps": [
+      "On uat_admin2, try to cancel the bill from RET-01."
+     ],
+     "expected": "Refused, with a message naming the return.",
+     "tags": [
+      "Admin"
+     ]
+    },
+    {
+     "code": "CUS-01",
+     "title": "Customers are shared by every branch",
+     "steps": [
+      "On uat_cbe, search F - Customer at Coimbatore billing."
+     ],
+     "expected": "The same customer is found at Coimbatore, with their dues.",
+     "tags": []
+    },
+    {
+     "code": "CUS-02",
+     "title": "Collect a payment",
+     "steps": [
+      "Sales → Payments received → add, for F - Customer."
+     ],
+     "expected": "What they owe goes down. The payment shows in that branch's cash.",
+     "tags": []
+    }
+   ]
+  },
+  {
+   "key": "TRF",
+   "name": "Stock transfers",
+   "owner": "Mithra",
+   "after": "SETUP",
+   "tests": [
+    {
+     "code": "TRF-01",
+     "title": "Send stock to another branch",
+     "steps": [
+      "On uat_admin2, pick Calicut. Stock transfers → Send stock (or F7 on the home screen). To Kochi. Add Tomato 5 and Onion 2.5. Note 'M - test'. Send."
+     ],
+     "expected": "TRF number made. Status 'On the way'. Calicut's Tomato and Onion go down at once; Kochi's don't change yet.",
+     "tags": [
+      "Admin"
+     ]
+    },
+    {
+     "code": "TRF-02",
+     "title": "Kochi sees it coming",
+     "steps": [
+      "Sign in as uat_kochi. Look at the home screen and the Stock transfers menu."
+     ],
+     "expected": "The transfer shows as 'to receive', with a count on the menu.",
+     "tags": []
+    },
+    {
+     "code": "TRF-03",
+     "title": "Receive in full",
+     "steps": [
+      "Open it, leave the quantities, press Receive."
+     ],
+     "expected": "Status Received. Kochi's stock goes up by 5 and 2.5.",
+     "tags": []
+    },
+    {
+     "code": "TRF-04",
+     "title": "Receive with something short",
+     "steps": [
+      "On uat_admin2 at Calicut, send another (Potato 10) to Kochi. At Kochi, enter 8 received and press Receive without a note. Then add a note 'two damaged'."
+     ],
+     "expected": "Without a note it is refused. With the note it saves: Kochi gets 8, the transfer shows 'short 2'.",
+     "tags": []
+    },
+    {
+     "code": "TRF-05",
+     "title": "Cancel while on the way",
+     "steps": [
+      "On uat_admin2 at Calicut, send Banana Robusta 3 to Coimbatore. Before Coimbatore receives it, open it and Cancel."
+     ],
+     "expected": "Status Cancelled. The 3 go back to Calicut.",
+     "tags": []
+    },
+    {
+     "code": "TRF-06",
+     "title": "Mistakes are refused",
+     "steps": [
+      "Try to send more than Calicut has. Try to send to Calicut itself."
+     ],
+     "expected": "Each is refused with a clear message.",
+     "tags": []
+    },
+    {
+     "code": "TRF-07",
+     "title": "Delivery challan",
+     "steps": [
+      "Open a transfer → Delivery challan."
+     ],
+     "expected": "PDF with from/to branches, items and quantities, marked as stock moved between branches, not a sale.",
+     "tags": [
+      "Printer"
+     ]
+    },
+    {
+     "code": "TRF-08",
+     "title": "Only the receiving branch receives",
+     "steps": [
+      "As uat_kochi, open a transfer going to Coimbatore (send one from Calicut on uat_admin2 first)."
+     ],
+     "expected": "Kochi can't see or receive Coimbatore's transfer.",
+     "tags": []
+    }
+   ]
+  },
+  {
+   "key": "STK",
+   "name": "Products, stock & wastage",
+   "owner": "Mithra",
+   "after": "SETUP",
+   "tests": [
+    {
+     "code": "STK-01",
+     "title": "Add a loose item with a scale code",
+     "steps": [
+      "Stock → Products → Add product. 'M - Papaya', category Fruits, unit kg, scale code 130, prices. Opening stock 10. Save."
+     ],
+     "expected": "Saved. The form also has warranty and 'Has an expiry date' (leave them off for papaya). Opening stock goes to the branch you're in.",
+     "tags": []
+    },
+    {
+     "code": "STK-02",
+     "title": "Scale code checks",
+     "steps": [
+      "Try scale code 1234567 (too long), 'ab' (letters), and 101 (Apple's)."
+     ],
+     "expected": "Each refused: 5-digit codes only, digits only, another item has it.",
+     "tags": []
+    },
+    {
+     "code": "STK-03",
+     "title": "Sticker for the new item",
+     "steps": [
+      "At billing, scan 2100130009008 (900 g of item 130)."
+     ],
+     "expected": "M - Papaya is added with 0.900 kg.",
+     "tags": [
+      "Scanner"
+     ]
+    },
+    {
+     "code": "STK-04",
+     "title": "Stock per branch",
+     "steps": [
+      "Open M - Papaya. Pick All branches at the top."
+     ],
+     "expected": "Its stock shows per branch (10 at the branch where it was added, 0 elsewhere).",
+     "tags": []
+    },
+    {
+     "code": "STK-05",
+     "title": "Stock adjustment at one branch",
+     "steps": [
+      "Pick Kochi. On M - Papaya, Adjust stock: +3, reason 'count'."
+     ],
+     "expected": "Only Kochi's stock changes. It is listed in Stock movements for Kochi.",
+     "tags": []
+    },
+    {
+     "code": "STK-06",
+     "title": "Record wastage",
+     "steps": [
+      "Pick Kochi. Stock → Wastage → Record wastage. Tomato 1.5 spoiled, Onion 0.5 damaged. Write off."
+     ],
+     "expected": "Saved with a WST number. Kochi's stock goes down. The wastage page shows loss by reason (Spoiled / rotten, Damaged) and top wasted items.",
+     "tags": []
+    },
+    {
+     "code": "STK-07",
+     "title": "Wastage needs a quantity",
+     "steps": [
+      "Record wastage with an item but no quantity."
+     ],
+     "expected": "Refused: add at least one item with a quantity.",
+     "tags": []
+    },
+    {
+     "code": "STK-08",
+     "title": "Stock movements",
+     "steps": [
+      "Stock → Stock movements. Filter by item and branch."
+     ],
+     "expected": "Purchases, sales, transfers, wastage and adjustments are listed with branch and reference.",
+     "tags": []
+    },
+    {
+     "code": "STK-09",
+     "title": "Barcode labels",
+     "steps": [
+      "Stock → Barcode labels. Print labels for Curd 400g and Dates 500g."
+     ],
+     "expected": "A sheet of labels with name, price and a barcode that scans.",
+     "tags": [
+      "Printer",
+      "Scanner"
+     ]
+    },
+    {
+     "code": "STK-10",
+     "title": "Import from Excel",
+     "steps": [
+      "Stock → Import from Excel. Download the template, add 2 rows starting 'M - ', upload."
+     ],
+     "expected": "The 2 items are added; errors (if any) say which row.",
+     "tags": [
+      "Admin"
+     ]
+    },
+    {
+     "code": "STK-11",
+     "title": "Categories & brands",
+     "steps": [
+      "Add category 'M - Test', then delete it."
+     ],
+     "expected": "Added and deleted. A category with items can't be deleted.",
+     "tags": []
+    }
+   ]
+  },
+  {
+   "key": "PUR",
+   "name": "Purchases & suppliers",
+   "owner": "Mithra",
+   "after": "SETUP",
+   "tests": [
+    {
+     "code": "PUR-01",
+     "title": "Purchase at Kochi",
+     "steps": [
+      "As uat_kochi: Purchases → New purchase. Supplier Calicut Wholesale Fruit Market, bill M-001. Add Orange Nagpur 20. Paid now 0. Save."
+     ],
+     "expected": "Number with KCH. Only Kochi's Orange stock goes up. Supplier owes shows the amount.",
+     "tags": []
+    },
+    {
+     "code": "PUR-02",
+     "title": "Can't pay more than the bill",
+     "steps": [
+      "New purchase with Paid now more than the bill total."
+     ],
+     "expected": "Refused with a clear message.",
+     "tags": []
+    },
+    {
+     "code": "PUR-03",
+     "title": "Supplier payment and statement",
+     "steps": [
+      "Purchases → Supplier payments → add, pay part of M-001 by cash. Open the supplier."
+     ],
+     "expected": "The supplier's balance goes down. Kochi's cash goes down. The supplier page lists bills and payments from all branches.",
+     "tags": []
+    },
+    {
+     "code": "PUR-04",
+     "title": "Purchase order, then receive it",
+     "steps": [
+      "Purchases → Purchase orders → New: Potato 30. Save. Open it → Receive goods, and save the purchase."
+     ],
+     "expected": "The purchase is made from the order, and the order shows Received.",
+     "tags": []
+    },
+    {
+     "code": "PUR-05",
+     "title": "Purchase return",
+     "steps": [
+      "Open PUR M-001 → Return 2 Orange."
+     ],
+     "expected": "Kochi's Orange stock goes down by 2; the supplier balance goes down.",
+     "tags": []
+    },
+    {
+     "code": "PUR-06",
+     "title": "Supplier credit / debit note",
+     "steps": [
+      "Purchases → Supplier credit/debit notes → new credit note ₹100 'rate difference'."
+     ],
+     "expected": "Saved; the supplier's balance changes by ₹100. No stock moves.",
+     "tags": []
+    },
+    {
+     "code": "PUR-07",
+     "title": "Attach the supplier's bill",
+     "steps": [
+      "Open a purchase → attach a photo or PDF."
+     ],
+     "expected": "The file opens from the purchase page.",
+     "tags": [
+      "Phone"
+     ]
+    }
+   ]
+  },
+  {
+   "key": "FIN",
+   "name": "Daily accounts per branch",
+   "owner": "Mithra",
+   "after": "SETUP",
+   "tests": [
+    {
+     "code": "FIN-01",
+     "title": "Expense at one branch",
+     "steps": [
+      "As uat_kochi: Accounts → Expenses → add 'M - tea' ₹50 cash."
+     ],
+     "expected": "Kochi's cash goes down by 50. Calicut's doesn't.",
+     "tags": []
+    },
+    {
+     "code": "FIN-02",
+     "title": "Other income",
+     "steps": [
+      "Accounts → Other income → add ₹100 cash."
+     ],
+     "expected": "Kochi's cash goes up by 100.",
+     "tags": []
+    },
+    {
+     "code": "FIN-03",
+     "title": "Cash to bank",
+     "steps": [
+      "Accounts → Cash ⇄ Bank: move ₹200 cash to bank."
+     ],
+     "expected": "Kochi cash −200, bank +200.",
+     "tags": []
+    },
+    {
+     "code": "FIN-04",
+     "title": "Employee and salary",
+     "steps": [
+      "On uat_admin2 at Kochi: Accounts → Employees → add 'M - Helper'. Pay a salary. Print the slip."
+     ],
+     "expected": "The salary is paid from Kochi's cash. The slip PDF opens.",
+     "tags": [
+      "Admin",
+      "Printer"
+     ]
+    },
+    {
+     "code": "FIN-05",
+     "title": "Daily ledger per branch and for all",
+     "steps": [
+      "Accounts → Daily ledger at Kochi. Then pick All branches."
+     ],
+     "expected": "Kochi: only Kochi's sales, payments and expenses. All branches: everything added up.",
+     "tags": []
+    },
+    {
+     "code": "FIN-06",
+     "title": "Cash book",
+     "steps": [
+      "Accounts → Cash book for this month. Download PDF."
+     ],
+     "expected": "Opening balance, every cash entry, closing balance for the branch.",
+     "tags": [
+      "Printer"
+     ]
+    },
+    {
+     "code": "FIN-07",
+     "title": "Day close (last day only)",
+     "steps": [
+      "On the last day, at each branch: Daily ledger → count the cash → Close the day."
+     ],
+     "expected": "Expected vs counted cash and the difference are saved per branch.",
+     "tags": []
+    }
+   ]
+  },
+  {
+   "key": "WAR",
+   "name": "Warranty & repairs",
+   "owner": "Sana",
+   "after": "SETUP",
+   "tests": [
+    {
+     "code": "WAR-01",
+     "title": "Item with warranty",
+     "steps": [
+      "On uat_admin, pick Calicut. Stock → Products → Add product: 'S - Mixer 750W', unit pcs, price 3200, cost 2600, GST 18, warranty 24 months, type Warranty (repair). Opening stock 3. Save.",
+      "Add 'S - Steam iron', price 1500, warranty 12 months, type Guarantee (replacement), opening stock 2."
+     ],
+     "expected": "Both saved. The item page shows 2 years warranty / 1 year guarantee.",
+     "tags": [
+      "Admin"
+     ]
+    },
+    {
+     "code": "WAR-02",
+     "title": "Warranty needs a customer",
+     "steps": [
+      "Billing at Calicut. Add S - Mixer 750W. Leave the customer empty. Save."
+     ],
+     "expected": "Refused: 'This bill has an item with warranty: enter the customer name and phone for the warranty card.'",
+     "tags": [
+      "Admin"
+     ]
+    },
+    {
+     "code": "WAR-03",
+     "title": "Warranty on the bill",
+     "steps": [
+      "Enter a name 'S - Customer' and a 10-digit phone. In the IMEI / serial no. box beside the mixer, type MX123. Save. Print the receipt, open the A4 invoice."
+     ],
+     "expected": "Receipt and invoice say 'Warranty 2 years' with the valid-till date and serial MX123.",
+     "tags": [
+      "Admin",
+      "Printer"
+     ]
+    },
+    {
+     "code": "WAR-04",
+     "title": "Fruit and groceries don't get warranty",
+     "steps": [
+      "Make a bill with Apple (scale sticker) and Milma Milk only, no customer. Save."
+     ],
+     "expected": "Saves without asking for a customer; nothing about warranty on the receipt.",
+     "tags": []
+    },
+    {
+     "code": "WAR-05",
+     "title": "Check cover",
+     "steps": [
+      "Warranty → Check warranty: search by S - Customer's phone, then the bill number, then 'mixer'."
+     ],
+     "expected": "The mixer is found each time with 'Covered · N days left', the bill number and valid-till date. Items without warranty aren't listed.",
+     "tags": [
+      "Admin"
+     ]
+    },
+    {
+     "code": "WAR-06",
+     "title": "Register a claim and print the slip",
+     "steps": [
+      "Click Register claim on the mixer. Check the filled-in fields. Enter complaint 'not starting', condition, promised date. Save. Print the slip."
+     ],
+     "expected": "Item, customer, bill date, cover and valid-till are filled in. The claim number is like WC/26-27/0001 (Calicut). The slip prints with claim number, complaint and 'Ready by' date.",
+     "tags": [
+      "Admin",
+      "Printer"
+     ]
+    },
+    {
+     "code": "WAR-07",
+     "title": "Track the repair",
+     "steps": [
+      "On the claim: 'Sent to service centre', service centre 'S - Service', docket 12345. Save. Then 'Ready for customer'. Then 'Returned to customer' with result 'Repaired'."
+     ],
+     "expected": "Each step saves with today's date. Notes show the date and your name. The timeline reads correctly.",
+     "tags": [
+      "Admin"
+     ]
+    },
+    {
+     "code": "WAR-08",
+     "title": "Overdue claims",
+     "steps": [
+      "Register a claim for the steam iron (sell one first) with a promised date of yesterday. Leave it open. Open Claims & repairs → Overdue."
+     ],
+     "expected": "It is counted under 'Past promised date' and listed with the date in red.",
+     "tags": [
+      "Admin"
+     ]
+    },
+    {
+     "code": "WAR-09",
+     "title": "Claim without a bill (paid repair)",
+     "steps": [
+      "Check warranty → Claim without a bill: an item bought elsewhere, untick 'Within warranty', charge ₹300. Save."
+     ],
+     "expected": "Saved. The slip says 'Not covered - chargeable'.",
+     "tags": [
+      "Admin"
+     ]
+    },
+    {
+     "code": "WAR-10",
+     "title": "Claims per branch",
+     "steps": [
+      "Pick Kochi at the top and open Claims & repairs. Then pick All branches."
+     ],
+     "expected": "Kochi shows none of the Calicut claims. All branches shows them. Search by serial MX123 and docket 12345 finds the claim.",
+     "tags": [
+      "Admin"
+     ]
+    }
+   ]
+  },
+  {
+   "key": "EXP",
+   "name": "Batches & expiry dates",
+   "owner": "Mithra",
+   "after": "SETUP",
+   "tests": [
+    {
+     "code": "EXP-01",
+     "title": "Item with an expiry date",
+     "steps": [
+      "On uat_kochi: Stock → Products → Add product 'M - Butter 100g', unit pcs, price 58, cost 50, GST 12. Tick 'Has an expiry date'. No opening stock. Save."
+     ],
+     "expected": "Saved. The item page says it has an expiry date.",
+     "tags": []
+    },
+    {
+     "code": "EXP-02",
+     "title": "Expiry date is required when receiving",
+     "steps": [
+      "Purchases → New purchase at Kochi, supplier Malabar Dairy Agencies, bill M-B1. Add M - Butter 100g × 10. Leave the expiry date empty. Save."
+     ],
+     "expected": "Refused: 'Enter the expiry date for M - Butter 100g.' The empty date box is red.",
+     "tags": []
+    },
+    {
+     "code": "EXP-03",
+     "title": "Receive two batches",
+     "steps": [
+      "Same purchase: batch 'B1', expiry 10 days from today. Save.",
+      "New purchase, bill M-B2: M - Butter 100g × 10, batch 'B2', expiry 90 days from today. Save."
+     ],
+     "expected": "Both saved. The item page shows 20 in stock at Kochi in two batches.",
+     "tags": []
+    },
+    {
+     "code": "EXP-04",
+     "title": "Expiring soon",
+     "steps": [
+      "Stock → Expiry dates. Look at each tab: Expired, Expired or within 30 days, All batches."
+     ],
+     "expected": "B1 is under 'within 30 days' with its date, qty 10 and value at cost. B2 is only under All batches. Only Kochi's batches show at Kochi; All branches adds a Branch column.",
+     "tags": []
+    },
+    {
+     "code": "EXP-05",
+     "title": "Oldest is sold first",
+     "steps": [
+      "Billing at Kochi. Add M - Butter 100g × 12. Look at the line, then save. Open Expiry dates → All batches."
+     ],
+     "expected": "The line shows 'exp' with B1's date. After saving, B1 is gone (all 10 sold) and B2 has 8 left.",
+     "tags": []
+    },
+    {
+     "code": "EXP-06",
+     "title": "Expired stock",
+     "steps": [
+      "Receive 'M - Butter 100g' × 2, batch 'B0', expiry yesterday (purchase M-B0). Start a bill and add the butter."
+     ],
+     "expected": "Expiry dates → Expired lists B0. At billing the line shows 'EXPIRED' and the date in red, so the cashier notices.",
+     "tags": []
+    },
+    {
+     "code": "EXP-07",
+     "title": "Write off an expired batch",
+     "steps": [
+      "Expiry dates → Expired → Write off on B0. Then open Stock → Wastage."
+     ],
+     "expected": "B0 leaves the list. A WST wastage entry with reason Expired is made for 2 pcs at Kochi.",
+     "tags": []
+    },
+    {
+     "code": "EXP-08",
+     "title": "Write off needs the right branch",
+     "steps": [
+      "Pick All branches (on uat_admin2) and try Write off on a Kochi batch."
+     ],
+     "expected": "Refused: 'Switch to Kochi to write off its stock.'",
+     "tags": [
+      "Admin"
+     ]
+    },
+    {
+     "code": "EXP-09",
+     "title": "Return of a batch item",
+     "steps": [
+      "Return 1 butter from the EXP-05 bill."
+     ],
+     "expected": "The return is saved and the butter goes back into the batch it was last sold from (B2 now shows 9).",
+     "tags": []
+    },
+    {
+     "code": "EXP-10",
+     "title": "Transfer a batch item",
+     "steps": [
+      "On uat_admin2 at Kochi, send M - Butter 100g × 3 to Calicut. Receive it at Calicut."
+     ],
+     "expected": "Calicut gets 3, with the expiry date carried over (Expiry dates at Calicut shows them).",
+     "tags": [
+      "Admin"
+     ]
+    }
+   ]
+  },
+  {
+   "key": "GEN",
+   "name": "General checks",
+   "owner": "Everyone",
+   "after": "SETUP",
+   "tests": [
+    {
+     "code": "GEN-01",
+     "title": "Phone layout",
+     "steps": [
+      "Use the app on your phone: home, billing, a report."
+     ],
+     "expected": "Everything fits; menus open; nothing is cut off.",
+     "tags": [
+      "Phone"
+     ]
+    },
+    {
+     "code": "GEN-02",
+     "title": "Install as an app",
+     "steps": [
+      "On the phone, Add to home screen. Open it from there."
+     ],
+     "expected": "Opens like an app without the browser bar.",
+     "tags": [
+      "Phone"
+     ]
+    },
+    {
+     "code": "GEN-03",
+     "title": "Global search",
+     "steps": [
+      "Search an item, a customer, a bill number from the top box."
+     ],
+     "expected": "Each is found and opens.",
+     "tags": []
+    },
+    {
+     "code": "GEN-04",
+     "title": "Two branches at once",
+     "steps": [
+      "Fathima bills at Calicut while Mithra bills at Kochi at the same time."
+     ],
+     "expected": "Both save. Numbers don't clash. Each branch's stock goes down only for its own bill.",
+     "tags": []
+    },
+    {
+     "code": "GEN-05",
+     "title": "Backup (admin)",
+     "steps": [
+      "On uat_admin: your name → Backup → Download backup now."
+     ],
+     "expected": "A backup file downloads.",
+     "tags": [
+      "Admin"
+     ]
+    }
+   ]
+  },
+  {
+   "key": "REP",
+   "name": "Reports & GST (last day)",
+   "owner": "Sana",
+   "after": "SETUP",
+   "tests": [
+    {
+     "code": "REP-01",
+     "title": "Sales summary per branch",
+     "steps": [
+      "Reports → Sales summary for today, at Calicut, then Kochi, then All branches."
+     ],
+     "expected": "Each branch shows only its bills; All branches adds them up. Count the bills against Sales → Bills.",
+     "tags": [
+      "Admin"
+     ]
+    },
+    {
+     "code": "REP-02",
+     "title": "Branch comparison",
+     "steps": [
+      "Reports → Branch comparison for this month."
+     ],
+     "expected": "Each branch's sales, margin, expenses and net profit; totals match the other reports.",
+     "tags": [
+      "Admin"
+     ]
+    },
+    {
+     "code": "REP-03",
+     "title": "GST by registration",
+     "steps": [
+      "Reports → GST (monthly). Pick the GST registration 32 (Calicut + Kochi), then 33 (Coimbatore). Download GSTR-1 JSON for each."
+     ],
+     "expected": "Calicut and Kochi file one return together; Coimbatore files its own. Each JSON has the right GSTIN.",
+     "tags": [
+      "Admin"
+     ]
+    },
+    {
+     "code": "REP-04",
+     "title": "Manager can't download GSTR-1",
+     "steps": [
+      "As uat_kochi open GST (monthly)."
+     ],
+     "expected": "It shows Kochi's part only, and the GSTR-1 download isn't allowed.",
+     "tags": [
+      "Admin"
+     ]
+    },
+    {
+     "code": "REP-05",
+     "title": "Profit & loss",
+     "steps": [
+      "Reports → Profit & loss (FY), at a branch and All branches."
+     ],
+     "expected": "Sales, cost, expenses and wastage loss; net profit. Wastage from STK-06 is counted.",
+     "tags": [
+      "Admin"
+     ]
+    },
+    {
+     "code": "REP-06",
+     "title": "Stock report",
+     "steps": [
+      "Reports → Stock report, per branch and All."
+     ],
+     "expected": "Stock and stock value per branch add up to All.",
+     "tags": [
+      "Admin"
+     ]
+    },
+    {
+     "code": "REP-07",
+     "title": "Outstanding and expenses",
+     "steps": [
+      "Reports → Outstanding, Expense summary."
+     ],
+     "expected": "Customer dues and supplier dues per branch; expenses by category.",
+     "tags": [
+      "Admin"
+     ]
+    },
+    {
+     "code": "REP-08",
+     "title": "Downloads",
+     "steps": [
+      "Download one report as PDF and one as Excel."
+     ],
+     "expected": "Both open with the same figures as the screen.",
+     "tags": [
+      "Admin",
+      "Printer"
+     ]
+    }
+   ]
+  },
+  {
+   "key": "E2E",
+   "name": "Full shop day, three branches (together, last day)",
+   "owner": "Everyone",
+   "after": "SETUP",
+   "tests": [
+    {
+     "code": "E2E-01",
+     "title": "One complete day",
+     "steps": [
+      "Morning (Sana, uat_admin): update Today's prices for all branches.",
+      "Fathima at Calicut and Mithra at Kochi: 5 bills each with scale stickers and packed items; one with an offer, one on credit.",
+      "Calicut sends Kochi stock; Kochi receives it. Each branch records wastage and one expense.",
+      "Closing: day close at each branch. Sana checks Branch comparison and Sales summary for All branches.",
+      "Put back anything changed for testing (prices, offers switched off)."
+     ],
+     "expected": "Every bill, transfer and expense lands in the right branch. Each branch's day close matches its cash. All-branch reports add up the three.",
+     "tags": [
+      "Printer",
+      "Scanner",
+      "Phone"
+     ]
+    }
+   ]
+  }
+ ]
+}
