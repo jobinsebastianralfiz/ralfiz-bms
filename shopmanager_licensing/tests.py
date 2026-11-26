@@ -50,6 +50,14 @@ class ShopLicenceApiTests(TestCase):
         self.lic.refresh_from_db()
         self.assertEqual((self.lic.api_domain, self.lic.app_version, self.lic.total_checks), ('shop.4z.in', '1.0', 1))
 
+    def test_branch_limit_is_signed(self):
+        self.assertEqual(verify(self.call().json()['token'])['max_branches'], 1)  # one branch unless sold more
+        ShopLicense.objects.filter(pk=self.lic.pk).update(max_branches=3)
+        ShopLicense.objects.filter(pk=self.lic.pk).update(branch_fee=2000)
+        p = verify(self.call('check').json()['token'])
+        self.assertEqual((p['max_branches'], p['yearly_fee'], p['branch_fee'], p['total_fee']),
+                         (3, '7500.00', '2000.00', '11500.00'))  # 7,500 + 2 extra branches x 2,000
+
     def test_other_server_rejected(self):
         self.call()
         r = self.call('check', domain='shop.someone-else.com')
@@ -124,6 +132,21 @@ class ShopLicenceDashboardTests(TestCase):
         lic.refresh_from_db()
         self.assertEqual((lic.status, lic.status_reason), ('suspended', 'Payment pending'))
         self.assertEqual(lic.logs.filter(event__in=['create', 'renew', 'suspend']).count(), 3)
+
+    def test_set_branches_allowed(self):
+        lic = ShopLicense.objects.create(shop_name='Two Branch Shop')
+        self.assertEqual(lic.max_branches, 1)
+        self.client.post(reverse('shop_license_update', args=[lic.pk]), {
+            'action': 'update_details', 'shop_name': lic.shop_name, 'plan': lic.plan, 'max_branches': '3',
+            'branch_fee': '2500'})
+        lic.refresh_from_db()
+        self.assertEqual((lic.max_branches, lic.branch_fee, lic.total_yearly_fee), (3, 2500, 10500))
+        self.assertContains(self.client.get(reverse('shop_license_detail', args=[lic.pk])), '2 × ₹2500')
+        self.assertEqual(lic.logs.get(event='update').details['max_branches'], '1 -> 3')
+        self.client.post(reverse('shop_license_update', args=[lic.pk]), {
+            'action': 'update_details', 'shop_name': lic.shop_name, 'plan': lic.plan, 'max_branches': '0'})
+        lic.refresh_from_db()
+        self.assertEqual(lic.max_branches, 1)  # never below one
 
     def test_login_required(self):
         self.client.logout()

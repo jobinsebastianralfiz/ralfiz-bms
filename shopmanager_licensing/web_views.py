@@ -87,6 +87,8 @@ def shop_license_create(request):
             api_domain=ShopLicense.normalize_domain(p.get('api_domain', '')),
             plan=plan,
             yearly_fee=_money(p.get('yearly_fee'), Decimal(ShopLicense.PLAN_FEES.get(plan, 5500))),
+            max_branches=max(_int(p.get('max_branches'), 1), 1),
+            branch_fee=_money(p.get('branch_fee'), Decimal('0')),
             valid_from=_date(p.get('valid_from'), timezone.localdate()),
             valid_until=_date(p.get('valid_until')),
             on_expiry=_choice(p.get('on_expiry'), ShopLicense.ON_EXPIRY_CHOICES, 'read_only'),
@@ -100,7 +102,8 @@ def shop_license_create(request):
             messages.error(request, 'The end date is before the start date.')
         else:
             lic.save()
-            _log(lic, 'create', request.user.username, plan=lic.plan, valid_until=lic.valid_until.isoformat())
+            _log(lic, 'create', request.user.username, plan=lic.plan, valid_until=lic.valid_until.isoformat(),
+                 max_branches=lic.max_branches)
             messages.success(request, f'Licence created for {lic.shop_name}: {lic.license_key}')
             return redirect('shop_license_detail', pk=lic.pk)
     return render(request, 'shopmanager/license_form.html', {
@@ -141,6 +144,9 @@ def shop_license_update(request, pk):
             lic.client = Client.objects.filter(id=p.get('client')).first() if p.get('client') else None
         lic.plan = _choice(p.get('plan'), ShopLicense.PLAN_CHOICES, lic.plan)
         lic.yearly_fee = _money(p.get('yearly_fee'), lic.yearly_fee)
+        old_branches = lic.max_branches
+        lic.max_branches = max(_int(p.get('max_branches'), lic.max_branches), 1)
+        lic.branch_fee = _money(p.get('branch_fee'), lic.branch_fee)
         lic.on_expiry = _choice(p.get('on_expiry'), ShopLicense.ON_EXPIRY_CHOICES, lic.on_expiry)
         lic.warn_days = _int(p.get('warn_days'), lic.warn_days)
         lic.grace_period_days = _int(p.get('grace_period_days'), lic.grace_period_days)
@@ -156,7 +162,8 @@ def shop_license_update(request, pk):
         if lic.status == 'expired' and new_until >= timezone.localdate():
             lic.status = 'active'
         lic.save()
-        _log(lic, 'update', who, details_updated=True, valid_until=lic.valid_until.isoformat())
+        extra = {'max_branches': f'{old_branches} -> {lic.max_branches}'} if old_branches != lic.max_branches else {}
+        _log(lic, 'update', who, details_updated=True, valid_until=lic.valid_until.isoformat(), **extra)
         messages.success(request, 'Licence updated. The shop picks this up within 15 minutes, or at once with "Check now" on its licence page.')
 
     elif action == 'renew':

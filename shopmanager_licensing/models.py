@@ -67,6 +67,13 @@ class ShopLicense(models.Model):
     # Plan & validity
     plan = models.CharField(max_length=20, choices=PLAN_CHOICES, default='software')
     yearly_fee = models.DecimalField(max_digits=10, decimal_places=2, default=5500)
+    max_branches = models.PositiveIntegerField(
+        'Branches allowed', default=1,
+        help_text='How many active branches the shop may run (multi-branch Shop Manager). Single-branch '
+                  'installs ignore it.')
+    branch_fee = models.DecimalField(
+        'Fee per extra branch (yearly)', max_digits=10, decimal_places=2, default=0,
+        help_text='Charged for each branch after the first, on top of the yearly fee.')
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='active', db_index=True)
     status_reason = models.CharField(max_length=255, blank=True, help_text='Shown to the shop when suspended')
     valid_from = models.DateField(default=_today)
@@ -108,6 +115,15 @@ class ShopLicense(models.Model):
             key = 'RS-' + '-'.join(secrets.token_hex(2).upper() for _ in range(3))
             if not ShopLicense.objects.filter(license_key=key).exists():
                 return key
+
+    @property
+    def extra_branches(self):
+        return max(self.max_branches - 1, 0)
+
+    @property
+    def total_yearly_fee(self):
+        """Plan fee plus the extra branches: what the shop pays each year."""
+        return self.yearly_fee + self.branch_fee * self.extra_branches
 
     # ── State ────────────────────────────────────────────
     def days_remaining(self, on=None):
