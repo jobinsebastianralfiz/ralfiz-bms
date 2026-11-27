@@ -200,6 +200,8 @@ def _base_context(request, active_nav=''):
         'photo_url': photo_url(employee),
         'asset_v': ASSET_V,
         'has_projects': staff_projects(employee)[0].exists(),
+        # Interns always see Assessments; employees once HR gives them a test.
+        'has_assessments': is_intern(employee) or InternAssessment.objects.filter(employee=employee).exists(),
     }
 
 

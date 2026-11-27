@@ -17,9 +17,15 @@ from .enrolment_web_views import enrolment_admin
 MAX_UPLOAD_BYTES = 2 * 1024 * 1024
 
 
-def _interns():
-    return (Employee.objects.select_related('user')
-            .filter(status='active', employment_type='intern').order_by('user__first_name'))
+def _people():
+    """Everyone a test can be given to: active interns and employees (not
+    owners or partners)."""
+    return (Employee.objects.select_related('user').filter(status='active')
+            .exclude(role__in=('owner', 'partner')).order_by('user__first_name'))
+
+
+def _is_intern(e):
+    return e.employment_type == 'intern' or e.role == 'intern'
 
 
 def _read_upload(request):
@@ -95,7 +101,8 @@ def mcq_test_detail(request, pk):
     return render(request, 'hr/mcq_test_detail.html', {
         'test': test, 'given': given, 'done_count': len(done),
         'avg': round(sum(a.percentage or 0 for a in done) / len(done), 1) if done else None,
-        'available': [e for e in _interns() if e.pk not in have],
+        'available_interns': [e for e in _people() if e.pk not in have and _is_intern(e)],
+        'available_staff': [e for e in _people() if e.pk not in have and not _is_intern(e)],
         'questions': questions, 'locked': bool(done),
     })
 
@@ -105,15 +112,15 @@ def mcq_test_detail(request, pk):
 def mcq_test_assign(request, pk):
     test = get_object_or_404(McqTest, pk=pk)
     ids = request.POST.getlist('employees')
-    people = list(_interns().filter(pk__in=ids)) if ids else []
+    people = list(_people().filter(pk__in=ids)) if ids else []
     if not people:
-        messages.error(request, 'Pick at least one intern.')
+        messages.error(request, 'Pick at least one person.')
         return redirect('mcq_test_detail', pk=pk)
     if not test.is_active:
         test.is_active = True
         test.save(update_fields=['is_active', 'updated_at'])
     created = mcq.assign(test, people, by=request.user, due_date=parse_date(request.POST.get('due_date') or ''))
-    messages.success(request, f'Test given to {len(created)} intern{"s" if len(created) != 1 else ""}. '
+    messages.success(request, f'Test given to {len(created)} {"person" if len(created) == 1 else "people"}. '
                               f'It is on their staff dashboard now.')
     return redirect('mcq_test_detail', pk=pk)
 

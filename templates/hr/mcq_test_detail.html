@@ -16,17 +16,27 @@
 <div class="row">
   <div class="col-12 col-lg-7" style="padding: 0.75rem;">
     <div class="card mb-4">
-      <div class="card-header"><h3 class="card-title"><i class="fas fa-user-graduate me-2 text-primary"></i> Give to interns</h3></div>
+      <div class="card-header"><h3 class="card-title"><i class="fas fa-user-graduate me-2 text-primary"></i> Give to interns &amp; employees</h3></div>
       <div class="card-body">
-        {% if available %}
+        {% if available_interns or available_staff %}
         <form method="post" action="{% url 'mcq_test_assign' test.pk %}">
           {% csrf_token %}
-          <label class="small d-block mb-2"><input type="checkbox" id="mqAll"> <b>All interns</b> ({{ available|length }})</label>
-          <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:6px;max-height:260px;overflow:auto" class="mb-3">
-            {% for e in available %}
-            <label class="small"><input type="checkbox" name="employees" value="{{ e.pk }}" class="mq-pick"> {{ e.full_name }} <span class="text-muted">{{ e.employee_id }}</span></label>
+          {% if available_interns %}
+          <label class="small d-block mb-2"><input type="checkbox" class="mq-all" data-group="intern"> <b>All interns</b> ({{ available_interns|length }})</label>
+          <div class="mq-people mb-3">
+            {% for e in available_interns %}
+            <label class="small"><input type="checkbox" name="employees" value="{{ e.pk }}" class="mq-pick" data-group="intern"> {{ e.full_name }} <span class="text-muted">{{ e.employee_id }}</span></label>
             {% endfor %}
           </div>
+          {% endif %}
+          {% if available_staff %}
+          <label class="small d-block mb-2"><input type="checkbox" class="mq-all" data-group="staff"> <b>All employees</b> ({{ available_staff|length }})</label>
+          <div class="mq-people mb-3">
+            {% for e in available_staff %}
+            <label class="small"><input type="checkbox" name="employees" value="{{ e.pk }}" class="mq-pick" data-group="staff"> {{ e.full_name }} <span class="text-muted">{{ e.designation|default:e.employee_id }}</span></label>
+            {% endfor %}
+          </div>
+          {% endif %}
           <div class="d-flex gap-2 align-items-end flex-wrap">
             <div>
               <label class="form-label small mb-1">Take it by (optional)</label>
@@ -36,7 +46,7 @@
           </div>
         </form>
         {% else %}
-        <p class="text-muted mb-0">Every active intern already has this test.</p>
+        <p class="text-muted mb-0">Everyone active already has this test.</p>
         {% endif %}
       </div>
     </div>
@@ -51,7 +61,7 @@
             <tbody>
               {% for a in given %}
               <tr>
-                <td><a href="{% url 'emp_employee_detail' a.employee.pk %}" class="fw-medium">{{ a.employee.full_name }}</a>
+                <td><a href="{% url 'emp_employee_detail' a.employee.pk %}" class="fw-medium">{{ a.employee.full_name }}</a>{% if a.employee.employment_type != 'intern' and a.employee.role != 'intern' %} <span class="badge bg-light text-dark">Employee</span>{% endif %}
                   {% if a.due_date %}<div class="text-sm text-muted">by {{ a.due_date|date:"d M Y" }}</div>{% endif %}</td>
                 <td class="text-sm">
                   {% if a.locked_at %}<span class="badge bg-danger"><i class="fas fa-lock"></i> Locked</span> <span class="text-muted">{{ a.lock_reason }}</span>
@@ -156,12 +166,13 @@
   </div>
 </div>
 
+<style>.mq-people{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:6px;max-height:220px;overflow:auto}</style>
 <script>
 (function () {
-  var all = document.getElementById('mqAll');
-  if (!all) return;
-  all.addEventListener('change', function () {
-    document.querySelectorAll('.mq-pick').forEach(function (c) { c.checked = all.checked; });
+  document.querySelectorAll('.mq-all').forEach(function (all) {
+    all.addEventListener('change', function () {
+      document.querySelectorAll('.mq-pick[data-group="' + all.dataset.group + '"]').forEach(function (c) { c.checked = all.checked; });
+    });
   });
 })();
 </script>

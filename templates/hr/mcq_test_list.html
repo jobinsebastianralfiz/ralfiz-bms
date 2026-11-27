@@ -5,7 +5,7 @@
 <div class="page-header">
   <div>
     <h1 class="page-title">MCQ &amp; Coding Tests</h1>
-    <p class="page-subtitle mb-0">Upload a test as a JSON file, give it to interns, and they take it from their staff dashboard. Choice questions are marked automatically; code and written answers you mark on the intern's answer page.</p>
+    <p class="page-subtitle mb-0">Upload a test as a JSON file, give it to interns or employees, and they take it from their staff dashboard. Choice questions are marked automatically; code and written answers you mark on the intern's answer page.</p>
   </div>
   <div class="page-actions">
     <a href="{% url 'mcq_test_sample' %}" class="btn btn-ghost"><i class="fas fa-download"></i> Sample JSON</a>
@@ -76,7 +76,7 @@
             <td class="text-sm">{% if r.t.duration_minutes %}{{ r.t.duration_minutes }} min{% else %}<span class="text-muted">No limit</span>{% endif %}</td>
             <td>{{ r.done }} / {{ r.given }}</td>
             <td>{% if r.avg is not None %}{{ r.avg }}%{% else %}<span class="text-muted">&mdash;</span>{% endif %}</td>
-            <td class="text-end"><a href="{% url 'mcq_test_detail' r.t.pk %}" class="btn btn-sm btn-ghost">{% if r.given %}Results{% else %}Give to interns{% endif %}</a></td>
+            <td class="text-end"><a href="{% url 'mcq_test_detail' r.t.pk %}" class="btn btn-sm btn-ghost">{% if r.given %}Results{% else %}Give test{% endif %}</a></td>
           </tr>
           {% endfor %}
         </tbody>

@@ -59,9 +59,9 @@
     {% if is_intern %}
     <a href="{% url 'staff:class_list' %}" class="{% if active_nav == 'classes' %}active{% endif %}"><i class="fas fa-chalkboard-user"></i> Classes</a>
     <a href="{% url 'staff:bootcamp' %}"><i class="fas fa-graduation-cap"></i> Bootcamp</a>
-    <a href="{% url 'staff:assessment_list' %}" class="{% if active_nav == 'assessments' %}active{% endif %}"><i class="fas fa-file-pen"></i> Assessments</a>
     <a href="{% url 'staff:lead_list' %}" class="{% if active_nav == 'leads' %}active{% endif %}"><i class="fas fa-bullseye"></i> My Leads</a>
     {% endif %}
+    {% if has_assessments %}<a href="{% url 'staff:assessment_list' %}" class="{% if active_nav == 'assessments' %}active{% endif %}"><i class="fas fa-file-pen"></i> Assessments</a>{% endif %}
     {% if has_wallet %}<a href="{% url 'staff:wallet' %}" class="{% if active_nav == 'wallet' %}active{% endif %}"><i class="fas fa-wallet"></i> XP Wallet</a>{% endif %}
     <a href="{% url 'staff:notification_list' %}" class="{% if active_nav == 'notifications' %}active{% endif %}"><i class="fas fa-bell"></i> Notifications{% if unread_count %}<span class="sv-count">{{ unread_count }}</span>{% endif %}</a>
     <hr>
@@ -168,9 +168,9 @@
     {% if is_intern %}
       <a href="{% url 'staff:class_list' %}"><i class="fas fa-chalkboard-user"></i> Classes</a>
       <a href="{% url 'staff:bootcamp' %}"><i class="fas fa-graduation-cap"></i> Bootcamp</a>
-      <a href="{% url 'staff:assessment_list' %}"><i class="fas fa-file-pen"></i> Assessments</a>
       <a href="{% url 'staff:lead_list' %}"><i class="fas fa-bullseye"></i> My Leads</a>
     {% endif %}
+    {% if has_assessments %}<a href="{% url 'staff:assessment_list' %}"><i class="fas fa-file-pen"></i> Assessments</a>{% endif %}
     {% if has_projects %}<a href="{% url 'staff:project_list' %}"><i class="fas fa-table-columns"></i> Projects</a>{% endif %}
     <a href="{% url 'staff:daily_report' %}"><i class="fas fa-pen-to-square"></i> Daily updates</a>
     <a href="{% url 'notes_home' %}"><i class="fas fa-book-open"></i> Notes</a>

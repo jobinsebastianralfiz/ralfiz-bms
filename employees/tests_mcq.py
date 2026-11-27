@@ -285,3 +285,32 @@ class WrittenAndProctoredTests(TestCase):
                          {'action': 'reset', 'assessment_id': self.a.pk})
         self.a.refresh_from_db()
         self.assertEqual((self.a.violations, self.a.answers, self.a.started_at, self.a.locked_at), ([], {}, None, None))
+
+
+class EmployeeTestsTests(TestCase):
+    def test_employee_can_be_given_and_take_a_test(self):
+        admin = User.objects.create_superuser('et_admin', 'e@example.com', 'pw')
+        u = User.objects.create_user('et_emp', password='pw', first_name='Ravi')
+        emp = Employee.objects.create(user=u, employee_id='ET01', employment_type='fulltime',
+                                      role='employee', status='active', designation='Developer')
+        owner_u = User.objects.create_user('et_owner', password='pw')
+        Employee.objects.create(user=owner_u, employee_id='ET02', employment_type='fulltime', role='owner',
+                                status='active')
+        self.client.force_login(admin)
+        self.client.post(reverse('mcq_test_list'), {'file': _file(MCQ_ONLY)})
+        test = McqTest.objects.get()
+        page = self.client.get(reverse('mcq_test_detail', args=[test.pk]))
+        self.assertContains(page, 'All employees')
+        self.assertContains(page, 'Ravi')
+        self.assertNotContains(page, 'ET02')                 # owners are not offered
+        self.client.post(reverse('mcq_test_assign', args=[test.pk]), {'employees': [emp.pk]})
+        a = test.assessments.get(employee=emp)
+        self.assertContains(self.client.get(reverse('emp_employee_detail', args=[emp.pk])), 'Give an online MCQ test')
+
+        self.client.force_login(u)
+        self.assertContains(self.client.get(reverse('staff:dashboard')), 'Tests to take')
+        self.assertContains(self.client.get(reverse('staff:dashboard')), reverse('staff:assessment_list'))
+        self.client.get(reverse('staff:assessment_take', args=[a.pk]) + '?start=1')
+        self.client.post(reverse('staff:assessment_take', args=[a.pk]), {'q_0': '1', 'q_1': '1', 'q_2': '2'})
+        a.refresh_from_db()
+        self.assertEqual(a.scored, 4)

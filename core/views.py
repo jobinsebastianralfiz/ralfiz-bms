@@ -8406,7 +8406,8 @@ def emp_employee_detail(request, pk):
     leave_requests = current().counted(LeaveRequest.objects.filter(employee=employee)).order_by('-created_at')[:10]
     leave_summary = _employee_leave_summary(employee)
     work_assignments = WorkAssignment.objects.filter(assigned_to=employee).order_by('-created_at')[:10]
-    assessments = employee.assessments.select_related('mcq_test') if employee.employment_type == 'intern' else None
+    assessments = (employee.assessments.select_related('mcq_test')
+                   if employee.role not in ('owner', 'partner') else None)
     if assessments is not None:
         from employees.models import McqTest
         mcq_tests = McqTest.objects.filter(is_active=True).exclude(assessments__employee=employee)

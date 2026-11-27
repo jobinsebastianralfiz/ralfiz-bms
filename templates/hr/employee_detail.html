@@ -593,14 +593,14 @@
       </div>
     </div>
 
-    {% if employee.employment_type == 'intern' %}
-    <!-- Assessments (interns) -->
+    {% if assessments is not None %}
+    <!-- Assessments -->
     <div class="card mt-4">
       <div class="card-header">
         <h3 class="card-title"><i class="fas fa-file-signature me-2 text-primary"></i> Assessments</h3>
       </div>
       <div class="card-body">
-        <p class="text-muted small mb-3">Test scores and papers. The intern can view these (including the answer key) from their app login.</p>
+        <p class="text-muted small mb-3">Test scores and papers. They can see these (including the answer key) from their staff login.</p>
         <form method="post" class="d-flex gap-2 align-items-end flex-wrap mb-3 p-2" style="background:var(--bg-secondary, #f6f7fb);border-radius:10px">
           {% csrf_token %}
           <input type="hidden" name="action" value="give_mcq">
