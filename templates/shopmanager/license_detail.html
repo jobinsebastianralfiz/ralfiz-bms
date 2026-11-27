@@ -32,7 +32,7 @@
         {% if license.status_reason %}<p class="sm-help" style="color:#B54708;margin-bottom:1rem">Reason shown to the shop: {{ license.status_reason }}</p>{% endif %}
         <div class="sm-grid">
           <div><p class="sm-k">Shop Manager address</p><p class="sm-v">{{ license.api_domain|default:"Not activated yet" }}</p></div>
-          <div><p class="sm-k">Plan · fee</p><p class="sm-v">{{ license.get_plan_display }} · ₹{{ license.yearly_fee|floatformat:0 }}</p></div>
+          <div><p class="sm-k">Plan · fee</p><p class="sm-v">{{ license.plan_name }} · ₹{{ license.yearly_fee|floatformat:0 }} / year</p></div>
           <div><p class="sm-k">Yearly total</p><p class="sm-v">₹{{ license.total_yearly_fee|floatformat:0 }}{% if license.extra_branches %} <span class="sm-help">(₹{{ license.yearly_fee|floatformat:0 }} + {{ license.extra_branches }} × ₹{{ license.branch_fee|floatformat:0 }} per extra branch)</span>{% endif %}</p></div>
           <div><p class="sm-k">Business type</p><p class="sm-v">{{ license.get_business_type_display }}</p></div>
           <div><p class="sm-k">Branches allowed</p><p class="sm-v">{{ license.max_branches }}</p></div>

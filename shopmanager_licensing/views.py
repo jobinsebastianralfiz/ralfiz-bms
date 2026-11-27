@@ -52,7 +52,7 @@ def signed_answer(lic, domain):
         'status': state,
         'reason': lic.status_reason,
         'plan': lic.plan,
-        'plan_label': lic.get_plan_display(),
+        'plan_label': lic.plan_name,
         'yearly_fee': str(lic.yearly_fee),
         'business_type': lic.business_type,
         'business_type_label': lic.get_business_type_display(),

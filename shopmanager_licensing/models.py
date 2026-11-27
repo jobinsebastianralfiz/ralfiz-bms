@@ -138,6 +138,12 @@ class ShopLicense(models.Model):
         return max(self.max_branches - 1, 0)
 
     @property
+    def plan_name(self):
+        """The plan without the standard price in its label ('Software', not 'Software (₹5,500 / year)'): the fee
+        actually charged is yearly_fee, which can differ from the standard price."""
+        return self.get_plan_display().split(' (')[0]
+
+    @property
     def total_yearly_fee(self):
         """Plan fee plus the extra branches: what the shop pays each year."""
         return self.yearly_fee + self.branch_fee * self.extra_branches
