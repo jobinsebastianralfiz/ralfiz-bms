@@ -5,7 +5,7 @@
 <div class="page-header">
   <div>
     <h1 class="page-title">{{ test.title }} {% if not test.is_active %}<span class="badge bg-secondary align-middle">Closed</span>{% endif %}</h1>
-    <p class="page-subtitle mb-0">{{ test.question_count }} questions · {{ test.total_marks|floatformat:"-2" }} marks · {% if test.duration_minutes %}{{ test.duration_minutes }} minutes{% else %}no time limit{% endif %}
+    <p class="page-subtitle mb-0">{{ test.kind_label }} · {% if test.proctored %}<i class="fas fa-video"></i> proctored · {% endif %}{{ test.question_count }} questions · {{ test.total_marks|floatformat:"-2" }} marks · {% if test.duration_minutes %}{{ test.duration_minutes }} minutes{% else %}no time limit{% endif %}
       {% if done_count %} · {{ done_count }} taken{% if avg is not None %}, average {{ avg }}%{% endif %}{% endif %}</p>
   </div>
   <div class="page-actions">
@@ -54,12 +54,16 @@
                 <td><a href="{% url 'emp_employee_detail' a.employee.pk %}" class="fw-medium">{{ a.employee.full_name }}</a>
                   {% if a.due_date %}<div class="text-sm text-muted">by {{ a.due_date|date:"d M Y" }}</div>{% endif %}</td>
                 <td class="text-sm">
-                  {% if a.submitted_at %}<span class="badge bg-success">Taken</span> <span class="text-muted">{{ a.submitted_at|date:"d M, g:i A" }}</span>
+                  {% if a.locked_at %}<span class="badge bg-danger"><i class="fas fa-lock"></i> Locked</span> <span class="text-muted">{{ a.lock_reason }}</span>
+                  {% elif a.needs_marking %}<span class="badge bg-info">To mark</span> <span class="text-muted">{{ a.submitted_at|date:"d M, g:i A" }}</span>
+                  {% elif a.submitted_at %}<span class="badge bg-success">Taken</span> <span class="text-muted">{{ a.submitted_at|date:"d M, g:i A" }}</span>
                   {% elif a.started_at %}<span class="badge bg-warning text-dark">In progress</span>
                   {% else %}<span class="badge bg-secondary">Not started</span>{% endif %}
+                  {% if test.proctored and a.flag_count %}<div class="text-warning small"><i class="fas fa-flag"></i> {{ a.flag_count }} flag{{ a.flag_count|pluralize }}</div>{% endif %}
                 </td>
-                <td>{% if a.submitted_at %}<b>{{ a.scored|floatformat:"-2" }}</b> / {{ a.max_score|floatformat:"-2" }} <span class="text-muted text-sm">({{ a.percentage }}%)</span>{% else %}<span class="text-muted">&mdash;</span>{% endif %}</td>
-                <td class="text-end">
+                <td>{% if a.scored is not None %}<b>{{ a.scored|floatformat:"-2" }}</b> / {{ a.max_score|floatformat:"-2" }} <span class="text-muted text-sm">({{ a.percentage }}%)</span>{% elif a.needs_marking %}<span class="text-muted text-sm">MCQ {{ a.auto_score|floatformat:"-2" }} + written</span>{% else %}<span class="text-muted">&mdash;</span>{% endif %}</td>
+                <td class="text-end text-nowrap">
+                  {% if a.started_at %}<a href="{% url 'mcq_attempt' test.pk a.pk %}" class="btn btn-sm {% if a.needs_marking or a.locked_at %}btn-primary{% else %}btn-ghost{% endif %}">{% if a.needs_marking %}Mark{% elif a.locked_at %}Review{% else %}Answers{% endif %}</a>{% endif %}
                   <form method="post" action="{% url 'mcq_test_update' test.pk %}" class="d-inline"
                         onsubmit="return confirm('{% if a.submitted_at %}Clear {{ a.employee.full_name|escapejs }}\'s score and let them take it again?{% else %}Take this test back from {{ a.employee.full_name|escapejs }}?{% endif %}');">
                     {% csrf_token %}
@@ -88,9 +92,15 @@
         {% for q in questions %}
         <div class="mb-3 pb-3" style="border-bottom:1px solid var(--border-color, #eceef4)">
           <div class="fw-medium mb-1">{{ q.num }}. {{ q.question|linebreaksbr }} <span class="text-muted text-sm">({{ q.marks }} mark{{ q.marks|pluralize }})</span></div>
+          {% if q.type == 'mcq' %}
           {% for o in q.options %}
           <div class="small {% if o.right %}text-success fw-semibold{% endif %}">{{ o.letter }}. {{ o.text }}{% if o.right %} <i class="fas fa-check"></i>{% endif %}</div>
           {% endfor %}
+          {% else %}
+          <span class="badge bg-info">{% if q.type == 'code' %}Code · {{ q.language|default:'any' }}{% else %}Written answer{% endif %}</span>
+          {% if q.starter %}<div class="small text-muted mt-1">Starter code:</div><pre class="small mb-1" style="background:var(--bg-secondary,#f6f7fb);padding:8px 10px;border-radius:6px;white-space:pre-wrap">{{ q.starter }}</pre>{% endif %}
+          {% if q.model_answer %}<div class="small text-muted mt-1">Model answer (for marking):</div><pre class="small mb-0" style="background:var(--bg-secondary,#f6f7fb);padding:8px 10px;border-radius:6px;white-space:pre-wrap">{{ q.model_answer }}</pre>{% endif %}
+          {% endif %}
           {% if q.explanation %}<div class="small text-muted mt-1"><i class="far fa-lightbulb"></i> {{ q.explanation }}</div>{% endif %}
         </div>
         {% endfor %}
@@ -113,7 +123,11 @@
           <input type="number" min="0" name="duration_minutes" value="{{ test.duration_minutes }}" class="form-control form-control-sm mb-2">
           <label class="small d-block"><input type="checkbox" name="shuffle_questions" {% if test.shuffle_questions %}checked{% endif %}> Shuffle question order for each intern</label>
           <label class="small d-block"><input type="checkbox" name="show_answers" {% if test.show_answers %}checked{% endif %}> Show correct answers after they submit</label>
-          <label class="small d-block mb-3"><input type="checkbox" name="is_active" {% if test.is_active %}checked{% endif %}> Open (untick to stop new starts)</label>
+          <label class="small d-block"><input type="checkbox" name="is_active" {% if test.is_active %}checked{% endif %}> Open (untick to stop new starts)</label>
+          <div class="p-2 my-2" style="background:var(--bg-secondary,#f6f7fb);border-radius:8px">
+            <label class="small d-block fw-medium"><input type="checkbox" name="proctored" {% if test.proctored %}checked{% endif %}> <i class="fas fa-video text-primary"></i> Proctored: camera on, fullscreen, locks on leaving</label>
+            <label class="small d-flex align-items-center gap-2 mt-1">Lock after leaving <input type="number" min="1" max="10" name="max_violations" value="{{ test.max_violations }}" class="form-control form-control-sm" style="width:64px"> time(s)</label>
+          </div>
           <button class="btn btn-sm btn-primary"><i class="fas fa-save"></i> Save</button>
         </form>
       </div>

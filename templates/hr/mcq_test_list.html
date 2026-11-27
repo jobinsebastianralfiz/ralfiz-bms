@@ -1,11 +1,11 @@
 {% extends 'base.html' %}
-{% block title %}MCQ Tests - Ralfiz BMS{% endblock %}
+{% block title %}MCQ & Coding Tests - Ralfiz BMS{% endblock %}
 
 {% block content %}
 <div class="page-header">
   <div>
-    <h1 class="page-title">MCQ Tests</h1>
-    <p class="page-subtitle mb-0">Upload a test as a JSON file, give it to interns, and they take it from their staff dashboard. It is marked automatically and the score goes on their Assessments.</p>
+    <h1 class="page-title">MCQ &amp; Coding Tests</h1>
+    <p class="page-subtitle mb-0">Upload a test as a JSON file, give it to interns, and they take it from their staff dashboard. Choice questions are marked automatically; code and written answers you mark on the intern's answer page.</p>
   </div>
   <div class="page-actions">
     <a href="{% url 'mcq_test_sample' %}" class="btn btn-ghost"><i class="fas fa-download"></i> Sample JSON</a>
@@ -32,6 +32,9 @@
       <div class="col-6 col-md-1">
         <button type="submit" class="btn btn-sm btn-primary w-100"><i class="fas fa-upload"></i> Upload</button>
       </div>
+      <div class="col-12">
+        <label class="small"><input type="checkbox" name="proctored"> <i class="fas fa-video text-primary"></i> <b>Proctored</b>: camera on the whole time, fullscreen, and the test locks if the intern switches tab, window or browser</label>
+      </div>
     </form>
 
     <details class="mt-3">
@@ -40,6 +43,12 @@
         One file is one test. <code>answer</code> can be a letter (<code>"B"</code>), the option number counted from 1 (<code>2</code>), or the exact option text.
         <code>marks</code> (default 1), <code>explanation</code> (shown after submitting), <code>description</code> and <code>duration_minutes</code> (0 = no time limit) are optional.
         A plain list of questions also works; then type the title above.
+      </p>
+      <p class="small text-muted mb-2">
+        <b>Programming / written questions:</b> add <code>"type": "code"</code> (with <code>"language"</code>, optional <code>"starter"</code> code) or <code>"type": "text"</code>.
+        Their <code>answer</code> is your model answer, shown to you while marking. Python questions get a <b>Run</b> button for the intern.
+        Mix them freely with MCQs in one test.
+        <b>Proctoring:</b> <code>"proctored": true</code> at the top (or tick the box), and <code>"max_violations": 1</code> = lock the first time they leave.
       </p>
       <pre class="small mb-0" style="background:var(--bg-secondary, #f6f7fb);padding:12px;border-radius:8px;max-height:340px;overflow:auto">{{ sample }}</pre>
     </details>
@@ -58,6 +67,8 @@
           <tr>
             <td>
               <a href="{% url 'mcq_test_detail' r.t.pk %}" class="fw-medium">{{ r.t.title }}</a>
+              <span class="badge bg-light text-dark ms-1">{{ r.t.kind_label }}</span>
+              {% if r.t.proctored %}<span class="badge bg-info ms-1"><i class="fas fa-video"></i> Proctored</span>{% endif %}
               {% if not r.t.is_active %}<span class="badge bg-secondary ms-1">Closed</span>{% endif %}
               <div class="text-sm text-muted">Uploaded {{ r.t.created_at|date:"d M Y" }}</div>
             </td>

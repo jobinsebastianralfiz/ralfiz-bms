@@ -18,7 +18,9 @@
   </div>
 
   <ul class="mq-rules">
-    <li>Each question has one correct answer. Tap an option to choose it.</li>
+    {% if test.kind_label != 'Programming' and test.kind_label != 'Written' %}<li>Choice questions have one correct answer. Tap an option to choose it.</li>{% endif %}
+    {% if test.has_written %}<li>Type your answers in the boxes. Code questions have an editor{% if 'python' in test.questions|stringformat:'s' %}, and Python ones a <b>Run</b> button to try your code{% endif %}. HR marks these by hand.</li>{% endif %}
+    <li>Your answers save as you go.</li>
     {% if test.duration_minutes %}<li>The timer starts when you tap <b>Start test</b> and keeps running if you leave the page. When it ends, your answers are submitted.</li>{% endif %}
     <li>You can take this test once. Check your answers before you submit.</li>
     {% if test.show_answers %}<li>After you submit you'll see your score and the correct answers.</li>{% endif %}

@@ -18,7 +18,8 @@
         <span class="mq-todo-body">
           <span class="sf-item-title">{{ a.title }}</span>
           <span class="sf-item-meta">
-            <span>{{ a.mcq_test.question_count }} questions</span>
+            <span>{{ a.mcq_test.kind_label }} · {{ a.mcq_test.question_count }} questions</span>
+            {% if a.mcq_test.proctored %}<span><i class="fas fa-video"></i> Camera on</span>{% endif %}
             <span>{{ a.max_score|floatformat:"-2" }} marks</span>
             {% if a.mcq_test.duration_minutes %}<span><i class="far fa-clock"></i> {{ a.mcq_test.duration_minutes }} min</span>{% endif %}
             {% if a.due_date %}<span{% if a.due_date < today %} class="mq-late"{% endif %}><i class="fas fa-calendar"></i> by {{ a.due_date|date:"d M" }}</span>{% endif %}
@@ -57,6 +58,8 @@
             <span class="sf-badge {% if a.percentage >= 60 %}sf-badge-ok{% elif a.percentage >= 40 %}sf-badge-warn{% else %}sf-badge-danger{% endif %}">
               {{ a.scored|floatformat:"-2" }}/{{ a.max_score|floatformat:"-2" }}
             </span>
+          {% elif a.needs_marking %}
+            <span class="sf-badge sf-badge-info">Waiting for marking</span>
           {% else %}
             <span class="sf-badge sf-badge-muted">Not graded</span>
           {% endif %}
@@ -72,9 +75,10 @@
                  background:{% if a.percentage >= 60 %}var(--sf-green){% elif a.percentage >= 40 %}var(--sf-gold){% else %}var(--sf-red){% endif %}"></div>
           </div>
         {% endif %}
+        {% if a.locked_at %}<div class="sf-muted" style="margin-top:7px;color:var(--sf-danger)"><i class="fas fa-lock"></i> Locked: {{ a.lock_reason }}</div>{% endif %}
         {% if a.is_mcq and a.submitted_at %}
           <div style="display:flex;gap:8px;margin-top:11px;flex-wrap:wrap">
-            <a href="{% url 'staff:assessment_result' a.pk %}" class="sf-btn sf-btn-ghost sf-btn-sm"><i class="fas fa-list-check"></i> {% if a.mcq_test.show_answers %}Review answers{% else %}See result{% endif %}</a>
+            <a href="{% url 'staff:assessment_result' a.pk %}" class="sf-btn sf-btn-ghost sf-btn-sm"><i class="fas fa-list-check"></i> {% if a.needs_marking %}Your answers{% elif a.mcq_test.show_answers %}Review answers{% else %}See result{% endif %}</a>
           </div>
         {% endif %}
         {% if a.test_file or a.answer_key_file %}

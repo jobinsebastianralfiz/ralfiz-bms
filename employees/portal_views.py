@@ -17,12 +17,13 @@ from django.contrib import messages
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
 from django.db.models import Q
-from django.http import Http404, HttpResponse
+from django.http import Http404, HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.template.loader import render_to_string
 from django.urls import reverse
 from django.utils import timezone
 from django.views.decorators.cache import never_cache
+from django.views.decorators.http import require_POST
 
 from . import bootcamp, work_calendar
 from .leave_rules import year_days_used
@@ -35,7 +36,7 @@ from .models import (
 # changes. Whitenoise serves these unhashed, and the service worker is
 # cache-first for static assets, so an unversioned URL is served from the old
 # cache forever -- which is exactly how the app icon got stuck.
-ASSET_V = '22'
+ASSET_V = '23'
 
 MONTHS = [
     '', 'January', 'February', 'March', 'April', 'May', 'June',
@@ -1252,8 +1253,10 @@ def _my_mcq(request, pk):
 
 @staff_required
 def assessment_take(request, pk):
-    """Take an MCQ test: one page of questions, an optional countdown, marked
-    on submit. Answers never reach the page until the test is submitted."""
+    """Take an online test: MCQ and/or written (code/text) questions, an
+    optional countdown, autosaved as you go. Answers never reach the page
+    before submitting. Proctored tests show a camera + fullscreen gate first
+    and fetch the questions only from there (see assessment_begin)."""
     from . import mcq
     a = _my_mcq(request, pk)
     test = a.mcq_test
@@ -1268,37 +1271,123 @@ def assessment_take(request, pk):
             return redirect('staff:assessment_take', pk=a.pk)
         posted = {k[2:]: v for k, v in request.POST.items() if k.startswith('q_')}
         mcq.grade(a, posted)
-        messages.success(request, f'Test submitted. You scored {a.scored.normalize()} out of '
-                                  f'{a.max_score.normalize()}.')
+        if a.scored is not None:
+            messages.success(request, f'Test submitted. You scored {a.scored.normalize()} out of '
+                                      f'{a.max_score.normalize()}.')
+        else:
+            messages.success(request, 'Test submitted. HR will mark your written answers.')
         return redirect('staff:assessment_result', pk=a.pk)
+
+    ctx = _base_context(request, 'assessments')
+    ctx.update({'a': a, 'test': test})
+
+    if test.proctored:
+        # The gate page never holds the questions: they come from assessment_begin
+        # after the camera is on and the page is fullscreen.
+        return render(request, 'staff/assessment_proctor.html', ctx)
 
     if request.GET.get('start') == '1' and not a.started_at:
         a.started_at = timezone.now()
         a.save(update_fields=['started_at', 'updated_at'])
         return redirect('staff:assessment_take', pk=a.pk)
-
-    ctx = _base_context(request, 'assessments')
-    ctx.update({'a': a, 'test': test})
     if not a.started_at:
         return render(request, 'staff/assessment_start.html', ctx)
+    if _time_up(a):
+        return redirect('staff:assessment_result', pk=a.pk)
+    ctx.update(_question_ctx(a))
+    return render(request, 'staff/assessment_take.html', ctx)
 
+
+def _time_up(a):
+    """Past the timer + grace with nothing submitted (closed tab, lost
+    network): submit what was autosaved."""
+    from . import mcq
     ends = mcq.deadline(a)
     if ends and timezone.now() > ends + timedelta(seconds=mcq.GRACE_SECONDS):
-        # Time ran out and nothing came back (closed tab, lost network): mark it
-        # with whatever was answered, which is nothing.
-        mcq.grade(a, {})
-        messages.warning(request, 'Time is up for this test, so it was submitted with no answers.')
-        return redirect('staff:assessment_result', pk=a.pk)
+        mcq.grade(a)
+        return True
+    return False
 
-    questions = test.questions
-    ctx.update({
-        'questions': [{'num': n, 'idx': i, 'text': questions[i]['question'], 'marks': questions[i].get('marks', 1),
-                       'options': [{'letter': mcq.LETTERS[j], 'text': t, 'idx': j}
-                                   for j, t in enumerate(questions[i]['options'])]}
-                      for n, i in enumerate(mcq.question_order(a), start=1)],
+
+def _question_ctx(a):
+    from . import mcq
+    ends = mcq.deadline(a)
+    return {
+        'questions': mcq.question_rows(a),
         'seconds_left': max(0, int((ends - timezone.now()).total_seconds())) if ends else None,
-    })
-    return render(request, 'staff/assessment_take.html', ctx)
+    }
+
+
+@staff_required
+@require_POST
+def assessment_begin(request, pk):
+    """Proctored tests: start (or resume after HR unlocked it) and return the
+    questions as an HTML fragment. Opening it again any other way means the
+    page was reloaded or left, which locks the test."""
+    from . import mcq
+    a = _my_mcq(request, pk)
+    if a.submitted_at:
+        return JsonResponse({'locked': bool(a.locked_at), 'redirect': reverse('staff:assessment_result', args=[a.pk])})
+    if not a.mcq_test.is_active and not a.started_at:
+        return JsonResponse({'error': 'This test is closed.'}, status=400)
+    if not a.started_at:
+        a.started_at = timezone.now()
+        a.save(update_fields=['started_at', 'updated_at'])
+    elif a.resume_allowed:
+        a.resume_allowed = False
+        a.save(update_fields=['resume_allowed', 'updated_at'])
+    else:
+        mcq.record_event(a, 'reload', 'Opened the test again after it had started')
+        if a.submitted_at:
+            return JsonResponse({'locked': True, 'redirect': reverse('staff:assessment_result', args=[a.pk])})
+    if _time_up(a):
+        return JsonResponse({'locked': False, 'redirect': reverse('staff:assessment_result', args=[a.pk])})
+    ctx = {'a': a, 'test': a.mcq_test, **_question_ctx(a)}
+    html = render_to_string('staff/_test_questions.html', ctx, request=request)
+    return JsonResponse({'html': html, 'seconds_left': ctx['seconds_left']})
+
+
+@staff_required
+@require_POST
+def assessment_autosave(request, pk):
+    from . import mcq
+    a = _my_mcq(request, pk)
+    if a.submitted_at or not a.started_at:
+        return JsonResponse({'saved': False, 'locked': bool(a.locked_at), 'submitted': bool(a.submitted_at)})
+    mcq.save_draft(a, {k[2:]: v for k, v in request.POST.items() if k.startswith('q_')})
+    return JsonResponse({'saved': True})
+
+
+@staff_required
+@require_POST
+def assessment_proctor(request, pk):
+    """A proctoring event from the test page (also sent with sendBeacon when
+    the page is hidden). May carry a webcam still and the current answers."""
+    from . import mcq
+    from .models import ProctorSnapshot
+    a = _my_mcq(request, pk)
+    if not a.mcq_test.proctored or not a.started_at:
+        return JsonResponse({'ok': False}, status=400)
+    if a.submitted_at:
+        return JsonResponse({'locked': bool(a.locked_at), 'redirect': reverse('staff:assessment_result', args=[a.pk])})
+    answers = {k[2:]: v for k, v in request.POST.items() if k.startswith('q_')}
+    if answers:
+        # Merge: a beacon sent as the page hides may not carry every field.
+        mcq.save_draft(a, {**{k: str(v) for k, v in (a.answers or {}).items()}, **answers})
+    kind = (request.POST.get('kind') or 'periodic')[:30]
+    detail = (request.POST.get('detail') or '')[:200]
+    faces = request.POST.get('faces')
+    image = request.FILES.get('image')
+    if image and image.size <= 400 * 1024 and a.snapshots.count() < 600:
+        ProctorSnapshot.objects.create(assessment=a, image=image, kind=kind, detail=detail,
+                                       faces=int(faces) if faces and faces.lstrip('-').isdigit() else None)
+    locked = False
+    if kind != 'periodic':
+        locked = mcq.record_event(a, kind, detail)
+    out = {'locked': locked}
+    if locked:
+        out['redirect'] = reverse('staff:assessment_result', args=[a.pk])
+    return JsonResponse(out)
 
 
 @staff_required
@@ -1308,11 +1397,14 @@ def assessment_result(request, pk):
     if not a.submitted_at:
         return redirect('staff:assessment_take', pk=a.pk)
     rows = mcq.review_rows(a)
+    mcq_rows = [r for r in rows if r['type'] == 'mcq']
     ctx = _base_context(request, 'assessments')
     ctx.update({
         'a': a, 'test': a.mcq_test, 'rows': rows, 'show_answers': a.mcq_test.show_answers,
-        'right': sum(r['is_right'] for r in rows), 'wrong': sum(not r['is_right'] and not r['skipped'] for r in rows),
+        'right': sum(r['is_right'] for r in mcq_rows),
+        'wrong': sum(not r['is_right'] and not r['skipped'] for r in mcq_rows),
         'skipped': sum(r['skipped'] for r in rows),
+        'written': len(rows) - len(mcq_rows),
     })
     return render(request, 'staff/assessment_result.html', ctx)
 

@@ -1,0 +1,118 @@
+{% extends 'base.html' %}
+{% block title %}{{ a.employee.full_name }} · {{ test.title }}{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title">{{ a.employee.full_name }} <span class="text-muted" style="font-weight:500">· {{ test.title }}</span></h1>
+    <p class="page-subtitle mb-0">
+      {% if a.locked_at %}<span class="badge bg-danger"><i class="fas fa-lock"></i> Locked</span> {{ a.lock_reason }} at {{ a.locked_at|date:"d M, g:i:s A" }}
+      {% elif a.submitted_at %}<span class="badge bg-success">Submitted</span> {{ a.submitted_at|date:"d M Y, g:i A" }}
+      {% elif a.started_at %}<span class="badge bg-warning text-dark">In progress</span> since {{ a.started_at|date:"g:i A" }}{% if a.resume_allowed %} · unlocked, waiting for them to continue{% endif %}
+      {% else %}<span class="badge bg-secondary">Not started</span>{% endif %}
+      {% if a.scored is not None %} · <b>{{ a.scored|floatformat:"-2" }} / {{ a.max_score|floatformat:"-2" }}</b> ({{ a.percentage }}%)
+      {% elif a.needs_marking %} · MCQ part {{ a.auto_score|floatformat:"-2" }}, written answers to mark{% endif %}
+    </p>
+  </div>
+  <div class="page-actions d-flex gap-2">
+    {% if a.locked_at %}
+    <form method="post" action="{% url 'mcq_test_update' test.pk %}" onsubmit="return confirm('Let {{ a.employee.full_name|escapejs }} continue? They get back the time that was left, with their saved answers.');">
+      {% csrf_token %}<input type="hidden" name="assessment_id" value="{{ a.pk }}">
+      <button name="action" value="unlock" class="btn btn-primary"><i class="fas fa-lock-open"></i> Unlock &amp; let continue</button>
+    </form>
+    {% endif %}
+    {% if a.started_at %}
+    <form method="post" action="{% url 'mcq_test_update' test.pk %}" onsubmit="return confirm('Clear everything (answers, marks, photos) and let {{ a.employee.full_name|escapejs }} start again?');">
+      {% csrf_token %}<input type="hidden" name="assessment_id" value="{{ a.pk }}"><input type="hidden" name="next" value="attempt">
+      <button name="action" value="reset" class="btn btn-ghost"><i class="fas fa-rotate-left"></i> Retake from start</button>
+    </form>
+    {% endif %}
+    <a href="{% url 'mcq_test_detail' test.pk %}" class="btn btn-ghost"><i class="fas fa-arrow-left"></i> All results</a>
+  </div>
+</div>
+
+<div class="row">
+  <div class="col-12 {% if test.proctored %}col-lg-7{% endif %}" style="padding: 0.75rem;">
+    <form method="post" class="card mb-4">
+      {% csrf_token %}
+      <div class="card-header"><h3 class="card-title"><i class="fas fa-file-pen me-2 text-primary"></i> Answers</h3>
+        {% if a.submitted_at and test.has_written %}<button class="btn btn-sm btn-primary"><i class="fas fa-save"></i> Save marks</button>{% endif %}</div>
+      <div class="card-body">
+        {% for r in rows %}
+        <div class="mb-4 pb-3" style="border-bottom:1px solid var(--border-color, #eceef4)">
+          <div class="fw-medium mb-2">{{ r.num }}. {{ r.question|linebreaksbr }}
+            <span class="text-muted text-sm">({{ r.marks }} mark{{ r.marks|pluralize }}{% if r.type != 'mcq' %} · {% if r.type == 'code' %}{{ r.language|default:'code' }}{% else %}written{% endif %}{% endif %})</span></div>
+          {% if r.type == 'mcq' %}
+            {% for o in r.options %}
+            <div class="small {% if o.idx == r.correct %}text-success fw-semibold{% elif o.idx == r.chosen %}text-danger fw-semibold{% endif %}">
+              {{ o.letter }}. {{ o.text }}{% if o.idx == r.correct %} <i class="fas fa-check"></i>{% endif %}{% if o.idx == r.chosen %} <span class="badge bg-light text-dark">their pick</span>{% endif %}</div>
+            {% endfor %}
+            {% if r.skipped %}<div class="small text-muted mt-1">Not answered</div>{% endif %}
+          {% else %}
+            {% if r.skipped %}<div class="small text-muted">Not answered</div>
+            {% elif r.type == 'code' %}<pre style="background:#0f1222;color:#e6e9ff;padding:12px 14px;border-radius:8px;white-space:pre-wrap;font-size:13px;max-height:420px;overflow:auto" class="mb-2">{{ r.chosen }}</pre>
+            {% else %}<div class="mb-2" style="background:var(--bg-secondary,#f6f7fb);padding:10px 14px;border-radius:8px;line-height:1.5">{{ r.chosen|linebreaksbr }}</div>{% endif %}
+            {% if r.model_answer %}<details class="mb-2"><summary class="small fw-medium" style="cursor:pointer">Model answer</summary>
+              <pre style="background:var(--bg-secondary,#f6f7fb);padding:10px 12px;border-radius:8px;white-space:pre-wrap;font-size:12.5px" class="mt-2 mb-0">{{ r.model_answer }}</pre></details>{% endif %}
+            {% if a.submitted_at %}
+            <div class="d-flex gap-2 align-items-start flex-wrap">
+              <div style="width:130px">
+                <label class="form-label small mb-1">Marks (of {{ r.marks }})</label>
+                <input type="number" step="0.5" min="0" max="{{ r.marks }}" name="mark_{{ r.idx }}" value="{% if r.got is not None %}{{ r.got }}{% endif %}" class="form-control form-control-sm">
+              </div>
+              <div style="flex:1;min-width:220px">
+                <label class="form-label small mb-1">Comment for the intern</label>
+                <input type="text" name="comment_{{ r.idx }}" value="{{ r.comment }}" class="form-control form-control-sm" placeholder="Optional">
+              </div>
+            </div>
+            {% endif %}
+          {% endif %}
+        </div>
+        {% empty %}
+        <p class="text-muted mb-0">Not started yet.</p>
+        {% endfor %}
+        {% if a.submitted_at and test.has_written %}<button class="btn btn-sm btn-primary"><i class="fas fa-save"></i> Save marks</button>{% endif %}
+      </div>
+    </form>
+  </div>
+
+  {% if test.proctored %}
+  <div class="col-12 col-lg-5" style="padding: 0.75rem;">
+    <div class="card mb-4">
+      <div class="card-header"><h3 class="card-title"><i class="fas fa-shield-halved me-2 text-primary"></i> Proctoring log</h3></div>
+      <div class="card-body">
+        {% for v in violations %}
+        <div class="d-flex gap-2 mb-2 small">
+          <span class="text-muted" style="min-width:84px">{{ v.when|date:"g:i:s A" }}</span>
+          <span>{% if v.locks %}<i class="fas fa-lock text-danger"></i>{% elif v.kind == 'unlocked' %}<i class="fas fa-lock-open text-success"></i>{% else %}<i class="fas fa-flag text-warning"></i>{% endif %}
+            <b>{{ v.label }}</b>{% if v.detail and v.detail != v.label %} <span class="text-muted">· {{ v.detail }}</span>{% endif %}</span>
+        </div>
+        {% empty %}
+        <p class="text-muted small mb-0">{% if a.started_at %}Nothing flagged. They stayed on the test page the whole time.{% else %}Not started.{% endif %}</p>
+        {% endfor %}
+        <p class="text-muted small mt-2 mb-0"><i class="fas fa-lock text-danger"></i> locks the test, <i class="fas fa-flag text-warning"></i> is only recorded.</p>
+      </div>
+    </div>
+
+    <div class="card mb-4">
+      <div class="card-header"><h3 class="card-title"><i class="fas fa-camera me-2 text-primary"></i> Camera ({{ snaps|length }})</h3></div>
+      <div class="card-body">
+        {% if snaps %}
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:8px">
+          {% for x in snaps %}
+          <a href="{% url 'mcq_snapshot' x.pk %}" target="_blank" style="position:relative;display:block;border-radius:8px;overflow:hidden;{% if x.kind != 'periodic' %}outline:3px solid #f59e0b;{% endif %}">
+            <img src="{% url 'mcq_snapshot' x.pk %}" loading="lazy" alt="" style="width:100%;display:block;transform:scaleX(-1)">
+            <span style="position:absolute;left:0;right:0;bottom:0;background:rgba(0,0,0,.6);color:#fff;font-size:10.5px;padding:2px 5px">
+              {{ x.taken_at|date:"g:i:s A" }}{% if x.kind != 'periodic' %} · {{ x.kind|cut:"_" }}{% endif %}{% if x.faces is not None %} · {{ x.faces }} face{{ x.faces|pluralize }}{% endif %}</span>
+          </a>
+          {% endfor %}
+        </div>
+        {% else %}
+        <p class="text-muted small mb-0">No photos yet.</p>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

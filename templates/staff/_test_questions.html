@@ -1,0 +1,45 @@
+{% comment %}The test form, shared by the plain take page and the proctored page (fetched after the camera check).{% endcomment %}
+<div class="mq-bar" id="mqBar">
+  <div class="mq-bar-title">
+    <strong>{{ test.title }}</strong>
+    <span><b id="mqAnswered">0</b> of {{ questions|length }} answered · <em id="mqSaved">Saved</em></span>
+  </div>
+  {% if seconds_left is not None %}<div class="mq-timer" id="mqTimer" data-left="{{ seconds_left }}"><i class="far fa-clock"></i> <span>--:--</span></div>{% endif %}
+  <div class="mq-progress"><i id="mqProgress" style="width:0%"></i></div>
+</div>
+
+<form method="post" action="{% url 'staff:assessment_take' a.pk %}" id="mqForm"
+      data-autosave="{% url 'staff:assessment_autosave' a.pk %}" data-total="{{ questions|length }}">
+  {% csrf_token %}
+  {% for q in questions %}
+  <fieldset class="sf-card mq-q" id="q{{ q.num }}" data-type="{{ q.type }}">
+    <legend class="mq-q-head"><span class="mq-num">{{ q.num }}</span><span class="mq-q-text">{{ q.text|linebreaksbr }}</span>
+      <span class="mq-marks">{{ q.marks }} mark{{ q.marks|pluralize }}</span></legend>
+    {% if q.type == 'mcq' %}
+    <div class="mq-opts">
+      {% for o in q.options %}
+      <label class="mq-opt">
+        <input type="radio" name="q_{{ q.idx }}" value="{{ o.idx }}"{% if o.checked %} checked{% endif %}>
+        <span class="mq-letter">{{ o.letter }}</span>
+        <span class="mq-opt-text">{{ o.text }}</span>
+      </label>
+      {% endfor %}
+    </div>
+    {% elif q.type == 'code' %}
+    <div class="mq-code">
+      <div class="mq-code-head"><span><i class="fas fa-code"></i> {{ q.language|default:'code'|title }}</span>
+        {% if q.language == 'python' %}<button type="button" class="mq-run" data-for="q_{{ q.idx }}"><i class="fas fa-play"></i> Run</button>{% endif %}</div>
+      <textarea name="q_{{ q.idx }}" class="mq-editor" rows="12" spellcheck="false" autocapitalize="off" autocomplete="off" autocorrect="off" data-starter="{{ q.value }}">{{ q.value }}</textarea>
+      {% if q.language == 'python' %}<pre class="mq-run-out" id="out_q_{{ q.idx }}" hidden></pre>{% endif %}
+    </div>
+    {% else %}
+    <textarea name="q_{{ q.idx }}" class="mq-text" rows="5" placeholder="Write your answer here">{{ q.value }}</textarea>
+    {% endif %}
+  </fieldset>
+  {% endfor %}
+
+  <div class="mq-submit">
+    <p class="sf-muted" id="mqLeftNote"></p>
+    <button type="submit" class="sf-btn mq-go" id="mqSubmit"><i class="fas fa-paper-plane"></i> Submit test</button>
+  </div>
+</form>

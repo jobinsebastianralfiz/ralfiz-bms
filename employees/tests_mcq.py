@@ -11,13 +11,16 @@ from . import mcq
 from .models import Employee, InternAssessment, McqTest, Notification
 
 
+MCQ_ONLY = {**mcq.SAMPLE, 'questions': mcq.SAMPLE['questions'][:3]}
+
+
 def _file(data, name='test.json'):
     return SimpleUploadedFile(name, json.dumps(data).encode(), content_type='application/json')
 
 
 class McqParseTests(TestCase):
     def test_sample_parses_with_all_answer_forms(self):
-        data = mcq.parse_upload(json.dumps(mcq.SAMPLE).encode())
+        data = mcq.parse_upload(json.dumps(MCQ_ONLY).encode())
         self.assertEqual(data['title'], 'Python Basics - Test 1')
         self.assertEqual(data['duration_minutes'], 20)
         # "B" letter, 2 as option number (1-based), "tuple" as option text
@@ -57,7 +60,7 @@ class McqFlowTests(TestCase):
 
     def upload(self, data=None, **extra):
         self.client.force_login(self.admin)
-        return self.client.post(reverse('mcq_test_list'), {'file': _file(data or mcq.SAMPLE), **extra})
+        return self.client.post(reverse('mcq_test_list'), {'file': _file(data or MCQ_ONLY), **extra})
 
     def test_upload_assign_take_and_score(self):
         res = self.upload()
@@ -119,7 +122,7 @@ class McqFlowTests(TestCase):
         self.assertEqual(self.client.get(reverse('staff:assessment_take', args=[a.pk])).status_code, 404)
 
     def test_timer_expired_submits_empty(self):
-        self.upload({**mcq.SAMPLE, 'duration_minutes': 5})
+        self.upload({**MCQ_ONLY, 'duration_minutes': 5})
         a = mcq.assign(McqTest.objects.get(), [self.intern])[0]
         a.started_at = timezone.now() - timedelta(minutes=30)
         a.save()
@@ -150,3 +153,135 @@ class McqFlowTests(TestCase):
         done.refresh_from_db()
         self.assertEqual(done.scored, 1)
         self.assertIsNone(done.mcq_test)
+
+
+CODE_TEST = {
+    'title': 'Coding round', 'proctored': True, 'duration_minutes': 30,
+    'questions': [
+        {'question': '2 + 2?', 'options': ['3', '4'], 'answer': 'B', 'marks': 1},
+        {'type': 'code', 'question': 'Write add(a, b).', 'language': 'python',
+         'starter': 'def add(a, b):\n    pass', 'answer': 'def add(a, b):\n    return a + b', 'marks': 5},
+        {'type': 'text', 'question': 'What is a list?', 'answer': 'mutable sequence', 'marks': 2},
+    ],
+}
+
+
+class WrittenAndProctoredTests(TestCase):
+    @classmethod
+    def setUpTestData(cls):
+        cls.admin = User.objects.create_superuser('wp_admin', 'w@example.com', 'pw')
+        cls.user = User.objects.create_user('wp_intern', password='pw', first_name='Anees')
+        cls.intern = Employee.objects.create(user=cls.user, employee_id='WP01', employment_type='intern',
+                                             role='intern', status='active')
+
+    def setUp(self):
+        self.client.force_login(self.admin)
+        self.client.post(reverse('mcq_test_list'), {'file': _file(CODE_TEST)})
+        self.test = McqTest.objects.get()
+        self.a = mcq.assign(self.test, [self.intern])[0]
+        self.client.force_login(self.user)
+
+    def url(self, name):
+        return reverse(f'staff:assessment_{name}', args=[self.a.pk])
+
+    def begin(self):
+        return self.client.post(self.url('begin')).json()
+
+    def test_parse_written(self):
+        self.assertTrue(self.test.proctored)
+        self.assertTrue(self.test.has_written)
+        self.assertEqual(self.test.kind_label, 'Mixed')
+        self.assertEqual(self.test.total_marks, 8)
+        with self.assertRaisesMessage(mcq.McqFormatError, 'type "essayx"'):
+            mcq.parse_upload(json.dumps([{'type': 'essayx', 'question': 'x'}]).encode())
+
+    def test_gate_hides_questions_until_begin(self):
+        gate = self.client.get(self.url('take'))
+        self.assertContains(gate, 'Turn on camera')
+        self.assertNotContains(gate, 'Write add(a, b)')
+        d = self.begin()
+        self.assertIn('Write add(a, b)', d['html'])
+        self.assertIn('def add(a, b):', d['html'])          # starter code
+        self.assertNotIn('return a + b', d['html'])         # model answer never sent
+        self.assertNotIn('mutable sequence', d['html'])
+
+    def test_reopening_after_start_locks(self):
+        self.begin()
+        d = self.begin()   # page reloaded
+        self.assertTrue(d['locked'])
+        self.a.refresh_from_db()
+        self.assertIsNotNone(self.a.locked_at)
+        self.assertIn('Reloaded', self.a.lock_reason)
+
+    def test_tab_switch_locks_and_keeps_answers_then_unlock_resumes(self):
+        self.begin()
+        self.client.post(self.url('autosave'), {'q_0': '1', 'q_1': 'def add(a, b):\n    return a+b'})
+        img = SimpleUploadedFile('s.jpg', b'\xff\xd8\xff fakejpeg', content_type='image/jpeg')
+        d = self.client.post(self.url('proctor'), {'kind': 'tab_hidden', 'detail': 'x', 'q_2': 'a list',
+                                                   'image': img}).json()
+        self.assertTrue(d['locked'])
+        self.a.refresh_from_db()
+        self.assertIsNotNone(self.a.submitted_at)
+        self.assertEqual(self.a.answers['1'], 'def add(a, b):\n    return a+b')
+        self.assertEqual(self.a.answers['2'], 'a list')
+        self.assertEqual(self.a.auto_score, 1)
+        self.assertIsNone(self.a.scored)               # written part waits for HR
+        self.assertEqual(self.a.snapshots.count(), 1)
+        self.assertContains(self.client.get(self.url('result')), 'This test was locked')
+
+        # HR sees it, the still, and unlocks.
+        self.client.force_login(self.admin)
+        page = self.client.get(reverse('mcq_attempt', args=[self.test.pk, self.a.pk]))
+        self.assertContains(page, 'Switched tab')
+        snap = self.a.snapshots.get()
+        self.assertEqual(self.client.get(reverse('mcq_snapshot', args=[snap.pk])).status_code, 200)
+        self.client.post(reverse('mcq_test_update', args=[self.test.pk]),
+                         {'action': 'unlock', 'assessment_id': self.a.pk})
+        self.a.refresh_from_db()
+        self.assertIsNone(self.a.submitted_at)
+        self.assertTrue(self.a.resume_allowed)
+
+        # Intern continues once, answers still there.
+        self.client.force_login(self.user)
+        d = self.begin()
+        self.assertIn('return a+b', d['html'])
+        self.assertIn('a list', d['html'])
+        self.assertTrue(self.begin()['locked'])        # a second reopen locks again
+
+    def test_flags_do_not_lock(self):
+        self.begin()
+        d = self.client.post(self.url('proctor'), {'kind': 'no_face'}).json()
+        self.assertFalse(d['locked'])
+        self.a.refresh_from_db()
+        self.assertIsNone(self.a.locked_at)
+        self.assertEqual(self.a.flag_count, 1)
+
+    def test_submit_then_hr_marks(self):
+        self.begin()
+        self.client.post(self.url('take'), {'q_0': '1', 'q_1': 'def add(a,b): return a+b', 'q_2': 'changeable'})
+        self.a.refresh_from_db()
+        self.assertTrue(self.a.needs_marking)
+        self.assertContains(self.client.get(self.url('result')), 'Waiting for marking')
+
+        self.client.force_login(self.admin)
+        url = reverse('mcq_attempt', args=[self.test.pk, self.a.pk])
+        self.assertContains(self.client.get(url), 'return a + b')   # model answer for HR
+        self.client.post(url, {'mark_1': '4', 'comment_1': 'Good', 'mark_2': ''})
+        self.a.refresh_from_db()
+        self.assertIsNone(self.a.scored)                             # one still unmarked
+        self.client.post(url, {'mark_1': '4', 'comment_1': 'Good', 'mark_2': '9'})  # capped at 2
+        self.a.refresh_from_db()
+        self.assertEqual(self.a.scored, 7)                           # 1 + 4 + 2
+        self.client.force_login(self.user)
+        res = self.client.get(self.url('result'))
+        self.assertContains(res, 'Good')
+        self.assertContains(res, '87.5%')
+
+    def test_retake_clears_everything(self):
+        self.begin()
+        self.client.post(self.url('proctor'), {'kind': 'tab_hidden'})
+        self.client.force_login(self.admin)
+        self.client.post(reverse('mcq_test_update', args=[self.test.pk]),
+                         {'action': 'reset', 'assessment_id': self.a.pk})
+        self.a.refresh_from_db()
+        self.assertEqual((self.a.violations, self.a.answers, self.a.started_at, self.a.locked_at), ([], {}, None, None))

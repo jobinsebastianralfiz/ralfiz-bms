@@ -1,0 +1,73 @@
+{% extends 'staff/base.html' %}
+{% load static %}
+
+{% block title %}{{ test.title }}{% endblock %}
+{% block heading %}Test{% endblock %}
+
+{% block content %}
+<div id="pcGate">
+  <a href="{% url 'staff:assessment_list' %}" class="sf-back"><i class="fas fa-arrow-left"></i> Assessments</a>
+  <div class="sf-card mq-start">
+    <span class="mq-start-ico"><i class="fas fa-video"></i></span>
+    <h2>{{ test.title }}</h2>
+    <p class="mq-desc">{% if a.resume_allowed %}HR has unlocked your test. You can carry on where you stopped.{% elif test.description %}{{ test.description|linebreaksbr }}{% else %}This is a supervised test.{% endif %}</p>
+
+    {% if not a.started_at or a.resume_allowed %}
+    <div class="mq-facts">
+      <div><strong>{{ test.question_count }}</strong><span>Questions</span></div>
+      <div><strong>{{ a.max_score|floatformat:"-2" }}</strong><span>Marks</span></div>
+      <div><strong>{% if test.duration_minutes %}{{ test.duration_minutes }} min{% else %}No limit{% endif %}</strong><span>Time</span></div>
+    </div>
+
+    <div class="pc-cam">
+      <video id="pcVideo" autoplay muted playsinline></video>
+      <div class="pc-cam-msg" id="pcCamMsg"><i class="fas fa-camera"></i> Camera is off</div>
+    </div>
+
+    <ul class="pc-checks">
+      <li id="pcChkCam"><i class="fas fa-circle"></i> Camera on and your face visible</li>
+      <li id="pcChkScreen"><i class="fas fa-circle"></i> Only one screen connected</li>
+      <li id="pcChkFull"><i class="fas fa-circle"></i> The test opens in fullscreen</li>
+    </ul>
+
+    <div class="pc-warn">
+      <strong><i class="fas fa-lock"></i> This test locks itself if you:</strong>
+      <ul>
+        <li>switch to another tab, window, app or browser</li>
+        <li>leave fullscreen (Esc) or reload this page</li>
+        <li>turn the camera off or connect another screen</li>
+      </ul>
+      <span>Your camera takes pictures during the test and HR sees them, with every time you look away or someone else is in view. Close other apps and turn off notifications first. If it locks, your answers so far are saved and HR decides.</span>
+    </div>
+
+    <p class="pc-error" id="pcError" hidden></p>
+    <button type="button" class="sf-btn mq-go" id="pcCamBtn"><i class="fas fa-camera"></i> Turn on camera</button>
+    <button type="button" class="sf-btn mq-go" id="pcStart" hidden><i class="fas fa-play"></i> {% if a.resume_allowed %}Continue test{% else %}Start test{% endif %}</button>
+    {% else %}
+    <div class="pc-warn">
+      <strong><i class="fas fa-lock"></i> This test was already opened.</strong>
+      <span>Opening it again means the page was reloaded or left. Tap below and the test will be locked and sent to HR, who can let you continue.</span>
+    </div>
+    <button type="button" class="sf-btn mq-go" id="pcStart"><i class="fas fa-paper-plane"></i> Send to HR</button>
+    {% endif %}
+  </div>
+</div>
+
+<div id="pcTest" hidden></div>
+<div class="pc-thumb" id="pcThumb" hidden><video id="pcThumbVideo" autoplay muted playsinline></video><span><i class="fas fa-circle"></i> REC</span></div>
+<div class="pc-lockscreen" id="pcLock" hidden><div><i class="fas fa-lock"></i><h2>Test locked</h2><p id="pcLockMsg">You left the test.</p><p class="sf-muted">Opening your result…</p></div></div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/test-take.js' %}?v={{ asset_v }}"></script>
+<script src="{% static 'js/proctor.js' %}?v={{ asset_v }}"></script>
+<script>
+Proctor.init({
+  beginUrl: '{% url "staff:assessment_begin" a.pk %}',
+  eventUrl: '{% url "staff:assessment_proctor" a.pk %}',
+  resultUrl: '{% url "staff:assessment_result" a.pk %}',
+  csrf: '{{ csrf_token }}',
+  needsCamera: {% if not a.started_at or a.resume_allowed %}true{% else %}false{% endif %}
+});
+</script>
+{% endblock %}

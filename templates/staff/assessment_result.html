@@ -6,37 +6,64 @@
 {% block content %}
 <a href="{% url 'staff:assessment_list' %}" class="sf-back"><i class="fas fa-arrow-left"></i> Assessments</a>
 
+{% if a.locked_at %}
+<div class="pc-locked-note"><i class="fas fa-lock"></i>
+  <div><strong>This test was locked</strong><span>{{ a.lock_reason }} at {{ a.locked_at|date:"g:i A" }}. Your answers up to then were saved and HR has been told. HR can let you continue.</span></div>
+</div>
+{% endif %}
+
+{% if a.scored is not None %}
 <div class="sf-card mq-score {% if a.percentage >= 60 %}good{% elif a.percentage >= 40 %}ok{% else %}low{% endif %}">
   <div class="mq-score-ring" style="--p: {{ a.percentage|default:0 }}"><span>{{ a.percentage|default:0 }}%</span></div>
   <div>
     <h2>{{ a.title }}</h2>
     <p class="mq-score-big">{{ a.scored|floatformat:"-2" }} <small>/ {{ a.max_score|floatformat:"-2" }}</small></p>
     <p class="sf-muted">Submitted {{ a.submitted_at|date:"d M Y, g:i A" }}</p>
-    <div class="mq-tally">
+    {% if right or wrong %}<div class="mq-tally">
       <span class="r"><i class="fas fa-check"></i> {{ right }} right</span>
       <span class="w"><i class="fas fa-xmark"></i> {{ wrong }} wrong</span>
       {% if skipped %}<span class="s"><i class="fas fa-minus"></i> {{ skipped }} skipped</span>{% endif %}
-    </div>
+    </div>{% endif %}
   </div>
 </div>
+{% else %}
+<div class="sf-card mq-score">
+  <div class="mq-score-ring wait"><span><i class="fas fa-hourglass-half"></i></span></div>
+  <div>
+    <h2>{{ a.title }}</h2>
+    <p class="mq-score-big" style="font-size:1.2rem">Waiting for marking</p>
+    <p class="sf-muted">Submitted {{ a.submitted_at|date:"d M Y, g:i A" }}. HR marks your {{ written }} written answer{{ written|pluralize }}{% if right or wrong %}; you got {{ a.auto_score|floatformat:"-2" }} from the choice questions{% endif %}.</p>
+  </div>
+</div>
+{% endif %}
 
-{% if show_answers %}
+{% if show_answers or a.scored is None %}
   <h2 class="sd-h2" style="margin:22px 0 10px">Your answers</h2>
   {% for r in rows %}
-  <div class="sf-card mq-q {% if r.is_right %}right{% elif r.skipped %}skipped{% else %}wrong{% endif %}">
+  <div class="sf-card mq-q {% if r.type == 'mcq' %}{% if r.is_right %}right{% elif r.skipped %}skipped{% else %}wrong{% endif %}{% elif r.is_marked %}{% if r.is_right %}right{% else %}part{% endif %}{% endif %}">
     <div class="mq-q-head"><span class="mq-num">{{ r.num }}</span><span class="mq-q-text">{{ r.question|linebreaksbr }}</span>
-      <span class="mq-marks">{% if r.is_right %}+{{ r.marks }}{% else %}0{% endif %} / {{ r.marks }}</span></div>
+      <span class="mq-marks">{% if r.type == 'mcq' %}{% if show_answers %}{% if r.is_right %}+{{ r.marks }}{% else %}0{% endif %} / {% endif %}{{ r.marks }}{% elif r.is_marked %}{{ r.got }} / {{ r.marks }}{% else %}— / {{ r.marks }}{% endif %}</span></div>
+    {% if r.type == 'mcq' %}
     <div class="mq-opts">
       {% for o in r.options %}
-      <div class="mq-opt{% if o.idx == r.correct %} is-correct{% endif %}{% if o.idx == r.chosen and o.idx != r.correct %} is-wrong{% endif %}">
+      <div class="mq-opt{% if show_answers and o.idx == r.correct %} is-correct{% endif %}{% if o.idx == r.chosen %}{% if not show_answers %} is-chosen{% elif o.idx != r.correct %} is-wrong{% endif %}{% endif %}">
         <span class="mq-letter">{{ o.letter }}</span>
         <span class="mq-opt-text">{{ o.text }}</span>
-        {% if o.idx == r.correct %}<i class="fas fa-check mq-mark"></i>{% elif o.idx == r.chosen %}<i class="fas fa-xmark mq-mark"></i>{% endif %}
+        {% if show_answers %}{% if o.idx == r.correct %}<i class="fas fa-check mq-mark"></i>{% elif o.idx == r.chosen %}<i class="fas fa-xmark mq-mark"></i>{% endif %}{% endif %}
       </div>
       {% endfor %}
     </div>
-    {% if r.skipped %}<p class="mq-note">You didn't answer this one.</p>{% endif %}
-    {% if r.explanation %}<p class="mq-note"><i class="far fa-lightbulb"></i> {{ r.explanation|linebreaksbr }}</p>{% endif %}
+    {% else %}
+      {% if r.skipped %}<p class="mq-note">You didn't answer this one.</p>
+      {% elif r.type == 'code' %}<pre class="mq-answer-code">{{ r.chosen }}</pre>
+      {% else %}<div class="mq-answer-text">{{ r.chosen|linebreaksbr }}</div>{% endif %}
+      {% if r.comment %}<p class="mq-note"><i class="far fa-comment"></i> <b>HR:</b> {{ r.comment|linebreaksbr }}</p>{% endif %}
+      {% if show_answers and a.scored is not None and r.model_answer %}
+        <details class="mq-model"><summary>Model answer</summary>{% if r.type == 'code' %}<pre class="mq-answer-code">{{ r.model_answer }}</pre>{% else %}<div class="mq-answer-text">{{ r.model_answer|linebreaksbr }}</div>{% endif %}</details>
+      {% endif %}
+    {% endif %}
+    {% if r.type == 'mcq' and r.skipped %}<p class="mq-note">You didn't answer this one.</p>{% endif %}
+    {% if show_answers and r.explanation and a.scored is not None %}<p class="mq-note"><i class="far fa-lightbulb"></i> {{ r.explanation|linebreaksbr }}</p>{% endif %}
   </div>
   {% endfor %}
 {% else %}

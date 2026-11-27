@@ -50,14 +50,15 @@
   <section>
     {% if tests_to_take %}
     <h2 class="sd-h2">Tests to take <a href="{% url 'staff:assessment_list' %}">Assessments</a></h2>
-    <div class="sd-tasks" style="margin-bottom:26px">
+    <div class="sd-tasks sd-tests">
       {% for a in tests_to_take %}
-      <a class="sd-task coral" href="{% url 'staff:assessment_take' a.pk %}">
+      <a class="sd-test" href="{% url 'staff:assessment_take' a.pk %}">
+        <span class="sd-test-ico"><i class="fas fa-{% if a.mcq_test.kind_label == 'Programming' %}code{% else %}file-pen{% endif %}"></i></span>
         <span class="sd-task-body">
           <strong>{{ a.title }}</strong>
-          <span>{{ a.mcq_test.question_count }} questions{% if a.mcq_test.duration_minutes %} · {{ a.mcq_test.duration_minutes }} min{% endif %}{% if a.due_date %} · {% if a.due_date < today %}<b class="late">due {{ a.due_date|date:"d M" }}</b>{% else %}take it by {{ a.due_date|date:"d M" }}{% endif %}{% endif %}</span>
+          <span>{{ a.mcq_test.kind_label }} · {{ a.mcq_test.question_count }} Q{% if a.mcq_test.duration_minutes %} · {{ a.mcq_test.duration_minutes }} min{% endif %}{% if a.mcq_test.proctored %} · <i class="fas fa-video"></i>{% endif %}{% if a.due_date %} · {% if a.due_date < today %}<b>due {{ a.due_date|date:"d M" }}</b>{% else %}by {{ a.due_date|date:"d M" }}{% endif %}{% endif %}</span>
         </span>
-        <span class="sd-check"><i class="fas fa-{% if a.started_at %}hourglass-half{% else %}play{% endif %}"></i></span>
+        <span class="sd-test-go">{% if a.started_at %}Continue{% else %}Start{% endif %} <i class="fas fa-arrow-right"></i></span>
       </a>
       {% endfor %}
     </div>

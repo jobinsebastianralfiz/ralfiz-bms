@@ -649,6 +649,10 @@ class McqTest(models.Model):
     shuffle_questions = models.BooleanField(default=True, help_text='Each intern gets the questions in a different order')
     show_answers = models.BooleanField(default=True, help_text='Show correct answers after the intern submits')
     is_active = models.BooleanField(default=True, help_text='Untaken tests can still be started')
+    proctored = models.BooleanField(default=False, help_text='Webcam on, fullscreen, and the test locks if the '
+                                                             'intern leaves the page')
+    max_violations = models.PositiveSmallIntegerField(default=1, help_text='Lock after this many times leaving '
+                                                                          'the test (1 = first time)')
     created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True,
                                    related_name='created_mcq_tests')
     created_at = models.DateTimeField(auto_now_add=True)
@@ -669,6 +673,20 @@ class McqTest(models.Model):
     @property
     def total_marks(self):
         return sum(float(q.get('marks', 1)) for q in (self.questions or []))
+
+    @property
+    def has_written(self):
+        """Has code/text questions that HR marks by hand."""
+        return any(q.get('type', 'mcq') != 'mcq' for q in (self.questions or []))
+
+    @property
+    def kind_label(self):
+        types = {q.get('type', 'mcq') for q in (self.questions or [])}
+        if types == {'mcq'}:
+            return 'MCQ'
+        if 'mcq' in types:
+            return 'Mixed'
+        return 'Programming' if 'code' in types else 'Written'
 
 
 class InternAssessment(models.Model):
@@ -710,6 +728,17 @@ class InternAssessment(models.Model):
                                help_text='MCQ: {question index: chosen option index}')
     started_at = models.DateTimeField(null=True, blank=True)
     submitted_at = models.DateTimeField(null=True, blank=True)
+    # Written (code/text) questions are marked by HR: {question index: {"marks": n, "comment": ""}}.
+    auto_score = models.DecimalField(max_digits=6, decimal_places=2, null=True, blank=True,
+                                     help_text='Marks from MCQ questions, set on submit')
+    marks = models.JSONField(default=dict, blank=True)
+    marked_at = models.DateTimeField(null=True, blank=True)
+    # Proctoring
+    violations = models.JSONField(default=list, blank=True,
+                                  help_text='[{"at", "kind", "detail", "locks"}] tab switches, camera flags, ...')
+    locked_at = models.DateTimeField(null=True, blank=True)
+    lock_reason = models.CharField(max_length=255, blank=True)
+    resume_allowed = models.BooleanField(default=False, help_text='HR unlocked it; the next open continues the test')
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -735,10 +764,42 @@ class InternAssessment(models.Model):
         return self.mcq_test_id is not None and self.submitted_at is None
 
     @property
+    def needs_marking(self):
+        return self.submitted_at is not None and self.scored is None and self.mcq_test_id is not None
+
+    @property
+    def flag_count(self):
+        return len(self.violations or [])
+
+    @property
     def percentage(self):
         if self.scored is None or not self.max_score:
             return None
         return round(float(self.scored) / float(self.max_score) * 100, 1)
+
+
+def proctor_snapshot_path(instance, filename):
+    return f'proctor/{instance.assessment_id}/{uuid.uuid4().hex[:10]}.jpg'
+
+
+def _private_storage():
+    from core.models import _private_storage as storage
+    return storage()
+
+
+class ProctorSnapshot(models.Model):
+    """A webcam still taken during a proctored test. Stored privately; HR
+    sees them on the review page."""
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    assessment = models.ForeignKey(InternAssessment, on_delete=models.CASCADE, related_name='snapshots')
+    image = models.FileField(upload_to=proctor_snapshot_path, storage=_private_storage, max_length=200)
+    kind = models.CharField(max_length=30, default='periodic')
+    detail = models.CharField(max_length=255, blank=True)
+    faces = models.SmallIntegerField(null=True, blank=True)
+    taken_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['taken_at']
 
 
 class Payroll(models.Model):
