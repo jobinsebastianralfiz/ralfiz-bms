@@ -1,0 +1,84 @@
+{% load money %}
+{% comment %}The quote as the client reads it on the link. The PDF stays quotes/pdf.html.{% endcomment %}
+<section class="agr-section">
+  <div class="kv-grid">
+    <div><label>Prepared for</label><div>{{ quote.recipient_company|default:quote.recipient_name }}{% if quote.recipient_company and quote.recipient_name %}<br><span class="kv-sub">{{ quote.recipient_name }}</span>{% endif %}</div></div>
+    <div><label>Prepared by</label><div>{{ company.company_name|default:"Ralfiz Technologies" }}<br><span class="kv-sub">Perinthalmanna, Kerala</span></div></div>
+    <div><label>Quotation</label><div>{{ quote.quote_number }}<br><span class="kv-sub">issued {{ quote.issue_date|date:"d M Y" }}</span></div></div>
+    <div><label>Valid until</label><div>{{ quote.valid_until|date:"d M Y" }}{% if quote.duration %}<br><span class="kv-sub">Timeline: {{ quote.duration }}</span>{% endif %}</div></div>
+  </div>
+</section>
+
+<section class="agr-section">
+  <div class="agr-section-head"><span class="agr-no">1</span><h2>{{ quote.title }}</h2></div>
+  {% if quote.description %}<p class="pre-line">{{ quote.description }}</p>{% endif %}
+  <table class="pay-table">
+    <thead><tr><th>Item</th><th style="text-align:right">Qty</th><th style="text-align:right">Amount</th></tr></thead>
+    <tbody>
+      {% for item in core_items %}
+      <tr>
+        <td><strong>{{ item.description }}</strong>{% if item.details %}<br><span class="kv-sub pre-line">{{ item.details }}</span>{% endif %}
+          {% if item.quantity != 1 %}<br><span class="kv-sub">&#8377;{{ item.unit_price|inr }} each</span>{% endif %}</td>
+        <td style="text-align:right">{{ item.quantity|floatformat:"-2" }}</td>
+        <td style="text-align:right">&#8377;{{ item.amount|inr }}</td>
+      </tr>
+      {% endfor %}
+      <tr><td colspan="2" style="text-align:right">Subtotal</td><td style="text-align:right">&#8377;{{ quote.subtotal|inr }}</td></tr>
+      {% if quote.discount %}<tr><td colspan="2" style="text-align:right">Discount</td><td style="text-align:right">-&#8377;{{ quote.discount|inr }}</td></tr>{% endif %}
+      {% if with_gst %}
+      <tr><td colspan="2" style="text-align:right">CGST ({{ cgst_rate|floatformat:"-2" }}%)</td><td style="text-align:right">&#8377;{{ cgst_amount|inr }}</td></tr>
+      <tr><td colspan="2" style="text-align:right">SGST ({{ sgst_rate|floatformat:"-2" }}%)</td><td style="text-align:right">&#8377;{{ sgst_amount|inr }}</td></tr>
+      {% endif %}
+    </tbody>
+  </table>
+  <div class="agr-fee">
+    <div class="agr-fee-amount">&#8377;{{ grand_total|inr }}</div>
+    <div class="agr-fee-note">Total {% if with_gst %}including GST{% else %}&middot; GST extra as applicable{% endif %}</div>
+  </div>
+</section>
+
+{% if addons %}
+<section class="agr-section">
+  <div class="agr-section-head"><span class="agr-no">+</span><h2>Optional add-ons</h2></div>
+  <p class="kv-sub" style="margin-bottom:10px">Not included in the total above. {% if link.is_open %}You can pick any of them when you accept, at the bottom of this page.{% endif %}</p>
+  <table class="pay-table">
+    <thead><tr><th>Add-on</th><th style="text-align:right">{% if with_gst %}Total incl. GST{% else %}Amount{% endif %}</th></tr></thead>
+    <tbody>
+      {% for a in addons %}
+      <tr>
+        <td><strong>{{ a.letter }}. {{ a.item.description }}</strong>{% if a.item.details %}<br><span class="kv-sub pre-line">{{ a.item.details }}</span>{% endif %}</td>
+        <td style="text-align:right">&#8377;{{ a.total|inr }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</section>
+{% endif %}
+
+{% if quote.deliverables %}
+<section class="agr-section">
+  <div class="agr-section-head"><span class="agr-no">2</span><h2>Deliverables</h2></div>
+  <p class="pre-line">{{ quote.deliverables }}</p>
+</section>
+{% endif %}
+
+{% if quote.payment_terms_display %}
+<section class="agr-section">
+  <div class="agr-section-head"><span class="agr-no">{% if quote.deliverables %}3{% else %}2{% endif %}</span><h2>Payment terms</h2></div>
+  <p class="pre-line">{{ quote.payment_terms_display }}</p>
+</section>
+{% endif %}
+
+{% if quote.terms %}
+<section class="agr-section">
+  <div class="agr-section-head"><span class="agr-no">&sect;</span><h2>Terms &amp; conditions</h2></div>
+  <p class="pre-line">{{ quote.terms }}</p>
+</section>
+{% endif %}
+
+{% if quote.client_notes %}
+<section class="agr-section">
+  <div class="agr-section-head"><span class="agr-no">&#9998;</span><h2>Notes</h2></div>
+  <p class="pre-line">{{ quote.client_notes }}</p>
+</section>
+{% endif %}

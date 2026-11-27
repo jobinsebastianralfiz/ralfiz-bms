@@ -1,0 +1,18 @@
+{% extends 'agreements/_doc_base.html' %}
+
+{% block title %}Quotation {{ quote.quote_number }}{% endblock %}
+{% block band_label %}Quotation{% endblock %}
+
+{% block body %}
+<div class="status-card">
+  <div class="status-icon info">&#8987;</div>
+  {% if expired %}
+  <h1>This quotation has expired</h1>
+  <p>Quotation <strong>{{ quote.quote_number }}</strong> was valid until {{ quote.valid_until|date:"d M Y" }}. Please contact us and we will send you an updated one.</p>
+  {% else %}
+  <h1>This link is no longer active</h1>
+  <p>We have sent a newer version of quotation <strong>{{ quote.quote_number }}</strong>. Please open the latest link we shared with you, or contact us.</p>
+  {% endif %}
+  <p style="margin-top:22px;font-size:13px;color:var(--agr-muted);">Call or WhatsApp us on +91 98956 63498.</p>
+</div>
+{% endblock %}

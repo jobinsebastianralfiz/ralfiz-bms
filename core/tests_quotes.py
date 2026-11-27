@@ -141,7 +141,7 @@ class QuoteFormPaymentTermsTests(TestCase):
             'quote': q, 'company': CompanySettings.get_settings(),
             'items': q.items.all(),
         })
-        self.assertIn('Payment Terms', html)
+        self.assertIn('Payment terms', html)
         self.assertIn('45% upfront, 55% on handover', html)
 
     def test_pdf_omits_the_section_when_there_are_no_terms(self):

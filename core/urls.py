@@ -14,6 +14,7 @@ from . import enrolment_web_views
 from . import offer_web_views
 from . import resignation_web_views
 from . import mcq_test_views
+from . import quote_link_views
 
 urlpatterns = [
     # Public Pages
@@ -130,6 +131,9 @@ urlpatterns = [
     path('quotes/<uuid:pk>/delete/', views.quote_delete, name='quote_delete'),
     path('quotes/<uuid:pk>/clone/', views.quote_clone, name='quote_clone'),
     path('quotes/<uuid:pk>/convert/', views.quote_convert, name='quote_convert'),
+    path('quotes/<uuid:pk>/send-link/', quote_link_views.quote_send_link, name='quote_send_link'),
+    path('quote-links/<uuid:pk>/cancel/', quote_link_views.quote_link_cancel, name='quote_link_cancel'),
+    path('quote-links/<uuid:pk>/signed.pdf', quote_link_views.quote_link_signed_pdf, name='quote_link_signed_pdf'),
 
     # Invoices
     path('invoices/', views.invoice_list, name='invoice_list'),

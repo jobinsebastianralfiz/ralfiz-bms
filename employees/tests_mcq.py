@@ -302,7 +302,7 @@ class EmployeeTestsTests(TestCase):
         page = self.client.get(reverse('mcq_test_detail', args=[test.pk]))
         self.assertContains(page, 'All employees')
         self.assertContains(page, 'Ravi')
-        self.assertNotContains(page, 'ET02')                 # owners are not offered
+        self.assertContains(page, 'ET02')                    # owners can take one too
         self.client.post(reverse('mcq_test_assign', args=[test.pk]), {'employees': [emp.pk]})
         a = test.assessments.get(employee=emp)
         self.assertContains(self.client.get(reverse('emp_employee_detail', args=[emp.pk])), 'Give an online MCQ test')

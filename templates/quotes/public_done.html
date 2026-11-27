@@ -1,0 +1,44 @@
+{% extends 'agreements/_doc_base.html' %}
+{% load money %}
+
+{% block title %}Quotation {{ quote.quote_number }} - {{ company.company_name|default:"Ralfiz Technologies" }}{% endblock %}
+{% block band_label %}Quotation{% endblock %}
+
+{% block body %}
+<div class="status-card">
+  {% if link.status == 'accepted' %}
+  <div class="status-icon ok">&#10003;</div>
+  <h1>Thank you, {{ link.signer_name }}</h1>
+  <p>Your acceptance of quotation <strong>{{ quote.quote_number }}</strong> for <strong>{{ quote.title }}</strong> is recorded
+     and kept as our agreement. We will be in touch to get started.</p>
+  {% else %}
+  <div class="status-icon info">&#9998;</div>
+  <h1>Change request received</h1>
+  <p>Thanks, {{ link.signer_name }}. We will look at your note and send you a revised quotation on a new link.</p>
+  {% endif %}
+
+  <div class="receipt">
+    <div class="receipt-row"><span>Quotation</span><span>{{ quote.quote_number }}</span></div>
+    <div class="receipt-row"><span>For</span><span>{{ quote.title }}</span></div>
+    <div class="receipt-row"><span>Response</span><span>{% if link.status == 'accepted' %}<span class="pill ok">Accepted</span>{% else %}<span class="pill stop">Changes requested</span>{% endif %}</span></div>
+    {% if link.status == 'accepted' %}
+    {% for a in picked_addons %}<div class="receipt-row"><span>Add-on</span><span>{{ a.letter }}. {{ a.item.description }}</span></div>{% endfor %}
+    <div class="receipt-row"><span>Total accepted</span><span>&#8377;{{ link.snapshot.accepted_total|default:grand_total|inr }} ({% if link.with_gst %}incl. GST{% else %}plus GST{% endif %})</span></div>
+    <div class="receipt-row"><span>Signed as</span><span>{{ link.signed_name }}</span></div>
+    {% endif %}
+    <div class="receipt-row"><span>On</span><span>{{ link.responded_at|date:"d M Y, g:i a" }}</span></div>
+  </div>
+
+  {% if link.status == 'accepted' %}
+  <div style="margin-top:26px; display:flex; gap:10px; justify-content:center; flex-wrap:wrap;">
+    <a href="{% url 'quote_public_pdf' link.token %}" class="copy-btn primary">Download signed copy (PDF)</a>
+  </div>
+  {% else %}
+  <div class="receipt" style="text-align:left;"><div class="receipt-row" style="display:block;">
+    <span>Your note</span><p class="pre-line" style="margin:6px 0 0;color:var(--agr-ink);">{{ link.change_notes }}</p>
+  </div></div>
+  {% endif %}
+
+  <p style="margin-top:22px;font-size:13px;color:var(--agr-muted);">Questions? Call or WhatsApp us on +91 98956 63498.</p>
+</div>
+{% endblock %}

@@ -10,6 +10,7 @@ from django.urls import re_path
 from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView, SpectacularRedocView
 
 from academy.public_views import robots as academy_robots
+from core import quote_link_views
 from connector.files import pdf_download as connector_pdf_download
 from connector.mcp import MCPView
 from employees.views import CertificateVerifyView, certificate_public_pdf
@@ -38,6 +39,8 @@ urlpatterns = [
     path('staff/', include('employees.portal_urls')),
     path('agreement/', include('employees.agreement_urls')),
     path('client-agreement/', include('core.client_agreement_urls')),
+    path('quote/<str:token>/pdf/', quote_link_views.quote_public_pdf, name='quote_public_pdf'),
+    path('quote/<str:token>/', quote_link_views.quote_public, name='quote_public'),
     path('signoff/', include('core.signoff_urls')),
     path('enrol/', include('employees.enrolment_urls')),
     path('offer/', include('employees.offer_urls')),

@@ -18,10 +18,9 @@ MAX_UPLOAD_BYTES = 2 * 1024 * 1024
 
 
 def _people():
-    """Everyone a test can be given to: active interns and employees (not
-    owners or partners)."""
-    return (Employee.objects.select_related('user').filter(status='active')
-            .exclude(role__in=('owner', 'partner')).order_by('user__first_name'))
+    """Everyone a test can be given to: every active intern and employee,
+    owners and partners too (so they can try a test themselves)."""
+    return Employee.objects.select_related('user').filter(status='active').order_by('user__first_name')
 
 
 def _is_intern(e):

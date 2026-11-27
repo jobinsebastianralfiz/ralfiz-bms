@@ -126,61 +126,39 @@
             <thead>
               <tr>
                 <th>Description</th>
-                <th style="width: 100px;">Qty</th>
-                <th style="width: 150px;">Unit Price</th>
-                <th style="width: 150px;">Amount</th>
+                <th style="width: 70px;">Qty</th>
+                <th style="width: 120px;">Unit Price</th>
+                <th style="width: 120px;">Amount</th>
                 <th style="width: 50px;"></th>
               </tr>
             </thead>
             <tbody id="lineItemsBody">
-              {% if quote and quote.items.all %}
-                {% for item in quote.items.all %}
-                <tr class="line-item-row" data-index="{{ forloop.counter }}">
-                  <td>
-                    <input type="text" class="form-control" name="item_description_{{ forloop.counter }}" value="{{ item.description }}" placeholder="Item description">
-                    <input type="hidden" name="item_id_{{ forloop.counter }}" value="{{ item.pk }}">
-                  </td>
-                  <td>
-                    <input type="number" class="form-control text-end item-qty" name="item_quantity_{{ forloop.counter }}" value="{{ item.quantity|floatformat:0 }}" min="1" onchange="calculateLineTotal(this)">
-                  </td>
-                  <td>
-                    <input type="number" class="form-control text-end item-price" name="item_price_{{ forloop.counter }}" value="{{ item.unit_price|floatformat:2 }}" step="0.01" onchange="calculateLineTotal(this)">
-                  </td>
-                  <td>
-                    <input type="text" class="form-control text-end item-total" readonly value="{{ item.amount|floatformat:2 }}">
-                  </td>
-                  <td>
-                    <button type="button" class="btn btn-ghost btn-sm btn-icon text-danger" onclick="removeLineItem(this)">
-                      <i class="fas fa-trash"></i>
-                    </button>
-                  </td>
-                </tr>
-                {% endfor %}
-              {% else %}
-              <tr class="line-item-row" data-index="1">
+              {% for item in quote.items.all %}
+              <tr class="line-item-row{% if item.is_optional %} is-addon{% endif %}" data-index="{{ forloop.counter }}">
                 <td>
-                  <input type="text" class="form-control" name="item_description_1" placeholder="Item description">
+                  <input type="text" class="form-control" name="item_description_{{ forloop.counter }}" value="{{ item.description }}" placeholder="Item, e.g. Admin panel">
+                  <textarea class="form-control form-control-sm mt-1 item-details" name="item_details_{{ forloop.counter }}" rows="2" placeholder="Details shown after the name (optional), e.g. properties, enquiries, staff logins">{{ item.details }}</textarea>
+                  <label class="addon-tick" title="An add-on the client can pick. It is listed separately and not counted in the total."><input type="checkbox" name="item_optional_{{ forloop.counter }}" value="1" {% if item.is_optional %}checked{% endif %} onchange="toggleAddon(this)"> Optional add-on</label>
                 </td>
-                <td>
-                  <input type="number" class="form-control text-end item-qty" name="item_quantity_1" value="1" min="1" onchange="calculateLineTotal(this)">
-                </td>
-                <td>
-                  <input type="number" class="form-control text-end item-price" name="item_price_1" value="0" step="0.01" onchange="calculateLineTotal(this)">
-                </td>
-                <td>
-                  <input type="text" class="form-control text-end item-total" readonly value="0.00">
-                </td>
-                <td>
-                  <button type="button" class="btn btn-ghost btn-sm btn-icon text-danger" onclick="removeLineItem(this)">
-                    <i class="fas fa-trash"></i>
-                  </button>
-                </td>
+                <td><input type="number" class="form-control text-end item-qty" name="item_quantity_{{ forloop.counter }}" value="{{ item.quantity|floatformat:0 }}" min="1" onchange="calculateLineTotal(this)"></td>
+                <td><input type="number" class="form-control text-end item-price" name="item_price_{{ forloop.counter }}" value="{{ item.unit_price|floatformat:2 }}" step="0.01" onchange="calculateLineTotal(this)"></td>
+                <td><input type="text" class="form-control text-end item-total" readonly value="{{ item.amount|floatformat:2 }}"></td>
+                <td><button type="button" class="btn btn-ghost btn-sm btn-icon text-danger" onclick="removeLineItem(this)"><i class="fas fa-trash"></i></button></td>
               </tr>
-              {% endif %}
+              {% endfor %}
             </tbody>
           </table>
         </div>
         <input type="hidden" name="item_count" id="itemCount" value="{% if quote %}{{ quote.items.count }}{% else %}1{% endif %}">
+        <style>
+          .addon-tick { display:flex; align-items:center; gap:6px; margin-top:6px; font-size:.8rem; color:var(--text-muted,#64748b); cursor:pointer; }
+          .addon-tick input { margin:0; }
+          .line-item-row.is-addon td { background:#fff7ed; }
+          .line-item-row.is-addon .addon-tick { color:#c2410c; font-weight:600; }
+          .line-item-row .item-details { resize:vertical; min-height:30px; }
+          #lineItemsBody td { padding-left:6px; padding-right:6px; }
+          #lineItemsBody .item-qty, #lineItemsBody .item-price, #lineItemsBody .item-total { padding-left:6px; padding-right:6px; min-width:0; }
+        </style>
 
         <!-- Item Templates -->
         <div class="card-body pt-0">
@@ -436,64 +414,41 @@ e.g.:
   })();
 </script>
 <script>
-let lineItemCounter = {{ quote.items.count|default:1 }};
+let lineItemCounter = {{ quote.items.count|default:0 }};
 
-function addLineItem() {
-  lineItemCounter++;
-  const tbody = document.getElementById('lineItemsBody');
-  const row = document.createElement('tr');
-  row.className = 'line-item-row';
-  row.dataset.index = lineItemCounter;
-  row.innerHTML = `
-    <td>
-      <input type="text" class="form-control" name="item_description_${lineItemCounter}" placeholder="Item description">
-    </td>
-    <td>
-      <input type="number" class="form-control text-end item-qty" name="item_quantity_${lineItemCounter}" value="1" min="1" onchange="calculateLineTotal(this)">
-    </td>
-    <td>
-      <input type="number" class="form-control text-end item-price" name="item_price_${lineItemCounter}" value="0" step="0.01" onchange="calculateLineTotal(this)">
-    </td>
-    <td>
-      <input type="text" class="form-control text-end item-total" readonly value="0.00">
-    </td>
-    <td>
-      <button type="button" class="btn btn-ghost btn-sm btn-icon text-danger" onclick="removeLineItem(this)">
-        <i class="fas fa-trash"></i>
-      </button>
-    </td>
-  `;
-  tbody.appendChild(row);
-  document.getElementById('itemCount').value = lineItemCounter;
+function escapeAttr(v) {
+  return String(v == null ? '' : v).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;');
 }
 
-function addTemplateItem(description, price) {
+function buildRow(description, price) {
   lineItemCounter++;
-  const tbody = document.getElementById('lineItemsBody');
+  const n = lineItemCounter;
   const row = document.createElement('tr');
   row.className = 'line-item-row';
-  row.dataset.index = lineItemCounter;
+  row.dataset.index = n;
   row.innerHTML = `
     <td>
-      <input type="text" class="form-control" name="item_description_${lineItemCounter}" value="${description}" placeholder="Item description">
+      <input type="text" class="form-control" name="item_description_${n}" value="${escapeAttr(description)}" placeholder="Item, e.g. Admin panel">
+      <textarea class="form-control form-control-sm mt-1 item-details" name="item_details_${n}" rows="2" placeholder="Details shown after the name (optional)"></textarea>
+      <label class="addon-tick" title="An add-on the client can pick. It is listed separately and not counted in the total."><input type="checkbox" name="item_optional_${n}" value="1" onchange="toggleAddon(this)"> Optional add-on</label>
     </td>
-    <td>
-      <input type="number" class="form-control text-end item-qty" name="item_quantity_${lineItemCounter}" value="1" min="1" onchange="calculateLineTotal(this)">
-    </td>
-    <td>
-      <input type="number" class="form-control text-end item-price" name="item_price_${lineItemCounter}" value="${price}" step="0.01" onchange="calculateLineTotal(this)">
-    </td>
-    <td>
-      <input type="text" class="form-control text-end item-total" readonly value="${price.toFixed(2)}">
-    </td>
-    <td>
-      <button type="button" class="btn btn-ghost btn-sm btn-icon text-danger" onclick="removeLineItem(this)">
-        <i class="fas fa-trash"></i>
-      </button>
-    </td>
+    <td><input type="number" class="form-control text-end item-qty" name="item_quantity_${n}" value="1" min="1" onchange="calculateLineTotal(this)"></td>
+    <td><input type="number" class="form-control text-end item-price" name="item_price_${n}" value="${price}" step="0.01" onchange="calculateLineTotal(this)"></td>
+    <td><input type="text" class="form-control text-end item-total" readonly value="${Number(price).toFixed(2)}"></td>
+    <td><button type="button" class="btn btn-ghost btn-sm btn-icon text-danger" onclick="removeLineItem(this)"><i class="fas fa-trash"></i></button></td>
   `;
-  tbody.appendChild(row);
+  document.getElementById('lineItemsBody').appendChild(row);
   document.getElementById('itemCount').value = lineItemCounter;
+  calculateTotals();
+  return row;
+}
+
+function addLineItem() { buildRow('', 0); }
+
+function addTemplateItem(description, price) { buildRow(description, price); }
+
+function toggleAddon(box) {
+  box.closest('tr').classList.toggle('is-addon', box.checked);
   calculateTotals();
 }
 
@@ -505,6 +460,11 @@ function removeLineItem(btn) {
     calculateTotals();
   }
 }
+
+// A new quote starts with one empty line.
+document.addEventListener('DOMContentLoaded', function () {
+  if (!document.querySelector('#lineItemsBody .line-item-row')) { lineItemCounter = 0; buildRow('', 0); }
+});
 
 function calculateLineTotal(input) {
   const row = input.closest('tr');
@@ -518,6 +478,7 @@ function calculateLineTotal(input) {
 function calculateTotals() {
   let subtotal = 0;
   document.querySelectorAll('.line-item-row').forEach(row => {
+    if (row.classList.contains('is-addon')) return;  // add-ons are not in the total
     const total = parseFloat(row.querySelector('.item-total').value) || 0;
     subtotal += total;
   });

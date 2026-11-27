@@ -1933,6 +1933,7 @@ class OwnerQuoteDetailView(APIView):
             'unit_price': str(it.unit_price),
             'amount': str(it.amount),
             'order': it.order,
+            'optional': it.is_optional,
         } for it in q.items.all()]
 
         return Response({
@@ -3034,6 +3035,7 @@ class OwnerQuoteCreateView(APIView):
                 quote=quote,
                 description=item.get('description', ''),
                 details=item.get('details', ''),
+                is_optional=bool(item.get('optional')),
                 quantity=item.get('quantity', 1),
                 unit_price=item.get('unit_price', 0),
                 amount=float(item.get('quantity', 1)) * float(item.get('unit_price', 0)),
@@ -3079,6 +3081,7 @@ class OwnerQuoteUpdateDeleteView(APIView):
                     quote=quote,
                     description=item.get('description', ''),
                     details=item.get('details', ''),
+                    is_optional=bool(item.get('optional')),
                     quantity=item.get('quantity', 1),
                     unit_price=item.get('unit_price', 0),
                     amount=float(item.get('quantity', 1)) * float(item.get('unit_price', 0)),
@@ -5068,6 +5071,7 @@ class CRMLeadQuoteListCreateView(APIView):
                 quote=quote,
                 description=item.get('description', ''),
                 details=item.get('details', ''),
+                is_optional=bool(item.get('optional')),
                 quantity=item.get('quantity', 1),
                 unit_price=item.get('unit_price', 0),
                 amount=float(item.get('quantity', 1)) * float(item.get('unit_price', 0)),

@@ -663,13 +663,22 @@ class Quote(models.Model):
         from decimal import Decimal
         # Values assigned before save() may be int/float (e.g. from API payloads);
         # coerce to Decimal so the arithmetic never mixes types.
-        self.subtotal = sum((item.amount for item in self.items.all()), Decimal('0'))
+        # Optional add-ons are offered on the side; only the core lines make the total.
+        self.subtotal = sum((item.amount for item in self.items.all() if not item.is_optional), Decimal('0'))
         discount = Decimal(str(self.discount or 0))
         tax_rate = Decimal(str(self.tax_rate or 0))
         taxable_amount = self.subtotal - discount
         self.tax_amount = taxable_amount * (tax_rate / Decimal('100'))
         self.total_amount = taxable_amount + self.tax_amount
         self.save()
+
+    @property
+    def core_items(self):
+        return [i for i in self.items.all() if not i.is_optional]
+
+    @property
+    def addon_items(self):
+        return [i for i in self.items.all() if i.is_optional]
 
     @property
     def is_expired(self):
@@ -703,6 +712,8 @@ class QuoteItem(models.Model):
     unit_price = models.DecimalField(max_digits=12, decimal_places=2)
     amount = models.DecimalField(max_digits=12, decimal_places=2)
     order = models.IntegerField(default=0)
+    is_optional = models.BooleanField(
+        default=False, help_text='Optional add-on: listed separately for the client to pick, not in the total')
 
     class Meta:
         ordering = ['order']
@@ -2367,3 +2378,4 @@ class DailyTask(models.Model):
         return self.title
 from .client_agreement_models import ClientAgreement  # noqa: E402,F401
 from .signoff_models import ProjectSignoff  # noqa: E402,F401
+from .quote_link_models import QuoteLink  # noqa: E402,F401

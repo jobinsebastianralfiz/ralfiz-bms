@@ -2353,7 +2353,18 @@ def quote_detail(request, pk):
         Quote.objects.select_related('client', 'project').prefetch_related('items'),
         pk=pk
     )
-    return render(request, 'quotes/detail.html', {'quote': quote})
+    links = list(quote.links.all())
+    link = links[0] if links else None
+    return render(request, 'quotes/detail.html', {
+        'quote': quote, 'link': link, 'old_links': links[1:6],
+        'link_url': link.public_url(request) if link else '',
+        'whatsapp_url': link.whatsapp_url(request) if link else '',
+        'mailto_url': link.mailto_url(request) if link else '',
+        'has_gst_rate': bool(quote.tax_rate),
+        'accepted_addons': [i for i in quote.items.all()
+                            if i.is_optional and link and link.status == 'accepted'
+                            and str(i.pk) in (link.snapshot or {}).get('chosen_addons', [])],
+    })
 
 
 @login_required
@@ -2425,9 +2436,12 @@ def quote_create(request):
                 QuoteItem.objects.create(
                     quote=quote,
                     description=description,
+                    details=(request.POST.get(f'item_details_{i}') or '').strip(),
+                    is_optional=request.POST.get(f'item_optional_{i}') == '1',
                     quantity=quantity,
                     unit_price=unit_price,
-                    amount=quantity * unit_price
+                    amount=quantity * unit_price,
+                    order=i,
                 )
 
         # Recalculate totals
@@ -2517,9 +2531,12 @@ def quote_update(request, pk):
                     QuoteItem.objects.create(
                         quote=quote,
                         description=description,
+                        details=(request.POST.get(f'item_details_{i}') or '').strip(),
+                        is_optional=request.POST.get(f'item_optional_{i}') == '1',
                         quantity=quantity,
                         unit_price=unit_price,
-                        amount=quantity * unit_price
+                        amount=quantity * unit_price,
+                        order=i,
                     )
 
             # Recalculate totals
@@ -2553,6 +2570,67 @@ def quote_update(request, pk):
         raise
 
 
+def quote_pdf_context(quote, with_gst):
+    """Everything quotes/pdf.html needs; shared with the client's quote link."""
+    from decimal import Decimal
+    company = CompanySettings.get_settings()
+    taxable_amount = quote.subtotal - (quote.discount or Decimal('0'))
+    tax_rate = Decimal(str(quote.tax_rate)) if quote.tax_rate is not None else Decimal('0')
+    cgst_amount = sgst_amount = tax_amount = Decimal('0')
+    total = taxable_amount
+    if with_gst:
+        cgst_amount = taxable_amount * (tax_rate / 2 / 100)
+        sgst_amount = taxable_amount * (tax_rate / 2 / 100)
+        tax_amount = cgst_amount + sgst_amount
+        total = taxable_amount + tax_amount
+    return {
+        'quote': quote,
+        'company': company,
+        'with_gst': with_gst,
+        'taxable_amount': taxable_amount,
+        'tax_rate': tax_rate,
+        'cgst_rate': tax_rate / 2 if with_gst else 0,
+        'sgst_rate': tax_rate / 2 if with_gst else 0,
+        'cgst_amount': cgst_amount,
+        'sgst_amount': sgst_amount,
+        'tax_amount': tax_amount,
+        'total_with_gst': total,
+        'grand_total': total,
+        **_quote_addons(quote, with_gst, tax_rate, taxable_amount, tax_amount, total),
+    }
+
+
+def _quote_addons(quote, with_gst, tax_rate, core_amount, core_tax, core_total):
+    """Optional add-ons with their GST, the 'core + all add-ons' row, the
+    amount in words, and which add-ons an accepted client picked."""
+    from decimal import Decimal
+    from employees.agreement_models import rupees_in_words
+    cent = Decimal('0.01')
+    accepted = next((l for l in quote.links.all() if l.status == 'accepted'), None)
+    chosen = set((accepted.snapshot or {}).get('chosen_addons', [])) if accepted else set()
+    rows, amt, gst = [], Decimal('0'), Decimal('0')
+    for item in quote.items.all():
+        if not item.is_optional:
+            continue
+        g = (item.amount * tax_rate / 100).quantize(cent) if with_gst else Decimal('0')
+        rows.append({'item': item, 'letter': chr(65 + len(rows)), 'gst': g, 'total': item.amount + g,
+                     'chosen': str(item.pk) in chosen})
+        amt += item.amount
+        gst += g
+    picked = [r for r in rows if r['chosen']]
+    picked_total = core_total + sum((r['total'] for r in picked), Decimal('0'))
+    return {
+        'core_items': [i for i in quote.items.all() if not i.is_optional],
+        'addons': rows,
+        'addons_amount': core_amount + amt,
+        'addons_gst': core_tax + gst,
+        'addons_total': core_total + amt + gst,
+        'amount_in_words': rupees_in_words(int(core_total.quantize(Decimal('1')))),
+        'picked_addons': picked,
+        'picked_total': picked_total,
+    }
+
+
 @login_required
 def quote_pdf(request, pk):
     """Generate PDF for a quote"""
@@ -2565,45 +2643,9 @@ def quote_pdf(request, pk):
         pk=pk
     )
 
-    # Get company settings
-    company = CompanySettings.get_settings()
-
-    # Check if GST should be included
     with_gst = request.GET.get('gst', '0') == '1'
     download = request.GET.get('download', '0') == '1'
-
-    # Calculate amounts
-    taxable_amount = quote.subtotal - (quote.discount or Decimal('0'))
-    # Use quote's tax_rate (0 means no tax), only default to 0 if None
-    tax_rate = Decimal(str(quote.tax_rate)) if quote.tax_rate is not None else Decimal('0')
-
-    cgst_amount = Decimal('0')
-    sgst_amount = Decimal('0')
-    tax_amount = Decimal('0')
-    total = taxable_amount
-
-    if with_gst:
-        cgst_rate = tax_rate / 2
-        sgst_rate = tax_rate / 2
-        cgst_amount = taxable_amount * (cgst_rate / 100)
-        sgst_amount = taxable_amount * (sgst_rate / 100)
-        tax_amount = cgst_amount + sgst_amount
-        total = taxable_amount + tax_amount
-
-    context = {
-        'quote': quote,
-        'company': company,
-        'with_gst': with_gst,
-        'taxable_amount': taxable_amount,
-        'tax_rate': tax_rate,
-        'cgst_rate': tax_rate / 2 if with_gst else 0,
-        'sgst_rate': tax_rate / 2 if with_gst else 0,
-        'cgst_amount': cgst_amount,
-        'sgst_amount': sgst_amount,
-        'tax_amount': tax_amount,
-        'total_with_gst': total,
-    }
-
+    context = quote_pdf_context(quote, with_gst)
     # If download requested, generate PDF
     if download:
         try:
@@ -2611,6 +2653,7 @@ def quote_pdf(request, pk):
             from django.conf import settings
             import os
 
+            context['font_dir'] = (settings.BASE_DIR / 'static' / 'certificates' / 'fonts').as_uri()
             html_string = render_to_string('quotes/pdf.html', context)
 
             # Create PDF
@@ -2703,6 +2746,7 @@ def quote_clone(request, pk):
             unit_price=item.unit_price,
             amount=item.amount,
             order=item.order,
+            is_optional=item.is_optional,
         )
 
     messages.success(request, f'Quote cloned successfully. New quote: {new_quote.quote_number}')
@@ -2755,17 +2799,23 @@ def quote_convert(request, pk):
         notes=quote.notes,
     )
 
-    # Copy all items from quote to invoice
-    for item in quote.items.all():
+    # Copy the core lines, plus any add-ons the client picked when accepting
+    # online. Add-ons nobody picked are not billed.
+    accepted = quote.links.filter(status='accepted').first()
+    chosen = set((accepted.snapshot or {}).get('chosen_addons', [])) if accepted else set()
+    billed = [i for i in quote.items.all() if not i.is_optional or str(i.pk) in chosen]
+    for item in billed:
         InvoiceItem.objects.create(
             invoice=invoice,
             description=item.description,
             details=item.details,
             quantity=item.quantity,
             unit_price=item.unit_price,
-            total=item.amount,
+            amount=item.amount,
             order=item.order,
         )
+    if any(i.is_optional for i in quote.items.all()):
+        invoice.calculate_totals()  # totals follow the add-ons actually billed
 
     # Update quote status to accepted if not already
     if quote.status not in ['accepted', 'rejected', 'expired']:
@@ -8406,8 +8456,7 @@ def emp_employee_detail(request, pk):
     leave_requests = current().counted(LeaveRequest.objects.filter(employee=employee)).order_by('-created_at')[:10]
     leave_summary = _employee_leave_summary(employee)
     work_assignments = WorkAssignment.objects.filter(assigned_to=employee).order_by('-created_at')[:10]
-    assessments = (employee.assessments.select_related('mcq_test')
-                   if employee.role not in ('owner', 'partner') else None)
+    assessments = employee.assessments.select_related('mcq_test')
     if assessments is not None:
         from employees.models import McqTest
         mcq_tests = McqTest.objects.filter(is_active=True).exclude(assessments__employee=employee)

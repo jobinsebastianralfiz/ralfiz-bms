@@ -586,14 +586,26 @@ ITEMS = {
 PAYMENT_TERMS = [value for value, _ in PAYMENT_TERMS_CHOICES]
 
 
-def _clean_items(items):
+QUOTE_ITEMS = {
+    **ITEMS,
+    'description': ITEMS['description'] + ' On a quote, a line with optional=true is an add-on the '
+                   'client may pick: it is listed separately and is not in the quote total.',
+    'items': {**ITEMS['items'], 'properties': {
+        **ITEMS['items']['properties'],
+        'optional': {'type': 'boolean', 'description': 'Optional add-on (quotes only), not in the total.'},
+    }},
+}
+
+
+def _clean_items(items, allow_optional=False):
     if not items:
         raise ToolError('Add at least one line item.')
     clean = []
     for n, item in enumerate(items, 1):
         if not isinstance(item, dict):
             raise ToolError(f'Item {n} must be an object with description and unit_price')
-        unknown = set(item) - {'description', 'details', 'quantity', 'unit_price'}
+        unknown = set(item) - {'description', 'details', 'quantity', 'unit_price'} - (
+            {'optional'} if allow_optional else set())
         if unknown:
             raise ToolError(f'Item {n}: unknown field(s) {", ".join(sorted(unknown))}')
         description = str(item.get('description') or '').strip()
@@ -607,8 +619,11 @@ def _clean_items(items):
             raise ToolError(f'Item {n} quantity must be more than 0')
         if unit_price < 0:
             raise ToolError(f'Item {n} unit_price cannot be negative')
-        clean.append({'description': description[:500], 'details': str(item.get('details') or ''),
-                      'quantity': quantity, 'unit_price': unit_price})
+        row = {'description': description[:500], 'details': str(item.get('details') or ''),
+               'quantity': quantity, 'unit_price': unit_price}
+        if allow_optional and item.get('optional'):
+            row['optional'] = True
+        clean.append(row)
     return clean
 
 
@@ -693,7 +708,7 @@ register(Tool(
 QUOTE_FIELDS = {
     'title': s_str('Quote title, e.g. "E-commerce website".'),
     'description': s_str('Scope summary shown on the quote.'),
-    'items': ITEMS,
+    'items': QUOTE_ITEMS,
     'discount': s_num('Discount in rupees, taken off before tax.', minimum=0),
     'tax_rate': s_num('GST percent. Defaults to the company rate (usually 18); pass 0 for '
                       'no tax.', minimum=0, maximum=100),
@@ -713,7 +728,7 @@ QUOTE_FIELDS = {
 def _quote_body(args):
     body = {k: v for k, v in args.items() if k != 'quote_id'}
     if 'items' in body:
-        body['items'] = _clean_items(body['items'])
+        body['items'] = _clean_items(body['items'], allow_optional=True)
     return body
 
 
