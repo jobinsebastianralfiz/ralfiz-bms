@@ -49,6 +49,7 @@ class ShopLicense(models.Model):
         ('fresh', 'Fruits & vegetables'),
         ('fmcg', 'Supermarket / FMCG'),
         ('pharmacy', 'Pharmacy'),
+        ('textiles', 'Textiles & garments'),
     ]
 
     ON_EXPIRY_CHOICES = [
@@ -80,8 +81,9 @@ class ShopLicense(models.Model):
     business_type = models.CharField(
         'Business type', max_length=20, choices=BUSINESS_TYPE_CHOICES, default='electronics',
         help_text='Switches features in the shop: weighing scale and daily prices for fruits & vegetables and '
-                  'supermarkets, batches & expiry for supermarkets and pharmacies, warranty for electronics, '
-                  'mobiles and general retail. The shop cannot change it.')
+                  'supermarkets, batches & expiry for supermarkets and pharmacies, sizes & colours and GST by '
+                  'price for textiles, warranty for electronics, mobiles, general retail, supermarkets and '
+                  'pharmacies. The shop cannot change it.')
     max_branches = models.PositiveIntegerField(
         'Branches allowed', default=1,
         help_text='How many active branches the shop may run (multi-branch Shop Manager). Single-branch '
