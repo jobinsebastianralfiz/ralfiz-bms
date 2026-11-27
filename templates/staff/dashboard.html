@@ -1,12 +1,12 @@
 {% extends 'staff/base.html' %}
 
 {% block title %}Home{% endblock %}
-{% block heading %}Hi, {{ first_name }}{% endblock %}
+{% block heading %}Home{% endblock %}
 
 {% block content %}
 <header class="sd-head">
   <div>
-    <h1>Hello, {{ first_name }}</h1>
+    <h1>{{ greeting|default:'Hello' }}, {{ first_name }}</h1>
     <p>Today is {{ today|date:"l, j F Y" }}</p>
   </div>
   <div class="sd-head-actions">
@@ -105,7 +105,7 @@
   <section>
     <h2 class="sd-h2">Statistics</h2>
     <div class="sd-stats">
-      <a class="sd-stat" href="{% url 'staff:attendance_history' %}"><strong>{{ days_present }}</strong><span>Days present this month</span></a>
+      <a class="sd-stat" href="{% url 'staff:attendance_history' %}"><strong>{{ days_present }}</strong><span>Days present in {{ today|date:"M" }}</span></a>
       <a class="sd-stat" href="{% url 'staff:leave' %}"><strong>{{ pending_leave }}</strong><span>Leave waiting</span></a>
       {% if can_apply_leave %}<a class="sd-stat link" href="{% url 'staff:leave' %}"><i class="fas fa-plus"></i><span>Apply Leave</span></a>
       {% else %}<a class="sd-stat link" href="tel:{{ office_tel }}"><i class="fas fa-phone"></i><span>Call Office</span></a>{% endif %}

@@ -275,8 +275,65 @@
   .sd-task-empty { min-height: 0; padding: 20px 16px; }
   .sd-task-empty-ico { width: 38px; height: 38px; font-size: 15px; }
 }
+
+/* ---- Phone Home, tidied (2026-11-27): one palette, rows not squeezed tiles ---- */
+@media (max-width: 900px) {
+  .sd-head { background: radial-gradient(120% 140% at 100% 0%, rgba(246,132,79,.55) 0%, rgba(246,132,79,0) 55%), linear-gradient(135deg, #6B3A8C 0%, #4A2766 100%);
+    box-shadow: 0 16px 30px -18px rgba(74, 39, 102, .8); padding: 16px 14px 16px 18px; }
+  .sd-head h1 { font-size: 20px; }
+  .sd-head-actions .sd-dark-btn { color: #5A2E78; padding: 0 12px; width: 40px; justify-content: center; }
+  .sd-head-actions .sd-dark-btn span { display: none; }
+
+  /* Today: three full-width rows, icon | title + one line | chevron */
+  .sd-cards { grid-template-columns: 1fr; gap: 0; margin-bottom: 22px; background: var(--sf-card-solid); border-radius: 18px;
+    border: 1px solid var(--sf-line-soft); box-shadow: var(--sd-shadow); overflow: hidden; }
+  .sd-card { display: grid; grid-template-columns: 38px minmax(0, 1fr) auto; grid-template-rows: auto auto; column-gap: 12px; align-items: center;
+    padding: 12px 14px; border-radius: 0; background: transparent !important; color: var(--sf-text); min-height: 0; }
+  .sd-card + .sd-card { border-top: 1px solid var(--sf-line-soft); }
+  .sd-card:hover { color: var(--sf-text); transform: none; box-shadow: none; background: var(--sd-soft) !important; }
+  .sd-card-top { display: contents; }
+  .sd-card-ico { grid-row: 1 / 3; grid-column: 1; width: 38px; height: 38px; border-radius: 12px; font-size: 15px; color: #fff; }
+  .sd-card.plum .sd-card-ico { background: var(--sd-plum); } .sd-card.teal .sd-card-ico { background: var(--sd-teal); } .sd-card.coral .sd-card-ico { background: var(--sd-coral); }
+  .sd-card-status { display: inline-block; grid-row: 1 / 3; grid-column: 3; font-size: 10.5px; padding: 4px 9px; background: var(--sd-soft); color: var(--sf-text-2); }
+  .sd-card.coral .sd-card-status { background: rgba(246,132,79,.14); color: #C2541F; }
+  .sd-card h3 { grid-column: 2; grid-row: 1; margin: 0; font-size: 14px; color: var(--sf-text); }
+  .sd-card-meta { grid-column: 2; grid-row: 2; margin: 2px 0 0; font-size: 12px; color: var(--sf-text-3); opacity: 1; }
+  .sd-card-meta span:first-child { white-space: nowrap; display: block; -webkit-line-clamp: unset; }
+  .sd-card-bar { display: none; }
+
+  /* Tests */
+  .sd-tests { margin-bottom: 22px; }
+  .sd-test { padding: 12px; gap: 10px; }
+  .sd-test-ico { width: 38px; height: 38px; font-size: 15px; }
+  .sd-test .sd-task-body strong { font-size: 13.5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+  /* Statistics + promo */
+  .sd-grid { gap: 22px; }
+  .sd-stats { gap: 8px; margin-bottom: 14px; }
+  .sd-stat:not(.link) { background: var(--sf-card-solid); border: 1px solid var(--sf-line-soft); box-shadow: var(--sd-shadow); }
+  .sd-stat { padding: 12px 10px; display: flex; flex-direction: column; justify-content: flex-start; min-height: 74px; border-radius: 14px; }
+  .sd-stat.link { justify-content: center; }
+  .sd-stat strong { font-size: 19px; }
+  .sd-stat span { font-size: 11px; }
+  .sd-promo { min-height: 0; padding: 16px; border-radius: 18px; }
+  .sd-promo .big { font-size: 16px; max-width: 70%; }
+  .sd-promo p, .sd-promo-bar { max-width: 66%; }
+  .sd-promo > .sd-dark-btn, .sd-promo-bar + .sd-dark-btn { height: 36px; padding: 0 14px; font-size: 12.5px; }
+  .sd-promo-art { width: 30%; max-width: 110px; right: 6px; }
+
+  /* Wallet: the six-month chart lives on the wallet page, not Home */
+  .sd-wallet { margin-top: 22px; }
+  .sd-wallet .xp-panel:has(.xp-bars) { display: none; }
+
+  /* Calendar: a card in the page, not a full-bleed band; bell is already in the top bar */
+  .sd-cal { margin: 4px 16px calc(var(--sf-tabbar, 64px) + 24px); padding: 18px 16px 8px; border-radius: 18px; }
+  .sd-cal-head a { display: none; }
+  .sd-cal-group:first-of-type { margin-top: 10px; }
+  .sd-ev { grid-template-columns: 58px 3px minmax(0, 1fr); }
+}
 @media (max-width: 380px) {
-  .sd-cards { gap: 8px; }
-  .sd-card { padding: 11px 10px; }
-  .sd-card h3 { font-size: 12.5px; }
+  .sd-stat span { font-size: 10.5px; }
+  .sd-card-status { display: none !important; }
+  .sd-head h1 { font-size: 17px; }
+  .sd-head p { font-size: 11.5px; }
 }
