@@ -601,6 +601,29 @@
       </div>
       <div class="card-body">
         <p class="text-muted small mb-3">Test scores and papers. The intern can view these (including the answer key) from their app login.</p>
+        <form method="post" class="d-flex gap-2 align-items-end flex-wrap mb-3 p-2" style="background:var(--bg-secondary, #f6f7fb);border-radius:10px">
+          {% csrf_token %}
+          <input type="hidden" name="action" value="give_mcq">
+          <div style="flex:1;min-width:200px">
+            <label class="form-label small mb-1"><i class="fas fa-list-check text-primary"></i> Give an online MCQ test</label>
+            {% if mcq_tests %}
+            <select name="mcq_test" class="form-control form-control-sm" required>
+              <option value="">Choose a test…</option>
+              {% for t in mcq_tests %}<option value="{{ t.pk }}">{{ t.title }} ({{ t.question_count }} Q{% if t.duration_minutes %}, {{ t.duration_minutes }} min{% endif %})</option>{% endfor %}
+            </select>
+            {% else %}
+            <div class="small text-muted">No tests to give. <a href="{% url 'mcq_test_list' %}">Upload a JSON test</a>.</div>
+            {% endif %}
+          </div>
+          {% if mcq_tests %}
+          <div>
+            <label class="form-label small mb-1">Take it by</label>
+            <input type="date" name="due_date" class="form-control form-control-sm">
+          </div>
+          <button type="submit" class="btn btn-sm btn-primary"><i class="fas fa-paper-plane"></i> Give test</button>
+          {% endif %}
+          <a href="{% url 'mcq_test_list' %}" class="btn btn-sm btn-ghost">MCQ Tests</a>
+        </form>
         <form method="post" enctype="multipart/form-data" class="row g-2 mb-4">
           {% csrf_token %}
           <input type="hidden" name="action" value="add_assessment">
@@ -651,11 +674,12 @@
             <tbody>
               {% for a in assessments %}
               <tr>
-                <td class="fw-medium">{{ a.title }}{% if a.description %}<div class="text-muted small">{{ a.description }}</div>{% endif %}</td>
+                <td class="fw-medium">{% if a.mcq_test %}<a href="{% url 'mcq_test_detail' a.mcq_test.pk %}">{{ a.title }}</a> <span class="badge bg-info">MCQ</span>{% else %}{{ a.title }}{% endif %}{% if a.description %}<div class="text-muted small">{{ a.description }}</div>{% endif %}</td>
                 <td>{{ a.date|date:"d M Y" }}</td>
                 <td>
                   {% if a.is_graded %}<span class="fw-medium">{{ a.scored }} / {{ a.max_score }}</span>
                   <span class="text-muted small">({{ a.percentage }}%)</span>
+                  {% elif a.mcq_pending %}<span class="text-muted">/ {{ a.max_score|floatformat:"-2" }} · {% if a.started_at %}In progress{% else %}Not taken yet{% endif %}</span>
                   {% else %}<span class="text-muted">/ {{ a.max_score }} · Not graded</span>{% endif %}
                 </td>
                 <td>

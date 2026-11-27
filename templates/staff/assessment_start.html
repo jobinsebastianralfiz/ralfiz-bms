@@ -1,0 +1,30 @@
+{% extends 'staff/base.html' %}
+
+{% block title %}{{ test.title }}{% endblock %}
+{% block heading %}Test{% endblock %}
+
+{% block content %}
+<a href="{% url 'staff:assessment_list' %}" class="sf-back"><i class="fas fa-arrow-left"></i> Assessments</a>
+
+<div class="sf-card mq-start">
+  <span class="mq-start-ico"><i class="fas fa-file-pen"></i></span>
+  <h2>{{ test.title }}</h2>
+  {% if test.description %}<p class="mq-desc">{{ test.description|linebreaksbr }}</p>{% endif %}
+
+  <div class="mq-facts">
+    <div><strong>{{ test.question_count }}</strong><span>Questions</span></div>
+    <div><strong>{{ a.max_score|floatformat:"-2" }}</strong><span>Marks</span></div>
+    <div><strong>{% if test.duration_minutes %}{{ test.duration_minutes }} min{% else %}No limit{% endif %}</strong><span>Time</span></div>
+  </div>
+
+  <ul class="mq-rules">
+    <li>Each question has one correct answer. Tap an option to choose it.</li>
+    {% if test.duration_minutes %}<li>The timer starts when you tap <b>Start test</b> and keeps running if you leave the page. When it ends, your answers are submitted.</li>{% endif %}
+    <li>You can take this test once. Check your answers before you submit.</li>
+    {% if test.show_answers %}<li>After you submit you'll see your score and the correct answers.</li>{% endif %}
+    {% if a.due_date %}<li>Take it by <b>{{ a.due_date|date:"d M Y" }}</b>.</li>{% endif %}
+  </ul>
+
+  <a href="?start=1" class="sf-btn mq-go"><i class="fas fa-play"></i> Start test</a>
+</div>
+{% endblock %}

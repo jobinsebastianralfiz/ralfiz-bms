@@ -1,0 +1,154 @@
+{% extends 'base.html' %}
+{% block title %}{{ test.title }} - MCQ Tests{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title">{{ test.title }} {% if not test.is_active %}<span class="badge bg-secondary align-middle">Closed</span>{% endif %}</h1>
+    <p class="page-subtitle mb-0">{{ test.question_count }} questions · {{ test.total_marks|floatformat:"-2" }} marks · {% if test.duration_minutes %}{{ test.duration_minutes }} minutes{% else %}no time limit{% endif %}
+      {% if done_count %} · {{ done_count }} taken{% if avg is not None %}, average {{ avg }}%{% endif %}{% endif %}</p>
+  </div>
+  <div class="page-actions">
+    <a href="{% url 'mcq_test_list' %}" class="btn btn-ghost"><i class="fas fa-arrow-left"></i> All tests</a>
+  </div>
+</div>
+
+<div class="row">
+  <div class="col-12 col-lg-7" style="padding: 0.75rem;">
+    <div class="card mb-4">
+      <div class="card-header"><h3 class="card-title"><i class="fas fa-user-graduate me-2 text-primary"></i> Give to interns</h3></div>
+      <div class="card-body">
+        {% if available %}
+        <form method="post" action="{% url 'mcq_test_assign' test.pk %}">
+          {% csrf_token %}
+          <label class="small d-block mb-2"><input type="checkbox" id="mqAll"> <b>All interns</b> ({{ available|length }})</label>
+          <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:6px;max-height:260px;overflow:auto" class="mb-3">
+            {% for e in available %}
+            <label class="small"><input type="checkbox" name="employees" value="{{ e.pk }}" class="mq-pick"> {{ e.full_name }} <span class="text-muted">{{ e.employee_id }}</span></label>
+            {% endfor %}
+          </div>
+          <div class="d-flex gap-2 align-items-end flex-wrap">
+            <div>
+              <label class="form-label small mb-1">Take it by (optional)</label>
+              <input type="date" name="due_date" class="form-control form-control-sm">
+            </div>
+            <button type="submit" class="btn btn-sm btn-primary"><i class="fas fa-paper-plane"></i> Give test</button>
+          </div>
+        </form>
+        {% else %}
+        <p class="text-muted mb-0">Every active intern already has this test.</p>
+        {% endif %}
+      </div>
+    </div>
+
+    <div class="card mb-4">
+      <div class="card-header"><h3 class="card-title"><i class="fas fa-square-poll-vertical me-2 text-primary"></i> Results</h3></div>
+      <div class="card-body p-0">
+        {% if given %}
+        <div class="table-responsive">
+          <table class="table mb-0">
+            <thead><tr><th>Intern</th><th>Status</th><th>Score</th><th></th></tr></thead>
+            <tbody>
+              {% for a in given %}
+              <tr>
+                <td><a href="{% url 'emp_employee_detail' a.employee.pk %}" class="fw-medium">{{ a.employee.full_name }}</a>
+                  {% if a.due_date %}<div class="text-sm text-muted">by {{ a.due_date|date:"d M Y" }}</div>{% endif %}</td>
+                <td class="text-sm">
+                  {% if a.submitted_at %}<span class="badge bg-success">Taken</span> <span class="text-muted">{{ a.submitted_at|date:"d M, g:i A" }}</span>
+                  {% elif a.started_at %}<span class="badge bg-warning text-dark">In progress</span>
+                  {% else %}<span class="badge bg-secondary">Not started</span>{% endif %}
+                </td>
+                <td>{% if a.submitted_at %}<b>{{ a.scored|floatformat:"-2" }}</b> / {{ a.max_score|floatformat:"-2" }} <span class="text-muted text-sm">({{ a.percentage }}%)</span>{% else %}<span class="text-muted">&mdash;</span>{% endif %}</td>
+                <td class="text-end">
+                  <form method="post" action="{% url 'mcq_test_update' test.pk %}" class="d-inline"
+                        onsubmit="return confirm('{% if a.submitted_at %}Clear {{ a.employee.full_name|escapejs }}\'s score and let them take it again?{% else %}Take this test back from {{ a.employee.full_name|escapejs }}?{% endif %}');">
+                    {% csrf_token %}
+                    <input type="hidden" name="assessment_id" value="{{ a.pk }}">
+                    {% if a.submitted_at %}
+                    <button name="action" value="reset" class="btn btn-sm btn-ghost" title="Let them retake"><i class="fas fa-rotate-left"></i> Retake</button>
+                    {% else %}
+                    <button name="action" value="remove" class="btn btn-sm btn-outline-danger" title="Take back"><i class="fas fa-xmark"></i></button>
+                    {% endif %}
+                  </form>
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        {% else %}
+        <p class="text-muted" style="padding: 20px;">Not given to anyone yet.</p>
+        {% endif %}
+      </div>
+    </div>
+
+    <div class="card mb-4">
+      <div class="card-header"><h3 class="card-title"><i class="fas fa-list-ol me-2 text-primary"></i> Questions &amp; answers</h3></div>
+      <div class="card-body">
+        {% for q in questions %}
+        <div class="mb-3 pb-3" style="border-bottom:1px solid var(--border-color, #eceef4)">
+          <div class="fw-medium mb-1">{{ q.num }}. {{ q.question|linebreaksbr }} <span class="text-muted text-sm">({{ q.marks }} mark{{ q.marks|pluralize }})</span></div>
+          {% for o in q.options %}
+          <div class="small {% if o.right %}text-success fw-semibold{% endif %}">{{ o.letter }}. {{ o.text }}{% if o.right %} <i class="fas fa-check"></i>{% endif %}</div>
+          {% endfor %}
+          {% if q.explanation %}<div class="small text-muted mt-1"><i class="far fa-lightbulb"></i> {{ q.explanation }}</div>{% endif %}
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+
+  <div class="col-12 col-lg-5" style="padding: 0.75rem;">
+    <div class="card mb-4">
+      <div class="card-header"><h3 class="card-title"><i class="fas fa-sliders me-2 text-primary"></i> Settings</h3></div>
+      <div class="card-body">
+        <form method="post" action="{% url 'mcq_test_update' test.pk %}">
+          {% csrf_token %}
+          <input type="hidden" name="action" value="settings">
+          <label class="form-label small mb-1">Title</label>
+          <input type="text" name="title" value="{{ test.title }}" class="form-control form-control-sm mb-2" required>
+          <label class="form-label small mb-1">Instructions</label>
+          <textarea name="description" rows="3" class="form-control form-control-sm mb-2">{{ test.description }}</textarea>
+          <label class="form-label small mb-1">Time limit (minutes, 0 = none)</label>
+          <input type="number" min="0" name="duration_minutes" value="{{ test.duration_minutes }}" class="form-control form-control-sm mb-2">
+          <label class="small d-block"><input type="checkbox" name="shuffle_questions" {% if test.shuffle_questions %}checked{% endif %}> Shuffle question order for each intern</label>
+          <label class="small d-block"><input type="checkbox" name="show_answers" {% if test.show_answers %}checked{% endif %}> Show correct answers after they submit</label>
+          <label class="small d-block mb-3"><input type="checkbox" name="is_active" {% if test.is_active %}checked{% endif %}> Open (untick to stop new starts)</label>
+          <button class="btn btn-sm btn-primary"><i class="fas fa-save"></i> Save</button>
+        </form>
+      </div>
+    </div>
+
+    <div class="card mb-4">
+      <div class="card-header"><h3 class="card-title"><i class="fas fa-file-import me-2 text-primary"></i> Replace questions</h3></div>
+      <div class="card-body">
+        {% if locked %}
+        <p class="text-muted small mb-0">Someone has taken this test, so the questions are locked. Upload a corrected file as a new test.</p>
+        {% else %}
+        <form method="post" action="{% url 'mcq_test_update' test.pk %}" enctype="multipart/form-data">
+          {% csrf_token %}
+          <input type="hidden" name="action" value="replace">
+          <input type="file" name="file" accept=".json,application/json" class="form-control form-control-sm mb-2" required>
+          <button class="btn btn-sm btn-ghost"><i class="fas fa-upload"></i> Upload new questions</button>
+        </form>
+        {% endif %}
+      </div>
+    </div>
+
+    <form method="post" action="{% url 'mcq_test_delete' test.pk %}" onsubmit="return confirm('Delete this test? Interns who have not taken it lose it. Scores already earned stay.');">
+      {% csrf_token %}
+      <button class="btn btn-sm btn-outline-danger"><i class="fas fa-trash"></i> Delete test</button>
+    </form>
+  </div>
+</div>
+
+<script>
+(function () {
+  var all = document.getElementById('mqAll');
+  if (!all) return;
+  all.addEventListener('change', function () {
+    document.querySelectorAll('.mq-pick').forEach(function (c) { c.checked = all.checked; });
+  });
+})();
+</script>
+{% endblock %}

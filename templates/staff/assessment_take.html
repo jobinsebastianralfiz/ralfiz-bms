@@ -1,0 +1,104 @@
+{% extends 'staff/base.html' %}
+
+{% block title %}{{ test.title }}{% endblock %}
+{% block heading %}Test{% endblock %}
+
+{% block content %}
+<div class="mq-bar" id="mqBar">
+  <div class="mq-bar-title">
+    <strong>{{ test.title }}</strong>
+    <span><b id="mqAnswered">0</b> of {{ questions|length }} answered</span>
+  </div>
+  {% if seconds_left is not None %}<div class="mq-timer" id="mqTimer" data-left="{{ seconds_left }}"><i class="far fa-clock"></i> <span>--:--</span></div>{% endif %}
+  <div class="mq-progress"><i id="mqProgress" style="width:0%"></i></div>
+</div>
+
+<form method="post" id="mqForm">
+  {% csrf_token %}
+  {% for q in questions %}
+  <fieldset class="sf-card mq-q" id="q{{ q.num }}">
+    <legend class="mq-q-head"><span class="mq-num">{{ q.num }}</span><span class="mq-q-text">{{ q.text|linebreaksbr }}</span>
+      <span class="mq-marks">{{ q.marks }} mark{{ q.marks|pluralize }}</span></legend>
+    <div class="mq-opts">
+      {% for o in q.options %}
+      <label class="mq-opt">
+        <input type="radio" name="q_{{ q.idx }}" value="{{ o.idx }}">
+        <span class="mq-letter">{{ o.letter }}</span>
+        <span class="mq-opt-text">{{ o.text }}</span>
+      </label>
+      {% endfor %}
+    </div>
+  </fieldset>
+  {% endfor %}
+
+  <div class="mq-submit">
+    <p class="sf-muted" id="mqLeftNote"></p>
+    <button type="submit" class="sf-btn mq-go" id="mqSubmit"><i class="fas fa-paper-plane"></i> Submit test</button>
+  </div>
+</form>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function () {
+  var form = document.getElementById('mqForm');
+  var total = {{ questions|length }};
+  var key = 'mq-{{ a.pk }}';
+  var submitting = false;
+
+  // Keep picks across a reload or a dropped connection on this device.
+  try {
+    var saved = JSON.parse(localStorage.getItem(key) || '{}');
+    Object.keys(saved).forEach(function (name) {
+      var el = form.querySelector('input[name="' + name + '"][value="' + saved[name] + '"]');
+      if (el) el.checked = true;
+    });
+  } catch (e) {}
+
+  function answered() {
+    var picks = {}, n = 0;
+    form.querySelectorAll('input[type=radio]:checked').forEach(function (el) { picks[el.name] = el.value; n++; });
+    return { picks: picks, n: n };
+  }
+  function refresh() {
+    var s = answered();
+    document.getElementById('mqAnswered').textContent = s.n;
+    document.getElementById('mqProgress').style.width = (total ? s.n / total * 100 : 0) + '%';
+    document.getElementById('mqLeftNote').textContent = s.n < total ? (total - s.n) + ' question' + (total - s.n === 1 ? '' : 's') + ' not answered yet.' : 'All questions answered.';
+    try { localStorage.setItem(key, JSON.stringify(s.picks)); } catch (e) {}
+  }
+  form.addEventListener('change', refresh);
+  refresh();
+
+  form.addEventListener('submit', function (e) {
+    if (submitting) return;
+    var left = total - answered().n;
+    if (left > 0 && !e.timeUp && !window.confirm(left + ' question' + (left === 1 ? ' is' : 's are') + ' not answered. Submit anyway?')) {
+      e.preventDefault(); return;
+    }
+    submitting = true;
+    document.getElementById('mqSubmit').disabled = true;
+    try { localStorage.removeItem(key); } catch (e2) {}
+  });
+  window.addEventListener('beforeunload', function (e) {
+    if (!submitting && answered().n) { e.preventDefault(); e.returnValue = ''; }
+  });
+
+  var timer = document.getElementById('mqTimer');
+  if (timer) {
+    var ends = Date.now() + parseInt(timer.dataset.left, 10) * 1000;
+    var label = timer.querySelector('span');
+    (function tick() {
+      var s = Math.max(0, Math.round((ends - Date.now()) / 1000));
+      label.textContent = Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0');
+      timer.classList.toggle('low', s <= 60);
+      if (s === 0) {
+        if (!submitting) { submitting = true; try { localStorage.removeItem(key); } catch (e) {} form.submit(); }
+        return;
+      }
+      setTimeout(tick, 500);
+    })();
+  }
+})();
+</script>
+{% endblock %}

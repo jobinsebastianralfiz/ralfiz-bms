@@ -633,6 +633,44 @@ class ScheduledClass(models.Model):
         return False
 
 
+class McqTest(models.Model):
+    """A multiple-choice test HR uploads as a JSON file and gives to interns.
+
+    Each intern who gets it has their own InternAssessment row (``mcq_test``
+    set); they take it on the staff portal and it is marked automatically.
+    ``questions`` is a list of {"question", "options": [...], "answer": <0-based
+    index>, "marks", "explanation"} -- see employees/mcq.py for the upload format.
+    """
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    title = models.CharField(max_length=255)
+    description = models.TextField(blank=True, help_text='Instructions shown before the intern starts')
+    duration_minutes = models.PositiveIntegerField(default=0, help_text='Time limit in minutes (0 = no limit)')
+    questions = models.JSONField(default=list)
+    shuffle_questions = models.BooleanField(default=True, help_text='Each intern gets the questions in a different order')
+    show_answers = models.BooleanField(default=True, help_text='Show correct answers after the intern submits')
+    is_active = models.BooleanField(default=True, help_text='Untaken tests can still be started')
+    created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True,
+                                   related_name='created_mcq_tests')
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['-created_at']
+        verbose_name = 'MCQ Test'
+        verbose_name_plural = 'MCQ Tests'
+
+    def __str__(self):
+        return self.title
+
+    @property
+    def question_count(self):
+        return len(self.questions or [])
+
+    @property
+    def total_marks(self):
+        return sum(float(q.get('marks', 1)) for q in (self.questions or []))
+
+
 class InternAssessment(models.Model):
     """A test/assessment given to an intern, with score and downloadable files.
 
@@ -664,6 +702,14 @@ class InternAssessment(models.Model):
         User, on_delete=models.SET_NULL, null=True, blank=True,
         related_name='created_assessments'
     )
+    # Set when this is an online MCQ test the intern takes on the staff portal.
+    mcq_test = models.ForeignKey(McqTest, on_delete=models.SET_NULL, null=True, blank=True,
+                                 related_name='assessments')
+    due_date = models.DateField(null=True, blank=True, help_text='Take the test by this date')
+    answers = models.JSONField(default=dict, blank=True,
+                               help_text='MCQ: {question index: chosen option index}')
+    started_at = models.DateTimeField(null=True, blank=True)
+    submitted_at = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -678,6 +724,15 @@ class InternAssessment(models.Model):
     @property
     def is_graded(self):
         return self.scored is not None
+
+    @property
+    def is_mcq(self):
+        return self.mcq_test_id is not None
+
+    @property
+    def mcq_pending(self):
+        """An online test the intern still has to take."""
+        return self.mcq_test_id is not None and self.submitted_at is None
 
     @property
     def percentage(self):

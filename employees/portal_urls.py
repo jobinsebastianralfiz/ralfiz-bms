@@ -57,6 +57,8 @@ urlpatterns = [
     path('classes/', v.class_list, name='class_list'),
     path('classes/<uuid:pk>/', v.class_detail, name='class_detail'),
     path('assessments/', v.assessment_list, name='assessment_list'),
+    path('assessments/<uuid:pk>/take/', v.assessment_take, name='assessment_take'),
+    path('assessments/<uuid:pk>/result/', v.assessment_result, name='assessment_result'),
     path('bootcamp/', v.bootcamp_open, name='bootcamp'),
 
     # XP wallet

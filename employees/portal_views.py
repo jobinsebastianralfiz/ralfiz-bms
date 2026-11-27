@@ -35,7 +35,7 @@ from .models import (
 # changes. Whitenoise serves these unhashed, and the service worker is
 # cache-first for static assets, so an unversioned URL is served from the old
 # cache forever -- which is exactly how the app icon got stuck.
-ASSET_V = '21'
+ASSET_V = '22'
 
 MONTHS = [
     '', 'January', 'February', 'March', 'April', 'May', 'June',
@@ -280,6 +280,9 @@ def dashboard(request):
                      else 'Good afternoon' if timezone.localtime().hour < 17 else 'Good evening'),
         'pending_leave': pending_leave,
         'upcoming_classes': upcoming_classes,
+        'tests_to_take': list(InternAssessment.objects.filter(
+            employee=employee, mcq_test__isnull=False, submitted_at__isnull=True)
+            .select_related('mcq_test').order_by('due_date', 'created_at')[:5]),
         'bootcamp': bootcamp.dashboard_summary(employee) if is_intern(employee) else None,
         'wallet': _wallet_card(employee),
         'days_present': month_attendance.exclude(status='absent').count(),
@@ -1226,16 +1229,92 @@ def class_detail(request, pk):
 @staff_required
 def assessment_list(request):
     employee = request.employee
-    assessments = InternAssessment.objects.filter(employee=employee)
+    assessments = list(InternAssessment.objects.filter(employee=employee).select_related('mcq_test'))
     graded = [a for a in assessments if a.is_graded]
+    to_take = [a for a in assessments if a.mcq_pending and a.mcq_test]
 
     ctx = _base_context(request, 'assessments')
     ctx.update({
-        'assessments': assessments,
+        'to_take': to_take,
+        'today': timezone.localdate(),
+        'assessments': [a for a in assessments if a not in to_take],
         'average': round(sum(a.percentage for a in graded) / len(graded), 1) if graded else None,
         'graded_count': len(graded),
     })
     return render(request, 'staff/assessment_list.html', ctx)
+
+
+def _my_mcq(request, pk):
+    return get_object_or_404(
+        InternAssessment.objects.select_related('mcq_test'),
+        pk=pk, employee=request.employee, mcq_test__isnull=False)
+
+
+@staff_required
+def assessment_take(request, pk):
+    """Take an MCQ test: one page of questions, an optional countdown, marked
+    on submit. Answers never reach the page until the test is submitted."""
+    from . import mcq
+    a = _my_mcq(request, pk)
+    test = a.mcq_test
+    if a.submitted_at:
+        return redirect('staff:assessment_result', pk=a.pk)
+    if not test.is_active and not a.started_at:
+        messages.info(request, 'This test is closed. Please ask HR.')
+        return redirect('staff:assessment_list')
+
+    if request.method == 'POST':
+        if not a.started_at:
+            return redirect('staff:assessment_take', pk=a.pk)
+        posted = {k[2:]: v for k, v in request.POST.items() if k.startswith('q_')}
+        mcq.grade(a, posted)
+        messages.success(request, f'Test submitted. You scored {a.scored.normalize()} out of '
+                                  f'{a.max_score.normalize()}.')
+        return redirect('staff:assessment_result', pk=a.pk)
+
+    if request.GET.get('start') == '1' and not a.started_at:
+        a.started_at = timezone.now()
+        a.save(update_fields=['started_at', 'updated_at'])
+        return redirect('staff:assessment_take', pk=a.pk)
+
+    ctx = _base_context(request, 'assessments')
+    ctx.update({'a': a, 'test': test})
+    if not a.started_at:
+        return render(request, 'staff/assessment_start.html', ctx)
+
+    ends = mcq.deadline(a)
+    if ends and timezone.now() > ends + timedelta(seconds=mcq.GRACE_SECONDS):
+        # Time ran out and nothing came back (closed tab, lost network): mark it
+        # with whatever was answered, which is nothing.
+        mcq.grade(a, {})
+        messages.warning(request, 'Time is up for this test, so it was submitted with no answers.')
+        return redirect('staff:assessment_result', pk=a.pk)
+
+    questions = test.questions
+    ctx.update({
+        'questions': [{'num': n, 'idx': i, 'text': questions[i]['question'], 'marks': questions[i].get('marks', 1),
+                       'options': [{'letter': mcq.LETTERS[j], 'text': t, 'idx': j}
+                                   for j, t in enumerate(questions[i]['options'])]}
+                      for n, i in enumerate(mcq.question_order(a), start=1)],
+        'seconds_left': max(0, int((ends - timezone.now()).total_seconds())) if ends else None,
+    })
+    return render(request, 'staff/assessment_take.html', ctx)
+
+
+@staff_required
+def assessment_result(request, pk):
+    from . import mcq
+    a = _my_mcq(request, pk)
+    if not a.submitted_at:
+        return redirect('staff:assessment_take', pk=a.pk)
+    rows = mcq.review_rows(a)
+    ctx = _base_context(request, 'assessments')
+    ctx.update({
+        'a': a, 'test': a.mcq_test, 'rows': rows, 'show_answers': a.mcq_test.show_answers,
+        'right': sum(r['is_right'] for r in rows), 'wrong': sum(not r['is_right'] and not r['skipped'] for r in rows),
+        'skipped': sum(r['skipped'] for r in rows),
+    })
+    return render(request, 'staff/assessment_result.html', ctx)
 
 
 # --- Payslips --------------------------------------------------------------

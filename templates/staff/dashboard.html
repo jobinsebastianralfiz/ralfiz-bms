@@ -48,6 +48,20 @@
 
 <div class="sd-grid">
   <section>
+    {% if tests_to_take %}
+    <h2 class="sd-h2">Tests to take <a href="{% url 'staff:assessment_list' %}">Assessments</a></h2>
+    <div class="sd-tasks" style="margin-bottom:26px">
+      {% for a in tests_to_take %}
+      <a class="sd-task coral" href="{% url 'staff:assessment_take' a.pk %}">
+        <span class="sd-task-body">
+          <strong>{{ a.title }}</strong>
+          <span>{{ a.mcq_test.question_count }} questions{% if a.mcq_test.duration_minutes %} · {{ a.mcq_test.duration_minutes }} min{% endif %}{% if a.due_date %} · {% if a.due_date < today %}<b class="late">due {{ a.due_date|date:"d M" }}</b>{% else %}take it by {{ a.due_date|date:"d M" }}{% endif %}{% endif %}</span>
+        </span>
+        <span class="sd-check"><i class="fas fa-{% if a.started_at %}hourglass-half{% else %}play{% endif %}"></i></span>
+      </a>
+      {% endfor %}
+    </div>
+    {% endif %}
     <h2 class="sd-h2">Tasks for today <a href="{% url 'staff:work_list' %}">View all</a></h2>
     <div class="sd-tasks">
       {% for t in tasks %}

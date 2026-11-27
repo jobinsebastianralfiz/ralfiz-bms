@@ -13,6 +13,7 @@ from . import signoff_views
 from . import enrolment_web_views
 from . import offer_web_views
 from . import resignation_web_views
+from . import mcq_test_views
 
 urlpatterns = [
     # Public Pages
@@ -394,6 +395,12 @@ urlpatterns = [
     path('hr/offers/<uuid:pk>/enrolment/', offer_web_views.offer_create_enrolment, name='offer_create_enrolment'),
     path('hr/offers/<uuid:pk>/cancel/', offer_web_views.offer_cancel, name='offer_cancel'),
     path('hr/offers/<uuid:pk>/extend/', offer_web_views.offer_extend, name='offer_extend'),
+    path('hr/mcq-tests/', mcq_test_views.mcq_test_list, name='mcq_test_list'),
+    path('hr/mcq-tests/sample.json', mcq_test_views.mcq_test_sample, name='mcq_test_sample'),
+    path('hr/mcq-tests/<uuid:pk>/', mcq_test_views.mcq_test_detail, name='mcq_test_detail'),
+    path('hr/mcq-tests/<uuid:pk>/assign/', mcq_test_views.mcq_test_assign, name='mcq_test_assign'),
+    path('hr/mcq-tests/<uuid:pk>/update/', mcq_test_views.mcq_test_update, name='mcq_test_update'),
+    path('hr/mcq-tests/<uuid:pk>/delete/', mcq_test_views.mcq_test_delete, name='mcq_test_delete'),
     path('hr/resignations/', resignation_web_views.resignation_list, name='resignation_list'),
     path('hr/resignations/send/', resignation_web_views.resignation_send, name='resignation_send'),
     path('hr/resignations/<uuid:pk>/', resignation_web_views.resignation_detail, name='resignation_detail'),

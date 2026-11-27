@@ -1,0 +1,82 @@
+{% extends 'base.html' %}
+{% block title %}MCQ Tests - Ralfiz BMS{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title">MCQ Tests</h1>
+    <p class="page-subtitle mb-0">Upload a test as a JSON file, give it to interns, and they take it from their staff dashboard. It is marked automatically and the score goes on their Assessments.</p>
+  </div>
+  <div class="page-actions">
+    <a href="{% url 'mcq_test_sample' %}" class="btn btn-ghost"><i class="fas fa-download"></i> Sample JSON</a>
+  </div>
+</div>
+
+<div class="card mb-4">
+  <div class="card-header"><h3 class="card-title"><i class="fas fa-upload me-2 text-primary"></i> Upload a test</h3></div>
+  <div class="card-body">
+    <form method="post" enctype="multipart/form-data" class="row g-2 align-items-end">
+      {% csrf_token %}
+      <div class="col-12 col-md-5">
+        <label class="form-label small mb-1">JSON file *</label>
+        <input type="file" name="file" accept=".json,application/json" class="form-control form-control-sm" required>
+      </div>
+      <div class="col-12 col-md-4">
+        <label class="form-label small mb-1">Title</label>
+        <input type="text" name="title" class="form-control form-control-sm" placeholder="Leave blank to use the file's title">
+      </div>
+      <div class="col-6 col-md-2">
+        <label class="form-label small mb-1">Minutes</label>
+        <input type="number" min="0" name="duration_minutes" class="form-control form-control-sm" placeholder="From file">
+      </div>
+      <div class="col-6 col-md-1">
+        <button type="submit" class="btn btn-sm btn-primary w-100"><i class="fas fa-upload"></i> Upload</button>
+      </div>
+    </form>
+
+    <details class="mt-3">
+      <summary class="small fw-medium" style="cursor:pointer">File format</summary>
+      <p class="small text-muted mt-2 mb-2">
+        One file is one test. <code>answer</code> can be a letter (<code>"B"</code>), the option number counted from 1 (<code>2</code>), or the exact option text.
+        <code>marks</code> (default 1), <code>explanation</code> (shown after submitting), <code>description</code> and <code>duration_minutes</code> (0 = no time limit) are optional.
+        A plain list of questions also works; then type the title above.
+      </p>
+      <pre class="small mb-0" style="background:var(--bg-secondary, #f6f7fb);padding:12px;border-radius:8px;max-height:340px;overflow:auto">{{ sample }}</pre>
+    </details>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header"><h3 class="card-title"><i class="fas fa-list-check"></i> All tests</h3></div>
+  <div class="card-body p-0">
+    {% if rows %}
+    <div class="table-responsive">
+      <table class="table table-hover mb-0">
+        <thead><tr><th>Test</th><th>Questions</th><th>Time</th><th>Taken</th><th>Average</th><th></th></tr></thead>
+        <tbody>
+          {% for r in rows %}
+          <tr>
+            <td>
+              <a href="{% url 'mcq_test_detail' r.t.pk %}" class="fw-medium">{{ r.t.title }}</a>
+              {% if not r.t.is_active %}<span class="badge bg-secondary ms-1">Closed</span>{% endif %}
+              <div class="text-sm text-muted">Uploaded {{ r.t.created_at|date:"d M Y" }}</div>
+            </td>
+            <td>{{ r.t.question_count }} <span class="text-muted text-sm">· {{ r.t.total_marks|floatformat:"-2" }} marks</span></td>
+            <td class="text-sm">{% if r.t.duration_minutes %}{{ r.t.duration_minutes }} min{% else %}<span class="text-muted">No limit</span>{% endif %}</td>
+            <td>{{ r.done }} / {{ r.given }}</td>
+            <td>{% if r.avg is not None %}{{ r.avg }}%{% else %}<span class="text-muted">&mdash;</span>{% endif %}</td>
+            <td class="text-end"><a href="{% url 'mcq_test_detail' r.t.pk %}" class="btn btn-sm btn-ghost">{% if r.given %}Results{% else %}Give to interns{% endif %}</a></td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <div class="text-center text-muted" style="padding: 48px;">
+      <i class="fas fa-file-pen fa-2x mb-3 d-block"></i>
+      No tests yet. Upload a JSON file above, or download the sample to start from.
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

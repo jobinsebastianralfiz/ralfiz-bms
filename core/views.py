@@ -8373,6 +8373,20 @@ def emp_employee_detail(request, pk):
         messages.success(request, 'Assessment added.')
         return redirect('emp_employee_detail', pk=pk)
 
+    if request.method == 'POST' and request.POST.get('action') == 'give_mcq':
+        from employees import mcq
+        from employees.models import McqTest
+        from django.utils.dateparse import parse_date
+        test = McqTest.objects.filter(pk=request.POST.get('mcq_test') or None).first()
+        if not test:
+            messages.error(request, 'Pick a test to give.')
+        elif mcq.assign(test, [employee], by=request.user,
+                        due_date=parse_date(request.POST.get('due_date') or '')):
+            messages.success(request, f'"{test.title}" is on {employee.full_name}\'s staff dashboard now.')
+        else:
+            messages.info(request, f'{employee.full_name} already has "{test.title}".')
+        return redirect('emp_employee_detail', pk=pk)
+
     if request.method == 'POST' and request.POST.get('action') == 'delete_assessment':
         from employees.models import InternAssessment
         assessment = InternAssessment.objects.filter(
@@ -8392,7 +8406,12 @@ def emp_employee_detail(request, pk):
     leave_requests = current().counted(LeaveRequest.objects.filter(employee=employee)).order_by('-created_at')[:10]
     leave_summary = _employee_leave_summary(employee)
     work_assignments = WorkAssignment.objects.filter(assigned_to=employee).order_by('-created_at')[:10]
-    assessments = employee.assessments.all() if employee.employment_type == 'intern' else None
+    assessments = employee.assessments.select_related('mcq_test') if employee.employment_type == 'intern' else None
+    if assessments is not None:
+        from employees.models import McqTest
+        mcq_tests = McqTest.objects.filter(is_active=True).exclude(assessments__employee=employee)
+    else:
+        mcq_tests = None
     context = {
         'employee': employee,
         'policy': employee.attendance_policy(),
@@ -8402,6 +8421,7 @@ def emp_employee_detail(request, pk):
         'leave_summary': leave_summary,
         'work_assignments': work_assignments,
         'assessments': assessments,
+        'mcq_tests': mcq_tests,
         'employment_types': Employee.EMPLOYMENT_TYPE_CHOICES,
         'roles': Employee.ROLE_CHOICES,
         'departments': Employee.DEPARTMENT_CHOICES,

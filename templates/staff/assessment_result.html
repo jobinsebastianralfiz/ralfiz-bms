@@ -1,0 +1,45 @@
+{% extends 'staff/base.html' %}
+
+{% block title %}{{ a.title }} · Result{% endblock %}
+{% block heading %}Result{% endblock %}
+
+{% block content %}
+<a href="{% url 'staff:assessment_list' %}" class="sf-back"><i class="fas fa-arrow-left"></i> Assessments</a>
+
+<div class="sf-card mq-score {% if a.percentage >= 60 %}good{% elif a.percentage >= 40 %}ok{% else %}low{% endif %}">
+  <div class="mq-score-ring" style="--p: {{ a.percentage|default:0 }}"><span>{{ a.percentage|default:0 }}%</span></div>
+  <div>
+    <h2>{{ a.title }}</h2>
+    <p class="mq-score-big">{{ a.scored|floatformat:"-2" }} <small>/ {{ a.max_score|floatformat:"-2" }}</small></p>
+    <p class="sf-muted">Submitted {{ a.submitted_at|date:"d M Y, g:i A" }}</p>
+    <div class="mq-tally">
+      <span class="r"><i class="fas fa-check"></i> {{ right }} right</span>
+      <span class="w"><i class="fas fa-xmark"></i> {{ wrong }} wrong</span>
+      {% if skipped %}<span class="s"><i class="fas fa-minus"></i> {{ skipped }} skipped</span>{% endif %}
+    </div>
+  </div>
+</div>
+
+{% if show_answers %}
+  <h2 class="sd-h2" style="margin:22px 0 10px">Your answers</h2>
+  {% for r in rows %}
+  <div class="sf-card mq-q {% if r.is_right %}right{% elif r.skipped %}skipped{% else %}wrong{% endif %}">
+    <div class="mq-q-head"><span class="mq-num">{{ r.num }}</span><span class="mq-q-text">{{ r.question|linebreaksbr }}</span>
+      <span class="mq-marks">{% if r.is_right %}+{{ r.marks }}{% else %}0{% endif %} / {{ r.marks }}</span></div>
+    <div class="mq-opts">
+      {% for o in r.options %}
+      <div class="mq-opt{% if o.idx == r.correct %} is-correct{% endif %}{% if o.idx == r.chosen and o.idx != r.correct %} is-wrong{% endif %}">
+        <span class="mq-letter">{{ o.letter }}</span>
+        <span class="mq-opt-text">{{ o.text }}</span>
+        {% if o.idx == r.correct %}<i class="fas fa-check mq-mark"></i>{% elif o.idx == r.chosen %}<i class="fas fa-xmark mq-mark"></i>{% endif %}
+      </div>
+      {% endfor %}
+    </div>
+    {% if r.skipped %}<p class="mq-note">You didn't answer this one.</p>{% endif %}
+    {% if r.explanation %}<p class="mq-note"><i class="far fa-lightbulb"></i> {{ r.explanation|linebreaksbr }}</p>{% endif %}
+  </div>
+  {% endfor %}
+{% else %}
+  <div class="sf-empty" style="margin-top:18px"><i class="fas fa-lock"></i> HR will share the answers later.</div>
+{% endif %}
+{% endblock %}

@@ -323,12 +323,16 @@ class InternAssessmentSerializer(serializers.ModelSerializer):
     is_graded = serializers.ReadOnlyField()
     percentage = serializers.ReadOnlyField()
     created_by_name = serializers.CharField(source='created_by.get_full_name', read_only=True, default='')
+    # Online MCQ tests are taken on the staff web portal (/staff/assessments/).
+    is_mcq = serializers.ReadOnlyField()
+    mcq_pending = serializers.ReadOnlyField()
 
     class Meta:
         model = InternAssessment
         fields = [
             'id', 'title', 'description', 'date', 'max_score', 'scored',
             'is_graded', 'percentage', 'test_file', 'answer_key_file',
+            'is_mcq', 'mcq_pending', 'due_date', 'submitted_at',
             'created_by_name', 'created_at', 'updated_at',
         ]
         read_only_fields = ['id', 'created_by_name', 'created_at', 'updated_at']
